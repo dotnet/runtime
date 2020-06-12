@@ -28,8 +28,8 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\coree.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\coree.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\coree-internals.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\culture-info.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\culture-info-tables.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\culture\culture-info.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\culture\culture-info-tables.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\debug-helpers.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\debug-mono-symfile.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\debug-mono-ppdb.h" />
@@ -62,7 +62,7 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loaded-images-netcore.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loader.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loader-internals.h" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\locales.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\culture\locales.c" Condition="Exists('$(MonoSourceLocation)\mono\culture\locales.c')" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\locales.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\lock-tracer.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\lock-tracer.h" />

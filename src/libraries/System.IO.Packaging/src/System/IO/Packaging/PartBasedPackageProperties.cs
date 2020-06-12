@@ -10,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Xml;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Packaging
 {
@@ -49,11 +50,11 @@ namespace System.IO.Packaging
         /// recommended that this value be only as verbose as necessary to
         /// identify the individual.
         /// </value>
-        public override string Creator
+        public override string? Creator
         {
             get
             {
-                return (string)GetPropertyValue(PackageXmlEnum.Creator);
+                return (string?)GetPropertyValue(PackageXmlEnum.Creator);
             }
             set
             {
@@ -64,11 +65,11 @@ namespace System.IO.Packaging
         /// <value>
         /// The title.
         /// </value>
-        public override string Title
+        public override string? Title
         {
             get
             {
-                return (string)GetPropertyValue(PackageXmlEnum.Title);
+                return (string?)GetPropertyValue(PackageXmlEnum.Title);
             }
             set
             {
@@ -79,11 +80,11 @@ namespace System.IO.Packaging
         /// <value>
         /// The topic of the contents.
         /// </value>
-        public override string Subject
+        public override string? Subject
         {
             get
             {
-                return (string)GetPropertyValue(PackageXmlEnum.Subject);
+                return (string?)GetPropertyValue(PackageXmlEnum.Subject);
             }
             set
             {
@@ -95,11 +96,11 @@ namespace System.IO.Packaging
         /// The category. This value is typically used by UI applications to create navigation
         /// controls.
         /// </value>
-        public override string Category
+        public override string? Category
         {
             get
             {
-                return (string)GetPropertyValue(PackageXmlEnum.Category);
+                return (string?)GetPropertyValue(PackageXmlEnum.Category);
             }
             set
             {
@@ -112,11 +113,11 @@ namespace System.IO.Packaging
         /// is typically a list of terms that are not available elsewhere in the
         /// properties.
         /// </value>
-        public override string Keywords
+        public override string? Keywords
         {
             get
             {
-                return (string)GetPropertyValue(PackageXmlEnum.Keywords);
+                return (string?)GetPropertyValue(PackageXmlEnum.Keywords);
             }
             set
             {
@@ -127,11 +128,11 @@ namespace System.IO.Packaging
         /// <value>
         /// The description or abstract of the contents.
         /// </value>
-        public override string Description
+        public override string? Description
         {
             get
             {
-                return (string)GetPropertyValue(PackageXmlEnum.Description);
+                return (string?)GetPropertyValue(PackageXmlEnum.Description);
             }
             set
             {
@@ -145,11 +146,11 @@ namespace System.IO.Packaging
         /// "Security Bulletin", and "Exam". (This property is distinct from
         /// MIME content types as defined in RFC 2616.)
         /// </value>
-        public override string ContentType
+        public override string? ContentType
         {
             get
             {
-                string contentType = GetPropertyValue(PackageXmlEnum.ContentType) as string;
+                string? contentType = GetPropertyValue(PackageXmlEnum.ContentType) as string;
 
                 return contentType;
             }
@@ -163,11 +164,11 @@ namespace System.IO.Packaging
         /// The status of the content. Example values include "Draft",
         /// "Reviewed", and "Final".
         /// </value>
-        public override string ContentStatus
+        public override string? ContentStatus
         {
             get
             {
-                return (string)GetPropertyValue(PackageXmlEnum.ContentStatus);
+                return (string?)GetPropertyValue(PackageXmlEnum.ContentStatus);
             }
             set
             {
@@ -178,11 +179,11 @@ namespace System.IO.Packaging
         /// <value>
         /// The version number. This value is set by the user or by the application.
         /// </value>
-        public override string Version
+        public override string? Version
         {
             get
             {
-                return (string)GetPropertyValue(PackageXmlEnum.Version);
+                return (string?)GetPropertyValue(PackageXmlEnum.Version);
             }
             set
             {
@@ -195,11 +196,11 @@ namespace System.IO.Packaging
         /// revisions. The application is responsible for updating this value
         /// after each revision.
         /// </value>
-        public override string Revision
+        public override string? Revision
         {
             get
             {
-                return (string)GetPropertyValue(PackageXmlEnum.Revision);
+                return (string?)GetPropertyValue(PackageXmlEnum.Revision);
             }
             set
             {
@@ -243,11 +244,11 @@ namespace System.IO.Packaging
         /// employee ID, etc. It is recommended that this value be only as
         /// verbose as necessary to identify the individual.
         /// </value>
-        public override string LastModifiedBy
+        public override string? LastModifiedBy
         {
             get
             {
-                return (string)GetPropertyValue(PackageXmlEnum.LastModifiedBy);
+                return (string?)GetPropertyValue(PackageXmlEnum.LastModifiedBy);
             }
             set
             {
@@ -273,11 +274,11 @@ namespace System.IO.Packaging
         /// <value>
         /// A language of the intellectual content of the resource
         /// </value>
-        public override string Language
+        public override string? Language
         {
             get
             {
-                return (string)GetPropertyValue(PackageXmlEnum.Language);
+                return (string?)GetPropertyValue(PackageXmlEnum.Language);
             }
             set
             {
@@ -288,11 +289,11 @@ namespace System.IO.Packaging
         /// <value>
         /// A unique identifier.
         /// </value>
-        public override string Identifier
+        public override string? Identifier
         {
             get
             {
-                return (string)GetPropertyValue(PackageXmlEnum.Identifier);
+                return (string?)GetPropertyValue(PackageXmlEnum.Identifier);
             }
             set
             {
@@ -313,7 +314,7 @@ namespace System.IO.Packaging
 
             // Make sure there is a part to write to and that it contains
             // the expected start markup.
-            Stream zipStream = null;
+            Stream? zipStream = null;
             EnsureXmlWriter(ref zipStream);
 
             // Write the property elements and clear _dirty.
@@ -339,7 +340,7 @@ namespace System.IO.Packaging
         // Keys are taken from the set of string constants defined in this
         // class and compared by their references rather than their values.
 
-        private object GetPropertyValue(PackageXmlEnum propertyName)
+        private object? GetPropertyValue(PackageXmlEnum propertyName)
         {
             _package.ThrowIfWriteOnly();
 
@@ -351,7 +352,7 @@ namespace System.IO.Packaging
         // Shim function to adequately cast the result of GetPropertyValue.
         private Nullable<DateTime> GetDateTimePropertyValue(PackageXmlEnum propertyName)
         {
-            object valueObject = GetPropertyValue(propertyName);
+            object? valueObject = GetPropertyValue(propertyName);
             if (valueObject == null)
                 return null;
             // If an object is there, it will be a DateTime (not a Nullable<DateTime>).
@@ -361,7 +362,7 @@ namespace System.IO.Packaging
         // Set new property value.
         // Override that sets the initializing flag to false to reflect the default
         // situation: recording a binding to implement a value assignment.
-        private void RecordNewBinding(PackageXmlEnum propertyenum, object value)
+        private void RecordNewBinding(PackageXmlEnum propertyenum, object? value)
         {
             RecordNewBinding(propertyenum, value, false /* not invoked at construction */, null);
         }
@@ -370,7 +371,7 @@ namespace System.IO.Packaging
         // Null value is passed for deleting a property.
         // While initializing, we are not assigning new values, and so the dirty flag should
         // stay untouched.
-        private void RecordNewBinding(PackageXmlEnum propertyenum, object value, bool initializing, XmlReader reader)
+        private void RecordNewBinding(PackageXmlEnum propertyenum, object? value, bool initializing, XmlReader? reader)
         {
             // If we are reading values from the package, reader cannot be null
             Debug.Assert(!initializing || reader != null);
@@ -384,7 +385,7 @@ namespace System.IO.Packaging
                 // Parsing should detect redundant entries.
                 if (initializing)
                 {
-                    throw new XmlException(SR.Format(SR.DuplicateCorePropertyName, reader.Name),
+                    throw new XmlException(SR.Format(SR.DuplicateCorePropertyName, reader!.Name),
                         null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                 }
 
@@ -427,10 +428,10 @@ namespace System.IO.Packaging
         }
 
         // Locate core properties part using the package relationship that points to it.
-        private PackagePart GetPropertyPart()
+        private PackagePart? GetPropertyPart()
         {
             // Find a package-wide relationship of type CoreDocumentPropertiesRelationshipType.
-            PackageRelationship corePropertiesRelationship = GetCorePropertiesRelationship();
+            PackageRelationship? corePropertiesRelationship = GetCorePropertiesRelationship();
             if (corePropertiesRelationship == null)
                 return null;
 
@@ -438,7 +439,7 @@ namespace System.IO.Packaging
             if (corePropertiesRelationship.TargetMode != TargetMode.Internal)
                 throw new FileFormatException(SR.NoExternalTargetForMetadataRelationship);
 
-            PackagePart propertiesPart = null;
+            PackagePart? propertiesPart = null;
             Uri propertiesPartUri = PackUriHelper.ResolvePartUri(
                 PackUriHelper.PackageRootUri,
                 corePropertiesRelationship.TargetUri);
@@ -456,9 +457,9 @@ namespace System.IO.Packaging
         }
 
         // Find a package-wide relationship of type CoreDocumentPropertiesRelationshipType.
-        private PackageRelationship GetCorePropertiesRelationship()
+        private PackageRelationship? GetCorePropertiesRelationship()
         {
-            PackageRelationship propertiesPartRelationship = null;
+            PackageRelationship? propertiesPartRelationship = null;
             foreach (PackageRelationship rel
                 in _package.GetRelationshipsByType(CoreDocumentPropertiesRelationshipType))
             {
@@ -535,7 +536,7 @@ namespace System.IO.Packaging
                     // Property elements can occur in any order (xsd:all).
                     object localName = reader.LocalName;
                     PackageXmlEnum xmlStringIndex = PackageXmlStringTable.GetEnumOf(localName);
-                    string valueType = PackageXmlStringTable.GetValueType(xmlStringIndex);
+                    string? valueType = PackageXmlStringTable.GetValueType(xmlStringIndex);
 
                     if (Array.IndexOf(s_validProperties, xmlStringIndex) == -1)  // An unexpected element is an error.
                     {
@@ -673,7 +674,7 @@ namespace System.IO.Packaging
 
         // Make sure there is a part to write to and that it contains
         // the expected start markup.
-        private void EnsureXmlWriter(ref Stream zipStream)
+        private void EnsureXmlWriter(ref Stream? zipStream)
         {
             if (_xmlWriter != null)
                 return;
@@ -687,6 +688,7 @@ namespace System.IO.Packaging
         }
 
         // Create a property part if none exists yet.
+        [MemberNotNull(nameof(_propertyPart))]
         private void EnsurePropertyPart()
         {
             if (_propertyPart != null)
@@ -714,6 +716,7 @@ namespace System.IO.Packaging
         // pre-existing dangling property relationship.
         // No check is performed here for other classes getting misused insofar as this function
         // has to work in write-only mode.
+        [MemberNotNull(nameof(_propertyPart))]
         private void CreatePropertyPart()
         {
             _propertyPart = _package.CreatePart(GeneratePropertyPartUri(), s_coreDocumentPropertiesContentType.ToString());
@@ -732,6 +735,8 @@ namespace System.IO.Packaging
 
         private void WriteXmlStartTagsForPackageProperties()
         {
+            Debug.Assert(_xmlWriter != null);
+
             _xmlWriter.WriteStartDocument();
 
             // <coreProperties
@@ -759,6 +764,8 @@ namespace System.IO.Packaging
         // Write the property elements and clear _dirty.
         private void SerializeDirtyProperties()
         {
+            Debug.Assert(_xmlWriter != null);
+
             // Create a property element for each non-null entry.
             foreach (KeyValuePair<PackageXmlEnum, object> entry in _propertyDictionary)
             {
@@ -804,6 +811,8 @@ namespace System.IO.Packaging
         // Add end markup and close the writer.
         private void CloseXmlWriter()
         {
+            Debug.Assert(_xmlWriter != null);
+
             // Close the root element.
             _xmlWriter.WriteEndElement();
 
@@ -819,8 +828,8 @@ namespace System.IO.Packaging
         #region Private Fields
 
         private readonly Package _package;
-        private PackagePart _propertyPart;
-        private XmlWriter _xmlWriter;
+        private PackagePart? _propertyPart;
+        private XmlWriter? _xmlWriter;
 
         // Table of objects from the closed set of literals defined below.
         // (Uses object comparison rather than string comparison.)

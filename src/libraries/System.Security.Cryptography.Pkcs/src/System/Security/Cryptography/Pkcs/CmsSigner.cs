@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
@@ -128,7 +129,7 @@ namespace System.Security.Cryptography.Pkcs
             byte[] dataHash = hasher.GetHashAndReset();
 
             SignerInfoAsn newSignerInfo = default;
-            newSignerInfo.DigestAlgorithm.Algorithm = DigestAlgorithm;
+            newSignerInfo.DigestAlgorithm.Algorithm = DigestAlgorithm.Value!;
 
             // If the user specified attributes (not null, count > 0) we need attributes.
             // If the content type is null we're counter-signing, and need the message digest attr.
@@ -137,29 +138,27 @@ namespace System.Security.Cryptography.Pkcs
             {
                 List<AttributeAsn> signedAttrs = BuildAttributes(SignedAttributes);
 
-                using (var writer = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    writer.WriteOctetString(dataHash);
-                    signedAttrs.Add(
-                        new AttributeAsn
-                        {
-                            AttrType = new Oid(Oids.MessageDigest, Oids.MessageDigest),
-                            AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
-                        });
-                }
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                writer.WriteOctetString(dataHash);
+
+                signedAttrs.Add(
+                    new AttributeAsn
+                    {
+                        AttrType = Oids.MessageDigest,
+                        AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
+                    });
 
                 if (contentTypeOid != null)
                 {
-                    using (var writer = new AsnWriter(AsnEncodingRules.DER))
-                    {
-                        writer.WriteObjectIdentifier(contentTypeOid);
-                        signedAttrs.Add(
-                            new AttributeAsn
-                            {
-                                AttrType = new Oid(Oids.ContentType, Oids.ContentType),
-                                AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
-                            });
-                    }
+                    writer.Reset();
+                    writer.WriteObjectIdentifierForCrypto(contentTypeOid);
+
+                    signedAttrs.Add(
+                        new AttributeAsn
+                        {
+                            AttrType = Oids.ContentType,
+                            AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
+                        });
                 }
 
                 // Use the serializer/deserializer to DER-normalize the attribute order.
@@ -171,11 +170,9 @@ namespace System.Security.Cryptography.Pkcs
                 // Since this contains user data in a context where BER is permitted, use BER.
                 // There shouldn't be any observable difference here between BER and DER, though,
                 // since the top level fields were written by NormalizeSet.
-                using (AsnWriter attrsWriter = new AsnWriter(AsnEncodingRules.BER))
-                {
-                    signedAttrsSet.Encode(attrsWriter);
-                    newSignerInfo.SignedAttributes = attrsWriter.Encode();
-                }
+                AsnWriter attrsWriter = new AsnWriter(AsnEncodingRules.BER);
+                signedAttrsSet.Encode(attrsWriter);
+                newSignerInfo.SignedAttributes = attrsWriter.Encode();
 
                 dataHash = hasher.GetHashAndReset();
             }
@@ -246,7 +243,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             newSignerInfo.SignatureValue = signatureValue;
-            newSignerInfo.SignatureAlgorithm.Algorithm = signatureAlgorithm!;
+            newSignerInfo.SignatureAlgorithm.Algorithm = signatureAlgorithm!.Value!;
 
             X509Certificate2Collection certs = new X509Certificate2Collection();
             certs.AddRange(Certificates);
@@ -317,7 +314,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 AttributeAsn newAttr = new AttributeAsn
                 {
-                    AttrType = attributeObject.Oid,
+                    AttrType = attributeObject.Oid!.Value!,
                     AttrValues = new ReadOnlyMemory<byte>[attributeObject.Values.Count],
                 };
 

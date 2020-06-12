@@ -9210,8 +9210,8 @@ typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> Lc
 //            the assignment is to a local (and not a field),
 //            the local is not lvLiveInOutOfHndlr or no exceptions can be thrown between the prolog and the assignment,
 //            either the local has no gc pointers or there are no gc-safe points between the prolog and the assignment,
-//         then the local with lvHasExplicitInit which tells the codegen not to insert zero initialization for this
-//         local in the prolog.
+//         then the local is marked with lvHasExplicitInit which tells the codegen not to insert zero initialization
+//         for this local in the prolog.
 
 void Compiler::optRemoveRedundantZeroInits()
 {
@@ -9276,6 +9276,9 @@ void Compiler::optRemoveRedundantZeroInits()
                             unsigned         lclNum    = treeOp->gtOp1->AsLclVarCommon()->GetLclNum();
                             LclVarDsc* const lclDsc    = lvaGetDesc(lclNum);
                             unsigned*        pRefCount = refCounts.LookupPointer(lclNum);
+
+                            // pRefCount can't be null because the local node on the lhs of the assignment
+                            // must have already been seen.
                             assert(pRefCount != nullptr);
                             if (*pRefCount == 1)
                             {
@@ -9297,6 +9300,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                             removedExplicitZeroInit      = true;
                                             *pRefCount                   = 0;
                                             lclDsc->lvSuppressedZeroInit = 1;
+                                            lclDsc->setLvRefCnt(lclDsc->lvRefCnt() - 1);
                                         }
                                     }
                                 }

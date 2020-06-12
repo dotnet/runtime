@@ -60,7 +60,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                ValueTask.CompletedTask.GetAwaiter().OnCompleted(continuation);
+                Task.CompletedTask.GetAwaiter().OnCompleted(continuation);
             }
         }
 
@@ -80,7 +80,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                ValueTask.CompletedTask.GetAwaiter().UnsafeOnCompleted(continuation);
+                Task.CompletedTask.GetAwaiter().UnsafeOnCompleted(continuation);
             }
         }
 
@@ -142,7 +142,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                ValueTask.CompletedTask.GetAwaiter().OnCompleted(continuation);
+                Task.CompletedTask.GetAwaiter().OnCompleted(continuation);
             }
         }
 
@@ -162,7 +162,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                ValueTask.CompletedTask.GetAwaiter().UnsafeOnCompleted(continuation);
+                Task.CompletedTask.GetAwaiter().UnsafeOnCompleted(continuation);
             }
         }
 

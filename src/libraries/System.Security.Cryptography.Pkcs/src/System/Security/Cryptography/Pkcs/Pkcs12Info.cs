@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Security.Cryptography.Asn1;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs12;
 using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Pkcs.Asn1;
@@ -49,11 +49,11 @@ namespace System.Security.Cryptography.Pkcs
             out int bytesConsumed,
             bool skipCopy = false)
         {
-            AsnReader reader = new AsnReader(encodedBytes, AsnEncodingRules.BER);
             // Trim it to the first value
-            encodedBytes = reader.PeekEncodedValue();
+            int firstValueLength = PkcsHelpers.FirstBerValueLength(encodedBytes.Span);
+            ReadOnlyMemory<byte> firstValue = encodedBytes.Slice(0, firstValueLength);
 
-            ReadOnlyMemory<byte> maybeCopy = skipCopy ? encodedBytes : encodedBytes.ToArray();
+            ReadOnlyMemory<byte> maybeCopy = skipCopy ? firstValue : firstValue.ToArray();
             PfxAsn pfx = PfxAsn.Decode(maybeCopy, AsnEncodingRules.BER);
 
             // https://tools.ietf.org/html/rfc7292#section-4 only defines version 3.
@@ -101,43 +101,50 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             List<ContentInfoAsn> authSafeData = new List<ContentInfoAsn>();
-            AsnValueReader authSafeReader = new AsnValueReader(authSafeBytes.Span, AsnEncodingRules.BER);
-            AsnValueReader sequenceReader = authSafeReader.ReadSequence();
-
-            authSafeReader.ThrowIfNotEmpty();
-            while (sequenceReader.HasData)
+            try
             {
-                ContentInfoAsn.Decode(ref sequenceReader, authSafeBytes, out ContentInfoAsn contentInfo);
-                authSafeData.Add(contentInfo);
-            }
+                AsnValueReader authSafeReader = new AsnValueReader(authSafeBytes.Span, AsnEncodingRules.BER);
+                AsnValueReader sequenceReader = authSafeReader.ReadSequence();
 
-            ReadOnlyCollection<Pkcs12SafeContents> authSafe;
-
-            if (authSafeData.Count == 0)
-            {
-                authSafe = new ReadOnlyCollection<Pkcs12SafeContents>(Array.Empty<Pkcs12SafeContents>());
-            }
-            else
-            {
-                Pkcs12SafeContents[] contentsArray = new Pkcs12SafeContents[authSafeData.Count];
-
-                for (int i = 0; i < contentsArray.Length; i++)
+                authSafeReader.ThrowIfNotEmpty();
+                while (sequenceReader.HasData)
                 {
-                    contentsArray[i] = new Pkcs12SafeContents(authSafeData[i]);
+                    ContentInfoAsn.Decode(ref sequenceReader, authSafeBytes, out ContentInfoAsn contentInfo);
+                    authSafeData.Add(contentInfo);
                 }
 
-                authSafe = new ReadOnlyCollection<Pkcs12SafeContents>(contentsArray);
+                ReadOnlyCollection<Pkcs12SafeContents> authSafe;
+
+                if (authSafeData.Count == 0)
+                {
+                    authSafe = new ReadOnlyCollection<Pkcs12SafeContents>(Array.Empty<Pkcs12SafeContents>());
+                }
+                else
+                {
+                    Pkcs12SafeContents[] contentsArray = new Pkcs12SafeContents[authSafeData.Count];
+
+                    for (int i = 0; i < contentsArray.Length; i++)
+                    {
+                        contentsArray[i] = new Pkcs12SafeContents(authSafeData[i]);
+                    }
+
+                    authSafe = new ReadOnlyCollection<Pkcs12SafeContents>(contentsArray);
+                }
+
+                bytesConsumed = firstValueLength;
+
+                return new Pkcs12Info
+                {
+                    AuthenticatedSafe = authSafe,
+                    IntegrityMode = mode,
+                    _decoded = pfx,
+                    _authSafeContents = authSafeBytes,
+                };
             }
-
-            bytesConsumed = encodedBytes.Length;
-
-            return new Pkcs12Info
+            catch (AsnContentException e)
             {
-                AuthenticatedSafe = authSafe,
-                IntegrityMode = mode,
-                _decoded = pfx,
-                _authSafeContents = authSafeBytes,
-            };
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
     }
 }

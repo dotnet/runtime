@@ -42,25 +42,5 @@ namespace System.IO
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
             }
         }
-
-        public static void ValidateCopyToArgs(Stream source, Delegate callback, int bufferSize)
-        {
-            if (callback == null)
-            {
-                throw new ArgumentNullException(nameof(callback));
-            }
-
-            if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, SR.ArgumentOutOfRange_NeedPosNum);
-            }
-
-            if (!source.CanRead)
-            {
-                throw source.CanWrite ? (Exception)
-                    new NotSupportedException(SR.NotSupported_UnreadableStream) :
-                    new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
-            }
-        }
     }
 }

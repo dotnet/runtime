@@ -22,7 +22,7 @@ namespace System.Tests
             yield return new object[] { new string[] { "arg1", @"\\\\\" + "\"alpha", @"\" + "\"arg3" } };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(GetCommandLineArgs_TestData))]
         public void GetCommandLineArgs_Invoke_ReturnsExpected(string[] args)
         {

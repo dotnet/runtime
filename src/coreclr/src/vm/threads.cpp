@@ -48,6 +48,7 @@
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #include "olecontexthelpers.h"
+#include "roapi.h"
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #ifdef FEATURE_PERFTRACING
@@ -5066,8 +5067,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
         _ASSERTE(!"Unexpected HRESULT returned from CoInitializeEx!");
     }
 
-#ifdef FEATURE_COMINTEROP
-
     // If WinRT is supported on this OS, also initialize it at the same time.  Since WinRT sits on top of COM
     // we need to make sure that it is initialized in the same threading mode as we just started COM itself
     // with (or that we detected COM had already been started with).
@@ -5112,7 +5111,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
     // Since we've just called CoInitialize, COM has effectively been started up.
     // To ensure the CLR is aware of this, we need to call EnsureComStarted.
     EnsureComStarted(FALSE);
-#endif // FEATURE_COMINTEROP
 
     return GetApartment();
 }

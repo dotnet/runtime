@@ -474,6 +474,8 @@ namespace ILCompiler
                         .UseResilience(_commandLineOptions.Resilient)
                         .UseMapFile(_commandLineOptions.Map)
                         .UseParallelism(_commandLineOptions.Parallelism)
+                        .UseProfileData(profileDataManager)
+                        .FileLayoutAlgorithms(_commandLineOptions.MethodLayout, _commandLineOptions.FileLayout)
                         .UseJitPath(_commandLineOptions.JitPath)
                         .UseInstructionSetSupport(instructionSetSupport)
                         .GenerateOutputFile(_commandLineOptions.OutputFilePath.FullName)

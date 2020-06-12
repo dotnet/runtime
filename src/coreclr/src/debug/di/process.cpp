@@ -422,9 +422,6 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
             const WCHAR *niexe = W(".ni.exe");
             const size_t dllLen = wcslen(nidll);  // used for ni.exe as well
 
-            const WCHAR *niwinmd = W(".ni.winmd");
-            const size_t winmdLen = wcslen(niwinmd);
-
             if (pathLen > dllLen && _wcsicmp(mutableFilePath+pathLen-dllLen, nidll) == 0)
             {
                 wcscpy_s(mutableFilePath+pathLen-dllLen, dllLen, W(".dll"));
@@ -432,10 +429,6 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
             else if (pathLen > dllLen && _wcsicmp(mutableFilePath+pathLen-dllLen, niexe) == 0)
             {
                 wcscpy_s(mutableFilePath+pathLen-dllLen, dllLen, W(".exe"));
-            }
-            else if (pathLen > winmdLen && _wcsicmp(mutableFilePath+pathLen-winmdLen, niwinmd) == 0)
-            {
-                wcscpy_s(mutableFilePath+pathLen-winmdLen, winmdLen, W(".winmd"));
             }
 #endif//FEATURE_CORESYSTEM
 

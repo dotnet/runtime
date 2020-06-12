@@ -86,54 +86,25 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
     ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
     _ASSERTE(pComInfo != NULL);
 
-    BOOL fWinRTCtor = FALSE;
-    BOOL fWinRTComposition = FALSE;
-    BOOL fWinRTStatic = FALSE;
-    BOOL fWinRTDelegate = FALSE;
-
     if (pMD->IsInterface())
     {
         pComInfo->m_cachedComSlot = pMD->GetComSlot();
         pItfMT = pMT;
         pComInfo->m_pInterfaceMT = pItfMT;
     }
-    else if (pMT->IsWinRTDelegate())
-    {
-        pComInfo->m_cachedComSlot = ComMethodTable::GetNumExtraSlots(ifVtable);
-        pItfMT = pMT;
-        pComInfo->m_pInterfaceMT = pItfMT;
-
-        fWinRTDelegate = TRUE;
-    }
     else
     {
-        BOOL fIsWinRTClass = (!pMT->IsInterface() && pMT->IsProjectedFromWinRT());
         MethodDesc *pItfMD;
 
-        if (fIsWinRTClass && pMD->IsCtor())
+        pItfMD = pMD->GetInterfaceMD();
+        if (pItfMD == NULL)
         {
-            // ctors on WinRT classes call factory interface methods
-            pItfMD = GetWinRTFactoryMethodForCtor(pMD, &fWinRTComposition);
-            fWinRTCtor = TRUE;
-        }
-        else if (fIsWinRTClass && pMD->IsStatic())
-        {
-            // static members of WinRT classes call static interface methods
-            pItfMD = GetWinRTFactoryMethodForStatic(pMD);
-            fWinRTStatic = TRUE;
-        }
-        else
-        {
-            pItfMD = pMD->GetInterfaceMD();
-            if (pItfMD == NULL)
-            {
-                // the method does not implement any interface
-                StackSString ssClassName;
-                pMT->_GetFullyQualifiedNameForClass(ssClassName);
-                StackSString ssMethodName(SString::Utf8, pMD->GetName());
+            // the method does not implement any interface
+            StackSString ssClassName;
+            pMT->_GetFullyQualifiedNameForClass(ssClassName);
+            StackSString ssMethodName(SString::Utf8, pMD->GetName());
 
-                COMPlusThrow(kInvalidOperationException, IDS_EE_COMIMPORT_METHOD_NO_INTERFACE, ssMethodName.GetUnicode(), ssClassName.GetUnicode());
-            }
+            COMPlusThrow(kInvalidOperationException, IDS_EE_COMIMPORT_METHOD_NO_INTERFACE, ssMethodName.GetUnicode(), ssClassName.GetUnicode());
         }
 
         pComInfo->m_cachedComSlot = pItfMD->GetComSlot();
@@ -162,53 +133,10 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
     if (fComEventCall)
         dwStubFlags |= NDIRECTSTUB_FL_COMEVENTCALL;
 
-    bool fIsWinRT = (pItfMT->IsProjectedFromWinRT() || pItfMT->IsWinRTRedirectedDelegate());
-    if (!fIsWinRT && pItfMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative))
-    {
-        if (!pItfMT->HasInstantiation())
-        {
-            // non-generic redirected interface needs to keep its pre-4.5 classic COM interop
-            // behavior so the IL stub will be special - it will conditionally tail-call to
-            // the new WinRT marshaling routines
-            dwStubFlags |= NDIRECTSTUB_FL_WINRTHASREDIRECTION;
-        }
-        else
-        {
-            fIsWinRT = true;
-        }
-    }
-
-    if (fIsWinRT)
-    {
-        dwStubFlags |= NDIRECTSTUB_FL_WINRT;
-
-        if (pMD->IsGenericComPlusCall())
-            dwStubFlags |= NDIRECTSTUB_FL_WINRTSHAREDGENERIC;
-    }
-
-    if (fWinRTCtor)
-    {
-        dwStubFlags |= NDIRECTSTUB_FL_WINRTCTOR;
-
-        if (fWinRTComposition)
-            dwStubFlags |= NDIRECTSTUB_FL_WINRTCOMPOSITION;
-    }
-
-    if (fWinRTStatic)
-        dwStubFlags |= NDIRECTSTUB_FL_WINRTSTATIC;
-
-    if (fWinRTDelegate)
-        dwStubFlags |= NDIRECTSTUB_FL_WINRTDELEGATE | NDIRECTSTUB_FL_WINRT;
-
     BOOL BestFit = TRUE;
     BOOL ThrowOnUnmappableChar = FALSE;
 
-    // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes
-    // are not going to affect the marshaling behavior.
-    if (!fIsWinRT)
-    {
-        ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
-    }
+    ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
 
     if (BestFit)
         dwStubFlags |= NDIRECTSTUB_FL_BESTFIT;
@@ -222,147 +150,6 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
     *pdwStubFlags = dwStubFlags;
 
     return pComInfo;
-}
-
-// static
-MethodDesc *ComPlusCall::GetWinRTFactoryMethodForCtor(MethodDesc *pMDCtor, BOOL *pComposition)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pMDCtor));
-        PRECONDITION(pMDCtor->IsCtor());
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = pMDCtor->GetMethodTable();
-    _ASSERTE(pMT->IsProjectedFromWinRT());
-
-    // If someone is trying to access a WinRT attribute, block it since there is no actual implementation type
-    MethodTable *pParentMT = pMT->GetParentMethodTable();
-    if (pParentMT == MscorlibBinder::GetClass(CLASS__ATTRIBUTE))
-    {
-        DefineFullyQualifiedNameForClassW();
-        COMPlusThrow(kInvalidOperationException, IDS_EE_WINRT_ATTRIBUTES_NOT_INVOKABLE, GetFullyQualifiedNameForClassW(pMT));
-    }
-
-    // build the expected factory method signature
-    PCCOR_SIGNATURE pSig;
-    DWORD cSig;
-    pMDCtor->GetSig(&pSig, &cSig);
-    SigParser ctorSig(pSig, cSig);
-
-    ULONG numArgs;
-
-    IfFailThrow(ctorSig.GetCallingConv(NULL)); // calling convention
-    IfFailThrow(ctorSig.GetData(&numArgs));    // number of args
-    IfFailThrow(ctorSig.SkipExactlyOne());     // skip return type
-
-    // Get the class factory for the type
-    WinRTClassFactory *pFactory = GetComClassFactory(pMT)->AsWinRTClassFactory();
-    BOOL fComposition = pFactory->IsComposition();
-
-    if (numArgs == 0 && !fComposition)
-    {
-        // this is a default ctor - it will use IActivationFactory::ActivateInstance
-        return MscorlibBinder::GetMethod(METHOD__IACTIVATIONFACTORY__ACTIVATE_INSTANCE);
-    }
-
-    // Composition factory methods have two additional arguments
-    // For now a class has either composition factories or regular factories but never both.
-    // In future versions it's possible we may want to allow a class to become unsealed, in
-    // which case we'll probably need to support both and change how we find factory methods.
-    if (fComposition)
-    {
-        numArgs += 2;
-    }
-
-    SigBuilder sigBuilder;
-    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_HASTHIS);
-    sigBuilder.AppendData(numArgs);
-
-    // the return type is the class that declares the ctor
-    sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
-    sigBuilder.AppendPointer(pMT);
-
-    // parameter types are identical
-    ctorSig.GetSignature(&pSig, &cSig);
-    sigBuilder.AppendBlob((const PVOID)pSig, cSig);
-
-    if (fComposition)
-    {
-        // in: outer IInspectable to delegate to, or null
-        sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);
-
-        // out: non-delegating IInspectable for the created object
-        sigBuilder.AppendElementType(ELEMENT_TYPE_BYREF);
-        sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);
-    }
-
-    pSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cSig);
-
-    // ask the factory to find a matching method
-    MethodDesc *pMD = pFactory->FindFactoryMethod(pSig, cSig, pMDCtor->GetModule());
-
-    if (pMD == NULL)
-    {
-        // @TODO: Do we want a richer exception message?
-        SString ctorMethodName(SString::Utf8, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, ctorMethodName.GetUnicode());
-    }
-
-    if (pComposition != NULL)
-    {
-        *pComposition = fComposition;
-    }
-
-    return pMD;
-}
-
-// static
-MethodDesc *ComPlusCall::GetWinRTFactoryMethodForStatic(MethodDesc *pMDStatic)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pMDStatic));
-        PRECONDITION(pMDStatic->IsStatic());
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = pMDStatic->GetMethodTable();
-    _ASSERTE(pMT->IsProjectedFromWinRT());
-
-    // build the expected interface method signature
-    PCCOR_SIGNATURE pSig;
-    DWORD cSig;
-    pMDStatic->GetSig(&pSig, &cSig);
-    SigParser ctorSig(pSig, cSig);
-
-    IfFailThrow(ctorSig.GetCallingConv(NULL)); // calling convention
-
-    // use the "has this" calling convention because we're looking for an instance method
-    SigBuilder sigBuilder;
-    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_HASTHIS);
-
-    // return type and parameter types are identical
-    ctorSig.GetSignature(&pSig, &cSig);
-    sigBuilder.AppendBlob((const PVOID)pSig, cSig);
-
-    pSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cSig);
-
-    // ask the factory to find a matching method
-    WinRTClassFactory *pFactory = GetComClassFactory(pMT)->AsWinRTClassFactory();
-    MethodDesc *pMD = pFactory->FindStaticMethod(pMDStatic->GetName(), pSig, cSig, pMDStatic->GetModule());
-
-    if (pMD == NULL)
-    {
-        // @TODO: Do we want a richer exception message?
-        SString staticMethodName(SString::Utf8, pMDStatic->GetName());
-        COMPlusThrowNonLocalized(kMissingMethodException, staticMethodName.GetUnicode());
-    }
-
-    return pMD;
 }
 
 MethodDesc* ComPlusCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)

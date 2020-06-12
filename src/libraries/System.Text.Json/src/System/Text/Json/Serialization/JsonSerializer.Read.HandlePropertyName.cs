@@ -84,7 +84,7 @@ namespace System.Text.Json
                 unescapedPropertyName = propertyName;
             }
 
-            if (options.ReferenceHandling.ShouldReadPreservedReferences())
+            if (options.ReferenceHandler != null)
             {
                 if (propertyName.Length > 0 && propertyName[0] == '$')
                 {

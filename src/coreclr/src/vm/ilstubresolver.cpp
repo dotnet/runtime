@@ -73,10 +73,8 @@ LPCUTF8 ILStubResolver::GetStubMethodName()
     {
         case CLRToNativeInteropStub: return "IL_STUB_PInvoke";
         case CLRToCOMInteropStub:    return "IL_STUB_CLRtoCOM";
-        case CLRToWinRTInteropStub:  return "IL_STUB_CLRtoWinRT";
         case NativeToCLRInteropStub: return "IL_STUB_ReversePInvoke";
         case COMToCLRInteropStub:    return "IL_STUB_COMtoCLR";
-        case WinRTToCLRInteropStub:  return "IL_STUB_WinRTtoCLR";
         case StructMarshalInteropStub: return "IL_STUB_StructMarshal";
 #ifdef FEATURE_ARRAYSTUB_AS_IL
         case ArrayOpStub:            return "IL_STUB_Array";

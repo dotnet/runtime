@@ -10,7 +10,7 @@ using Xunit;
 
 public partial class ConsoleEncoding
 {
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public void InputEncoding_SetDefaultEncoding_Success()
     {
@@ -23,7 +23,7 @@ public partial class ConsoleEncoding
         }).Dispose();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public void InputEncoding_SetUnicodeEncoding_SilentlyIgnoredInternally()
     {
@@ -39,7 +39,7 @@ public partial class ConsoleEncoding
         }).Dispose();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public void OutputEncoding_SetDefaultEncoding_Success()
     {
@@ -52,7 +52,7 @@ public partial class ConsoleEncoding
         }).Dispose();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public void OutputEncoding_SetUnicodeEncoding_SilentlyIgnoredInternally()
     {

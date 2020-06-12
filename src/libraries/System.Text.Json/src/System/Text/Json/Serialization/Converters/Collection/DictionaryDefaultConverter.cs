@@ -69,9 +69,7 @@ namespace System.Text.Json.Serialization.Converters
             ref ReadStack state,
             [MaybeNullWhen(false)] out TCollection value)
         {
-            bool shouldReadPreservedReferences = options.ReferenceHandling.ShouldReadPreservedReferences();
-
-            if (!state.SupportContinuation && !shouldReadPreservedReferences)
+            if (state.UseFastPath)
             {
                 // Fast path that avoids maintaining state variables and dealing with preserved references.
 
@@ -148,7 +146,8 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Handle the metadata properties.
-                if (shouldReadPreservedReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
+                bool preserveReferences = options.ReferenceHandler != null;
+                if (preserveReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
                     if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
                     {
@@ -175,10 +174,10 @@ namespace System.Text.Json.Serialization.Converters
                         Debug.Assert(CanHaveIdMetadata);
 
                         value = (TCollection)state.Current.ReturnValue!;
-                        if (!state.ReferenceResolver.AddReferenceOnDeserialize(state.Current.MetadataId, value))
-                        {
-                            ThrowHelper.ThrowJsonException_MetadataDuplicateIdFound(state.Current.MetadataId, ref state);
-                        }
+                        state.ReferenceResolver.AddReference(state.Current.MetadataId, value);
+                        // Clear metadata name, if the next read fails
+                        // we want to point the JSON path to the property's object.
+                        state.Current.JsonPropertyName = null;
                     }
 
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
@@ -214,7 +213,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.PropertyState = StackFramePropertyState.Name;
 
                         // Verify property doesn't contain metadata.
-                        if (shouldReadPreservedReferences)
+                        if (preserveReferences)
                         {
                             ReadOnlySpan<byte> propertyName = reader.GetSpan();
                             if (propertyName.Length > 0 && propertyName[0] == '$')
@@ -275,7 +274,7 @@ namespace System.Text.Json.Serialization.Converters
                 state.Current.ProcessedStartToken = true;
                 writer.WriteStartObject();
 
-                if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                if (options.ReferenceHandler != null)
                 {
                     if (JsonSerializer.WriteReferenceForObject(this, dictionary, ref state, writer) == MetadataPropertyName.Ref)
                     {

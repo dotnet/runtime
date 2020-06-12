@@ -261,4 +261,10 @@
   <data name="ErrorMultipleInputFilesCompositeModeOnly" xml:space="preserve">
     <value>Error: multiple input files are only supported in composite build mode: {0}</value>
   </data>
+  <data name="MethodLayoutOption" xml:space="preserve">
+    <value>Layout methods in file using profile driven optimization assuming the layout algorithm specified. The default value is DefaultSort, which indicates that complex layout is disabled</value>
+  </data>
+  <data name="FileLayoutOption" xml:space="preserve">
+    <value>Layout non-method contents of file using profile driven optimization assuming the layout algorithm specified. The default value is DefaultSort, which indicates that complex layout is disabled</value>
+  </data>
 </root>

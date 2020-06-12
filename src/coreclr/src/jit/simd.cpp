@@ -75,11 +75,12 @@ int Compiler::getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd)
 //
 int Compiler::getSIMDTypeAlignment(var_types simdType)
 {
+    unsigned size = genTypeSize(simdType);
+
 #ifdef TARGET_XARCH
     // Fixed length vectors have the following alignment preference
     // Vector2   = 8 byte alignment
     // Vector3/4 = 16-byte alignment
-    unsigned size = genTypeSize(simdType);
 
     // preferred alignment for SSE2 128-bit vectors is 16-bytes
     if (size == 8)
@@ -97,7 +98,9 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
         return 32;
     }
 #elif defined(TARGET_ARM64)
-    return 16;
+    // preferred alignment for 64-bit vectors is 8-bytes.
+    // For everything else, 16-bytes.
+    return (size == 8) ? 8 : 16;
 #else
     assert(!"getSIMDTypeAlignment() unimplemented on target arch");
     unreached();
@@ -1822,6 +1825,25 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
     if (intrinsicInfo == nullptr || intrinsicInfo->id == SIMDIntrinsicInvalid)
     {
         return nullptr;
+    }
+
+#if defined(TARGET_XARCH)
+    CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
+#elif defined(TARGET_ARM64)
+    CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    if (!compOpportunisticallyDependsOn(minimumIsa))
+    {
+        // The user disabled support for the baseline ISA so
+        // don't emit any SIMD intrinsics as they all require
+        // this at a minimum. We will, however, return false
+        // for IsHardwareAccelerated as that will help with
+        // dead code elimination.
+
+        return (intrinsicInfo->id == SIMDIntrinsicHWAccel) ? gtNewIconNode(0, TYP_INT) : nullptr;
     }
 
     SIMDIntrinsicID simdIntrinsicID = intrinsicInfo->id;

@@ -416,6 +416,9 @@ IDispatchTesting : IDispatch
     virtual HRESULT STDMETHODCALLTYPE DoubleHVAValues(
         /*[in,out]*/ HFA_4 *input,
         /*[out,retval]*/ HFA_4 *pRetVal) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE ExplicitGetEnumerator(
+        /* [retval][out] */ IUnknown** retval) = 0;
 };
 
 struct __declspec(uuid("83AFF8E4-C46A-45DB-9D91-2ADB5164545E"))

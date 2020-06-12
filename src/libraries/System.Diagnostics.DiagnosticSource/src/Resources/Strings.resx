@@ -150,9 +150,6 @@
   <data name="SetParentIdOnActivityWithParent" xml:space="preserve">
     <value>"Can not set ParentId on activity which has parent"</value>
   </data>
-  <data name="SpanIdOrTraceIdInvalid" xml:space="preserve">
-    <value>"Invalid SpanId or TraceId"</value>
-  </data>
   <data name="StartTimeNotUtc" xml:space="preserve">
     <value>"StartTime is not UTC"</value>
   </data>

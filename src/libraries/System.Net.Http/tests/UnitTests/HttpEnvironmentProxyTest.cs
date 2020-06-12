@@ -41,7 +41,7 @@ namespace System.Net.Http.Tests
             CleanEnv();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void HttpProxy_EnvironmentProxy_Loaded()
         {
             RemoteExecutor.Invoke(() =>
@@ -128,7 +128,7 @@ namespace System.Net.Http.Tests
             }).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("1.1.1.5", "1.1.1.5", "80", null, null)]
         [InlineData("http://1.1.1.5:3005", "1.1.1.5", "3005", null, null)]
         [InlineData("http://foo@1.1.1.5", "1.1.1.5", "80", "foo", "")]
@@ -178,7 +178,7 @@ namespace System.Net.Http.Tests
             }, _input, _host, _port, _user ?? "null", _password ?? "null").Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void HttpProxy_CredentialParsing_Basic()
         {
             RemoteExecutor.Invoke(() =>
@@ -210,7 +210,7 @@ namespace System.Net.Http.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void HttpProxy_Exceptions_Match()
         {
             RemoteExecutor.Invoke(() =>
@@ -238,7 +238,7 @@ namespace System.Net.Http.Tests
             yield return new object[] { "HTTP_PROXY", "NO_PROXY" };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(HttpProxyNoProxyEnvVarMemberData))]
         public void HttpProxy_TryCreate_CaseInsensitiveVariables(string proxyEnvVar, string noProxyEnvVar)
         {
@@ -270,7 +270,7 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(HttpProxyCgiEnvVarMemberData))]
         public void HttpProxy_TryCreateAndPossibleCgi_HttpProxyUpperCaseDisabledInCgi(
             string proxyEnvVar, bool cgi, bool expectedProxyUse)

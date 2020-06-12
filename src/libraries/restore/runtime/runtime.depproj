@@ -4,6 +4,8 @@
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
     <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
+    <BinPlaceNative>true</BinPlaceNative>
+    <BinPlaceRuntime>false</BinPlaceRuntime>
     <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0-Unix;$(netcoreappCurrent)-Windows_NT;$(netcoreappCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
 
@@ -81,13 +83,13 @@
           Condition="'$(RuntimeFlavor)' == 'Mono'"
           AfterTargets="AfterResolveReferences">
     <ItemGroup>
-      <NativeBinPlaceItem Include="@(RuntimeFiles)" />
-      <NativeBinPlaceItem Include="@(MonoCrossFiles)">
+      <BinPlaceItem Include="@(RuntimeFiles)" />
+      <BinPlaceItem Include="@(MonoCrossFiles)">
         <DestinationSubDirectory>cross/</DestinationSubDirectory>
-      </NativeBinPlaceItem>
-      <NativeBinPlaceItem Include="@(MonoIncludeFiles)">
+      </BinPlaceItem>
+      <BinPlaceItem Include="@(MonoIncludeFiles)">
         <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
-      </NativeBinPlaceItem>
+      </BinPlaceItem>
     </ItemGroup>
     <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
       <TestHostBinPlaceItem Include="@(RuntimeFiles)" />

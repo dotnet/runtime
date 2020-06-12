@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System;
@@ -10,9 +11,9 @@ namespace System.Xml.Schema
     internal sealed class SchemaEntity : IDtdEntityInfo
     {
         private readonly XmlQualifiedName _qname;      // Name of entity
-        private string _url;                  // Url for external entity (system id)
-        private string _pubid;                // Pubid for external entity
-        private string _text;                 // Text for internal entity
+        private string? _url;                  // Url for external entity (system id)
+        private string? _pubid;                // Pubid for external entity
+        private string? _text;                 // Text for internal entity
         private XmlQualifiedName _ndata = XmlQualifiedName.Empty; // NDATA identifier
         private int _lineNumber;           // line number
         private int _linePosition;         // character position
@@ -20,8 +21,8 @@ namespace System.Xml.Schema
         private bool _isExternal;           // external entity flag
         private bool _parsingInProgress;      // whether entity is being parsed (DtdParser infinite recursion check)
         private bool _isDeclaredInExternal; // declared in external markup or not
-        private string _baseURI;
-        private string _declaredURI;
+        private string? _baseURI;
+        private string? _declaredURI;
 
         //
         // Constructor
@@ -72,17 +73,17 @@ namespace System.Xml.Schema
             get { return this.DeclaredURI; }
         }
 
-        string IDtdEntityInfo.SystemId
+        string? IDtdEntityInfo.SystemId
         {
             get { return this.Url; }
         }
 
-        string IDtdEntityInfo.PublicId
+        string? IDtdEntityInfo.PublicId
         {
             get { return this.Pubid; }
         }
 
-        string IDtdEntityInfo.Text
+        string? IDtdEntityInfo.Text
         {
             get { return ((SchemaEntity)this).Text; }
         }
@@ -116,13 +117,13 @@ namespace System.Xml.Schema
             get { return _qname; }
         }
 
-        internal string Url
+        internal string? Url
         {
             get { return _url; }
             set { _url = value; _isExternal = true; }
         }
 
-        internal string Pubid
+        internal string? Pubid
         {
             get { return _pubid; }
             set { _pubid = value; }
@@ -146,7 +147,7 @@ namespace System.Xml.Schema
             set { _ndata = value; }
         }
 
-        internal string Text
+        internal string? Text
         {
             get { return _text; }
             set { _text = value; _isExternal = false; }

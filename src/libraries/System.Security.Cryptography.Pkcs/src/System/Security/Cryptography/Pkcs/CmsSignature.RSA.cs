@@ -5,8 +5,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
-using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
 
@@ -215,12 +215,12 @@ namespace System.Security.Cryptography.Pkcs
 
                 PssParamsAsn pssParams = PssParamsAsn.Decode(signatureParameters.Value, AsnEncodingRules.DER);
 
-                if (pssParams.HashAlgorithm.Algorithm.Value != digestAlgorithmOid)
+                if (pssParams.HashAlgorithm.Algorithm != digestAlgorithmOid)
                 {
                     throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_Pkcs_PssParametersHashMismatch,
-                            pssParams.HashAlgorithm.Algorithm.Value,
+                            pssParams.HashAlgorithm.Algorithm,
                             digestAlgorithmOid));
                 }
 
@@ -238,11 +238,11 @@ namespace System.Security.Cryptography.Pkcs
                             digestAlgorithmName.Name));
                 }
 
-                if (pssParams.MaskGenAlgorithm.Algorithm.Value != Oids.Mgf1)
+                if (pssParams.MaskGenAlgorithm.Algorithm != Oids.Mgf1)
                 {
                     throw new CryptographicException(
                         SR.Cryptography_Pkcs_PssParametersMgfNotSupported,
-                        pssParams.MaskGenAlgorithm.Algorithm.Value);
+                        pssParams.MaskGenAlgorithm.Algorithm);
                 }
 
                 if (pssParams.MaskGenAlgorithm.Parameters == null)
@@ -254,12 +254,12 @@ namespace System.Security.Cryptography.Pkcs
                     pssParams.MaskGenAlgorithm.Parameters.Value,
                     AsnEncodingRules.DER);
 
-                if (mgfParams.Algorithm.Value != digestAlgorithmOid)
+                if (mgfParams.Algorithm != digestAlgorithmOid)
                 {
                     throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_Pkcs_PssParametersMgfHashMismatch,
-                            mgfParams.Algorithm.Value,
+                            mgfParams.Algorithm,
                             digestAlgorithmOid));
                 }
 

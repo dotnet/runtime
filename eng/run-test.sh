@@ -15,12 +15,12 @@ wait_on_pids()
 
 usage()
 {
-    echo "Runs .NET CoreFX tests on FreeBSD, Linux, NetBSD or SunOS"
+    echo "Runs .NET CoreFX tests on FreeBSD, Linux, NetBSD, illumos or Solaris"
     echo "usage: run-test [options]"
     echo
     echo "Input sources:"
     echo "    --runtime <location>              Location of root of the binaries directory"
-    echo "                                      containing the FreeBSD, Linux, NetBSD or SunOS runtime"
+    echo "                                      containing the FreeBSD, Linux, NetBSD, illumos or Solaris runtime"
     echo "                                      default: <repo_root>/bin/testhost/netcoreapp-<OS>-<Configuration>-<Arch>"
     echo "    --corefx-tests <location>         Location of the root binaries location containing"
     echo "                                      the tests to run"
@@ -29,7 +29,7 @@ usage()
     echo "Flavor/OS/Architecture options:"
     echo "    --configuration <config>     Configuration to run (Debug/Release)"
     echo "                                      default: Debug"
-    echo "    --os <os>                         OS to run (FreeBSD, Linux, NetBSD or SunOS)"
+    echo "    --os <os>                         OS to run (FreeBSD, Linux, NetBSD, illumos or Solaris)"
     echo "                                      default: detect current OS"
     echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64)"
     echo "                                      default: detect current architecture"
@@ -254,7 +254,7 @@ then
     exit 1
 fi
 
-if [ "$OS" != "FreeBSD" ] && [ "$OS" != "Linux" ] && [ "$OS" != "NetBSD" ] && [ "$OS" != "SunOS" ]
+if [ "$OS" != "FreeBSD" ] && [ "$OS" != "Linux" ] && [ "$OS" != "NetBSD" ] && [ "$OS" != "illumos" ] && [ "$OS" != "Solaris" ]
 then
     echo "error: OS should be FreeBSD, Linux, NetBSD or Linux"
     exit 1

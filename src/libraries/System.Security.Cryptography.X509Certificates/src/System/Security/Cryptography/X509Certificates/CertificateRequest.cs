@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using Internal.Cryptography;
@@ -549,7 +550,7 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     Algorithm = new AlgorithmIdentifierAsn
                     {
-                        Algorithm = PublicKey.Oid,
+                        Algorithm = PublicKey.Oid!.Value!,
                         Parameters = PublicKey.EncodedParameters.RawData,
                     },
                     SubjectPublicKey = PublicKey.EncodedKeyValue.RawData,
@@ -586,22 +587,21 @@ namespace System.Security.Cryptography.X509Certificates
                 tbsCertificate.Extensions = extensionAsns.ToArray();
             }
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            using (AsnWriter signedWriter = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            tbsCertificate.Encode(writer);
+
+            byte[] encodedTbsCertificate = writer.Encode();
+            writer.Reset();
+
+            CertificateAsn certificate = new CertificateAsn
             {
-                tbsCertificate.Encode(writer);
+                TbsCertificate = tbsCertificate,
+                SignatureAlgorithm = signatureAlgorithmAsn,
+                SignatureValue = generator.SignData(encodedTbsCertificate, HashAlgorithm),
+            };
 
-                byte[] encodedTbsCertificate = writer.Encode();
-                CertificateAsn certificate = new CertificateAsn
-                {
-                    TbsCertificate = tbsCertificate,
-                    SignatureAlgorithm = signatureAlgorithmAsn,
-                    SignatureValue = generator.SignData(encodedTbsCertificate, HashAlgorithm),
-                };
-
-                certificate.Encode(signedWriter);
-                return new X509Certificate2(signedWriter.Encode());
-            }
+            certificate.Encode(writer);
+            return new X509Certificate2(writer.Encode());
         }
 
         private ReadOnlyMemory<byte> NormalizeSerialNumber(byte[] serialNumber)

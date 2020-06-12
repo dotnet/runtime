@@ -105,7 +105,7 @@ namespace System.Text.RegularExpressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => new Regex("foo", RegexOptions.None, TimeSpan.FromMilliseconds(int.MaxValue)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void StaticCtor_InvalidTimeoutObject_ExceptionThrown()
         {
             RemoteExecutor.Invoke(() =>
@@ -115,7 +115,7 @@ namespace System.Text.RegularExpressions.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void StaticCtor_InvalidTimeoutRange_ExceptionThrown()
         {
             RemoteExecutor.Invoke(() =>
@@ -190,7 +190,7 @@ namespace System.Text.RegularExpressions.Tests
             public SerializableDerivedRegex(SerializationInfo info, StreamingContext context) : base(info, context) { }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Ctor_PatternInName()
         {

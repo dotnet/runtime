@@ -1301,7 +1301,11 @@ namespace Internal.JitInterface
                     //
                     // Note that it is safe to devirtualize in the following cases, since a servicing event cannot later modify it
                     //  1) Callvirt on a virtual final method of a value type - since value types are sealed types as per ECMA spec
-                    devirt = (constrainedType ?? targetMethod.OwningType).IsValueType || targetMethod.IsInternalCall;
+                    //  2) Delegate.Invoke() - since a Delegate is a sealed class as per ECMA spec
+                    //  3) JIT intrinsics - since they have pre-defined behavior
+                    devirt = targetMethod.OwningType.IsValueType ||
+                        (targetMethod.OwningType.IsDelegate && targetMethod.Name == "Invoke") ||
+                        (targetMethod.IsIntrinsic && getIntrinsicID(targetMethod, null) != CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal);
 
                     callVirtCrossingVersionBubble = true;
                 }

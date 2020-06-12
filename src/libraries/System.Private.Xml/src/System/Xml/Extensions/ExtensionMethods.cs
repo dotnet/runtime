@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Reflection;
 
 
@@ -11,12 +12,12 @@ namespace System.Xml.Extensions
     {
         #region Contract compliance for System.Type
 
-        internal static ConstructorInfo GetConstructor(this Type type, BindingFlags bindingFlags, Type[] parameterTypes)
+        internal static ConstructorInfo? GetConstructor(this Type type, BindingFlags bindingFlags, Type[] parameterTypes)
         {
             return type.GetConstructor(bindingFlags, null, parameterTypes, null);
         }
 
-        internal static MethodInfo GetMethod(this Type type, string methodName, BindingFlags bindingFlags, Type[] parameterTypes)
+        internal static MethodInfo? GetMethod(this Type type, string methodName, BindingFlags bindingFlags, Type[] parameterTypes)
         {
             return type.GetMethod(methodName, bindingFlags, null, parameterTypes, null);
         }
@@ -33,10 +34,11 @@ namespace System.Xml.Extensions
                     throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
                 }
             }
-            if (!Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out Uri uri))
+            if (!Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out Uri? uri))
             {
                 throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
             }
+
             return uri;
         }
     }

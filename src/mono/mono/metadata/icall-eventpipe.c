@@ -76,7 +76,7 @@ static
 EventPipeThread *
 eventpipe_thread_get (void)
 {
-	EventPipeThreadHolder *thread_holder = mono_native_tls_get_value (ep_rt_mono_thread_holder_tls_id);
+	EventPipeThreadHolder *thread_holder = (EventPipeThreadHolder *)mono_native_tls_get_value (ep_rt_mono_thread_holder_tls_id);
 	return thread_holder ? ep_thread_holder_get_thread (thread_holder) : NULL;
 }
 
@@ -175,7 +175,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (
 	char *provider_name_utf8 = mono_string_handle_to_utf8 (provider_name, error);
 
 	//TODO: Need to pin delegate if we switch to safe mode or maybe we should get funcptr in icall?
-	provider = ep_create_provider (provider_name_utf8, MONO_HANDLE_GETVAL (callback_func, delegate_trampoline), NULL);
+	provider = ep_create_provider (provider_name_utf8, (EventPipeCallback)MONO_HANDLE_GETVAL (callback_func, delegate_trampoline), NULL);
 
 	g_free (provider_name_utf8);
 	return provider;
@@ -230,10 +230,24 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (
 
 	char *output_file_utf8 = mono_utf16_to_utf8 (output_file, g_utf16_len (output_file), error);
 
+	EventPipeProviderConfigurationNative *native_config_providers = (EventPipeProviderConfigurationNative *)providers;
+	EventPipeProviderConfiguration *config_providers = g_new0 (EventPipeProviderConfiguration, providers_len);
+
+	if (config_providers) {
+		for (int i = 0; i < providers_len; ++i) {
+			ep_provider_config_init (
+				&config_providers[i],
+				native_config_providers[i].provider_name ? mono_utf16_to_utf8 (native_config_providers[i].provider_name, g_utf16_len (native_config_providers[i].provider_name), error) : NULL,
+				native_config_providers [i].keywords,
+				(EventPipeEventLevel)native_config_providers [i].logging_level,
+				native_config_providers[i].filter_data ? mono_utf16_to_utf8 (native_config_providers[i].filter_data, g_utf16_len (native_config_providers[i].filter_data), error) : NULL);
+		}
+	}
+
 	session_id = ep_enable (
 		output_file_utf8,
 		circular_buffer_size_mb,
-		providers,
+		config_providers,
 		providers_len,
 		output_file != NULL ? EP_SESSION_TYPE_FILE : EP_SESSION_TYPE_LISTENER,
 		(EventPipeSerializationFormat)format,
@@ -241,6 +255,14 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (
 		NULL,
 		true);
 	ep_start_streaming (session_id);
+
+	if (config_providers) {
+		for (int i = 0; i < providers_len; ++i) {
+			ep_provider_config_fini (&config_providers[i]);
+			g_free ((ep_char8_t *)config_providers[i].provider_name);
+			g_free ((ep_char8_t *)config_providers[i].filter_data);
+		}
+	}
 
 	g_free (output_file_utf8);
 	return session_id;

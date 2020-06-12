@@ -404,8 +404,10 @@ namespace System.Xml.Schema
                         {
                             newComplexRest.Particle = CloneParticle(newComplexRest.Particle, parentSchema);
                         }
+
                         newComplexContent.Content = newComplexRest;
                     }
+
                     complexType.ContentModel = newComplexContent;
                 }
             }

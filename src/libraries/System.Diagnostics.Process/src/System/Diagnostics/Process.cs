@@ -1083,7 +1083,14 @@ namespace System.Diagnostics
             EventHandler? exited = _onExited;
             if (exited != null)
             {
-                exited(this, EventArgs.Empty);
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
+                {
+                    syncObj.BeginInvoke(exited, new object[] { this, EventArgs.Empty });
+                }
+                else
+                {
+                    exited(this, EventArgs.Empty);
+                }
             }
         }
 
@@ -1571,8 +1578,16 @@ namespace System.Diagnostics
             DataReceivedEventHandler? outputDataReceived = OutputDataReceived;
             if (outputDataReceived != null)
             {
+                // Call back to user informing data is available
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);
-                outputDataReceived(this, e);  // Call back to user informing data is available
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
+                {
+                    syncObj.Invoke(outputDataReceived, new object[] { this, e });
+                }
+                else
+                {
+                    outputDataReceived(this, e);
+                }
             }
         }
 
@@ -1582,8 +1597,16 @@ namespace System.Diagnostics
             DataReceivedEventHandler? errorDataReceived = ErrorDataReceived;
             if (errorDataReceived != null)
             {
+                // Call back to user informing data is available.
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);
-                errorDataReceived(this, e); // Call back to user informing data is available.
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
+                {
+                    syncObj.Invoke(errorDataReceived, new object[] { this, e });
+                }
+                else
+                {
+                    errorDataReceived(this, e);
+                }
             }
         }
 

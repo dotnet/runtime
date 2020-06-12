@@ -1413,7 +1413,7 @@ namespace System
             if ((pattern[index] == '%')
                 && (pattern.Length - index >= 3))
             {
-                char ret = UriHelper.EscapedAscii(pattern[index + 1], pattern[index + 2]);
+                char ret = UriHelper.DecodeHexChars(pattern[index + 1], pattern[index + 2]);
                 if (ret != c_DummyChar)
                 {
                     index += 3;
@@ -3518,7 +3518,9 @@ namespace System
             }
 
             // Unix: Unix path?
-            if (!IsWindowsSystem && idx < length && uriString[idx] == '/')
+            // A path starting with 2 / or \ (including mixed) is treated as UNC and will be matched below
+            if (!IsWindowsSystem && idx < length && uriString[idx] == '/' &&
+                (idx + 1 == length || (uriString[idx + 1] != '/' && uriString[idx + 1] != '\\')))
             {
                 flags |= (Flags.UnixPath | Flags.ImplicitFile | Flags.AuthorityFound);
                 syntax = UriParser.UnixFileUri;
@@ -4385,7 +4387,7 @@ namespace System
                 {
                     if (!foundEscaping) foundEscaping = true;
                     //try unescape a byte hex escaping
-                    if (i + 2 < end && (c = UriHelper.EscapedAscii(str[i + 1], str[i + 2])) != c_DummyChar)
+                    if (i + 2 < end && (c = UriHelper.DecodeHexChars(str[i + 1], str[i + 2])) != c_DummyChar)
                     {
                         if (c == '.' || c == '/' || c == '\\')
                         {
@@ -4616,7 +4618,7 @@ namespace System
             if (pch >= pend) goto done;
             if (*pch++ != '%') goto over;
 
-            char ch = UriHelper.EscapedAscii(*pch++, *pch++);
+            char ch = UriHelper.DecodeHexChars(*pch++, *pch++);
             if (!(ch == ch1 || ch == ch2 || ch == ch3)) goto over;
 
             // Here we found something and now start copying the scanned chars
@@ -4628,7 +4630,7 @@ namespace System
             if (pch >= pend) goto done;
             if ((*pnew++ = *pch++) != '%') goto over_new;
 
-            ch = UriHelper.EscapedAscii((*pnew++ = *pch++), (*pnew++ = *pch++));
+            ch = UriHelper.DecodeHexChars((*pnew++ = *pch++), (*pnew++ = *pch++));
             if (!(ch == ch1 || ch == ch2 || ch == ch3))
             {
                 goto over_new;

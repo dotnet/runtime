@@ -21,7 +21,7 @@ namespace System.Transactions.Tests
         private const int iterations = 5;
 
         // The work queue that requests will be placed in to be serviced by the background thread
-        private static BlockingCollection<Tuple<int, TaskCompletionSource<object>, Transaction>> s_workQueue = new BlockingCollection<Tuple<int, TaskCompletionSource<object>, Transaction>>();
+        private static BlockingCollection<Tuple<int, TaskCompletionSource, Transaction>> s_workQueue = new BlockingCollection<Tuple<int, TaskCompletionSource, Transaction>>();
 
         private static bool s_throwExceptionDefaultOrBeforeAwait;
         private static bool s_throwExceptionAfterAwait;
@@ -40,7 +40,7 @@ namespace System.Transactions.Tests
         /// <summary>
         /// This test case will verify various Async TransactionScope usage with task and async/await and also nested mixed mode(legacy TS and async TS) usage.
         /// </summary>
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -1247,7 +1247,7 @@ namespace System.Transactions.Tests
             string txId1;
             string txId2;
 
-            TaskCompletionSource<object> completionSource = new TaskCompletionSource<object>();
+            TaskCompletionSource completionSource = new TaskCompletionSource();
 
             // Start a transaction - presumably the customer would do this in our code
             using (TransactionScope ts = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
@@ -1290,7 +1290,7 @@ namespace System.Transactions.Tests
                     Debug.WriteLine("{0}: {1}", work.Item1, Transaction.Current == work.Item3);
 
                     // Tell the other thread that we completed its work
-                    work.Item2.SetResult(null);
+                    work.Item2.SetResult();
                 }
             }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }

@@ -144,7 +144,7 @@ namespace System.Resources.Tests
             return null;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetString_ExpectEvents()
         {
             RemoteExecutor.Invoke(() =>
