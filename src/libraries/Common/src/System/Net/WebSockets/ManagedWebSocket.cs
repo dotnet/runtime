@@ -1111,6 +1111,7 @@ namespace System.Net.WebSockets
                     {
                         Debug.Assert(!Monitor.IsEntered(StateUpdateLock), $"{nameof(StateUpdateLock)} must never be held when acquiring {nameof(ReceiveAsyncLock)}");
                         Task receiveTask;
+                        bool usingExistingReceive;
                         lock (ReceiveAsyncLock)
                         {
                             // Now that we're holding the ReceiveAsyncLock, double-check that we've not yet received the close frame.
@@ -1127,12 +1128,19 @@ namespace System.Net.WebSockets
                             // a race condition here, e.g. if there's a in-flight receive that completes after we check, but that's fine: worst
                             // case is we then await it, find that it's not what we need, and try again.
                             receiveTask = _lastReceiveAsync;
-                            _lastReceiveAsync = receiveTask = ValidateAndReceiveAsync(receiveTask, closeBuffer, cancellationToken);
+                            Task newReceiveTask = ValidateAndReceiveAsync(receiveTask, closeBuffer, cancellationToken);
+                            usingExistingReceive = ReferenceEquals(receiveTask, newReceiveTask);
+                            _lastReceiveAsync = receiveTask = newReceiveTask;
                         }
 
                         // Wait for whatever receive task we have.  We'll then loop around again to re-check our state.
+                        // If this is an existing receive, and if we have a cancelable token, we need to register with that
+                        // token while we wait, since it may not be the same one that was given to the receive initially.
                         Debug.Assert(receiveTask != null);
-                        await receiveTask.ConfigureAwait(false);
+                        using (usingExistingReceive ? cancellationToken.Register(s => ((ManagedWebSocket)s!).Abort(), this) : default)
+                        {
+                            await receiveTask.ConfigureAwait(false);
+                        }
                     }
                 }
                 finally

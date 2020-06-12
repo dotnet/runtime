@@ -25,6 +25,7 @@
 #include "comdelegate.h"
 #include "corprof.h"
 #include "eeprofinterfaces.h"
+#include "dynamicinterfacecastable.h"
 
 #ifndef TARGET_UNIX
 // Included for referencing __report_gsfailure
@@ -2116,12 +2117,12 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
     {
         fCast = TRUE;
     }
-    else
+    else if (toTypeHnd.IsInterface())
     {
 #ifdef FEATURE_COMINTEROP
         // If we are casting a COM object from interface then we need to do a check to see
         // if it implements the interface.
-        if (toTypeHnd.IsInterface() && pMT->IsComObjectType())
+        if (pMT->IsComObjectType())
         {
             fCast = ComObject::SupportsInterface(obj, toTypeHnd.AsMethodTable());
         }
@@ -2130,7 +2131,7 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
 #ifdef FEATURE_ICASTABLE
         // If type implements ICastable interface we give it a chance to tell us if it can be casted
         // to a given type.
-        if (toTypeHnd.IsInterface() && pMT->IsICastable())
+        if (pMT->IsICastable())
         {
             // Make actuall call to ICastableHelpers.IsInstanceOfInterface(obj, interfaceTypeObj, out exception)
             OBJECTREF exception = NULL;
@@ -2154,7 +2155,12 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
             }
             GCPROTECT_END(); //exception
         }
+        else
 #endif // FEATURE_ICASTABLE
+        if (pMT->IsIDynamicInterfaceCastable())
+        {
+            fCast = DynamicInterfaceCastable::IsInstanceOf(&obj, toTypeHnd, throwCastException);
+        }
     }
 
     if (!fCast && throwCastException)
@@ -4184,23 +4190,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
             ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
         }
     }
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    if (!g_pConfig->LegacyCorruptedStateExceptionsPolicy())
-    {
-        // Within the VM, we could have thrown and caught a managed exception. This is done by
-        // RaiseTheException that will flag that exception's corruption severity to be used
-        // incase it leaks out to managed code.
-        //
-        // If it does not leak out, but ends up calling into managed code that throws,
-        // we will come here. In such a case, simply reset the corruption-severity
-        // since we want the exception being thrown to have its correct severity set
-        // when CLR's managed code exception handler sets it.
-
-        ThreadExceptionState *pExState = GetThread()->GetExceptionState();
-        pExState->SetLastActiveExceptionCorruptionSeverity(NotSet);
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     RaiseTheExceptionInternalOnly(oref, FALSE);
 

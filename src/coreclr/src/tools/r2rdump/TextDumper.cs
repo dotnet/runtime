@@ -134,7 +134,7 @@ namespace R2RDump
         internal override void DumpAllMethods()
         {
             WriteDivider("R2R Methods");
-            _writer.WriteLine($"{_r2r.Methods.Count} methods");
+            _writer.WriteLine($"{_r2r.Methods.Sum(kvp => kvp.Value.Count)} methods");
             SkipLine();
             foreach (ReadyToRunMethod method in NormalizedMethods())
             {
@@ -207,10 +207,10 @@ namespace R2RDump
         /// </summary>
         internal override void DumpDisasm(RuntimeFunction rtf, int imageOffset)
         {
-            int indent = (_options.Naked ? _options.HideOffsets ? 4 : 11 : 32);
-            string indentString = new string(' ', indent);
-            int rtfOffset = 0;
+            string indentString = new string(' ', _disassembler.MnemonicIndentation);
             int codeOffset = rtf.CodeOffset;
+            int rtfOffset = 0;
+
             while (rtfOffset < rtf.Size)
             {
                 string instr;
@@ -450,12 +450,12 @@ namespace R2RDump
                     break;
                 case ReadyToRunSectionType.OwnerCompositeExecutable:
                     int oceOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
-                    Decoder decoder = Encoding.UTF8.GetDecoder();
-                    int charLength = decoder.GetCharCount(_r2r.Image, oceOffset, section.Size - 1); // exclude the zero terminator
-                    char[] charArray = new char[charLength];
-                    decoder.GetChars(_r2r.Image, oceOffset, section.Size, charArray, 0, flush: true);
-                    string ownerCompositeExecutable = new string(charArray);
-                    _writer.WriteLine("Composite executable: {0}", ownerCompositeExecutable);
+                    if (_r2r.Image[oceOffset + section.Size - 1] != 0)
+                    {
+                        R2RDump.WriteWarning("String is not zero-terminated");
+                    }
+                    string ownerCompositeExecutable = Encoding.UTF8.GetString(_r2r.Image, oceOffset, section.Size - 1); // exclude the zero terminator
+                    _writer.WriteLine("Composite executable: {0}", ownerCompositeExecutable.ToEscapedString());
                     break;
             }
         }

@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
     public static class DynamicRevocationTests
     {
         // The CI machines are doing an awful lot of things at once, be generous with the timeout;
-        private static readonly TimeSpan s_urlRetrievalLimit = TimeSpan.FromSeconds(15);
+        internal static readonly TimeSpan s_urlRetrievalLimit = TimeSpan.FromSeconds(15);
 
         private static readonly Oid s_tlsServerOid = new Oid("1.3.6.1.5.5.7.3.1", null);
 
@@ -40,6 +40,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
             IssuerAuthorityHasDesignatedOcspResponder = 1 << 16,
             RootAuthorityHasDesignatedOcspResponder = 1 << 17,
+            NoIssuerCertDistributionUri = 1 << 18,
+            NoRootCertDistributionUri = 1 << 18,
         }
 
         private delegate void RunSimpleTest(
@@ -351,6 +353,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                         using (CertificateAuthority unrelated = new CertificateAuthority(
                             rootReq.CreateSelfSigned(now.AddMinutes(-5), now.AddMonths(1)),
+                            aiaHttpUrl: null,
                             cdpUrl: null,
                             ocspUrl: null))
                         {
@@ -434,6 +437,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                         using (CertificateAuthority unrelated = new CertificateAuthority(
                             rootReq.CreateSelfSigned(now.AddMinutes(-5), now.AddMonths(1)),
+                            aiaHttpUrl: null,
                             cdpUrl: null,
                             ocspUrl: null))
                         {
@@ -1262,7 +1266,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             }
         }
 
-        private static void BuildPrivatePki(
+        internal static void BuildPrivatePki(
             PkiOptions pkiOptions,
             out RevocationResponder responder,
             out CertificateAuthority rootAuthority,
@@ -1272,8 +1276,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             bool registerAuthorities = true,
             bool pkiOptionsInSubject = false)
         {
+            bool rootDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoRootCertDistributionUri);
             bool issuerRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl);
             bool issuerRevocationViaOcsp = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaOcsp);
+            bool issuerDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoIssuerCertDistributionUri);
             bool endEntityRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
             bool endEntityRevocationViaOcsp = pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaOcsp);
 
@@ -1312,11 +1318,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 X509Certificate2 rootCert = rootReq.CreateSelfSigned(start.AddDays(-2), end.AddDays(2));
                 responder = RevocationResponder.CreateAndListen();
 
+                string certUrl = $"{responder.UriPrefix}cert/{rootSkid.SubjectKeyIdentifier}.cer";
                 string cdpUrl = $"{responder.UriPrefix}crl/{rootSkid.SubjectKeyIdentifier}.crl";
                 string ocspUrl = $"{responder.UriPrefix}ocsp/{rootSkid.SubjectKeyIdentifier}";
 
                 rootAuthority = new CertificateAuthority(
                     rootCert,
+                    rootDistributionViaHttp ? certUrl : null,
                     issuerRevocationViaCrl ? cdpUrl : null,
                     issuerRevocationViaOcsp ? ocspUrl : null);
 
@@ -1335,11 +1343,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 X509SubjectKeyIdentifierExtension intermedSkid =
                     intermedCert.Extensions.OfType<X509SubjectKeyIdentifierExtension>().Single();
 
+                certUrl = $"{responder.UriPrefix}cert/{intermedSkid.SubjectKeyIdentifier}.cer";
                 cdpUrl = $"{responder.UriPrefix}crl/{intermedSkid.SubjectKeyIdentifier}.crl";
                 ocspUrl = $"{responder.UriPrefix}ocsp/{intermedSkid.SubjectKeyIdentifier}";
 
                 intermediateAuthority = new CertificateAuthority(
                     intermedCert,
+                    issuerDistributionViaHttp ? certUrl : null,
                     endEntityRevocationViaCrl ? cdpUrl : null,
                     endEntityRevocationViaOcsp ? ocspUrl : null);
 

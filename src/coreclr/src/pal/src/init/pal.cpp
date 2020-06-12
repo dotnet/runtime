@@ -81,6 +81,15 @@ int CacheLineSize;
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <kvm.h>
+#elif defined(__sun)
+#ifndef _KERNEL
+#define _KERNEL
+#define UNDEF_KERNEL
+#endif
+#include <sys/procfs.h>
+#ifdef UNDEF_KERNEL
+#undef _KERNEL
+#endif
 #endif
 
 #include <algorithm>
@@ -888,6 +897,25 @@ PAL_IsDebuggerPresent()
         return TRUE;
     else
         return FALSE;
+#elif defined(__sun)
+    int readResult;
+    char statusFilename[64];
+    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/status", getpid());
+    int fd = open(statusFilename, O_RDONLY);
+    if (fd == -1)
+    {
+        return FALSE;
+    }
+
+    pstatus_t status;
+    do
+    {
+        readResult = read(fd, &status, sizeof(status));
+    }
+    while ((readResult == -1) && (errno == EINTR));
+
+    close(fd);
+    return status.pr_flttrace.word[0] != 0;
 #else
     return FALSE;
 #endif

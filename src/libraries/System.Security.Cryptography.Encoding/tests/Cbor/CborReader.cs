@@ -5,162 +5,241 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal enum CborReaderState
+    /// <summary>
+    ///   A stateful, forward-only reader for CBOR encoded data.
+    /// </summary>
+    public partial class CborReader
     {
-        Unknown = 0,
-        UnsignedInteger,
-        NegativeInteger,
-        ByteString,
-        TextString,
-        StartTextString,
-        StartByteString,
-        StartArray,
-        StartMap,
-        EndTextString,
-        EndByteString,
-        EndArray,
-        EndMap,
-        Tag,
-        Null,
-        Boolean,
-        HalfPrecisionFloat,
-        SinglePrecisionFloat,
-        DoublePrecisionFloat,
-        SpecialValue,
-        Finished,
-        EndOfData,
-        FormatError,
-    }
+        private readonly ReadOnlyMemory<byte> _data;
+        private int _offset = 0;
 
-    internal partial class CborReader
-    {
-        private ReadOnlyMemory<byte> _buffer;
-        private int _bytesRead = 0;
-
-        // remaining number of data items in current cbor context
-        // with null representing indefinite length data items.
-        // The root context ony permits one data item to be read.
-        private ulong? _remainingDataItems = 1;
-        private bool _isEvenNumberOfDataItemsRead = true; // required for indefinite-length map writes
-        private Stack<(CborMajorType type, int bytesRead, bool isEvenNumberOfDataItemsWritten, ulong? remainingDataItems)>? _nestedDataItems;
+        private Stack<StackFrame>? _nestedDataItems;
+        private CborMajorType? _currentMajorType = null; // major type of the currently written data item. Null iff at the root context
+        private int? _definiteLength; // predetermined definite-length of current data item context
+        private int _itemsWritten = 0; // number of items written in the current context
+        private int _frameOffset = 0; // buffer offset particular to the current data item context
         private bool _isTagContext = false; // true if reader is expecting a tagged value
-        private CborReaderState _cachedState = CborReaderState.Unknown; // caches the current reader state
 
-        // stores a reusable List allocation for keeping ranges in the buffer
-        private List<(int offset, int length)>? _rangeListAllocation = null;
+        // Map-specific book-keeping
+        private int? _currentKeyOffset = null; // offset for the current key encoding
+        private (int Offset, int Length)? _previousKeyEncodingRange; // previous key encoding range
+        private HashSet<(int Offset, int Length)>? _keyEncodingRanges; // all key encoding ranges up to encoding equality
 
-        internal CborReader(ReadOnlyMemory<byte> buffer)
+        // flag used to temporarily disable conformance level checks,
+        // e.g. during a skip operation over nonconforming encodings.
+        private bool _isConformanceLevelCheckEnabled = true;
+
+        // keeps a cached copy of the reader state; 'None' denotes uncomputed state
+        private CborReaderState _cachedState = CborReaderState.None;
+
+        /// <summary>
+        ///   The conformance level used by this reader.
+        /// </summary>
+        public CborConformanceLevel ConformanceLevel { get; }
+
+        /// <summary>
+        ///   Declares whether this reader allows multiple root-level CBOR data items.
+        /// </summary>
+        public bool AllowMultipleRootLevelValues { get; }
+
+        /// <summary>
+        ///   Gets the reader's current level of nestedness in the CBOR document.
+        /// </summary>
+        public int CurrentDepth => _nestedDataItems is null ? 0 : _nestedDataItems.Count;
+
+        /// <summary>
+        ///   Gets the total number of bytes that have been consumed by the reader.
+        /// </summary>
+        public int BytesRead => _offset;
+
+        /// <summary>
+        ///   Indicates whether or not the reader has remaining data available to process.
+        /// </summary>
+        public bool HasData => _offset != _data.Length;
+
+        /// <summary>
+        ///   Construct a CborReader instance over <paramref name="data"/> with given configuration.
+        /// </summary>
+        /// <param name="data">The CBOR encoded data to read.</param>
+        /// <param name="conformanceLevel">
+        ///   Specifies a conformance level guiding the conformance checks performed on the encoded data.
+        ///   Defaults to <see cref="CborConformanceLevel.Lax" /> conformance level.
+        /// </param>
+        /// <param name="allowMultipleRootLevelValues">
+        ///   Specify if multiple root-level values are to be supported by the reader.
+        ///   When set to <see langword="false" />, the reader will throw an <see cref="InvalidOperationException"/>
+        ///   if trying to read beyond the scope of one root-level CBOR data item.
+        /// </param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="conformanceLevel"/> is not defined.
+        /// </exception>
+        public CborReader(ReadOnlyMemory<byte> data, CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool allowMultipleRootLevelValues = false)
         {
-            _buffer = buffer;
+            CborConformanceLevelHelpers.Validate(conformanceLevel);
+
+            _data = data;
+            ConformanceLevel = conformanceLevel;
+            AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
+            _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
         }
 
-        public int BytesRead => _bytesRead;
-        public int BytesRemaining => _buffer.Length;
-
+        /// <summary>
+        ///   Read the next CBOR token, without advancing the reader.
+        /// </summary>
         public CborReaderState PeekState()
         {
-            if (_cachedState == CborReaderState.Unknown)
+            if (_cachedState == CborReaderState.None)
             {
-                _cachedState = PeekStateCore();
+                _cachedState = PeekStateCore(throwOnFormatErrors:false);
             }
 
             return _cachedState;
         }
 
-        private CborReaderState PeekStateCore()
+        /// <summary>
+        ///   Reads the next CBOR data item, returning a <see cref="ReadOnlySpan{T}"/> view
+        ///   of the encoded value. For indefinite length encodings this includes the break byte.
+        /// </summary>
+        /// <returns>A <see cref="ReadOnlySpan{T}"/> view of the encoded value.</returns>
+        /// <exception cref="FormatException">
+        ///   The data item is not a valid CBOR data item encoding. -or-
+        ///   The CBOR encoding is not valid under the current conformance level
+        /// </exception>
+        public ReadOnlySpan<byte> ReadEncodedValue()
         {
-            if (_remainingDataItems == 0)
+            // keep a snapshot of the current offset
+            int initialOffset = _offset;
+
+            // call skip to read and validate the next value
+            SkipValue(disableConformanceLevelChecks: false);
+
+            // return the slice corresponding to the consumed value
+            return _data.Span.Slice(initialOffset, _offset - initialOffset);
+        }
+
+        private CborReaderState PeekStateCore(bool throwOnFormatErrors)
+        {
+            if (_definiteLength - _itemsWritten == 0)
             {
-                if (_nestedDataItems?.Count > 0)
-                {
-                    return _nestedDataItems.Peek().type switch
-                    {
-                        CborMajorType.Array => CborReaderState.EndArray,
-                        CborMajorType.Map => CborReaderState.EndMap,
-                        _ => throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack."),
-                    };
-                }
-                else
+                // is at the end of a definite-length context
+                if (_currentMajorType is null)
                 {
                     return CborReaderState.Finished;
                 }
+                else
+                {
+                    switch (_currentMajorType.Value)
+                    {
+                        case CborMajorType.Array: return CborReaderState.EndArray;
+                        case CborMajorType.Map: return CborReaderState.EndMap;
+                        default:
+                            Debug.Fail("CborReader internal error. Invalid CBOR major type pushed to stack.");
+                            throw new Exception();
+                    }
+                }
             }
 
-            if (_buffer.IsEmpty)
+            if (_offset == _data.Length)
             {
-                return CborReaderState.EndOfData;
+                // is at the end of the read buffer
+                if (_currentMajorType is null && _definiteLength is null)
+                {
+                    // is at the end of a well-defined sequence of root-level values
+                    return CborReaderState.Finished;
+                }
+                else
+                {
+                    // incomplete CBOR document(s)
+                    return CborReaderState.EndOfData;
+                }
             }
 
-            var initialByte = new CborInitialByte(_buffer.Span[0]);
+            // peek the next initial byte
+            var initialByte = new CborInitialByte(_data.Span[_offset]);
 
             if (initialByte.InitialByte == CborInitialByte.IndefiniteLengthBreakByte)
             {
                 if (_isTagContext)
                 {
-                    // indefinite-length collection has ended without providing value for tag
-                    return CborReaderState.FormatError;
+                    return throwOnFormatErrors ?
+                        throw new FormatException(SR.Cbor_Reader_InvalidCbor_TagNotFollowedByValue) :
+                        CborReaderState.FormatError;
                 }
 
-                if (_remainingDataItems == null)
+                if (_definiteLength is null)
                 {
-                    // stack guaranteed to be populated since root context cannot be indefinite-length
-                    Debug.Assert(_nestedDataItems != null && _nestedDataItems.Count > 0);
-
-                    return _nestedDataItems.Peek().type switch
+                    switch (_currentMajorType)
                     {
-                        CborMajorType.ByteString => CborReaderState.EndByteString,
-                        CborMajorType.TextString => CborReaderState.EndTextString,
-                        CborMajorType.Array => CborReaderState.EndArray,
-                        CborMajorType.Map when !_isEvenNumberOfDataItemsRead => CborReaderState.FormatError,
-                        CborMajorType.Map => CborReaderState.EndMap,
-                        _ => throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack."),
+                        case null:
+                            // found a break byte at the end of a root-level data item sequence
+                            Debug.Assert(AllowMultipleRootLevelValues);
+                            return throwOnFormatErrors ?
+                                throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedBreakByte) :
+                                CborReaderState.FormatError;
+
+                        case CborMajorType.ByteString: return CborReaderState.EndByteString;
+                        case CborMajorType.TextString: return CborReaderState.EndTextString;
+                        case CborMajorType.Array: return CborReaderState.EndArray;
+                        case CborMajorType.Map when _itemsWritten % 2 == 0: return CborReaderState.EndMap;
+                        case CborMajorType.Map:
+                            return throwOnFormatErrors ?
+                                throw new FormatException(SR.Cbor_Reader_InvalidCbor_KeyMissingValue) :
+                                CborReaderState.FormatError;
+                        default:
+                            Debug.Fail("CborReader internal error. Invalid CBOR major type pushed to stack.");
+                            throw new Exception();
                     };
                 }
                 else
                 {
-                    return CborReaderState.FormatError;
+                    return throwOnFormatErrors ?
+                        throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedBreakByte) :
+                        CborReaderState.FormatError;
                 }
             }
 
-            if (_remainingDataItems == null)
+            if (_definiteLength is null && _currentMajorType != null)
             {
-                // stack guaranteed to be populated since root context cannot be indefinite-length
-                Debug.Assert(_nestedDataItems != null && _nestedDataItems.Count > 0);
-
-                CborMajorType parentType = _nestedDataItems.Peek().type;
-
-                switch (parentType)
+                // is at indefinite-length nested data item
+                switch (_currentMajorType.Value)
                 {
                     case CborMajorType.ByteString:
                     case CborMajorType.TextString:
-                        // indefinite length string contexts can only contain data items of same major type
-                        if (initialByte.MajorType != parentType)
+                        if (initialByte.MajorType != _currentMajorType.Value)
                         {
-                            return CborReaderState.FormatError;
+                            return throwOnFormatErrors ?
+                                throw new FormatException(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem) :
+                                CborReaderState.FormatError;
                         }
 
                         break;
                 }
             }
 
-            return initialByte.MajorType switch
+            switch (initialByte.MajorType)
             {
-                CborMajorType.UnsignedInteger => CborReaderState.UnsignedInteger,
-                CborMajorType.NegativeInteger => CborReaderState.NegativeInteger,
-                CborMajorType.ByteString when initialByte.AdditionalInfo == CborAdditionalInfo.IndefiniteLength => CborReaderState.StartByteString,
-                CborMajorType.ByteString => CborReaderState.ByteString,
-                CborMajorType.TextString when initialByte.AdditionalInfo == CborAdditionalInfo.IndefiniteLength => CborReaderState.StartTextString,
-                CborMajorType.TextString => CborReaderState.TextString,
-                CborMajorType.Array => CborReaderState.StartArray,
-                CborMajorType.Map => CborReaderState.StartMap,
-                CborMajorType.Tag => CborReaderState.Tag,
-                CborMajorType.Simple => MapSpecialValueTagToReaderState(initialByte.AdditionalInfo),
-                _ => throw new Exception("CborReader internal error. Invalid major type."),
+                case CborMajorType.UnsignedInteger: return CborReaderState.UnsignedInteger;
+                case CborMajorType.NegativeInteger: return CborReaderState.NegativeInteger;
+                case CborMajorType.ByteString:
+                    return (initialByte.AdditionalInfo == CborAdditionalInfo.IndefiniteLength) ?
+                            CborReaderState.StartByteString :
+                            CborReaderState.ByteString;
+
+                case CborMajorType.TextString:
+                    return (initialByte.AdditionalInfo == CborAdditionalInfo.IndefiniteLength) ?
+                            CborReaderState.StartTextString :
+                            CborReaderState.TextString;
+
+                case CborMajorType.Array: return CborReaderState.StartArray;
+                case CborMajorType.Map: return CborReaderState.StartMap;
+                case CborMajorType.Tag: return CborReaderState.Tag;
+                case CborMajorType.Simple: return MapSpecialValueTagToReaderState(initialByte.AdditionalInfo);
+                default:
+                    Debug.Fail("CborReader internal error. Invalid CBOR major type.");
+                    throw new Exception();
             };
 
             static CborReaderState MapSpecialValueTagToReaderState (CborAdditionalInfo value)
@@ -169,10 +248,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 switch (value)
                 {
-                    case CborAdditionalInfo.SimpleValueNull:
+                    case (CborAdditionalInfo)CborSimpleValue.Null:
                         return CborReaderState.Null;
-                    case CborAdditionalInfo.SimpleValueFalse:
-                    case CborAdditionalInfo.SimpleValueTrue:
+                    case (CborAdditionalInfo)CborSimpleValue.True:
+                    case (CborAdditionalInfo)CborSimpleValue.False:
                         return CborReaderState.Boolean;
                     case CborAdditionalInfo.Additional16BitData:
                         return CborReaderState.HalfPrecisionFloat;
@@ -181,59 +260,49 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     case CborAdditionalInfo.Additional64BitData:
                         return CborReaderState.DoublePrecisionFloat;
                     default:
-                        return CborReaderState.SpecialValue;
+                        return CborReaderState.SimpleValue;
                 }
             }
-        }
-
-        public ReadOnlyMemory<byte> ReadEncodedValue()
-        {
-            // keep a snapshot of the initial buffer state
-            ReadOnlyMemory<byte> initialBuffer = _buffer;
-            int initialBytesRead = _bytesRead;
-
-            // call skip to read and validate the next value
-            SkipValue();
-
-            // return the slice corresponding to the consumed value
-            return initialBuffer.Slice(0, _bytesRead - initialBytesRead);
         }
 
         private CborInitialByte PeekInitialByte()
         {
-            if (_remainingDataItems == 0)
+            if (_definiteLength - _itemsWritten == 0)
             {
-                throw new InvalidOperationException("Reading a CBOR data item in the current context exceeds its definite length.");
+                throw new InvalidOperationException(SR.Cbor_Reader_NoMoreDataItemsToRead);
             }
 
-            if (_buffer.IsEmpty)
+            if (_offset == _data.Length)
             {
-                throw new FormatException("unexpected end of buffer.");
-            }
-
-            var result = new CborInitialByte(_buffer.Span[0]);
-
-            if (_nestedDataItems != null && _nestedDataItems.Count > 0)
-            {
-                CborMajorType parentType = _nestedDataItems.Peek().type;
-
-                switch (parentType)
+                if (_currentMajorType is null && _definiteLength is null && _offset > 0)
                 {
-                    // indefinite-length string contexts do not permit nesting
-                    case CborMajorType.ByteString:
-                    case CborMajorType.TextString:
-                        if (result.InitialByte == CborInitialByte.IndefiniteLengthBreakByte ||
-                            result.MajorType == parentType &&
-                            result.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
-                        {
-                            break;
-                        }
-
-                        throw new FormatException("Indefinite-length CBOR string containing invalid data item.");
+                    // we are at the end of a well-formed sequence of root-level CBOR values
+                    throw new InvalidOperationException(SR.Cbor_Reader_NoMoreDataItemsToRead);
                 }
+
+                throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
             }
 
-            return result;
+            var nextByte = new CborInitialByte(_data.Span[_offset]);
+
+            switch (_currentMajorType)
+            {
+                case CborMajorType.ByteString:
+                case CborMajorType.TextString:
+                    // Indefinite-length string contexts allow two possible data items:
+                    // 1) Definite-length string chunks of the same major type OR
+                    // 2) a break byte denoting the end of the indefinite-length string context.
+                    if (nextByte.InitialByte == CborInitialByte.IndefiniteLengthBreakByte ||
+                        nextByte.MajorType == _currentMajorType.Value &&
+                        nextByte.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
+                    {
+                        break;
+                    }
+
+                    throw new FormatException(SR.Format(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem, (int)nextByte.MajorType));
+            }
+
+            return nextByte;
         }
 
         private CborInitialByte PeekInitialByte(CborMajorType expectedType)
@@ -242,186 +311,269 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (expectedType != result.MajorType)
             {
-                throw new InvalidOperationException("Data item major type mismatch.");
+                throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_MajorTypeMismatch, (int)result.MajorType));
             }
 
             return result;
         }
 
-        private void ReadNextIndefiniteLengthBreakByte()
+        private void ValidateNextByteIsBreakByte()
         {
             CborInitialByte result = PeekInitialByte();
 
             if (result.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
             {
-                throw new InvalidOperationException("Next data item is not indefinite-length break byte.");
+                throw new InvalidOperationException(SR.Cbor_NotAtEndOfIndefiniteLengthDataItem);
             }
         }
 
-        private void PushDataItem(CborMajorType type, ulong? expectedNestedItems)
+        private void PushDataItem(CborMajorType majorType, int? definiteLength)
         {
-            // a conservative check intended to filter out malicious payloads
-            if (expectedNestedItems > (ulong)_buffer.Length)
-            {
-                throw new FormatException("Insufficient buffer size for declared definite length in CBOR data item.");
-            }
+            _nestedDataItems ??= new Stack<StackFrame>();
 
-            _nestedDataItems ??= new Stack<(CborMajorType, int, bool, ulong?)>();
-            _nestedDataItems.Push((type, _bytesRead, _isEvenNumberOfDataItemsRead, _remainingDataItems));
-            _remainingDataItems = expectedNestedItems;
-            _isEvenNumberOfDataItemsRead = true;
+            var frame = new StackFrame(
+                type: _currentMajorType,
+                frameOffset: _frameOffset,
+                definiteLength: _definiteLength,
+                itemsWritten: _itemsWritten,
+                currentKeyOffset: _currentKeyOffset,
+                previousKeyEncodingRange: _previousKeyEncodingRange,
+                keyEncodingRanges: _keyEncodingRanges
+            );
+
+            _nestedDataItems.Push(frame);
+
+            _currentMajorType = majorType;
+            _definiteLength = definiteLength;
+            _itemsWritten = 0;
+            _frameOffset = _offset;
             _isTagContext = false;
+            _currentKeyOffset = null;
+            _previousKeyEncodingRange = null;
+            _keyEncodingRanges = null;
         }
 
         private void PopDataItem(CborMajorType expectedType)
         {
-            if (_nestedDataItems is null || _nestedDataItems.Count == 0)
+            if (_currentMajorType is null)
             {
-                throw new InvalidOperationException("No active CBOR nested data item to pop");
+                throw new InvalidOperationException(SR.Cbor_Reader_IsAtRootContext);
             }
 
-            (CborMajorType actualType, int _, bool isEvenNumberOfDataItemsWritten, ulong? remainingItems) = _nestedDataItems.Peek();
+            Debug.Assert(_nestedDataItems?.Count > 0);
 
-            if (expectedType != actualType)
+            if (expectedType != _currentMajorType)
             {
-                throw new InvalidOperationException("Unexpected major type in nested CBOR data item.");
+                throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, (int)_currentMajorType.Value));
             }
 
-            if (_remainingDataItems > 0)
+            if (_definiteLength - _itemsWritten > 0)
             {
-                throw new InvalidOperationException("Definite-length nested CBOR data item is incomplete.");
+                throw new InvalidOperationException(SR.Cbor_NotAtEndOfDefiniteLengthDataItem);
             }
 
             if (_isTagContext)
             {
-                throw new FormatException("CBOR tag should be followed by a data item.");
+                throw new FormatException(SR.Cbor_Reader_InvalidCbor_TagNotFollowedByValue);
             }
 
-            _nestedDataItems.Pop();
-            _remainingDataItems = remainingItems;
-            _isEvenNumberOfDataItemsRead = isEvenNumberOfDataItemsWritten;
-            // Popping items from the stack can change the reader state
-            // without necessarily needing to advance the buffer
-            // (e.g. we're at the end of a definite-length collection).
-            // We therefore need to invalidate the cache here.
-            _cachedState = CborReaderState.Unknown;
+            if (_currentMajorType == CborMajorType.Map)
+            {
+                ReturnKeyEncodingRangeAllocation(_keyEncodingRanges);
+            }
+
+            StackFrame frame = _nestedDataItems.Pop();
+            RestoreStackFrame(in frame);
         }
 
         private void AdvanceDataItemCounters()
         {
-            _remainingDataItems--;
-            _isEvenNumberOfDataItemsRead = !_isEvenNumberOfDataItemsRead;
-            _isTagContext = false;
-        }
+            Debug.Assert(_definiteLength is null || _definiteLength - _itemsWritten > 0);
 
-        private void AdvanceBuffer(int length)
-        {
-            _buffer = _buffer.Slice(length);
-            _bytesRead += length;
-            // invalidate the state cache
-            _cachedState = CborReaderState.Unknown;
-        }
-
-        private void EnsureBuffer(int length)
-        {
-            if (_buffer.Length < length)
+            if (_currentMajorType == CborMajorType.Map)
             {
-                throw new FormatException("Unexpected end of buffer.");
-            }
-        }
-
-        private static void EnsureBuffer(ReadOnlySpan<byte> buffer, int requiredLength)
-        {
-            if (buffer.Length < requiredLength)
-            {
-                throw new FormatException("Unexpected end of buffer.");
-            }
-        }
-
-        private List<(int offset, int length)> AcquireRangeList()
-        {
-            List<(int offset, int length)>? ranges = Interlocked.Exchange(ref _rangeListAllocation, null);
-
-            if (ranges != null)
-            {
-                ranges.Clear();
-                return ranges;
-            }
-
-            return new List<(int, int)>();
-        }
-
-        private void ReturnRangeList(List<(int offset, int length)> ranges)
-        {
-            _rangeListAllocation = ranges;
-        }
-
-        private CborReaderCheckpoint CreateCheckpoint()
-        {
-            return new CborReaderCheckpoint(
-                buffer: _buffer,
-                bytesRead: _bytesRead,
-                depth: _nestedDataItems?.Count ?? 0,
-                contextOffset: (_nestedDataItems == null || _nestedDataItems.Count == 0) ? 0 : _nestedDataItems.Peek().bytesRead,
-                remainingDataItems: _remainingDataItems,
-                isEvenNumberOfDataItemsRead: _isEvenNumberOfDataItemsRead,
-                isTagContext: _isTagContext);
-        }
-
-        private void RestoreCheckpoint(CborReaderCheckpoint checkpoint)
-        {
-            if (_nestedDataItems != null)
-            {
-                int stackOffset = _nestedDataItems.Count - checkpoint.Depth;
-
-                Debug.Assert(
-                    stackOffset >= 0 &&
-                    _nestedDataItems.Skip(stackOffset).FirstOrDefault().bytesRead == checkpoint.ContextOffset,
-                    "Attempting to restore checkpoint outside of its original context.");
-
-                // pop any nested data items introduced after the checkpoint
-                for (int i = 0; i < stackOffset; i++)
+                if (_itemsWritten % 2 == 0)
                 {
-                    _nestedDataItems.Pop();
+                    HandleMapKeyRead();
+                }
+                else
+                {
+                    HandleMapValueRead();
                 }
             }
 
-            _buffer = checkpoint.Buffer;
-            _bytesRead = checkpoint.BytesRead;
-            _remainingDataItems = checkpoint.RemainingDataItems;
-            _isEvenNumberOfDataItemsRead = checkpoint.IsEvenNumberOfDataItemsRead;
-            _isTagContext = checkpoint.IsTagContext;
-            // invalidate the state cache
-            _cachedState = CborReaderState.Unknown;
+            _itemsWritten++;
+            _isTagContext = false;
         }
-    }
 
-    // Struct containing checkpoint data for rolling back reader state in the event of a failure
-    // NB checkpoints do not contain stack information, so we can only roll back provided that the
-    // reader is within the original context in which the checkpoint was created
-    internal readonly struct CborReaderCheckpoint
-    {
-        public CborReaderCheckpoint(
-            ReadOnlyMemory<byte> buffer, int bytesRead,
-            int depth, int contextOffset, ulong? remainingDataItems,
-            bool isEvenNumberOfDataItemsRead, bool isTagContext)
+        private ReadOnlySpan<byte> GetRemainingBytes() => _data.Span.Slice(_offset);
+
+        private void AdvanceBuffer(int length)
         {
-            Buffer = buffer;
-            BytesRead = bytesRead;
-            Depth = depth;
-            ContextOffset = contextOffset;
-            RemainingDataItems = remainingDataItems;
-            IsEvenNumberOfDataItemsRead = isEvenNumberOfDataItemsRead;
-            IsTagContext = isTagContext;
+            Debug.Assert(_offset + length <= _data.Length);
+
+            _offset += length;
+            // invalidate the state cache
+            _cachedState = CborReaderState.None;
         }
 
-        public ReadOnlyMemory<byte> Buffer { get; }
-        public int BytesRead { get; }
-        public int Depth { get; }
-        public int ContextOffset { get; }
+        private void ResetBuffer(int position)
+        {
+            Debug.Assert(position <= _data.Length);
 
-        public ulong? RemainingDataItems { get; }
-        public bool IsEvenNumberOfDataItemsRead { get; }
-        public bool IsTagContext { get; }
+            _offset = position;
+            // invalidate the state cache
+            _cachedState = CborReaderState.None;
+        }
+
+        private void EnsureReadCapacity(int length)
+        {
+            if (_data.Length - _offset < length)
+            {
+                throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
+            }
+        }
+
+        private static void EnsureReadCapacity(ReadOnlySpan<byte> buffer, int requiredLength)
+        {
+            if (buffer.Length < requiredLength)
+            {
+                throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
+            }
+        }
+
+        private readonly struct StackFrame
+        {
+            public StackFrame(
+                CborMajorType? type,
+                int frameOffset,
+                int? definiteLength,
+                int itemsWritten,
+                int? currentKeyOffset,
+                (int Offset, int Length)? previousKeyEncodingRange,
+                HashSet<(int Offset, int Length)>? keyEncodingRanges)
+            {
+                MajorType = type;
+                FrameOffset = frameOffset;
+                DefiniteLength = definiteLength;
+                ItemsWritten = itemsWritten;
+
+                CurrentKeyOffset = currentKeyOffset;
+                PreviousKeyEncodingRange = previousKeyEncodingRange;
+                KeyEncodingRanges = keyEncodingRanges;
+            }
+
+            public CborMajorType? MajorType { get; }
+            public int FrameOffset { get; }
+            public int? DefiniteLength { get; }
+            public int ItemsWritten { get; }
+
+            public int? CurrentKeyOffset { get; }
+            public (int Offset, int Length)? PreviousKeyEncodingRange { get; }
+            public HashSet<(int Offset, int Length)>? KeyEncodingRanges { get; }
+        }
+
+        private void RestoreStackFrame(in StackFrame frame)
+        {
+            _currentMajorType = frame.MajorType;
+            _frameOffset = frame.FrameOffset;
+            _definiteLength = frame.DefiniteLength;
+            _itemsWritten = frame.ItemsWritten;
+            _currentKeyOffset = frame.CurrentKeyOffset;
+            _previousKeyEncodingRange = frame.PreviousKeyEncodingRange;
+            _keyEncodingRanges = frame.KeyEncodingRanges;
+            // Popping items from the stack can change the reader state
+            // without necessarily needing to advance the buffer
+            // (e.g. we're at the end of a definite-length collection).
+            // We therefore need to invalidate the cache here.
+            _cachedState = CborReaderState.None;
+        }
+
+        // Struct containing checkpoint data for rolling back reader state in the event of a failure
+        // NB checkpoints do not contain stack information, so we can only roll back provided that the
+        // reader is within the original context in which the checkpoint was created
+        private readonly struct Checkpoint
+        {
+            public Checkpoint(
+                int depth,
+                int offset,
+                int frameOffset,
+                int itemsWritten,
+                int? currentKeyOffset,
+                (int Offset, int Length)? previousKeyEncodingRange)
+
+            {
+                Depth = depth;
+                Offset = offset;
+                FrameOffset = frameOffset;
+                ItemsWritten = itemsWritten;
+                CurrentKeyOffset = currentKeyOffset;
+                PreviousKeyEncodingRange = previousKeyEncodingRange;
+            }
+
+            public int Depth { get; }
+            public int Offset { get; }
+            public int FrameOffset { get; }
+            public int ItemsWritten { get; }
+
+            public int? CurrentKeyOffset { get; }
+            public (int Offset, int Length)? PreviousKeyEncodingRange { get; }
+        }
+
+        private Checkpoint CreateCheckpoint()
+        {
+            return new Checkpoint(
+                depth: CurrentDepth,
+                offset: _offset,
+                frameOffset: _frameOffset,
+                itemsWritten: _itemsWritten,
+                currentKeyOffset: _currentKeyOffset,
+                previousKeyEncodingRange: _previousKeyEncodingRange);
+        }
+
+        private void RestoreCheckpoint(in Checkpoint checkpoint)
+        {
+            int restoreHeight = CurrentDepth - checkpoint.Depth;
+            Debug.Assert(restoreHeight >= 0, "Attempting to restore checkpoint outside of its original context.");
+
+            if (restoreHeight > 0)
+            {
+                // pop any nested contexts added after the checkpoint
+
+                Debug.Assert(_nestedDataItems != null);
+                Debug.Assert(_nestedDataItems.ToArray()[restoreHeight - 1].FrameOffset == checkpoint.FrameOffset,
+                                "Attempting to restore checkpoint outside of its original context.");
+
+                StackFrame frame;
+                for (int i = 0; i < restoreHeight - 1; i++)
+                {
+                    frame = _nestedDataItems.Pop();
+                    ReturnKeyEncodingRangeAllocation(frame.KeyEncodingRanges);
+                }
+
+                frame = _nestedDataItems.Pop();
+                RestoreStackFrame(in frame);
+            }
+            else
+            {
+                Debug.Assert(checkpoint.FrameOffset == _frameOffset, "Attempting to restore checkpoint outside of its original context.");
+            }
+
+            // Remove any key encodings added after the current checkpoint.
+            // This is only needed when rolling back key reads in the Strict conformance level.
+            if (_keyEncodingRanges != null && _itemsWritten > checkpoint.ItemsWritten)
+            {
+                int checkpointOffset = checkpoint.Offset;
+                _keyEncodingRanges.RemoveWhere(key => key.Offset >= checkpointOffset);
+            }
+
+            _offset = checkpoint.Offset;
+            _itemsWritten = checkpoint.ItemsWritten;
+            _previousKeyEncodingRange = checkpoint.PreviousKeyEncodingRange;
+            _currentKeyOffset = checkpoint.CurrentKeyOffset;
+            _cachedState = CborReaderState.None;
+
+            Debug.Assert(CurrentDepth == checkpoint.Depth);
+        }
     }
 }

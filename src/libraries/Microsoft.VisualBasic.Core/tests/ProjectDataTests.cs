@@ -49,7 +49,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(0, Information.Err().Erl);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EndApp()
         {
             RemoteExecutor.Invoke(

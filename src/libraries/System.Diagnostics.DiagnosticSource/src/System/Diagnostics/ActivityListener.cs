@@ -21,7 +21,6 @@ namespace System.Diagnostics
         /// </summary>
         public ActivityListener()
         {
-
         }
 
         /// <summary>

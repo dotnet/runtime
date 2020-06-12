@@ -19,7 +19,7 @@ Below is a table of contents.
 - [Method Descriptor](method-descriptor.md)
 - [Virtual Stub Dispatch](virtual-stub-dispatch.md)
 - [Stack Walking](stackwalking.md)
-- [Mscorlib and Calling Into the Runtime](mscorlib.md)
+- [`System.Private.CoreLib` and calling into the runtime](corelib.md)
 - [Data Access Component (DAC) Notes](dac-notes.md)
 - [Profiling](profiling.md)
 - [Implementing Profilability](profilability.md)

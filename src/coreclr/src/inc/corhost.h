@@ -156,14 +156,4 @@ private:
     SVAL_DECL(STARTUP_FLAGS, m_dwStartupFlags);
 };
 
-#ifdef FEATURE_COMINTEROP
-extern "C"
-HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(
-                                                      LPCWSTR wszAssemblyName,
-                                                      LPCWSTR wszTypeName,
-                                                      LPCWSTR wszCodeBase,
-                                                      IActivationFactory ** factory);
-
-#endif // defined(FEATURE_COMINTEROP)
-
 #endif // __CorHost__h__

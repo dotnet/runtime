@@ -18,7 +18,7 @@ namespace System.IO.Tests
 {
     public partial class DangerousFileSystemWatcherTests
     {
-        [ConditionalFact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop("Slow test with significant resource usage.")]
         public void FileSystemWatcher_Unix_DoesNotLeak()
         {

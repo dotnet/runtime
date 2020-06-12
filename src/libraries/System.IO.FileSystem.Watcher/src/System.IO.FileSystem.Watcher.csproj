@@ -66,6 +66,8 @@
              Link="Common\Interop\Linux\Interop.inotify.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
              Link="Common\Interop\Unix\Interop.Poll.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
+             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
              Link="Common\Interop\Unix\Interop.Stat.cs" />
   </ItemGroup>

@@ -775,6 +775,8 @@ namespace System.Globalization
         /// </remarks>
         internal static Calendar GetCalendarInstance(CalendarId calType)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             if (calType == CalendarId.GREGORIAN)
             {
                 return new GregorianCalendar();
@@ -819,14 +821,6 @@ namespace System.Globalization
             return new GregorianCalendar();
         }
 
-        internal static CultureInfo GetUserDefaultCulture() => GlobalizationMode.UseNls ?
-                                                                   NlsGetUserDefaultCulture() :
-                                                                   IcuGetUserDefaultCulture();
-
-        private static CultureInfo GetUserDefaultUICulture() => GlobalizationMode.UseNls ?
-                                                                    NlsGetUserDefaultUICulture() :
-                                                                    IcuGetUserDefaultUICulture();
-
         /// <summary>
         /// Return/set the default calendar used by this culture.
         /// This value can be overridden by regional option if this is a current culture.
@@ -837,7 +831,6 @@ namespace System.Globalization
             {
                 if (_calendar == null)
                 {
-                    Debug.Assert(_cultureData.CalendarIds.Length > 0, "_cultureData.CalendarIds.Length > 0");
                     // Get the default calendar for this culture.  Note that the value can be
                     // from registry if this is a user default culture.
                     Calendar newObj = _cultureData.DefaultCalendar;
@@ -858,6 +851,11 @@ namespace System.Globalization
             get
             {
                 // This property always returns a new copy of the calendar array.
+                if (GlobalizationMode.Invariant)
+                {
+                    return new[] { new GregorianCalendar() };
+                }
+
                 CalendarId[] calID = _cultureData.CalendarIds;
                 Calendar[] cals = new Calendar[calID.Length];
                 for (int i = 0; i < cals.Length; i++)
@@ -1111,7 +1109,9 @@ namespace System.Globalization
             }
             catch (ArgumentException)
             {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, combination of arguments used
                 throw new CultureNotFoundException("name/altName", SR.Format(SR.Argument_OneOfCulturesNotSupported, name, altName));
+#pragma warning restore CA2208
             }
 
             lock (nameTable)

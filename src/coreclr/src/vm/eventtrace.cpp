@@ -914,7 +914,7 @@ VOID ETW::GCLog::FireGcStart(ETW_GC_INFO * pGcInfo)
 // the CLR to perform a GC.  The important work here is to create a managed thread for
 // the current thread BEFORE the GC begins.  On both ETW and profapi threads, there may
 // not yet be a managed thread object.  But some scenarios require a managed thread
-// object be present (notably if we need to call into Jupiter during the GC).
+// object be present..
 //
 // Return Value:
 //      HRESULT indicating success or failure
@@ -941,7 +941,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
     // Caller should ensure we're past startup.
     _ASSERTE(IsGarbageCollectorFullyInitialized());
 
-    // In immersive apps the GarbageCollect() call below will call into Jupiter,
+    // In immersive apps the GarbageCollect() call below will call into the WinUI reference tracker,
     // which will call back into the runtime to track references. This call
     // chain would cause a Thread object to be created for this thread while code
     // higher on the stack owns the ThreadStoreLock. This will lead to asserts
@@ -960,7 +960,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
     EX_TRY
     {
         // Need to switch to cooperative mode as the thread will access managed
-        // references (through Jupiter callbacks).
+        // references (through reference tracker callbacks).
         GCX_COOP();
 #endif // FEATURE_REDHAWK
 
@@ -974,7 +974,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
 #ifndef FEATURE_REDHAWK
     }
     EX_CATCH { }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
 #endif // FEATURE_REDHAWK
 
     return hr;
@@ -1165,7 +1165,6 @@ void BulkComLogger::WriteCcw(ComCallWrapper *pCcw, Object **handle, Object *obj)
 #ifdef FEATURE_COMINTEROP
     IUnknown *iUnk = NULL;
     int refCount = 0;
-    ULONG jupiterRefCount = 0;
     ULONG flags = 0;
 
     if (pCcw)
@@ -1175,13 +1174,9 @@ void BulkComLogger::WriteCcw(ComCallWrapper *pCcw, Object **handle, Object *obj)
             iUnk = pCcw->GetBasicIP(true);
 
         refCount = pCcw->GetRefCount();
-        jupiterRefCount = pCcw->GetJupiterRefCount();
 
         if (pCcw->IsWrapperActive())
             flags |= EventCCWEntry::Strong;
-
-        if (pCcw->IsPegged())
-            flags |= EventCCWEntry::Pegged;
     }
 
     EventCCWEntry &ccw = m_etwCcwData[m_currCcw++];
@@ -1190,7 +1185,7 @@ void BulkComLogger::WriteCcw(ComCallWrapper *pCcw, Object **handle, Object *obj)
     ccw.TypeID = (ULONGLONG)obj->GetTypeHandle().AsTAddr();
     ccw.IUnk = (ULONGLONG)iUnk;
     ccw.RefCount = refCount;
-    ccw.JupiterRefCount = jupiterRefCount;
+    ccw.JupiterRefCount = 0;
     ccw.Flags = flags;
 
     if (m_currCcw >= kMaxCcwCount)
@@ -1752,7 +1747,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
     if (!fSucceeded)
         return -1;
 
@@ -1772,8 +1767,8 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
             unsigned rank = th.GetRank();
             if (rank < kEtwTypeFlagsArrayRankMax)
             {
-                // Only ranks less than kEtwTypeFlagsArrayRankMax are supported. 
-                // Fortunately kEtwTypeFlagsArrayRankMax should be greater than the 
+                // Only ranks less than kEtwTypeFlagsArrayRankMax are supported.
+                // Fortunately kEtwTypeFlagsArrayRankMax should be greater than the
                 // number of ranks the type loader will support
                 rank <<= kEtwTypeFlagsArrayRankShift;
                 _ASSERTE((rank & kEtwTypeFlagsArrayRankMask) == rank);
@@ -1791,7 +1786,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         {
             fSucceeded = FALSE;
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
         if (!fSucceeded)
             return -1;
     }
@@ -1811,7 +1806,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
                 return -1;
         }
@@ -1850,7 +1845,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
                 return -1;
         }
@@ -1888,7 +1883,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         // won't have a name in it.
         pVal->sName.Clear();
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
 
     // Now that we know the full size of this type's data, see if it fits in our
     // batch or whether we need to flush
@@ -1986,7 +1981,7 @@ void BulkTypeEventLogger::LogTypeAndParameters(ULONGLONG thAsAddr, ETW::TypeSyst
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
     if (!fSucceeded)
         return;
 
@@ -2551,7 +2546,7 @@ VOID ETW::GCLog::SendFinalizeObjectEvent(MethodTable * pMT, Object * pObj)
         EX_CATCH
         {
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
     }
 }
 
@@ -2977,7 +2972,7 @@ BOOL ETW::TypeSystemLog::AddOrReplaceTypeLoggingInfo(ETW::LoggedTypesFromModule 
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
 
     return fSucceeded;
 }
@@ -3384,7 +3379,7 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
         {
             fSucceeded = FALSE;
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
         if (!fSucceeded)
         {
             *pfCreatedNew = FALSE;
@@ -3422,7 +3417,7 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
     if (!fSucceeded)
     {
         *pfCreatedNew = FALSE;
@@ -3467,7 +3462,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
 
     BOOL fSucceeded = FALSE;
 
-    {
+   {
         CrstHolder _crst(GetHashCrst());
 
         // Check if ETW is enabled, and if not, bail here.
@@ -3492,42 +3487,62 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
                 return fSucceeded;
             }
         }
+    }
 
-        // Step 1: go from LoaderModule to hash of types.
+    // Step 1: go from LoaderModule to hash of types.
+    Module * pLoaderModule = th.GetLoaderModule();
+    _ASSERTE(pLoaderModule != NULL);
+    LoggedTypesFromModule * pLoggedTypesFromModule = nullptr;
+    {
+        CrstHolder _crst(GetHashCrst());
+        pLoggedTypesFromModule = s_pAllLoggedTypes->allLoggedTypesHash.Lookup(pLoaderModule);
+    }
 
-        Module * pLoaderModule = th.GetLoaderModule();
-        _ASSERTE(pLoaderModule != NULL);
-        LoggedTypesFromModule * pLoggedTypesFromModule = s_pAllLoggedTypes->allLoggedTypesHash.Lookup(pLoaderModule);
+    if (pLoggedTypesFromModule == NULL)
+    {
+        pLoggedTypesFromModule = new (nothrow) LoggedTypesFromModule(pLoaderModule);
         if (pLoggedTypesFromModule == NULL)
         {
-            pLoggedTypesFromModule = new (nothrow) LoggedTypesFromModule(pLoaderModule);
-            if (pLoggedTypesFromModule == NULL)
+            // out of memory.  Bail on ETW stuff
+            *pfCreatedNew = FALSE;
+            return fSucceeded;
+        }
+        {
+            CrstHolder _crst(GetHashCrst());
+            // recheck if the type has been added by another thread since we last checked above
+            LoggedTypesFromModule * recheckLoggedTypesFromModule = s_pAllLoggedTypes->allLoggedTypesHash.Lookup(pLoaderModule);
+            if (recheckLoggedTypesFromModule == NULL)
             {
-                // out of memory.  Bail on ETW stuff
-                *pfCreatedNew = FALSE;
-                return fSucceeded;
+                EX_TRY
+                {
+                    s_pAllLoggedTypes->allLoggedTypesHash.Add(pLoggedTypesFromModule);
+                    fSucceeded = TRUE;
+                }
+                EX_CATCH
+                {
+                    fSucceeded = FALSE;
+                }
+                EX_END_CATCH(RethrowTerminalExceptions);
+            }
+            else
+            {
+                delete pLoggedTypesFromModule;
+                pLoggedTypesFromModule = recheckLoggedTypesFromModule;
             }
 
-            fSucceeded = FALSE;
-            EX_TRY
-            {
-                s_pAllLoggedTypes->allLoggedTypesHash.Add(pLoggedTypesFromModule);
-                fSucceeded = TRUE;
-            }
-            EX_CATCH
-            {
-                fSucceeded = FALSE;
-            }
-            EX_END_CATCH(RethrowCorruptingExceptions);
             if (!fSucceeded)
             {
                 *pfCreatedNew = FALSE;
                 return fSucceeded;
             }
         }
+    }
 
-        // Step 2: From hash of types, see if our TypeHandle is there already
-        TypeLoggingInfo typeLoggingInfoPreexisting = pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th);
+    // Step 2: From hash of types, see if our TypeHandle is there already
+    TypeLoggingInfo typeLoggingInfoPreexisting;
+    {
+        CrstHolder _crst(GetHashCrst());
+        typeLoggingInfoPreexisting = pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th);
         if (!typeLoggingInfoPreexisting.th.IsNull())
         {
             // Type is already hashed, so it's already logged, so we don't need to
@@ -3535,12 +3550,22 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
             *pfCreatedNew = FALSE;
             return fSucceeded;
         }
+    }
 
-        // We haven't logged this type, so we need to continue with this function to
-        // log it below. Add it to the hash table first so any recursive calls will
-        // see that this type is already being taken care of
-        fSucceeded = FALSE;
-        TypeLoggingInfo typeLoggingInfoNew(th);
+    // We haven't logged this type, so we need to continue with this function to
+    // log it below. Add it to the hash table first so any recursive calls will
+    // see that this type is already being taken care of
+    fSucceeded = FALSE;
+    TypeLoggingInfo typeLoggingInfoNew(th);
+    {
+        CrstHolder _crst(GetHashCrst());
+        // Like above, check if the type has been added from a different thread since we last looked it up.
+        if (pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th).th.IsNull())
+        {
+            *pfCreatedNew = FALSE;
+            return fSucceeded;
+        }
+
         EX_TRY
         {
             pLoggedTypesFromModule->loggedTypesFromModuleHash.Add(typeLoggingInfoNew);
@@ -3550,7 +3575,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
         {
             fSucceeded = FALSE;
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
         if (!fSucceeded)
         {
             *pfCreatedNew = FALSE;
@@ -3560,7 +3585,6 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
 
     *pfCreatedNew = TRUE;
     return fSucceeded;
-
 }
 
 //---------------------------------------------------------------------------------------
@@ -4239,9 +4263,6 @@ VOID EtwCallbackCommon(
     static_assert(GCEventLevel_Information == TRACE_LEVEL_INFORMATION, "GCEventLevel_Information mismatch");
     static_assert(GCEventLevel_Verbose == TRACE_LEVEL_VERBOSE, "GCEventLevel_Verbose mismatch");
 #endif // !defined(HOST_UNIX)
-    GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
-    GCEventLevel level = static_cast<GCEventLevel>(Level);
-    GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
 
     DOTNET_TRACE_CONTEXT * ctxToUpdate;
     switch(ProviderIndex)
@@ -4270,6 +4291,30 @@ VOID EtwCallbackCommon(
     {
         ctxToUpdate->EventPipeProvider.Level = Level;
         ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask = MatchAnyKeyword;
+        ctxToUpdate->EventPipeProvider.IsEnabled = ControlCode;
+
+        // For EventPipe, ControlCode can only be either 0 or 1.
+        _ASSERTE(ControlCode == 0 || ControlCode == 1);
+    }
+
+    if (
+#if !defined(HOST_UNIX)
+        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
+#endif
+        (ProviderIndex == DotNETRuntime || ProviderIndex == DotNETRuntimePrivate))
+    {
+#if !defined(HOST_UNIX)
+        // On Windows, consolidate level and keywords across event pipe and ETW contexts -
+        // ETW may still want to see events that event pipe doesn't care about and vice versa
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask |
+                                                              ctxToUpdate->EtwProvider->MatchAnyKeyword);
+        GCEventLevel level = static_cast<GCEventLevel>(max(ctxToUpdate->EventPipeProvider.Level,
+                                                           ctxToUpdate->EtwProvider->Level));
+#else
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask);
+        GCEventLevel level = static_cast<GCEventLevel>(ctxToUpdate->EventPipeProvider.Level);
+#endif
+        GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
     }
 
     // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
@@ -4489,10 +4534,6 @@ extern "C"
 
         BOOLEAN bIsRundownTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimeRundownHandle);
 
-        GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
-        GCEventLevel level = static_cast<GCEventLevel>(Level);
-        GCHeapUtilities::RecordEventStateChange(!!bIsPublicTraceHandle, keywords, level);
-
         // EventPipeEtwCallback contains some GC eventing functionality shared between EventPipe and ETW.
         // Eventually, we'll want to merge these two codepaths whenever we can.
         CallbackProviderIndex providerIndex = DotNETRuntime;
@@ -4628,7 +4669,6 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         pExInfo = pExState->GetCurrentExceptionTracker();
         _ASSERTE(pExInfo != NULL);
         bIsNestedException = (pExInfo->GetPreviousExceptionTracker() != NULL);
-        bIsCSE = (pExInfo->GetCorruptionSeverity() == ProcessCorrupting);
         bIsCLSCompliant = IsException((gc.exceptionObj)->GetMethodTable()) &&
                           ((gc.exceptionObj)->GetMethodTable() != MscorlibBinder::GetException(kRuntimeWrappedException));
 
@@ -4643,7 +4683,6 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         exceptionFlags = ((bHasInnerException ? ETW::ExceptionLog::ExceptionStructs::HasInnerException : 0) |
                           (bIsNestedException ? ETW::ExceptionLog::ExceptionStructs::IsNestedException : 0) |
                           (bIsReThrownException ? ETW::ExceptionLog::ExceptionStructs::IsReThrownException : 0) |
-                          (bIsCSE ? ETW::ExceptionLog::ExceptionStructs::IsCSE : 0) |
                           (bIsCLSCompliant ? ETW::ExceptionLog::ExceptionStructs::IsCLSCompliant : 0));
 
         if (pCf->IsFrameless())
@@ -6232,8 +6271,8 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
 
     EX_TRY
     {
-        if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, 
-                                        TRACE_LEVEL_INFORMATION, 
+        if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+                                        TRACE_LEVEL_INFORMATION,
                                         CLR_METHODDIAGNOSTIC_KEYWORD))
         {
             if (pMethodDesc->IsDynamicMethod())
@@ -6247,7 +6286,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
             BulkTypeEventLogger typeLogger;
 
             ULONGLONG typeID = (ULONGLONG)pMethodDesc->GetMethodTable_NoLogging();
-            ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, typeID, ETW::TypeSystemLog::kTypeLogBehaviorTakeLockAndLogIfFirstTime);
+            ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, typeID, ETW::TypeSystemLog::kTypeLogBehaviorAlwaysLog);
             ULONGLONG loaderModuleID = (ULONGLONG)pMethodDesc->GetLoaderModule();
 
             StackSArray<ULONGLONG> rgTypeParameters;
@@ -6266,14 +6305,14 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
-                goto done;      
+                goto done;
 
             // Log any referenced parameter types
             for (COUNT_T i=0; i < cParams; i++)
             {
-                ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, rgTypeParameters[i], ETW::TypeSystemLog::kTypeLogBehaviorTakeLockAndLogIfFirstTime);
+                ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, rgTypeParameters[i], ETW::TypeSystemLog::kTypeLogBehaviorAlwaysLog);
             }
 
             typeLogger.FireBulkTypeEvent();
@@ -7601,7 +7640,12 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
     }
     CONTRACTL_END
 
-    if (Level <= Context.EventPipeProvider.Level || Context.EventPipeProvider.Level == 0)
+    if (!Context.EventPipeProvider.IsEnabled)
+    {
+        return false;
+    }
+
+    if (Level <= Context.EventPipeProvider.Level)
     {
         return (Keyword == (ULONGLONG)0) || (Keyword & Context.EventPipeProvider.EnabledKeywordsBitmask) != 0;
     }

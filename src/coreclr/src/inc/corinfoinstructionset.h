@@ -274,6 +274,8 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
         if (resultflags.HasInstructionSet(InstructionSet_POPCNT) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
             resultflags.RemoveInstructionSet(InstructionSet_POPCNT);
+        if (resultflags.HasInstructionSet(InstructionSet_Vector256) && !resultflags.HasInstructionSet(InstructionSet_AVX))
+            resultflags.RemoveInstructionSet(InstructionSet_Vector256);
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
         if (resultflags.HasInstructionSet(InstructionSet_SSE) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
@@ -304,6 +306,8 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
         if (resultflags.HasInstructionSet(InstructionSet_POPCNT) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
             resultflags.RemoveInstructionSet(InstructionSet_POPCNT);
+        if (resultflags.HasInstructionSet(InstructionSet_Vector256) && !resultflags.HasInstructionSet(InstructionSet_AVX))
+            resultflags.RemoveInstructionSet(InstructionSet_Vector256);
 #endif // TARGET_X86
 
     } while (!oldflags.Equals(resultflags));

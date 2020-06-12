@@ -5,7 +5,7 @@
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.DependencyModel.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
   </ItemGroup>

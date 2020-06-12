@@ -85,9 +85,9 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("world", anotherActivity.GetBaggageItem("hello"));
                     Assert.Equal(4, anotherActivity.Baggage.Count());
                     Assert.Equal(new KeyValuePair<string, string>("hello", "world"), anotherActivity.Baggage.First());
-                    Assert.Equal(new KeyValuePair<string, string>(Key + 2, Value + 2), anotherActivity.Baggage.Skip(1).First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 0, Value + 0), anotherActivity.Baggage.Skip(1).First());
                     Assert.Equal(new KeyValuePair<string, string>(Key + 1, Value + 1), anotherActivity.Baggage.Skip(2).First());
-                    Assert.Equal(new KeyValuePair<string, string>(Key + 0, Value + 0), anotherActivity.Baggage.Skip(3).First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 2, Value + 2), anotherActivity.Baggage.Skip(3).First());
                 }
                 finally
                 {
@@ -116,8 +116,8 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(activity, activity.AddTag(Key + i, Value + i));
                 List<KeyValuePair<string, string>> tags = activity.Tags.ToList();
                 Assert.Equal(i + 1, tags.Count);
-                Assert.Equal(tags[tags.Count - i - 1].Key, Key + i);
-                Assert.Equal(tags[tags.Count - i - 1].Value, Value + i);
+                Assert.Equal(tags[i].Key, Key + i);
+                Assert.Equal(tags[i].Value, Value + i);
             }
         }
 
@@ -604,7 +604,7 @@ namespace System.Diagnostics.Tests
             Assert.True(IdIsW3CFormat(activity.Id));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_W3CWhenDefaultIsW3C()
         {
             RemoteExecutor.Invoke(() =>
@@ -617,7 +617,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_HierarchicalWhenDefaultIsW3CButHierarchicalParentId()
         {
             RemoteExecutor.Invoke(() =>
@@ -642,7 +642,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("0000000000000000", activity.SpanId.ToHexString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_W3CWhenForcedAndHierarchicalParentId()
         {
             RemoteExecutor.Invoke(() =>
@@ -763,7 +763,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityTraceFlags.None, activity.ActivityTraceFlags);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_W3CForcedOverridesParentActivityIdFormat()
         {
             RemoteExecutor.Invoke(() =>
@@ -841,7 +841,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetIdFormat_OverridesForcedW3C()
         {
             RemoteExecutor.Invoke(() =>
@@ -855,7 +855,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetIdFormat_OverridesForcedHierarchical()
         {
             RemoteExecutor.Invoke(() =>
@@ -936,7 +936,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TraceIdBeforeStart_NoParent()
         {
             RemoteExecutor.Invoke(() =>
@@ -1411,12 +1411,12 @@ namespace System.Diagnostics.Tests
             Assert.True(object.ReferenceEquals(activity, activity.AddEvent(new ActivityEvent("Event2", ts2))));
 
             Assert.Equal(2, activity.Events.Count());
-            Assert.Equal("Event2", activity.Events.ElementAt(0).Name);
-            Assert.Equal(ts2, activity.Events.ElementAt(0).Timestamp);
+            Assert.Equal("Event1", activity.Events.ElementAt(0).Name);
+            Assert.Equal(ts1, activity.Events.ElementAt(0).Timestamp);
             Assert.Equal(0, activity.Events.ElementAt(0).Attributes.Count());
 
-            Assert.Equal("Event1", activity.Events.ElementAt(1).Name);
-            Assert.Equal(ts1, activity.Events.ElementAt(1).Timestamp);
+            Assert.Equal("Event2", activity.Events.ElementAt(1).Name);
+            Assert.Equal(ts2, activity.Events.ElementAt(1).Timestamp);
             Assert.Equal(0, activity.Events.ElementAt(1).Attributes.Count());
         }
 

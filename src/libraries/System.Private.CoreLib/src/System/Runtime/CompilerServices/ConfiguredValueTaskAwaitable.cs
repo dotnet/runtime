@@ -69,7 +69,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    ValueTask.CompletedTask.ConfigureAwait(_value._continueOnCapturedContext).GetAwaiter().OnCompleted(continuation);
+                    Task.CompletedTask.ConfigureAwait(_value._continueOnCapturedContext).GetAwaiter().OnCompleted(continuation);
                 }
             }
 
@@ -90,7 +90,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    ValueTask.CompletedTask.ConfigureAwait(_value._continueOnCapturedContext).GetAwaiter().UnsafeOnCompleted(continuation);
+                    Task.CompletedTask.ConfigureAwait(_value._continueOnCapturedContext).GetAwaiter().UnsafeOnCompleted(continuation);
                 }
             }
 
@@ -105,7 +105,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else if (obj != null)
                 {
-                    Unsafe.As<IValueTaskSource>(obj).OnCompleted(ThreadPoolGlobals.s_invokeAsyncStateMachineBox, box, _value._token,
+                    Unsafe.As<IValueTaskSource>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token,
                         _value._continueOnCapturedContext ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None);
                 }
                 else
@@ -174,7 +174,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    ValueTask.CompletedTask.ConfigureAwait(_value._continueOnCapturedContext).GetAwaiter().OnCompleted(continuation);
+                    Task.CompletedTask.ConfigureAwait(_value._continueOnCapturedContext).GetAwaiter().OnCompleted(continuation);
                 }
             }
 
@@ -195,7 +195,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    ValueTask.CompletedTask.ConfigureAwait(_value._continueOnCapturedContext).GetAwaiter().UnsafeOnCompleted(continuation);
+                    Task.CompletedTask.ConfigureAwait(_value._continueOnCapturedContext).GetAwaiter().UnsafeOnCompleted(continuation);
                 }
             }
 
@@ -210,7 +210,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else if (obj != null)
                 {
-                    Unsafe.As<IValueTaskSource<TResult>>(obj).OnCompleted(ThreadPoolGlobals.s_invokeAsyncStateMachineBox, box, _value._token,
+                    Unsafe.As<IValueTaskSource<TResult>>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token,
                         _value._continueOnCapturedContext ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None);
                 }
                 else

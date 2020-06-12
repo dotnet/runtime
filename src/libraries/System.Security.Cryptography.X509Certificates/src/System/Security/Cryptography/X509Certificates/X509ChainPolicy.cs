@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Globalization;
-
 namespace System.Security.Cryptography.X509Certificates
 {
     public sealed class X509ChainPolicy
@@ -21,6 +19,17 @@ namespace System.Security.Cryptography.X509Certificates
         {
             Reset();
         }
+
+        /// <summary>
+        ///   Gets or sets a value that indicates whether the chain engine can use the
+        ///   Authority Information Access (AIA) extension to locate unknown issuer certificates.
+        /// </summary>
+        /// <value>
+        ///   <see langword="true" /> if using the AIA extension is disabled;
+        ///   otherwise, <see langword="false" />.
+        ///   The default is <see langword="false" />.
+        /// </value>
+        public bool DisableCertificateDownloads { get; set; }
 
         public OidCollection ApplicationPolicy => _applicationPolicy ??= new OidCollection();
 
@@ -96,6 +105,7 @@ namespace System.Security.Cryptography.X509Certificates
             _certificatePolicy = null;
             _extraStore = null;
             _customTrustStore = null;
+            DisableCertificateDownloads = false;
             _revocationMode = X509RevocationMode.Online;
             _revocationFlag = X509RevocationFlag.ExcludeRoot;
             _verificationFlags = X509VerificationFlags.NoFlag;

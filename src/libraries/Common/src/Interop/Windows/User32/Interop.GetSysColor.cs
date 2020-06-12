@@ -15,6 +15,7 @@ internal partial class Interop
         // the overhead in the P/Invoke. It will only fail if we try and grab a color
         // index that doesn't exist.
 
+        [SuppressGCTransition]
         [DllImport(Libraries.User32, ExactSpelling = true)]
         internal static extern uint GetSysColor(int nIndex);
     }

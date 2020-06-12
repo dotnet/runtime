@@ -10,11 +10,11 @@
   <ItemGroup>
     <Compile Include="System.CodeDom.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <ProjectReference Include="..\..\System.Security.Permissions\ref\System.Security.Permissions.csproj" />
   </ItemGroup>
 </Project>

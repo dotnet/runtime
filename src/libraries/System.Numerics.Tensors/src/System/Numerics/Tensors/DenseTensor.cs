@@ -28,14 +28,14 @@ namespace System.Numerics.Tensors
                 foreach (var item in fromArray)
                 {
                     var destIndex = ArrayUtilities.TransformIndexByStrides(index++, sourceStrides, false, strides);
-                    backingArray[destIndex] = (T)item;
+                    backingArray[destIndex] = (T)item!;
                 }
             }
             else
             {
                 foreach (var item in fromArray)
                 {
-                    backingArray[index++] = (T)item;
+                    backingArray[index++] = (T)item!;
                 }
             }
             memory = backingArray;
@@ -120,7 +120,7 @@ namespace System.Numerics.Tensors
             // TODO: use Span.IndexOf when/if it removes the IEquatable type constraint
             if (MemoryMarshal.TryGetArray<T>(Buffer, out var arraySegment))
             {
-                var result = Array.IndexOf(arraySegment.Array, item, arraySegment.Offset, arraySegment.Count);
+                var result = Array.IndexOf(arraySegment.Array!, item, arraySegment.Offset, arraySegment.Count);
                 if (result != -1)
                 {
                     result -= arraySegment.Offset;

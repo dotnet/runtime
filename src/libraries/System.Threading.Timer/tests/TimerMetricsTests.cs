@@ -10,7 +10,7 @@ namespace System.Threading.Tests
 {
     public class TimerMetricsTests
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CountTest()
         {
             RemoteExecutor.Invoke(() =>

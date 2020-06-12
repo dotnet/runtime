@@ -1,25 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- Test unsupported outside of windows -->
-    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <!-- Native COM interfaces left alive at the test exit -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <DisableProjectBuild Condition="'$(TargetsWindows)' != 'true'">true</DisableProjectBuild>
+    <!-- Test unsupported outside of windows -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="../Common.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../MockReferenceTrackerRuntime/CMakeLists.txt" />
-  </ItemGroup>
-  <PropertyGroup>
-    <CLRTestNeedTarget>1</CLRTestNeedTarget>
-  </PropertyGroup>
-  <ItemGroup>
-    <TraitTags Include="OsSpecific" />
   </ItemGroup>
 </Project>

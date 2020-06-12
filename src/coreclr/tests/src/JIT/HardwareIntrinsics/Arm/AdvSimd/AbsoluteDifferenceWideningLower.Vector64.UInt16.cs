@@ -206,7 +206,7 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private static readonly int LargestVectorSize = 8;
+        private static readonly int LargestVectorSize = 16;
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector64<UInt16>>() / sizeof(UInt16);
         private static readonly int Op2ElementCount = Unsafe.SizeOf<Vector64<UInt16>>() / sizeof(UInt16);

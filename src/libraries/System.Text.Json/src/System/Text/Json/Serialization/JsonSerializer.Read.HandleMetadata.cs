@@ -10,6 +10,9 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
+        internal static readonly byte[] s_idPropertyName
+            = new byte[] { (byte)'$', (byte)'i', (byte)'d' };
+
         /// <summary>
         /// Returns true if successful, false is the reader ran out of buffer.
         /// Sets state.Current.ReturnValue to the $ref target for MetadataRefProperty cases.
@@ -22,7 +25,7 @@ namespace System.Text.Json
             if (state.Current.ObjectState < StackFrameObjectState.ReadAheadNameOrEndObject)
             {
                 // Read the first metadata property name.
-                if (!ReadAheadMetataDataAndSetState(ref reader, ref state, StackFrameObjectState.ReadNameOrEndObject))
+                if (!TryReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadNameOrEndObject))
                 {
                     return false;
                 }
@@ -100,14 +103,14 @@ namespace System.Text.Json
 
             if (state.Current.ObjectState == StackFrameObjectState.ReadAheadRefValue)
             {
-                if (!ReadAheadMetataDataAndSetState(ref reader, ref state, StackFrameObjectState.ReadRefValue))
+                if (!TryReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadRefValue))
                 {
                     return false;
                 }
             }
             else if (state.Current.ObjectState == StackFrameObjectState.ReadAheadIdValue)
             {
-                if (!ReadAheadMetataDataAndSetState(ref reader, ref state, StackFrameObjectState.ReadIdValue))
+                if (!TryReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadIdValue))
                 {
                     return false;
                 }
@@ -123,7 +126,7 @@ namespace System.Text.Json
                 string key = reader.GetString()!;
 
                 // todo: https://github.com/dotnet/runtime/issues/32354
-                state.Current.ReturnValue = state.ReferenceResolver.ResolveReferenceOnDeserialize(key);
+                state.Current.ReturnValue = state.ReferenceResolver.ResolveReference(key);
                 state.Current.ObjectState = StackFrameObjectState.ReadAheadRefEndObject;
             }
             else if (state.Current.ObjectState == StackFrameObjectState.ReadIdValue)
@@ -134,9 +137,6 @@ namespace System.Text.Json
                 }
 
                 state.Current.MetadataId = reader.GetString();
-
-                // Clear the MetadataPropertyName since we are done processing Id.
-                state.Current.JsonPropertyName = default;
 
                 if (converter.ClassType == ClassType.Enumerable)
                 {
@@ -153,7 +153,7 @@ namespace System.Text.Json
 
             if (state.Current.ObjectState == StackFrameObjectState.ReadAheadRefEndObject)
             {
-                if (!ReadAheadMetataDataAndSetState(ref reader, ref state, StackFrameObjectState.ReadRefEndObject))
+                if (!TryReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadRefEndObject))
                 {
                     return false;
                 }
@@ -174,7 +174,7 @@ namespace System.Text.Json
 
             if (state.Current.ObjectState == StackFrameObjectState.ReadAheadValuesName)
             {
-                if (!ReadAheadMetataDataAndSetState(ref reader, ref state, StackFrameObjectState.ReadValuesName))
+                if (!TryReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadValuesName))
                 {
                     return false;
                 }
@@ -184,6 +184,8 @@ namespace System.Text.Json
             {
                 if (reader.TokenType != JsonTokenType.PropertyName)
                 {
+                    // Missing $values, JSON path should point to the property's object.
+                    state.Current.JsonPropertyName = null;
                     ThrowHelper.ThrowJsonException_MetadataPreservedArrayValuesNotFound(converter.TypeToConvert);
                 }
 
@@ -202,7 +204,7 @@ namespace System.Text.Json
 
             if (state.Current.ObjectState == StackFrameObjectState.ReadAheadValuesStartArray)
             {
-                if (!ReadAheadMetataDataAndSetState(ref reader, ref state, StackFrameObjectState.ReadValuesStartArray))
+                if (!TryReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadValuesStartArray))
                 {
                     return false;
                 }
@@ -222,8 +224,10 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool ReadAheadMetataDataAndSetState(ref Utf8JsonReader reader, ref ReadStack state, StackFrameObjectState nextState)
+        private static bool TryReadAheadMetadataAndSetState(ref Utf8JsonReader reader, ref ReadStack state, StackFrameObjectState nextState)
         {
+            // If we can't read here, the read will be completed at the root API by asking the stream for more data.
+            // Set the state so we know where to resume on re-entry.
             state.Current.ObjectState = nextState;
             return reader.Read();
         }

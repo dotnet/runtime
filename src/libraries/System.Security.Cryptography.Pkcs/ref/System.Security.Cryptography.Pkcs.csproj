@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.0;netstandard2.1;net461;$(NetFrameworkCurrent);$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.1;net461;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <Nullable>enable</Nullable>
@@ -13,9 +13,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Pkcs.cs" />
-    <Compile Include="System.Security.Cryptography.Pkcs.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsNetStandard)' == 'true'" />
+    <Compile Include="System.Security.Cryptography.Pkcs.netcoreapp.cs" Condition="!$(TargetFramework.StartsWith('net4'))" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Security" />

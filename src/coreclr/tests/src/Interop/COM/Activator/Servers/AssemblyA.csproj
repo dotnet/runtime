@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
   <PropertyGroup>
     <OutputType>library</OutputType>
   </PropertyGroup>
@@ -10,11 +9,5 @@
     <ProjectReference Include="AssemblyB.csproj" />
     <ProjectReference Include="AssemblyC.csproj" />
     <ProjectReference Include="AssemblyContracts.csproj" />
-  </ItemGroup>
-  <PropertyGroup>
-    <CLRTestNeedTarget>1</CLRTestNeedTarget>
-  </PropertyGroup>
-  <ItemGroup>
-    <TraitTags Include="OsSpecific" />
   </ItemGroup>
 </Project>

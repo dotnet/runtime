@@ -35,7 +35,14 @@ namespace System.PrivateUri.Tests
     {
         public TestUriParser() : base() { }
         public new string GetComponents(Uri uri, UriComponents components, UriFormat format) => base.GetComponents(uri, components, format);
-        public new void InitializeAndValidate(Uri uri, out UriFormatException parsingError) => base.InitializeAndValidate(uri, out parsingError);
+        protected override void InitializeAndValidate(Uri uri, out UriFormatException parsingError)
+        {
+            parsingError = null;
+            for (int i = 0; i < BaseInitializeAndValidateCallCount; i++)
+            {
+                base.InitializeAndValidate(uri, out parsingError);
+            }
+        }
         public new bool IsBaseOf(Uri baseUri, Uri relativeUri) => base.IsBaseOf(baseUri, relativeUri);
         public new bool IsWellFormedOriginalString(Uri uri) => base.IsWellFormedOriginalString(uri);
         public new string Resolve(Uri baseUri, Uri relativeUri, out UriFormatException parsingError) => base.Resolve(baseUri, relativeUri, out parsingError);
@@ -55,6 +62,11 @@ namespace System.PrivateUri.Tests
         public string SchemeName { get; private set; }
         public int DefaultPort { get; private set; }
 
+        public int BaseInitializeAndValidateCallCount = 1;
+        public void DangerousExposed_InitializeAndValidate(Uri uri, out UriFormatException parsingError)
+        {
+            InitializeAndValidate(uri, out parsingError);
+        }
     }
     #endregion Test class
 
@@ -186,19 +198,40 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public static void InitializeAndValidate()
+        public static void InitializeAndValidate_ThrowsOnUriOfDifferentScheme()
         {
-            Uri http = new Uri(FullHttpUri);
+            Uri uri = new Uri(FullHttpUri);
             TestUriParser parser = new TestUriParser();
-            parser.InitializeAndValidate(http, out UriFormatException error);
-            Assert.NotNull(error);
+            Assert.Throws<InvalidOperationException>(() => parser.DangerousExposed_InitializeAndValidate(uri, out _));
         }
 
         [Fact]
-        public static void InitializeAndValidate_Null()
+        public static void InitializeAndValidate_ThrowsOnRelativeUri()
+        {
+            Uri uri = new Uri("foo", UriKind.Relative);
+            TestUriParser parser = new TestUriParser();
+            Assert.Throws<InvalidOperationException>(() => parser.DangerousExposed_InitializeAndValidate(uri, out _));
+        }
+
+        [Fact]
+        public static void InitializeAndValidate_ThrowsIfCalledOutsideOfConstructorOrMultipleTimes()
         {
             TestUriParser parser = new TestUriParser();
-            Assert.Throws<NullReferenceException>(() => parser.InitializeAndValidate(null, out _));
+            UriParser.Register(parser, "test-scheme", 12345);
+
+            // Does not throw if called once from the constructor
+            parser.BaseInitializeAndValidateCallCount = 1;
+            Uri uri = new Uri("test-scheme://foo.bar");
+
+            // Throws if called multiple times
+            parser.BaseInitializeAndValidateCallCount = 2;
+            Assert.Throws<InvalidOperationException>(() => new Uri("test-scheme://foo.bar"));
+
+            // Throws if called after the constructor
+            parser.BaseInitializeAndValidateCallCount = 0;
+            uri = new Uri("test-scheme://foo.bar");
+            parser.BaseInitializeAndValidateCallCount = 1;
+            Assert.Throws<InvalidOperationException>(() => parser.DangerousExposed_InitializeAndValidate(uri, out _));
         }
 
         [Fact]

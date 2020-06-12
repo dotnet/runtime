@@ -7,7 +7,7 @@ using System;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor.Tests
 {
     public partial class CborReaderTests
     {
@@ -159,35 +159,81 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        // all possible definite-length encodings for the value 23
-        [InlineData("17")]
-        [InlineData("1817")]
-        [InlineData("190017")]
-        [InlineData("1a00000017")]
-        [InlineData("1b0000000000000017")]
-        public static void ReadUInt64_SingleValue_ShouldSupportNonCanonicalEncodings(string hexEncoding)
+        [InlineData(CborConformanceLevel.Lax, "1817", 23)]
+        [InlineData(CborConformanceLevel.Lax, "1900ff", byte.MaxValue)]
+        [InlineData(CborConformanceLevel.Lax, "1a0000ffff", ushort.MaxValue)]
+        [InlineData(CborConformanceLevel.Lax, "1b00000000ffffffff", uint.MaxValue)]
+        [InlineData(CborConformanceLevel.Lax, "1b0000000000000001", 1)]
+        [InlineData(CborConformanceLevel.Strict, "1817", 23)]
+        [InlineData(CborConformanceLevel.Strict, "1900ff", byte.MaxValue)]
+        [InlineData(CborConformanceLevel.Strict, "1a0000ffff", ushort.MaxValue)]
+        [InlineData(CborConformanceLevel.Strict, "1b00000000ffffffff", uint.MaxValue)]
+        [InlineData(CborConformanceLevel.Strict, "1b0000000000000001", 1)]
+        public static void ReadUInt64_NonCanonicalEncodings_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding, ulong expectedValue)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            var reader = new CborReader(data, level);
             ulong result = reader.ReadUInt64();
-            Assert.Equal(23ul, result);
+            Assert.Equal(expectedValue, result);
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
-        // all possible definite-length encodings for the value -24
-        [InlineData("37")]
-        [InlineData("3817")]
-        [InlineData("390017")]
-        [InlineData("3a00000017")]
-        [InlineData("3b0000000000000017")]
-        public static void ReadInt64_SingleValue_ShouldSupportNonCanonicalEncodings(string hexEncoding)
+        [InlineData(CborConformanceLevel.Canonical, "1817")]
+        [InlineData(CborConformanceLevel.Canonical, "1900ff")]
+        [InlineData(CborConformanceLevel.Canonical, "1a0000ffff")]
+        [InlineData(CborConformanceLevel.Canonical, "1b00000000ffffffff")]
+        [InlineData(CborConformanceLevel.Canonical, "1b0000000000000001")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "1817")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "1900ff")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "1a0000ffff")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "1b00000000ffffffff")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "1b0000000000000001")]
+        public static void ReadUInt64_NonCanonicalEncodings_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            var reader = new CborReader(data, level);
+            Assert.Throws<FormatException>(() => reader.ReadUInt64());
+            Assert.Equal(0, reader.BytesRead);
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Lax, "3817", -24)]
+        [InlineData(CborConformanceLevel.Lax, "3900ff", -1 - byte.MaxValue)]
+        [InlineData(CborConformanceLevel.Lax, "3a0000ffff", -1 - ushort.MaxValue)]
+        [InlineData(CborConformanceLevel.Lax, "3b00000000ffffffff", -1 - uint.MaxValue)]
+        [InlineData(CborConformanceLevel.Lax, "3b0000000000000000", -1)]
+        [InlineData(CborConformanceLevel.Strict, "3817", -24)]
+        [InlineData(CborConformanceLevel.Strict, "3900ff", -1 - byte.MaxValue)]
+        [InlineData(CborConformanceLevel.Strict, "3a0000ffff", -1 - ushort.MaxValue)]
+        [InlineData(CborConformanceLevel.Strict, "3b00000000ffffffff", -1 - uint.MaxValue)]
+        [InlineData(CborConformanceLevel.Strict, "3b0000000000000000", -1)]
+        public static void ReadInt64_NonCanonicalEncodings_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding, long expectedValue)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data, level);
             long result = reader.ReadInt64();
-            Assert.Equal(-24, result);
+            Assert.Equal(expectedValue, result);
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Canonical, "3817")]
+        [InlineData(CborConformanceLevel.Canonical, "3900ff")]
+        [InlineData(CborConformanceLevel.Canonical, "3a0000ffff")]
+        [InlineData(CborConformanceLevel.Canonical, "3b00000000ffffffff")]
+        [InlineData(CborConformanceLevel.Canonical, "3b0000000000000001")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "3817")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "3900ff")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "3a0000ffff")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "3b00000000ffffffff")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "3b0000000000000001")]
+        public static void ReadInt64_NonCanonicalEncodings_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data, level);
+            Assert.Throws<FormatException>(() => reader.ReadInt64());
+            Assert.Equal(0, reader.BytesRead);
         }
 
 
@@ -201,7 +247,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<OverflowException>(() => reader.ReadInt64());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -216,7 +262,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<OverflowException>(() => reader.ReadInt32());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -228,7 +274,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<OverflowException>(() => reader.ReadUInt32());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -240,7 +286,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<OverflowException>(() => reader.ReadUInt64());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -256,10 +302,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
 
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -275,10 +320,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadInt32());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadInt32());
 
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -294,10 +338,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadUInt32());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadUInt32());
 
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -313,10 +356,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadUInt64());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadUInt64());
 
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -334,10 +376,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadCborNegativeIntegerEncoding());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadCborNegativeIntegerEncoding());
 
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -363,7 +404,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadInt64());
 
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -382,7 +423,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadCborNegativeIntegerEncoding());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -394,7 +435,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadInt64());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Fact]
@@ -404,7 +445,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadUInt64());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Fact]
@@ -414,7 +455,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadCborNegativeIntegerEncoding());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
     }
 }

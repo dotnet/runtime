@@ -55,21 +55,26 @@ Please use the following command for help.
 
 ### Unsupported and temporarily disabled tests
 
-Unsupported tests outside of Windows have two annotations in their csproj to
-ignore them when run.
+To support building all tests for all targets on single target, we use
+the conditional property
 
 ```xml
-<TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
+<CLRTestTargetUnsupported Condition="...">true</CLRTestTargetUnsupported>
 ```
 
-This will write in the bash target to skip the test by returning a passing value if run outside Windows.
+This property disables building of a test in a default build. It also
+disables running a test in the bash/batch wrapper scripts. It allows the
+test to be built on any target in CI when the `allTargets` option is
+passed to the `build-test.*` scripts.
 
-In addition:
+Tests which never should be built or run are marked
+
 ```xml
-<DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+<DisableProjectBuild>true</DisableProjectBuild>
 ```
 
-Is used to disable the build, that way if building on Unix cycles are saved building/running.
+This propoerty should not be conditioned on Target properties to allow
+all tests to be built for `allTargets`.
 
 PAL tests
 ---------

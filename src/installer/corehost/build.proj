@@ -6,7 +6,7 @@
     package's targets into the build.
   -->
   <PropertyGroup>
-    <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
@@ -63,9 +63,6 @@
       </HostFiles>
       <HostFiles Include="ijwhost">
         <FileDescription>.NET IJW Host</FileDescription>
-      </HostFiles>
-      <HostFiles Include="winrthost">
-        <FileDescription>.NET WinRT Host</FileDescription>
       </HostFiles>
       <HostFiles Include="nethost">
         <FileDescription>.NET Component Host</FileDescription>

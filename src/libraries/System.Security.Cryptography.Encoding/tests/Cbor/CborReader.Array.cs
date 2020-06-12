@@ -3,42 +3,67 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using System.Buffers.Binary;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborReader
+    public partial class CborReader
     {
-        public ulong? ReadStartArray()
+        /// <summary>
+        ///   Reads the next data item as the start of an array (major type 4).
+        /// </summary>
+        /// <returns>
+        ///   The length of the definite-length array, or <see langword="null" /> if the array is indefinite-length.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
+        public int? ReadStartArray()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Array);
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
-                PushDataItem(CborMajorType.Array, null);
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                {
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+                }
+
                 AdvanceBuffer(1);
+                PushDataItem(CborMajorType.Array, null);
                 return null;
             }
             else
             {
-                ulong arrayLength = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
+                ReadOnlySpan<byte> buffer = GetRemainingBytes();
+                int arrayLength = DecodeDefiniteLength(header, buffer, out int bytesRead);
+
+                AdvanceBuffer(bytesRead);
                 PushDataItem(CborMajorType.Array, arrayLength);
-                AdvanceBuffer(1 + additionalBytes);
                 return arrayLength;
             }
         }
 
+        /// <summary>
+        ///   Reads the end of an array (major type 4).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   the current context is not an array. -or-
+        ///   the reader is not at the end of the array.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data
+        /// </exception>
         public void ReadEndArray()
         {
-            if (_remainingDataItems == null)
+            if (_definiteLength is null)
             {
-                CborInitialByte value = PeekInitialByte();
-
-                if (value.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
-                {
-                    throw new InvalidOperationException("Not at end of indefinite-length array.");
-                }
-
+                ValidateNextByteIsBreakByte();
                 PopDataItem(expectedType: CborMajorType.Array);
                 AdvanceDataItemCounters();
                 AdvanceBuffer(1);

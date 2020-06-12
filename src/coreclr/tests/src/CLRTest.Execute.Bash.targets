@@ -109,11 +109,6 @@ then
   exit $(GCBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
-      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(TestUnsupportedOutsideWindows)' == 'true'"><![CDATA[
-$(BashCLRTestEnvironmentCompatibilityCheck)
-echo SKIPPING EXECUTION BECAUSE test is unsupported outside Windows.
-exit $(GCBashScriptExitCode)
-      ]]></BashCLRTestEnvironmentCompatibilityCheck>
 
       <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
 <![CDATA[

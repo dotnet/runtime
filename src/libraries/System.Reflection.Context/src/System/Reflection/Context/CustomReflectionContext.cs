@@ -67,8 +67,8 @@ namespace System.Reflection.Context
         protected PropertyInfo CreateProperty(
             Type propertyType,
             string name,
-            Func<object, object> getter,
-            Action<object, object> setter)
+            Func<object, object>? getter,
+            Action<object, object>? setter)
         {
             return new VirtualPropertyInfo(
                 name,
@@ -84,11 +84,11 @@ namespace System.Reflection.Context
         protected PropertyInfo CreateProperty(
             Type propertyType,
             string name,
-            Func<object, object> getter,
-            Action<object, object> setter,
-            IEnumerable<Attribute> propertyCustomAttributes,
-            IEnumerable<Attribute> getterCustomAttributes,
-            IEnumerable<Attribute> setterCustomAttributes)
+            Func<object, object>? getter,
+            Action<object, object>? setter,
+            IEnumerable<Attribute>? propertyCustomAttributes,
+            IEnumerable<Attribute>? getterCustomAttributes,
+            IEnumerable<Attribute>? setterCustomAttributes)
         {
             return new VirtualPropertyInfo(
                 name,

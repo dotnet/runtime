@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 using Internal.JitInterface;
@@ -81,12 +82,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             VertexArray vertexArray = new VertexArray(section);
             section.Place(vertexArray);
 
+            Dictionary<byte[], BlobVertex> blobCache = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
+            
             foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods())
             {
                 MemoryStream methodDebugBlob = new MemoryStream();
                 
-                byte[] bounds = CreateBoundsBlobForMethod(method);
-                byte[] vars = CreateVarBlobForMethod(method);
+                byte[] bounds = method.DebugLocInfos;
+                byte[] vars = method.DebugVarInfos;
 
                 NibbleWriter nibbleWriter = new NibbleWriter();
                 nibbleWriter.WriteUInt((uint)(bounds?.Length ?? 0));
@@ -105,8 +108,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     methodDebugBlob.Write(vars, 0, vars.Length);
                 }
 
-                BlobVertex debugBlob = new BlobVertex(methodDebugBlob.ToArray());
-
+                byte[] debugBlobArrayKey = methodDebugBlob.ToArray();
+                if (!blobCache.TryGetValue(debugBlobArrayKey, out BlobVertex debugBlob))
+                {
+                    debugBlob = new BlobVertex(methodDebugBlob.ToArray());
+                    blobCache.Add(debugBlobArrayKey, debugBlob);
+                }
                 vertexArray.Set(factory.RuntimeFunctionsTable.GetIndex(method), new DebugInfoVertex(debugBlob));
             }
 
@@ -122,16 +129,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 definedSymbols: new ISymbolDefinitionNode[] { this });
         }
 
-        private byte[] CreateBoundsBlobForMethod(MethodWithGCInfo method)
+        public static byte[] CreateBoundsBlobForMethod(OffsetMapping[] offsetMapping)
         {
-            if (method.DebugLocInfos == null || method.DebugLocInfos.Length == 0)
+            if (offsetMapping == null || offsetMapping.Length == 0)
                 return null;
 
             NibbleWriter writer = new NibbleWriter();
-            writer.WriteUInt((uint)method.DebugLocInfos.Length);
+            writer.WriteUInt((uint)offsetMapping.Length);
 
             uint previousNativeOffset = 0;
-            foreach (var locInfo in method.DebugLocInfos)
+            foreach (var locInfo in offsetMapping)
             {
                 writer.WriteUInt(locInfo.nativeOffset - previousNativeOffset);
                 writer.WriteUInt(locInfo.ilOffset + 3); // Count of items in Internal.JitInterface.MappingTypes to adjust the IL offset by
@@ -143,15 +150,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return writer.ToArray();
         }
 
-        private byte[] CreateVarBlobForMethod(MethodWithGCInfo method)
+        public static byte[] CreateVarBlobForMethod(NativeVarInfo[] varInfos)
         {
-            if (method.DebugVarInfos == null || method.DebugVarInfos.Length == 0)
+            if (varInfos == null || varInfos.Length == 0)
                 return null;
 
             NibbleWriter writer = new NibbleWriter();
-            writer.WriteUInt((uint)method.DebugVarInfos.Length);
+            writer.WriteUInt((uint)varInfos.Length);
 
-            foreach (var nativeVarInfo in method.DebugVarInfos)
+            foreach (var nativeVarInfo in varInfos)
             {
                 writer.WriteUInt(nativeVarInfo.startOffset);
                 writer.WriteUInt(nativeVarInfo.endOffset - nativeVarInfo.startOffset);

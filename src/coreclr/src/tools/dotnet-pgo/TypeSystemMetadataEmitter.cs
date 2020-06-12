@@ -158,7 +158,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             else
             {
                 var typeSpecSignature = new BlobBuilder();
-                EncodeType(typeSpecSignature, type);
+                EncodeType(typeSpecSignature, type, EmbeddedSignatureDataEmitter.EmptySingleton);
                 var blobSigHandle = _metadataBuilder.GetOrAddBlob(typeSpecSignature);
                 typeHandle = _metadataBuilder.AddTypeSpecification(blobSigHandle);
             }
@@ -183,7 +183,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 BlobEncoder methodSpecEncoder = new BlobEncoder(methodSpecSig);
                 methodSpecEncoder.MethodSpecificationSignature(method.Instantiation.Length);
                 foreach (var type in method.Instantiation)
-                    EncodeType(methodSpecSig, type);
+                    EncodeType(methodSpecSig, type, EmbeddedSignatureDataEmitter.EmptySingleton);
 
                 var methodSpecSigHandle = _metadataBuilder.GetOrAddBlob(methodSpecSig);
                 methodHandle = _metadataBuilder.AddMethodSpecification(uninstantiatedHandle, methodSpecSigHandle);
@@ -194,8 +194,21 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 StringHandle methodName = _metadataBuilder.GetOrAddString(method.Name);
                 var sig = method.GetTypicalMethodDefinition().Signature;
 
+                EmbeddedSignatureDataEmitter signatureDataEmitter;
+                if (sig.HasEmbeddedSignatureData)
+                {
+                    signatureDataEmitter = new EmbeddedSignatureDataEmitter(sig.GetEmbeddedSignatureData(), this);
+                }
+                else
+                {
+                    signatureDataEmitter = EmbeddedSignatureDataEmitter.EmptySingleton;
+                }
+
                 BlobBuilder memberRefSig = new BlobBuilder();
-                EncodeMethodSignature(memberRefSig, sig);
+                EncodeMethodSignature(memberRefSig, sig, signatureDataEmitter);
+
+                if (!signatureDataEmitter.Complete)
+                    throw new ArgumentException();
 
                 var sigBlob = _metadataBuilder.GetOrAddBlob(memberRefSig);
                 methodHandle = _metadataBuilder.AddMemberReference(typeHandle, methodName, sigBlob);
@@ -205,8 +218,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return methodHandle;
         }
 
-        private void EncodeType(BlobBuilder blobBuilder, TypeDesc type)
+        private void EncodeType(BlobBuilder blobBuilder, TypeDesc type, EmbeddedSignatureDataEmitter signatureDataEmitter)
         {
+            signatureDataEmitter.Push();
+            signatureDataEmitter.Push();
+            signatureDataEmitter.EmitAtCurrentIndexStack(blobBuilder);
+            signatureDataEmitter.Pop();
+
+            signatureDataEmitter.Push();
             if (type.IsPrimitive)
             {
                 SignatureTypeCode primitiveCode;
@@ -266,13 +285,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             else if (type.IsSzArray)
             {
                 blobBuilder.WriteByte((byte)SignatureTypeCode.SZArray);
-                EncodeType(blobBuilder, type.GetParameterType());
+                EncodeType(blobBuilder, type.GetParameterType(), signatureDataEmitter);
             }
             else if (type.IsArray)
             {
                 var arrayType = (ArrayType)type;
                 blobBuilder.WriteByte((byte)SignatureTypeCode.Array);
-                EncodeType(blobBuilder, type.GetParameterType());
+                EncodeType(blobBuilder, type.GetParameterType(), signatureDataEmitter);
                 var shapeEncoder = new ArrayShapeEncoder(blobBuilder);
                 // TODO Add support for non-standard array shapes
                 shapeEncoder.Shape(arrayType.Rank, default(ImmutableArray<int>), default(ImmutableArray<int>));
@@ -280,17 +299,17 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             else if (type.IsPointer)
             {
                 blobBuilder.WriteByte((byte)SignatureTypeCode.Pointer);
-                EncodeType(blobBuilder, type.GetParameterType());
+                EncodeType(blobBuilder, type.GetParameterType(), signatureDataEmitter);
             }
             else if (type.IsFunctionPointer)
             {
                 FunctionPointerType fnptrType = (FunctionPointerType)type;
-                EncodeMethodSignature(blobBuilder, fnptrType.Signature);
+                EncodeMethodSignature(blobBuilder, fnptrType.Signature, signatureDataEmitter);
             }
             else if (type.IsByRef)
             {
                 blobBuilder.WriteByte((byte)SignatureTypeCode.ByReference);
-                EncodeType(blobBuilder, type.GetParameterType());
+                EncodeType(blobBuilder, type.GetParameterType(), signatureDataEmitter);
             }
             else if (type.IsObject)
             {
@@ -318,10 +337,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             else if (type is InstantiatedType)
             {
                 blobBuilder.WriteByte((byte)SignatureTypeCode.GenericTypeInstance);
-                EncodeType(blobBuilder, type.GetTypeDefinition());
+                EncodeType(blobBuilder, type.GetTypeDefinition(), signatureDataEmitter);
                 blobBuilder.WriteCompressedInteger(type.Instantiation.Length);
                 foreach (var instantiationArg in type.Instantiation)
-                    EncodeType(blobBuilder, instantiationArg);
+                    EncodeType(blobBuilder, instantiationArg, signatureDataEmitter);
             }
             else if (type is MetadataType)
             {
@@ -335,10 +354,96 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 throw new Exception("Unexpected type");
             }
+            signatureDataEmitter.Pop();
+            signatureDataEmitter.Pop();
         }
 
-        void EncodeMethodSignature(BlobBuilder signatureBuilder, MethodSignature sig)
+        class EmbeddedSignatureDataEmitter
         {
+            EmbeddedSignatureData[] _embeddedData;
+            int _embeddedDataIndex;
+            Stack<int> _indexStack = new Stack<int>();
+            TypeSystemMetadataEmitter _metadataEmitter;
+
+            public static EmbeddedSignatureDataEmitter EmptySingleton = new EmbeddedSignatureDataEmitter(null, null);
+
+            public EmbeddedSignatureDataEmitter(EmbeddedSignatureData[] embeddedData, TypeSystemMetadataEmitter metadataEmitter)
+            {
+                _embeddedData = embeddedData;
+                _indexStack.Push(0);
+                _metadataEmitter = metadataEmitter;
+            }
+
+            public void Push()
+            {
+                if (!Complete)
+                {
+                    int was = _indexStack.Pop();
+                    _indexStack.Push(was + 1);
+                    _indexStack.Push(0);
+                }
+            }
+
+            public void EmitAtCurrentIndexStack(BlobBuilder signatureBuilder)
+            {
+                if (!Complete)
+                {
+                    if (_embeddedDataIndex < _embeddedData.Length)
+                    {
+                        string indexData = string.Join(".", _indexStack);
+                        while ((_embeddedDataIndex < _embeddedData.Length) && _embeddedData[_embeddedDataIndex].index == indexData)
+                        {
+                            switch (_embeddedData[_embeddedDataIndex].kind)
+                            {
+                                case EmbeddedSignatureDataKind.OptionalCustomModifier:
+                                    {
+                                        signatureBuilder.WriteByte((byte)SignatureTypeCode.OptionalModifier);
+                                        EntityHandle handle = _metadataEmitter.GetTypeRef((MetadataType)_embeddedData[_embeddedDataIndex].type);
+                                        signatureBuilder.WriteCompressedInteger(CodedIndex.TypeDefOrRefOrSpec(handle));
+                                    }
+                                    break;
+
+                                case EmbeddedSignatureDataKind.RequiredCustomModifier:
+                                    {
+                                        signatureBuilder.WriteByte((byte)SignatureTypeCode.RequiredModifier);
+                                        EntityHandle handle = _metadataEmitter.GetTypeRef((MetadataType)_embeddedData[_embeddedDataIndex].type);
+                                        signatureBuilder.WriteCompressedInteger(CodedIndex.TypeDefOrRefOrSpec(handle));
+                                    }
+                                    break;
+
+                                default:
+                                    throw new NotImplementedException();
+                            }
+
+                            _embeddedDataIndex++;
+                        }
+                    }
+                }
+            }
+
+            public bool Complete
+            {
+                get
+                {
+                    if (_embeddedData == null)
+                        return true;
+
+                    return _embeddedDataIndex >= _embeddedData.Length;
+                }
+            }
+
+            public void Pop()
+            {
+                if (!Complete)
+                {
+                    _indexStack.Pop();
+                }
+            }
+        }
+
+        void EncodeMethodSignature(BlobBuilder signatureBuilder, MethodSignature sig, EmbeddedSignatureDataEmitter signatureDataEmitter)
+        {
+            signatureDataEmitter.Push();
             BlobEncoder signatureEncoder = new BlobEncoder(signatureBuilder);
             int genericParameterCount = sig.GenericParameterCount;
             bool isInstanceMethod = !sig.IsStatic;
@@ -362,9 +467,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             signatureEncoder.MethodSignature(sigCallingConvention, genericParameterCount, isInstanceMethod);
             signatureBuilder.WriteCompressedInteger(sig.Length);
             // TODO Process custom modifiers in some way
-            EncodeType(signatureBuilder, sig.ReturnType);
+            EncodeType(signatureBuilder, sig.ReturnType, signatureDataEmitter);
             for (int i = 0; i < sig.Length; i++)
-                EncodeType(signatureBuilder, sig[i]);
+                EncodeType(signatureBuilder, sig[i], signatureDataEmitter);
+
+            signatureDataEmitter.Pop();
         }
 
         public UserStringHandle GetUserStringHandle(string userString)

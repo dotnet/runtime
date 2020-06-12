@@ -3,7 +3,7 @@
     <RootNamespace>System.Console</RootNamespace>
     <AssemblyName>System.Console</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -194,6 +194,8 @@
              Link="Common\Interop\Unix\Interop.OpenFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
              Link="Common\Interop\Unix\Interop.Poll.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
+             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
              Link="Common\Interop\Unix\Interop.GetEUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"

@@ -3,6 +3,7 @@
     <AssemblyName>System.Runtime</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <!-- Compiler throws error if you try to use System.Void and instructs you to use void keyword instead. So we have manually added a typeforward for this type. -->  

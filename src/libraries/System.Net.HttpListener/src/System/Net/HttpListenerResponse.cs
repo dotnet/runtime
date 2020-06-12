@@ -188,7 +188,7 @@ namespace System.Net
                     char c = (char)(0x000000ff & (uint)value[i]);
                     if ((c <= 31 && c != (byte)'\t') || c == 127)
                     {
-                        throw new ArgumentException(SR.net_WebHeaderInvalidControlChars, "name");
+                        throw new ArgumentException(SR.net_WebHeaderInvalidControlChars, nameof(value));
                     }
                 }
 

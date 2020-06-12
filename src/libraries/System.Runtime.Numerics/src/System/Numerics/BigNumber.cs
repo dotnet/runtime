@@ -519,8 +519,7 @@ namespace System.Numerics
             }
             bits = bits.Slice(0, bytesWrittenOrNeeded);
 
-            Span<char> stackSpace = stackalloc char[128]; // each byte is typically two chars
-            var sb = new ValueStringBuilder(stackSpace);
+            var sb = new ValueStringBuilder(stackalloc char[128]); // each byte is typically two chars
 
             int cur = bits.Length - 1;
             if (cur > -1)
@@ -729,8 +728,7 @@ namespace System.Numerics
                 int precision = 29;
                 int scale = cchMax - ichDst;
 
-                Span<char> stackSpace = stackalloc char[128]; // arbitrary stack cut-off
-                var sb = new ValueStringBuilder(stackSpace);
+                var sb = new ValueStringBuilder(stackalloc char[128]); // arbitrary stack cut-off
                 FormatProvider.FormatBigInteger(ref sb, precision, scale, sign, formatSpan, info, rgch, ichDst);
 
                 if (targetSpan)

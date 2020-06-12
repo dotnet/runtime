@@ -11,6 +11,7 @@ namespace ComWrappersTests.Common
     // Managed object with native wrapper definition.
     //
     [Guid("447BB9ED-DA48-4ABC-8963-5BB5C3E0AA09")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     interface ITest
     {
         void SetValue(int i);

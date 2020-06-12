@@ -15,20 +15,16 @@ namespace System.Reflection
         private EventAttributes m_flags;
         private string? m_name;
         private void* m_utf8name;
-        private RuntimeTypeCache m_reflectedTypeCache = null!;
+        private RuntimeTypeCache m_reflectedTypeCache;
         private RuntimeMethodInfo? m_addMethod;
         private RuntimeMethodInfo? m_removeMethod;
         private RuntimeMethodInfo? m_raiseMethod;
         private MethodInfo[]? m_otherMethod;
-        private RuntimeType m_declaringType = null!;
+        private RuntimeType m_declaringType;
         private BindingFlags m_bindingFlags;
         #endregion
 
         #region Constructor
-        internal RuntimeEventInfo()
-        {
-            // Used for dummy head node during population
-        }
         internal RuntimeEventInfo(int tkEvent, RuntimeType declaredType, RuntimeTypeCache reflectedTypeCache, out bool isPrivate)
         {
             Debug.Assert(declaredType != null);

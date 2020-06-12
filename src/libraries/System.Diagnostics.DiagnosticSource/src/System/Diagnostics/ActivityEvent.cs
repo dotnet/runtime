@@ -36,11 +36,8 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="name">Event name.</param>
         /// <param name="attributes">Event attributes.</param>
-        public ActivityEvent(string name, IEnumerable<KeyValuePair<string, object>>? attributes)
+        public ActivityEvent(string name, IEnumerable<KeyValuePair<string, object>>? attributes) : this(name, default, attributes)
         {
-            this.Name = name ?? string.Empty;
-            this.Attributes = attributes ?? s_emptyAttributes;
-            this.Timestamp = DateTimeOffset.UtcNow;
         }
 
         /// <summary>
@@ -51,9 +48,9 @@ namespace System.Diagnostics
         /// <param name="attributes">Event attributes.</param>
         public ActivityEvent(string name, DateTimeOffset timestamp, IEnumerable<KeyValuePair<string, object>>? attributes)
         {
-            this.Name = name ?? string.Empty;
-            this.Attributes = attributes ?? s_emptyAttributes;
-            this.Timestamp = timestamp != default ? timestamp : DateTimeOffset.UtcNow;
+            Name = name ?? string.Empty;
+            Attributes = attributes ?? s_emptyAttributes;
+            Timestamp = timestamp != default ? timestamp : DateTimeOffset.UtcNow;
         }
 
         /// <summary>
@@ -69,6 +66,6 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the collection of attributes associated with the event.
         /// </summary>
-        public IEnumerable<KeyValuePair<string, object>>? Attributes { get; }
+        public IEnumerable<KeyValuePair<string, object>> Attributes { get; }
     }
 }

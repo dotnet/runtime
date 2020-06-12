@@ -33,6 +33,17 @@
         "alpine.3.10-x64"
       ]
     },
+    "alpine.3.12": {
+      "#import": [
+        "alpine.3.11"
+      ]
+    },
+    "alpine.3.12-x64": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-x64"
+      ]
+    },
     "alpine.3.6": {
       "#import": [
         "alpine"
@@ -406,6 +417,12 @@
         "rhel"
       ]
     },
+    "centos-arm64": {
+      "#import": [
+        "centos",
+        "rhel-arm64"
+      ]
+    },
     "centos-x64": {
       "#import": [
         "centos",
@@ -431,11 +448,38 @@
         "rhel.8"
       ]
     },
+    "centos.8-arm64": {
+      "#import": [
+        "centos.8",
+        "centos-arm64",
+        "rhel.8-arm64"
+      ]
+    },
     "centos.8-x64": {
       "#import": [
         "centos.8",
         "centos-x64",
         "rhel.8-x64"
+      ]
+    },
+    "centos.9": {
+      "#import": [
+        "centos",
+        "rhel.9"
+      ]
+    },
+    "centos.9-arm64": {
+      "#import": [
+        "centos.9",
+        "centos-arm64",
+        "rhel.9-arm64"
+      ]
+    },
+    "centos.9-x64": {
+      "#import": [
+        "centos.9",
+        "centos-x64",
+        "rhel.9-x64"
       ]
     },
     "debian": {
@@ -782,6 +826,23 @@
         "fedora-x64"
       ]
     },
+    "fedora.34": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.34-arm64": {
+      "#import": [
+        "fedora.34",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.34-x64": {
+      "#import": [
+        "fedora.34",
+        "fedora-x64"
+      ]
+    },
     "freebsd": {
       "#import": [
         "unix"
@@ -837,6 +898,17 @@
         "linux-x64"
       ]
     },
+    "illumos": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "illumos-x64": {
+      "#import": [
+        "illumos",
+        "unix-x64"
+      ]
+    },
     "ios": {
       "#import": [
         "unix"
@@ -860,6 +932,12 @@
         "unix-x64"
       ]
     },
+    "ios-x86": {
+      "#import": [
+        "ios",
+        "unix-x86"
+      ]
+    },
     "ios.10": {
       "#import": [
         "ios.9"
@@ -881,6 +959,12 @@
       "#import": [
         "ios.10",
         "ios.9-x64"
+      ]
+    },
+    "ios.10-x86": {
+      "#import": [
+        "ios.10",
+        "ios.9-x86"
       ]
     },
     "ios.11": {
@@ -957,6 +1041,12 @@
         "ios-x64"
       ]
     },
+    "ios.8-x86": {
+      "#import": [
+        "ios.8",
+        "ios-x86"
+      ]
+    },
     "ios.9": {
       "#import": [
         "ios.8"
@@ -978,6 +1068,12 @@
       "#import": [
         "ios.9",
         "ios.8-x64"
+      ]
+    },
+    "ios.9-x86": {
+      "#import": [
+        "ios.9",
+        "ios.8-x86"
       ]
     },
     "linux": {
@@ -1312,6 +1408,39 @@
         "rhel.8.0-x64"
       ]
     },
+    "omnios": {
+      "#import": [
+        "illumos"
+      ]
+    },
+    "omnios-x64": {
+      "#import": [
+        "omnios",
+        "illumos-x64"
+      ]
+    },
+    "omnios.15": {
+      "#import": [
+        "omnios"
+      ]
+    },
+    "omnios.15-x64": {
+      "#import": [
+        "omnios.15",
+        "omnios-x64"
+      ]
+    },
+    "openindiana": {
+      "#import": [
+        "illumos"
+      ]
+    },
+    "openindiana-x64": {
+      "#import": [
+        "openindiana",
+        "illumos-x64"
+      ]
+    },
     "opensuse": {
       "#import": [
         "linux"
@@ -1633,6 +1762,23 @@
         "rhel.8.0-x64"
       ]
     },
+    "rhel.9": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "rhel.9-arm64": {
+      "#import": [
+        "rhel.9",
+        "rhel-arm64"
+      ]
+    },
+    "rhel.9-x64": {
+      "#import": [
+        "rhel.9",
+        "rhel-x64"
+      ]
+    },
     "sles": {
       "#import": [
         "linux"
@@ -1719,6 +1865,61 @@
       "#import": [
         "sles.15.1",
         "sles.15-x64"
+      ]
+    },
+    "smartos": {
+      "#import": [
+        "illumos"
+      ]
+    },
+    "smartos-x64": {
+      "#import": [
+        "smartos",
+        "illumos-x64"
+      ]
+    },
+    "smartos.2020": {
+      "#import": [
+        "smartos"
+      ]
+    },
+    "smartos.2020-x64": {
+      "#import": [
+        "smartos.2020",
+        "smartos-x64"
+      ]
+    },
+    "smartos.2021": {
+      "#import": [
+        "smartos.2020"
+      ]
+    },
+    "smartos.2021-x64": {
+      "#import": [
+        "smartos.2021",
+        "smartos.2020-x64"
+      ]
+    },
+    "solaris": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "solaris-x64": {
+      "#import": [
+        "solaris",
+        "unix-x64"
+      ]
+    },
+    "solaris.11": {
+      "#import": [
+        "solaris"
+      ]
+    },
+    "solaris.11-x64": {
+      "#import": [
+        "solaris.11",
+        "solaris-x64"
       ]
     },
     "tizen": {
@@ -2241,6 +2442,122 @@
     "ubuntu.19.10-x86": {
       "#import": [
         "ubuntu.19.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.20.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.20.04-arm": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.20.04-arm64": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.20.04-x64": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.20.04-x86": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.20.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.20.10-arm": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.20.10-arm64": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.20.10-x64": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.20.10-x86": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.21.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.21.04-arm": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.21.04-arm64": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.21.04-x64": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.21.04-x86": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.21.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.21.10-arm": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.21.10-arm64": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.21.10-x64": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.21.10-x86": {
+      "#import": [
+        "ubuntu.21.10",
         "ubuntu-x86"
       ]
     },

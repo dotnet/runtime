@@ -8,7 +8,6 @@
     <AssemblyKey>Open</AssemblyKey>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetFramework Condition="'$(BuildingInsideVisualStudio)' == 'true'">netcoreapp3.0</TargetFramework>
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>8002,NU1701</NoWarn>
     <RuntimeIdentifiers>win-x64;win-x86</RuntimeIdentifiers>
@@ -16,12 +15,14 @@
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)DiaSymReaderNative.targets" />
+
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.CoreDisTools">
       <Version>1.0.1-prerelease-00005</Version>
     </PackageReference>
-    <PackageReference Include="System.CommandLine.Experimental">
-      <Version>0.2.0-alpha.19174.3</Version>
+    <PackageReference Include="System.CommandLine">
+      <Version>$(SystemCommandLineVersion)</Version>
     </PackageReference>
     <ProjectReference Include="..\crossgen2\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj" />
   </ItemGroup>

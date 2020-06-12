@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <!-- ArrayBufferWriter is publicly exposed from the System.Memory ref and only it should define this constant as true.  -->
     <DefineConstants>$(DefineConstants);MAKE_ABW_PUBLIC</DefineConstants>
   </PropertyGroup>

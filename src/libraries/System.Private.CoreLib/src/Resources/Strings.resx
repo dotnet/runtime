@@ -1343,7 +1343,7 @@
     <value>The specified object must not be an instance of a generic type.</value>
   </data>
   <data name="Argument_NeedNonGenericType" xml:space="preserve">
-    <value>The specified Type must not be a generic type definition.</value>
+    <value>The specified Type must not be a generic type.</value>
   </data>
   <data name="Argument_NeedStructWithNoRefs" xml:space="preserve">
     <value>The specified Type must be a struct containing no references.</value>
@@ -2917,6 +2917,9 @@
   <data name="NotSupported_NoCodepageData" xml:space="preserve">
     <value>No data is available for encoding {0}. For information on defining a custom encoding, see the documentation for the Encoding.RegisterProvider method.</value>
   </data>
+  <data name="InvalidOperation_FunctionMissingUnmanagedCallersOnly" xml:space="preserve">
+    <value>Function not marked with UnmanagedCallersOnlyAttribute.</value>
+  </data>
   <data name="InvalidProgram_NonBlittableTypes" xml:space="preserve">
     <value>Non-blittable parameter types are invalid for UnmanagedCallersOnly methods.</value>
   </data>
@@ -3735,5 +3738,14 @@
   </data>
   <data name="SwitchExpressionException_UnmatchedValue" xml:space="preserve">
     <value>Unmatched value was {0}.</value>
+  </data>
+  <data name="IDynamicInterfaceCastable_DoesNotImplementRequested" xml:space="preserve">
+    <value>Type '{0}' returned by IDynamicInterfaceCastable does not implement the requested interface '{1}'.</value>
+  </data>
+  <data name="IDynamicInterfaceCastable_MissingImplementationAttribute" xml:space="preserve">
+    <value>Type '{0}' returned by IDynamicInterfaceCastable does not have the attribute '{1}'.</value>
+  </data>
+  <data name="IDynamicInterfaceCastable_NotInterface" xml:space="preserve">
+    <value>Type '{0}' returned by IDynamicInterfaceCastable is not an interface.</value>
   </data>
 </root>

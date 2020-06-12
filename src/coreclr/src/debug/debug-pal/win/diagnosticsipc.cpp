@@ -194,8 +194,12 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
     return new IpcStream(hPipe, mode);
 }
 
-void IpcStream::DiagnosticsIpc::Close(ErrorCallback)
+void IpcStream::DiagnosticsIpc::Close(bool isShutdown, ErrorCallback)
 {
+    // don't attempt cleanup on shutdown and let the OS handle it
+    if (isShutdown)
+        return;
+
     if (_hPipe != INVALID_HANDLE_VALUE)
     {
         if (mode == DiagnosticsIpc::ConnectionMode::SERVER)

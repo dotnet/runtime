@@ -9,6 +9,7 @@ parameters:
   targetOS: ''
   testRunNamePrefixSuffix: ''
   testScope: 'innerloop' # innerloop | outerloop | all
+  interpreter: ''
   condition: always()
   extraHelixArguments: ''
 
@@ -20,6 +21,7 @@ steps:
             /p:TargetArchitecture=${{ parameters.archGroup }}
             /p:Configuration=${{ parameters.configuration }}
             /p:TargetOS=${{ parameters.targetOS }}
+            /p:MonoEnableInterpreter=${{ parameters.interpreter }}
             /p:TestScope=${{ parameters.testScope }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
             /p:HelixBuild=$(Build.BuildNumber)

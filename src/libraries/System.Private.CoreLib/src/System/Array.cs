@@ -64,6 +64,8 @@ namespace System
                 Copy(larray, 0, newArray, 0, larray.Length > newSize ? newSize : larray.Length);
                 array = newArray;
             }
+
+            Debug.Assert(array != null);
         }
 
         public static Array CreateInstance(Type elementType, params long[] lengths)

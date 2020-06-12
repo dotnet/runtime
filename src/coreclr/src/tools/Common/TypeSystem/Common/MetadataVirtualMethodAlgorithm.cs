@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Internal.TypeSystem
 {
@@ -44,6 +45,9 @@ namespace Internal.TypeSystem
         {
             private MethodDesc[] _members = MethodDesc.EmptyMethods;
             private int _memberCount = 0;
+
+            private MethodDesc[] _methodsRequiringSlotUnification = MethodDesc.EmptyMethods;
+            private int _methodsRequiringSlotUnificationCount = 0;
 
             /// <summary>
             /// Custom enumerator struct for Unification group. Makes enumeration require 0 allocations.
@@ -86,6 +90,21 @@ namespace Internal.TypeSystem
                 }
             }
 
+            public struct Enumerable
+            {
+                private readonly MethodDesc[] _arrayToEnumerate;
+
+                public Enumerable(MethodDesc[] arrayToEnumerate)
+                {
+                    _arrayToEnumerate = arrayToEnumerate;
+                }
+
+                public Enumerator GetEnumerator()
+                {
+                    return new Enumerator(_arrayToEnumerate);
+                }
+            }
+
             public UnificationGroup(MethodDesc definingMethod)
             {
                 DefiningMethod = definingMethod;
@@ -94,9 +113,31 @@ namespace Internal.TypeSystem
 
             public MethodDesc DefiningMethod;
 
-            public Enumerator GetEnumerator()
+            public Enumerable Members => new Enumerable(_members);
+
+            public Enumerable MethodsRequiringSlotUnification => new Enumerable(_methodsRequiringSlotUnification);
+
+            public void AddMethodRequiringSlotUnification(MethodDesc method)
             {
-                return new Enumerator(_members);
+                if (RequiresSlotUnification(method))
+                    return;
+
+                _methodsRequiringSlotUnificationCount++;
+                if (_methodsRequiringSlotUnificationCount >= _methodsRequiringSlotUnification.Length)
+                {
+                    Array.Resize(ref _methodsRequiringSlotUnification, Math.Max(_methodsRequiringSlotUnification.Length * 2, 2));
+                }
+                _methodsRequiringSlotUnification[_methodsRequiringSlotUnificationCount - 1] = method;
+            }
+
+            public bool RequiresSlotUnification(MethodDesc method)
+            {
+                for(int i = 0; i < _methodsRequiringSlotUnificationCount; i++)
+                {
+                    if (_methodsRequiringSlotUnification[i] == method)
+                        return true;
+                }
+                return false;
             }
 
             public void SetDefiningMethod(MethodDesc newDefiningMethod)
@@ -395,6 +436,11 @@ namespace Internal.TypeSystem
             MethodDesc methodImpl = FindImplFromDeclFromMethodImpls(currentType, unificationGroup.DefiningMethod);
             if (methodImpl != null)
             {
+                if(methodImpl.RequiresSlotUnification())
+                {
+                    unificationGroup.AddMethodRequiringSlotUnification(unificationGroup.DefiningMethod);
+                    unificationGroup.AddMethodRequiringSlotUnification(methodImpl);
+                }
                 unificationGroup.SetDefiningMethod(methodImpl);
             }
 
@@ -416,7 +462,7 @@ namespace Internal.TypeSystem
             // Start with removing methods that seperated themselves from the group via name/sig matches
             MethodDescHashtable separatedMethods = null;
 
-            foreach (MethodDesc memberMethod in unificationGroup)
+            foreach (MethodDesc memberMethod in unificationGroup.Members)
             {
                 MethodDesc nameSigMatchMemberMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(memberMethod, currentType, reverseMethodSearch: true);
                 if (nameSigMatchMemberMethod != null && nameSigMatchMemberMethod != memberMethod)
@@ -448,29 +494,68 @@ namespace Internal.TypeSystem
                     if (separatedMethods == null)
                         separatedMethods = new MethodDescHashtable();
                     separatedMethods.AddOrGetExisting(declSlot);
-                    continue;
-                }
-                if (!unificationGroup.IsInGroupOrIsDefiningSlot(declSlot) && unificationGroup.IsInGroupOrIsDefiningSlot(implSlot))
-                {
-                    // Add decl to group.
 
-                    // To do so, we need to have the Unification Group of the decl slot, as it may have multiple members itself
-                    UnificationGroup addDeclGroup = new UnificationGroup(declSlot);
-                    FindBaseUnificationGroup(baseType, addDeclGroup);
-                    Debug.Assert(addDeclGroup.IsInGroupOrIsDefiningSlot(declSlot));
-
-                    // Add all members from the decl's unification group except for ones that have been seperated by name/sig matches
-                    // or previously processed methodimpls. NOTE: This implies that method impls are order dependent.
-                    if (separatedMethods == null || !separatedMethods.Contains(addDeclGroup.DefiningMethod))
+                    if (unificationGroup.RequiresSlotUnification(declSlot) || implSlot.RequiresSlotUnification())
                     {
-                        unificationGroup.AddToGroup(addDeclGroup.DefiningMethod);
+                        if (implSlot.Signature.EqualsWithCovariantReturnType(unificationGroup.DefiningMethod.Signature))
+                        {
+                            unificationGroup.AddMethodRequiringSlotUnification(declSlot);
+                            unificationGroup.AddMethodRequiringSlotUnification(implSlot);
+                            unificationGroup.SetDefiningMethod(implSlot);
+                        }
                     }
 
-                    foreach (MethodDesc addDeclGroupMemberMethod in addDeclGroup)
+                    continue;
+                }
+                if (!unificationGroup.IsInGroupOrIsDefiningSlot(declSlot))
+                {
+                    if (unificationGroup.IsInGroupOrIsDefiningSlot(implSlot))
                     {
-                        if (separatedMethods == null || !separatedMethods.Contains(addDeclGroupMemberMethod))
+                        // Add decl to group.
+
+                        // To do so, we need to have the Unification Group of the decl slot, as it may have multiple members itself
+                        UnificationGroup addDeclGroup = new UnificationGroup(declSlot);
+                        FindBaseUnificationGroup(baseType, addDeclGroup);
+                        Debug.Assert(
+                            addDeclGroup.IsInGroupOrIsDefiningSlot(declSlot) ||
+                            (addDeclGroup.RequiresSlotUnification(declSlot) && addDeclGroup.DefiningMethod.Signature.EqualsWithCovariantReturnType(declSlot.Signature)));
+
+                        foreach(MethodDesc methodImplRequiredToRemainInEffect in addDeclGroup.MethodsRequiringSlotUnification)
                         {
-                            unificationGroup.AddToGroup(addDeclGroupMemberMethod);
+                            unificationGroup.AddMethodRequiringSlotUnification(methodImplRequiredToRemainInEffect);
+                        }
+
+                        // Add all members from the decl's unification group except for ones that have been seperated by name/sig matches
+                        // or previously processed methodimpls. NOTE: This implies that method impls are order dependent.
+                        if (separatedMethods == null || !separatedMethods.Contains(addDeclGroup.DefiningMethod))
+                        {
+                            unificationGroup.AddToGroup(addDeclGroup.DefiningMethod);
+                        }
+
+                        foreach (MethodDesc addDeclGroupMemberMethod in addDeclGroup.Members)
+                        {
+                            if (separatedMethods == null || !separatedMethods.Contains(addDeclGroupMemberMethod))
+                            {
+                                unificationGroup.AddToGroup(addDeclGroupMemberMethod);
+                            }
+                        }
+
+                        if(unificationGroup.RequiresSlotUnification(declSlot))
+                        {
+                            unificationGroup.AddMethodRequiringSlotUnification(implSlot);
+                        }
+                        else if (implSlot == unificationGroup.DefiningMethod && implSlot.RequiresSlotUnification())
+                        {
+                            unificationGroup.AddMethodRequiringSlotUnification(declSlot);
+                            unificationGroup.AddMethodRequiringSlotUnification(implSlot);
+                        }
+                    }
+                    else if (unificationGroup.RequiresSlotUnification(declSlot))
+                    {
+                        if (implSlot.Signature.EqualsWithCovariantReturnType(unificationGroup.DefiningMethod.Signature))
+                        {
+                            unificationGroup.AddMethodRequiringSlotUnification(implSlot);
+                            unificationGroup.SetDefiningMethod(implSlot);
                         }
                     }
                 }

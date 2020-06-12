@@ -876,7 +876,7 @@ typedef struct {
 
 #include <sys/ucontext.h>
 
-#if __GLIBC_PREREQ(2, 27)
+#if __GLIBC_PREREQ(2, 26)
 typedef ucontext_t MonoContext;
 #else
 typedef struct ucontext MonoContext;

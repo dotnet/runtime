@@ -106,8 +106,7 @@ namespace System.Data.Common
                     // <value> -> <value>
                     builder.Append(keyValue);
                 }
-                // string.Contains(char) is .NetCore2.1+ specific
-                else if ((-1 != keyValue.IndexOf('\"')) && (-1 == keyValue.IndexOf('\'')))
+                else if ((keyValue.Contains('\"')) && (!keyValue.Contains('\'')))
                 {
                     // <val"ue> -> <'val"ue'>
                     builder.Append('\'');
