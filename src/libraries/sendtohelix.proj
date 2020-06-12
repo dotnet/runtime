@@ -11,7 +11,7 @@
     <!-- We need to enable xunit reporter so that it parses test results
          Package testing doesn't run on xunit. -->
     <EnableXunitReporter Condition="'$(BuildAllConfigurations)' != 'true'">true</EnableXunitReporter>
-    
+
     <TestArchiveRuntimeFile>$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
     <TestArchiveRuntimeFile Condition="'$(BuildAllConfigurations)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
 
@@ -106,7 +106,7 @@
       <XHarnessAppFolderToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
         <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64_13.5</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</Targets>
       </XHarnessAppFolderToTest>
     </ItemGroup>
