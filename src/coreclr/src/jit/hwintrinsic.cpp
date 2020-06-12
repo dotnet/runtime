@@ -450,6 +450,7 @@ GenTree* HWIntrinsicInfo::lookupLastOp(const GenTreeHWIntrinsic* node)
 //     true if the node has an imm operand; otherwise, false
 bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
 {
+#ifdef TARGET_XARCH
     if (HWIntrinsicInfo::lookupCategory(id) != HW_Category_IMM)
     {
         return false;
@@ -459,6 +460,14 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
     {
         return true;
     }
+#elif defined(TARGET_ARM64)
+    if (!HWIntrinsicInfo::HasImmediateOperand(id))
+    {
+        return false;
+    }
+#else
+#error Unsupported platform
+#endif
 
     if (genActualType(op->TypeGet()) != TYP_INT)
     {
