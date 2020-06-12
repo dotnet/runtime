@@ -293,7 +293,7 @@
       </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
-	<Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />
