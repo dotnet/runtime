@@ -49,6 +49,76 @@ namespace System.Numerics
         };
 
         /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPow2(int value)
+        {
+            if (Popcnt.IsSupported)
+            {
+                // 1 set bit means number is a power of 2 unless it is the sign bit, so get rid of that
+                // Cast to unsigned type so logic shift not signed arithmetic shift
+                return PopCount((uint)value << 1) == 1;
+            }
+
+            return IsPow2SoftwareFallback((uint)value << 1);
+        }
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static bool IsPow2(uint value)
+        {
+            if (Popcnt.IsSupported)
+            {
+                return PopCount(value) == 1;
+            }
+
+            return IsPow2SoftwareFallback(value);
+        }
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPow2(long value)
+        {
+            if (Popcnt.X64.IsSupported)
+            {
+                // 1 set bit means number is a power of 2 unless it is the sign bit, so get rid of that
+                // Cast to unsigned type so logic shift not signed arithmetic shift
+                return PopCount((ulong)value << 1) == 1;
+            }
+
+            return IsPow2SoftwareFallback((ulong)value << 1);
+        }
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static bool IsPow2(ulong value)
+        {
+            if (Popcnt.X64.IsSupported)
+            {
+                return PopCount(value) == 1;
+            }
+
+            return IsPow2SoftwareFallback(value);
+        }
+
+        // These are faster than the PopCount software fallbacks
+        private static bool IsPow2SoftwareFallback(uint value) => (value & (value - 1)) == 0 && value != 0;
+        private static bool IsPow2SoftwareFallback(ulong value) => (value & (value - 1)) == 0 && value != 0;
+
+        /// <summary>
         /// Count the number of leading zero bits in a mask.
         /// Similar in behavior to the x86 instruction LZCNT.
         /// </summary>
