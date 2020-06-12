@@ -30,13 +30,13 @@ HRESULT PdbHeap::SetData(PORTABLE_PDB_STREAM* data)
     m_data = new BYTE[m_size];
 
     ULONG offset = 0;
-    IfFailGo(hr = memcpy_s(m_data + offset, m_size, &data->id, sizeof(data->id)));
+    IfFailGo(memcpy_s(m_data + offset, m_size, &data->id, sizeof(data->id)));
     offset += sizeof(data->id);
-    IfFailGo(hr = memcpy_s(m_data + offset, m_size, &data->entryPoint, sizeof(data->entryPoint)));
+    IfFailGo(memcpy_s(m_data + offset, m_size, &data->entryPoint, sizeof(data->entryPoint)));
     offset += sizeof(data->entryPoint);
-    IfFailGo(hr = memcpy_s(m_data + offset, m_size, &data->referencedTypeSystemTables, sizeof(data->referencedTypeSystemTables)));
+    IfFailGo(memcpy_s(m_data + offset, m_size, &data->referencedTypeSystemTables, sizeof(data->referencedTypeSystemTables)));
     offset += sizeof(data->referencedTypeSystemTables);
-    IfFailGo(hr = memcpy_s(m_data + offset, m_size, data->typeSystemTableRows, sizeof(ULONG) * data->typeSystemTableRowsSize));
+    IfFailGo(memcpy_s(m_data + offset, m_size, data->typeSystemTableRows, sizeof(ULONG) * data->typeSystemTableRowsSize));
     offset += sizeof(ULONG) * data->typeSystemTableRowsSize;
 
     _ASSERTE(offset == m_size);
