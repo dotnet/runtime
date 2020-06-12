@@ -118,6 +118,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/AddThresholdTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/36850</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/reflection/SetValue/TrySetReadonlyStaticField2/**">
+            <Issue>https://github.com/dotnet/runtime/issues/37899</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/mono/runningmono/*">
             <Issue>This test is to verify we are running mono, and therefore only makes sense on mono.</Issue>
         </ExcludeList>
