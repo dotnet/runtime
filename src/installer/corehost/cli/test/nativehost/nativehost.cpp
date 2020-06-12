@@ -215,7 +215,7 @@ int main(const int argc, const pal::char_t *argv[])
         std::cout << tostr(test_output.str()).data() << std::endl;
         return success ? EXIT_SUCCESS : EXIT_FAILURE;
     }
-    else if (pal::strcmp(command, _X("load_assembly_and_get_function_pointer")) == 0)
+    else if (pal::strcmp(command, _X("component_load_assembly_and_get_function_pointer")) == 0)
     {
         // args: ... <hostfxr_path> <app_or_config_path> <assembly_path> <type_name> <method_name> [<assembly_path> <type_name> <method_name>...]
         const int min_argc = 4;
@@ -236,7 +236,7 @@ int main(const int argc, const pal::char_t *argv[])
         pal::stringstream_t test_output;
         bool success = false;
 
-        success = host_context_test::load_assembly_and_get_function_pointer(hostfxr_path, app_or_config_path, remaining_argc, remaining_argv, test_output);
+        success = host_context_test::component_load_assembly_and_get_function_pointer(hostfxr_path, app_or_config_path, remaining_argc, remaining_argv, test_output);
 
         std::cout << tostr(test_output.str()).data() << std::endl;
         return success ? EXIT_SUCCESS : EXIT_FAILURE;
