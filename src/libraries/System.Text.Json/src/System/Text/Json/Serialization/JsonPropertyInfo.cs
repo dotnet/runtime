@@ -23,9 +23,9 @@ namespace System.Text.Json
         public static JsonPropertyInfo GetPropertyPlaceholder()
         {
             JsonPropertyInfo info = new JsonPropertyInfo<object>();
-            Debug.Assert(info.IsForClassInfo == false);
-            Debug.Assert(info.ShouldDeserialize == false);
-            Debug.Assert(info.ShouldSerialize == false);
+            Debug.Assert(!info.IsForClassInfo);
+            Debug.Assert(!info.ShouldDeserialize);
+            Debug.Assert(!info.ShouldSerialize);
             return info;
         }
 
