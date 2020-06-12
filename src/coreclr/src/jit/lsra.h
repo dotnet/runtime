@@ -1068,7 +1068,7 @@ private:
         var_types type = tree->TypeGet();
         if (type == TYP_STRUCT)
         {
-            assert(tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+            assert(tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) || tree->OperIsHWIntrinsic());
             GenTreeLclVar* lclVar = tree->AsLclVar();
             LclVarDsc*     varDsc = compiler->lvaGetDesc(lclVar);
             type                  = varDsc->GetRegisterType(lclVar);

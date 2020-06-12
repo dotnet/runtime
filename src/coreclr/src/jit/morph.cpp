@@ -10356,7 +10356,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
             }
         }
     }
-    else
+    else if (!effectiveVal->OperIsHWIntrinsic())
     {
         GenTreeIndir*        indirTree        = nullptr;
         GenTreeLclVarCommon* lclNode          = nullptr;
@@ -10772,11 +10772,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         }
 #endif // TARGET_ARM
 
-        // Can't use field by field assignment if the src is a call.
-        if (src->OperGet() == GT_CALL)
+        // Can't use field by field assignment if the src is a call or HW intrinsic.
+        if (src->OperIs(GT_CALL) || src->OperIsHWIntrinsic())
         {
-            JITDUMP(" src is a call");
-            // C++ style CopyBlock with holes
+            JITDUMP(" src is a call or hw intrinsic");
             requiresCopyBlock = true;
         }
 
