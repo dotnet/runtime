@@ -50,7 +50,7 @@ namespace System.Xml
                 }
 
                 // Standalone
-                if (_standalone != XmlStandalone.Omit)
+                if (standalone != XmlStandalone.Omit)
                 {
                     await RawTextAsync("\" standalone=\"").ConfigureAwait(false);
                     await RawTextAsync(standalone == XmlStandalone.Yes ? "yes" : "no").ConfigureAwait(false);

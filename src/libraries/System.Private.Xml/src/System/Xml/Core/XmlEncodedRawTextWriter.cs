@@ -174,7 +174,7 @@ namespace System.Xml
 
             _encoder = _encoding.GetEncoder();
 
-            if (!_stream.CanSeek || _stream.Position == 0)
+            if (!stream.CanSeek || stream.Position == 0)
             {
                 if (bom.Length != 0)
                 {
