@@ -26,8 +26,6 @@ namespace System.Text.Json
                 matchingProperty,
                 options);
 
-            ConverterBase = matchingProperty.ConverterBase;
-
             if (parameterInfo.HasDefaultValue)
             {
                 DefaultValue = parameterInfo.DefaultValue;

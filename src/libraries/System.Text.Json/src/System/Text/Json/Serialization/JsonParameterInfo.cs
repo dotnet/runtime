@@ -15,13 +15,13 @@ namespace System.Text.Json
     internal abstract class JsonParameterInfo
     {
 
-        public JsonConverter ConverterBase { get; set; } = null!;
+        public JsonConverter ConverterBase { get; private set; } = null!;
 
         // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the CLR `default` for the `ParameterType`.
         public object? DefaultValue { get; protected set; }
 
         // Options can be referenced here since all JsonPropertyInfos originate from a JsonClassInfo that is cached on JsonSerializerOptions.
-        protected internal JsonSerializerOptions Options { get; set; } = null!; // initialized in Init method
+        public JsonSerializerOptions? Options { get; set; } // initialized in Init method
 
         // The name of the parameter as UTF-8 bytes.
         public byte[] NameAsUtf8Bytes { get; private set; } = null!;
@@ -34,9 +34,11 @@ namespace System.Text.Json
         {
             get
             {
+                Debug.Assert(ShouldDeserialize);
                 if (_runtimeClassInfo == null)
                 {
-                    _runtimeClassInfo = Options.GetOrAddClass(RuntimePropertyType);
+                    Debug.Assert(Options != null);
+                    _runtimeClassInfo = Options!.GetOrAddClass(RuntimePropertyType);
                 }
 
                 return _runtimeClassInfo;
@@ -58,6 +60,7 @@ namespace System.Text.Json
             NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!;
             Options = options;
             ShouldDeserialize = true;
+            ConverterBase = matchingProperty.ConverterBase;
         }
 
         // Create a parameter that is ignored at run-time. It uses the same type (typeof(sbyte)) to help
@@ -70,7 +73,6 @@ namespace System.Text.Json
             {
                 RuntimePropertyType = typeof(sbyte),
                 NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!,
-                Options = options
             };
         }
     }
