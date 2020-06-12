@@ -127,6 +127,11 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.HostFactoryResolver.Sources",
+    "Description": "Internal package for sharing Microsoft.Extensions.Hosting.HostFactoryResolver type.",
+    "CommonTypes": []
+  },
+  {
     "Name": "Microsoft.Extensions.Hosting",
     "Description": "Hosting and startup infrastructures for applications.",
     "CommonTypes": []
