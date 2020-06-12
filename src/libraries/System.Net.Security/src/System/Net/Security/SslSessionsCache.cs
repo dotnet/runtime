@@ -160,7 +160,7 @@ namespace System.Net.Security
                 return;
             }
 
-            var key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy);
+            SslCredKey key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy);
 
             SafeFreeCredentials? credentials = GetCachedCredential(key);
 
@@ -171,7 +171,7 @@ namespace System.Net.Security
                     credentials = GetCachedCredential(key);
                     if (credentials == null || credentials.IsClosed)
                     {
-                        var cached = SafeCredentialReference.CreateReference(creds);
+                        SafeCredentialReference? cached = SafeCredentialReference.CreateReference(creds);
 
                         if (cached == null)
                         {
@@ -198,11 +198,11 @@ namespace System.Net.Security
 
                             for (int i = 0; i < toRemoveAttempt.Length; ++i)
                             {
-                                var freeCreds = toRemoveAttempt[i].Value.Target;
+                                SafeFreeCredentials? freeCreds = toRemoveAttempt[i].Value.Target;
 
                                 if (freeCreds == null || freeCreds.IsClosed || freeCreds.IsInvalid)
                                 {
-                                    if (s_cachedCreds.TryRemove(toRemoveAttempt[i].Key, out var removedCached))
+                                    if (s_cachedCreds.TryRemove(toRemoveAttempt[i].Key, out SafeCredentialReference? removedCached))
                                     {
                                         removedCached.Dispose();
                                     }
