@@ -6,14 +6,12 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
     public static class Runtime
     {
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, typeof(Runtime))]
         private static readonly Dictionary<int, WeakReference> _boundObjects = new Dictionary<int, WeakReference>();
         private static readonly Dictionary<object, JSObject> _rawToJS = new Dictionary<object, JSObject>();
         // _weakDelegateTable is a ConditionalWeakTable with the Delegate and associated JSObject:
