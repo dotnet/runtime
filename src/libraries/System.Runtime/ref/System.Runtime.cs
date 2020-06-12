@@ -9097,6 +9097,10 @@ namespace System.Runtime.CompilerServices
     public static partial class IsConst
     {
     }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public static partial class IsExternalInit
+    {
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class IsReadOnlyAttribute : System.Attribute
