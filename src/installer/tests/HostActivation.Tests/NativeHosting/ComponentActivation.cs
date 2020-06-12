@@ -91,6 +91,28 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
         }
 
+        [Fact]
+        public void CallDelegateFromSelfContainedApp()
+        {
+            var componentProject = sharedState.SelfContainedComponentWithNoDependenciesFixture.TestProject;
+            string[] args =
+            {
+                ComponentFromAppActivationArg,
+                sharedState.HostFxrPath,
+                componentProject.AppDll,
+                componentProject.AppDll,
+                sharedState.ComponentTypeName,
+                sharedState.ComponentEntryPoint1,
+            };
+            CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
+                .Execute();
+
+            result.Should()
+                .InitializeContextForApp(componentProject.AppDll)
+                .And.Pass()
+                .And.ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint1, 1, 1);
+        }
+
         [Theory]
         [InlineData(1, false)]
         [InlineData(1, true)]
@@ -211,6 +233,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public string DotNetRoot { get; }
 
             public TestProjectFixture ComponentWithNoDependenciesFixture { get; }
+            public TestProjectFixture SelfContainedComponentWithNoDependenciesFixture { get; }
             public string ComponentTypeName { get; }
             public string ComponentEntryPoint1 => "ComponentEntryPoint1";
             public string ComponentEntryPoint2 => "ComponentEntryPoint2";
@@ -225,6 +248,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 ComponentWithNoDependenciesFixture = new TestProjectFixture("ComponentWithNoDependencies", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .PublishProject();
+                SelfContainedComponentWithNoDependenciesFixture = new TestProjectFixture("ComponentWithNoDependencies", RepoDirectories)
+                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .PublishProject(selfContained: "true");
                 ComponentTypeName = $"Component.Component, {ComponentWithNoDependenciesFixture.TestProject.AssemblyName}";
             }
 
