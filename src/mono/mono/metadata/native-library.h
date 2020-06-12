@@ -46,4 +46,4 @@ typedef struct
 #define BEGIN_QCALL ERROR_DECL (error)
 #define END_QCALL mono_error_set_pending_exception (error)
 
-#endif 
+#endif

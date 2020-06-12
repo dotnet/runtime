@@ -1168,9 +1168,6 @@ legacy_lookup_native_library (MonoImage *image, const char *scope)
 
 #endif // ENABLE_NETCORE
 
-extern const void* gPalGlobalizationNative[];
-//extern const void* gEventPipeInternalFuncs[];
-
 gpointer
 lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_out)
 {
