@@ -285,10 +285,11 @@ CONFIG_INTEGER(JitDisableSimdVN, W("JitDisableSimdVN"), 0) // Default 0, ValueNu
                                                            // If 3, disable both SIMD and HW Intrinsic nodes
 #endif                                                     // FEATURE_SIMD
 
-CONFIG_INTEGER(JitDisableConstCSE, W("JitDisableConstCSE"), 0) // Default 0, We CSE Const including nearby with small offset
+CONFIG_INTEGER(JitDisableConstCSE, W("JitDisableConstCSE"), 0) // Default 0, We CSE Const including nearby with small
+                                                               // offset
                                                                // If 1, then disable all CSE of Const
                                                                // If 2, then disable the CSE of Const with small offset
-                                                               // If 3, then change the weighting of Const on x64 to match Arm64
+// If 3, then change the weighting of Const on x64 to match Arm64
 ///
 /// JIT
 ///

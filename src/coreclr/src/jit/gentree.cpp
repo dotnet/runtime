@@ -3306,16 +3306,16 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_CNS_LNG:
             case GT_CNS_INT:
             {
-                GenTreeIntConCommon* con = tree->AsIntConCommon();
-                ssize_t conVal = (oper == GT_CNS_LNG) ? (ssize_t)con->LngValue() : con->IconValue();
-                bool fitsInVal = true;
+                GenTreeIntConCommon* con       = tree->AsIntConCommon();
+                ssize_t              conVal    = (oper == GT_CNS_LNG) ? (ssize_t)con->LngValue() : con->IconValue();
+                bool                 fitsInVal = true;
 
 #ifdef TARGET_X86
                 if (oper == GT_CNS_LNG)
                 {
                     INT64 lngVal = con->LngValue();
 
-                    conVal = (ssize_t)lngVal;  // truncate to 32-bits
+                    conVal = (ssize_t)lngVal; // truncate to 32-bits
 
                     fitsInVal = ((INT64)conVal == lngVal);
                 }
@@ -3358,10 +3358,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 if (JitConfig.JitDisableConstCSE() == 3)
                 {
-                    GenTreeIntConCommon* con = tree->AsIntConCommon();
-                    bool iconNeedsReloc = con->ImmedValNeedsReloc(this);
-                    INT64 imm = con->LngValue();
-                    emitAttr size = EA_8BYTE;
+                    GenTreeIntConCommon* con            = tree->AsIntConCommon();
+                    bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
+                    INT64                imm            = con->LngValue();
+                    emitAttr             size           = EA_8BYTE;
 
                     if ((imm >= -256) && (imm < 1024))
                     {
@@ -3379,13 +3379,15 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         // There are three forms
                         //    movk which loads into any halfword preserving the remaining halfwords
                         //    movz which loads into any halfword zeroing the remaining halfwords
-                        //    movn which loads into any halfword zeroing the remaining halfwords then bitwise inverting the register
-                        // In some cases it is preferable to use movn, because it has the side effect of filling the other halfwords
+                        //    movn which loads into any halfword zeroing the remaining halfwords then bitwise inverting
+                        //    the register
+                        // In some cases it is preferable to use movn, because it has the side effect of filling the
+                        // other halfwords
                         // with ones
 
                         // Determine whether movn or movz will require the fewest instructions to populate the immediate
-                        bool preferMovz = false;
-                        bool preferMovn = false;
+                        bool preferMovz       = false;
+                        bool preferMovn       = false;
                         int  instructionCount = 4;
 
                         for (int i = (size == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
@@ -3421,10 +3423,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
                 else
                 {
-                    GenTreeIntConCommon* con = tree->AsIntConCommon();
-                    bool iconNeedsReloc = con->ImmedValNeedsReloc(this);
-                    INT64 imm = con->LngValue();
-                    emitAttr size = EA_8BYTE;
+                    GenTreeIntConCommon* con            = tree->AsIntConCommon();
+                    bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
+                    INT64                imm            = con->LngValue();
+                    emitAttr             size           = EA_8BYTE;
 
                     if ((imm >= -256) && (imm < 1024))
                     {
@@ -3447,13 +3449,15 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         // There are three forms
                         //    movk which loads into any halfword preserving the remaining halfwords
                         //    movz which loads into any halfword zeroing the remaining halfwords
-                        //    movn which loads into any halfword zeroing the remaining halfwords then bitwise inverting the register
-                        // In some cases it is preferable to use movn, because it has the side effect of filling the other halfwords
+                        //    movn which loads into any halfword zeroing the remaining halfwords then bitwise inverting
+                        //    the register
+                        // In some cases it is preferable to use movn, because it has the side effect of filling the
+                        // other halfwords
                         // with ones
 
                         // Determine whether movn or movz will require the fewest instructions to populate the immediate
-                        bool preferMovz = false;
-                        bool preferMovn = false;
+                        bool preferMovz       = false;
+                        bool preferMovn       = false;
                         int  instructionCount = 4;
 
                         for (int i = (size == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
@@ -6902,7 +6906,6 @@ bool GenTreeOp::usesMagicNumberDivision(Compiler* comp)
             return true;
         }
     }
-
 
     const bool isDiv = OperIs(GT_DIV, GT_UDIV);
 

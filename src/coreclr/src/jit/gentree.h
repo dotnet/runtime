@@ -636,7 +636,7 @@ public:
     void ClearRegNum()
     {
         _gtRegNum = REG_NA;
-        INDEBUG(gtRegTag  = GT_REGTAG_NONE;)
+        INDEBUG(gtRegTag = GT_REGTAG_NONE;)
     }
 
     // Copy the _gtRegNum/gtRegTag fields

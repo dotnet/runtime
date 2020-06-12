@@ -6320,9 +6320,10 @@ protected:
     {
         CSEdsc* csdNextInBucket; // used by the hash table
 
-        ssize_t  csdHashKey; // the orginal hashkey
+        ssize_t  csdHashKey;       // the orginal hashkey
         ssize_t  csdConstDefValue; // When we CSE similar constants this is the value that we use as the def
-        ValueNum csdConstDefVN; // When we CSE similar constants this is the ValueNumber that we use for the LclVar assignment
+        ValueNum csdConstDefVN;    // When we CSE similar constants this is the ValueNumber that we use for the LclVar
+                                   // assignment
 
         unsigned csdIndex; // 1..optCSECandidateCount
         bool     csdLiveAcrossCall;
