@@ -680,6 +680,50 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, var_types baseType)
     return false;
 }
 
+struct HWIntrinsicSignatureReader final
+{
+    void Read(COMP_HANDLE compHnd, CORINFO_SIG_INFO* sig)
+    {
+        CORINFO_ARG_LIST_HANDLE args = sig->args;
+
+        if (sig->numArgs > 0)
+        {
+            CorInfoType op1Type = strip(compHnd->getArgType(sig, args, &op1ClsHnd));
+            op1VarType          = JITtype2varType(op1Type);
+
+            if (sig->numArgs > 1)
+            {
+                args                = compHnd->getArgNext(args);
+                CorInfoType op2Type = strip(compHnd->getArgType(sig, args, &op2ClsHnd));
+                op2VarType          = JITtype2varType(op2Type);
+            }
+
+            if (sig->numArgs > 2)
+            {
+                args                = compHnd->getArgNext(args);
+                CorInfoType op3Type = strip(compHnd->getArgType(sig, args, &op3ClsHnd));
+                op3VarType          = JITtype2varType(op3Type);
+            }
+
+            if (sig->numArgs > 3)
+            {
+                args                = compHnd->getArgNext(args);
+                CorInfoType op4Type = strip(compHnd->getArgType(sig, args, &op4ClsHnd));
+                op4VarType          = JITtype2varType(op4Type);
+            }
+        }
+    }
+
+    CORINFO_CLASS_HANDLE op1ClsHnd;
+    CORINFO_CLASS_HANDLE op2ClsHnd;
+    CORINFO_CLASS_HANDLE op3ClsHnd;
+    CORINFO_CLASS_HANDLE op4ClsHnd;
+    var_types            op1VarType;
+    var_types            op2VarType;
+    var_types            op3VarType;
+    var_types            op4VarType;
+};
+
 //------------------------------------------------------------------------
 // impHWIntrinsic: Import a hardware intrinsic as a GT_HWINTRINSIC node if possible
 //
