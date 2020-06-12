@@ -32,6 +32,7 @@
 
 #if MONO_FEATURE_SRE
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Runtime.InteropServices;
 
@@ -887,10 +888,7 @@ namespace System.Reflection.Emit
             Emit(opcode, helper);
         }
 
-        private static Type GetConsoleType()
-        {
-            return Type.GetType("System.Console, System.Console", throwOnError: true)!;
-        }
+        private const string ConsoleTypeFullName = "System.Console, System.Console";
 
         public virtual void EmitWriteLine(FieldInfo fld)
         {
@@ -907,7 +905,8 @@ namespace System.Reflection.Emit
                 Emit(OpCodes.Ldarg_0);
                 Emit(OpCodes.Ldfld, fld);
             }
-            Emit(OpCodes.Call, GetConsoleType().GetMethod("WriteLine", new Type[1] { fld.FieldType })!);
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { fld.FieldType })!);
         }
 
         public virtual void EmitWriteLine(LocalBuilder localBuilder)
@@ -919,13 +918,15 @@ namespace System.Reflection.Emit
             // The MS implementation does not check for valuetypes here but it
             // should.
             Emit(OpCodes.Ldloc, localBuilder);
-            Emit(OpCodes.Call, GetConsoleType().GetMethod("WriteLine", new Type[1] { localBuilder.LocalType })!);
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { localBuilder.LocalType })!);
         }
 
         public virtual void EmitWriteLine(string value)
         {
             Emit(OpCodes.Ldstr, value);
-            Emit(OpCodes.Call, GetConsoleType().GetMethod("WriteLine", new Type[1] { typeof(string) })!);
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { typeof(string) })!);
         }
 
         public virtual void EndExceptionBlock()
@@ -1010,7 +1011,7 @@ namespace System.Reflection.Emit
             get { return sequencePointLists != null; }
         }
 
-        public virtual void ThrowException(Type excType)
+        public virtual void ThrowException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type excType)
         {
             if (excType == null)
                 throw new ArgumentNullException(nameof(excType));
