@@ -3108,6 +3108,7 @@ public:
     bool lvaVarDoNotEnregister(unsigned varNum);
 
     bool lvaEnregEHVars;
+    bool lvaEnregMultiRegVars;
 
 #ifdef DEBUG
     // Reasons why we can't enregister.  Some of these correspond to debug properties of local vars.
@@ -4600,7 +4601,7 @@ public:
                                       VARSET_VALARG_TP     keepAliveVars,
                                       LclVarDsc&           varDsc,
                                       GenTreeLclVarCommon* node);
-    void fgComputeLifeUntrackedLocal(VARSET_TP&           life,
+    bool fgComputeLifeUntrackedLocal(VARSET_TP&           life,
                                      VARSET_VALARG_TP     keepAliveVars,
                                      LclVarDsc&           varDsc,
                                      GenTreeLclVarCommon* lclVarNode);

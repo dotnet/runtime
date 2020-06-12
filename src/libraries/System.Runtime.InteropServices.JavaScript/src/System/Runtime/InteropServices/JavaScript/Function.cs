@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public Function(params object[] args) : base(Interop.Runtime.New<Function>(args))
         { }
 
-        internal Function(IntPtr jHandle) : base(jHandle)
+        internal Function(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
         { }
 
         /// <summary>

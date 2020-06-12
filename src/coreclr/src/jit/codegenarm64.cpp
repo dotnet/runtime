@@ -1919,33 +1919,49 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 // genCodeForStoreLclVar: Produce code for a GT_STORE_LCL_VAR node.
 //
 // Arguments:
-//    tree - the GT_STORE_LCL_VAR node
+//    lclNode - the GT_STORE_LCL_VAR node
 //
-void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
+void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
 {
-    GenTree* data = tree->gtOp1;
+    GenTree* data = lclNode->gtOp1;
 
-    // var = call, where call returns a multi-reg return value
-    // case is handled separately.
-    if (data->gtSkipReloadOrCopy()->IsMultiRegCall())
+    // Stores from a multi-reg source are handled separately.
+    if (data->gtSkipReloadOrCopy()->IsMultiRegNode())
     {
-        genMultiRegStoreToLocal(tree);
+        genMultiRegStoreToLocal(lclNode);
+        return;
+    }
+
+    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNode);
+    if (lclNode->IsMultiReg())
+    {
+        // This is the case of storing to a multi-reg HFA local from a fixed-size SIMD type.
+        assert(varTypeIsSIMD(data) && varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
+        regNumber    operandReg = genConsumeReg(data);
+        unsigned int regCount   = varDsc->lvFieldCnt;
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            regNumber varReg = lclNode->GetRegByIndex(i);
+            assert(varReg != REG_NA);
+            unsigned   fieldLclNum = varDsc->lvFieldLclStart + i;
+            LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
+            assert(fieldVarDsc->TypeGet() == TYP_FLOAT);
+            GetEmitter()->emitIns_R_R_I(INS_dup, emitTypeSize(TYP_FLOAT), varReg, operandReg, i);
+        }
     }
     else
     {
-        regNumber targetReg = tree->GetRegNum();
+        regNumber targetReg = lclNode->GetRegNum();
         emitter*  emit      = GetEmitter();
 
-        unsigned varNum = tree->GetLclNum();
-        assert(varNum < compiler->lvaCount);
-        LclVarDsc* varDsc     = compiler->lvaGetDesc(varNum);
-        var_types  targetType = varDsc->GetRegisterType(tree);
+        unsigned  varNum     = lclNode->GetLclNum();
+        var_types targetType = varDsc->GetRegisterType(lclNode);
 
 #ifdef FEATURE_SIMD
         // storing of TYP_SIMD12 (i.e. Vector3) field
         if (targetType == TYP_SIMD12)
         {
-            genStoreLclTypeSIMD12(tree);
+            genStoreLclTypeSIMD12(lclNode);
             return;
         }
 #endif // FEATURE_SIMD
@@ -1963,7 +1979,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
                 if (targetReg != REG_NA)
                 {
                     emit->emitIns_R_I(INS_movi, emitActualTypeSize(targetType), targetReg, 0x00, INS_OPTS_16B);
-                    genProduceReg(tree);
+                    genProduceReg(lclNode);
                 }
                 else
                 {
@@ -1976,7 +1992,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
                         assert(targetType == TYP_SIMD8);
                         GetEmitter()->emitIns_S_R(INS_str, EA_8BYTE, REG_ZR, varNum, 0);
                     }
-                    genUpdateLife(tree);
+                    genUpdateLife(lclNode);
                 }
                 return;
             }
@@ -1992,14 +2008,14 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
         if (targetReg == REG_NA) // store into stack based LclVar
         {
-            inst_set_SV_var(tree);
+            inst_set_SV_var(lclNode);
 
             instruction ins  = ins_Store(targetType);
             emitAttr    attr = emitActualTypeSize(targetType);
 
             emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
 
-            genUpdateLife(tree);
+            genUpdateLife(lclNode);
 
             varDsc->SetRegNum(REG_STK);
         }
@@ -2010,7 +2026,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
                 // Assign into targetReg when dataReg (from op1) is not the same register
                 inst_RV_RV(ins_Copy(targetType), targetReg, dataReg, targetType);
             }
-            genProduceReg(tree);
+            genProduceReg(lclNode);
         }
     }
 }

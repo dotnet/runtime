@@ -1907,8 +1907,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
             {
                 pDispatchingMT = curobj->GetMethodTable();
 
-#ifdef FEATURE_ICASTABLE
-                if (pDispatchingMT->IsICastable())
+                if (pDispatchingMT->IsICastable() || pDispatchingMT->IsIDynamicInterfaceCastable())
                 {
                     MethodTable* pMDMT = pMD->GetMethodTable();
                     TypeHandle objectType(pDispatchingMT);
@@ -1925,7 +1924,6 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
                         pDispatchingMT = pMDMT;
                     }
                 }
-#endif // FEATURE_ICASTABLE
 
                 // For value types, the only virtual methods are interface implementations.
                 // Thus pDispatching == pMT because there

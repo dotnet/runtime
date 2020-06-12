@@ -91,9 +91,6 @@ namespace System
         public static void Sort<TKey, TValue>(this System.Span<TKey> keys, System.Span<TValue> items) { }
         public static void Sort<TKey, TValue, TComparer>(this System.Span<TKey> keys, System.Span<TValue> items, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<TKey>? { }
         public static void Sort<TKey, TValue>(this System.Span<TKey> keys, System.Span<TValue> items, System.Comparison<TKey> comparison) { }
-        public static System.SpanSplitEnumerator<char> Split(this System.ReadOnlySpan<char> span) { throw null; }
-        public static System.SpanSplitEnumerator<char> Split(this System.ReadOnlySpan<char> span, char separator) { throw null; }
-        public static System.SpanSplitEnumerator<char> Split(this System.ReadOnlySpan<char> span, string separator) { throw null; }
         public static bool StartsWith(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static bool StartsWith<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T> { throw null; }
         public static bool StartsWith<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T> { throw null; }
@@ -158,12 +155,6 @@ namespace System
         public int GetInteger() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public object? GetObject() { throw null; }
-    }
-    public ref struct SpanSplitEnumerator<T> where T : System.IEquatable<T>
-    {
-        public System.SpanSplitEnumerator<T> GetEnumerator() { throw null; }
-        public readonly System.Range Current { get { throw null; } }
-        public bool MoveNext() { throw null; }
     }
 }
 namespace System.Buffers

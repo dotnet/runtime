@@ -111,7 +111,7 @@ namespace System.IO.Packaging
         /// <param name="targetMode">enum specifying the interpretation of the base uri for the target uri</param>
         /// <param name="relationshipType">type name</param>
         /// <param name="id">unique identifier</param>
-        internal PackageRelationship(Package package, PackagePart sourcePart, Uri targetUri, TargetMode targetMode, string relationshipType, string id)
+        internal PackageRelationship(Package package, PackagePart? sourcePart, Uri targetUri, TargetMode targetMode, string relationshipType, string id)
         {
             //sourcePart can be null to represent that the relationships are at the package level
 
@@ -177,7 +177,7 @@ namespace System.IO.Packaging
         #region Private Members
 
         private readonly Package _package;
-        private readonly PackagePart _source;
+        private readonly PackagePart? _source;
         private readonly Uri _targetUri;
         private readonly string _relationshipType;
         private readonly TargetMode _targetMode;

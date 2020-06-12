@@ -416,7 +416,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Globalization.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Split.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Trim.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MethodAccessException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MidpointRounding.cs" />
@@ -659,6 +658,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\MethodCodeType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\MethodImplAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\MethodImplOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ModuleInitializerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ReferenceAssemblyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\PreserveBaseOverridesAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RuntimeCompatibilityAttribute.cs" />
@@ -745,6 +745,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomMarshaler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomQueryInterface.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\IDynamicInterfaceCastable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InterfaceTypeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InvalidComObjectException.cs" />
@@ -857,7 +858,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Char.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.T.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\SpanSplitEnumerator.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SR.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\StackOverflowException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.Comparison.cs" />
