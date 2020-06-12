@@ -8,8 +8,8 @@ namespace System.Data.Odbc.Tests
 {
     public class DependencyCheckTest
     {
-        [ConditionalFact(Helpers.OdbcNotAvailable)]
-        [Conditional(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static bool IsObdcNotAvailableAndThreadingSupported => Helpers.OdbcNotAvailable && PlatformDetection.IsThreadingSupported;
+        [Conditional(nameof(IsObdcNotAvailableAndThreadingSupported))]
         public void OdbcConnection_OpenWhenOdbcNotInstalled_ThrowsException()
         {
             if (PlatformDetection.IsWindowsServerCore && !Environment.Is64BitProcess)
