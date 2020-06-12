@@ -341,8 +341,8 @@ else(CLR_CMAKE_HOST_UNIX)
       win/pal-single-threaded.c
       # ${libunwind_la_SOURCES}  Local...
       ${libunwind_remote_la_SOURCES}
-        # Commented out above for LOCAL + REMOTE runtime build
-        mi/Gget_accessors.c
+      # Commented out above for LOCAL + REMOTE runtime build
+      mi/Gget_accessors.c
       # ${libunwind_dwarf_local_la_SOURCES}
       ${libunwind_dwarf_common_la_SOURCES}
       ${libunwind_dwarf_generic_la_SOURCES}
