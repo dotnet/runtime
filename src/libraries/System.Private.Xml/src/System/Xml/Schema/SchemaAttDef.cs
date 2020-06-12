@@ -101,9 +101,9 @@ namespace System.Xml.Schema
             get { return ((SchemaAttDef)this).DefaultValueExpanded; }
         }
 
-        object IDtdDefaultAttributeInfo.DefaultValueTyped
+        object? IDtdDefaultAttributeInfo.DefaultValueTyped
         {
-            get { return ((SchemaAttDef)this).DefaultValueTyped!; }
+            get { return ((SchemaAttDef)this).DefaultValueTyped; }
         }
 
         int IDtdDefaultAttributeInfo.ValueLineNumber

@@ -166,7 +166,7 @@ namespace System.Xml
         /// <summary>
         /// The typed default value of the attribute.
         /// </summary>
-        object DefaultValueTyped { get; }
+        object? DefaultValueTyped { get; }
 
         /// <summary>
         /// The line number of the default value (in the DTD)
