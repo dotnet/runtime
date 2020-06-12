@@ -1844,16 +1844,18 @@ namespace System
         {
             Debug.Assert(AdvSimd.IsSupported);
 
-            ulong matches = AdvSimd.Arm64.MaxPairwise(compareResult, compareResult).AsUInt64().ToScalar();
-            if (matches == 0)
+            // Find the first lane that is set inside compareResult.
+            Vector128<byte> maskedSelectedLanes = AdvSimd.And(compareResult, mask);
+            Vector128<byte> pairwiseSelectedLane = AdvSimd.Arm64.AddPairwise(maskedSelectedLanes, maskedSelectedLanes);
+            ulong selectedLanes = pairwiseSelectedLane.AsUInt64().ToScalar();
+            if (selectedLanes == 0)
             {
+                // all lanes are zero, so nothing matched.
                 return false;
             }
 
-            // Try to find the first lane that is set inside compareResult.
-            Vector128<byte> selectedLanes = AdvSimd.And(compareResult, mask);
-            Vector128<byte> pairwiseSelectedLane = AdvSimd.Arm64.AddPairwise(selectedLanes, selectedLanes);
-            matchedLane = BitOperations.TrailingZeroCount(pairwiseSelectedLane.AsUInt64().ToScalar()) >> 2;
+            // Find the first lane that is set inside compareResult.
+            matchedLane = BitOperations.TrailingZeroCount(selectedLanes) >> 2;
             return true;
         }
     }

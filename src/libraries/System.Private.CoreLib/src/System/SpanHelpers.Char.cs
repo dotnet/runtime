@@ -428,7 +428,7 @@ namespace System
                             Vector128<ushort> search = LoadVector128(ref searchSpace, offset);
                             Vector128<ushort> compareResult = AdvSimd.CompareEqual(values, search);
 
-                            if (!TryFindFirstMatchedLane(compareResult.AsByte(), ref matchedLane))
+                            if (!TryFindFirstMatchedLane(compareResult, ref matchedLane))
                             {
                                 // Zero flags set so no matches
                                 offset += Vector128<ushort>.Count;
@@ -1096,15 +1096,16 @@ namespace System
         {
             Debug.Assert(AdvSimd.IsSupported);
 
-            ulong matches = AdvSimd.Arm64.MaxPairwise(compareResult, compareResult).AsUInt64().ToScalar();
-            if (matches == 0)
+            Vector128<byte> pairwiseSelectedLane = AdvSimd.Arm64.AddPairwise(compareResult.AsByte(), compareResult.AsByte());
+            ulong selectedLanes = pairwiseSelectedLane.AsUInt64().ToScalar();
+            if (selectedLanes == 0)
             {
+                // all lanes are zero, so nothing matched.
                 return false;
             }
 
-            // Try to find the first lane that is set inside compareResult.
-            Vector128<byte> pairwiseSelectedLane = AdvSimd.Arm64.AddPairwise(compareResult, compareResult);
-            matchedLane = BitOperations.TrailingZeroCount(pairwiseSelectedLane.AsUInt64().ToScalar()) >> 3;
+            // Find the first lane that is set inside compareResult.
+            matchedLane = BitOperations.TrailingZeroCount(selectedLanes) >> 3;
             return true;
         }
     }
