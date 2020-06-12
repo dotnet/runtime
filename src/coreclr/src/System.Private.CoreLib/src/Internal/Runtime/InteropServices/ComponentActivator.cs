@@ -21,12 +21,7 @@ namespace Internal.Runtime.InteropServices
 
         private static string MarshalToString(IntPtr arg, string argName)
         {
-#if TARGET_WINDOWS
-            string? result = Marshal.PtrToStringUni(arg);
-#else
-            string? result = Marshal.PtrToStringUTF8(arg);
-#endif
-
+            string? result = Marshal.PtrToStringAuto(arg);
             if (result == null)
             {
                 throw new ArgumentNullException(argName);
