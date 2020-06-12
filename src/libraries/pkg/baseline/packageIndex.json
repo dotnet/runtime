@@ -650,6 +650,9 @@
         "5.0.0.0": "5.0.0"
       }
     },
+    "Microsoft.Extensions.HostFactoryResolver.Sources": {
+      "InboxOn": {}
+    },
     "Microsoft.Extensions.Hosting": {
       "StableVersions": [
         "2.1.0",
