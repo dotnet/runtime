@@ -394,7 +394,7 @@ namespace ILCompiler.PEWriter
             {
                 if (_customPESectionAlignment != null)
                 {
-                    // When _customPESectionAlignment is set, the phyical and virtual sizes are the same
+                    // When _customPESectionAlignment is set, the physical and virtual sizes are the same
                     byte[] sizeBytes = BitConverter.GetBytes(_sectionRawSizes[sectionIndex]);
                     Debug.Assert(sizeBytes.Length == sizeof(int));
 

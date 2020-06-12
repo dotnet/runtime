@@ -2431,9 +2431,9 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     {
         loadedBase = ALIGN_UP(loadedBase, ntHeader.OptionalHeader.SectionAlignment);
         headerSize = ntHeader.OptionalHeader.SectionAlignment;
-        char *mapAsShared = EnvironGetenv("PAL_MAP_READONLY_PE_HUGE_PE_AS_SHARED");
+        char *mapAsShared = EnvironGetenv("PAL_MAP_READONLY_PE_HUGE_PAGE_AS_SHARED");
 
-        // If PAL_MAP_READONLY_PE_HUGE_PE_AS_SHARED is set to 1. map the readonly sections as shared
+        // If PAL_MAP_READONLY_PE_HUGE_PAGE_AS_SHARED is set to 1. map the readonly sections as shared
         // which works well with the behavior of the hugetlbfs
         if (mapAsShared != NULL && (strcmp(mapAsShared, "1") == 0))
             readOnlyFlags = MAP_FILE|MAP_SHARED|MAP_FIXED;
