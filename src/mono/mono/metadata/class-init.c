@@ -33,6 +33,10 @@
 #undef REALLY_INCLUDE_CLASS_DEF
 #endif
 
+#ifdef ENABLE_NETCORE
+#define FEATURE_COVARIANT_RETURNS
+#endif
+
 gboolean mono_print_vtable = FALSE;
 gboolean mono_align_small_structs = FALSE;
 #ifdef ENABLE_NETCORE
@@ -3003,6 +3007,7 @@ mono_class_setup_vtable_ginst (MonoClass *klass, GList *in_setup)
 
 }
 
+#ifdef FEATURE_COVARIANT_RETURNS
 /*
  * vtable_slot_has_preserve_base_overrides_attribute:
  * 
@@ -3040,18 +3045,39 @@ vtable_slot_has_preserve_base_overrides_attribute (MonoClass *klass, int slot, M
  *
  * This is the CanCastTo relation from ECMA (impl type can be cast to the decl
  * type), except that we don't allow a valuetype to be cast to one of its
- * implemented interfaces.
+ * implemented interfaces, and we don't allow T to Nullable<T>.
  */
 static gboolean
 is_ok_for_covariant_ret (MonoType *type_impl, MonoType *type_decl)
 {
-	MonoClass *impl_class = mono_class_from_mono_type_internal (type_impl);
-	MonoClass *decl_class = mono_class_from_mono_type_internal (type_decl);
-
-	if (MONO_CLASS_IS_INTERFACE_INTERNAL (decl_class) && m_class_is_valuetype (decl_class))
+	/* method declared to return an interface, impl returns a value type that implements the interface */
+	if (!mono_type_is_reference (type_impl) && mono_type_is_reference (type_decl))
 		return FALSE;
-	return mono_class_is_assignable_from_internal (decl_class, impl_class);
 
+
+	TRACE_INTERFACE_VTABLE (do {
+			char *decl_str = mono_type_full_name (type_decl);
+			char *impl_str = mono_type_full_name (type_impl);
+			printf ("Checking if %s is assignable from %s", decl_str, impl_str);
+			g_free (decl_str);
+			g_free (impl_str);
+		} while (0));
+
+	MonoClass *class_impl = mono_class_from_mono_type_internal (type_impl);
+	MonoClass *class_decl = mono_class_from_mono_type_internal (type_decl);
+
+	/* Also disallow overriding a Nullable<T> return with an impl that
+	 * returns T */
+	if (mono_class_is_nullable (class_decl) &&
+	    mono_class_get_nullable_param_internal (class_decl) == class_impl)
+		return FALSE;
+
+
+	ERROR_DECL (local_error);
+	gboolean result = FALSE;
+	mono_class_signature_is_assignable_from_checked (class_decl, class_impl, &result, local_error);
+	mono_error_cleanup (local_error);
+	return result;
 }
 
 /**
@@ -3143,9 +3169,11 @@ check_signature_covariant (MonoClass *klass, MonoMethod *impl_method, MonoMethod
 	}
 
 	gboolean result = is_ok_for_covariant_ret (impl_ret, decl_ret);
-	mono_metadata_free_type (alloc_decl_ret);
+	if (alloc_decl_ret)
+		mono_metadata_free_type (alloc_decl_ret);
 	return result;
 }
+#endif /* FEATURE_COVARIANT_RETURNS */
 
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
@@ -3475,13 +3503,16 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	for (i = 0; i < onum; i++) {
 		MonoMethod *decl = overrides [i*2];
 		MonoMethod *impl = overrides [i*2 + 1];
-		gboolean maybe_covariant = FALSE;
+		gboolean compare_sigs = FALSE;
 		if (!MONO_CLASS_IS_INTERFACE_INTERNAL (decl->klass)) {
 			g_assert (decl->slot != -1);
 			vtable [decl->slot] = impl;
+#ifdef FEATURE_COVARIANT_RETURNS
+			gboolean impl_newslot = (impl->flags & METHOD_ATTRIBUTE_NEW_SLOT) != 0;
 			/* covariant returns generate an explicit override impl with a newslot flag. respect it. */
-			if (!(impl->flags & METHOD_ATTRIBUTE_NEW_SLOT))
+			if (!impl_newslot)
 				impl->slot = decl->slot;
+#endif
 			if (!override_map)
 				override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
 			TRACE_INTERFACE_VTABLE (printf ("adding explicit override from %s [%p] to %s [%p]\n", 
@@ -3489,14 +3520,16 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				mono_method_full_name (impl, 1), impl));
 			g_hash_table_insert (override_map, decl, impl);
 
+#ifdef FEATURE_COVARIANT_RETURNS
 			MonoClass *impl_class = impl->klass;
 			gboolean has_preserve_base_overrides =
 				method_has_preserve_base_overrides_attribute (impl) ||
 				(klass->parent &&
 				 vtable_slot_has_preserve_base_overrides_attribute (klass->parent, decl->slot, &impl_class));
 
-			maybe_covariant =
-				has_preserve_base_overrides;
+			/* Historically, mono didn't do a signature equivalence check for explicit overrides, but we need one for covariant returns */
+			compare_sigs =
+				TRUE;
 
 			if (has_preserve_base_overrides) {
 				if (impl_class == decl->klass) {
@@ -3524,10 +3557,12 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				}
 
 			}
+#endif /* FEATURE_COVARIANT_RETURNS */
 
 			if (mono_security_core_clr_enabled ())
 				mono_security_core_clr_check_override (klass, impl, decl);
-			if (maybe_covariant) {
+#ifdef FEATURE_COVARIANT_RETURNS
+			if (compare_sigs) {
 				TRACE_INTERFACE_VTABLE (printf (" checking covariant signature compatability of %s overriding %s\n", mono_method_full_name (impl, 1), mono_method_full_name (decl, 1)));
 				ERROR_DECL (local_error);
 				gboolean subsumed = check_signature_covariant (klass, impl, decl, local_error);
@@ -3553,6 +3588,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				}
 			}
 		}
+#endif /* FEATURE_COVARIANT_RETURNS */
 	}
 
 	TRACE_INTERFACE_VTABLE (print_vtable_full (klass, vtable, cur_slot, first_non_interface_slot, "AFTER OVERRIDING NON-INTERFACE METHODS", FALSE));
