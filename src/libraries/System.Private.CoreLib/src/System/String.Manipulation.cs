@@ -1511,7 +1511,7 @@ namespace System
                     // point.
                     if ((options & StringSplitOptions.RemoveEmptyEntries) != 0)
                     {
-                        while (i < numReplaces - 1)
+                        while (++i < numReplaces)
                         {
                             thisEntry = this.AsSpan(currIndex, sepList[i] - currIndex);
                             if ((options & StringSplitOptions.TrimEntries) != 0)
@@ -1522,7 +1522,7 @@ namespace System
                             {
                                 break; // there's useful data here
                             }
-                            currIndex += (lengthList.IsEmpty ? defaultLength : lengthList[i]);
+                            currIndex = sepList[i] + (lengthList.IsEmpty ? defaultLength : lengthList[i]);
                         }
                     }
                     break;
