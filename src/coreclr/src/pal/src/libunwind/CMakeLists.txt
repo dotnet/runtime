@@ -1,3 +1,6 @@
+# This is a custom file written for .NET Core's build system
+# It overwrites the one found in upstream
+
 project(unwind)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -11,9 +14,11 @@ set(PKG_EXTRA "-rc2")
 # The HAVE___THREAD set to 1 causes creation of thread local variable with tls_model("initial-exec")
 # which is incompatible with usage of the unwind code in a shared library.
 add_definitions(-DHAVE___THREAD=0)
-add_definitions(-DHAVE_CONFIG_H=1)
 
 add_definitions(-D_GNU_SOURCE)
+
+add_definitions(-DPACKAGE_STRING="")
+add_definitions(-DPACKAGE_BUGREPORT="")
 
 if(CLR_CMAKE_HOST_UNIX)
     if (CLR_CMAKE_HOST_ARCH_AMD64)
@@ -25,9 +30,6 @@ if(CLR_CMAKE_HOST_UNIX)
     elseif(CLR_CMAKE_HOST_ARCH_I386)
         set(arch x86)
     endif ()
-
-    add_definitions(-DPACKAGE_STRING="")
-    add_definitions(-DPACKAGE_BUGREPORT="")
 
     # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
     add_compile_options(-Wno-format -Wno-format-security)
@@ -87,38 +89,6 @@ if(CLR_CMAKE_HOST_WIN32)
       message(FATAL_ERROR "Unrecognized TARGET")
     endif ()
 
-    set(PACKAGE_STRING "libunwind")
-    set(PACKAGE_BUGREPORT "")
-
-    include(CheckCSourceCompiles)
-    include(CheckIncludeFiles)
-
-    # Our posix abstraction layer will provide these headers
-    set(HAVE_ELF_H 1)
-    set(HAVE_ENDIAN_H 1)
-
-    # MSVC compiler is currently missing C11 stdalign.h header
-    # Fake it until support is added
-    check_include_files(stdalign.h HAVE_STDALIGN_H)
-    if (NOT HAVE_STDALIGN_H)
-        configure_file(include/win/fakestdalign.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdalign.h COPYONLY)
-    endif (NOT HAVE_STDALIGN_H)
-
-    # MSVC compiler is currently missing C11 stdatomic.h header
-    # Fake it until support is added
-    check_include_files(stdatomic.h HAVE_STDATOMIC_H)
-    if (NOT HAVE_STDATOMIC_H)
-        configure_file(include/win/fakestdatomic.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdatomic.h COPYONLY)
-    endif (NOT HAVE_STDATOMIC_H)
-
-    # MSVC compiler is currently missing C11 _Thread_local
-    check_c_source_compiles("void main() { _Thread_local int a; }"  HAVE_THREAD_LOCAL)
-    if (NOT HAVE_THREAD_LOCAL)
-        add_definitions(-D_Thread_local=)
-    endif (NOT HAVE_THREAD_LOCAL)
-
-    configure_file(include/config.h.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/include/config.h)
-
     # Windows builds will only support remote unwind
     add_definitions(-DUNW_REMOTE_ONLY)
 
@@ -154,7 +124,6 @@ if(CLR_CMAKE_HOST_WIN32)
     add_compile_options(-wd4311) # pointer truncation from 'unw_word_t *' to 'long'
     add_compile_options(-wd4475) # 'fprintf' : length modifier 'L' cannot be used
     add_compile_options(-wd4477) # fprintf argument type
-
 endif (CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_TARGET_ARCH_ARM)
@@ -164,9 +133,5 @@ if(CLR_CMAKE_TARGET_ARCH_ARM)
     include_directories(include/tdep-arm)
 endif()
 
-
-configure_file(include/libunwind-common.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/libunwind-common.h)
-configure_file(include/libunwind.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/libunwind.h)
-configure_file(include/tdep/libunwind_i.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/tdep/libunwind_i.h)
-
+include(configure.cmake)
 add_subdirectory(src)

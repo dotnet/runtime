@@ -1,6 +1,5 @@
-if (CLR_CMAKE_HOST_UNIX)
-    include(configure.cmake)
-endif (CLR_CMAKE_HOST_UNIX)
+# This is a custom file written for .NET Core's build system
+# It overwrites the one found in upstream
 
 SET(libunwind_ptrace_la_SOURCES
     ptrace/_UPT_elf.c
