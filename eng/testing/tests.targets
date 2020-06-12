@@ -24,19 +24,25 @@
     <RunScriptCommands Include="set DEVPATH=%RUNTIME_PATH%" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <!-- OutDir is not set early enough to set this property in .props file. -->
+    <BundleDir Condition="'$(TargetsMobile)' == 'true'">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
+
+    <_zipSourceDirectory>$(OutDir)</_zipSourceDirectory>
+    <_zipSourceDirectory Condition="'$(TargetOS)' == 'Browser'">$(BundleDir)</_zipSourceDirectory>
+  </PropertyGroup>
+
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
-          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'Android')"
-          AfterTargets="PrepareForRun"
+          Condition="'$(IsCrossTargetingBuild)' != 'true' and
+                     '$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and
+                     ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'Browser')"
+          AfterTargets="Build"
           DependsOnTargets="GenerateRunScript">
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
-    <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-      <OutDir>$(OutDir)/AppBundle</OutDir>
-    </PropertyGroup>
-
     <MakeDir Directories="$(TestArchiveTestsDir)" />
-    <ZipDirectory SourceDirectory="$(OutDir)"
+    <ZipDirectory SourceDirectory="$(_zipSourceDirectory)"
                   DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
                   Overwrite="true" />
   </Target>
