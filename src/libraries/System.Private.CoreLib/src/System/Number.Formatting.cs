@@ -587,7 +587,7 @@ namespace System
         public static string FormatHalf(Half value, string? format, NumberFormatInfo info)
         {
             Span<char> stackBuffer = stackalloc char[CharStackBufferSize];
-            var sb = new ValueStringBuilder(stackBuffer);
+            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
             return FormatHalf(ref sb, value, format, info) ?? sb.ToString();
         }
 

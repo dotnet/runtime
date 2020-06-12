@@ -462,7 +462,6 @@ namespace System
         public string ToString(string? format, IFormatProvider? provider)
         {
             return Number.FormatHalf(this, format, NumberFormatInfo.GetInstance(provider));
-
         }
 
         /// <summary>
@@ -482,14 +481,14 @@ namespace System
 
         public static explicit operator Half(float value)
         {
-            const int singleMaxExponent = 0xFF;
+            const int SingleMaxExponent = 0xFF;
 
             uint floatInt = ToUInt32(value);
             bool sign = (floatInt & float.SignMask) >> float.SignShift != 0;
             int exp = (int)(floatInt & float.ExponentMask) >> float.ExponentShift;
             uint sig = floatInt & float.SignificandMask;
 
-            if (exp == singleMaxExponent)
+            if (exp == SingleMaxExponent)
             {
                 if (sig != 0) // NaN
                 {
@@ -510,14 +509,14 @@ namespace System
 
         public static explicit operator Half(double value)
         {
-            const int doubleMaxExponent = 0x7FF;
+            const int DoubleMaxExponent = 0x7FF;
 
             ulong doubleInt = ToUInt64(value);
             bool sign = (doubleInt & double.SignMask) >> double.SignShift != 0;
             int exp = (int)((doubleInt & double.ExponentMask) >> double.ExponentShift);
             ulong sig = doubleInt & double.SignificandMask;
 
-            if (exp == doubleMaxExponent)
+            if (exp == DoubleMaxExponent)
             {
                 if (sig != 0) // NaN
                 {
@@ -606,7 +605,7 @@ namespace System
         #region Utilities
 
         private static uint ToUInt32(float value)
-                   => (uint)BitConverter.SingleToInt32Bits(value);
+            => (uint)BitConverter.SingleToInt32Bits(value);
 
         // Significand bits should be shifted towards to the left end before calling these methods
         // Creates Quiet NaN if significand == 0
@@ -625,7 +624,7 @@ namespace System
 
         private static ushort RoundPackToHalf(bool sign, short exp, ushort sig)
         {
-            const int roundIncrement = 0x8; // Depends on rounding mode but it's always towards closest / ties to even
+            const int RoundIncrement = 0x8; // Depends on rounding mode but it's always towards closest / ties to even
             int roundBits = sig & 0xF;
 
             if ((uint)exp >= 0x1D)
@@ -635,13 +634,13 @@ namespace System
                     sig = (ushort)ShiftRightJam(sig, -exp);
                     exp = 0;
                 }
-                else if (exp > 0x1D || sig + roundIncrement >= 0x8000) // Overflow
+                else if (exp > 0x1D || sig + RoundIncrement >= 0x8000) // Overflow
                 {
                     return sign ? NegativeInfinityBits : PositiveInfinityBits;
                 }
             }
 
-            sig = (ushort)((sig + roundIncrement) >> 4);
+            sig = (ushort)((sig + RoundIncrement) >> 4);
             sig &= (ushort)~(((roundBits ^ 8) != 0 ? 0 : 1) & 1);
 
             if (sig == 0)
