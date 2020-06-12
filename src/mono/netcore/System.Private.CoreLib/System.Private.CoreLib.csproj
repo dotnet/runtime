@@ -126,6 +126,7 @@
 
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
+    <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
     <FeaturePerfTracing>true</FeaturePerfTracing>
     <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>

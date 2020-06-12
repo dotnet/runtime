@@ -11,24 +11,24 @@ namespace System.Threading
     // Runtime interface
     internal static class WasmRuntime
     {
-        private static Dictionary<int, Action> callbacks = new Dictionary<int, Action>();
-        private static int next_id;
+        private static readonly Dictionary<int, Action> s_callbacks = new Dictionary<int, Action>();
+        private static int s_nextId;
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void SetTimeout(int timeout, int id);
 
         internal static void ScheduleTimeout(int timeout, Action action)
         {
-            int id = ++next_id;
-            callbacks[id] = action;
-            SetTimeout (timeout, id);
+            int id = ++s_nextId;
+            s_callbacks[id] = action;
+            SetTimeout(timeout, id);
         }
 
         // Called by mini-wasm.c:mono_set_timeout_exec
-        private static void TimeoutCallback (int id)
+        private static void TimeoutCallback(int id)
         {
-            Action cb = callbacks[id];
-            callbacks.Remove(id);
+            Action cb = s_callbacks[id];
+            s_callbacks.Remove(id);
             cb();
         }
     }
@@ -36,13 +36,12 @@ namespace System.Threading
     //
     // WebAssembly-specific implementation of Timer
     // Based on TimerQueue.Portable.cs
+    // Not thread safe
     //
     internal partial class TimerQueue
     {
         private static List<TimerQueue>? s_scheduledTimers;
         private static List<TimerQueue>? s_scheduledTimersToFire;
-
-        private static readonly object s_monitor = new object();
 
         private bool _isScheduled;
         private long _scheduledDueTimeMs;
@@ -55,20 +54,14 @@ namespace System.Threading
         {
             Debug.Assert((int)actualDuration >= 0);
             long dueTimeMs = TickCount64 + (int)actualDuration;
-            lock (s_monitor)
+            if (!_isScheduled)
             {
-                if (!_isScheduled)
-                {
-                    if (s_scheduledTimers == null)
-                        s_scheduledTimers = new List<TimerQueue>(Instances.Length);
-                    s_scheduledTimersToFire ??= new List<TimerQueue>(Instances.Length);
-                    s_scheduledTimers.Add(this);
-                    _isScheduled = true;
-                }
-
-                _scheduledDueTimeMs = dueTimeMs;
+                s_scheduledTimers ??= new List<TimerQueue>(Instances.Length);
+                s_scheduledTimersToFire ??= new List<TimerQueue>(Instances.Length);
+                s_scheduledTimers.Add(this);
+                _isScheduled = true;
             }
-
+            _scheduledDueTimeMs = dueTimeMs;
             WasmRuntime.ScheduleTimeout((int)actualDuration, Run);
 
             return true;
@@ -79,33 +72,30 @@ namespace System.Threading
             int shortestWaitDurationMs;
             List<TimerQueue> timersToFire = s_scheduledTimersToFire!;
             List<TimerQueue> timers;
-            lock (s_monitor)
+            timers = s_scheduledTimers!;
+            long currentTimeMs = TickCount64;
+            shortestWaitDurationMs = int.MaxValue;
+            for (int i = timers.Count - 1; i >= 0; --i)
             {
-                timers = s_scheduledTimers!;
-                long currentTimeMs = TickCount64;
-                shortestWaitDurationMs = int.MaxValue;
-                for (int i = timers.Count - 1; i >= 0; --i)
+                TimerQueue timer = timers[i];
+                long waitDurationMs = timer._scheduledDueTimeMs - currentTimeMs;
+                if (waitDurationMs <= 0)
                 {
-                    TimerQueue timer = timers[i];
-                    long waitDurationMs = timer._scheduledDueTimeMs - currentTimeMs;
-                    if (waitDurationMs <= 0)
-                    {
-                        timer._isScheduled = false;
-                        timersToFire.Add(timer);
+                    timer._isScheduled = false;
+                    timersToFire.Add(timer);
 
-                        int lastIndex = timers.Count - 1;
-                        if (i != lastIndex)
-                        {
-                            timers[i] = timers[lastIndex];
-                        }
-                        timers.RemoveAt(lastIndex);
-                        continue;
-                    }
-
-                    if (waitDurationMs < shortestWaitDurationMs)
+                    int lastIndex = timers.Count - 1;
+                    if (i != lastIndex)
                     {
-                        shortestWaitDurationMs = (int)waitDurationMs;
+                        timers[i] = timers[lastIndex];
                     }
+                    timers.RemoveAt(lastIndex);
+                    continue;
+                }
+
+                if (waitDurationMs < shortestWaitDurationMs)
+                {
+                    shortestWaitDurationMs = (int)waitDurationMs;
                 }
             }
 
