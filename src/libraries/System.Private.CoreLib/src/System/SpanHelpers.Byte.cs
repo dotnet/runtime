@@ -195,7 +195,7 @@ namespace System
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
             nuint lengthToExamine = (nuint)(uint)length;
 
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
             {
                 // Avx2 branch also operates on Sse2 sizes, so check is combined.
                 if (length >= Vector128<byte>.Count * 2)
@@ -371,7 +371,7 @@ namespace System
                     }
                 }
             }
-            else if (AdvSimd.IsSupported)
+            else if (AdvSimd.Arm64.IsSupported)
             {
                 if (offset < (nuint)(uint)length)
                 {
@@ -1842,7 +1842,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryFindFirstMatchedLane(Vector128<byte> mask, Vector128<byte> compareResult, ref int matchedLane)
         {
-            Debug.Assert(AdvSimd.IsSupported);
+            Debug.Assert(AdvSimd.Arm64.IsSupported);
 
             // Find the first lane that is set inside compareResult.
             Vector128<byte> maskedSelectedLanes = AdvSimd.And(compareResult, mask);

@@ -223,7 +223,7 @@ namespace System
             {
                 // Input isn't char aligned, we won't be able to align it to a Vector
             }
-            else if (Sse2.IsSupported || AdvSimd.IsSupported)
+            else if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
             {
                 // Avx2 branch also operates on Sse2 sizes, so check is combined.
                 // Needs to be double length to allow us to align the data first.
@@ -409,7 +409,7 @@ namespace System
                     }
                 }
             }
-            else if (AdvSimd.IsSupported)
+            else if (AdvSimd.Arm64.IsSupported)
             {
                 if (offset < length)
                 {
@@ -1092,9 +1092,9 @@ namespace System
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFindFirstMatchedLane(Vector128<byte> compareResult, ref int matchedLane)
+        private static bool TryFindFirstMatchedLane(Vector128<ushort> compareResult, ref int matchedLane)
         {
-            Debug.Assert(AdvSimd.IsSupported);
+            Debug.Assert(AdvSimd.Arm64.IsSupported);
 
             Vector128<byte> pairwiseSelectedLane = AdvSimd.Arm64.AddPairwise(compareResult.AsByte(), compareResult.AsByte());
             ulong selectedLanes = pairwiseSelectedLane.AsUInt64().ToScalar();
