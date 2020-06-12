@@ -38,8 +38,7 @@ namespace System.IO.Enumeration
                 return "*";
 
             bool modified = false;
-            Span<char> stackSpace = stackalloc char[32];
-            ValueStringBuilder sb = new ValueStringBuilder(stackSpace);
+            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[32]);
             int length = expression.Length;
             for (int i = 0; i < length; i++)
             {
