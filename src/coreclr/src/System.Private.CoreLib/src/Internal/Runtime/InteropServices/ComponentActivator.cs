@@ -21,11 +21,6 @@ namespace Internal.Runtime.InteropServices
 
         private static string MarshalToString(IntPtr arg, string argName)
         {
-            if (arg == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(argName);
-            }
-
 #if TARGET_WINDOWS
             string? result = Marshal.PtrToStringUni(arg);
 #else
@@ -37,31 +32,6 @@ namespace Internal.Runtime.InteropServices
                 throw new ArgumentNullException(argName);
             }
             return result;
-        }
-
-        private static (Type? delegateType, string? delegateTypeName) GetDelegateTypeArgs(IntPtr delegateTypeNative)
-        {
-            // Determine the signature of the type. There are 3 possibilities:
-            //  * No delegate type was supplied - use the default (i.e. ComponentEntryPoint).
-            //  * A sentinel value was supplied - the function is marked UnmanagedCallersOnly. This means
-            //      a function pointer can be returned without creating a delegate.
-            //  * A delegate type was supplied - Load the type and create a delegate for that method.
-            string? delegateTypeName = null;
-            Type? delegateType = null;
-            if (delegateTypeNative == IntPtr.Zero)
-            {
-                delegateType = typeof(ComponentEntryPoint);
-            }
-            else if (delegateTypeNative == (IntPtr)(-1))
-            {
-                // Leave both null.
-            }
-            else
-            {
-                delegateTypeName = MarshalToString(delegateTypeNative, nameof(delegateTypeNative));
-            }
-
-            return (delegateType, delegateTypeName);
         }
 
         /// <summary>
@@ -87,7 +57,6 @@ namespace Internal.Runtime.InteropServices
                 string assemblyPath = MarshalToString(assemblyPathNative, nameof(assemblyPathNative));
                 string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
                 string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
-                (Type? delegateType, string? delegateTypeName) = GetDelegateTypeArgs(delegateTypeNative);
 
                 if (reserved != IntPtr.Zero)
                 {
@@ -100,10 +69,10 @@ namespace Internal.Runtime.InteropServices
                 }
 
                 // Set up the AssemblyLoadContext for this delegate.
-                AssemblyLoadContext alc = InternalLoadAssembly(assemblyPath);
+                AssemblyLoadContext alc = GetIsolatedComponentLoadContext(assemblyPath);
 
                 // Create the function pointer.
-                *(IntPtr*)functionHandle = InternalGetFunctionPointer(alc, typeName, methodName, delegateType, delegateTypeName);
+                *(IntPtr*)functionHandle = InternalGetFunctionPointer(alc, typeName, methodName, delegateTypeNative);
             }
             catch (Exception e)
             {
@@ -129,25 +98,31 @@ namespace Internal.Runtime.InteropServices
             return alc;
         }
 
-        private static AssemblyLoadContext InternalLoadAssembly(string assemblyPath)
-        {
-
-            IsolatedComponentLoadContext alc = GetIsolatedComponentLoadContext(assemblyPath);
-            return alc;
-        }
-
         private static IntPtr InternalGetFunctionPointer(AssemblyLoadContext alc,
                                                          string typeName,
                                                          string methodName,
-                                                         Type? delegateType,
-                                                         string? delegateTypeName)
+                                                         IntPtr delegateTypeNative)
         {
             // Create a resolver callback for types.
             Func<AssemblyName, Assembly> resolver = name => alc.LoadFromAssemblyName(name);
 
-            // Get the requested delegateType if a name was given.
-            if (delegateTypeName != null)
+            // Determine the signature of the type. There are 3 possibilities:
+            //  * No delegate type was supplied - use the default (i.e. ComponentEntryPoint).
+            //  * A sentinel value was supplied - the function is marked UnmanagedCallersOnly. This means
+            //      a function pointer can be returned without creating a delegate.
+            //  * A delegate type was supplied - Load the type and create a delegate for that method.
+            Type? delegateType;
+            if (delegateTypeNative == IntPtr.Zero)
             {
+                delegateType = typeof(ComponentEntryPoint);
+            }
+            else if (delegateTypeNative == (IntPtr)(-1))
+            {
+                delegateType = null;
+            }
+            else
+            {
+                string delegateTypeName = MarshalToString(delegateTypeNative, nameof(delegateTypeNative));
                 delegateType = Type.GetType(delegateTypeName, resolver, null, throwOnError: true)!;
             }
 
