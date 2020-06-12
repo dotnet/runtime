@@ -3650,6 +3650,29 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 	return result;
 }
 
+/*
+ * ECMA I.8.7.3 general assignment compatability is defined in terms of an "intermediate type"
+ * whereas ECMA I.8.7.1 assignment compatability for signature types is defined in terms of a "reduced type".
+ *
+ * This matters when we're comparing arrays of IntPtr.  IntPtr[] is generally
+ * assignable to int[] or long[], depending on architecture.  But for signature
+ * compatability, IntPtr[] is distinct from both of them.
+ */
+static MonoClass*
+array_type_to_reduced_element_type (MonoClass *array_klass)
+{
+	switch (m_class_get_byval_arg (m_class_get_element_class (array_klass))->type) {
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		return mono_defaults.int_class;
+	default:
+		return m_class_get_cast_class (array_klass);
+	}
+}
+
+static void
+mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboolean signature_assignment, gboolean *result, MonoError *error);
+
 /**
  * mono_class_is_assignable_from_checked:
  * \param klass the class to be assigned to
@@ -3663,6 +3686,20 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
  */
 void
 mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error)
+{
+	const gboolean for_sig = FALSE;
+	mono_class_is_assignable_from_general (klass, oklass, for_sig, result, error);
+}
+
+void
+mono_class_signature_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error)
+{
+	const gboolean for_sig = TRUE;
+	mono_class_is_assignable_from_general (klass, oklass, for_sig, result, error);
+}
+
+void
+mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboolean signature_assignment, gboolean *result, MonoError *error)
 {
 	g_assert (result);
 	if (klass == oklass) {
@@ -3830,8 +3867,14 @@ mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboo
 			return;
 		}
 
-		eclass = m_class_get_cast_class (klass);
-		eoclass = m_class_get_cast_class (oklass);
+		if (signature_assignment) {
+			eclass = array_type_to_reduced_element_type (klass);
+			eoclass = array_type_to_reduced_element_type (oklass);
+		} else {
+			eclass = m_class_get_cast_class (klass);
+			eoclass = m_class_get_cast_class (oklass);
+		}
+
 
 		/* 
 		 * a is b does not imply a[] is b[] when a is a valuetype, and

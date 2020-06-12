@@ -1248,6 +1248,9 @@ mono_class_vtable_checked (MonoDomain *domain, MonoClass *klass, MonoError *erro
 void
 mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error);
 
+void
+mono_class_signature_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error);
+
 gboolean
 mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate);
 
