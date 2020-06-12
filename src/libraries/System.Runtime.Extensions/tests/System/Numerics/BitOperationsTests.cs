@@ -94,6 +94,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
+
         [Theory]
         [InlineData(0u, 32)]
         [InlineData(0b1u, 31)]
