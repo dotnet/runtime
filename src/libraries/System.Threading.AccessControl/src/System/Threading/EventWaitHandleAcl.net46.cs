@@ -11,7 +11,7 @@ namespace System.Threading
         public static EventWaitHandle Create(
             bool initialState,
             EventResetMode mode,
-            string name,
+            string? name,
             out bool createdNew,
             EventWaitHandleSecurity eventSecurity)
         {

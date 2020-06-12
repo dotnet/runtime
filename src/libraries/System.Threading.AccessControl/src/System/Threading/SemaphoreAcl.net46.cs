@@ -11,7 +11,7 @@ namespace System.Threading
         public static Semaphore Create(
             int initialCount,
             int maximumCount,
-            string name,
+            string? name,
             out bool createdNew,
             SemaphoreSecurity semaphoreSecurity)
         {
