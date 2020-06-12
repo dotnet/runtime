@@ -764,6 +764,9 @@ public:
 
     BOOL IsICastable(); // This type implements ICastable interface
 
+    void SetIDynamicInterfaceCastable();
+    BOOL IsIDynamicInterfaceCastable();
+
 #ifdef FEATURE_TYPEEQUIVALENCE
     // mark the type as opted into type equivalence
     void SetHasTypeEquivalence()
@@ -3598,7 +3601,7 @@ private:
 
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization
 
-        // enum_flag_unused                   = 0x00200000,
+        enum_flag_IDynamicInterfaceCastable   = 0x00200000, // class implements IDynamicInterfaceCastable interface
 
         enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
 
@@ -3623,6 +3626,7 @@ private:
         enum_flag_NonTrivialInterfaceCast   =  enum_flag_Category_Array
                                              | enum_flag_ComObject
                                              | enum_flag_ICastable
+                                             | enum_flag_IDynamicInterfaceCastable
 
     };  // enum WFLAGS_HIGH_ENUM
 

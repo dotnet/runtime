@@ -207,11 +207,13 @@ namespace System.Reflection
             return GetEntryAssemblyInternal();
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly Load(byte[] rawAssembly) => Load(rawAssembly, rawSymbolStore: null);
 
         // Loads the assembly with a COFF based IMAGE containing
         // an emitted assembly. The assembly is loaded into a fully isolated ALC with resolution fully deferred to the AssemblyLoadContext.Default.
         // The second parameter is the raw bytes representing the symbol store that matches the assembly.
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly Load(byte[] rawAssembly, byte[]? rawSymbolStore)
         {
             if (rawAssembly == null)
@@ -227,6 +229,7 @@ namespace System.Reflection
             return alc.InternalLoad(rawAssembly, rawSymbolStore);
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly LoadFile(string path)
         {
             if (path == null)
@@ -252,6 +255,7 @@ namespace System.Reflection
             return result;
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         private static Assembly? LoadFromResolveHandler(object? sender, ResolveEventArgs args)
         {
             Assembly? requestingAssembly = args.RequestingAssembly;
@@ -309,6 +313,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly LoadFrom(string assemblyFile)
         {
             if (assemblyFile == null)
@@ -341,18 +346,25 @@ namespace System.Reflection
             return AssemblyLoadContext.Default.LoadFromAssemblyPath(fullPath);
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly LoadFrom(string assemblyFile, byte[]? hashValue, AssemblyHashAlgorithm hashAlgorithm)
         {
             throw new NotSupportedException(SR.NotSupported_AssemblyLoadFromHash);
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly UnsafeLoadFrom(string assemblyFile) => LoadFrom(assemblyFile);
 
+        [RequiresUnreferencedCode("Types and members the loaded module depends on might be removed")]
         public Module LoadModule(string moduleName, byte[]? rawModule) => LoadModule(moduleName, rawModule, null);
+        [RequiresUnreferencedCode("Types and members the loaded module depends on might be removed")]
         public virtual Module LoadModule(string moduleName, byte[]? rawModule, byte[]? rawSymbolStore) { throw NotImplemented.ByDesign; }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly ReflectionOnlyLoad(byte[] rawAssembly) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly ReflectionOnlyLoad(string assemblyString) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly ReflectionOnlyLoadFrom(string assemblyFile) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
 
         public virtual SecurityRuleSet SecurityRuleSet => SecurityRuleSet.None;

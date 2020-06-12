@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.IO.Packaging
@@ -148,7 +149,7 @@ namespace System.IO.Packaging
         /// Value - Equal to zero means both the Uris are equal</returns>
         /// Value - Greater than zero means firstUri is greater than secondUri
         /// <exception cref="ArgumentException">If firstPartUri or secondPartUri parameter does not conform to the valid partUri syntax</exception>
-        public static int ComparePartUri(Uri firstPartUri, Uri secondPartUri)
+        public static int ComparePartUri(Uri? firstPartUri, Uri? secondPartUri)
         {
             if (firstPartUri != null)
                 firstPartUri = ValidatePartUri(firstPartUri);
@@ -311,7 +312,7 @@ namespace System.IO.Packaging
 
         #region Internal Methods
 
-        internal static bool TryValidatePartUri(Uri partUri, out ValidatedPartUri validatedPartUri)
+        internal static bool TryValidatePartUri(Uri partUri, [NotNullWhen(true)] out ValidatedPartUri? validatedPartUri)
         {
             var validatedUri = partUri as ValidatedPartUri;
             if (validatedUri != null)
@@ -321,7 +322,7 @@ namespace System.IO.Packaging
             }
 
             string partUriString;
-            Exception exception = GetExceptionIfPartUriInvalid(partUri, out partUriString);
+            Exception? exception = GetExceptionIfPartUriInvalid(partUri, out partUriString);
             if (exception != null)
             {
                 validatedPartUri = null;
@@ -356,7 +357,7 @@ namespace System.IO.Packaging
                 return validatedUri;
 
             string partUriString;
-            Exception exception = GetExceptionIfPartUriInvalid(partUri, out partUriString);
+            Exception? exception = GetExceptionIfPartUriInvalid(partUri, out partUriString);
             if (exception != null)
             {
                 Debug.Assert(partUriString != null && partUriString.Length == 0);
@@ -382,14 +383,14 @@ namespace System.IO.Packaging
         #endregion Internal Methods
 
         #region Private Methods
-        private static Exception GetExceptionIfPartUriInvalid(Uri partUri, out string partUriString)
+        private static Exception? GetExceptionIfPartUriInvalid(Uri partUri, out string partUriString)
         {
             partUriString = string.Empty;
 
             if (partUri == null)
                 return new ArgumentNullException(nameof(partUri));
 
-            Exception argumentException = null;
+            Exception? argumentException = null;
 
             argumentException = GetExceptionIfAbsoluteUri(partUri);
             if (argumentException != null)
@@ -444,12 +445,12 @@ namespace System.IO.Packaging
 
         private static void ThrowIfAbsoluteUri(Uri uri)
         {
-            Exception exception = GetExceptionIfAbsoluteUri(uri);
+            Exception? exception = GetExceptionIfAbsoluteUri(uri);
             if (exception != null)
                 throw exception;
         }
 
-        private static ArgumentException GetExceptionIfAbsoluteUri(Uri uri)
+        private static ArgumentException? GetExceptionIfAbsoluteUri(Uri uri)
         {
             if (uri.IsAbsoluteUri)
                 return new ArgumentException(SR.URIShouldNotBeAbsolute);
@@ -459,12 +460,12 @@ namespace System.IO.Packaging
 
         private static void ThrowIfFragmentPresent(string partName)
         {
-            Exception exception = GetExceptionIfFragmentPresent(partName);
+            Exception? exception = GetExceptionIfFragmentPresent(partName);
             if (exception != null)
                 throw exception;
         }
 
-        private static ArgumentException GetExceptionIfFragmentPresent(string partName)
+        private static ArgumentException? GetExceptionIfFragmentPresent(string partName)
         {
             if (partName.Contains("#")) // string.Contains(char) is .NetCore2.1+ specific
                 return new ArgumentException(SR.PartUriCannotHaveAFragment);
@@ -474,12 +475,12 @@ namespace System.IO.Packaging
 
         private static void ThrowIfPartNameEndsWithSlash(string partName)
         {
-            Exception exception = GetExceptionIfPartNameEndsWithSlash(partName);
+            Exception? exception = GetExceptionIfPartNameEndsWithSlash(partName);
             if (exception != null)
                 throw exception;
         }
 
-        private static ArgumentException GetExceptionIfPartNameEndsWithSlash(string partName)
+        private static ArgumentException? GetExceptionIfPartNameEndsWithSlash(string partName)
         {
             if (partName.Length > 0)
             {
@@ -491,7 +492,7 @@ namespace System.IO.Packaging
 
         private static void ThrowIfPartNameStartsWithTwoSlashes(string partName)
         {
-            Exception exception = GetExceptionIfPartNameStartsWithTwoSlashes(partName);
+            Exception? exception = GetExceptionIfPartNameStartsWithTwoSlashes(partName);
             if (exception != null)
                 throw exception;
         }
@@ -502,7 +503,7 @@ namespace System.IO.Packaging
         // Absolute URI - `http://a/b/c/d;p?q
         // Relative URI - //m
         // Resolved URI - `http://m
-        private static ArgumentException GetExceptionIfPartNameStartsWithTwoSlashes(string partName)
+        private static ArgumentException? GetExceptionIfPartNameStartsWithTwoSlashes(string partName)
         {
             if (partName.Length > 1)
             {
@@ -516,7 +517,7 @@ namespace System.IO.Packaging
         //This method minimizes the false positives that we might get as a result
         //of comparing two URIs.
         //Also, we exclude the Fragment component while comparing.
-        private static int CompareUsingSystemUri(Uri firstUri, Uri secondUri)
+        private static int CompareUsingSystemUri(Uri? firstUri, Uri? secondUri)
         {
             return Uri.Compare(
                     firstUri,
@@ -645,7 +646,7 @@ namespace System.IO.Packaging
 
             #region IComparable Methods
 
-            int IComparable<ValidatedPartUri>.CompareTo(ValidatedPartUri otherPartUri)
+            int IComparable<ValidatedPartUri>.CompareTo(ValidatedPartUri? otherPartUri)
             {
                 return Compare(otherPartUri);
             }
@@ -654,7 +655,7 @@ namespace System.IO.Packaging
 
             #region IEqualityComparer Methods
 
-            bool IEquatable<ValidatedPartUri>.Equals(ValidatedPartUri otherPartUri)
+            bool IEquatable<ValidatedPartUri>.Equals(ValidatedPartUri? otherPartUri)
             {
                 return Compare(otherPartUri) == 0;
             }
@@ -852,13 +853,13 @@ namespace System.IO.Packaging
                 if (IsNormalized)
                     return this;
                 else
-                    return new ValidatedPartUri(_normalizedPartUriString,
+                    return new ValidatedPartUri(_normalizedPartUriString!,
                                                 true /*isNormalized*/,
                                                 false /*computeIsRelationship*/,
                                                 IsRelationshipPartUri);
             }
 
-            private int Compare(ValidatedPartUri otherPartUri)
+            private int Compare(ValidatedPartUri? otherPartUri)
             {
                 //If otherPartUri is null then we return 1
                 if (otherPartUri == null)
@@ -874,10 +875,10 @@ namespace System.IO.Packaging
             //
             //------------------------------------------------------
 
-            private ValidatedPartUri _normalizedPartUri;
+            private ValidatedPartUri? _normalizedPartUri;
             private readonly string _partUriString;
-            private string _normalizedPartUriString;
-            private string _partUriExtension;
+            private string? _normalizedPartUriString;
+            private string? _partUriExtension;
             private readonly bool _isNormalized;
             private readonly bool _isRelationshipPartUri;
 

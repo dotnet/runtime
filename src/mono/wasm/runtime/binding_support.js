@@ -9,6 +9,8 @@ var BindingSupportLib = {
 		mono_wasm_object_registry: [],
 		mono_wasm_ref_counter: 0,
 		mono_wasm_free_list: [],
+		mono_wasm_owned_objects_frames: [],
+		mono_wasm_owned_objects_LMF: [],
 		mono_wasm_marshal_enum_as_int: false,
 		mono_bindings_init: function (binding_asm) {
 			this.BINDING_ASM = binding_asm;
@@ -79,8 +81,6 @@ var BindingSupportLib = {
 			this.bind_js_obj = get_method ("BindJSObject");
 			this.bind_core_clr_obj = get_method ("BindCoreCLRObject");
 			this.bind_existing_obj = get_method ("BindExistingObject");
-			this.unbind_js_obj = get_method ("UnBindJSObject");
-			this.unbind_js_obj_and_free = get_method ("UnBindJSObjectAndFree");			
 			this.unbind_raw_obj_and_free = get_method ("UnBindRawJSObjectAndFree");			
 			this.get_js_id = get_method ("GetJSObjectId");
 			this.get_raw_mono_obj = get_method ("GetDotNetObject");
@@ -101,6 +101,11 @@ var BindingSupportLib = {
 			this.get_date_value = get_method ("GetDateValue");
 			this.create_date_time = get_method ("CreateDateTime");
 			this.create_uri = get_method ("CreateUri");
+
+			this.safehandle_addref = get_method ("SafeHandleAddRef");
+			this.safehandle_release = get_method ("SafeHandleRelease");
+			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
+			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
 
 			this.init = true;
 		},
@@ -161,6 +166,7 @@ var BindingSupportLib = {
 				throw new Error ("no idea on how to unbox value types");
 			case 5: { // delegate
 				var obj = this.extract_js_obj (mono_obj);
+				obj.__mono_delegate_alive__ = true;
 				return function () {
 					return BINDING.invoke_delegate (obj, arguments);
 				};
@@ -225,6 +231,18 @@ var BindingSupportLib = {
 			case 22: // clr .NET Uri
 				var uriValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
 				return uriValue;
+			case 23: // clr .NET SafeHandle
+				var addRef = true;
+				var js_handle = this.call_method(this.safehandle_get_handle, null, "mii", [ mono_obj, addRef ]);
+				var requiredObject = BINDING.mono_wasm_require_handle (js_handle);
+				if (addRef)
+				{
+					if (typeof this.mono_wasm_owned_objects_LMF === "undefined")
+						this.mono_wasm_owned_objects_LMF = [];
+
+					this.mono_wasm_owned_objects_LMF.push(js_handle);
+				}
+				return requiredObject;
 			default:
 				throw new Error ("no idea on how to unbox object kind " + type);
 			}
@@ -495,9 +513,9 @@ var BindingSupportLib = {
 			// return the unboxed enum value.
 			return this.mono_unbox_enum(monoEnum);
 		},
-		wasm_binding_obj_new: function (js_obj_id, type)
+		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type)
 		{
-			return this.call_method (this.bind_js_obj, null, "ii", [js_obj_id, type]);
+			return this.call_method (this.bind_js_obj, null, "iii", [js_obj_id, ownsHandle, type]);
 		},
 		wasm_bind_existing: function (mono_obj, js_id)
 		{
@@ -508,16 +526,6 @@ var BindingSupportLib = {
 		{
 			return this.call_method (this.bind_core_clr_obj, null, "ii", [js_id, gc_handle]);
 		},
-
-		wasm_unbind_js_obj: function (js_obj_id)
-		{
-			this.call_method (this.unbind_js_obj, null, "i", [js_obj_id]);
-		},		
-
-		wasm_unbind_js_obj_and_free: function (js_obj_id)
-		{
-			this.call_method (this.unbind_js_obj_and_free, null, "i", [js_obj_id]);
-		},		
 
 		wasm_get_js_id: function (mono_obj)
 		{
@@ -711,6 +719,12 @@ var BindingSupportLib = {
 		invoke_delegate: function (delegate_obj, js_args) {
 			this.bindings_lazy_init ();
 
+			// Check to make sure the delegate is still alive on the CLR side of things.
+			if (typeof delegate_obj.__mono_delegate_alive__ !== "undefined") {
+				if (!delegate_obj.__mono_delegate_alive__)
+					throw new Error("The delegate target that is being invoked is no longer available.  Please check if it has been prematurely GC'd.");
+			}
+
 			if (!this.delegate_dynamic_invoke) {
 				if (!this.corlib)
 					this.corlib = this.assembly_load ("System.Private.CoreLib");
@@ -879,6 +893,12 @@ var BindingSupportLib = {
 					obj.__mono_jshandle__ = handle;
 					// Obtain the JS -> C# type mapping.
 					var wasm_type = this.get_wasm_type(obj);
+					var ownsHandle = true;
+
+					// If this is the global object we do not want to release it.
+					if (typeof ___mono_wasm_global___ !== "undefined" && ___mono_wasm_global___ === obj)
+						ownsHandle = false;
+
 					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					this.mono_wasm_object_registry[handle] = obj;
 						
@@ -901,10 +921,15 @@ var BindingSupportLib = {
 
 				var gc_handle = obj.__mono_gchandle__;
 				if (typeof gc_handle  !== "undefined") {
-					this.wasm_unbind_js_obj_and_free(js_id);
 
 					obj.__mono_gchandle__ = undefined;
 					obj.__mono_jshandle__ = undefined;
+
+					// If we are unregistering a delegate then mark it as not being alive
+					// this will be checked in the delegate invoke and throw an appropriate
+					// error.
+					if (typeof obj.__mono_delegate_alive__ !== "undefined")
+						obj.__mono_delegate_alive__ = false;
 
 					this.mono_wasm_object_registry[js_id - 1] = undefined;
 					this.mono_wasm_free_list.push(js_id - 1);
@@ -961,7 +986,36 @@ var BindingSupportLib = {
 			}
 			throw Error('Unable to get mono wasm global object.');
 		},
-	
+		mono_wasm_parse_args : function (args) {
+			var js_args = this.mono_array_to_js_array(args);
+			this.mono_wasm_save_LMF();
+			return js_args;
+		},
+		mono_wasm_save_LMF : function () {
+			//console.log("save LMF: " + BINDING.mono_wasm_owned_objects_frames.length)
+			BINDING.mono_wasm_owned_objects_frames.push(BINDING.mono_wasm_owned_objects_LMF);
+			BINDING.mono_wasm_owned_objects_LMF = undefined;
+		},
+		mono_wasm_unwind_LMF : function () {
+			var __owned_objects__ = this.mono_wasm_owned_objects_frames.pop();
+			// Release all managed objects that are loaded into the LMF
+			if (typeof __owned_objects__ !== "undefined")
+			{
+				// Look into passing the array of owned object handles in one pass.
+				var refidx;
+				for (refidx = 0; refidx < __owned_objects__.length; refidx++)
+				{
+					var ownerRelease = __owned_objects__[refidx];
+					this.call_method(this.safehandle_release_by_handle, null, "i", [ ownerRelease ]);
+				}
+			}
+			//console.log("restore LMF: " + BINDING.mono_wasm_owned_objects_frames.length)
+
+		},
+		mono_wasm_convert_return_value: function (ret) {
+			this.mono_wasm_unwind_LMF();
+			return this.js_to_mono_obj (ret);
+		},
 	},
 
 	mono_wasm_invoke_js_with_args: function(js_handle, method_name, args, is_exception) {
@@ -979,7 +1033,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid method name object '" + method_name + "'");
 		}
 
-		var js_args = BINDING.mono_array_to_js_array(args);
+		var js_args = BINDING.mono_wasm_parse_args(args);
 
 		var res;
 		try {
@@ -987,8 +1041,10 @@ var BindingSupportLib = {
 			if (typeof m === "undefined")
 				throw new Error("Method: '" + js_name + "' not found for: '" + Object.prototype.toString.call(obj) + "'");
 			var res = m.apply (obj, js_args);
-			return BINDING.js_to_mono_obj (res);
+			return BINDING.mono_wasm_convert_return_value(res);
 		} catch (e) {
+			// make sure we release object reference counts on errors.
+			BINDING.mono_wasm_unwind_LMF();
 			var res = e.toString ();
 			setValue (is_exception, 1, "i32");
 			if (res === null || res === undefined)
@@ -1045,6 +1101,7 @@ var BindingSupportLib = {
         var result = false;
 
 		var js_value = BINDING.unbox_mono_obj(value);
+		BINDING.mono_wasm_save_LMF();
 
         if (createIfNotExist) {
             requireObject[property] = js_value;
@@ -1068,7 +1125,8 @@ var BindingSupportLib = {
                 result = true;
             }
         
-        }
+		}
+		BINDING.mono_wasm_unwind_LMF();
         return BINDING.call_method (BINDING.box_js_bool, null, "im", [ result ]);
 	},
 	mono_wasm_get_by_index: function(js_handle, property_index, is_exception) {
@@ -1101,9 +1159,11 @@ var BindingSupportLib = {
 		}
 
 		var js_value = BINDING.unbox_mono_obj(value);
+		BINDING.mono_wasm_save_LMF();
 
 		try {
 			obj [property_index] = js_value;
+			BINDING.mono_wasm_unwind_LMF();
 			return true;
 		} catch (e) {
 			var res = e.toString ();
@@ -1155,6 +1215,7 @@ var BindingSupportLib = {
 
 		BINDING.wasm_bind_core_clr_obj(js_handle, gc_handle );
 		requireObject.__mono_gchandle__ = gc_handle;
+		requireObject.__js_handle__ = js_handle;
 		return gc_handle;
 	},
 	mono_wasm_bind_host_object: function(js_handle, gc_handle, is_exception) {
@@ -1187,7 +1248,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("JavaScript host object '" + js_name + "' not found.");
 		}
 
-		var js_args = BINDING.mono_array_to_js_array(args);
+		var js_args = BINDING.mono_wasm_parse_args(args);
 		
 		try {
 			
@@ -1205,7 +1266,7 @@ var BindingSupportLib = {
 			var res = allocator(coreObj, js_args);
 			var gc_handle = BINDING.mono_wasm_free_list.length ? BINDING.mono_wasm_free_list.pop() : BINDING.mono_wasm_ref_counter++;
 			BINDING.mono_wasm_object_registry[gc_handle] = res;
-			return BINDING.js_to_mono_obj (gc_handle + 1);
+			return BINDING.mono_wasm_convert_return_value(gc_handle + 1);
 		} catch (e) {
 			var res = e.toString ();
 			setValue (is_exception, 1, "i32");
@@ -1215,52 +1276,7 @@ var BindingSupportLib = {
 		}	
 
 	},
-	mono_wasm_new_object: function(object_handle_or_function, args, is_exception) {
-		BINDING.bindings_lazy_init ();
 
-		if (!object_handle_or_function) {
-			return BINDING.js_to_mono_obj ({});
-		}
-		else {
-
-			var requireObject;
-			if (typeof object_handle_or_function === 'function')
-				requireObject = object_handle_or_function;
-			else
-				requireObject = BINDING.mono_wasm_require_handle (object_handle_or_function);
-
-			if (!requireObject) {
-				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + object_handle_or_function + "'");
-			}
-
-			var js_args = BINDING.mono_array_to_js_array(args);
-			
-			try {
-				
-				// This is all experimental !!!!!!
-				var allocator = function(constructor, js_args) {
-					// Not sure if we should be checking for anything here
-					var argsList = new Array();
-					argsList[0] = constructor;
-					if (js_args)
-						argsList = argsList.concat(js_args);
-					var obj = new (constructor.bind.apply(constructor, argsList ));
-					return obj;
-				};
-		
-				var res = allocator(requireObject, js_args);
-				return BINDING.extract_mono_obj (res);
-			} catch (e) {
-				var res = e.toString ();
-				setValue (is_exception, 1, "i32");
-				if (res === null || res === undefined)
-					res = "Error allocating object.";
-				return BINDING.js_string_to_mono_string (res);
-			}	
-		}
-
-	},
 	mono_wasm_typed_array_to_array: function(js_handle, is_exception) {
 		BINDING.bindings_lazy_init ();
 

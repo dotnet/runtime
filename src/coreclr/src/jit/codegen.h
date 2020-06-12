@@ -1117,7 +1117,9 @@ protected:
     void genUnspillLocal(
         unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum, bool reSpill, bool isLastUse);
     void genUnspillRegIfNeeded(GenTree* tree);
+    void genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex);
     regNumber genConsumeReg(GenTree* tree);
+    regNumber genConsumeReg(GenTree* tree, unsigned multiRegIndex);
     void genCopyRegIfNeeded(GenTree* tree, regNumber needReg);
     void genConsumeRegAndCopy(GenTree* tree, regNumber needReg);
 
@@ -1130,6 +1132,7 @@ protected:
     }
 
     void genRegCopy(GenTree* tree);
+    regNumber genRegCopy(GenTree* tree, unsigned multiRegIndex);
     void genTransferRegGCState(regNumber dst, regNumber src);
     void genConsumeAddress(GenTree* addr);
     void genConsumeAddrMode(GenTreeAddrMode* mode);
@@ -1278,7 +1281,8 @@ protected:
     void genEHFinallyOrFilterRet(BasicBlock* block);
 #endif // !FEATURE_EH_FUNCLETS
 
-    void genMultiRegStoreToLocal(GenTree* treeNode);
+    void genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode);
+    void genMultiRegStoreToLocal(GenTreeLclVar* lclNode);
 
     // Codegen for multi-register struct returns.
     bool isStructReturn(GenTree* treeNode);

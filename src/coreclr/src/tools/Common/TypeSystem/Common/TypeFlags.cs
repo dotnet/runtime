@@ -60,5 +60,8 @@ namespace Internal.TypeSystem
         IsByRefLike            = 0x04000,
         AttributeCacheComputed = 0x08000,
         IsIntrinsic            = 0x10000,
+
+        IsIDynamicInterfaceCastable         = 0x20000,
+        IsIDynamicInterfaceCastableComputed = 0x40000,
     }
 }
