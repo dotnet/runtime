@@ -126,6 +126,9 @@ namespace System.Runtime.InteropServices
         /// </summary>
         private static ComWrappers? s_globalInstanceForMarshalling;
 
+        private static long s_instanceCounter;
+        private readonly long id = Interlocked.Increment(ref s_instanceCounter);
+
         /// <summary>
         /// Create a COM representation of the supplied object that can be passed to a non-managed environment.
         /// </summary>
@@ -152,16 +155,16 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// If <paramref name="impl" /> is <c>null</c>, the global instance (if registered) will be used.
         /// </remarks>
-        private static bool TryGetOrCreateComInterfaceForObjectInternal(ComWrappers? impl, object instance, CreateComInterfaceFlags flags, out IntPtr retValue)
+        private static bool TryGetOrCreateComInterfaceForObjectInternal(ComWrappers impl, object instance, CreateComInterfaceFlags flags, out IntPtr retValue)
         {
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
 
-            return TryGetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack.Create(ref impl), ObjectHandleOnStack.Create(ref instance), flags, out retValue);
+            return TryGetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack.Create(ref impl), impl.id, ObjectHandleOnStack.Create(ref instance), flags, out retValue);
         }
 
         [DllImport(RuntimeHelpers.QCall)]
-        private static extern bool TryGetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack comWrappersImpl, ObjectHandleOnStack instance, CreateComInterfaceFlags flags, out IntPtr retValue);
+        private static extern bool TryGetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack comWrappersImpl, long wrapperId, ObjectHandleOnStack instance, CreateComInterfaceFlags flags, out IntPtr retValue);
 
         /// <summary>
         /// Compute the desired Vtable for <paramref name="obj"/> respecting the values of <paramref name="flags"/>.
@@ -288,18 +291,18 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// If <paramref name="impl" /> is <c>null</c>, the global instance (if registered) will be used.
         /// </remarks>
-        private static bool TryGetOrCreateObjectForComInstanceInternal(ComWrappers? impl, IntPtr externalComObject, CreateObjectFlags flags, object? wrapperMaybe, out object? retValue)
+        private static bool TryGetOrCreateObjectForComInstanceInternal(ComWrappers impl, IntPtr externalComObject, CreateObjectFlags flags, object? wrapperMaybe, out object? retValue)
         {
             if (externalComObject == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(externalComObject));
 
             object? wrapperMaybeLocal = wrapperMaybe;
             retValue = null;
-            return TryGetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack.Create(ref impl), externalComObject, flags, ObjectHandleOnStack.Create(ref wrapperMaybeLocal), ObjectHandleOnStack.Create(ref retValue));
+            return TryGetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack.Create(ref impl), impl.id, externalComObject, flags, ObjectHandleOnStack.Create(ref wrapperMaybeLocal), ObjectHandleOnStack.Create(ref retValue));
         }
 
         [DllImport(RuntimeHelpers.QCall)]
-        private static extern bool TryGetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack comWrappersImpl, IntPtr externalComObject, CreateObjectFlags flags, ObjectHandleOnStack wrapper, ObjectHandleOnStack retValue);
+        private static extern bool TryGetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack comWrappersImpl, long wrapperId, IntPtr externalComObject, CreateObjectFlags flags, ObjectHandleOnStack wrapper, ObjectHandleOnStack retValue);
 
         /// <summary>
         /// Called when a request is made for a collection of objects to be released outside of normal object or COM interface lifetime.
@@ -332,13 +335,13 @@ namespace System.Runtime.InteropServices
                 throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalComWrappersInstance);
             }
 
-            SetGlobalInstanceRegisteredForTrackerSupport();
+            SetGlobalInstanceRegisteredForTrackerSupport(instance.id);
         }
 
 
         [DllImport(RuntimeHelpers.QCall)]
         [SuppressGCTransition]
-        private static extern void SetGlobalInstanceRegisteredForTrackerSupport();
+        private static extern void SetGlobalInstanceRegisteredForTrackerSupport(long id);
 
         /// <summary>
         /// Register a <see cref="ComWrappers" /> instance to be used as the global instance for marshalling in the runtime.
@@ -366,12 +369,12 @@ namespace System.Runtime.InteropServices
             // Indicate to the runtime that a global instance has been registered for marshalling.
             // This allows the native runtime know to call into the managed ComWrappers only if a
             // global instance is registered for marshalling.
-            SetGlobalInstanceRegisteredForMarshalling();
+            SetGlobalInstanceRegisteredForMarshalling(instance.id);
         }
 
         [DllImport(RuntimeHelpers.QCall)]
         [SuppressGCTransition]
-        private static extern void SetGlobalInstanceRegisteredForMarshalling();
+        private static extern void SetGlobalInstanceRegisteredForMarshalling(long id);
 
         /// <summary>
         /// Get the runtime provided IUnknown implementation.
