@@ -4273,6 +4273,27 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            // Fold PopCount for constant input
+            case NI_System_Numerics_BitOperations_PopCount:
+            {
+                assert(sig->numArgs == 1);
+                if (impStackTop().val->IsIntegralConst())
+                {
+                    typeInfo argType = verParseArgSigToTypeInfo(sig, sig->args).NormaliseForStack();
+                    ssize_t  cns     = impPopStack().val->AsIntConCommon()->IconValue();
+                    if (argType.IsType(TI_LONG))
+                    {
+                        retNode = gtNewIconNode(genCountBits(cns), callType);
+                    }
+                    else
+                    {
+                        assert(argType.IsType(TI_INT));
+                        retNode = gtNewIconNode(genCountBits(static_cast<unsigned>(cns)), callType);
+                    }
+                }
+                break;
+            }
+
             case NI_System_GC_KeepAlive:
             {
                 retNode = gtNewOperNode(GT_KEEPALIVE, TYP_VOID, impPopStack().val);
@@ -4495,6 +4516,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
     }
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    else if (strcmp(namespaceName, "System.Numerics") == 0)
+    {
+        if ((strcmp(className, "BitOperations") == 0) && (strcmp(methodName, "PopCount") == 0))
+        {
+            result = NI_System_Numerics_BitOperations_PopCount;
+        }
+    }
     else if (strcmp(namespaceName, "System.Collections.Generic") == 0)
     {
         if ((strcmp(className, "EqualityComparer`1") == 0) && (strcmp(methodName, "get_Default") == 0))
