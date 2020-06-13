@@ -5,34 +5,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
-    // Runtime interface
-    internal static class WasmRuntime
-    {
-        private static readonly Dictionary<int, Action> s_callbacks = new Dictionary<int, Action>();
-        private static int s_nextId;
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void SetTimeout(int timeout, int id);
-
-        internal static void ScheduleTimeout(int timeout, Action action)
-        {
-            int id = ++s_nextId;
-            s_callbacks[id] = action;
-            SetTimeout(timeout, id);
-        }
-
-        // Called by mini-wasm.c:mono_set_timeout_exec
-        private static void TimeoutCallback(int id)
-        {
-            Action cb = s_callbacks[id];
-            s_callbacks.Remove(id);
-            cb();
-        }
-    }
-
     //
     // WebAssembly-specific implementation of Timer
     // Based on TimerQueue.Portable.cs
@@ -50,6 +26,17 @@ namespace System.Threading
         {
         }
 
+        [DynamicDependency("TimeoutCallback")]
+        // The id argument is unused in netcore
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void SetTimeout(int timeout, int id);
+
+        // Called by mini-wasm.c:mono_set_timeout_exec
+        private static void TimeoutCallback()
+        {
+            Run();
+        }
+
         private bool SetTimer(uint actualDuration)
         {
             Debug.Assert((int)actualDuration >= 0);
@@ -62,7 +49,7 @@ namespace System.Threading
                 _isScheduled = true;
             }
             _scheduledDueTimeMs = dueTimeMs;
-            WasmRuntime.ScheduleTimeout((int)actualDuration, Run);
+            SetTimeout((int)actualDuration, 0);
 
             return true;
         }
@@ -110,7 +97,7 @@ namespace System.Threading
 
             if (shortestWaitDurationMs != int.MaxValue)
             {
-                WasmRuntime.ScheduleTimeout((int)shortestWaitDurationMs, Run);
+                SetTimeout((int)shortestWaitDurationMs, 0);
             }
         }
     }
