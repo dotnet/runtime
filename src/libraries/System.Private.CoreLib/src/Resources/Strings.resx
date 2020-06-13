@@ -1537,9 +1537,6 @@
   <data name="Argument_UnknownUnmanagedCallConv" xml:space="preserve">
     <value>Unknown unmanaged calling convention for function signature.</value>
   </data>
-  <data name="NotSupported_UnknownUnmanagedCallConv" xml:space="preserve">
-    <value>Unknown unmanaged calling convention for function signature.</value>
-  </data>
   <data name="Argument_UnmanagedMemAccessorWrapAround" xml:space="preserve">
     <value>The UnmanagedMemoryAccessor capacity and offset would wrap around the high end of the address space.</value>
   </data>

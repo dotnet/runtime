@@ -714,7 +714,7 @@ VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
             }
             else
             {
-                COMPlusThrow(kNotSupportedException, W("NotSupported_UnknownUnmanagedCallConv"));
+                COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
             }
         }
     }
