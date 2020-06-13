@@ -1,14 +1,15 @@
 
 if (CLR_CMAKE_TARGET_WIN32)
+
   if(CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64)
     preprocess_compile_asm(TARGET cee_wks ASM_FILES ${VM_SOURCES_WKS_ARCH_ASM} OUTPUT_OBJECTS VM_WKS_ARCH_ASM_OBJECTS)
-    list(APPEND VM_SOURCES_WKS_ARCH_ASM ${VM_WKS_ARCH_ASM_OBJECTS})
+    preprocess_compile_asm(TARGET cee_wks_mergeable ASM_FILES ${VM_SOURCES_WKS_ARCH_ASM} OUTPUT_OBJECTS VM_WKS_ARCH_ASM_OBJECTS_M)
   endif()
 
 endif (CLR_CMAKE_TARGET_WIN32)
 
-add_library_clr(cee_wks OBJECT ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM})
-add_library_clr(cee_wks_mergeable OBJECT ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM})
+add_library_clr(cee_wks OBJECT ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM} ${VM_WKS_ARCH_ASM_OBJECTS})
+add_library_clr(cee_wks_mergeable OBJECT ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM} ${VM_WKS_ARCH_ASM_OBJECTS_M})
 
 
 target_precompile_header(TARGET cee_wks HEADER common.h)
