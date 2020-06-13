@@ -787,12 +787,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         return nullptr;
     }
 
-    unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
-
     GenTree* immOp = nullptr;
 
+    HWIntrinsicSignatureReader sigReader;
+    sigReader.Read(info.compCompHnd, sig);
+
 #ifdef TARGET_ARM64
-    if (intrinsic == NI_AdvSimd_Insert)
+    if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_LoadAndInsertScalar))
     {
         assert(sig->numArgs == 3);
         immOp = impStackTop(1).val;
@@ -807,13 +808,59 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         immOp = impStackTop().val;
     }
 
+    const unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
+
+    int  immLowerBound   = 0;
+    int  immUpperBound   = 0;
+    bool hasFullRangeImm = false;
+
     if (immOp != nullptr)
     {
-        if (!HWIntrinsicInfo::HasFullRangeImm(intrinsic) && immOp->IsCnsIntOrI())
+#ifdef TARGET_XARCH
+        immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
+        hasFullRangeImm = HWIntrinsicInfo::HasFullRangeImm(intrinsic);
+#elif defined(TARGET_ARM64)
+        if (category == HW_Category_SIMDByIndexedElement)
+        {
+            var_types    indexedElementBaseType;
+            unsigned int indexedElementSimdSize = 0;
+
+            if (numArgs == 3)
+            {
+                indexedElementBaseType = getBaseTypeAndSizeOfSIMDType(sigReader.op2ClsHnd, &indexedElementSimdSize);
+            }
+            else
+            {
+                assert(numArgs == 4);
+                indexedElementBaseType = getBaseTypeAndSizeOfSIMDType(sigReader.op3ClsHnd, &indexedElementSimdSize);
+            }
+
+            assert(indexedElementBaseType == baseType);
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, indexedElementSimdSize, baseType, &immLowerBound,
+                                             &immUpperBound);
+        }
+        else
+        {
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, baseType, &immLowerBound, &immUpperBound);
+        }
+#endif
+
+        if (!hasFullRangeImm && immOp->IsCnsIntOrI())
         {
             const int ival = (int)immOp->AsIntCon()->IconValue();
+            bool      immOutOfRange;
+#ifdef TARGET_XARCH
+            if (HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsic))
+            {
+                immOutOfRange = (ival != 1) && (ival != 2) && (ival != 4) && (ival != 8);
+            }
+            else
+#endif
+            {
+                immOutOfRange = (ival < immLowerBound) || (ival > immUpperBound);
+            }
 
-            if (!HWIntrinsicInfo::isInImmRange(intrinsic, ival, simdSize, baseType))
+            if (immOutOfRange)
             {
                 assert(!mustExpand);
                 // The imm-HWintrinsics that do not accept all imm8 values may throw
