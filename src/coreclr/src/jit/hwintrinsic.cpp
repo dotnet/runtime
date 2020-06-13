@@ -799,6 +799,52 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         immOp = impStackTop(1).val;
         assert(HWIntrinsicInfo::isImmOp(intrinsic, immOp));
     }
+    else if (intrinsic == NI_AdvSimd_Arm64_InsertSelectedScalar)
+    {
+        // InsertSelectedScalar intrinsic has two immediate operands.
+        // Since all the remaining intrinsics on both platforms have only one immediate
+        // operand to no complicate the shared logic even further we ensure here that
+        // 1) The second immediate operand immOp2 is constant and
+        // 2) its value belongs to [0, sizeof(op3) / sizeof(op3.BaseType)).
+        // If either is false, we should fallback to the managed implementation Insert(dst, dstIdx, Extract(src,
+        // srcIdx)).
+        // The check for the first immediate operand immOp will use the same logic as other intrinsics that have an
+        // immediate operand.
+
+        GenTree* immOp2 = nullptr;
+
+        assert(sig->numArgs == 4);
+
+        immOp  = impStackTop(2).val;
+        immOp2 = impStackTop().val;
+
+        assert(HWIntrinsicInfo::isImmOp(intrinsic, immOp));
+        assert(HWIntrinsicInfo::isImmOp(intrinsic, immOp2));
+
+        if (!immOp2->IsCnsIntOrI())
+        {
+            assert(HWIntrinsicInfo::NoJmpTableImm(intrinsic));
+            return impNonConstFallback(intrinsic, retType, baseType);
+        }
+
+        unsigned int otherSimdSize = 0;
+        var_types    otherBaseType = getBaseTypeAndSizeOfSIMDType(sigReader.op3ClsHnd, &otherSimdSize);
+
+        assert(otherBaseType == baseType);
+
+        int immLowerBound2 = 0;
+        int immUpperBound2 = 0;
+
+        HWIntrinsicInfo::lookupImmBounds(intrinsic, otherSimdSize, otherBaseType, &immLowerBound2, &immUpperBound2);
+
+        const int immVal2 = (int)immOp2->AsIntCon()->IconValue();
+
+        if ((immVal2 < immLowerBound2) || (immVal2 > immUpperBound2))
+        {
+            assert(!mustExpand);
+            return nullptr;
+        }
+    }
     else
 #endif
         if ((sig->numArgs > 0) && HWIntrinsicInfo::isImmOp(intrinsic, impStackTop().val))
