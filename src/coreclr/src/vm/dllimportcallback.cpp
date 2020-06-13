@@ -714,7 +714,7 @@ VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
             }
             else
             {
-                COMPlusThrow(kArgumentException, W("Argument_UnknownUnmanagedCallConv"));
+                COMPlusThrow(kNotSupportedException, W("NotSupported_UnknownUnmanagedCallConv"));
             }
         }
     }
