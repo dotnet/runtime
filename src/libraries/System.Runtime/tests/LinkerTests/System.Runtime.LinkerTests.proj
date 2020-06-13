@@ -1,11 +1,6 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
-  <ItemGroup>
-    <TestRuntimeIdentifiers Include="win-x64" />
-    <TestRuntimeIdentifiers Include="linux-x64" />
-  </ItemGroup>
-
   <Import Project="$(RepositoryEngineeringDir)linkerTests/linkerCorrectnessTests.targets" />
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

@@ -3,20 +3,11 @@
     <LinkerTestDir>$(ArtifactsBinDir)linkerTests/</LinkerTestDir>
     <LinkerTestProjectsDir>$(LinkerTestDir)projects/</LinkerTestProjectsDir>
     <TestDotNetPath>$(DotNetRoot)dotnet</TestDotNetPath>
-
     <ProjectTemplate>$(MSBuildThisFileDirectory)project.csproj.template</ProjectTemplate>
   </PropertyGroup>
 
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="$(MSBuildProjectDirectory)/*.cs" />
-
-    <!-- If not running in Helix, then remove specified TestRuntimeIdentifiers and only use the one that represents
-    the platform we are currently on. -->
-    <TestRuntimeIdentifiers Condition="'$(ArchiveTests)' != 'true'" Remove="@(TestRuntimeIdentifiers)" />
-    <TestRuntimeIdentifiers Condition="'$(ArchiveTests)' != 'true'" Include="$(PackageRID)" />
-
-    <!-- If running in Helix and the Test project didn't already provide a list of TestRuntimeIdentifiers, default to win-x64 -->
-    <TestRuntimeIdentifiers Condition="'@(TestRuntimeIdentifiers)' == ''" Include="win-x64" />
 
     <TestSupportFiles Include="$(MSBuildThisFileDirectory)SupportFiles/Directory.Build.props">
       <DestinationFolder>$(LinkerTestDir)</DestinationFolder>
@@ -33,31 +24,22 @@
     <Copy SourceFiles="@(TestSupportFiles)" DestinationFolder="%(TestSupportFiles.DestinationFolder)" />
   </Target>
 
-  <Target Name="GetTestConsoleAppSourceFilesByRID">
+  <Target Name="GetTestConsoleApps">
     <ItemGroup>
-      <TestConsoleAppSourceFilesByRID Include="@(TestConsoleAppSourceFiles)">
-        <TestRuntimeIdentifier>%(TestRuntimeIdentifiers.Identity)</TestRuntimeIdentifier>
-      </TestConsoleAppSourceFilesByRID>
-    </ItemGroup>
-  </Target>
-
-  <Target Name="GetTestConsoleApps"
-          DependsOnTargets="GetTestConsoleAppSourceFilesByRID">
-    <ItemGroup>
-      <TestConsoleAppSourceFilesByRID>
-        <ProjectDir>$(LinkerTestProjectsDir)$(MSBuildProjectName)/%(Filename)/%(TestRuntimeIdentifier)/</ProjectDir>
-      </TestConsoleAppSourceFilesByRID>
-      <TestConsoleAppSourceFilesByRID>
+      <TestConsoleAppSourceFiles>
+        <ProjectDir>$(LinkerTestProjectsDir)$(MSBuildProjectName)/%(Filename)/$(PackageRID)/</ProjectDir>
+        <TestRuntimeIdentifier>$(PackageRID)</TestRuntimeIdentifier>
+      </TestConsoleAppSourceFiles>
+      <TestConsoleAppSourceFiles>
         <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
-        <AssetsFile>%(ProjectDir)obj/project.assets.json</AssetsFile>
-        <TestCommand>%(ProjectDir)bin\Release\net5.0\win-x64\publish\project.exe</TestCommand>
-        <TestExecutionDirectory>%(ProjectDir)bin\Release\net5.0\win-x64\publish\</TestExecutionDirectory>
+        <TestCommand>%(ProjectDir)bin\Release\net5.0\%(TestRuntimeIdentifier)\publish\project</TestCommand>
+        <TestExecutionDirectory>%(ProjectDir)bin\Release\net5.0\%(TestRuntimeIdentifier)\publish\</TestExecutionDirectory>
         <RuntimePackDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.%(TestRuntimeIdentifier)', '$(Configuration)'))</RuntimePackDirectory>
-      </TestConsoleAppSourceFilesByRID>
+      </TestConsoleAppSourceFiles>
     </ItemGroup>
 
     <ItemGroup>
-      <TestConsoleApps Include="@(TestConsoleAppSourceFilesByRID->'%(ProjectFile)')">
+      <TestConsoleApps Include="@(TestConsoleAppSourceFiles->'%(ProjectFile)')">
         <ProjectCompileItems>%(Identity)</ProjectCompileItems>
       </TestConsoleApps>
     </ItemGroup>
@@ -65,7 +47,7 @@
 
   <Target Name="GenerateProjects"
           DependsOnTargets="GetTestConsoleApps;CreateTestDir"
-          Inputs="@(TestConsoleAppSourceFilesByRID);$(ProjectTemplate)"
+          Inputs="@(TestConsoleAppSourceFiles);$(ProjectTemplate);@(TestSupportFiles)"
           Outputs="%(TestConsoleApps.Identity)">
     <PropertyGroup>
       <_projectDir>%(TestConsoleApps.ProjectDir)/</_projectDir>
@@ -96,7 +78,6 @@
   </Target>
 
   <Target Name="PublishTrimmedProjects"
-          BeforeTargets="ExecuteApplications"
           DependsOnTargets="RestoreProjects">
     <PropertyGroup>
       <TestRestoreCommand>"$(TestDotNetPath)"</TestRestoreCommand>
@@ -110,6 +91,7 @@
   </Target>
 
   <Target Name="ExecuteApplications"
+          DependsOnTargets="PublishTrimmedProjects"
           Inputs="%(TestConsoleApps.Identity)"
           Outputs="_unused"
           Condition="'$(ArchiveTests)' != 'true'">
@@ -121,10 +103,7 @@
     <Error Condition="'$(ExecutionExitCode)' != '100'" Text="Error: [Failed Test]: %(TestConsoleApps.ProjectCompileItems) The Command %(TestConsoleApps.TestCommand) return a non-success exit code." />
   </Target>
 
-  <Target Name="Build" DependsOnTargets="ExecuteApplications;ArchiveHelixItems" />
-
-  <!-- ArchiveHelixItems target will be implemented in a subsequent change in order to add Helix support -->
-  <Target Name="ArchiveHelixItems" />
+  <Target Name="Build" DependsOnTargets="ExecuteApplications" />
 
   <!-- define test to do nothing, for this project Build does all the testing -->
   <Target Name="Test" DependsOnTargets="Build" />

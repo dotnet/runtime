@@ -17,13 +17,18 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Transactions.Local\tests\System.Transactions.Local.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(LinkerTests)' != 'true'">
     <!-- We currently only test with C# projects. -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(BuildAllConfigurations)' != 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
                       Condition="'$(BuildAllConfigurations)' == 'true'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(LinkerTests)' == 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.LinkerTests.proj"
+                      Exclude="@(ProjectExclusions)" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"
