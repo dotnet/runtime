@@ -8,13 +8,21 @@ if (CLR_CMAKE_TARGET_WIN32)
 endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library_clr(cee_wks OBJECT ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM})
+add_library_clr(cee_wks_mergeable OBJECT ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM})
+
 
 target_precompile_header(TARGET cee_wks HEADER common.h)
+target_precompile_header(TARGET cee_wks_mergeable HEADER common.h)
+
+target_compile_definitions(cee_wks_mergeable PUBLIC FEATURE_MERGE_JIT_AND_ENGINE)
+
 if (MSVC)
     # mscorlib.cpp does not compile with precompiled header file
     set_source_files_properties(../mscorlib.cpp PROPERTIES COMPILE_FLAGS "/Y-")
 endif()
+
 add_dependencies(cee_wks eventing_headers)
+add_dependencies(cee_wks_mergeable eventing_headers)
 
 if (CLR_CMAKE_TARGET_WIN32)
 
@@ -47,6 +55,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     )
 
     add_dependencies(cee_wks asmconstants_inc)
+    add_dependencies(cee_wks_mergeable asmconstants_inc)
 
   endif(NOT CLR_CMAKE_HOST_ARCH_ARM AND NOT CLR_CMAKE_HOST_ARCH_ARM64)
 

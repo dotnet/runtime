@@ -311,7 +311,8 @@ if(CLR_CMAKE_TARGET_WIN32)
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
   preprocess_file (${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
 
-  set(SHARED_LIB_SOURCES ${SOURCES} ${JIT_EXPORTS_FILE})
+  set(SHARED_LIB_SOURCES ${SOURCES})
+  set(JIT_DEF_FILE ${JIT_EXPORTS_FILE})
 else()
   set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.PAL.exports)
 
@@ -375,6 +376,7 @@ function(add_jit jitName)
         SHARED
         ${SHARED_LIB_SOURCES}
         ${JIT_ARCH_SOURCES}
+        ${JIT_DEF_FILE}
     )
 
     target_precompile_header(TARGET ${jitName} HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})
@@ -396,10 +398,11 @@ endfunction()
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (FEATURE_MERGE_JIT_AND_ENGINE)
-  # Despite the directory being named "dll", it creates a static library "clrjit_static" to link into the VM.
-  add_subdirectory(dll)
   add_subdirectory(crossgen)
 endif (FEATURE_MERGE_JIT_AND_ENGINE)
+
+# Despite the directory being named "dll", it creates a static library "clrjit_static" to link into the VM.
+add_subdirectory(dll)
 
 add_subdirectory(standalone)
 

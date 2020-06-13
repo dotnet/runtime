@@ -83,10 +83,6 @@ if (CLR_CMAKE_HOST_UNIX)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_HOST_UNIX)
 
-if(FEATURE_MERGE_JIT_AND_ENGINE)
-    set(CLRJIT_STATIC clrjit_static)
-endif(FEATURE_MERGE_JIT_AND_ENGINE)
-
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
@@ -96,7 +92,6 @@ set(CORECLR_LIBRARIES
     cordbee_wks
     debug-pal
     ${LIB_UNWINDER}
-    cee_wks
     v3binder
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
     mdcompiler_wks
@@ -105,7 +100,6 @@ set(CORECLR_LIBRARIES
     mdhotdata_full
     bcltype
     ceefgen
-    ${CLRJIT_STATIC}
     comfloat_wks
     corguids
     gcinfo
@@ -167,8 +161,12 @@ if(FEATURE_EVENT_TRACE)
     endif(CLR_CMAKE_HOST_UNIX)
 endif(FEATURE_EVENT_TRACE)
 
-target_link_libraries(coreclr ${CORECLR_LIBRARIES})
-target_link_libraries(coreclr_static ${CORECLR_LIBRARIES})
+if(FEATURE_MERGE_JIT_AND_ENGINE)
+    set(CLRJIT_STATIC clrjit_static)
+endif(FEATURE_MERGE_JIT_AND_ENGINE)
+
+target_link_libraries(coreclr ${CORECLR_LIBRARIES}  cee_wks ${CLRJIT_STATIC})
+target_link_libraries(coreclr_static ${CORECLR_LIBRARIES} cee_wks_mergeable clrjit_mergeable)
 
 # Create the runtime module index header file containing the coreclr build id
 # for xplat and the timestamp/size on Windows.
