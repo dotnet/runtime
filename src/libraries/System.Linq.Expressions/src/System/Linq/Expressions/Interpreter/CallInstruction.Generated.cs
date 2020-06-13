@@ -160,7 +160,7 @@ namespace System.Linq.Expressions.Interpreter
 #endif
 
 #if FEATURE_DLG_INVOKE
-        // TODO: replace these with DynamicallyAccessedMembersAttribute
+        // TODO: replace these with DynamicallyAccessedMembersAttribute (https://github.com/dotnet/runtime/issues/37837)
         [DynamicDependency("#ctor", typeof(ActionCallInstruction))]
         [DynamicDependency("#ctor", typeof(ActionCallInstruction<>))]
         [DynamicDependency("#ctor", typeof(ActionCallInstruction<,>))]
