@@ -25,7 +25,11 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Optional. If omitted, the runtime will use the default platform calling convention.
         /// </summary>
-        public CallingConvention CallingConvention;
+        /// <remarks>
+        /// Supplied types must be from the official "System.Runtime.CompilerServices" namespace and
+        /// be of the form "CallConvXXX".
+        /// </remarks>
+        public Type[]? CallConvs;
 
         /// <summary>
         /// Optional. If omitted, no named export is emitted during compilation.

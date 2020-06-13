@@ -1010,7 +1010,7 @@ namespace System.Runtime.InteropServices
     public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
     {
         public UnmanagedCallersOnlyAttribute() { }
-        public System.Runtime.InteropServices.CallingConvention CallingConvention;
+        public System.Type[]? CallConvs;
         public string? EntryPoint;
     }
 }
