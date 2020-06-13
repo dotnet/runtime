@@ -2416,9 +2416,15 @@ FCIMPL1(INT32, ReflectionEnum::InternalGetCorElementType, Object *pRefThis) {
     if (pRefThis == NULL)
         FCThrowArgumentNull(NULL);
 
-    return pRefThis->GetMethodTable()->GetInternalCorElementType();
+    MethodTable* pMT = pRefThis->GetMethodTable();
+    _ASSERTE(pMT->IsEnum());
+
+    // MethodTable::GetInternalCorElementType has unnecessary overhead for enums
+    // Call EEClass::GetInternalCorElementType directly to avoid it
+    return pMT->GetClass_NoLogging()->GetInternalCorElementType();
 }
 FCIMPLEND
+#include <optdefault.h>
 
 //*******************************************************************************
 struct TempEnumValue
