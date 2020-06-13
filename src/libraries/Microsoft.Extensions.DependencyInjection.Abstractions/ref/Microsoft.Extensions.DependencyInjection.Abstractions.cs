@@ -22,6 +22,14 @@ namespace Microsoft.Extensions.DependencyInjection
     public partial interface IServiceCollection : System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.IEnumerable
     {
     }
+    public partial interface IServiceCollectionModule
+    {
+        IServiceCollection ConfigureServices(IServiceCollection services);
+    }
+    public static partial class ServiceCollectionModuleExtensions
+    {
+        public static IServiceCollection AddModules(this IServiceCollection services, params IServiceCollectionModule[] modules) { throw null; }
+    }
     public partial interface IServiceProviderFactory<TContainerBuilder>
     {
         TContainerBuilder CreateBuilder(Microsoft.Extensions.DependencyInjection.IServiceCollection services);
