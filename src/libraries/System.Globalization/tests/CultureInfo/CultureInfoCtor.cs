@@ -48,7 +48,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1903OrGreater))]
         [InlineData(0x2000)]
         [InlineData(0x2400)]
         [InlineData(0x2800)]
