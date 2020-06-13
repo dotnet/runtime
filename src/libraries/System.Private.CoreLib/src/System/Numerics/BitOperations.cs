@@ -62,7 +62,9 @@ namespace System.Numerics
                 return PopCount((uint)value << 1) == 1;
             }
 
-            return IsPow2SoftwareFallback((uint)value << 1);
+            return SoftwareFallback((uint)value << 1);
+
+            static bool SoftwareFallback(uint value) => (value & (value - 1)) == 0 && value != 0;
         }
 
         /// <summary>
@@ -78,7 +80,9 @@ namespace System.Numerics
                 return PopCount(value) == 1;
             }
 
-            return IsPow2SoftwareFallback(value);
+            return SoftwareFallback(value);
+
+            static bool SoftwareFallback(uint value) => (value & (value - 1)) == 0 && value != 0;
         }
 
         /// <summary>
@@ -95,7 +99,9 @@ namespace System.Numerics
                 return PopCount((ulong)value << 1) == 1;
             }
 
-            return IsPow2SoftwareFallback((ulong)value << 1);
+            return SoftwareFallback((ulong)value << 1);
+
+            static bool SoftwareFallback(ulong value) => (value & (value - 1)) == 0 && value != 0;
         }
 
         /// <summary>
@@ -111,12 +117,10 @@ namespace System.Numerics
                 return PopCount(value) == 1;
             }
 
-            return IsPow2SoftwareFallback(value);
-        }
+            return SoftwareFallback(value);
 
-        // These are faster than the PopCount software fallbacks
-        private static bool IsPow2SoftwareFallback(uint value) => (value & (value - 1)) == 0 && value != 0;
-        private static bool IsPow2SoftwareFallback(ulong value) => (value & (value - 1)) == 0 && value != 0;
+            static bool SoftwareFallback(ulong value) => (value & (value - 1)) == 0 && value != 0;
+        }
 
         /// <summary>
         /// Count the number of leading zero bits in a mask.
