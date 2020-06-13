@@ -3546,6 +3546,7 @@ namespace System
     {
         None = 0,
         RemoveEmptyEntries = 1,
+        TrimEntries = 2,
     }
     public partial class SystemException : System.Exception
     {
