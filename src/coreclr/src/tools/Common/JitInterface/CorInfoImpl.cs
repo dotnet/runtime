@@ -741,7 +741,7 @@ namespace Internal.JitInterface
                 // do a dynamic check instead.
                 if (
                     !HardwareIntrinsicHelpers.IsIsSupportedMethod(method)
-                    || HardwareIntrinsicHelpers.IsKnownSupportedIntrinsicAtCompileTime(method))
+                    || !_compilation.IsHardwareInstrinsicWithRuntimeDeterminedSupport(method))
 #endif
                 {
                     result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
@@ -2944,10 +2944,13 @@ namespace Internal.JitInterface
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, this.MethodBeingCompiled);
                 }
 
+#if READYTORUN
+                // TODO: enable this check in full AOT
                 if (Marshaller.IsMarshallingRequired(this.MethodBeingCompiled.Signature, Array.Empty<ParameterMetadata>())) // Only blittable arguments
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, this.MethodBeingCompiled);
                 }
+#endif
 
                 flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
             }
