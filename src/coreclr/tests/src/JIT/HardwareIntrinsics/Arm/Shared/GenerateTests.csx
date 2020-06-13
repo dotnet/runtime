@@ -1869,13 +1869,13 @@ namespace JIT.HardwareIntrinsics.Arm
             ProcessInput(debugProjectFile, releaseProjectFile, testListFile, groupName, input);
         }
 
-        debugProjectFile.WriteLine($@"    <Compile Include=""Program.{groupName}.cs"" />
+        debugProjectFile.WriteLine($@"    <Compile Include=""Program.{fileGroupName}.cs"" />
     <Compile Include=""..\Shared\Helpers.cs"" />
     <Compile Include=""..\Shared\Program.cs"" />
   </ItemGroup>
 </Project>");
 
-        releaseProjectFile.WriteLine($@"    <Compile Include=""Program.{groupName}.cs"" />
+        releaseProjectFile.WriteLine($@"    <Compile Include=""Program.{fileGroupName}.cs"" />
     <Compile Include=""..\Shared\Helpers.cs"" />
     <Compile Include=""..\Shared\Program.cs"" />
   </ItemGroup>
