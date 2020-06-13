@@ -737,7 +737,6 @@ jobs:
     platforms:
     # - Windows_NT_x64
     #- OSX_x64
-    - Linux_arm64
     - Linux_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
@@ -795,9 +794,7 @@ jobs:
     - Linux_x64
     - Linux_musl_x64
     - ${{ if eq(variables['isFullMatrix'], true) }}:
-      - Linux_arm
       - Linux_arm64
-      - Linux_musl_arm64
     - ${{ if eq(variables['isFullMatrix'], false) }}:
       - Windows_NT_x86
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
@@ -846,7 +843,6 @@ jobs:
     - Windows_NT_x64
     - Linux_x64
     - Linux_musl_x64
-    - Linux_arm64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
