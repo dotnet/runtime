@@ -264,7 +264,7 @@
     <Compile Include="SubtractSaturateScalar.Vector64.UInt32.cs" />
     <Compile Include="TransposeEven.Vector64.Byte.cs" />
     <Compile Include="TransposeEven.Vector64.Int16.cs" />
-    <Compile Include="Program.AdvSimd.Arm64.cs" />
+    <Compile Include="Program.AdvSimd.Arm64_Part0.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

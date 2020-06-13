@@ -264,7 +264,7 @@
     <Compile Include="LeadingZeroCount.Vector128.Int16.cs" />
     <Compile Include="LeadingZeroCount.Vector128.Int32.cs" />
     <Compile Include="LeadingZeroCount.Vector128.SByte.cs" />
-    <Compile Include="Program.AdvSimd.cs" />
+    <Compile Include="Program.AdvSimd_Part1.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

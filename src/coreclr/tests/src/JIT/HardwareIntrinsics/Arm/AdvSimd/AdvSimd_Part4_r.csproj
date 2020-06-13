@@ -233,7 +233,7 @@
     <Compile Include="ZeroExtendWideningUpper.Vector128.SByte.cs" />
     <Compile Include="ZeroExtendWideningUpper.Vector128.UInt16.cs" />
     <Compile Include="ZeroExtendWideningUpper.Vector128.UInt32.cs" />
-    <Compile Include="Program.AdvSimd.cs" />
+    <Compile Include="Program.AdvSimd_Part4.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

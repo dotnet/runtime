@@ -264,7 +264,7 @@
     <Compile Include="CompareEqual.Vector128.SByte.cs" />
     <Compile Include="CompareEqual.Vector128.Single.cs" />
     <Compile Include="CompareEqual.Vector128.UInt16.cs" />
-    <Compile Include="Program.AdvSimd.cs" />
+    <Compile Include="Program.AdvSimd_Part0.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

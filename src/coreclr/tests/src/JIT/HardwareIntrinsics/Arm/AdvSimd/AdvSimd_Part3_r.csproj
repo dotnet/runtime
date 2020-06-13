@@ -264,7 +264,7 @@
     <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.Int32.1.cs" />
     <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.SByte.1.cs" />
     <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.UInt16.1.cs" />
-    <Compile Include="Program.AdvSimd.cs" />
+    <Compile Include="Program.AdvSimd_Part3.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

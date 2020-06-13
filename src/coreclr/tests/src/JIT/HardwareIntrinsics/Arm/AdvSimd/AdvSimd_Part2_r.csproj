@@ -264,7 +264,7 @@
     <Compile Include="ShiftRightAndInsert.Vector64.UInt32.cs" />
     <Compile Include="ShiftRightAndInsert.Vector128.Byte.cs" />
     <Compile Include="ShiftRightAndInsert.Vector128.Int16.cs" />
-    <Compile Include="Program.AdvSimd.cs" />
+    <Compile Include="Program.AdvSimd_Part2.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
