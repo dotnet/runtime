@@ -622,7 +622,7 @@ VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
     MethodDesc* pMD = GetMethod();
     _ASSERTE(pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute());
 
-    // Validate UnmanagedCallersOnlyAttribute usage
+    // Validate usage
     COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(pMD);
 
     BYTE* pData = NULL;
@@ -642,13 +642,14 @@ VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
 
     CustomAttributeParser ca(pData, cData);
 
-    // UnmanagedCallersOnly has two optional named arguments CallingConvention and EntryPoint.
+    // UnmanagedCallersOnly and NativeCallableInternal each
+    // have optional named arguments.
     CaNamedArg namedArgs[2];
 
     // For the UnmanagedCallersOnly scenario.
     CaType caCallConvs;
 
-    // Define the optional named properties
+    // Define attribute specific optional named properties
     if (nativeCallableInternalData)
     {
         namedArgs[0].InitI4FieldEnum("CallingConvention", "System.Runtime.InteropServices.CallingConvention", (ULONG)(CorPinvokeMap)0);
@@ -659,6 +660,7 @@ VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
         namedArgs[0].Init("CallConvs", SERIALIZATION_TYPE_SZARRAY, caCallConvs);
     }
 
+    // Define common optional named properties
     CaTypeCtor caEntryPoint(SERIALIZATION_TYPE_STRING);
     namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caEntryPoint);
 
@@ -709,6 +711,10 @@ VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
             else if (typeFQName.BeginsWith(W("System.Runtime.CompilerServices.CallConvThiscall")))
             {
                 callConvLocal = CorPinvokeMap::pmCallConvThiscall;
+            }
+            else
+            {
+                COMPlusThrow(kArgumentException, W("Argument_UnknownUnmanagedCallConv"));
             }
         }
     }
