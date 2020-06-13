@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.Configuration
                 {
                     if (fileInfo.PhysicalPath != null)
                     {
-                        // The default physical file info assumes asynchronous IO which results in unnecessary overload
+                        // The default physical file info assumes asynchronous IO which results in unnecessary overhead
                         // especally since the configuration system is synchronous. This uses the same settings
                         // and disables async IO.
                         return new FileStream(
@@ -103,7 +103,6 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 using Stream stream = OpenRead(file);
-
                 try
                 {
                     Load(stream);
