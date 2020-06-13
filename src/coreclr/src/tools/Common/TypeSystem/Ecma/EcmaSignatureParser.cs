@@ -6,7 +6,6 @@ using System;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Linq;
 
 using Internal.TypeSystem;
 using System.Collections.Generic;
