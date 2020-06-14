@@ -21,8 +21,6 @@ PdbHeap::~PdbHeap()
 __checkReturn
 HRESULT PdbHeap::SetData(PORTABLE_PDB_STREAM* data)
 {
-    HRESULT hr = S_OK;
-
     m_size = sizeof(data->id) +
         sizeof(data->entryPoint) +
         sizeof(data->referencedTypeSystemTables) +
@@ -30,18 +28,25 @@ HRESULT PdbHeap::SetData(PORTABLE_PDB_STREAM* data)
     m_data = new BYTE[m_size];
 
     ULONG offset = 0;
-    IfFailGo(memcpy_s(m_data + offset, m_size, &data->id, sizeof(data->id)));
+    if (memcpy_s(m_data + offset, m_size, &data->id, sizeof(data->id)))
+        return E_FAIL;
     offset += sizeof(data->id);
-    IfFailGo(memcpy_s(m_data + offset, m_size, &data->entryPoint, sizeof(data->entryPoint)));
+
+    if (memcpy_s(m_data + offset, m_size, &data->entryPoint, sizeof(data->entryPoint)))
+        return E_FAIL;
     offset += sizeof(data->entryPoint);
-    IfFailGo(memcpy_s(m_data + offset, m_size, &data->referencedTypeSystemTables, sizeof(data->referencedTypeSystemTables)));
+
+    if (memcpy_s(m_data + offset, m_size, &data->referencedTypeSystemTables, sizeof(data->referencedTypeSystemTables)))
+        return E_FAIL;
     offset += sizeof(data->referencedTypeSystemTables);
-    IfFailGo(memcpy_s(m_data + offset, m_size, data->typeSystemTableRows, sizeof(ULONG) * data->typeSystemTableRowsSize));
+
+    if (memcpy_s(m_data + offset, m_size, data->typeSystemTableRows, sizeof(ULONG) * data->typeSystemTableRowsSize))
+        return E_FAIL;
     offset += sizeof(ULONG) * data->typeSystemTableRowsSize;
 
     _ASSERTE(offset == m_size);
-ErrExit:
-    return hr;
+
+    return S_OK;
 }
 
 __checkReturn

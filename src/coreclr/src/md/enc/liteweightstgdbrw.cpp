@@ -985,7 +985,7 @@ HRESULT CLiteWeightStgdbRW::SavePool(   // Return code.
             IfFailGo(pStorage->CreateStream(szName,
                 STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE,
                 0, 0, &pIStream));
-            m_pPdbHeap->SaveToStream(pIStream);
+            IfFailGo(m_pPdbHeap->SaveToStream(pIStream));
         }
         else
         {
