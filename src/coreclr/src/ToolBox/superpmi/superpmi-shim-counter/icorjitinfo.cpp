@@ -1009,7 +1009,7 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getArgClass(CORINFO_SIG_INFO*       sig, 
 }
 
 // Returns type of HFA for valuetype
-CorInfoType interceptor_ICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
+CorInfoHFAElemType interceptor_ICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
 {
     mcs->AddCall("getHFAType");
     return original_ICorJitInfo->getHFAType(hClass);

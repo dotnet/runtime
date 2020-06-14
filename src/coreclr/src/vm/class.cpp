@@ -1412,7 +1412,7 @@ int MethodTable::GetVectorSize()
 }
 
 //*******************************************************************************
-CorElementType MethodTable::GetHFAType()
+CorInfoHFAElemType MethodTable::GetHFAType()
 {
     CONTRACTL
     {
@@ -1422,7 +1422,7 @@ CorElementType MethodTable::GetHFAType()
     CONTRACTL_END;
 
     if (!IsHFA())
-        return ELEMENT_TYPE_END;
+        return CORINFO_HFA_ELEM_NONE;
 
     MethodTable * pMT = this;
     for (;;)
@@ -1433,7 +1433,7 @@ CorElementType MethodTable::GetHFAType()
         int vectorSize = pMT->GetVectorSize();
         if (vectorSize != 0)
         {
-            return (vectorSize == 8) ? ELEMENT_TYPE_R8 : ELEMENT_TYPE_VALUETYPE;
+            return (vectorSize == 8) ? CORINFO_HFA_ELEM_VECTOR64 : CORINFO_HFA_ELEM_VECTOR128;
         }
 
         PTR_FieldDesc pFirstField = pMT->GetApproxFieldDescListRaw();
@@ -1448,14 +1448,15 @@ CorElementType MethodTable::GetHFAType()
             break;
 
         case ELEMENT_TYPE_R4:
+            return CORINFO_HFA_ELEM_FLOAT;
         case ELEMENT_TYPE_R8:
-            return fieldType;
+            return CORINFO_HFA_ELEM_DOUBLE;
 
         default:
             // This should never happen. MethodTable::IsHFA() should be set only on types
             // that have a valid HFA type when the flag is used to track HFA status.
             _ASSERTE(false);
-            return ELEMENT_TYPE_END;
+            return CORINFO_HFA_ELEM_NONE;
         }
     }
 }
@@ -1471,7 +1472,7 @@ bool MethodTable::IsNativeHFA()
     return GetNativeLayoutInfo()->IsNativeHFA();
 }
 
-CorElementType MethodTable::GetNativeHFAType()
+CorInfoHFAElemType MethodTable::GetNativeHFAType()
 {
     LIMITED_METHOD_CONTRACT;
     if (!HasLayout() || IsBlittable())
@@ -1499,7 +1500,6 @@ EEClass::CheckForHFA()
     // This method should be called for valuetypes only
     _ASSERTE(GetMethodTable()->IsValueType());
 
-
     // The opaque Vector types appear to have multiple fields, but need to be treated
     // as an opaque type of a single vector.
     if (GetMethodTable()->GetVectorSize() != 0)
@@ -1510,8 +1510,7 @@ EEClass::CheckForHFA()
         return true;
     }
 
-    int elemSize = 0;
-    CorElementType hfaType = ELEMENT_TYPE_END;
+    CorInfoHFAElemType hfaType = CORINFO_HFA_ELEM_NONE;
 
     FieldDesc *pFieldDescList = GetFieldDescList();
 
@@ -1523,17 +1522,13 @@ EEClass::CheckForHFA()
         hasZeroOffsetField |= (pFD->GetOffset() == 0);
 
         CorElementType fieldType = pFD->GetFieldType();
+        CorInfoHFAElemType fieldHFAType = CORINFO_HFA_ELEM_NONE;
 
         switch (fieldType)
         {
         case ELEMENT_TYPE_VALUETYPE:
             {
 #ifdef TARGET_ARM64
-            // hfa/hva types are unique by size, except for Vector64 which we can conveniently
-                // treat as if it were a double for ABI purposes. However, it only qualifies as
-                // an HVA if all fields are the same type. This will ensure that we only
-                // consider it an HVA if all the fields are ELEMENT_TYPE_VALUETYPE (which have been
-                // determined above to be vectors) of the same size.
                 MethodTable* pMT;
 #if defined(FEATURE_HFA)
                 pMT = pByValueClassCache[i];
@@ -1543,22 +1538,15 @@ EEClass::CheckForHFA()
                 int thisElemSize = pMT->GetVectorSize();
                 if (thisElemSize != 0)
                 {
-                    if (elemSize == 0)
-                    {
-                        elemSize = thisElemSize;
-                    }
-                    else if ((thisElemSize != elemSize) || (hfaType != ELEMENT_TYPE_VALUETYPE))
-                    {
-                        return false;
-                    }
+                    fieldHFAType = (thisElemSize == 8) ? CORINFO_HFA_ELEM_VECTOR64 : CORINFO_HFA_ELEM_VECTOR128;
                 }
                 else
 #endif // TARGET_ARM64
                 {
 #if defined(FEATURE_HFA)
-                    fieldType = pByValueClassCache[i]->GetHFAType();
+                    fieldHFAType = pByValueClassCache[i]->GetHFAType();
 #else
-                    fieldType = pFD->LookupApproxFieldTypeHandle().AsMethodTable()->GetHFAType();
+                    fieldHFAType = pFD->LookupApproxFieldTypeHandle().AsMethodTable()->GetHFAType();
 #endif
                 }
             }
@@ -1571,6 +1559,7 @@ EEClass::CheckForHFA()
                 {
                     return false;
                 }
+                fieldHFAType = CORINFO_HFA_ELEM_FLOAT;
             }
             break;
         case ELEMENT_TYPE_R8:
@@ -1580,6 +1569,7 @@ EEClass::CheckForHFA()
                 {
                     return false;
                 }
+                fieldHFAType = CORINFO_HFA_ELEM_DOUBLE;
             }
             break;
         default:
@@ -1588,38 +1578,36 @@ EEClass::CheckForHFA()
         }
 
         // Field type should be a valid HFA type.
-        if (fieldType == ELEMENT_TYPE_END)
+        if (fieldHFAType == CORINFO_HFA_ELEM_NONE)
         {
             return false;
         }
 
         // Initialize with a valid HFA type.
-        if (hfaType == ELEMENT_TYPE_END)
+        if (hfaType == CORINFO_HFA_ELEM_NONE)
         {
-            hfaType = fieldType;
+            hfaType = fieldHFAType;
         }
         // All field types should be equal.
-        else if (fieldType != hfaType)
+        else if (fieldHFAType != hfaType)
         {
             return false;
         }
     }
 
+    int elemSize = 0;
     switch (hfaType)
     {
-    case ELEMENT_TYPE_R4:
+    case CORINFO_HFA_ELEM_FLOAT:
         elemSize = 4;
         break;
-    case ELEMENT_TYPE_R8:
+    case CORINFO_HFA_ELEM_DOUBLE:
+    case CORINFO_HFA_ELEM_VECTOR64:
         elemSize = 8;
         break;
 #ifdef TARGET_ARM64
-    case ELEMENT_TYPE_VALUETYPE:
-        // Should already have set elemSize, but be conservative
-        if (elemSize == 0)
-        {
-            return false;
-        }
+    case CORINFO_HFA_ELEM_VECTOR128:
+        elemSize = 16;
         break;
 #endif
     default:
