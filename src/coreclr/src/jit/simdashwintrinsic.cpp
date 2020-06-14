@@ -648,6 +648,15 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
         case 2:
         {
+#if defined(TARGET_XARCH)
+            if ((intrinsic == NI_VectorT128_Dot) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                assert((baseType == TYP_INT) || (baseType == TYP_UINT));
+                // We need to exit early if this is Vector<T>.Dot for int or uint and SSE41 is not supported
+                return nullptr;
+            }
+#endif // TARGET_XARCH
+
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                          = getArgForHWIntrinsic(argType, argClass);
@@ -696,6 +705,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                          NI_SSE2_ShiftRightLogical128BitLane, TYP_INT, simdSize);
 
                     return retNode;
+                }
+
+                case NI_VectorT128_Dot:
+                {
+                    assert((baseType == TYP_INT) || (baseType == TYP_UINT));
+                    assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
+                    return gtNewSimdAsHWIntrinsicNode(retType, op1, op2, NI_Vector128_Dot, baseType, simdSize);
                 }
 
                 case NI_VectorT128_Equals:

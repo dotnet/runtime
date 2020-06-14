@@ -553,6 +553,13 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return;
         }
 
+        case NI_Vector64_Dot:
+        case NI_Vector128_Dot:
+        {
+            LowerHWIntrinsicDot(node);
+            return;
+        }
+
         case NI_Vector64_op_Equality:
         case NI_Vector128_op_Equality:
         {
@@ -1035,6 +1042,97 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     node->gtOp2 = nullptr;
 
     node->gtHWIntrinsicId = NI_AdvSimd_Insert;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerHWIntrinsicDot: Lowers a Vector64 or Vector128 Dot call
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
+{
+    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    var_types      simdType    = node->gtType;
+    var_types      baseType    = node->gtSIMDBaseType;
+    unsigned       simdSize    = node->gtSIMDSize;
+
+    assert((intrinsicId == NI_Vector64_Dot) || (intrinsicId == NI_Vector128_Dot));
+    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsArithmetic(baseType));
+    assert(simdSize != 0);
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    assert(op1 != nullptr);
+    assert(op2 != nullptr);
+    assert(!op1->OperIsList());
+
+    // Spare GenTrees to be used for the lowering logic below
+    // Defined upfront to avoid naming conflicts, etc...
+    GenTree* idx  = nullptr;
+    GenTree* tmp1 = nullptr;
+    GenTree* tmp2 = nullptr;
+
+    if (simdSize == 12)
+    {
+        // We will be constructing the following parts:
+        //   idx  =    CNS_INT       int    0x03
+        //   tmp1 = *  CNS_DLB       float  0.0
+        //          /--*  op1  simd16
+        //          +--*  idx  int
+        //          +--*  tmp1 simd16
+        //   op1  = *  HWINTRINSIC   simd16 T Insert
+        //   ...
+
+        // This is roughly the following managed code:
+        //    op1 = AdvSimd.Insert(op1, 0x03, 0.0f);
+        //    ...
+
+        idx = comp->gtNewIconNode(0x03, TYP_INT);
+        BlockRange().InsertAfter(op1, idx);
+
+        tmp1 = comp->gtNewZeroConNode(TYP_FLOAT);
+        BlockRange().InsertAfter(idx, tmp1);
+        LowerNode(tmp1);
+
+        op1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, op1, idx, tmp1, NI_AdvSimd_Insert, baseType, simdSize);
+        BlockRange().InsertAfter(tmp1, op1);
+        LowerNode(op1);
+    }
+
+    // We will be constructing the following parts:
+    //   ...
+    //          /--*  op1  simd16
+    //          +--*  op2  simd16
+    //   tmp1 = *  HWINTRINSIC   simd16 T Multiply
+    //          /--*  tmp1 simd16
+    //   tmp2 = *  HWINTRINSIC   simd16 T AddAcross
+    //          /--*  tmp2 simd16
+    //   node = *  HWINTRINSIC   simd16 T ToScalar
+
+    // This is roughly the following managed code:
+    //    ...
+    //    var tmp1 = AdvSimd.Multiply(op1, op2);
+    //    var tmp2 = AdvSimd.Arm64.AddAcross(tmp1);
+    //    return tmp2.ToScalar();
+
+    tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, op1, op2, NI_AdvSimd_Multiply, baseType, simdSize);
+    BlockRange().InsertAfter(op2, tmp1);
+    LowerNode(tmp1);
+
+    tmp2 = comp->gtNewSimdAsHWIntrinsicNode(simdType, tmp1, NI_AdvSimd_Arm64_AddAcross, baseType, simdSize);
+    BlockRange().InsertAfter(tmp1, tmp2);
+    LowerNode(tmp2);
+
+    node->gtOp1 = tmp2;
+    node->gtOp2 = nullptr;
+
+    node->gtHWIntrinsicId = (simdSize == 8) ? NI_Vector64_ToScalar : NI_Vector128_ToScalar;
+    LowerNode(node);
+
+    return;
 }
 #endif // FEATURE_HW_INTRINSICS
 
