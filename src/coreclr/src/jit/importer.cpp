@@ -4516,18 +4516,18 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
     }
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
-    else if (strcmp(namespaceName, "System.Numerics") == 0)
-    {
-        if ((strcmp(className, "BitOperations") == 0) && (strcmp(methodName, "PopCount") == 0))
-        {
-            result = NI_System_Numerics_BitOperations_PopCount;
-        }
-    }
     else if (strcmp(namespaceName, "System.Collections.Generic") == 0)
     {
         if ((strcmp(className, "EqualityComparer`1") == 0) && (strcmp(methodName, "get_Default") == 0))
         {
             result = NI_System_Collections_Generic_EqualityComparer_get_Default;
+        }
+    }
+    else if ((strcmp(namespaceName, "System.Numerics") == 0) && (strcmp(className, "BitOperations") == 0))
+    {
+        if (strcmp(methodName, "PopCount") == 0)
+        {
+            result = NI_System_Numerics_BitOperations_PopCount;
         }
     }
 #ifdef FEATURE_HW_INTRINSICS
