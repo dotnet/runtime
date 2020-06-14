@@ -957,6 +957,13 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return;
         }
 
+        case NI_Vector128_ToScalar:
+        case NI_Vector256_ToScalar:
+        {
+            LowerHWIntrinsicToScalar(node);
+            break;
+        }
+
         case NI_SSE2_Insert:
         case NI_SSE41_Insert:
         case NI_SSE41_X64_Insert:
@@ -2474,6 +2481,108 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             unreached();
         }
     }
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerHWIntrinsicToScalar: Lowers a Vector128 or Vector256 ToScalar call
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
+{
+    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;;
+    var_types      baseType    = node->gtSIMDBaseType;
+    unsigned       simdSize    = node->gtSIMDSize;
+    var_types      simdType    = Compiler::getSIMDTypeForSize(simdSize);
+
+    assert((intrinsicId == NI_Vector128_ToScalar) || (intrinsicId == NI_Vector256_ToScalar));
+    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsArithmetic(baseType));
+    assert(simdSize != 0);
+
+    GenTree* op1 = node->gtGetOp1();
+
+    assert(op1 != nullptr);
+    assert(node->gtGetOp2() == nullptr);
+    assert(!op1->OperIsList());
+
+    // Spare GenTrees to be used for the lowering logic below
+    // Defined upfront to avoid naming conflicts, etc...
+    GenTree* tmp1 = nullptr;
+
+    switch (baseType)
+    {
+        case TYP_BYTE:
+        case TYP_SHORT:
+        {
+            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_SSE2_ConvertToInt32, baseType, 16);
+            BlockRange().InsertAfter(op1, tmp1);
+            LowerNode(tmp1);
+
+            node->ChangeOper(GT_CAST);
+            node->AsCast()->gtCastType = node->gtType;
+
+            node->gtFlags = (node->gtFlags & ~GTF_SIMDASHW_OP);
+            node->gtOp1   = tmp1;
+            break;
+        }
+
+        case TYP_UBYTE:
+        case TYP_USHORT:
+        {
+            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_SSE2_ConvertToUInt32, baseType, 16);
+            BlockRange().InsertAfter(op1, tmp1);
+            LowerNode(tmp1);
+
+            node->ChangeOper(GT_CAST);
+            node->AsCast()->gtCastType = node->gtType;
+
+            node->gtFlags = (node->gtFlags & ~GTF_SIMDASHW_OP) | GTF_UNSIGNED;
+            node->gtOp1   = tmp1;
+            break;
+        }
+
+        case TYP_INT:
+        {
+            node->gtHWIntrinsicId = NI_SSE2_ConvertToInt32;
+            break;
+        }
+
+        case TYP_UINT:
+        {
+            node->gtHWIntrinsicId = NI_SSE2_ConvertToUInt32;
+            break;
+        }
+
+#if defined(TARGET_AMD64)
+        case TYP_LONG:
+        {
+            node->gtHWIntrinsicId = NI_SSE2_X64_ConvertToInt64;
+            break;
+        }
+
+        case TYP_ULONG:
+        {
+            node->gtHWIntrinsicId = NI_SSE2_X64_ConvertToUInt64;
+            break;
+        }
+#endif // TARGET_AMD64
+
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+        {
+            ContainCheckHWIntrinsic(node);
+            return;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    LowerNode(node);
 }
 #endif // FEATURE_HW_INTRINSICS
 
