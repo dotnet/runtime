@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.DependencyInjection
     }
     public partial interface IServiceCollectionModule
     {
-        IServiceCollection ConfigureServices(IServiceCollection services);
+        void ConfigureServices(IServiceCollection services);
     }
     public static partial class ServiceCollectionModuleExtensions
     {

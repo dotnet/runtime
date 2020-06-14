@@ -13,7 +13,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Adds the service configurations of this module to the provided <see cref="IServiceCollection"/> instance.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the service configurations of this module to.</param>
-        /// <returns>A reference to the provided <see cref="IServiceCollection"/> instance after the operation has completed.</returns>
-        IServiceCollection ConfigureServices(IServiceCollection services);
+        void ConfigureServices(IServiceCollection services);
     }
 }
