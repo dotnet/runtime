@@ -98,18 +98,14 @@ namespace System.Text.Json
             bool success;
             T value = Get!(obj);
 
-            if (value == null)
+            if (IgnoreDefaultValuesOnWrite && (
+                default(T) is null ? value is null : EqualityComparer<T>.Default.Equals(default, value)))
             {
-                Debug.Assert(default(T) == null && Converter.CanBeNull);
-
-                success = true;
-                if (!IgnoreDefaultValuesOnWrite)
+                if (default(T) is null)
                 {
-                    if (!Converter.HandleNull)
-                    {
-                        writer.WriteNullSection(EscapedNameSection);
-                    }
-                    else
+                    Debug.Assert(Converter.CanBeNull);
+
+                    if (Converter.HandleNull)
                     {
                         // No object, collection, or re-entrancy converter handles null.
                         Debug.Assert(Converter.ClassType == ClassType.Value);
@@ -127,11 +123,12 @@ namespace System.Text.Json
                             ThrowHelper.ThrowJsonException_SerializationConverterWrite(Converter);
                         }
                     }
+                    else
+                    {
+                        writer.WriteNullSection(EscapedNameSection);
+                    }
                 }
-            }
-            else if (IgnoreDefaultValuesOnWrite && EqualityComparer<T>.Default.Equals(default, value))
-            {
-                Debug.Assert(default(T) != null && !Converter.CanBeNull);
+
                 success = true;
             }
             else
