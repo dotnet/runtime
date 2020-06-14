@@ -258,7 +258,7 @@ namespace System.Net.Mail
             }
             else
             {
-                return "\"" + DisplayName + "\" " + SmtpAddress;
+                return "\"" + DisplayName.Replace("\"", "\\\"") + "\" " + SmtpAddress;
             }
         }
 
