@@ -1938,6 +1938,12 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> RoundAwayFromZero(Vector128<double> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64x2_t vrndnq_f64 (float64x2_t a)
+            ///   A64: FRINTN Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> RoundToNearest(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// int16_t vqrshlh_s16 (int16_t a, int16_t b)
             ///   A64: SQRSHL Hd, Hn, Hm
             /// </summary>
@@ -9402,6 +9408,35 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> RoundAwayFromZeroScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vrndn_f32 (float32x2_t a)
+        ///   A32: VRINTN.F32 Dd, Dm
+        ///   A64: FRINTN Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> RoundToNearest(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vrndnq_f32 (float32x4_t a)
+        ///   A32: VRINTN.F32 Qd, Qm
+        ///   A64: FRINTN Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> RoundToNearest(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vrndn_f64 (float64x1_t a)
+        ///   A32: VRINTN.F64 Dd, Dm
+        ///   A64: FRINTN Dd, Dn
+        /// </summary>
+        public static Vector64<double> RoundToNearestScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vrndns_f32 (float32_t a)
+        ///   A32: VRINTN.F32 Sd, Sm
+        ///   A64: FRINTN Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> RoundToNearestScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vsli_n_u8(uint8x8_t a, uint8x8_t b, __builtin_constant_p(n))
