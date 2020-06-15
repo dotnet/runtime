@@ -76,6 +76,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             result.Should()
                 .InitializeContextForConfig(componentProject.RuntimeConfigJson);
 
+            // This should fail even with the valid type and valid method,
+            // because the type is not resolvable from the default AssemblyLoadContext.
             result.Should().Fail();
         }
 
