@@ -17,14 +17,18 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Transactions.Local\tests\System.Transactions.Local.Tests.csproj" />
   </ItemGroup>
 
+  <!-- Mysteriously won't build on Wasm -->
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Formatters\tests\System.Runtime.Serialization.Formatters.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.Common\tests\System.Data.Common.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyModel\tests\Microsoft.Extensions.DependencyModel.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- We currently only test with C# projects. -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(BuildAllConfigurations)' != 'true' and ('$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true')" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\System.Buffers.Tests.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(BuildAllConfigurations)' != 'true' and ('$(TargetsMobile)' == 'true' or '$(TargetsBrowser)' == 'true')" />
+                      Condition="'$(BuildAllConfigurations)' != 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
                       Condition="'$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
