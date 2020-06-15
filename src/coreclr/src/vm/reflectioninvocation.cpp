@@ -328,23 +328,6 @@ FCIMPL7(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Ob
 
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
 
-    // Verify we're not trying to set the value of a static initonly field
-    // once the class has been initialized.
-    if (pFieldDesc->IsStatic())
-    {
-        MethodTable* pEnclosingMT = pFieldDesc->GetEnclosingMethodTable();
-        if (pEnclosingMT->IsClassInited() && IsFdInitOnly(pFieldDesc->GetAttributes()))
-        {
-            DefineFullyQualifiedNameForClassW();
-            SString ssFieldName(SString::Utf8, pFieldDesc->GetName());
-            COMPlusThrow(kFieldAccessException,
-                IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD,
-                ssFieldName.GetUnicode(),
-                GetFullyQualifiedNameForClassW(pEnclosingMT));
-        }
-    }
-
-    //TODO: cleanup this function
     InvokeUtil::SetValidField(fieldType.GetSignatureCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, pDomainInitialized);
 
     HELPER_METHOD_FRAME_END();
@@ -1582,7 +1565,6 @@ static void DirectObjectFieldSet(FieldDesc *pField, TypeHandle fieldType, TypeHa
     // Validate the target/fld type relationship
     InvokeUtil::ValidateObjectTarget(pField, enclosingType, &objref);
 
-    InvokeUtil::ValidField(fieldType, pValue);
     InvokeUtil::SetValidField(pField->GetFieldType(), fieldType, pField, &objref, pValue, enclosingType, pDomainInitialized);
     GCPROTECT_END();
 }
@@ -1626,22 +1608,8 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
     TypeHandle targetType = pTarget->type;
     MethodTable *pEnclosingMT = contextType.GetMethodTable();
 
-    {
-        // Verify that the value passed can be widened into the target
-        InvokeUtil::ValidField(fieldType, &gc.oValue);
-
-        // Verify we're not trying to set the value of a static initonly field
-        // once the class has been initialized.
-        if (pField->IsStatic() && pEnclosingMT->IsClassInited() && IsFdInitOnly(pField->GetAttributes()))
-        {
-            DefineFullyQualifiedNameForClassW();
-            SString ssFieldName(SString::Utf8, pField->GetName());
-            COMPlusThrow(kFieldAccessException,
-                IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD,
-                ssFieldName.GetUnicode(),
-                GetFullyQualifiedNameForClassW(pEnclosingMT));
-        }
-    }
+    // Verify that the value passed can be widened into the target
+    InvokeUtil::ValidField(fieldType, &gc.oValue);
 
     CLR_BOOL domainInitialized = FALSE;
     if (pField->IsStatic() || !targetType.IsValueType()) {

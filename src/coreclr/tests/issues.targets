@@ -1571,6 +1571,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/reflection/SetValue/TrySetReadonlyStaticField/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/reflection/SetValue/TrySetReadonlyStaticField2/**">
+            <Issue>https://github.com/dotnet/runtime/issues/37899</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/15241/genericcontext/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
