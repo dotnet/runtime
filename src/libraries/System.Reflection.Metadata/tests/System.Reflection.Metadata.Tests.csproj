@@ -129,6 +129,7 @@
     <None Include="Resources\Misc\Signed.cmd" />
     <None Include="Resources\Misc\Signed.cs" />
     <EmbeddedResource Include="Resources\Misc\Signed.exe" />
+    <WasmFilesToIncludeInFileSystem Include="$(AssemblyName).dll" TargetPath="%(Identity)" />
   </ItemGroup>
   <ItemGroup>
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->

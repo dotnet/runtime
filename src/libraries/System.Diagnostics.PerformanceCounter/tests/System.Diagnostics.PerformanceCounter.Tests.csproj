@@ -18,9 +18,9 @@
     <Compile Include="PerformanceDataTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="provider.man">
+    <Content Include="provider.man">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    </Content>
     <None Include="provider.res" />
   </ItemGroup>
 </Project>

@@ -163,6 +163,39 @@ var Module = {
 			MONO.mono_wasm_setenv (variable, setenv [variable]);
 		}
 
+		// Read and write files to virtual file system listed in mono-config
+		if (typeof config.files_to_map != 'undefined') {
+			Module.print("Mapping test support files listed in config.files_to_map to VFS");
+			const files_to_map = config.files_to_map;
+			try {
+				for (var i = 0; i < files_to_map.length; i++)
+				{
+					if (typeof files_to_map[i].directory != 'undefined')
+					{
+						var directory = files_to_map[i].directory == '' ? '/' : files_to_map[i].directory;
+						if (directory != '/') {
+							Module['FS_createPath']('/', directory, true, true);
+						}
+
+						const files = files_to_map[i].files;
+						for (var j = 0; j < files.length; j++)
+						{
+							var fullPath = directory != '/' ? directory + '/' + files[j] : files[j];
+							var content = new Uint8Array (read ("supportFiles/" + fullPath, 'binary'));
+							var stream = FS.open(fullPath, 'w+');
+							FS.write(stream, content, 0, content.length, 0);
+							FS.close(stream);
+						}
+					}
+				}
+			}
+			catch (err) {
+				Module.printErr(err);
+				Module.printErr(err.stack);
+				test_exit(1);
+			}
+		}
+
 		if (enable_gc) {
 			var f = Module.cwrap ('mono_wasm_enable_on_demand_gc', 'void', []);
 			f ();
@@ -205,7 +238,7 @@ var Module = {
 			config.vfs_prefix,
 			config.deploy_prefix,
 			config.enable_debugging,
-			config.file_list,
+			config.assembly_list,
 			function () {
 				App.init ();
 			},
