@@ -315,15 +315,10 @@ namespace System.Net.Http
             {
                 if (disposing)
                 {
-                    // Free any other managed objects here.
-                    //
-                    _abortCts.Cancel();
                     _abortCts.Dispose();
                     _abortRegistration.Dispose();
                 }
 
-                // Free any unmanaged objects here.
-                //
                 _fetchResponse?.Dispose();
                 _abortController?.Dispose();
             }
