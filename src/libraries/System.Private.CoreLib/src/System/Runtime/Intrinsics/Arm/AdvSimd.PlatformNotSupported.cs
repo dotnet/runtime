@@ -970,6 +970,12 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<ulong> DuplicateToVector128(ulong value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64x2_t vrndmq_f64 (float64x2_t a)
+            ///   A64: FRINTM Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> Floor(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vfmaq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
             ///   A64: FMLA Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -5961,6 +5967,35 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*8)
         /// </summary>
         public static Vector128<ulong> ExtractVector128(Vector128<ulong> upper, Vector128<ulong> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vrndm_f32 (float32x2_t a)
+        ///   A32: VRINTM.F32 Dd, Dm
+        ///   A64: FRINTM Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> Floor(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vrndmq_f32 (float32x4_t a)
+        ///   A32: VRINTM.F32 Qd, Qm
+        ///   A64: FRINTM Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> Floor(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vrndm_f64 (float64x1_t a)
+        ///   A32: VRINTM.F64 Dd, Dm
+        ///   A64: FRINTM Dd, Dn
+        /// </summary>
+        public static Vector64<double> FloorScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vrndms_f32 (float32_t a)
+        ///   A32: VRINTM.F32 Sd, Sm
+        ///   A64: FRINTM Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FloorScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vhadd_u8 (uint8x8_t a, uint8x8_t b)
