@@ -11,7 +11,8 @@
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-path.h"
 #include "mono/metadata/native-library.h"
-#include "mono/metadata/qcalllist.h"
+
+extern const void* gPalGlobalizationNative[];
 
 enum {
     func_flag_end_of_array   = 0x01,
@@ -20,7 +21,7 @@ enum {
     func_flag_qcall        = 0x08, // QCall - mscorlib.dll to mscorwks.dll transition implemented as PInvoke
 };
 
-
+//keep qcall class names and method names sorted
 static const MonoQCallDef c_qcalls[] =
 {
     #define FCClassElement(name,namespace,funcs) {name, namespace, funcs},

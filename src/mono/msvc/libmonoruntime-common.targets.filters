@@ -550,9 +550,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\native-library-qcall.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\qcalllist.h">
-      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
-    </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\native-library.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>    

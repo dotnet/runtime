@@ -122,7 +122,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32process.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32process.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32process-internals.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\qcalllist.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\profiler.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\profiler-private.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\rand.h" />

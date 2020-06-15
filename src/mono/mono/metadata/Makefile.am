@@ -416,7 +416,6 @@ common_sources = \
 	abi.c	\
 	native-library.c \
 	native-library.h \
-	qcalllist.h \
 	native-library-qcall.c
 
 # These source files have compile time dependencies on GC code

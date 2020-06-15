@@ -841,7 +841,9 @@ namespace System.Reflection.Emit
             return false;
         }
 
-        internal RuntimeModule GetNativeHandle() => this.GetNativeHandle();
+        internal ModuleBuilder GetNativeHandle() => this;
+
+        internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
 
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
