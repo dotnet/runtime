@@ -1950,6 +1950,12 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> RoundToNegativeInfinity(Vector128<double> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64x2_t vrndpq_f64 (float64x2_t a)
+            ///   A64: FRINTP Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> RoundToPositiveInfinity(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// int16_t vqrshlh_s16 (int16_t a, int16_t b)
             ///   A64: SQRSHL Hd, Hn, Hm
             /// </summary>
@@ -9472,6 +9478,35 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> RoundToNegativeInfinityScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vrndp_f32 (float32x2_t a)
+        ///   A32: VRINTP.F32 Dd, Dm
+        ///   A64: FRINTP Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> RoundToPositiveInfinity(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vrndpq_f32 (float32x4_t a)
+        ///   A32: VRINTP.F32 Qd, Qm
+        ///   A64: FRINTP Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> RoundToPositiveInfinity(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vrndp_f64 (float64x1_t a)
+        ///   A32: VRINTP.F64 Dd, Dm
+        ///   A64: FRINTP Dd, Dn
+        /// </summary>
+        public static Vector64<double> RoundToPositiveInfinityScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vrndps_f32 (float32_t a)
+        ///   A32: VRINTP.F32 Sd, Sm
+        ///   A64: FRINTP Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> RoundToPositiveInfinityScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vsli_n_u8(uint8x8_t a, uint8x8_t b, __builtin_constant_p(n))
