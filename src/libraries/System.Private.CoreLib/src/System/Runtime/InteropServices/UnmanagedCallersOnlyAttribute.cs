@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices
     ///   * Must not be called from managed code.
     ///   * Must only have <see href="https://docs.microsoft.com/dotnet/framework/interop/blittable-and-non-blittable-types">blittable</see> arguments.
     /// </remarks>
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public sealed class UnmanagedCallersOnlyAttribute : Attribute
     {
         public UnmanagedCallersOnlyAttribute()
