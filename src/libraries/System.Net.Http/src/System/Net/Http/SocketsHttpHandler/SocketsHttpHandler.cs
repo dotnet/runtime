@@ -346,28 +346,7 @@ namespace System.Net.Http
                 return Task.FromException<HttpResponseMessage>(error);
             }
 
-            return HttpTelemetry.IsEnabled && request.RequestUri != null ?
-                WithLogging(handler, request, cancellationToken) :
-                handler.SendAsync(request, cancellationToken);
-
-            static async Task<HttpResponseMessage> WithLogging(HttpMessageHandler handler, HttpRequestMessage request, CancellationToken cancellationToken)
-            {
-                Debug.Assert(request.RequestUri != null);
-                HttpTelemetry.Log.RequestStart(request.RequestUri.IdnHost, request.RequestUri.Port);
-                try
-                {
-                    return await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
-                }
-                catch
-                {
-                    HttpTelemetry.Log.RequestAbort(request.RequestUri.IdnHost, request.RequestUri.Port);
-                    throw;
-                }
-                finally
-                {
-                    HttpTelemetry.Log.RequestStop(request.RequestUri.IdnHost, request.RequestUri.Port);
-                }
-            }
+            return handler.SendAsync(request, cancellationToken);
         }
 
         private Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)

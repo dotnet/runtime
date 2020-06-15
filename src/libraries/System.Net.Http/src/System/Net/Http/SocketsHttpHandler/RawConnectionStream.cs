@@ -34,6 +34,7 @@ namespace System.Net.Http
                 if (bytesRead == 0)
                 {
                     // We cannot reuse this connection, so close it.
+                    if (HttpTelemetry.IsEnabled) LogRequestStop();
                     _connection = null;
                     connection.Dispose();
                 }
@@ -81,6 +82,7 @@ namespace System.Net.Http
                     CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                     // We cannot reuse this connection, so close it.
+                    if (HttpTelemetry.IsEnabled) LogRequestStop();
                     _connection = null;
                     connection.Dispose();
                 }
@@ -142,6 +144,7 @@ namespace System.Net.Http
             private void Finish(HttpConnection connection)
             {
                 // We cannot reuse this connection, so close it.
+                if (HttpTelemetry.IsEnabled) LogRequestStop();
                 connection.Dispose();
                 _connection = null;
             }

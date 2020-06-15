@@ -14,13 +14,14 @@ namespace System.Net.Http
     {
         public static readonly HttpTelemetry Log = new HttpTelemetry();
 
-        private IncrementingPollingCounter? _requestsPerSecondCounter;
+        private IncrementingPollingCounter? _startedRequestsPerSecondCounter;
+        private IncrementingPollingCounter? _abortedRequestsPerSecondCounter;
         private PollingCounter? _startedRequestsCounter;
         private PollingCounter? _currentRequestsCounter;
         private PollingCounter? _abortedRequestsCounter;
 
         private long _startedRequests;
-        private long _currentRequests;
+        private long _stoppedRequests;
         private long _abortedRequests;
 
         public static new bool IsEnabled => Log.IsEnabled();
@@ -33,25 +34,24 @@ namespace System.Net.Http
         // - A stop event's event id must be next one after its start event.
 
         [Event(1, Level = EventLevel.Informational)]
-        public void RequestStart(string host, int port)
+        public void RequestStart(string scheme, string host, int port, string pathAndQuery, int versionMajor, int versionMinor)
         {
             Interlocked.Increment(ref _startedRequests);
-            Interlocked.Increment(ref _currentRequests);
-            WriteEvent(1, host, port);
+            WriteEvent(1, scheme, host, port, pathAndQuery, versionMajor, versionMinor);
         }
 
         [Event(2, Level = EventLevel.Informational)]
-        public void RequestStop(string host, int port)
+        public void RequestStop()
         {
-            Interlocked.Decrement(ref _currentRequests);
-            WriteEvent(2, host, port);
+            Interlocked.Increment(ref _stoppedRequests);
+            WriteEvent(2);
         }
 
         [Event(3, Level = EventLevel.Error)]
-        public void RequestAbort(string host, int port)
+        public void RequestAborted()
         {
             Interlocked.Increment(ref _abortedRequests);
-            WriteEvent(3, host, port);
+            WriteEvent(3);
         }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
@@ -68,7 +68,7 @@ namespace System.Net.Http
                 };
 
                 // The number of HTTP requests started per second since the process started.
-                _requestsPerSecondCounter ??= new IncrementingPollingCounter("requests-started-per-second", this, () => Interlocked.Read(ref _startedRequests))
+                _startedRequestsPerSecondCounter ??= new IncrementingPollingCounter("requests-started-rate", this, () => Interlocked.Read(ref _startedRequests))
                 {
                     DisplayName = "Requests Started Rate",
                     DisplayRateTimeScale = TimeSpan.FromSeconds(1)
@@ -83,17 +83,69 @@ namespace System.Net.Http
                 };
 
                 // The number of HTTP requests aborted per second since the process started.
-                _requestsPerSecondCounter ??= new IncrementingPollingCounter("requests-aborted-per-second", this, () => Interlocked.Read(ref _abortedRequests))
+                _abortedRequestsPerSecondCounter ??= new IncrementingPollingCounter("requests-aborted-rate", this, () => Interlocked.Read(ref _abortedRequests))
                 {
                     DisplayName = "Requests Aborted Rate",
                     DisplayRateTimeScale = TimeSpan.FromSeconds(1)
                 };
 
                 // The current number of active HTTP requests that have started but not yet completed or aborted.
-                _currentRequestsCounter ??= new PollingCounter("current-requests", this, () => Interlocked.Read(ref _currentRequests))
+                _currentRequestsCounter ??= new PollingCounter("current-requests", this, () => Interlocked.Read(ref _startedRequests) - Interlocked.Read(ref _stoppedRequests))
                 {
                     DisplayName = "Current Requests"
                 };
+            }
+        }
+
+        [NonEvent]
+        private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, int arg3, string? arg4, int arg5, int arg6)
+        {
+            if (IsEnabled())
+            {
+                if (arg1 == null) arg1 = "";
+                if (arg2 == null) arg2 = "";
+                if (arg4 == null) arg4 = "";
+
+                fixed (char* arg1Ptr = arg1)
+                fixed (char* arg2Ptr = arg2)
+                fixed (char* arg4Ptr = arg4)
+                {
+                    const int NumEventDatas = 6;
+                    var descrs = stackalloc EventData[NumEventDatas];
+
+                    descrs[0] = new EventData
+                    {
+                        DataPointer = (IntPtr)(arg1Ptr),
+                        Size = (arg1.Length + 1) * sizeof(char)
+                    };
+                    descrs[1] = new EventData
+                    {
+                        DataPointer = (IntPtr)(arg2Ptr),
+                        Size = (arg2.Length + 1) * sizeof(char)
+                    };
+                    descrs[2] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg3),
+                        Size = sizeof(int)
+                    };
+                    descrs[3] = new EventData
+                    {
+                        DataPointer = (IntPtr)(arg4Ptr),
+                        Size = (arg4.Length + 1) * sizeof(char)
+                    };
+                    descrs[4] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg5),
+                        Size = sizeof(int)
+                    };
+                    descrs[5] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg6),
+                        Size = sizeof(int)
+                    };
+
+                    WriteEventCore(eventId, NumEventDatas, descrs);
+                }
             }
         }
     }
