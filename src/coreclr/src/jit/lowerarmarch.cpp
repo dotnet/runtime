@@ -1077,6 +1077,8 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
     if (simdSize == 12)
     {
+        assert(baseType == TYP_FLOAT);
+
         // We will be constructing the following parts:
         //   idx  =    CNS_INT       int    0x03
         //   tmp1 = *  CNS_DLB       float  0.0
@@ -1107,24 +1109,146 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     //          /--*  op1  simd16
     //          +--*  op2  simd16
     //   tmp1 = *  HWINTRINSIC   simd16 T Multiply
-    //          /--*  tmp1 simd16
-    //   tmp2 = *  HWINTRINSIC   simd16 T AddAcross
+    //   ...
+
+    // This is roughly the following managed code:
+    //   ...
+    //   var tmp1 = AdvSimd.Multiply(op1, op2);
+    //   ...
+
+    tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, op1, op2, NI_AdvSimd_Multiply, baseType, simdSize);
+    BlockRange().InsertBefore(node, tmp1);
+    LowerNode(tmp1);
+
+
+    if (varTypeIsFloating(baseType))
+    {
+        // We will be constructing the following parts:
+        //   ...
+        //          /--*  tmp1 simd16
+        //          *  STORE_LCL_VAR simd16
+        //   tmp1 =    LCL_VAR       simd16
+        //   tmp2 =    LCL_VAR       simd16
+        //   ...
+
+        // This is roughly the following managed code:
+        //   ...
+        //   var tmp2 = tmp1;
+        //   ...
+
+        node->gtOp1 = tmp1;
+        LIR::Use tmp1Use(BlockRange(), &node->gtOp1, node);
+        ReplaceWithLclVar(tmp1Use);
+        tmp1 = node->gtOp1;
+
+        tmp2 = comp->gtClone(tmp1);
+        BlockRange().InsertAfter(tmp1, tmp2);
+
+        if (simdSize == 8)
+        {
+            assert(baseType == TYP_FLOAT);
+
+            // We will be constructing the following parts:
+            //   ...
+            //          /--*  tmp1 simd8
+            //          +--*  tmp2 simd8
+            //   tmp1 = *  HWINTRINSIC   simd8  T AddPairwise
+            //   ...
+
+            // This is roughly the following managed code:
+            //   ...
+            //   var tmp1 = AdvSimd.AddPairwise(tmp1, tmp2);
+            //   ...
+
+            tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_AddPairwise, baseType, simdSize);
+            BlockRange().InsertAfter(tmp2, tmp1);
+            LowerNode(tmp1);
+        }
+        else
+        {
+            assert((simdSize == 12) || (simdSize == 16));
+
+            // We will be constructing the following parts:
+            //   ...
+            //          /--*  tmp1 simd16
+            //          +--*  tmp2 simd16
+            //   tmp2 = *  HWINTRINSIC   simd16 T AddPairwise
+            //   ...
+
+            // This is roughly the following managed code:
+            //   ...
+            //   var tmp1 = AdvSimd.Arm64.AddPairwise(tmp1, tmp2);
+            //   ...
+
+            tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_Arm64_AddPairwise, baseType,
+                                                    simdSize);
+            BlockRange().InsertAfter(tmp2, tmp1);
+            LowerNode(tmp1);
+
+            if (baseType == TYP_FLOAT)
+            {
+                // We will be constructing the following parts:
+                //   ...
+                //          /--*  tmp1 simd16
+                //          *  STORE_LCL_VAR simd16
+                //   tmp1 =    LCL_VAR       simd16
+                //   tmp2 =    LCL_VAR       simd16
+                //          /--*  tmp1 simd16
+                //          +--*  tmp2 simd16
+                //   tmp2 = *  HWINTRINSIC   simd16 T AddPairwise
+                //   ...
+
+                // This is roughly the following managed code:
+                //   ...
+                //   var tmp2 = tmp1;
+                //   var tmp1 = AdvSimd.Arm64.AddPairwise(tmp1, tmp2);
+                //   ...
+
+                node->gtOp1 = tmp1;
+                LIR::Use tmp1Use(BlockRange(), &node->gtOp1, node);
+                ReplaceWithLclVar(tmp1Use);
+                tmp1 = node->gtOp1;
+
+                tmp2 = comp->gtClone(tmp1);
+                BlockRange().InsertAfter(tmp1, tmp2);
+
+                tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_Arm64_AddPairwise, baseType,
+                                                        simdSize);
+                BlockRange().InsertAfter(tmp2, tmp1);
+                LowerNode(tmp1);
+            }
+        }
+
+        tmp2 = tmp1;
+    }
+    else
+    {
+        assert(varTypeIsIntegral(baseType));
+
+        // We will be constructing the following parts:
+        //   ...
+        //          /--*  tmp1 simd16
+        //   tmp2 = *  HWINTRINSIC   simd16 T AddAcross
+        //   ...
+
+        // This is roughly the following managed code:
+        //   ...
+        //   var tmp2 = AdvSimd.Arm64.AddAcross(tmp1);
+        //   ...
+
+        tmp2 = comp->gtNewSimdAsHWIntrinsicNode(simdType, tmp1, NI_AdvSimd_Arm64_AddAcross, baseType, simdSize);
+        BlockRange().InsertAfter(tmp1, tmp2);
+        LowerNode(tmp2);
+    }
+
+    // We will be constructing the following parts:
+    //   ...
     //          /--*  tmp2 simd16
     //   node = *  HWINTRINSIC   simd16 T ToScalar
 
     // This is roughly the following managed code:
-    //    ...
-    //    var tmp1 = AdvSimd.Multiply(op1, op2);
-    //    var tmp2 = AdvSimd.Arm64.AddAcross(tmp1);
-    //    return tmp2.ToScalar();
-
-    tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, op1, op2, NI_AdvSimd_Multiply, baseType, simdSize);
-    BlockRange().InsertAfter(op2, tmp1);
-    LowerNode(tmp1);
-
-    tmp2 = comp->gtNewSimdAsHWIntrinsicNode(simdType, tmp1, NI_AdvSimd_Arm64_AddAcross, baseType, simdSize);
-    BlockRange().InsertAfter(tmp1, tmp2);
-    LowerNode(tmp2);
+    //   ...
+    //   return tmp2.ToScalar();
 
     node->gtOp1 = tmp2;
     node->gtOp2 = nullptr;
