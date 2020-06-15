@@ -2260,32 +2260,36 @@ namespace System.Globalization
 
         private int GetLocaleInfoCore(LocaleNumberData type)
         {
+            // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
-                throw new NotSupportedException();
+                return 0;
 
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
         }
 
         private string GetLocaleInfoCore(LocaleStringData type)
         {
+            // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
-                throw new NotSupportedException();
+                return null!;
 
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
         }
 
         private string GetLocaleInfoCore(string localeName, LocaleStringData type)
         {
+            // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
-                throw new NotSupportedException();
+                return null!;
 
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type);
         }
 
         private int[] GetLocaleInfoCore(LocaleGroupingData type)
         {
+            // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
-                throw new NotSupportedException();
+                return null!;
 
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
         }
