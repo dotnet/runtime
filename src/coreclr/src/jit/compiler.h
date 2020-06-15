@@ -4198,10 +4198,11 @@ private:
                            InlineCandidateInfo**  ppInlineCandidateInfo,
                            InlineResult*          inlineResult);
 
-    void impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
-                                GenTree*      curArgVal,
-                                unsigned      argNum,
-                                InlineResult* inlineResult);
+    void impInlineRecordArgInfo(InlineInfo*      pInlineInfo,
+                                GenTree*         curArgVal,
+                                unsigned         argNum,
+                                unsigned __int64 bbFlags,
+                                InlineResult*    inlineResult);
 
     void impInlineInitVars(InlineInfo* pInlineInfo);
 
