@@ -115,6 +115,14 @@ namespace Microsoft.Extensions.Hosting
                     // Add the EventLogLoggerProvider on windows machines
                     logging.AddEventLog();
                 }
+                
+                logging.Configure(options =>
+                {
+                    options.ActivityTrackingOptions = ActivityTrackingOptions.SpanId
+                                                        | ActivityTrackingOptions.TraceId
+                                                        | ActivityTrackingOptions.ParentId;
+                });
+                
             })
             .UseDefaultServiceProvider((context, options) =>
             {
