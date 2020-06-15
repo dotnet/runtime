@@ -165,6 +165,36 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<ulong> Abs(Vector128<long> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// int64x2_t vqabsq_s64 (int64x2_t a)
+            ///   A64: SQABS Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> AbsSaturate(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vqabsh_s16 (int16_t a)
+            ///   A64: SQABS Hd, Hn
+            /// </summary>
+            public static Vector64<short> AbsSaturateScalar(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqabss_s32 (int32_t a)
+            ///   A64: SQABS Sd, Sn
+            /// </summary>
+            public static Vector64<int> AbsSaturateScalar(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqabsd_s64 (int64_t a)
+            ///   A64: SQABS Dd, Dn
+            /// </summary>
+            public static Vector64<long> AbsSaturateScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8_t vqabsb_s8 (int8_t a)
+            ///   A64: SQABS Bd, Bn
+            /// </summary>
+            public static Vector64<sbyte> AbsSaturateScalar(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// int64x1_t vabs_s64 (int64x1_t a)
             ///   A64: ABS Dd, Dn
             /// </summary>
@@ -2762,6 +2792,48 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: FABS Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<float> Abs(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vqabs_s16 (int16x4_t a)
+        ///   A32: VQABS.S16 Dd, Dm
+        ///   A64: SQABS Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<short> AbsSaturate(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqabs_s32 (int32x2_t a)
+        ///   A32: VQABS.S32 Dd, Dm
+        ///   A64: SQABS Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<int> AbsSaturate(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vqabs_s8 (int8x8_t a)
+        ///   A32: VQABS.S8 Dd, Dm
+        ///   A64: SQABS Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<sbyte> AbsSaturate(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqabsq_s16 (int16x8_t a)
+        ///   A32: VQABS.S16 Qd, Qm
+        ///   A64: SQABS Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<short> AbsSaturate(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqabsq_s32 (int32x4_t a)
+        ///   A32: VQABS.S32 Qd, Qm
+        ///   A64: SQABS Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<int> AbsSaturate(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vqabsq_s8 (int8x16_t a)
+        ///   A32: VQABS.S8 Qd, Qm
+        ///   A64: SQABS Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<sbyte> AbsSaturate(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float64x1_t vabs_f64 (float64x1_t a)
