@@ -21,7 +21,6 @@ enum {
     func_flag_qcall        = 0x08, // QCall - mscorlib.dll to mscorwks.dll transition implemented as PInvoke
 };
 
-//keep qcall class names and method names sorted
 static const MonoQCallDef c_qcalls[] =
 {
     #define FCClassElement(name,namespace,funcs) {name, namespace, funcs},
@@ -40,15 +39,15 @@ static gboolean is_qcall (MonoQCallFunc *func)       { return !!((int)func->flag
 
 static MonoQCallFunc* next_in_array(MonoQCallFunc *func)
 {
-    return (MonoQCallFunc*)((char*)func +sizeof(MonoQCallFunc));
+    return (MonoQCallFunc *)((char *)func +sizeof(MonoQCallFunc));
         //(HasSignature(func) ? sizeof(ECFunc) : offsetof(ECFunc, func->m_pMethodSig)));
 }
 
 static int 
 find_impls_index_for_class (MonoMethod* method)
 {
-    const char* namespace = m_class_get_name_space(method->klass);
-    const char* name = m_class_get_name(method->klass);
+    const char *namespace = m_class_get_name_space (method->klass);
+    const char *name = m_class_get_name (method->klass);
 
     if (name == NULL)
         return -1;
@@ -61,18 +60,18 @@ find_impls_index_for_class (MonoMethod* method)
     if (!checkedSort) {
         checkedSort = true;
         for (unsigned i = 1; i < high; i++)  {
-            int cmp = strcmp(c_qcalls[i].class_name, c_qcalls[i-1].class_name);
+            int cmp = strcmp (c_qcalls[i].class_name, c_qcalls[i-1].class_name);
             if (cmp == 0)
-                cmp = strcmp(c_qcalls[i].namespace_name, c_qcalls[i-1].namespace_name);
+                cmp = strcmp (c_qcalls[i].namespace_name, c_qcalls[i-1].namespace_name);
             g_assert(cmp > 0);
         }
     }
 #endif // DEBUG
     while (high > low) {
         unsigned mid  = (high + low) / 2;
-        int cmp = strcmp(name, c_qcalls[mid].class_name);
+        int cmp = strcmp (name, c_qcalls[mid].class_name);
         if (cmp == 0)
-            cmp = strcmp(namespace, c_qcalls[mid].namespace_name);
+            cmp = strcmp (namespace, c_qcalls[mid].namespace_name);
 
         if (cmp == 0) {
             return(mid);
@@ -89,9 +88,9 @@ static int
 find_index_for_method (MonoMethod* method, const void **impls)
 {
     const char* method_name = method->name;
-    for (MonoQCallFunc* cur = (MonoQCallFunc*)impls; !is_end_of_array(cur); cur = next_in_array(cur))
+    for (MonoQCallFunc *cur = (MonoQCallFunc *)impls; !is_end_of_array(cur); cur = next_in_array(cur))
     {
-        if (strcmp(cur->method_name, method_name) != 0)
+        if (strcmp (cur->method_name, method_name) != 0)
             continue;
         return (int)((const void**)cur - impls);
     }

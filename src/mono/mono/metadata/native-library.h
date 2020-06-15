@@ -39,7 +39,7 @@ typedef struct MonoQCallDef
 } MonoQCallDef;
 
 typedef struct MonoQCallFunc {
-    int*            flags;
+    intptr_t        flags; //legal values (0x01 - end of array mareker, 0x08 - qcall)
     void*           implementation;
     const char*     method_name;
 } MonoQCallFunc;
