@@ -950,7 +950,7 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         pDeclMT = declaringType.GetMethodTable();
 
         // We don't allow setting the field of nullable<T> (hasValue and value)
-        // Because you can't independantly set them for this type.
+        // Because you can't independently set them for this type.
         if (Nullable::IsNullableType(pDeclMT))
             COMPlusThrow(kNotSupportedException);
 
@@ -1171,7 +1171,7 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
         pDeclMT = declaringType.GetMethodTable();
 
         // We don't allow getting the field just so we don't have more specical
-        // cases than we need to.  Then we need at least the throw check to insure
+        // cases than we need to.  Then we need at least the throw check to ensure
         // we don't allow data corruption.
         if (Nullable::IsNullableType(pDeclMT))
             COMPlusThrow(kNotSupportedException);
