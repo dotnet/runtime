@@ -3081,17 +3081,36 @@ is_ok_for_covariant_ret (MonoType *type_impl, MonoType *type_decl)
 }
 
 /**
- * check_signature_covariant:
- * \param klass the class with the explicit override
+ * signature_is_subsumed:
  * \param impl_method method that implements the override. defined in \p klass
  * \param decl_method method that is being overridden.
  *
  * Check that \p impl_method has a signature that is subsumed by the signature of \p decl_method.  That is,
  *  that the argument types all match and that the return type of \p impl_method is castable to the return type of \p decl_method, except that
  *  both must not be valuetypes or interfaces.
+ *
+ * Returns \c TRUE if \p impl_method is subsumed by \p decl_method, or FALSE otherwise.  On error sets \p error and returns \c FALSE
+ *
+ * Note that \p decl_method may not be the explicitly overridden method as specified by an .override in the class where \p impl_method is defined,
+ * but rather some method on an ancestor class that is itself a previous override.
+ *
+ * class C {
+ *   public virtual C Foo ();
+ * }
+ * class B : C {
+ *   public virtual newslot B Foo () {
+ *      .PreserveBaseOverrideAttribute;
+ *      .override C C::Foo ();
+ *   }
+ * }
+ * class A : B {
+ *   public virtual newslot C Foo () {
+ *     .override C C::Foo (); // type load error - it should be a a subclass of B because of B's override of C::Foo
+ *   }
+ * }
  */
 static gboolean
-check_signature_covariant (MonoClass *klass, MonoMethod *impl_method, MonoMethod *decl_method, MonoError *error)
+signature_is_subsumed (MonoMethod *impl_method, MonoMethod *decl_method, MonoError *error)
 {
 	MonoMethodSignature *impl_sig = mono_method_signature_internal (impl_method);
 
@@ -3173,6 +3192,34 @@ check_signature_covariant (MonoClass *klass, MonoMethod *impl_method, MonoMethod
 		mono_metadata_free_type (alloc_decl_ret);
 	return result;
 }
+
+static gboolean
+check_signature_covariant (MonoClass *klass, MonoMethod *impl, MonoMethod *decl)
+{
+	TRACE_INTERFACE_VTABLE (printf (" checking covariant signature compatability on behalf of %s: '%s' overriding '%s'\n", mono_type_full_name (m_class_get_byval_arg (klass)), mono_method_full_name (impl, 1), mono_method_full_name (decl, 1)));
+	ERROR_DECL (local_error);
+	gboolean subsumed = signature_is_subsumed (impl, decl, local_error);
+	if (!is_ok (local_error) || !subsumed) {
+		const gboolean print_sig = TRUE;
+		const gboolean print_ret_type = TRUE;
+		char *decl_method_name = mono_method_get_name_full (decl, print_sig, print_ret_type, MONO_TYPE_NAME_FORMAT_IL);
+		char *impl_method_name = mono_method_get_name_full (impl, print_sig, print_ret_type, MONO_TYPE_NAME_FORMAT_IL);
+		const char *msg;
+		if (!is_ok (local_error)) {
+			msg = mono_error_get_message (local_error);
+		} else {
+			msg = "but with an incompatible signature";
+		}
+		mono_class_set_type_load_failure (klass, "Method '%s' overrides method '%s', %s",
+						  impl_method_name, decl_method_name, msg);
+		mono_error_cleanup (local_error);
+		g_free (decl_method_name);
+		g_free (impl_method_name);
+		return FALSE;
+	}
+	return TRUE;
+}
+
 #endif /* FEATURE_COVARIANT_RETURNS */
 
 /*
@@ -3543,6 +3590,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 					 */
 					TRACE_INTERFACE_VTABLE (printf ("override decl [slot %d] %s in class %s has method %s in this slot and it has the preserve base overrides attribute.  overridden by %s\n", decl->slot, mono_method_full_name (decl, 1), mono_type_full_name (m_class_get_byval_arg (impl_class)), mono_method_full_name (prev_impl, 1), mono_method_full_name (impl, 1)));
 					g_assert (impl_class != NULL);
+					MonoMethod *last_checked_prev_override = NULL;
 					for (MonoClass *cur_class = klass->parent; cur_class ; cur_class = cur_class->parent) {
 						if (decl->slot >= cur_class->vtable_size)
 							break;
@@ -3553,6 +3601,23 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 								printf ("  slot %d of %s was %s adding override to %s\n", decl->slot, full_name, mono_method_full_name (prev_impl, 1), mono_method_full_name (impl, 1));
 								g_free (full_name);
 							} while (0));
+						if (prev_impl != last_checked_prev_override) {
+							/*
+							 * the new impl should be subsumed by the prior one, ie this
+							 * newest leaf class provides the most specific implementation
+							 * of the method of any of its ancestor classes.
+							 */
+							/*
+							 * but as we go up the inheritance hierarchy only check if the
+							 * prev_impl method is changing.  If it's the same one in the
+							 * slot the whole time, don't bother checking it over and
+							 * over.
+							 */
+							if (!check_signature_covariant (klass, impl, prev_impl))
+								goto fail;
+							last_checked_prev_override = prev_impl;
+						}
+
 					}
 				}
 
@@ -3563,29 +3628,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				mono_security_core_clr_check_override (klass, impl, decl);
 #ifdef FEATURE_COVARIANT_RETURNS
 			if (compare_sigs) {
-				TRACE_INTERFACE_VTABLE (printf (" checking covariant signature compatability of %s overriding %s\n", mono_method_full_name (impl, 1), mono_method_full_name (decl, 1)));
-				ERROR_DECL (local_error);
-				gboolean subsumed = check_signature_covariant (klass, impl, decl, local_error);
-				if (!is_ok (local_error) || !subsumed) {
-					const gboolean print_sig = TRUE;
-					const gboolean print_ret_type = TRUE;
-					char *decl_method_name = mono_method_get_name_full (decl, print_sig, print_ret_type, MONO_TYPE_NAME_FORMAT_IL);
-					char *impl_method_name = mono_method_get_name_full (impl, print_sig, print_ret_type, MONO_TYPE_NAME_FORMAT_IL);
-					const char *msg;
-					if (!is_ok (local_error)) {
-						msg = mono_error_get_message (local_error);
-					} else {
-						msg = "but with an incompatible signature";
-					}
-					mono_class_set_type_load_failure (klass, "Method '%s' overrides method '%s', %s",
-									  impl_method_name, decl_method_name, msg);
-					mono_error_cleanup (local_error);
-					g_free (decl_method_name);
-					g_free (impl_method_name);
-
+				if (!check_signature_covariant (klass, impl, decl))
 					goto fail;
-
-				}
 			}
 		}
 #endif /* FEATURE_COVARIANT_RETURNS */
