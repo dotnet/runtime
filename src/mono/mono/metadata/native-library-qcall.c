@@ -15,10 +15,10 @@
 extern const void* gPalGlobalizationNative[];
 
 enum {
-    func_flag_end_of_array   = 0x01,
+    func_flag_end_of_array = 0x01,
     func_flag_has_signature = 0x02,
     func_flag_unreferenced = 0x04, // Suppress unused fcall check
-    func_flag_qcall        = 0x08, // QCall - mscorlib.dll to mscorwks.dll transition implemented as PInvoke
+    func_flag_qcall = 0x08, // QCall - mscorlib.dll to mscorwks.dll transition implemented as PInvoke
 };
 
 static const MonoQCallDef c_qcalls[] =
@@ -30,14 +30,15 @@ static const MonoQCallDef c_qcalls[] =
 
 const int c_nECClasses = sizeof(c_qcalls)/sizeof(c_qcalls[0]);
 
-static gboolean is_end_of_array (MonoQCallFunc *func)  { return !!((int)func->flags & func_flag_end_of_array); }
-static gboolean has_signature (MonoQCallFunc *func)  { return !!((int)func->flags & func_flag_has_signature); }
-static gboolean is_unreferenced (MonoQCallFunc *func){ return !!((int)func->flags & func_flag_unreferenced); }
-static gboolean is_qcall (MonoQCallFunc *func)       { return !!((int)func->flags & func_flag_qcall); }
+static gboolean is_end_of_array (MonoQCallFunc *func) { return !!((int)func->flags & func_flag_end_of_array); }
+static gboolean has_signature (MonoQCallFunc *func) { return !!((int)func->flags & func_flag_has_signature); }
+static gboolean is_unreferenced (MonoQCallFunc *func) { return !!((int)func->flags & func_flag_unreferenced); }
+static gboolean is_qcall (MonoQCallFunc *func) { return !!((int)func->flags & func_flag_qcall); }
 //CorInfoIntrinsics   IntrinsicID(ECFunc *func)   { return (CorInfoIntrinsics)((INT8)(func->m_dwFlags >> 16)); }
 //int                 DynamicID(ECFunc *func)     { return (int)              ((int8)(func->m_dwFlags >> 24)); }
 
-static MonoQCallFunc* next_in_array(MonoQCallFunc *func)
+static MonoQCallFunc *
+next_in_array(MonoQCallFunc *func)
 {
     return (MonoQCallFunc *)((char *)func +sizeof(MonoQCallFunc));
         //(HasSignature(func) ? sizeof(ECFunc) : offsetof(ECFunc, func->m_pMethodSig)));
@@ -56,9 +57,9 @@ find_impls_index_for_class (MonoMethod* method)
     unsigned high = c_nECClasses;
 
 #ifdef DEBUG
-    static bool checkedSort = false;
+    static bool checkedSort = FALSE;
     if (!checkedSort) {
-        checkedSort = true;
+        checkedSort = TRUE;
         for (unsigned i = 1; i < high; i++)  {
             int cmp = strcmp (c_qcalls[i].class_name, c_qcalls[i-1].class_name);
             if (cmp == 0)
@@ -74,10 +75,10 @@ find_impls_index_for_class (MonoMethod* method)
             cmp = strcmp (namespace, c_qcalls[mid].namespace_name);
 
         if (cmp == 0) {
-            return(mid);
+            return mid;
         }
         if (cmp > 0)
-            low = mid+1;
+            low = mid + 1;
         else
             high = mid;
     }
@@ -113,5 +114,5 @@ mono_lookup_pinvoke_qcall_internal (MonoMethod *method, MonoLookupPInvokeStatus 
             "Couldn't find method: '%s' in class '%s' in namespace '%s'.", method->name, m_class_get_name(method->klass), m_class_get_name_space(method->klass));
         return NULL;
     }
-    return  (gpointer)c_qcalls[pos_class].functions[pos_method+1];
+    return (gpointer)c_qcalls[pos_class].functions[pos_method+1];
 }
