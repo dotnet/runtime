@@ -123,7 +123,7 @@ namespace System.Globalization
                 if (_currentEraValue == -1)
                 {
                     Debug.Assert(BaseCalendarID != CalendarId.UNINITIALIZED_VALUE, "[Calendar.CurrentEraValue] Expected a real calendar ID");
-                    _currentEraValue = CalendarData.GetCalendarData(BaseCalendarID).iCurrentEra;
+                    _currentEraValue = CalendarData.GetCalendarCurrentEra(this);
                 }
 
                 return _currentEraValue;

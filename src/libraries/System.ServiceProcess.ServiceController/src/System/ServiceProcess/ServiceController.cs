@@ -538,8 +538,7 @@ namespace System.ServiceProcess
         /// </summary>
         private unsafe string? GetServiceKeyName(SafeServiceHandle? SCMHandle, string serviceDisplayName)
         {
-            Span<char> initialBuffer = stackalloc char[256];
-            var builder = new ValueStringBuilder(initialBuffer);
+            var builder = new ValueStringBuilder(stackalloc char[256]);
             int bufLen;
             while (true)
             {

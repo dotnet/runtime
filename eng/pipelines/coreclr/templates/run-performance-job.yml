@@ -16,7 +16,8 @@ parameters:
   timeoutInMinutes: 320           # optional -- timeout for the job
   enableTelemetry: false          # optional -- enable for telemetry
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
-  runtimeType: 'coreclr'
+  runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
+  codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -49,18 +50,37 @@ jobs:
 
     - IsInternal: ''
     - HelixApiAccessToken: ''
+    - HelixPreCommandStemWindows: 'py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
+    - HelixPreCommandStemLinux: 'sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
     - HelixPreCommand: ''
+    - Interpreter: ''
 
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
-        - HelixPreCommand: 'py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
+        - HelixPreCommand: $(HelixPreCommandStemWindows)
         - IsInternal: -Internal
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - HelixPreCommand: 'sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+        - HelixPreCommand: $(HelixPreCommandStemLinux)
         - IsInternal: --internal
         
       - group: DotNet-HelixApi-Access
       - group: dotnet-benchview
+
+    - ${{ if and(eq(parameters.codeGenType, 'Interpreter'), eq(parameters.runtimeType, 'mono')) }}:
+      - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
+        - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+          - HelixPreCommand: '$(HelixPreCommandStemWindows);set MONO_ENV_OPTIONS="--interpreter"'
+          - Interpreter: ' -MonoInterpreter'
+        - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
+          - HelixPreCommand: 'set MONO_ENV_OPTIONS="--interpreter"'
+          - Interpreter: ' -MonoInterpreter'
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+          - HelixPreCommand: '$(HelixPreCommandStemLinux);export MONO_ENV_OPTIONS="--interpreter"'
+          - Interpreter: ' --monointerpreter'
+        - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
+          - HelixPreCommand: '$(HelixPreCommandStemLinux);export MONO_ENV_OPTIONS="--interpreter"'
+          - Interpreter: ' --monointerpreter'
 
     workspace:
       clean: all
@@ -74,11 +94,11 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
-    - powershell: $(Build.SourcesDirectory)\eng\common\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) ${{ parameters.extraSetupParameters }}
+    - powershell: $(Build.SourcesDirectory)\eng\common\performance\performance-setup.ps1 $(IsInternal)$(Interpreter) -Framework $(_Framework) ${{ parameters.extraSetupParameters }}
       displayName: Performance Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Build.SourcesDirectory)/eng/common/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) ${{ parameters.extraSetupParameters }}
+    - script: $(Build.SourcesDirectory)/eng/common/performance/performance-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) ${{ parameters.extraSetupParameters }}
       displayName: Performance Setup (Unix)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
@@ -108,6 +128,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}'
+        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
       continueOnError: true
       condition: always()

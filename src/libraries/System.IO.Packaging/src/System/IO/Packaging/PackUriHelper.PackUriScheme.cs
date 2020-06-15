@@ -48,7 +48,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentNullException">If packageUri parameter is null</exception>
         /// <exception cref="ArgumentException">If packageUri parameter is not an absolute Uri</exception>
         /// <exception cref="ArgumentException">If partUri parameter does not conform to the valid partUri syntax</exception>
-        public static Uri Create(Uri packageUri, Uri partUri)
+        public static Uri Create(Uri packageUri, Uri? partUri)
         {
             return Create(packageUri, partUri, null);
         }
@@ -69,7 +69,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If packageUri parameter is not an absolute Uri</exception>
         /// <exception cref="ArgumentException">If partUri parameter does not conform to the valid partUri syntax</exception>
         /// <exception cref="ArgumentException">If fragment parameter is empty or does not start with a "#"</exception>
-        public static Uri Create(Uri packageUri, Uri partUri, string fragment)
+        public static Uri Create(Uri packageUri, Uri? partUri, string? fragment)
         {
             // Step 1 - Validate input parameters
             packageUri = ValidatePackageUri(packageUri);
@@ -153,10 +153,10 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If packUri parameter is not an absolute Uri</exception>
         /// <exception cref="ArgumentException">If packUri parameter does not have "pack://" scheme</exception>
         /// <exception cref="ArgumentException">If partUri extracted from packUri does not conform to the valid partUri syntax</exception>
-        public static Uri GetPartUri(Uri packUri)
+        public static Uri? GetPartUri(Uri packUri)
         {
             //Parameter Validation is done in the following method
-            ValidateAndGetPackUriComponents(packUri, out _, out Uri partUri);
+            ValidateAndGetPackUriComponents(packUri, out _, out Uri? partUri);
 
             return partUri;
         }
@@ -173,7 +173,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If either of the Uris are not absolute or if either of the Uris are not with pack:// scheme</exception>
         /// <exception cref="ArgumentException">If firstPackUri or secondPackUri parameter is not an absolute Uri</exception>
         /// <exception cref="ArgumentException">If firstPackUri or secondPackUri parameter does not have "pack://" scheme</exception>
-        public static int ComparePackUri(Uri firstPackUri, Uri secondPackUri)
+        public static int ComparePackUri(Uri? firstPackUri, Uri? secondPackUri)
         {
             //If any of the operands are null then we simply call System.Uri compare to return the correct value
             if (firstPackUri == null || secondPackUri == null)
@@ -184,8 +184,8 @@ namespace System.IO.Packaging
             {
                 int compareResult;
 
-                ValidateAndGetPackUriComponents(firstPackUri, out Uri firstPackageUri, out Uri firstPartUri);
-                ValidateAndGetPackUriComponents(secondPackUri, out Uri secondPackageUri, out Uri secondPartUri);
+                ValidateAndGetPackUriComponents(firstPackUri, out Uri firstPackageUri, out Uri? firstPartUri);
+                ValidateAndGetPackUriComponents(secondPackUri, out Uri secondPackageUri, out Uri? secondPartUri);
 
                 if (firstPackageUri.Scheme == PackUriHelper.UriSchemePack && secondPackageUri.Scheme == PackUriHelper.UriSchemePack)
                 {
@@ -213,7 +213,7 @@ namespace System.IO.Packaging
         //This method validates the packUri and returns its two components if they are valid-
         //1. Package Uri
         //2. Part Uri
-        internal static void ValidateAndGetPackUriComponents(Uri packUri, out Uri packageUri, out Uri partUri)
+        internal static void ValidateAndGetPackUriComponents(Uri packUri, out Uri packageUri, out Uri? partUri)
         {
             //Validate if its not null and is an absolute Uri, has pack:// Scheme.
             packUri = ValidatePackUri(packUri);
@@ -317,7 +317,7 @@ namespace System.IO.Packaging
         }
 
         //This method validates and returns the PartUri component.
-        private static PackUriHelper.ValidatedPartUri GetPartUriComponent(Uri packUri)
+        private static PackUriHelper.ValidatedPartUri? GetPartUriComponent(Uri packUri)
         {
             Debug.Assert(packUri != null, "packUri parameter cannot be null");
 

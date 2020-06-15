@@ -19,7 +19,6 @@ namespace System.Tests
     {
         private static readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         private static readonly bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-        private static readonly bool s_isOSXAndNotHighSierra = s_isOSX && !PlatformDetection.IsMacOsHighSierraOrHigher;
 
         private static string s_strPacific = s_isWindows ? "Pacific Standard Time" : "America/Los_Angeles";
         private static string s_strSydney = s_isWindows ? "AUS Eastern Standard Time" : "Australia/Sydney";
@@ -2403,9 +2402,6 @@ namespace System.Tests
         /// <remarks>
         /// Windows uses the current daylight savings rules for early times.
         ///
-        /// OSX before High Sierra version has V1 tzfiles, which means for early times it uses the first standard offset in the tzfile.
-        /// For Pacific Standard Time it is UTC-8.  For Sydney, it is UTC+10.
-        ///
         /// Other Unix distros use V2 tzfiles, which use local mean time (LMT), which is based on the solar time.
         /// The Pacific Standard Time LMT is UTC-07:53.  For Sydney, LMT is UTC+10:04.
         /// </remarks>
@@ -2413,7 +2409,7 @@ namespace System.Tests
         {
             if (timeZoneId == s_strPacific)
             {
-                if (s_isWindows || s_isOSXAndNotHighSierra)
+                if (s_isWindows)
                 {
                     return TimeSpan.FromHours(-8);
                 }
@@ -2427,10 +2423,6 @@ namespace System.Tests
                 if (s_isWindows)
                 {
                     return TimeSpan.FromHours(11);
-                }
-                else if (s_isOSXAndNotHighSierra)
-                {
-                    return TimeSpan.FromHours(10);
                 }
                 else
                 {

@@ -9224,6 +9224,8 @@ void Compiler::optRemoveRedundantZeroInits()
 
     CompAllocator   allocator(getAllocator(CMK_ZeroInit));
     LclVarRefCounts refCounts(allocator);
+    BitVecTraits    bitVecTraits(lvaCount, this);
+    BitVec          zeroInitLocals = BitVecOps::MakeEmpty(&bitVecTraits);
     bool            hasGCSafePoint = false;
     bool            canThrow       = false;
 
@@ -9271,54 +9273,93 @@ void Compiler::optRemoveRedundantZeroInits()
                     case GT_ASG:
                     {
                         GenTreeOp* treeOp = tree->AsOp();
-                        if (treeOp->gtOp1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                        if (!treeOp->gtOp1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
                         {
-                            unsigned         lclNum    = treeOp->gtOp1->AsLclVarCommon()->GetLclNum();
-                            LclVarDsc* const lclDsc    = lvaGetDesc(lclNum);
-                            unsigned*        pRefCount = refCounts.LookupPointer(lclNum);
+                            break;
+                        }
 
-                            // pRefCount can't be null because the local node on the lhs of the assignment
-                            // must have already been seen.
-                            assert(pRefCount != nullptr);
-                            if (*pRefCount == 1)
+                        unsigned         lclNum    = treeOp->gtOp1->AsLclVarCommon()->GetLclNum();
+                        LclVarDsc* const lclDsc    = lvaGetDesc(lclNum);
+                        unsigned*        pRefCount = refCounts.LookupPointer(lclNum);
+
+                        // pRefCount can't be null because the local node on the lhs of the assignment
+                        // must have already been seen.
+                        assert(pRefCount != nullptr);
+                        if (*pRefCount != 1)
+                        {
+                            break;
+                        }
+
+                        unsigned parentRefCount = 0;
+                        if (lclDsc->lvIsStructField && refCounts.Lookup(lclDsc->lvParentLcl, &parentRefCount) &&
+                            (parentRefCount != 0))
+                        {
+                            break;
+                        }
+
+                        unsigned fieldRefCount = 0;
+                        if (lclDsc->lvPromoted)
+                        {
+                            for (unsigned i = lclDsc->lvFieldLclStart;
+                                 (fieldRefCount == 0) && (i < lclDsc->lvFieldLclStart + lclDsc->lvFieldCnt); ++i)
                             {
-                                // The local hasn't been referenced before this assignment.
-                                bool removedExplicitZeroInit = false;
-                                if (!lclDsc->lvTracked && treeOp->gtOp2->IsIntegralConst(0))
-                                {
-                                    bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
-                                    bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+                                refCounts.Lookup(i, &fieldRefCount);
+                            }
+                        }
 
-                                    if (!fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
+                        if (fieldRefCount != 0)
+                        {
+                            break;
+                        }
+
+                        // The local hasn't been referenced before this assignment.
+                        bool removedExplicitZeroInit = false;
+
+                        if (treeOp->gtOp2->IsIntegralConst(0))
+                        {
+                            if (!lclDsc->lvTracked)
+                            {
+                                bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+                                bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+
+                                if (BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclNum) ||
+                                    (lclDsc->lvIsStructField &&
+                                     BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
+                                    !fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
+                                {
+                                    // We are guaranteed to have a zero initialization in the prolog or a
+                                    // dominating explicit zero initialization and the local hasn't been redefined
+                                    // between the prolog and this explicit zero initialization so the assignment
+                                    // can be safely removed.
+                                    if (tree == stmt->GetRootNode())
                                     {
-                                        // We are guaranteed to have a zero initialization in the prolog and
-                                        // the local hasn't been redefined between the prolog and this explicit
-                                        // zero initialization so the assignment can be safely removed.
-                                        if (tree == stmt->GetRootNode())
-                                        {
-                                            fgRemoveStmt(block, stmt);
-                                            removedExplicitZeroInit      = true;
-                                            *pRefCount                   = 0;
-                                            lclDsc->lvSuppressedZeroInit = 1;
-                                            lclDsc->setLvRefCnt(lclDsc->lvRefCnt() - 1);
-                                        }
+                                        fgRemoveStmt(block, stmt);
+                                        removedExplicitZeroInit      = true;
+                                        lclDsc->lvSuppressedZeroInit = 1;
+                                        lclDsc->setLvRefCnt(lclDsc->lvRefCnt() - 1);
                                     }
                                 }
+                            }
 
-                                if (!removedExplicitZeroInit && treeOp->gtOp1->OperIs(GT_LCL_VAR) &&
-                                    (!canThrow || !lclDsc->lvLiveInOutOfHndlr))
-                                {
-                                    // If compMethodRequiresPInvokeFrame() returns true, lower may later
-                                    // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME which is a gc-safe point.
-                                    if (!lclDsc->HasGCPtr() ||
-                                        (!GetInterruptible() && !hasGCSafePoint && !compMethodRequiresPInvokeFrame()))
-                                    {
-                                        // The local hasn't been used and won't be reported to the gc between
-                                        // the prolog and this explicit intialization. Therefore, it doesn't
-                                        // require zero initialization in the prolog.
-                                        lclDsc->lvHasExplicitInit = 1;
-                                    }
-                                }
+                            if (treeOp->gtOp1->OperIs(GT_LCL_VAR))
+                            {
+                                BitVecOps::AddElemD(&bitVecTraits, zeroInitLocals, lclNum);
+                            }
+                            *pRefCount = 0;
+                        }
+
+                        if (!removedExplicitZeroInit && treeOp->gtOp1->OperIs(GT_LCL_VAR) &&
+                            (!canThrow || !lclDsc->lvLiveInOutOfHndlr))
+                        {
+                            // If compMethodRequiresPInvokeFrame() returns true, lower may later
+                            // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME which is a gc-safe point.
+                            if (!lclDsc->HasGCPtr() ||
+                                (!GetInterruptible() && !hasGCSafePoint && !compMethodRequiresPInvokeFrame()))
+                            {
+                                // The local hasn't been used and won't be reported to the gc between
+                                // the prolog and this explicit intialization. Therefore, it doesn't
+                                // require zero initialization in the prolog.
+                                lclDsc->lvHasExplicitInit = 1;
                             }
                         }
                         break;

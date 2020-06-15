@@ -40,6 +40,8 @@ namespace ILCompiler
         public int Parallelism { get; set; }
         public ReadyToRunMethodLayoutAlgorithm MethodLayout { get; set; }
         public ReadyToRunFileLayoutAlgorithm FileLayout { get; set; }
+        public int? CustomPESectionAlignment { get; set; }
+
         public string SingleMethodTypeName { get; set; }
         public string SingleMethodName { get; set; }
         public string[] SingleMethodGenericArgs { get; set; }
@@ -173,6 +175,10 @@ namespace ILCompiler
                 new Option(new[] { "--parallelism" }, SR.ParalellismOption)
                 { 
                     Argument = new Argument<int>(() => Environment.ProcessorCount)
+                },
+                new Option(new[] { "--custom-pe-section-alignment" }, SR.CustomPESectionAlignmentOption)
+                { 
+                    Argument = new Argument<int?>()
                 },
                 new Option(new[] { "--map" }, SR.MapFileOption)
                 {

@@ -55,6 +55,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 false);
 
         private X509Certificate2 _cert;
+        private byte[] _certData;
         private X509Extension _cdpExtension;
         private X509Extension _aiaExtension;
         private X509Extension _akidExtension;
@@ -66,6 +67,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         private X509Certificate2 _ocspResponder;
         private byte[] _dnHash;
 
+        internal string AiaHttpUri { get; }
         internal string CdpUri { get; }
         internal string OcspUri { get; }
 
@@ -73,9 +75,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         internal DateTimeOffset? RevocationExpiration { get; set; }
         internal bool CorruptRevocationIssuerName { get; set; }
 
-        internal CertificateAuthority(X509Certificate2 cert, string cdpUrl, string ocspUrl)
+        internal CertificateAuthority(
+            X509Certificate2 cert,
+            string aiaHttpUrl,
+            string cdpUrl,
+            string ocspUrl)
         {
             _cert = cert;
+            AiaHttpUri = aiaHttpUrl;
             CdpUri = cdpUrl;
             OcspUri = ocspUrl;
         }
@@ -160,9 +167,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 _cdpExtension = CreateCdpExtension(CdpUri);
             }
 
-            if (_aiaExtension == null && OcspUri != null)
+            if (_aiaExtension == null && (OcspUri != null || AiaHttpUri != null))
             {
-                _aiaExtension = CreateAiaExtension(OcspUri);
+                _aiaExtension = CreateAiaExtension(AiaHttpUri, OcspUri);
             }
 
             RebuildRootWithRevocation(_cdpExtension, _aiaExtension);
@@ -219,9 +226,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 _cdpExtension = CreateCdpExtension(CdpUri);
             }
 
-            if (_aiaExtension == null && OcspUri != null)
+            if (_aiaExtension == null && (OcspUri != null || AiaHttpUri != null))
             {
-                _aiaExtension = CreateAiaExtension(OcspUri);
+                _aiaExtension = CreateAiaExtension(AiaHttpUri, OcspUri);
             }
 
             if (_akidExtension == null)
@@ -263,6 +270,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 _cert.NotBefore.Add(nestingBuffer),
                 _cert.NotAfter.Subtract(nestingBuffer),
                 serial);
+        }
+
+        internal byte[] GetCertData()
+        {
+            return (_certData ??= _cert.RawData);
         }
 
         internal byte[] GetCrl()
@@ -650,22 +662,39 @@ SingleResponse ::= SEQUENCE {
             return CertStatus.OK;
         }
 
-        private static X509Extension CreateAiaExtension(string ocspStem)
+        private static X509Extension CreateAiaExtension(string certLocation, string ocspStem)
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
             // AuthorityInfoAccessSyntax (SEQUENCE OF)
             using (writer.PushSequence())
             {
-                // AccessDescription
-                using (writer.PushSequence())
+                if (!string.IsNullOrEmpty(ocspStem))
                 {
-                    writer.WriteObjectIdentifier("1.3.6.1.5.5.7.48.1");
+                    // AccessDescription for id-ad-ocsp
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteObjectIdentifier("1.3.6.1.5.5.7.48.1");
 
-                    writer.WriteCharacterString(
-                        UniversalTagNumber.IA5String,
-                        ocspStem,
-                        new Asn1Tag(TagClass.ContextSpecific, 6));
+                        writer.WriteCharacterString(
+                            UniversalTagNumber.IA5String,
+                            ocspStem,
+                            new Asn1Tag(TagClass.ContextSpecific, 6));
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(certLocation))
+                {
+                    // AccessDescription for id-ad-caIssuers
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteObjectIdentifier("1.3.6.1.5.5.7.48.2");
+
+                        writer.WriteCharacterString(
+                            UniversalTagNumber.IA5String,
+                            certLocation,
+                            new Asn1Tag(TagClass.ContextSpecific, 6));
+                    }
                 }
             }
 

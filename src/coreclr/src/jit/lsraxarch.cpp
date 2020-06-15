@@ -83,33 +83,14 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_LCL_VAR:
-        {
-            // We handle tracked variables differently from non-tracked ones.  If it is tracked,
-            // we will simply add a use of the tracked variable at its parent/consumer.
-            // Otherwise, for a use we need to actually add the appropriate references for loading
-            // or storing the variable.
-            //
-            // A tracked variable won't actually get used until the appropriate ancestor tree node
-            // is processed, unless this is marked "isLocalDefUse" because it is a stack-based argument
-            // to a call or an orphaned dead node.
-            //
-            // Because we do containment analysis before we redo dataflow and identify register
-            // candidates, the containment analysis only uses !lvDoNotEnregister to estimate register
-            // candidates.
-            // If there is a lclVar that is estimated to be register candidate but
-            // is not, if they were marked regOptional they should now be marked contained instead.
-            bool isCandidate = compiler->lvaGetDesc(tree->AsLclVar())->lvLRACandidate;
-            if (tree->IsRegOptional() && !isCandidate)
-            {
-                tree->ClearRegOptional();
-                tree->SetContained();
-                return 0;
-            }
-            if (isCandidate)
+            // We make a final determination about whether a GT_LCL_VAR is a candidate or contained
+            // after liveness. In either case we don't build any uses or defs. Otherwise, this is a
+            // load of a stack-based local into a register and we'll fall through to the general
+            // local case below.
+            if (checkContainedOrCandidateLclVar(tree->AsLclVar()))
             {
                 return 0;
             }
-        }
             __fallthrough;
 
         case GT_LCL_FLD:
@@ -132,6 +113,10 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_STORE_LCL_FLD:
         case GT_STORE_LCL_VAR:
+            if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
+            {
+                dstCount = compiler->lvaGetDesc(tree->AsLclVar()->GetLclNum())->lvFieldCnt;
+            }
             srcCount = BuildStoreLoc(tree->AsLclVarCommon());
             break;
 
@@ -707,7 +692,7 @@ int LinearScan::BuildNode(GenTree* tree)
     assert((dstCount < 2) || ((dstCount == 2) && tree->IsMultiRegNode()));
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsUnusedValue() || (dstCount != 0));
-    assert(dstCount == tree->GetRegisterDstCount());
+    assert(dstCount == tree->GetRegisterDstCount(compiler));
     return srcCount;
 }
 

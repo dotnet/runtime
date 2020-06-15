@@ -252,7 +252,7 @@ namespace
         return _printable_delegate_name_t{ delegate_name };
     }
 
-    int call_delegate_flavour(
+    int call_load_assembly_and_get_function_pointer_flavour(
         load_assembly_and_get_function_pointer_fn delegate,
         const pal::char_t *assembly_path,
         const pal::char_t *type_name,
@@ -294,7 +294,7 @@ namespace
         return rc;
     }
 
-    bool load_assembly_and_get_function_pointer_test(
+    bool component_load_assembly_and_get_function_pointer_test(
         const hostfxr_exports &hostfxr,
         const pal::char_t *config_path,
         int argc,
@@ -327,7 +327,7 @@ namespace
             else
             {
                 test_output << log_prefix << _X("hostfxr_get_runtime_delegate succeeded: ") << std::hex << std::showbase << rc << std::endl;
-                rc = call_delegate_flavour(delegate, assembly_path, type_name, method_name, log_prefix, test_output);
+                rc = call_load_assembly_and_get_function_pointer_flavour(delegate, assembly_path, type_name, method_name, log_prefix, test_output);
             }
         }
 
@@ -370,7 +370,7 @@ namespace
             else
             {
                 test_output << log_prefix << _X("hostfxr_get_runtime_delegate succeeded: ") << std::hex << std::showbase << rc << std::endl;
-                rc = call_delegate_flavour(delegate, assembly_path, type_name, method_name, log_prefix, test_output);
+                rc = call_load_assembly_and_get_function_pointer_flavour(delegate, assembly_path, type_name, method_name, log_prefix, test_output);
             }
         }
 
@@ -603,7 +603,7 @@ bool host_context_test::non_context_mixed(
     return success;
 }
 
-bool host_context_test::load_assembly_and_get_function_pointer(
+bool host_context_test::component_load_assembly_and_get_function_pointer(
     const pal::string_t &hostfxr_path,
     const pal::char_t *config_path,
     int argc,
@@ -612,7 +612,7 @@ bool host_context_test::load_assembly_and_get_function_pointer(
 {
     hostfxr_exports hostfxr{ hostfxr_path };
 
-    return load_assembly_and_get_function_pointer_test(hostfxr, config_path, argc, argv, config_log_prefix, test_output);
+    return component_load_assembly_and_get_function_pointer_test(hostfxr, config_path, argc, argv, config_log_prefix, test_output);
 }
 
 bool host_context_test::app_load_assembly_and_get_function_pointer(

@@ -361,6 +361,7 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Security.Cryptography.OidCollection ApplicationPolicy { get { throw null; } }
         public System.Security.Cryptography.OidCollection CertificatePolicy { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection CustomTrustStore { get { throw null; } }
+        public bool DisableCertificateDownloads { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection ExtraStore { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509RevocationFlag RevocationFlag { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509RevocationMode RevocationMode { get { throw null; } set { } }

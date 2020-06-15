@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Globalization;
-using System.Net;
 using System.Collections;
 using System.ComponentModel;
-using System.Text;
 using System.Diagnostics;
+using System.Net;
 using System.Runtime.InteropServices;
-using System.Xml;
-using System.Threading;
 using System.Security.Cryptography.X509Certificates;
-using System.Diagnostics.CodeAnalysis;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Xml;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -44,7 +43,6 @@ namespace System.DirectoryServices.Protocols
         private bool _needRebind = false;
         internal static Hashtable s_handleTable = null;
         internal static object s_objectLock = null;
-        private readonly GetLdapResponseCallback _fd = null;
         private static readonly Hashtable s_asyncResultTable = null;
         private static readonly LdapPartialResultsProcessor s_partialResultsProcessor = null;
         private static readonly ManualResetEvent s_waitHandle = null;
@@ -84,7 +82,6 @@ namespace System.DirectoryServices.Protocols
 
         public LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType)
         {
-            _fd = new GetLdapResponseCallback(ConstructResponse);
             _directoryIdentifier = identifier;
             _directoryCredential = (credential != null) ? new NetworkCredential(credential.UserName, credential.Password, credential.Domain) : null;
 
@@ -288,7 +285,9 @@ namespace System.DirectoryServices.Protocols
 
             if (error == 0 && messageID != -1)
             {
-                return ConstructResponse(messageID, operation, ResultAll.LDAP_MSG_ALL, requestTimeout, true);
+                ValueTask<DirectoryResponse> vt = ConstructResponseAsync(messageID, operation, ResultAll.LDAP_MSG_ALL, requestTimeout, true, sync: true);
+                Debug.Assert(vt.IsCompleted);
+                return vt.GetAwaiter().GetResult();
             }
             else
             {
@@ -379,7 +378,30 @@ namespace System.DirectoryServices.Protocols
 
                     s_asyncResultTable.Add(asyncResult, messageID);
 
-                    _fd.BeginInvoke(messageID, operation, ResultAll.LDAP_MSG_ALL, requestTimeout, true, new AsyncCallback(ResponseCallback), requestState);
+                    _ = ResponseCallback(ConstructResponseAsync(messageID, operation, ResultAll.LDAP_MSG_ALL, requestTimeout, true, sync: false), requestState);
+
+                    static async Task ResponseCallback(ValueTask<DirectoryResponse> vt, LdapRequestState requestState)
+                    {
+                        try
+                        {
+                            DirectoryResponse response = await vt.ConfigureAwait(false);
+                            requestState._response = response;
+                        }
+                        catch (Exception e)
+                        {
+                            requestState._exception = e;
+                            requestState._response = null;
+                        }
+
+                        // Signal waitable object, indicate operation completed and fire callback.
+                        requestState._ldapAsync._manualResetEvent.Set();
+                        requestState._ldapAsync._completed = true;
+
+                        if (requestState._ldapAsync._callback != null && !requestState._abortCalled)
+                        {
+                            requestState._ldapAsync._callback(requestState._ldapAsync);
+                        }
+                    }
 
                     return asyncResult;
                 }
@@ -402,31 +424,6 @@ namespace System.DirectoryServices.Protocols
             }
 
             throw ConstructException(error, operation);
-        }
-
-        private void ResponseCallback(IAsyncResult asyncResult)
-        {
-            LdapRequestState requestState = (LdapRequestState)asyncResult.AsyncState;
-
-            try
-            {
-                DirectoryResponse response = _fd.EndInvoke(asyncResult);
-                requestState._response = response;
-            }
-            catch (Exception e)
-            {
-                requestState._exception = e;
-                requestState._response = null;
-            }
-
-            // Signal waitable object, indicate operation completed and fire callback.
-            requestState._ldapAsync._manualResetEvent.Set();
-            requestState._ldapAsync._completed = true;
-
-            if (requestState._ldapAsync._callback != null && !requestState._abortCalled)
-            {
-                requestState._ldapAsync._callback(requestState._ldapAsync);
-            }
         }
 
         public void Abort(IAsyncResult asyncResult)
@@ -1404,7 +1401,7 @@ namespace System.DirectoryServices.Protocols
             return attributes;
         }
 
-        internal DirectoryResponse ConstructResponse(int messageId, LdapOperation operation, ResultAll resultType, TimeSpan requestTimeOut, bool exceptionOnTimeOut)
+        internal async ValueTask<DirectoryResponse> ConstructResponseAsync(int messageId, LdapOperation operation, ResultAll resultType, TimeSpan requestTimeOut, bool exceptionOnTimeOut, bool sync)
         {
             var timeout = new LDAP_TIMEVAL()
             {
@@ -1436,7 +1433,35 @@ namespace System.DirectoryServices.Protocols
                 needAbandon = false;
             }
 
-            int error = LdapPal.GetResultFromAsyncOperation(_ldapHandle, messageId, (int)resultType, timeout, ref ldapResult);
+            int error;
+            if (sync)
+            {
+                error = LdapPal.GetResultFromAsyncOperation(_ldapHandle, messageId, (int)resultType, timeout, ref ldapResult);
+            }
+            else
+            {
+                timeout.tv_sec = 0;
+                timeout.tv_usec = 0;
+                int iterationDelay = 1;
+                // Underlying native libraries don't support callback-based function, so we will instead use polling and
+                // use a Stopwatch to track the timeout manually.
+                Stopwatch watch = Stopwatch.StartNew();
+                while (true)
+                {
+                    error = LdapPal.GetResultFromAsyncOperation(_ldapHandle, messageId, (int)resultType, timeout, ref ldapResult);
+                    if (error != 0 || (requestTimeOut != Threading.Timeout.InfiniteTimeSpan && watch.Elapsed > requestTimeOut))
+                    {
+                        break;
+                    }
+                    await Task.Delay(Math.Min(iterationDelay, 100)).ConfigureAwait(false);
+                    if (iterationDelay < 100)
+                    {
+                        iterationDelay *= 2;
+                    }
+                }
+                watch.Stop();
+            }
+
             if (error != -1 && error != 0)
             {
                 // parsing the result
