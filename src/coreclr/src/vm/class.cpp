@@ -972,6 +972,104 @@ void ClassLoader::LoadExactParents(MethodTable *pMT)
     RETURN;
 }
 
+// Get CorElementType of the reduced type of a type.
+// The reduced type concept is described in ECMA 335 chapter I.8.7
+//
+/*static*/
+CorElementType ClassLoader::GetReducedTypeElementType(TypeHandle hType)
+{
+    CorElementType elemType = hType.GetVerifierCorElementType();
+    switch (elemType)
+    {
+        case ELEMENT_TYPE_U1:
+            return ELEMENT_TYPE_I1;
+        case ELEMENT_TYPE_U2:
+            return ELEMENT_TYPE_I2;
+        case ELEMENT_TYPE_U4:
+            return ELEMENT_TYPE_I4;
+        case ELEMENT_TYPE_U8:
+            return ELEMENT_TYPE_I8;
+        case ELEMENT_TYPE_U:
+            return ELEMENT_TYPE_I;
+        default:
+            return elemType;
+    }
+}
+
+// Get CorElementType of the verification type of a type.
+// The verification type concepts is described in ECMA 335 chapter I.8.7
+//
+/*static*/
+CorElementType ClassLoader::GetVerificationTypeElementType(TypeHandle hType)
+{
+    CorElementType reducedTypeElementType = GetReducedTypeElementType(hType);
+
+    switch (reducedTypeElementType)
+    {
+        case ELEMENT_TYPE_BOOLEAN:
+            return ELEMENT_TYPE_I1;
+        case ELEMENT_TYPE_CHAR:
+            return ELEMENT_TYPE_I2;
+        default:
+            return reducedTypeElementType;
+    }
+}
+
+// Check if verification types of two types are equal
+//
+/*static*/
+bool ClassLoader::AreVerificationTypesEqual(TypeHandle hType1, TypeHandle hType2)
+{
+    if (hType1 == hType2)
+    {
+        return true;
+    }
+
+    CorElementType e1 = GetVerificationTypeElementType(hType1);
+    if (!CorIsPrimitiveType(e1))
+    {
+        return false;
+    }
+
+    CorElementType e2 = GetVerificationTypeElementType(hType2);
+
+    return e1 == e2;
+}
+
+// Check if signatures of two function pointers are compatible
+// Note - this is a simplified version of what's described in the ECMA spec and it considers
+// pointers to be method-signature-compatible-with only if the signatures are the same.
+//
+/*static*/
+bool ClassLoader::IsMethodSignatureCompatibleWith(FnPtrTypeDesc* fn1TD, FnPtrTypeDesc* fn2TD)
+{
+    if (fn1TD->GetCallConv() != fn1TD->GetCallConv())
+    {
+        return false;
+    }
+
+    if (fn1TD->GetNumArgs() != fn2TD->GetNumArgs())
+    {
+        return false;
+    }
+
+    TypeHandle* pFn1ArgTH = fn1TD->GetRetAndArgTypes();
+    TypeHandle* pFn2ArgTH = fn2TD->GetRetAndArgTypes();
+    for (DWORD i = 0; i < fn1TD->GetNumArgs() + 1; i++)
+    {
+#ifdef FEATURE_PREJIT
+        if (!ZapSig::CompareTaggedPointerToTypeHandle(pFn1ArgTH->GetModule(), pFn1ArgTH[i].AsTAddr(), pFn2ArgTH[i]))
+#else
+        if (pFn1ArgTH[i] != pFn2ArgTH[i])
+#endif
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // Checks if two types are compatible according to compatible-with as described in ECMA 335 I.8.7.1
 // Most of the checks are performed by the CanCastTo, but with some cases pre-filtered out.
 //
@@ -984,6 +1082,36 @@ bool ClassLoader::IsCompatibleWith(TypeHandle hType1, TypeHandle hType2)
     {
         return false;
     }
+
+    // Managed pointers are compatible only if they are pointer-element-compatible-with as described in ECMA I.8.7.2
+    if (hType1.IsByRef() && hType2.IsByRef())
+    {
+        return AreVerificationTypesEqual(hType1.GetTypeParam(), hType2.GetTypeParam());
+    }
+
+    // Unmanaged pointers are handled the same way as managed pointers
+    if (hType1.IsPointer() && hType2.IsPointer())
+    {
+        return AreVerificationTypesEqual(hType1.GetTypeParam(), hType2.GetTypeParam());
+    }
+
+    // Function pointers are compatible only if they are method-signature-compatible-with as described in ECMA I.8.7.1
+    if (hType1.IsFnPtrType() && hType2.IsFnPtrType())
+    {
+        return IsMethodSignatureCompatibleWith(hType1.AsFnPtrType(), hType2.AsFnPtrType());
+    }
+
+    // None of the types can be a managed pointer, a pointer or a function pointer here,
+    // all the valid cases were handled above.
+    if (hType1.IsByRef() || hType2.IsByRef() ||
+        hType1.IsPointer() || hType2.IsPointer() ||
+        hType1.IsFnPtrType() || hType2.IsFnPtrType())
+    {
+        return false;
+    }
+
+    _ASSERTE(hType1.GetMethodTable() != NULL);
+    _ASSERTE(hType2.GetMethodTable() != NULL);
 
     // Nullable<T> can be cast to T, but this is not compatible according to ECMA I.8.7.1
     bool isCastFromNullableOfTtoT = hType1.GetMethodTable()->IsNullable() && hType2.IsEquivalentTo(hType1.GetMethodTable()->GetInstantiation()[0]);
@@ -1083,9 +1211,6 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
         SigTypeContext context2(pMD);
         MetaSig methodSig2(pMD);
         TypeHandle hType2 = methodSig2.GetReturnProps().GetTypeHandleThrowing(pMD->GetModule(), &context2, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
-
-        _ASSERTE(hType1.GetMethodTable() != NULL);
-        _ASSERTE(hType2.GetMethodTable() != NULL);
 
         if (!IsCompatibleWith(hType1, hType2))
         {
