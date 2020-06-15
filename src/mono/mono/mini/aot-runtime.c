@@ -6424,9 +6424,11 @@ mono_aot_find_method_index (MonoMethod *method)
 	return 0;
 }
 
-void
-mono_aot_init_llvm_method (gpointer aot_module, guint32 method_index)
+gboolean
+mono_aot_init_llvm_method (gpointer aot_module, gpointer method_info, MonoClass *init_class, MonoError *error)
 {
+	g_assert_not_reached ();
+	return FALSE;
 }
 
 gpointer
@@ -6469,7 +6471,7 @@ mono_aot_get_method_from_token (MonoDomain *domain, MonoImage *image, guint32 to
 }
 
 guint8*
-mono_aot_get_plt_entry (guint8 *code)
+mono_aot_get_plt_entry (host_mgreg_t *regs, guint8 *code)
 {
 	return NULL;
 }
@@ -6494,7 +6496,7 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 }
 
 guint32
-mono_aot_get_plt_info_offset (host_mgreg_t *regs, guint8 *code)
+mono_aot_get_plt_info_offset (gpointer aot_module, guint8 *plt_entry, host_mgreg_t *regs, guint8 *code)
 {
 	g_assert_not_reached ();
 
@@ -6606,13 +6608,6 @@ MonoAotMethodFlags
 mono_aot_get_method_flags (guint8 *code)
 {
 	return MONO_AOT_METHOD_FLAG_NONE;
-}
-
-gboolean
-mono_aot_init_llvmonly_method (gpointer aot_module, guint32 method_index, MonoClass *init_class, MonoError *error)
-{
-	g_assert_not_reached ();
-	return FALSE;
 }
 
 #endif
