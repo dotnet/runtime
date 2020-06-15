@@ -40,6 +40,10 @@
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android'">
+    <IncludeDotNetCli>true</IncludeDotNetCli>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(HelixType)' == ''">
     <!-- For PRs we want helixtype to be the same for all frameworks except package testing-->
     <TestScope Condition="'$(TestScope)' == ''">innerloop</TestScope>
@@ -47,9 +51,13 @@
     <HelixType Condition="'$(BuildAllConfigurations)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <IncludeDotNetCli>true</IncludeDotNetCli>
-    <IncludeXHarnessCli>true</IncludeXHarnessCli>
+    <DotNetCliPackageType>sdk</DotNetCliPackageType>
+    <DotNetCliVersion>3.1.201</DotNetCliVersion>
+    <HelixPreCommands>$(HelixPreCommands) "$HELIX_CORRELATION_PAYLOAD"/dotnet/dotnet tool install --tool-path "$HELIX_WORKITEM_PAYLOAD"/xharness-cli --version $(MicrosoftDotNetXHarnessCLIVersion) --add-source https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet-eng/nuget/v3/index.json Microsoft.DotNet.XHarness.CLI;</HelixPreCommands>
+    <HelixPreCommands>$(HelixPreCommands) export DOTNET_ROOT="$HELIX_CORRELATION_PAYLOAD"/dotnet;</HelixPreCommands>
+    <HelixPreCommands>$(HelixPreCommands) export PATH="$HELIX_WORKITEM_PAYLOAD"/xharness-cli:$PATH;</HelixPreCommands>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(BuildAllConfigurations)' == 'true'">
