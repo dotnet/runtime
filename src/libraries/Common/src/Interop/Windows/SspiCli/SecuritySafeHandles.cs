@@ -273,7 +273,6 @@ namespace System.Net.Security
             out SafeFreeCredentials outCredential)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(null, package, intent, authdata);
-
             int errorCode = -1;
             long timeStamp;
 
@@ -318,6 +317,59 @@ namespace System.Net.Security
 
             return errorCode;
         }
+
+        public static unsafe int AcquireCredentialsHandle(
+            string package,
+            Interop.SspiCli.CredentialUse intent,
+            ref Interop.SspiCli.SCH_CREDENTIALS authdata,
+            out SafeFreeCredentials outCredential)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, package, intent, authdata);
+
+            int errorCode = -1;
+            long timeStamp;
+
+            // If there is a certificate, wrap it into an array.
+            // Not threadsafe.
+            IntPtr copiedPtr = authdata.paCred;
+            try
+            {
+                IntPtr certArrayPtr = new IntPtr(&copiedPtr);
+                if (copiedPtr != IntPtr.Zero)
+                {
+                    authdata.paCred = certArrayPtr;
+                }
+
+                outCredential = new SafeFreeCredential_SECURITY();
+
+                errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
+                                null,
+                                package,
+                                (int)intent,
+                                null,
+                                ref authdata,
+                                null,
+                                null,
+                                ref outCredential._handle,
+                                out timeStamp);
+            }
+            finally
+            {
+                authdata.paCred = copiedPtr;
+            }
+
+#if TRACE_VERBOSE
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
+#endif
+
+            if (errorCode != 0)
+            {
+                outCredential.SetHandleAsInvalid();
+            }
+
+            return errorCode;
+        }
+
     }
 
     //

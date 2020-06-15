@@ -141,6 +141,31 @@ namespace System.Net
             return outCredential;
         }
 
+        public static SafeFreeCredentials AcquireCredentialsHandle(ISSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent, Interop.SspiCli.SCH_CREDENTIALS scc)
+        {
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(null, package);
+                NetEventSource.Log.AcquireCredentialsHandle(package, intent, scc);
+            }
+
+            SafeFreeCredentials? outCredential = null;
+            int errorCode = secModule.AcquireCredentialsHandle(
+                                            package,
+                                            intent,
+                                            ref scc,
+                                            out outCredential);
+
+            if (errorCode != 0)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, nameof(AcquireCredentialsHandle), $"0x{errorCode:X}"));
+                throw new Win32Exception(errorCode);
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, outCredential);
+            return outCredential;
+        }
+
         internal static int InitializeSecurityContext(ISSPIInterface secModule, ref SafeFreeCredentials? credential, ref SafeDeleteSslContext? context, string? targetName, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, InputSecurityBuffers inputBuffers, ref SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Log.InitializeSecurityContext(credential, context, targetName, inFlags);

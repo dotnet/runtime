@@ -16,6 +16,15 @@ namespace System.Net.Security
 {
     internal static class SslStreamPal
     {
+        private static bool UseNewCryptoApi = CheckWindowsVersion();
+        private static bool CheckWindowsVersion()
+        {
+            // On newer Windows version we use new API to get TLS1.3.
+            // API is supported since Windows 10 1809 (17763)but there is no reason to use at the moment.
+            return (Interop.NtDll.RtlGetVersionEx(out Interop.NtDll.RTL_OSVERSIONINFOEX osvi) == 0 &&
+                    osvi.dwMajorVersion >= 10 && osvi.dwBuildNumber >= 18836);
+        }
+
         private const string SecurityPackage = "Microsoft Unified Security Protocol Provider";
 
         private const Interop.SspiCli.ContextFlags RequiredFlags =
@@ -108,6 +117,14 @@ namespace System.Net.Security
 
         public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
+            // New crypto API does not allow to force NULL encryption.
+            return !UseNewCryptoApi || policy == EncryptionPolicy.NoEncryption ?
+                        AcquireCredentialsHandleLegcy(certificate, protocols, policy, isServer) :
+                        AcquireCredentialsHandleNew(certificate, protocols, policy, isServer);
+        }
+
+        public static SafeFreeCredentials AcquireCredentialsHandleLegcy(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        {
             int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
             Interop.SspiCli.SCHANNEL_CRED.Flags flags;
             Interop.SspiCli.CredentialUse direction;
@@ -143,6 +160,82 @@ namespace System.Net.Security
                 policy);
 
             return AcquireCredentialsHandle(direction, secureCredential);
+        }
+
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleNew(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        {
+            int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
+            Interop.SspiCli.SCH_CREDENTIALS.Flags flags;
+            Interop.SspiCli.CredentialUse direction;
+
+            if (!isServer)
+            {
+                direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_OUTBOUND;
+                flags =
+                    Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_MANUAL_CRED_VALIDATION |
+                    Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_DEFAULT_CREDS |
+                    Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
+            }
+            else
+            {
+                direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
+                flags = Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
+            }
+
+            if (policy == EncryptionPolicy.RequireEncryption)
+            {
+                // Always opt-in SCH_USE_STRONG_CRYPTO for TLS.
+                if (!isServer && ((protocolFlags & Interop.SChannel.SP_PROT_SSL3) == 0))
+                {
+                    flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_USE_STRONG_CRYPTO;
+                }
+            }
+            else if (policy == EncryptionPolicy.AllowNoEncryption)
+            {
+                // Allow null encryption cipher in addition to other ciphers.
+                flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_ALLOW_NULL_ENCRYPTION;
+            }
+            else
+            {
+                throw new ArgumentException(SR.Format(SR.net_invalid_enum, "EncryptionPolicy"), nameof(policy));
+            }
+
+            Interop.SspiCli.SCH_CREDENTIALS credential = default;
+            credential.dwVersion = Interop.SspiCli.SCH_CREDENTIALS.CurrentVersion;
+            credential.dwFlags = flags;
+
+            if (certificate != null)
+            {
+                credential.paCred = certificate.Handle;
+                credential.cCreds = 1;
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
+
+            if (protocolFlags != 0)
+            {
+                // If we were asked to do specific protocol we need to fill TLS_PARAMETERS.
+                Span<Interop.SspiCli.TLS_PARAMETERS> tlsParameters = stackalloc Interop.SspiCli.TLS_PARAMETERS[1];
+
+                tlsParameters[0].cAlpnIds = 0;
+                tlsParameters[0].rgstrAlpnIds = IntPtr.Zero;
+                tlsParameters[0].grbitDisabledProtocols = 0;
+                tlsParameters[0].cDisabledCrypto = 0;
+                tlsParameters[0].pDisabledCrypto = null;
+                tlsParameters[0].dwFlags = Interop.SspiCli.TLS_PARAMETERS.Flags.Zero;
+                tlsParameters[0].grbitDisabledProtocols = (uint)protocolFlags ^ uint.MaxValue;
+
+                fixed (Interop.SspiCli.TLS_PARAMETERS* ptr = tlsParameters)
+                {
+                    credential.cTlsParameters = 1;
+                    credential.pTlsParameters = ptr;
+                    return AcquireCredentialsHandle(direction, credential);
+                }
+            }
+            else
+            {
+                return AcquireCredentialsHandle(direction, credential);
+            }
         }
 
         internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteContext context)
@@ -437,5 +530,26 @@ namespace System.Net.Security
                 return SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPISecureChannel, SecurityPackage, credUsage, secureCredential);
             }
         }
+
+        private static unsafe SafeFreeCredentials AcquireCredentialsHandle(Interop.SspiCli.CredentialUse credUsage, Interop.SspiCli.SCH_CREDENTIALS secureCredential)
+        {
+            // First try without impersonation, if it fails, then try the process account.
+            // I.E. We don't know which account the certificate context was created under.
+            try
+            {
+                //
+                // For app-compat we want to ensure the credential are accessed under >>process<< account.
+                //
+                return WindowsIdentity.RunImpersonated<SafeFreeCredentials>(SafeAccessTokenHandle.InvalidHandle, () =>
+                {
+                    return SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPISecureChannel, SecurityPackage, credUsage, secureCredential);
+                });
+            }
+            catch
+            {
+                return SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPISecureChannel, SecurityPackage, credUsage, secureCredential);
+            }
+        }
+
     }
 }
