@@ -359,6 +359,66 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<uint> AddAcross(Vector128<uint> value) => AddAcross(value);
 
             /// <summary>
+            /// uint16_t vaddlv_u8 (uint8x8_t a)
+            ///   A64: UADDLV Hd, Vn.8B
+            /// </summary>
+            public static Vector64<ushort> AddAcrossWidening(Vector64<byte> value) => AddAcrossWidening(value);
+
+            /// <summary>
+            /// int32_t vaddlv_s16 (int16x4_t a)
+            ///   A64: SADDLV Sd, Vn.4H
+            /// </summary>
+            public static Vector64<int> AddAcrossWidening(Vector64<short> value) => AddAcrossWidening(value);
+
+            /// <summary>
+            /// int16_t vaddlv_s8 (int8x8_t a)
+            ///   A64: SADDLV Hd, Vn.8B
+            /// </summary>
+            public static Vector64<short> AddAcrossWidening(Vector64<sbyte> value) => AddAcrossWidening(value);
+
+            /// <summary>
+            /// uint32_t vaddlv_u16 (uint16x4_t a)
+            ///   A64: UADDLV Sd, Vn.4H
+            /// </summary>
+            public static Vector64<uint> AddAcrossWidening(Vector64<ushort> value) => AddAcrossWidening(value);
+
+            /// <summary>
+            /// uint16_t vaddlvq_u8 (uint8x16_t a)
+            ///   A64: UADDLV Hd, Vn.16B
+            /// </summary>
+            public static Vector64<ushort> AddAcrossWidening(Vector128<byte> value) => AddAcrossWidening(value);
+
+            /// <summary>
+            /// int32_t vaddlvq_s16 (int16x8_t a)
+            ///   A64: SADDLV Sd, Vn.8H
+            /// </summary>
+            public static Vector64<int> AddAcrossWidening(Vector128<short> value) => AddAcrossWidening(value);
+
+            /// <summary>
+            /// int64_t vaddlvq_s32 (int32x4_t a)
+            ///   A64: SADDLV Dd, Vn.4S
+            /// </summary>
+            public static Vector64<long> AddAcrossWidening(Vector128<int> value) => AddAcrossWidening(value);
+
+            /// <summary>
+            /// int16_t vaddlvq_s8 (int8x16_t a)
+            ///   A64: SADDLV Hd, Vn.16B
+            /// </summary>
+            public static Vector64<short> AddAcrossWidening(Vector128<sbyte> value) => AddAcrossWidening(value);
+
+            /// <summary>
+            /// uint32_t vaddlvq_u16 (uint16x8_t a)
+            ///   A64: UADDLV Sd, Vn.8H
+            /// </summary>
+            public static Vector64<uint> AddAcrossWidening(Vector128<ushort> value) => AddAcrossWidening(value);
+
+            /// <summary>
+            /// uint64_t vaddlvq_u32 (uint32x4_t a)
+            ///   A64: UADDLV Dd, Vn.4S
+            /// </summary>
+            public static Vector64<ulong> AddAcrossWidening(Vector128<uint> value) => AddAcrossWidening(value);
+
+            /// <summary>
             /// uint8x16_t vpaddq_u8 (uint8x16_t a, uint8x16_t b)
             ///   A64: ADDP Vd.16B, Vn.16B, Vm.16B
             /// </summary>
