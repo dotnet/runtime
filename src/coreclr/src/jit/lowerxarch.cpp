@@ -1364,7 +1364,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 
         GenTree* tmp = comp->gtNewOperNode(GT_AND, TYP_INT, msk, mskCns);
         BlockRange().InsertAfter(mskCns, tmp);
-        LowerNode(msk);
+        LowerNode(tmp);
 
         msk = tmp;
 
@@ -1508,7 +1508,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
         }
 
-        UNATIVE_OFFSET cnsSize  = simdSize;
+        UNATIVE_OFFSET cnsSize  = (simdSize != 12) ? simdSize : 16;
         UNATIVE_OFFSET cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
 
         CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(&vecCns, cnsSize, cnsAlign);
@@ -2282,7 +2282,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 //   return Sse41.X64.Insert(tmp1, op2, 0x01);
 
                 idx = comp->gtNewIconNode(0x01, TYP_INT);
-                BlockRange().InsertAfter(op2, idx);
+                BlockRange().InsertBefore(node, idx);
 
                 node->gtOp1 = comp->gtNewArgList(tmp1, op2, idx);
                 node->gtOp2 = nullptr;
@@ -2574,7 +2574,7 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 //   return tmp3.ToScalar();
 
                 idx = comp->gtNewIconNode(0xF1, TYP_INT);
-                BlockRange().InsertAfter(op2, idx);
+                BlockRange().InsertBefore(node, idx);
 
                 tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, idx, NI_AVX_DotProduct, baseType, simdSize);
                 BlockRange().InsertAfter(idx, tmp1);
@@ -2685,7 +2685,7 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                         assert(simdSize == 16);
                         idx = comp->gtNewIconNode(0xF1, TYP_INT);
                     }
-                    BlockRange().InsertAfter(op2, idx);
+                    BlockRange().InsertBefore(node, idx);
 
                     tmp3 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, idx, NI_SSE41_DotProduct, baseType,
                                                           simdSize);
@@ -2730,7 +2730,7 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                     //   return tmp3.ToScalar();
 
                     idx = comp->gtNewIconNode(0x31, TYP_INT);
-                    BlockRange().InsertAfter(op2, idx);
+                    BlockRange().InsertBefore(node, idx);
 
                     tmp3 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, idx, NI_SSE41_DotProduct, baseType,
                                                           simdSize);
@@ -2827,7 +2827,7 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     //   ...
 
     tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, multiply, baseType, simdSize);
-    BlockRange().InsertAfter(op2, tmp1);
+    BlockRange().InsertBefore(node, tmp1);
     LowerNode(tmp1);
 
     // HorizontalAdd combines pairs so we need log2(simd16Count) passes to sum all elements together.

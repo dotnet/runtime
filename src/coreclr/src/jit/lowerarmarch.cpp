@@ -917,7 +917,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
         }
 
-        UNATIVE_OFFSET cnsSize  = simdSize;
+        UNATIVE_OFFSET cnsSize  = (simdSize != 12) ? simdSize : 16;
         UNATIVE_OFFSET cnsAlign = cnsSize;
 
         CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(&vecCns, cnsSize, cnsAlign);
