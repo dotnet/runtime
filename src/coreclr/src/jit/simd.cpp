@@ -1074,14 +1074,10 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
     {
         case SIMDIntrinsicInit:
         case SIMDIntrinsicGetItem:
-        case SIMDIntrinsicAdd:
         case SIMDIntrinsicSub:
-        case SIMDIntrinsicMul:
-        case SIMDIntrinsicDiv:
         case SIMDIntrinsicEqual:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicDotProduct:
         case SIMDIntrinsicCast:
         case SIMDIntrinsicConvertToSingle:
         case SIMDIntrinsicConvertToDouble:
@@ -2262,55 +2258,10 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         }
         break;
 
-        case SIMDIntrinsicAdd:
         case SIMDIntrinsicSub:
-        case SIMDIntrinsicMul:
-        case SIMDIntrinsicDiv:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
         {
-#if defined(DEBUG)
-            // check for the cases where we don't support intrinsics.
-            // This check should be done before we make modifications to type stack.
-            // Note that this is more of a double safety check for robustness since
-            // we expect getSIMDIntrinsicInfo() to have filtered out intrinsics on
-            // unsupported base types. If getSIMdIntrinsicInfo() doesn't filter due
-            // to some bug, assert in chk/dbg will fire.
-            if (!varTypeIsFloating(baseType))
-            {
-                if (simdIntrinsicID == SIMDIntrinsicMul)
-                {
-#if defined(TARGET_XARCH)
-                    if ((baseType != TYP_INT) && (baseType != TYP_SHORT))
-                    {
-                        // TODO-CQ: implement mul on these integer vectors.
-                        // Note that SSE2 has no direct support for these vectors.
-                        assert(!"Mul not supported on long/ulong/uint/small int vectors\n");
-                        return nullptr;
-                    }
-#endif // TARGET_XARCH
-#if defined(TARGET_ARM64)
-                    if ((baseType == TYP_ULONG) && (baseType == TYP_LONG))
-                    {
-                        // TODO-CQ: implement mul on these integer vectors.
-                        // Note that ARM64 has no direct support for these vectors.
-                        assert(!"Mul not supported on long/ulong vectors\n");
-                        return nullptr;
-                    }
-#endif // TARGET_ARM64
-                }
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-                // common to all integer type vectors
-                if (simdIntrinsicID == SIMDIntrinsicDiv)
-                {
-                    // SSE2 doesn't support div on non-floating point vectors.
-                    assert(!"Div not supported on integer type vectors\n");
-                    return nullptr;
-                }
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
-            }
-#endif // DEBUG
-
             // op1 is the first operand; if instance method, op1 is "this" arg
             // op2 is the second operand
             op2 = impSIMDPopStack(simdType);
@@ -2359,31 +2310,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
             simdTree = gtNewSIMDNode(genActualType(callType), op1, op2, simdIntrinsicID, baseType, size);
             retVal   = simdTree;
-        }
-        break;
-
-        case SIMDIntrinsicDotProduct:
-        {
-#if defined(TARGET_XARCH)
-            // Right now dot product is supported only for float/double vectors and
-            // int vectors on SSE4/AVX.
-            if (!varTypeIsFloating(baseType) && !(baseType == TYP_INT && getSIMDSupportLevel() >= SIMD_SSE4_Supported))
-            {
-                return nullptr;
-            }
-#endif // TARGET_XARCH
-
-            // op1 is a SIMD variable that is the first source and also "this" arg.
-            // op2 is a SIMD variable which is the second source.
-            op2 = impSIMDPopStack(simdType);
-            op1 = impSIMDPopStack(simdType, instMethod);
-
-            simdTree = gtNewSIMDNode(baseType, op1, op2, simdIntrinsicID, baseType, size);
-            if (simdType == TYP_SIMD12)
-            {
-                simdTree->gtFlags |= GTF_SIMD12_OP;
-            }
-            retVal = simdTree;
         }
         break;
 

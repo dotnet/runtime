@@ -18463,11 +18463,9 @@ bool GenTree::isCommutativeSIMDIntrinsic()
     assert(gtOper == GT_SIMD);
     switch (AsSIMD()->gtSIMDIntrinsicID)
     {
-        case SIMDIntrinsicAdd:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicEqual:
-        case SIMDIntrinsicMul:
             return true;
         default:
             return false;
