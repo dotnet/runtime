@@ -25,7 +25,7 @@ void ProfilerDiagnosticProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessa
 
     if (!g_fEEStarted)
     {
-        DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, CORDIAGIPC_E_UNKNOWN_ERROR);
+        DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, CORPROF_E_NOT_YET_AVAILABLE);
         delete pStream;
         return;
     }
