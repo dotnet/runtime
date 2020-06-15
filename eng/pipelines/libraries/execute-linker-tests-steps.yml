@@ -1,4 +1,4 @@
   steps:
     # Execute tests
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch x64 $(_osParameter) -s libs.tests -c release /p:LinkerTests=true $(_officialBuildParameter) $(_crossBuildPropertyArg) /bl:$(Build.SourcesDirectory)/artifacts/log/LinkerTests.binlog
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch x64 $(_osParameter) -s libs.tests -c $(_BuildConfig) /p:LinkerTests=true $(_officialBuildParameter) $(_crossBuildPropertyArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfigUpper)/LinkerTests.binlog
       displayName: Executing Linker Tests
