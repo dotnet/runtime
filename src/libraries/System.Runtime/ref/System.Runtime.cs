@@ -3546,6 +3546,7 @@ namespace System
     {
         None = 0,
         RemoveEmptyEntries = 1,
+        TrimEntries = 2,
     }
     public partial class SystemException : System.Exception
     {
@@ -9095,6 +9096,10 @@ namespace System.Runtime.CompilerServices
         public IsByRefLikeAttribute() { }
     }
     public static partial class IsConst
+    {
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public static partial class IsExternalInit
     {
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false)]

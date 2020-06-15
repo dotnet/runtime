@@ -33,7 +33,8 @@ namespace Internal.Cryptography.Pal
             X509Certificate2Collection customTrustStore,
             X509ChainTrustMode trustMode,
             DateTime verificationTime,
-            TimeSpan timeout)
+            TimeSpan timeout,
+            bool disableAia)
         {
             // An input value of 0 on the timeout is "take all the time you need".
             if (timeout == TimeSpan.Zero)
@@ -66,7 +67,7 @@ namespace Internal.Cryptography.Pal
 
             Interop.Crypto.X509VerifyStatusCode status = chainPal.FindFirstChain(extraStore);
 
-            if (!OpenSslX509ChainProcessor.IsCompleteChain(status))
+            if (!OpenSslX509ChainProcessor.IsCompleteChain(status) && !disableAia)
             {
                 List<X509Certificate2>? tmp = null;
                 status = chainPal.FindChainViaAia(ref tmp);

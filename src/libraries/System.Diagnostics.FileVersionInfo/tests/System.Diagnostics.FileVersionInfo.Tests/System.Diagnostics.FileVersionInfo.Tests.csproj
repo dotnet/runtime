@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Diagnostics.FileVersionInfo.Tests</AssemblyName>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -35,8 +34,4 @@
   <ItemGroup>
     <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" />
   </ItemGroup>
-  <Target Name="MangleTestAssemblyExtension" AfterTargets="PrepareForRun">
-    <!-- Copy TestAssembly to file without .dll extension so that ILC preserves it as a data file rather than feeding it to the output executable. -->
-    <Copy SourceFiles="$(OutDir)System.Diagnostics.FileVersionInfo.TestAssembly.dll" DestinationFiles="$(OutDir)System.Diagnostics.FileVersionInfo.TestAssembly.ildll" />
-  </Target>
 </Project>

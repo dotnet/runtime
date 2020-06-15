@@ -1859,10 +1859,10 @@ public:
     // Get the HFA type. This is supported both with FEATURE_HFA, in which case it
     // depends on the cached bit on the class, or without, in which case it is recomputed
     // for each invocation.
-    CorElementType GetHFAType();
+    CorInfoHFAElemType GetHFAType();
     // The managed and unmanaged HFA type can differ for types with layout. The following two methods return the unmanaged HFA type.
     bool IsNativeHFA();
-    CorElementType GetNativeHFAType();
+    CorInfoHFAElemType GetNativeHFAType();
 
 #ifdef UNIX_AMD64_ABI
     inline bool IsRegPassedStruct()

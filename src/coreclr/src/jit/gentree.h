@@ -1707,7 +1707,7 @@ public:
     inline GenTree* gtEffectiveVal(bool commaOnly = false);
 
     // Tunnel through any GT_RET_EXPRs
-    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags = nullptr);
+    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags);
 
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
@@ -7053,23 +7053,16 @@ inline GenTree* GenTree::gtRetExprVal(unsigned __int64* pbbFlags)
     GenTree*         retExprVal = this;
     unsigned __int64 bbFlags    = 0;
 
-    for (;;)
+    assert(pbbFlags != nullptr);
+
+    for (; retExprVal->gtOper == GT_RET_EXPR; retExprVal = retExprVal->AsRetExpr()->gtInlineCandidate)
     {
-        if (retExprVal->gtOper == GT_RET_EXPR)
-        {
-            GenTreeRetExpr* retExp = retExprVal->AsRetExpr();
-            retExprVal             = retExp->gtInlineCandidate;
-            bbFlags                = retExp->bbFlags;
-        }
-        else
-        {
-            if (pbbFlags != nullptr)
-            {
-                *pbbFlags = bbFlags;
-            }
-            return retExprVal;
-        }
+        bbFlags = retExprVal->AsRetExpr()->bbFlags;
     }
+
+    *pbbFlags = bbFlags;
+
+    return retExprVal;
 }
 
 inline GenTree* GenTree::gtSkipReloadOrCopy()

@@ -342,14 +342,13 @@ namespace System.Text.Json
         {
             if (jsonPropertyInfo.IsIgnored)
             {
-                return JsonParameterInfo.CreateIgnoredParameterPlaceholder(parameterInfo, jsonPropertyInfo, options);
+                return JsonParameterInfo.CreateIgnoredParameterPlaceholder(jsonPropertyInfo, options);
             }
 
             JsonConverter converter = jsonPropertyInfo.ConverterBase;
 
             JsonParameterInfo jsonParameterInfo = converter.CreateJsonParameterInfo();
             jsonParameterInfo.Initialize(
-                jsonPropertyInfo.DeclaredPropertyType,
                 jsonPropertyInfo.RuntimePropertyType!,
                 parameterInfo,
                 jsonPropertyInfo,

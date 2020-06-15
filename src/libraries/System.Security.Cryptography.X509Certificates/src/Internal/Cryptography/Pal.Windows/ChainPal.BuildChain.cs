@@ -3,13 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-using Internal.Cryptography;
 using Internal.Cryptography.Pal.Native;
 
 using System.Security.Cryptography;
@@ -36,7 +31,8 @@ namespace Internal.Cryptography.Pal
             X509Certificate2Collection? customTrustStore,
             X509ChainTrustMode trustMode,
             DateTime verificationTime,
-            TimeSpan timeout)
+            TimeSpan timeout,
+            bool disableAia)
         {
             CertificatePal certificatePal = (CertificatePal)cert;
 
@@ -71,7 +67,7 @@ namespace Internal.Cryptography.Pal
                             chainPara.dwUrlRetrievalTimeout = (int)Math.Floor(timeout.TotalMilliseconds);
 
                             FILETIME ft = FILETIME.FromDateTime(verificationTime);
-                            CertChainFlags flags = MapRevocationFlags(revocationMode, revocationFlag);
+                            CertChainFlags flags = MapRevocationFlags(revocationMode, revocationFlag, disableAia);
                             SafeX509ChainHandle chain;
                             if (!Interop.crypt32.CertGetCertificateChain(storeHandle.DangerousGetHandle(), certificatePal.CertContext, &ft, extraStoreHandle, ref chainPara, flags, IntPtr.Zero, out chain))
                             {
@@ -118,9 +114,16 @@ namespace Internal.Cryptography.Pal
             return ((StorePal)StorePal.LinkFromCertificateCollection(extraStore!)).SafeCertStoreHandle;
         }
 
-        private static CertChainFlags MapRevocationFlags(X509RevocationMode revocationMode, X509RevocationFlag revocationFlag)
+        private static CertChainFlags MapRevocationFlags(
+            X509RevocationMode revocationMode,
+            X509RevocationFlag revocationFlag,
+            bool disableAia)
         {
-            CertChainFlags dwFlags = CertChainFlags.None;
+            const CertChainFlags AiaDisabledFlags =
+                CertChainFlags.CERT_CHAIN_DISABLE_AIA | CertChainFlags.CERT_CHAIN_DISABLE_AUTH_ROOT_AUTO_UPDATE;
+
+            CertChainFlags dwFlags = disableAia ? AiaDisabledFlags : CertChainFlags.None;
+
             if (revocationMode == X509RevocationMode.NoCheck)
                 return dwFlags;
 

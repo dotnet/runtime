@@ -583,6 +583,9 @@
     <Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
 
     <!-- WASM specific options -->
+    <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+      <_MonoEnableMinimal Condition="'$(MonoWasmEnableAOT)' != 'true'">aot</_MonoEnableMinimal>
+    </PropertyGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <_MonoConfigureParams Include="--host=wasm32"/>
       <_MonoConfigureParams Include="--disable-boehm" />
@@ -599,8 +602,7 @@
       <_MonoConfigureParams Include="--disable-icall-tables"/>
       <_MonoConfigureParams Include="--disable-crash-reporting"/>
       <_MonoConfigureParams Include="--with-bitcode=yes"/>
-      <_MonoConfigureParams Include="--enable-minimal=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,full_messages,appdomains,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,logging,remoting,shared_perfcounters,sgen_debug_helpers,soft_debug,interpreter,assert_messages,cleanup,mdb,gac,threads"/>
-      <!-- FIXME: -Os -->
+      <_MonoConfigureParams Include="--enable-minimal=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,full_messages,appdomains,shadowcopy,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,logging,remoting,shared_perfcounters,sgen_debug_helpers,soft_debug,interpreter,assert_messages,cleanup,mdb,gac,threads,$(_MonoEnableMinimal)"/>
       <_MonoCFLAGS Include="-fexceptions" />
       <_MonoCXXFLAGS Include="-fexceptions -s DISABLE_EXCEPTION_CATCHING=0" />
       <_MonoAC_VARS Include="ac_cv_func_shm_open_working_with_mmap=no" />

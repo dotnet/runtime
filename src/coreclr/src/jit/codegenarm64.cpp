@@ -1948,6 +1948,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             assert(fieldVarDsc->TypeGet() == TYP_FLOAT);
             GetEmitter()->emitIns_R_R_I(INS_dup, emitTypeSize(TYP_FLOAT), varReg, operandReg, i);
         }
+        genProduceReg(lclNode);
     }
     else
     {
