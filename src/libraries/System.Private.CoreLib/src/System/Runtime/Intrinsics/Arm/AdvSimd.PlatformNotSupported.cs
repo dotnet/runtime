@@ -1621,6 +1621,36 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<long> Negate(Vector128<long> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// int64x2_t vqnegq_s64 (int64x2_t a)
+            ///   A64: SQNEG Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> NegateSaturate(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vqnegh_s16 (int16_t a)
+            ///   A64: SQNEG Hd, Hn
+            /// </summary>
+            public static Vector64<short> NegateSaturateScalar(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqnegs_s32 (int32_t a)
+            ///   A64: SQNEG Sd, Sn
+            /// </summary>
+            public static Vector64<int> NegateSaturateScalar(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqnegd_s64 (int64_t a)
+            ///   A64: SQNEG Dd, Dn
+            /// </summary>
+            public static Vector64<long> NegateSaturateScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8_t vqnegb_s8 (int8_t a)
+            ///   A64: SQNEG Bd, Bn
+            /// </summary>
+            public static Vector64<sbyte> NegateSaturateScalar(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// int64x1_t vneg_s64 (int64x1_t a)
             ///   A64: NEG Dd, Dn
             /// </summary>
@@ -8489,6 +8519,48 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: FNEG Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<float> Negate(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vqneg_s16 (int16x4_t a)
+        ///   A32: VQNEG.S16 Dd, Dm
+        ///   A64: SQNEG Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<short> NegateSaturate(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqneg_s32 (int32x2_t a)
+        ///   A32: VQNEG.S32 Dd, Dm
+        ///   A64: SQNEG Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<int> NegateSaturate(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vqneg_s8 (int8x8_t a)
+        ///   A32: VQNEG.S8 Dd, Dm
+        ///   A64: SQNEG Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<sbyte> NegateSaturate(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqnegq_s16 (int16x8_t a)
+        ///   A32: VQNEG.S16 Qd, Qm
+        ///   A64: SQNEG Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<short> NegateSaturate(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqnegq_s32 (int32x4_t a)
+        ///   A32: VQNEG.S32 Qd, Qm
+        ///   A64: SQNEG Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<int> NegateSaturate(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vqnegq_s8 (int8x16_t a)
+        ///   A32: VQNEG.S8 Qd, Qm
+        ///   A64: SQNEG Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<sbyte> NegateSaturate(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float64x1_t vneg_f64 (float64x1_t a)
