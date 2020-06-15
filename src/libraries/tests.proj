@@ -9,7 +9,7 @@
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
     <EnableCoverageSupport>true</EnableCoverageSupport>
   </PropertyGroup>
-  
+
   <!-- Projects that don't support code coverage measurement. -->
   <ItemGroup Condition="'$(Coverage)' == 'true'">
     <ProjectExclusions Include="$(CommonTestPath)Common.Tests.csproj" />
@@ -21,10 +21,7 @@
     <!-- We currently only test with C# projects. -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(BuildAllConfigurations)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetsBrowser)' == 'true')" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\System.Buffers.Tests.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'" />
+                      Condition="'$(BuildAllConfigurations)' != 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
                       Condition="'$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
