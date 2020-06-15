@@ -17,7 +17,6 @@ typedef uint16_t UChar;
 #include "pal_idna.h"
 #include "pal_normalization.h"
 #include "pal_timeZoneInfo.h"
-#include "native-library.h"
 
 #define FCFuncStart(name) EXTERN_C const void* name[]; const void* name[] = {
 #define FCFuncEnd() (void*)0x01 /* FCFuncFlag_EndOfArray */ };
