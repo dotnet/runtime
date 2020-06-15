@@ -1120,7 +1120,6 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     BlockRange().InsertBefore(node, tmp1);
     LowerNode(tmp1);
 
-
     if (varTypeIsFloating(baseType))
     {
         // We will be constructing the following parts:
