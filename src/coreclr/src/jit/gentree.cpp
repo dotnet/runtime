@@ -18600,6 +18600,16 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdCreateBroadcastNode(
     NamedIntrinsic hwIntrinsicID = NI_Vector128_Create;
 
 #if defined(TARGET_XARCH)
+#if defined(TARGET_X86)
+    if (varTypeIsLong(baseType) && !op1->IsIntegralConst())
+    {
+        // TODO-XARCH-CQ: It may be beneficial to emit the movq
+        // instruction, which takes a 64-bit memory address and
+        // works on 32-bit x86 systems.
+        unreached();
+    }
+#endif // TARGET_X86
+
     if (size == 32)
     {
         hwIntrinsicID = NI_Vector256_Create;

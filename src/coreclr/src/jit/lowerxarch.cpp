@@ -1469,15 +1469,41 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         {
             for (argList = op1->AsArgList(); argList != nullptr; argList = argList->Rest())
             {
-                BlockRange().Remove(argList->Current());
+                GenTree* arg = argList->Current();
+
+#if !defined(TARGET_64BIT)
+                if (arg->OperIsLong())
+                {
+                    BlockRange().Remove(arg->AsOp()->gtOp1);
+                    BlockRange().Remove(arg->AsOp()->gtOp2);
+                }
+#endif // !TARGET_64BIT
+
+                BlockRange().Remove(arg);
             }
         }
         else
         {
+#if !defined(TARGET_64BIT)
+            if (op1->OperIsLong())
+            {
+                BlockRange().Remove(op1->AsOp()->gtOp1);
+                BlockRange().Remove(op1->AsOp()->gtOp2);
+            }
+#endif // !TARGET_64BIT
+
             BlockRange().Remove(op1);
 
             if (op2 != nullptr)
             {
+#if defined(TARGET_64BIT)
+                if (op2->OperIsLong())
+                {
+                    BlockRange().Remove(op2->AsOp()->gtOp1);
+                    BlockRange().Remove(op2->AsOp()->gtOp2);
+                }
+#endif // !TARGET_64BIT
+
                 BlockRange().Remove(op2);
             }
         }

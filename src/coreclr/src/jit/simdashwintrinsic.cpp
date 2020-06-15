@@ -386,20 +386,54 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #if defined(TARGET_XARCH)
     bool isVectorT256 = (SimdAsHWIntrinsicInfo::lookupClassId(intrinsic) == SimdAsHWIntrinsicClassId::VectorT256);
 
-    if ((baseType != TYP_FLOAT) && !compOpportunisticallyDependsOn(InstructionSet_SSE2))
+    // We should have alredy exited early if SSE2 isn't supported
+    assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
+
+    switch (intrinsic)
     {
-        // Vector<T>, for everything but float, requires at least SSE2
-        return nullptr;
-    }
-    else if (!compOpportunisticallyDependsOn(InstructionSet_SSE))
-    {
-        // Vector<float> requires at least SSE
-        return nullptr;
+#if defined(TARGET_X86)
+        case NI_VectorT128_CreateBroadcast:
+        case NI_VectorT256_CreateBroadcast:
+        {
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-XARCH-CQ: It may be beneficial to emit the movq
+                // instruction, which takes a 64-bit memory address and
+                // works on 32-bit x86 systems.
+                return nullptr;
+            }
+            break;
+        }
+#endif // TARGET_X86
+
+        case NI_VectorT128_Dot:
+        {
+            if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                // We need to exit early if this is Vector<T>.Dot for int or uint and SSE41 is not supported
+                // The other types should be handled via the table driven paths
+
+                assert((baseType == TYP_INT) || (baseType == TYP_UINT));
+                return nullptr;
+            }
+            break;
+        }
+
+        default:
+        {
+            // Most intrinsics have some path that works even if only SSE2 is available
+            break;
+        }
     }
 
     // Vector<T>, when 32-bytes, requires at least AVX2
     assert(!isVectorT256 || compIsaSupportedDebugOnly(InstructionSet_AVX2));
-#endif
+#elif defined(TARGET_ARM64)
+    // We should have alredy exited early if AdvSimd isn't supported
+    assert(compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
     GenTree* copyBlkDst = nullptr;
     GenTree* copyBlkSrc = nullptr;
@@ -651,15 +685,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
         case 2:
         {
-#if defined(TARGET_XARCH)
-            if ((intrinsic == NI_VectorT128_Dot) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
-            {
-                assert((baseType == TYP_INT) || (baseType == TYP_UINT));
-                // We need to exit early if this is Vector<T>.Dot for int or uint and SSE41 is not supported
-                return nullptr;
-            }
-#endif // TARGET_XARCH
-
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                          = getArgForHWIntrinsic(argType, argClass);
