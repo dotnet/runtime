@@ -25,7 +25,7 @@ jobs:
     dependsOn: checkout
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
-    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    timeoutInMinutes: 150
     condition: and(succeeded(), ${{ parameters.condition }})
     workspace:
       clean: all
@@ -69,7 +69,7 @@ jobs:
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg)
       displayName: Build product
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
