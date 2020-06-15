@@ -671,6 +671,12 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<ulong> AddSaturateScalar(Vector64<ulong> left, Vector64<long> right) => AddSaturateScalar(left, right);
 
             /// <summary>
+            /// float64x2_t vrndpq_f64 (float64x2_t a)
+            ///   A64: FRINTP Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> Ceiling(Vector128<double> value) => Ceiling(value);
+
+            /// <summary>
             /// uint64x2_t vceqq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FCMEQ Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -4749,6 +4755,35 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ulong> BitwiseSelect(Vector128<ulong> select, Vector128<ulong> left, Vector128<ulong> right) => BitwiseSelect(select, left, right);
+
+        /// <summary>
+        /// float32x2_t vrndp_f32 (float32x2_t a)
+        ///   A32: VRINTP.F32 Dd, Dm
+        ///   A64: FRINTP Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> Ceiling(Vector64<float> value) => Ceiling(value);
+
+        /// <summary>
+        /// float32x4_t vrndpq_f32 (float32x4_t a)
+        ///   A32: VRINTP.F32 Qd, Qm
+        ///   A64: FRINTP Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> Ceiling(Vector128<float> value) => Ceiling(value);
+
+        /// <summary>
+        /// float64x1_t vrndp_f64 (float64x1_t a)
+        ///   A32: VRINTP.F64 Dd, Dm
+        ///   A64: FRINTP Dd, Dn
+        /// </summary>
+        public static Vector64<double> CeilingScalar(Vector64<double> value) => CeilingScalar(value);
+
+        /// <summary>
+        /// float32_t vrndps_f32 (float32_t a)
+        ///   A32: VRINTP.F32 Sd, Sm
+        ///   A64: FRINTP Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> CeilingScalar(Vector64<float> value) => CeilingScalar(value);
 
         /// <summary>
         /// uint8x8_t vceq_u8 (uint8x8_t a, uint8x8_t b)
