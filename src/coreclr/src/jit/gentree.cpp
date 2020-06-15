@@ -6058,40 +6058,6 @@ GenTree* Compiler::gtNewSIMDVectorZero(var_types simdType, var_types baseType, u
     initVal->gtType  = baseType;
     return gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, baseType, size);
 }
-
-//---------------------------------------------------------------------
-// gtNewSIMDVectorOne: create a GT_SIMD node for Vector<T>.One
-//
-// Arguments:
-//    simdType  -  simd vector type
-//    baseType  -  element type of vector
-//    size      -  size of vector in bytes
-GenTree* Compiler::gtNewSIMDVectorOne(var_types simdType, var_types baseType, unsigned size)
-{
-    GenTree* initVal;
-    if (varTypeIsSmallInt(baseType))
-    {
-        unsigned baseSize = genTypeSize(baseType);
-        int      val;
-        if (baseSize == 1)
-        {
-            val = 0x01010101;
-        }
-        else
-        {
-            val = 0x00010001;
-        }
-        initVal = gtNewIconNode(val);
-    }
-    else
-    {
-        initVal = gtNewOneConNode(baseType);
-    }
-
-    baseType        = genActualType(baseType);
-    initVal->gtType = baseType;
-    return gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, baseType, size);
-}
 #endif // FEATURE_SIMD
 
 GenTreeCall* Compiler::gtNewIndCallNode(GenTree* addr, var_types type, GenTreeCall::Use* args, IL_OFFSETX ilOffset)

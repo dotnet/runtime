@@ -1876,38 +1876,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
     switch (simdIntrinsicID)
     {
-        case SIMDIntrinsicGetCount:
-        {
-            int            length       = getSIMDVectorLength(clsHnd);
-            GenTreeIntCon* intConstTree = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, length);
-            retVal                      = intConstTree;
-
-            intConstTree->gtFlags |= GTF_ICON_SIMD_COUNT;
-        }
-        break;
-
-        case SIMDIntrinsicGetZero:
-            retVal = gtNewSIMDVectorZero(simdType, baseType, size);
-            break;
-
-        case SIMDIntrinsicGetOne:
-            retVal = gtNewSIMDVectorOne(simdType, baseType, size);
-            break;
-
-        case SIMDIntrinsicGetAllOnes:
-        {
-            // Equivalent to (Vector<T>) new Vector<int>(0xffffffff);
-            GenTree* initVal = gtNewIconNode(0xffffffff, TYP_INT);
-            simdTree         = gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, TYP_INT, size);
-            if (baseType != TYP_INT)
-            {
-                // cast it to required baseType if different from TYP_INT
-                simdTree = gtNewSIMDNode(simdType, simdTree, nullptr, SIMDIntrinsicCast, baseType, size);
-            }
-            retVal = simdTree;
-        }
-        break;
-
         case SIMDIntrinsicInit:
         case SIMDIntrinsicInitN:
         {

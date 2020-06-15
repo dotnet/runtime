@@ -2110,10 +2110,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicGetY:
         case SIMDIntrinsicGetZ:
         case SIMDIntrinsicGetW:
-        case SIMDIntrinsicGetOne:
-        case SIMDIntrinsicGetZero:
-        case SIMDIntrinsicGetCount:
-        case SIMDIntrinsicGetAllOnes:
             assert(!"Get intrinsics should not be seen during Lowering.");
             unreached();
 
