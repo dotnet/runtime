@@ -250,7 +250,7 @@ namespace ILCompiler
             {
                 int alignment = _commandLineOptions.CustomPESectionAlignment.Value;
                 bool invalidArgument = false;
-                if (alignment <= 4096)
+                if (alignment < 4096)
                 {
                     invalidArgument = true;
                 }
