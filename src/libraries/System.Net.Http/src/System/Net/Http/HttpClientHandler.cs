@@ -243,7 +243,10 @@ namespace System.Net.Http
                 _underlyingHandler.SendAsync(request, cancellationToken);
         }
 
-        public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator { get; } = delegate { return true; };
+        // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
+        private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
+        public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
+            s_dangerousAcceptAnyServerCertificateValidator ??= delegate { return true; };
 
         private void ThrowForModifiedManagedSslOptionsIfStarted()
         {
