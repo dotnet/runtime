@@ -215,27 +215,14 @@ namespace System.Net.Security
             if (protocolFlags != 0)
             {
                 // If we were asked to do specific protocol we need to fill TLS_PARAMETERS.
-                Span<Interop.SspiCli.TLS_PARAMETERS> tlsParameters = stackalloc Interop.SspiCli.TLS_PARAMETERS[1];
+                Interop.SspiCli.TLS_PARAMETERS tlsParameters = default;
+                tlsParameters.grbitDisabledProtocols = (uint)protocolFlags ^ uint.MaxValue;
 
-                tlsParameters[0].cAlpnIds = 0;
-                tlsParameters[0].rgstrAlpnIds = IntPtr.Zero;
-                tlsParameters[0].grbitDisabledProtocols = 0;
-                tlsParameters[0].cDisabledCrypto = 0;
-                tlsParameters[0].pDisabledCrypto = null;
-                tlsParameters[0].dwFlags = Interop.SspiCli.TLS_PARAMETERS.Flags.Zero;
-                tlsParameters[0].grbitDisabledProtocols = (uint)protocolFlags ^ uint.MaxValue;
+                credential.cTlsParameters = 1;
+                credential.pTlsParameters = &tlsParameters;
+            }
 
-                fixed (Interop.SspiCli.TLS_PARAMETERS* ptr = tlsParameters)
-                {
-                    credential.cTlsParameters = 1;
-                    credential.pTlsParameters = ptr;
-                    return AcquireCredentialsHandle(direction, credential);
-                }
-            }
-            else
-            {
-                return AcquireCredentialsHandle(direction, credential);
-            }
+            return AcquireCredentialsHandle(direction, &credential);
         }
 
         internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteContext context)
@@ -531,7 +518,7 @@ namespace System.Net.Security
             }
         }
 
-        private static unsafe SafeFreeCredentials AcquireCredentialsHandle(Interop.SspiCli.CredentialUse credUsage, Interop.SspiCli.SCH_CREDENTIALS secureCredential)
+        private static unsafe SafeFreeCredentials AcquireCredentialsHandle(Interop.SspiCli.CredentialUse credUsage, Interop.SspiCli.SCH_CREDENTIALS* secureCredential)
         {
             // First try without impersonation, if it fails, then try the process account.
             // I.E. We don't know which account the certificate context was created under.

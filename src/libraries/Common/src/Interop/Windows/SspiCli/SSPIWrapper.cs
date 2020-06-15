@@ -141,19 +141,19 @@ namespace System.Net
             return outCredential;
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(ISSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent, Interop.SspiCli.SCH_CREDENTIALS scc)
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandle(ISSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent, Interop.SspiCli.SCH_CREDENTIALS* scc)
         {
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Enter(null, package);
-                NetEventSource.Log.AcquireCredentialsHandle(package, intent, scc);
+                NetEventSource.Log.AcquireCredentialsHandle(package, intent, (IntPtr)scc);
             }
 
             SafeFreeCredentials? outCredential = null;
             int errorCode = secModule.AcquireCredentialsHandle(
                                             package,
                                             intent,
-                                            ref scc,
+                                            scc,
                                             out outCredential);
 
             if (errorCode != 0)

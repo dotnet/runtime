@@ -442,7 +442,7 @@ internal static partial class Interop
           [In] string moduleName,
           [In] int usage,
           [In] void* logonID,
-          [In] ref SCH_CREDENTIALS authData,
+          [In] SCH_CREDENTIALS* authData,
           [In] void* keyCallback,
           [In] void* keyArgument,
           ref CredHandle handlePtr,

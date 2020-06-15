@@ -321,23 +321,23 @@ namespace System.Net.Security
         public static unsafe int AcquireCredentialsHandle(
             string package,
             Interop.SspiCli.CredentialUse intent,
-            ref Interop.SspiCli.SCH_CREDENTIALS authdata,
+            Interop.SspiCli.SCH_CREDENTIALS* authdata,
             out SafeFreeCredentials outCredential)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, package, intent, authdata);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, package, intent, (IntPtr)authdata);
 
             int errorCode = -1;
             long timeStamp;
 
             // If there is a certificate, wrap it into an array.
             // Not threadsafe.
-            IntPtr copiedPtr = authdata.paCred;
+            IntPtr copiedPtr = authdata->paCred;
             try
             {
                 IntPtr certArrayPtr = new IntPtr(&copiedPtr);
                 if (copiedPtr != IntPtr.Zero)
                 {
-                    authdata.paCred = certArrayPtr;
+                    authdata->paCred = certArrayPtr;
                 }
 
                 outCredential = new SafeFreeCredential_SECURITY();
@@ -347,7 +347,7 @@ namespace System.Net.Security
                                 package,
                                 (int)intent,
                                 null,
-                                ref authdata,
+                                authdata,
                                 null,
                                 null,
                                 ref outCredential._handle,
@@ -355,7 +355,7 @@ namespace System.Net.Security
             }
             finally
             {
-                authdata.paCred = copiedPtr;
+                authdata->paCred = copiedPtr;
             }
 
 #if TRACE_VERBOSE
