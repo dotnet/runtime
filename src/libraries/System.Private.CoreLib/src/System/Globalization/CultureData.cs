@@ -867,8 +867,7 @@ namespace System.Globalization
             }
 
             // Convert the lcid to a name, then use that
-            // Note that this will return neutral names (unlike Vista native API)
-            localeName = GlobalizationMode.UseNls ? NlsLCIDToLocaleName(culture) : IcuLCIDToLocaleName(culture);
+            localeName = LCIDToLocaleName(culture);
 
             if (!string.IsNullOrEmpty(localeName))
             {

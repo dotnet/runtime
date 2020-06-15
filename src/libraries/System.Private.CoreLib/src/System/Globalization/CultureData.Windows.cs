@@ -172,5 +172,20 @@ namespace System.Globalization
             // Fallback to current locale data.
             return CultureInfo.CurrentCulture._cultureData;
         }
+
+        private static unsafe string? LCIDToLocaleName(int culture)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
+            char* pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1]; // +1 for the null termination
+            int length = Interop.Kernel32.LCIDToLocaleName(culture, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
+
+            if (length > 0)
+            {
+                return new string(pBuffer);
+            }
+
+            return null;
+        }
     }
 }
