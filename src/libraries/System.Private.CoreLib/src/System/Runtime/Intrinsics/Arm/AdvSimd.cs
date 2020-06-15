@@ -1947,6 +1947,12 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> RoundToNearest(Vector128<double> value) => RoundToNearest(value);
 
             /// <summary>
+            /// float64x2_t vrndmq_f64 (float64x2_t a)
+            ///   A64: FRINTM Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> RoundToNegativeInfinity(Vector128<double> value) => RoundToNegativeInfinity(value);
+
+            /// <summary>
             /// int16_t vqrshlh_s16 (int16_t a, int16_t b)
             ///   A64: SQRSHL Hd, Hn, Hm
             /// </summary>
@@ -9440,6 +9446,35 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> RoundToNearestScalar(Vector64<float> value) => RoundToNearestScalar(value);
+
+        /// <summary>
+        /// float32x2_t vrndm_f32 (float32x2_t a)
+        ///   A32: VRINTM.F32 Dd, Dm
+        ///   A64: FRINTM Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> RoundToNegativeInfinity(Vector64<float> value) => RoundToNegativeInfinity(value);
+
+        /// <summary>
+        /// float32x4_t vrndmq_f32 (float32x4_t a)
+        ///   A32: VRINTM.F32 Qd, Qm
+        ///   A64: FRINTM Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> RoundToNegativeInfinity(Vector128<float> value) => RoundToNegativeInfinity(value);
+
+        /// <summary>
+        /// float64x1_t vrndm_f64 (float64x1_t a)
+        ///   A32: VRINTM.F64 Dd, Dm
+        ///   A64: FRINTM Dd, Dn
+        /// </summary>
+        public static Vector64<double> RoundToNegativeInfinityScalar(Vector64<double> value) => RoundToNegativeInfinityScalar(value);
+
+        /// <summary>
+        /// float32_t vrndms_f32 (float32_t a)
+        ///   A32: VRINTM.F32 Sd, Sm
+        ///   A64: FRINTM Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> RoundToNegativeInfinityScalar(Vector64<float> value) => RoundToNegativeInfinityScalar(value);
 
         /// <summary>
         /// uint8x8_t vsli_n_u8(uint8x8_t a, uint8x8_t b, __builtin_constant_p(n))
