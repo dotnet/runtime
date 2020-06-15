@@ -293,6 +293,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - iOS_x64
+    timeoutInMinutes: 170
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
