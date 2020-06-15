@@ -1959,6 +1959,12 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> RoundToPositiveInfinity(Vector128<double> value) => RoundToPositiveInfinity(value);
 
             /// <summary>
+            /// float64x2_t vrndq_f64 (float64x2_t a)
+            ///   A64: FRINTZ Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> RoundToZero(Vector128<double> value) => RoundToZero(value);
+
+            /// <summary>
             /// int16_t vqrshlh_s16 (int16_t a, int16_t b)
             ///   A64: SQRSHL Hd, Hn, Hm
             /// </summary>
@@ -9510,6 +9516,35 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> RoundToPositiveInfinityScalar(Vector64<float> value) => RoundToPositiveInfinityScalar(value);
+
+        /// <summary>
+        /// float32x2_t vrnd_f32 (float32x2_t a)
+        ///   A32: VRINTZ.F32 Dd, Dm
+        ///   A64: FRINTZ Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> RoundToZero(Vector64<float> value) => RoundToZero(value);
+
+        /// <summary>
+        /// float32x4_t vrndq_f32 (float32x4_t a)
+        ///   A32: VRINTZ.F32 Qd, Qm
+        ///   A64: FRINTZ Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> RoundToZero(Vector128<float> value) => RoundToZero(value);
+
+        /// <summary>
+        /// float64x1_t vrnd_f64 (float64x1_t a)
+        ///   A32: VRINTZ.F64 Dd, Dm
+        ///   A64: FRINTZ Dd, Dn
+        /// </summary>
+        public static Vector64<double> RoundToZeroScalar(Vector64<double> value) => RoundToZeroScalar(value);
+
+        /// <summary>
+        /// float32_t vrnds_f32 (float32_t a)
+        ///   A32: VRINTZ.F32 Sd, Sm
+        ///   A64: FRINTZ Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> RoundToZeroScalar(Vector64<float> value) => RoundToZeroScalar(value);
 
         /// <summary>
         /// uint8x8_t vsli_n_u8(uint8x8_t a, uint8x8_t b, __builtin_constant_p(n))
