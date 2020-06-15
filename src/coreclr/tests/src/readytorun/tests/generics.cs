@@ -1125,7 +1125,7 @@ class Program
                 m3 = typeof(DerivedClass1<string>).GetMethod("Method3");
                 gvm1 = typeof(DerivedClass1<string>).GetMethod("GVMethod1").MakeGenericMethod(typeof(string));
                 gvm2 = typeof(DerivedClass1<string>).GetMethod("GVMethod2").MakeGenericMethod(typeof(string));
-                gvm3 = typeof(DerivedClass1<string>).GetMethod("GVMethod3").MakeGenericMethod(typeof(string));
+                gvm3 = typeof(DerivedClass1<string>).GetMethod("GVMethod3", BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly).MakeGenericMethod(typeof(string));
                 Verify("DerivedClass1.Method1", m1.Invoke(new DerivedClass1<string>(), new[] { "" }));
                 Verify("DerivedClass1.Method2", m2.Invoke(new DerivedClass1<string>(), new[] { "" }));
                 Verify("DerivedClass1.Method3", m3.Invoke(new DerivedClass1<string>(), new[] { "" }));
@@ -1141,8 +1141,8 @@ class Program
 
                 m3 = typeof(DerivedClass2<string>).GetMethod("Method3");
                 m4 = typeof(DerivedClass2<string>).GetMethod("Method4");
-                gvm3 = typeof(DerivedClass2<string>).GetMethod("GVMethod3").MakeGenericMethod(typeof(string));
-                gvm4 = typeof(DerivedClass2<string>).GetMethod("GVMethod4").MakeGenericMethod(typeof(string));
+                gvm3 = typeof(DerivedClass2<string>).GetMethod("GVMethod3", BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly).MakeGenericMethod(typeof(string));
+                gvm4 = typeof(DerivedClass2<string>).GetMethod("GVMethod4", BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly).MakeGenericMethod(typeof(string));
                 Verify("DerivedClass2.Method3", m3.Invoke(new DerivedClass2<string>(), new[] { "" }));
                 Verify("DerivedClass2.Method4", m4.Invoke(new DerivedClass2<string>(), new[] { "" }));
                 Verify("DerivedClass2.GVMethod3", gvm3.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
@@ -1815,7 +1815,7 @@ class Program
 
                 if (typeof(T) == typeof(ClassType))
                     TestFieldAccess.s_FooClassTypeCctorCount++;
-                else
+                else if (typeof(T) == typeof(StructType))
                     TestFieldAccess.s_FooStructTypeCctorCount++;
             }
 

@@ -15,6 +15,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class PrecodeMethodImport : PrecodeHelperImport, IMethodNode
     {
         private readonly MethodWithGCInfo _localMethod;
+        private readonly MethodWithToken _method;
 
         public PrecodeMethodImport(
             NodeFactory factory,
@@ -33,9 +34,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             )
         {
             _localMethod = localMethod;
+            _method = method;
         }
 
-        public MethodDesc Method => _localMethod.Method;
+        public MethodDesc Method => _method.Method;
 
         public MethodWithGCInfo MethodCodeNode => _localMethod;
         
