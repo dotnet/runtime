@@ -493,7 +493,10 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
 // Return Value:
 //     the validated argument
 //
-GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr, GenTree* newobjThis)
+GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
+                                        CORINFO_CLASS_HANDLE argClass,
+                                        bool                 expectAddr,
+                                        GenTree*             newobjThis)
 {
     GenTree* arg = nullptr;
 
