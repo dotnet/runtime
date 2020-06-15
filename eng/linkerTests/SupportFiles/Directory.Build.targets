@@ -9,6 +9,7 @@
           DependsOnTargets="AddFrameworkReference;ResolveFrameworkReferences">
     <ItemGroup>
       <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(RuntimePackDir)" />
+      <ResolvedTargetingPack Update="@(ResolvedTargetingPack)" Path="$(TargetingPackDir)" />
     </ItemGroup>
   </Target>
 
