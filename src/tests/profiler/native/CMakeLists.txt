@@ -10,10 +10,10 @@ set(GETAPPDOMAINSTATICADDRESS_SOURCES getappdomainstaticaddress/getappdomainstat
 
 set(SOURCES ${GCBASIC_SOURCES} ${REJIT_SOURCES} ${EVENTPIPE_SOURCES} ${METADATAGETDISPENSER_SOURCES} ${GETAPPDOMAINSTATICADDRESS_SOURCES} profiler.def profiler.cpp classfactory.cpp dllmain.cpp guids.cpp)
 
-include_directories(../../../../src/pal/prebuilt/inc)
+include_directories(../../../coreclr/src/pal/prebuilt/inc)
 
 if(NOT WIN32)
-    include_directories(../../../../src/pal/inc/rt ../../../../src/pal/inc ../../../../src/inc)
+    include_directories(../../../coreclr/src/pal/inc/rt ../../../coreclr/src/pal/inc ../../../coreclr/src/inc)
     add_compile_options(-DPAL_STDCPP_COMPAT)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Wno-null-arithmetic)

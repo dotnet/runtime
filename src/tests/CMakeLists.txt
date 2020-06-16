@@ -5,7 +5,10 @@ project(Tests)
 
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
-set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Platform)
+# Add this subdir. We install the headers for the jit.
+add_subdirectory(../coreclr/src/pal/prebuilt/inc ../coreclr/src/pal/prebuilt/inc)
+
+set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Common/Platform)
 if (CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DWINDOWS)
 endif()
@@ -52,4 +55,4 @@ MACRO(ADDSUBDIR_REC  curdir)
     ENDFOREACH()
 ENDMACRO()
 
-ADDSUBDIR_REC(${CMAKE_CURRENT_SOURCE_DIR})
+ADDSUBDIR_REC("${CMAKE_CURRENT_SOURCE_DIR}")
