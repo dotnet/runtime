@@ -762,7 +762,7 @@ struct static_data
     float fragmentation_burden_limit;
     float limit;
     float max_limit;
-    size_t time_clock; // time after which to collect generation, in performance counts (see QueryPerformanceCounter)
+    uint64_t time_clock; // time after which to collect generation, in performance counts (see QueryPerformanceCounter)
     size_t gc_clock; // nubmer of gcs after which to collect generation
 };
 
@@ -803,13 +803,39 @@ public:
     size_t    freach_previous_promotion;
     size_t    fragmentation;    //fragmentation when we don't compact
     size_t    gc_clock;         //gc# when last GC happened
-    size_t    time_clock;       //time when last gc started
+    uint64_t  time_clock;       //time when last gc started
     size_t    gc_elapsed_time;  // Time it took for the gc to complete
     float     gc_speed;         //  speed in bytes/msec for the gc to complete
 
     size_t    min_size;
 
     static_data* sdata;
+};
+
+struct recorded_generation_info
+{
+    size_t size_before;
+    size_t fragmentation_before;
+    size_t size_after;
+    size_t fragmentation_after;
+};
+
+struct last_recorded_gc_info
+{
+    VOLATILE(size_t) index;
+    size_t total_committed;
+    size_t promoted;
+    size_t pinned_objects;
+    size_t finalize_promoted_objects;
+    size_t pause_durations[2];
+    float pause_percentage;
+    recorded_generation_info gen_info[total_generation_count];
+    size_t heap_size;
+    size_t fragmentation;
+    uint32_t memory_load;
+    uint8_t condemned_generation;
+    bool compaction;
+    bool concurrent;
 };
 
 #define ro_in_entry 0x1
@@ -1227,6 +1253,21 @@ public:
 
     PER_HEAP_ISOLATED
     void do_post_gc();
+
+    PER_HEAP_ISOLATED
+    void update_recorded_gen_data (last_recorded_gc_info* gc_info);
+
+    PER_HEAP
+    void update_end_gc_time_per_heap();
+
+    PER_HEAP_ISOLATED
+    void update_end_ngc_time();
+
+    PER_HEAP
+    void add_to_history_per_heap();
+
+    PER_HEAP_ISOLATED
+    void add_to_history();
 
 #ifdef BGC_SERVO_TUNING
     PER_HEAP_ISOLATED
@@ -2355,10 +2396,8 @@ protected:
     PER_HEAP
     void pin_object (uint8_t* o, uint8_t** ppObject);
 
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
     PER_HEAP_ISOLATED
     size_t get_total_pinned_objects();
-#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
     PER_HEAP
     void reset_mark_stack ();
@@ -2799,6 +2838,8 @@ protected:
     size_t get_current_allocated();
     PER_HEAP_ISOLATED
     size_t get_total_allocated();
+    PER_HEAP_ISOLATED
+    size_t get_total_promoted();
 #ifdef BGC_SERVO_TUNING
     PER_HEAP_ISOLATED
     size_t get_total_generation_size (int gen_number);
@@ -3279,7 +3320,7 @@ public:
     gc_history_global gc_data_global;
 
     PER_HEAP_ISOLATED
-    size_t gc_last_ephemeral_decommit_time;
+    uint64_t gc_last_ephemeral_decommit_time;
 
     PER_HEAP
     size_t gen0_big_free_spaces;
@@ -3289,19 +3330,70 @@ public:
     double short_plugs_pad_ratio;
 #endif //SHORT_PLUGS
 
+    // We record the time GC work is done while EE is suspended.
+    // suspended_start_ts is what we get right before we call
+    // SuspendEE. We omit the time between GC end and RestartEE
+    // because it's very short and by the time we are calling it
+    // the settings may have changed and we'd have to do more work
+    // to figure out the right GC to record info of.
+    // 
+    // The complications are the GCs triggered without their own
+    // SuspendEE, in which case we will record that GC's duration
+    // as its pause duration and the rest toward the GC that
+    // the SuspendEE was for. The ephemeral GC we might trigger
+    // at the beginning of a BGC and the PM triggered full GCs
+    // fall into this case.
+    PER_HEAP_ISOLATED
+    uint64_t suspended_start_time;
+
+    PER_HEAP_ISOLATED
+    uint64_t end_gc_time;
+
+    PER_HEAP_ISOLATED
+    uint64_t total_suspended_time;
+
+    PER_HEAP_ISOLATED
+    uint64_t process_start_time;
+
+    PER_HEAP_ISOLATED
+    last_recorded_gc_info last_ephemeral_gc_info;
+
+    PER_HEAP_ISOLATED
+    last_recorded_gc_info last_full_blocking_gc_info;
+
+#ifdef BACKGROUND_GC
+    // If the user didn't specify which kind of GC info to return, we need
+    // to return the last recorded one. There's a complication with BGC as BGC
+    // end runs concurrently. If 2 BGCs run back to back, we can't have one
+    // update the info while the user thread is reading it (and we'd still like
+    // to return the last BGC info otherwise if we only did BGCs we could frequently
+    // return nothing). So we maintain 2 of these for BGC and the older one is
+    // guaranteed to be consistent.
+    PER_HEAP_ISOLATED
+    last_recorded_gc_info last_bgc_info[2];
+    // This is either 0 or 1.
+    PER_HEAP_ISOLATED
+    VOLATILE(int) last_bgc_info_index;
+    // Since a BGC can finish later than blocking GCs with larger indices,
+    // we can't just compare the index recorded in the GC info. We use this
+    // to know whether we should be looking for a bgc info or a blocking GC,
+    // if the user asks for the latest GC info of any kind.
+    // This can only go from false to true concurrently so if it is true,
+    // it means the bgc info is ready.
+    PER_HEAP_ISOLATED
+    VOLATILE(bool) is_last_recorded_bgc;
+
+    PER_HEAP_ISOLATED
+    void add_bgc_pause_duration_0();
+
+    PER_HEAP_ISOLATED
+    last_recorded_gc_info* get_completed_bgc_info();
+#endif //BACKGROUND_GC
+
 #ifdef HOST_64BIT
     PER_HEAP_ISOLATED
-    size_t youngest_gen_desired_th;
+        size_t youngest_gen_desired_th;
 #endif //HOST_64BIT
-
-    PER_HEAP_ISOLATED
-    uint32_t last_gc_memory_load;
-
-    PER_HEAP_ISOLATED
-    size_t last_gc_heap_size;
-
-    PER_HEAP_ISOLATED
-    size_t last_gc_fragmentation;
 
     PER_HEAP_ISOLATED
     uint32_t high_memory_load_th;
@@ -3409,7 +3501,7 @@ public:
 
 #ifdef HEAP_BALANCE_INSTRUMENTATION
     PER_HEAP_ISOLATED
-    size_t last_gc_end_time_ms;
+    size_t last_gc_end_time_us;
 #endif //HEAP_BALANCE_INSTRUMENTATION
 
     PER_HEAP_ISOLATED
@@ -3456,7 +3548,7 @@ protected:
 #endif //MULTIPLE_HEAPS
 
     PER_HEAP
-    size_t time_bgc_last;
+    uint64_t time_bgc_last;
 
     PER_HEAP
     uint8_t*       gc_low; // lowest address being condemned
@@ -3484,10 +3576,8 @@ protected:
     PER_HEAP
     uint8_t*    oldest_pinned_plug;
 
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
     PER_HEAP
     size_t      num_pinned_objects;
-#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
 #ifdef FEATURE_LOH_COMPACTION
     PER_HEAP
@@ -3623,12 +3713,6 @@ protected:
 
     PER_HEAP_ISOLATED
     gc_mechanisms_store gchist[max_history_count];
-
-    PER_HEAP
-    void add_to_history_per_heap();
-
-    PER_HEAP_ISOLATED
-    void add_to_history();
 
     PER_HEAP
     size_t total_promoted_bytes;
@@ -4057,12 +4141,6 @@ protected:
     size_t eph_gen_starts_size;
 
 #ifdef GC_CONFIG_DRIVEN
-    PER_HEAP_ISOLATED
-    size_t time_init;
-
-    PER_HEAP_ISOLATED
-    size_t time_since_init;
-
     // 0 stores compacting GCs;
     // 1 stores sweeping GCs;
     PER_HEAP_ISOLATED
@@ -4460,7 +4538,7 @@ size_t& dd_gc_clock (dynamic_data* inst)
   return inst->gc_clock;
 }
 inline
-size_t& dd_time_clock (dynamic_data* inst)
+uint64_t& dd_time_clock (dynamic_data* inst)
 {
   return inst->time_clock;
 }
@@ -4471,7 +4549,7 @@ size_t& dd_gc_clock_interval (dynamic_data* inst)
   return inst->sdata->gc_clock;
 }
 inline
-size_t& dd_time_clock_interval (dynamic_data* inst)
+uint64_t& dd_time_clock_interval (dynamic_data* inst)
 {
   return inst->sdata->time_clock;
 }

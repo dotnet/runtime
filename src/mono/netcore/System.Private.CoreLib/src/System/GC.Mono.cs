@@ -248,13 +248,12 @@ namespace System
 
         public static GCMemoryInfo GetGCMemoryInfo()
         {
-            _GetGCMemoryInfo(out long highMemoryLoadThresholdBytes,
-                             out long memoryLoadBytes,
-                             out long totalAvailableMemoryBytes,
-                             out long heapSizeBytes,
-                             out long fragmentedBytes);
+            throw new PlatformNotSupportedException();
+        }
 
-            return new GCMemoryInfo(highMemoryLoadThresholdBytes, memoryLoadBytes, totalAvailableMemoryBytes, heapSizeBytes, fragmentedBytes);
+        public static GCMemoryInfo GetGCMemoryInfo(GCKind kind)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

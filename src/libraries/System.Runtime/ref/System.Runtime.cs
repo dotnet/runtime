@@ -2056,6 +2056,7 @@ namespace System
         public static void EndNoGCRegion() { }
         public static long GetAllocatedBytesForCurrentThread() { throw null; }
         public static System.GCMemoryInfo GetGCMemoryInfo() { throw null; }
+        public static System.GCMemoryInfo GetGCMemoryInfo(System.GCKind kind) { throw null; }
         public static int GetGeneration(object obj) { throw null; }
         public static int GetGeneration(System.WeakReference wo) { throw null; }
         public static long GetTotalAllocatedBytes(bool precise = false) { throw null; }
@@ -2081,6 +2082,20 @@ namespace System
         Forced = 1,
         Optimized = 2,
     }
+    public enum GCKind
+    {
+        Ephemeral = 0,
+        FullBlocking = 1,
+        Background =2
+    };
+    public readonly partial struct GCGenerationInfo
+    {
+        private readonly int _dummyPrimitive;
+        public long SizeBeforeBytes { get { throw null; } }
+        public long FragmentationBeforeBytes { get { throw null; } }
+        public long SizeAfterBytes { get { throw null; } }
+        public long FragmentationAfterBytes { get { throw null; } }
+    }
     public readonly partial struct GCMemoryInfo
     {
         private readonly int _dummyPrimitive;
@@ -2089,6 +2104,17 @@ namespace System
         public long HighMemoryLoadThresholdBytes { get { throw null; } }
         public long MemoryLoadBytes { get { throw null; } }
         public long TotalAvailableMemoryBytes { get { throw null; } }
+        public long Index { get { throw null; } }
+        public int Generation { get { throw null; } }
+        public bool Compacted { get { throw null; } }
+        public bool Concurrent { get { throw null; } }
+        public long TotalCommittedBytes { get { throw null; } }
+        public long PromotedBytes { get { throw null; } }
+        public long PinnedObjectsCount { get { throw null; } }
+        public long FinalizationPendingCount { get { throw null; } }
+        public ReadOnlySpan<TimeSpan> PauseDurations { get { throw null; } }
+        public double PauseTimePercentage { get { throw null; } }
+        public ReadOnlySpan<GCGenerationInfo> GenerationInfo { get { throw null; } }
     }
     public enum GCNotificationStatus
     {
