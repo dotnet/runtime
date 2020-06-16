@@ -2733,8 +2733,10 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
         switch (otherTreeNode->OperGet())
         {
             case GT_CNS_INT:
-                if ((refPosition->treeNode->AsIntCon()->IconValue() == otherTreeNode->AsIntCon()->IconValue()) &&
-                    (varTypeGCtype(refPosition->treeNode) == varTypeGCtype(otherTreeNode)))
+            {
+                ssize_t v1 = refPosition->treeNode->AsIntCon()->IconValue();
+                ssize_t v2 = otherTreeNode->AsIntCon()->IconValue();
+                if ((v1 == v2) && (varTypeGCtype(refPosition->treeNode) == varTypeGCtype(otherTreeNode) || v1 == 0))
                 {
 #ifdef TARGET_64BIT
                     // If the constant is negative, only reuse registers of the same type.
@@ -2743,14 +2745,14 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
                     // This doesn't apply to a 32-bit system, on which long values occupy multiple registers.
                     // (We could sign-extend, but we would have to always sign-extend, because if we reuse more
                     // than once, we won't have access to the instruction that originally defines the constant).
-                    if ((refPosition->treeNode->TypeGet() == otherTreeNode->TypeGet()) ||
-                        (refPosition->treeNode->AsIntCon()->IconValue() >= 0))
+                    if ((refPosition->treeNode->TypeGet() == otherTreeNode->TypeGet()) || (v1 >= 0))
 #endif // TARGET_64BIT
                     {
                         return true;
                     }
                 }
                 break;
+            }
             case GT_CNS_DBL:
             {
                 // For floating point constants, the values must be identical, not simply compare
