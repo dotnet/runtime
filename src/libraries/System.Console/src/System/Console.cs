@@ -379,14 +379,24 @@ namespace System
 
         public static int CursorLeft
         {
-            get { return ConsolePal.CursorLeft; }
+            get { return ConsolePal.GetCursorPosition().Left; }
             set { SetCursorPosition(value, CursorTop); }
         }
 
         public static int CursorTop
         {
-            get { return ConsolePal.CursorTop; }
+            get { return ConsolePal.GetCursorPosition().Top; }
             set { SetCursorPosition(CursorLeft, value); }
+        }
+
+        /// <summary>Gets the position of the cursor.</summary>
+        /// <returns>The column and row position of the cursor.</returns>
+        /// <remarks>
+        /// Columns are numbered from left to right starting at 0. Rows are numbered from top to bottom starting at 0.
+        /// </remarks>
+        public static (int Left, int Top) GetCursorPosition()
+        {
+            return ConsolePal.GetCursorPosition();
         }
 
         public static string Title

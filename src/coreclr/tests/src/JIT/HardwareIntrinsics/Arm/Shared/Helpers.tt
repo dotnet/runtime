@@ -371,7 +371,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public static <#= type.wide #> AddWideningUpper(<#= type.wide #>[] op1, <#= type.name #>[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
 
         public static <#= type.name #> ExtractNarrowing(<#= type.wide #> op1) => (<#= type.name #>)op1;
- 
+
         public static <#= type.name #> ExtractNarrowingUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
 
         public static <#= type.name #> FusedAddHalving(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.name #>)((<#= type.wideUnsigned #>)((<#= type.wide #>)op1 + (<#= type.wide #>)op2) >> 1);
@@ -1238,6 +1238,41 @@ namespace JIT.HardwareIntrinsics.Arm
             Array.Fill<<#= typeName #>>(zeros, 0, 0, indices.Length);
 
             return TableVectorExtension(i, zeros, indices, table);
+        }
+
+        public static byte Clamp(int i, <#= typeName #> value, bool inclusive)
+        {
+            <#= typeName #> max = (<#= typeName #>)((i * 8) - (inclusive ? 0 : 1));
+            <#= typeName #> min = ( <#= typeName #>)(inclusive ? 1 : 0);
+            return (byte)Math.Max (min, Math.Min(value % max, max));
+        }
+<#
+        }
+
+        foreach (var typeName in new[] { (original: "byte",   unsigned: "byte"),
+                                         (original: "short",  unsigned: "ushort"),
+                                         (original: "int",    unsigned: "uint"),
+                                         (original: "long",   unsigned: "ulong"),
+                                         (original: "sbyte",  unsigned: "byte"),
+                                         (original: "ushort", unsigned: "ushort"),
+                                         (original: "uint",   unsigned: "uint"),
+                                         (original: "ulong",  unsigned: "ulong") })
+        {
+#>
+        public static <#= typeName.original #> ShiftRightAndInsert(<#= typeName.original #> left, <#= typeName.original #> right, byte shift)
+        {
+            <#= typeName.unsigned #> mask = (<#= typeName.unsigned #>)~(<#= typeName.unsigned #>.MaxValue >> shift);
+            <#= typeName.unsigned #> value = (<#= typeName.unsigned #>)(right >> shift);
+            <#= typeName.original #> newval = (<#= typeName.original #>)(((<#= typeName.unsigned #>)left & mask) | value);
+            return newval;
+        }
+
+        public static <#= typeName.original #> ShiftLeftLogicalAndInsert(<#= typeName.original #> left, <#= typeName.original #> right, byte shift)
+        {
+            <#= typeName.unsigned #> mask = (<#= typeName.unsigned #>)~(<#= typeName.unsigned #>.MaxValue << shift);
+            <#= typeName.unsigned #> value = (<#= typeName.unsigned #>)(right << shift);
+            <#= typeName.original #> newval = (<#= typeName.original #>)(((<#= typeName.unsigned #>)left & mask) | value);
+            return newval;
         }
 <#
         }

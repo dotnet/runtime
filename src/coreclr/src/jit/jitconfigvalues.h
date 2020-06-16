@@ -246,6 +246,8 @@ CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 0)
 
 CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 0) // Enable the register allocator to support EH-write thru:
                                                              // partial enregistration of vars exposed on EH boundaries
+CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
+                                                                   // defined or used in a multireg context.
 
 // clang-format off
 
@@ -437,13 +439,8 @@ CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSave
 #endif // defined(TARGET_ARM64)
 #endif // DEBUG
 
-#if defined(TARGET_ARMARCH)
 CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 1) // Allow Jit to retype structs as primitive types
                                                                        // when possible.
-#else
-CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 1) // Allow Jit to retype structs as primitive types
-                                                                       // when possible.
-#endif
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING

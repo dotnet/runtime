@@ -787,7 +787,7 @@ namespace System.Tests
             public PublicType() { }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void CreateInstanceAssemblyResolve()
         {
             RemoteExecutor.Invoke(() =>

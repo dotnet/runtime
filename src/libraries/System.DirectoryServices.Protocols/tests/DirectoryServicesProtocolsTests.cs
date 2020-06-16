@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.DirectoryServices.Tests;
 using System.Globalization;
 using System.Net;
+using System.Threading;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
@@ -534,7 +536,8 @@ namespace System.DirectoryServices.Protocols.Tests
         {
             string filter = $"(&(objectClass=organizationalUnit)(ou={ouName}))";
             SearchRequest searchRequest = new SearchRequest(rootDn, filter, SearchScope.OneLevel, null);
-            SearchResponse searchResponse = (SearchResponse) connection.SendRequest(searchRequest);
+            IAsyncResult asyncResult = connection.BeginSendRequest(searchRequest, PartialResultProcessing.NoPartialResultSupport, null, null);
+            SearchResponse searchResponse = (SearchResponse)connection.EndSendRequest(asyncResult);
 
             if (searchResponse.Entries.Count > 0)
                 return searchResponse.Entries[0];

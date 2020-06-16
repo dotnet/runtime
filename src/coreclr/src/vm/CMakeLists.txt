@@ -323,6 +323,7 @@ set(VM_SOURCES_WKS
     autotrace.cpp
     diagnosticserver.cpp
     dllimportcallback.cpp
+    dynamicinterfacecastable.cpp
     eeconfig.cpp
     eecontract.cpp
     eemessagebox.cpp

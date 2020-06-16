@@ -3739,4 +3739,13 @@
   <data name="SwitchExpressionException_UnmatchedValue" xml:space="preserve">
     <value>Unmatched value was {0}.</value>
   </data>
+  <data name="IDynamicInterfaceCastable_DoesNotImplementRequested" xml:space="preserve">
+    <value>Type '{0}' returned by IDynamicInterfaceCastable does not implement the requested interface '{1}'.</value>
+  </data>
+  <data name="IDynamicInterfaceCastable_MissingImplementationAttribute" xml:space="preserve">
+    <value>Type '{0}' returned by IDynamicInterfaceCastable does not have the attribute '{1}'.</value>
+  </data>
+  <data name="IDynamicInterfaceCastable_NotInterface" xml:space="preserve">
+    <value>Type '{0}' returned by IDynamicInterfaceCastable is not an interface.</value>
+  </data>
 </root>

@@ -70,7 +70,7 @@ namespace System.IO.Tests
             yield return new string[] { @"C:\tmp\", @"C:\tmp\" };
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetTempPath_SetEnvVar()
         {
             RemoteExecutor.Invoke(() =>

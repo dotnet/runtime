@@ -5,6 +5,7 @@
 using Internal.Cryptography;
 using System.Buffers;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
 using System.Security.Cryptography.Asn1;
 
@@ -1022,14 +1023,14 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    using (AsnWriter pkcs8PrivateKey = EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters))
-                    using (AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
+                    AsnWriter pkcs8PrivateKey = EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters);
+
+                    AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
                         passwordBytes,
                         pkcs8PrivateKey,
-                        pbeParameters))
-                    {
-                        return writer.TryEncode(destination, out bytesWritten);
-                    }
+                        pbeParameters);
+
+                    return writer.TryEncode(destination, out bytesWritten);
                 }
                 finally
                 {
@@ -1058,14 +1059,14 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    using (AsnWriter pkcs8PrivateKey = EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters))
-                    using (AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
+                    AsnWriter pkcs8PrivateKey = EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters);
+
+                    AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
                         password,
                         pkcs8PrivateKey,
-                        pbeParameters))
-                    {
-                        return writer.TryEncode(destination, out bytesWritten);
-                    }
+                        pbeParameters);
+
+                    return writer.TryEncode(destination, out bytesWritten);
                 }
                 finally
                 {
@@ -1084,10 +1085,8 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    using (AsnWriter writer = EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters))
-                    {
-                        return writer.TryEncode(destination, out bytesWritten);
-                    }
+                    AsnWriter writer = EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters);
+                    return writer.TryEncode(destination, out bytesWritten);
                 }
                 finally
                 {
@@ -1102,10 +1101,8 @@ namespace System.Security.Cryptography
         {
             ECParameters ecParameters = ExportParameters(false);
 
-            using (AsnWriter writer = EccKeyFormatHelper.WriteSubjectPublicKeyInfo(ecParameters))
-            {
-                return writer.TryEncode(destination, out bytesWritten);
-            }
+            AsnWriter writer = EccKeyFormatHelper.WriteSubjectPublicKeyInfo(ecParameters);
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         public override unsafe void ImportEncryptedPkcs8PrivateKey(
@@ -1228,10 +1225,8 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    using (AsnWriter writer = EccKeyFormatHelper.WriteECPrivateKey(ecParameters))
-                    {
-                        return writer.Encode();
-                    }
+                    AsnWriter writer = EccKeyFormatHelper.WriteECPrivateKey(ecParameters);
+                    return writer.Encode();
                 }
                 finally
                 {
@@ -1248,10 +1243,8 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    using (AsnWriter writer = EccKeyFormatHelper.WriteECPrivateKey(ecParameters))
-                    {
-                        return writer.TryEncode(destination, out bytesWritten);
-                    }
+                    AsnWriter writer = EccKeyFormatHelper.WriteECPrivateKey(ecParameters);
+                    return writer.TryEncode(destination, out bytesWritten);
                 }
                 finally
                 {

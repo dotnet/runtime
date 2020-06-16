@@ -144,13 +144,15 @@ namespace R2RTest
                     new Option[]
                     {
                         InputDirectory(),
-                        OutputDirectory(),
                         DegreeOfParallelism(),
                         AspNetPath(),
-                        Composite(),
-                        PartialComposite(),
+                        CompositeScenario()
                     },
-                    CompileSerpCommand.CompileSerpAssemblies);
+                    options => 
+                    {
+                        var compileSerp = new CompileSerpCommand(options);
+                        return compileSerp.CompileSerpAssemblies();
+                    });
 
             // Todo: Input / Output directories should be required arguments to the command when they're made available to handlers
             // https://github.com/dotnet/command-line-api/issues/297
@@ -259,8 +261,8 @@ namespace R2RTest
             Option AspNetPath() =>
                 new Option<DirectoryInfo>(new[] { "--asp-net-path", "-asp" }, "Path to SERP's ASP.NET Core folder").ExistingOnly();
 
-            Option PartialComposite() =>
-                new Option<bool>(new[] { "--partial-composite", "-pc" }, "Add references to framework and asp.net instead of unrooted inputs");
+            Option CompositeScenario() =>
+                new Option<SerpCompositeScenario>(new [] { "--composite-scenario", "-cs" }, "Specifies which layers of a shared framework application are compiled as composite" );
         }
     }
 }

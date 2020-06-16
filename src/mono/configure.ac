@@ -320,6 +320,11 @@ case "$host" in
                 	# available during cross-compilation
                 	mono_cv_uscore=no
                 fi
+                case "$host" in
+                *-musl)
+                        AC_DEFINE(MUSL, 1, [musl libc])
+                        ;;
+                esac
 		case "$host" in
 		*-tizen-linux-*)
 			platform_tizen=yes
@@ -758,7 +763,7 @@ AC_CHECK_HEADERS(elf.h)
 # for perf jit dump support
 AC_CHECK_HEADERS(sys/mman.h)
 if test "x$host_linux" = "xyes" -a x$ac_cv_header_sys_mman_h = xyes -a  x$ac_cv_header_elf_h = xyes -a x$ac_cv_header_sys_syscall_h = xyes; then
-   AC_DEFINE(ENABLE_JIT_DUMP, 1, [Enable jit dump support on Linux])
+	AC_DEFINE(ENABLE_JIT_DUMP, 1, [Enable jit dump support on Linux])
 fi
 
 # for support
@@ -2207,6 +2212,9 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNC(mach_timebase_info, [AC_DEFINE(HAVE_MACH_TIMEBASE_INFO, 1, [mach_timebase_info])])
 	AC_CHECK_FUNC(futimes,            [AC_DEFINE(HAVE_FUTIMES, 1, [futimes])])
 	AC_CHECK_FUNC(futimens,           [AC_DEFINE(HAVE_FUTIMENS, 1, [futimens])])
+
+	AC_CHECK_TYPES([clockid_t], [AC_DEFINE(HAVE_CLOCKID_T)], [],
+		[#include <sys/types.h>])
 
 	dnl hires monotonic clock support
 	AC_SEARCH_LIBS(clock_gettime, rt)

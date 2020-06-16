@@ -125,7 +125,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             // High Sierra fails to build a chain for a self-signed certificate with revocation enabled.
             // https://github.com/dotnet/runtime/issues/22625
-            if (!PlatformDetection.IsMacOsHighSierraOrHigher)
+            if (PlatformDetection.IsNotOSX)
             {
                 using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
                 {

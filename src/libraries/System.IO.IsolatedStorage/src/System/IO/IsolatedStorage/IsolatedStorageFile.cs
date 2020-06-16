@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 
@@ -14,12 +15,12 @@ namespace System.IO.IsolatedStorage
         internal const string s_files = "Files";
         internal const string s_assemFiles = "AssemFiles";
         internal const string s_appFiles = "AppFiles";
-        private string _rootDirectory = null!; // Initialized in helper
 
         private bool _disposed;
         private bool _closed;
 
         private readonly object _internalLock = new object();
+        private readonly string _rootDirectory;
 
         // Data file notes
         // ===============
@@ -35,7 +36,36 @@ namespace System.IO.IsolatedStorage
         // private const string InfoFile = "info.dat";
         // private const string AppInfoFile = "appInfo.dat";
 
-        internal IsolatedStorageFile() { }
+        internal IsolatedStorageFile(IsolatedStorageScope scope)
+        {
+            // Evidence isn't currently available: https://github.com/dotnet/runtime/issues/18208
+            // public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Evidence domainEvidence, Type domainEvidenceType, Evidence assemblyEvidence, Type assemblyEvidenceType) { return default(IsolatedStorageFile); }
+
+            // InitStore will set up the IdentityHash
+            InitStore(scope, null, null);
+
+            StringBuilder sb = new StringBuilder(Helper.GetRootDirectory(scope));
+            sb.Append(SeparatorExternal);
+            sb.Append(IdentityHash);
+            sb.Append(SeparatorExternal);
+
+            if (Helper.IsApplication(scope))
+            {
+                sb.Append(s_appFiles);
+            }
+            else if (Helper.IsDomain(scope))
+            {
+                sb.Append(s_files);
+            }
+            else
+            {
+                sb.Append(s_assemFiles);
+            }
+            sb.Append(SeparatorExternal);
+
+            _rootDirectory = sb.ToString();
+            Helper.CreateDirectory(_rootDirectory, scope);
+        }
 
         // Using this property to match .NET Framework for testing
         private string RootDirectory
@@ -586,9 +616,7 @@ namespace System.IO.IsolatedStorage
 
         private static IsolatedStorageFile GetStore(IsolatedStorageScope scope)
         {
-            IsolatedStorageFile isf = new IsolatedStorageFile();
-            isf.Initialize(scope);
-            return isf;
+            return new IsolatedStorageFile(scope);
         }
 
         // Notes on the GetStore methods:
@@ -631,38 +659,6 @@ namespace System.IO.IsolatedStorage
         {
             // Scope MUST NOT be Application (assembly is assumed otherwise)
             return (domainIdentity == null && assemblyIdentity == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
-        }
-
-        // https://github.com/dotnet/runtime/issues/18208
-        // Evidence isn't currently available
-        // public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Evidence domainEvidence, Type domainEvidenceType, Evidence assemblyEvidence, Type assemblyEvidenceType) { return default(IsolatedStorageFile); }
-
-        private void Initialize(IsolatedStorageScope scope)
-        {
-            // InitStore will set up the IdentityHash
-            InitStore(scope, null, null);
-
-            StringBuilder sb = new StringBuilder(Helper.GetRootDirectory(scope));
-            sb.Append(SeparatorExternal);
-            sb.Append(IdentityHash);
-            sb.Append(SeparatorExternal);
-
-            if (Helper.IsApplication(scope))
-            {
-                sb.Append(s_appFiles);
-            }
-            else if (Helper.IsDomain(scope))
-            {
-                sb.Append(s_files);
-            }
-            else
-            {
-                sb.Append(s_assemFiles);
-            }
-            sb.Append(SeparatorExternal);
-
-            _rootDirectory = sb.ToString();
-            Helper.CreateDirectory(_rootDirectory, scope);
         }
 
         internal string GetFullPath(string partialPath)

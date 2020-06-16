@@ -213,8 +213,6 @@ struct InterpFrame {
 	InterpFrame    *next_free;
 	/* Stack fragments this frame was allocated from */
 	StackFragment *data_frag;
-	/* exception info */
-	const unsigned short  *ip;
 	/* State saved before calls */
 	/* This is valid if state.ip != NULL */
 	InterpState state;

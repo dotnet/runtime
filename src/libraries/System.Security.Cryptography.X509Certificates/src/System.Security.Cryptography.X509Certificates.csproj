@@ -653,6 +653,7 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Formats.Asn1" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />

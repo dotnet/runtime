@@ -741,7 +741,7 @@ namespace Internal.JitInterface
                 // do a dynamic check instead.
                 if (
                     !HardwareIntrinsicHelpers.IsIsSupportedMethod(method)
-                    || HardwareIntrinsicHelpers.IsKnownSupportedIntrinsicAtCompileTime(method))
+                    || !_compilation.IsHardwareInstrinsicWithRuntimeDeterminedSupport(method))
 #endif
                 {
                     result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
@@ -1788,7 +1788,11 @@ namespace Internal.JitInterface
 
             TypeCompareState result = TypeCompareState.May;
 
-            if (toType.IsNullable)
+            if (fromType.IsIDynamicInterfaceCastable)
+            {
+                result = TypeCompareState.May;
+            }
+            else if (toType.IsNullable)
             {
                 // If casting to Nullable<T>, don't try to optimize
                 result = TypeCompareState.May;
@@ -2199,20 +2203,18 @@ namespace Internal.JitInterface
             }
         }
 
-        private CorInfoType getHFAType(CORINFO_CLASS_STRUCT_* hClass)
+        private CorInfoHFAElemType getHFAType(CORINFO_CLASS_STRUCT_* hClass)
         {
             var type = (DefType)HandleToObject(hClass);
 
-            // For 8-byte vectors return CORINFO_TYPE_DOUBLE, which is mapped by JIT to SIMD8.
-            // For 16-byte vectors return CORINFO_TYPE_VALUECLASS, which is mapped by JIT to SIMD16.
             // See MethodTable::GetHFAType and Compiler::GetHfaType.
             return (type.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
             {
-                ValueTypeShapeCharacteristics.Float32Aggregate => CorInfoType.CORINFO_TYPE_FLOAT,
-                ValueTypeShapeCharacteristics.Float64Aggregate => CorInfoType.CORINFO_TYPE_DOUBLE,
-                ValueTypeShapeCharacteristics.Vector64Aggregate => CorInfoType.CORINFO_TYPE_DOUBLE,
-                ValueTypeShapeCharacteristics.Vector128Aggregate => CorInfoType.CORINFO_TYPE_VALUECLASS,
-                _ => CorInfoType.CORINFO_TYPE_UNDEF
+                ValueTypeShapeCharacteristics.Float32Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_FLOAT,
+                ValueTypeShapeCharacteristics.Float64Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_DOUBLE,
+                ValueTypeShapeCharacteristics.Vector64Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_VECTOR64,
+                ValueTypeShapeCharacteristics.Vector128Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_VECTOR128,
+                _ => CorInfoHFAElemType.CORINFO_HFA_ELEM_NONE
             };
         }
 
@@ -2942,10 +2944,13 @@ namespace Internal.JitInterface
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, this.MethodBeingCompiled);
                 }
 
+#if READYTORUN
+                // TODO: enable this check in full AOT
                 if (Marshaller.IsMarshallingRequired(this.MethodBeingCompiled.Signature, Array.Empty<ParameterMetadata>())) // Only blittable arguments
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, this.MethodBeingCompiled);
                 }
+#endif
 
                 flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
             }
