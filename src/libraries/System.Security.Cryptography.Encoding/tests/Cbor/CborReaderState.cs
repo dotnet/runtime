@@ -14,7 +14,7 @@ namespace System.Formats.Cbor
         /// <summary>
         ///   Indicates the undefined state.
         /// </summary>
-        None = 0,
+        Undefined = 0,
 
         /// <summary>
         ///   Indicates that the next CBOR data item is an unsigned integer (major type 0).

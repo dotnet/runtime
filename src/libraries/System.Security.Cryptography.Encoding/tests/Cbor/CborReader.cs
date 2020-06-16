@@ -33,7 +33,7 @@ namespace System.Formats.Cbor
         private bool _isConformanceModeCheckEnabled = true;
 
         // keeps a cached copy of the reader state; 'None' denotes uncomputed state
-        private CborReaderState _cachedState = CborReaderState.None;
+        private CborReaderState _cachedState = CborReaderState.Undefined;
 
         /// <summary>
         ///   The conformance mode used by this reader.
@@ -91,7 +91,7 @@ namespace System.Formats.Cbor
         /// </summary>
         public CborReaderState PeekState()
         {
-            if (_cachedState == CborReaderState.None)
+            if (_cachedState == CborReaderState.Undefined)
             {
                 _cachedState = PeekStateCore(throwOnFormatErrors:false);
             }
@@ -411,7 +411,7 @@ namespace System.Formats.Cbor
 
             _offset += length;
             // invalidate the state cache
-            _cachedState = CborReaderState.None;
+            _cachedState = CborReaderState.Undefined;
         }
 
         private void ResetBuffer(int position)
@@ -420,7 +420,7 @@ namespace System.Formats.Cbor
 
             _offset = position;
             // invalidate the state cache
-            _cachedState = CborReaderState.None;
+            _cachedState = CborReaderState.Undefined;
         }
 
         private void EnsureReadCapacity(int length)
@@ -483,7 +483,7 @@ namespace System.Formats.Cbor
             // without necessarily needing to advance the buffer
             // (e.g. we're at the end of a definite-length collection).
             // We therefore need to invalidate the cache here.
-            _cachedState = CborReaderState.None;
+            _cachedState = CborReaderState.Undefined;
         }
 
         // Struct containing checkpoint data for rolling back reader state in the event of a failure
@@ -568,7 +568,7 @@ namespace System.Formats.Cbor
             _itemsRead = checkpoint.ItemsRead;
             _previousKeyEncodingRange = checkpoint.PreviousKeyEncodingRange;
             _currentKeyOffset = checkpoint.CurrentKeyOffset;
-            _cachedState = CborReaderState.None;
+            _cachedState = CborReaderState.Undefined;
 
             Debug.Assert(CurrentDepth == checkpoint.Depth);
         }
