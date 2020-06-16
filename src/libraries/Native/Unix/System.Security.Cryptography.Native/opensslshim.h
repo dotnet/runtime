@@ -340,7 +340,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
     REQUIRED_FUNCTION(EVP_md5) \
-    REQUIRED_FUNCTION(EVP_MD_CTX_copy) \
+    REQUIRED_FUNCTION(EVP_MD_CTX_copy_ex) \
     RENAMED_FUNCTION(EVP_MD_CTX_free, EVP_MD_CTX_destroy) \
     RENAMED_FUNCTION(EVP_MD_CTX_new, EVP_MD_CTX_create) \
     REQUIRED_FUNCTION(EVP_MD_size) \
@@ -732,7 +732,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
 #define EVP_md5 EVP_md5_ptr
-#define EVP_MD_CTX_copy EVP_MD_CTX_copy_ptr
+#define EVP_MD_CTX_copy_ex EVP_MD_CTX_copy_ex_ptr
 #define EVP_MD_CTX_free EVP_MD_CTX_free_ptr
 #define EVP_MD_CTX_new EVP_MD_CTX_new_ptr
 #define EVP_MD_size EVP_MD_size_ptr

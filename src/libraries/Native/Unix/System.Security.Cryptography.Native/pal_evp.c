@@ -71,7 +71,7 @@ EVP_MD_CTX* CryptoNative_EvpDup(const EVP_MD_CTX* ctx)
         return NULL;
     }
 
-    if (!EVP_MD_CTX_copy(dup, ctx))
+    if (!EVP_MD_CTX_copy_ex(dup, ctx))
     {
         EVP_MD_CTX_free(dup);
         return NULL;
