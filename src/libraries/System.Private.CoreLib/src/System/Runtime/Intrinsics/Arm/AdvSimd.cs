@@ -937,6 +937,18 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> ConvertToDoubleUpper(Vector128<float> value) => ConvertToDoubleUpper(value);
 
             /// <summary>
+            /// float32x2_t vcvt_f32_f64 (float64x2_t a)
+            ///   A64: FCVTN Vd.2S, Vn.2D
+            /// </summary>
+            public static Vector64<float> ConvertToSingleLower(Vector128<double> value) => ConvertToSingleLower(value);
+
+            /// <summary>
+            /// float32x4_t vcvt_high_f32_f64 (float32x2_t r, float64x2_t a)
+            ///   A64: FCVTN2 Vd.4S, Vn.2D
+            /// </summary>
+            public static Vector128<float> ConvertToSingleUpper(Vector64<float> lower, Vector128<double> value) => ConvertToSingleUpper(lower, value);
+
+            /// <summary>
             /// float32x2_t vdiv_f32 (float32x2_t a, float32x2_t b)
             ///   A64: FDIV Vd.2S, Vn.2S, Vm.2S
             /// </summary>
