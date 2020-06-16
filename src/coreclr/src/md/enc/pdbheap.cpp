@@ -19,7 +19,7 @@ PdbHeap::~PdbHeap()
 }
 
 __checkReturn
-HRESULT PdbHeap::SetData(PORTABLE_PDB_STREAM* data)
+HRESULT PdbHeap::SetData(PORT_PDB_STREAM* data)
 {
     m_size = sizeof(data->id) +
         sizeof(data->entryPoint) +

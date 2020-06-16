@@ -779,66 +779,6 @@ HRESULT ProfilerMetadataEmitValidator::ResetENCLog()
     return COR_E_NOTSUPPORTED;
 }
 
-HRESULT ProfilerMetadataEmitValidator::GetReferencedTypeSysTables(
-        ULONG64     *refTables,
-        ULONG       refTableRows[],
-        const ULONG maxTableRowsSize,
-        ULONG       *tableRowsSize)
-{
-    LIMITED_METHOD_CONTRACT;
-    return COR_E_NOTSUPPORTED;
-}
-
-HRESULT ProfilerMetadataEmitValidator::DefinePdbStream(
-        PORT_PDB_STREAM *pdbStream)
-{
-    LIMITED_METHOD_CONTRACT;
-    return COR_E_NOTSUPPORTED;
-}
-
-HRESULT ProfilerMetadataEmitValidator::DefineDocument(
-    char        *docName,
-    GUID        *hashAlg,
-    BYTE        *hashVal,
-    ULONG       hashValSize,
-    GUID        *lang,
-    mdDocument  *docMdToken)
-{
-    LIMITED_METHOD_CONTRACT;
-    return COR_E_NOTSUPPORTED;
-}
-
-HRESULT ProfilerMetadataEmitValidator::DefineSequencePoints(
-    ULONG       docRid,
-    BYTE        *sequencePtsBlob,
-    ULONG       sequencePtsBlobSize)
-{
-    LIMITED_METHOD_CONTRACT;
-    return COR_E_NOTSUPPORTED;
-}
-
-HRESULT ProfilerMetadataEmitValidator::DefineLocalScope(
-    ULONG       methodDefRid,
-    ULONG       importScopeRid,
-    ULONG       firstLocalVarRid,
-    ULONG       firstLocalConstRid,
-    ULONG       startOffset,
-    ULONG       length)
-{
-    LIMITED_METHOD_CONTRACT;
-    return COR_E_NOTSUPPORTED;
-}
-
-HRESULT ProfilerMetadataEmitValidator::DefineLocalVariable(
-    USHORT      attribute,
-    USHORT      index,
-    char        *name,
-    mdLocalVariable *locVarToken)
-{
-    LIMITED_METHOD_CONTRACT;
-    return COR_E_NOTSUPPORTED;
-}
-
     //IMetaDataAssemblyEmit
 HRESULT ProfilerMetadataEmitValidator::DefineAssembly(
         const void  *pbPublicKey,

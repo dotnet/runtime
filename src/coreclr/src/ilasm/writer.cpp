@@ -31,7 +31,7 @@ HRESULT Assembler::InitMetaData()
     if(bClock) bClock->cMDInitBegin = GetTickCount();
 
     hr = MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
-        IID_IMetaDataDispenserEx, (void **)&m_pDisp);
+        IID_IMetaDataDispenserEx2, (void **)&m_pDisp);
     if (FAILED(hr))
         goto exit;
 
@@ -44,7 +44,7 @@ HRESULT Assembler::InitMetaData()
         hr = m_pDisp->SetOption(MetaDataRuntimeVersion, &encOption);
         ::SysFreeString(bstr);
     }
-    hr = m_pDisp->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit2,
+    hr = m_pDisp->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit3,
                         (IUnknown **)&m_pEmitter);
     if (FAILED(hr))
         goto exit;
@@ -53,17 +53,10 @@ HRESULT Assembler::InitMetaData()
     if(FAILED(hr = m_pEmitter->QueryInterface(IID_IMetaDataImport2, (void**)&m_pImporter)))
         goto exit;
 
-    // For portable PDB debug info generation create new instance of MD emitter
-    // TODO: it might be better to introduce IID_IMetaDataEmit3 interface to be used by this emitter,
-    //  and also new version of the metadata e.g. CLSID_CLR_v3_MetaData
     if (m_pdbFormat == PdbFormat::PORTABLE)
     {
         m_pPortablePdbWritter = new PortablePdbWritter();
-        IMetaDataEmit2* pPdbEmitter;
-        hr = m_pDisp->DefinePortablePdbScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit2,
-            (IUnknown**)&pPdbEmitter);
-        if (FAILED(hr)) goto exit;
-        if (FAILED(hr = m_pPortablePdbWritter->Init(pPdbEmitter))) goto exit;
+        if (FAILED(hr = m_pPortablePdbWritter->Init(m_pDisp))) goto exit;
     }
 
     //m_Parser = new AsmParse(m_pEmitter);

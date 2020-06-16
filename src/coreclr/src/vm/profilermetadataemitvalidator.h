@@ -363,42 +363,6 @@ public:
         mdToken      rtkConstraints[]);
 
     virtual HRESULT STDMETHODCALLTYPE ResetENCLog();
-    
-    virtual HRESULT STDMETHODCALLTYPE GetReferencedTypeSysTables(
-        ULONG64     *refTables,
-        ULONG       refTableRows[],
-        const ULONG maxTableRowsSize,
-        ULONG       *tableRowsSize);
-
-    virtual HRESULT STDMETHODCALLTYPE DefinePdbStream(
-        PORT_PDB_STREAM *pdbStream);
-        
-    virtual HRESULT STDMETHODCALLTYPE DefineDocument(
-        char        *docName,
-        GUID        *hashAlg,
-        BYTE        *hashVal,
-        ULONG       hashValSize,
-        GUID        *lang,
-        mdDocument  *docMdToken);
-
-    virtual HRESULT STDMETHODCALLTYPE DefineSequencePoints(
-        ULONG       docRid,
-        BYTE        *sequencePtsBlob,
-        ULONG       sequencePtsBlobSize);
-        
-    virtual HRESULT STDMETHODCALLTYPE DefineLocalScope(
-        ULONG       methodDefRid,
-        ULONG       importScopeRid,
-        ULONG       firstLocalVarRid,
-        ULONG       firstLocalConstRid,
-        ULONG       startOffset,
-        ULONG       length);
-
-    virtual HRESULT STDMETHODCALLTYPE DefineLocalVariable(
-        USHORT      attribute,
-        USHORT      index,
-        char        *name,
-        mdLocalVariable *locVarToken);
 
     //IMetaDataAssemblyEmit
     virtual HRESULT STDMETHODCALLTYPE DefineAssembly(

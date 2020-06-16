@@ -71,17 +71,6 @@ typedef mdToken mdGenericParam;         // formal parameter to generic type or m
 typedef mdToken mdMethodSpec;           // instantiation of a generic method
 typedef mdToken mdGenericParamConstraint; // constraint on a formal generic parameter
 
-/* Portable PDB tables */
-typedef mdToken mdDocument;
-typedef mdToken mdMethodDebugInformation;
-typedef mdToken mdLocalScope;
-typedef mdToken mdLocalVariable;
-typedef mdToken mdLocalConstant;
-typedef mdToken mdImportScope;
-// TODO:
-// typedef mdToken mdStateMachineMethod;
-// typedef mdToken mdCustomDebugInformation;
-
 // Application string.
 typedef mdToken mdString;               // User literal string token.
 
@@ -1514,17 +1503,7 @@ typedef enum CorTokenType
     mdtManifestResource     = 0x28000000,       //
     mdtGenericParam         = 0x2a000000,       //
     mdtMethodSpec           = 0x2b000000,       //
-    mdtGenericParamConstraint = 0x2c000000,     //
-    /* Portable PDB tables */
-    mdtDocument             = 0x30000000,       //
-    mdtMethodDebugInformation = 0x31000000,     //
-    mdtLocalScope           = 0x32000000,       //
-    mdtLocalVariable        = 0x33000000,       //
-    mdtLocalConstant        = 0x34000000,       //
-    mdtImportScope          = 0x35000000,       //
-    // TODO:
-    // mdtStateMachineMethod   = 0x36000000,       //
-    // mdtCustomDebugInformation = 0x37000000,     //
+    mdtGenericParamConstraint = 0x2c000000,
 
     mdtString               = 0x70000000,       //
     mdtName                 = 0x71000000,       //
@@ -1568,17 +1547,6 @@ typedef enum CorTokenType
 #define mdGenericParamNil           ((mdGenericParam)mdtGenericParam)
 #define mdGenericParamConstraintNil ((mdGenericParamConstraint)mdtGenericParamConstraint)
 #define mdMethodSpecNil             ((mdMethodSpec)mdtMethodSpec)
-
-/* Portable PDB tables */
-#define mdDocumentNil               ((mdDocument)mdtDocument)
-#define mdMethodDebugInformationNil ((mdMethodDebugInformation)mdtMethodDebugInformation)
-#define mdLocalScopeNil             ((mdLocalScope)mdtLocalScope)
-#define mdLocalVariableNil          ((mdLocalVariable)mdtLocalVariable)
-#define mdLocalConstantNil          ((mdLocalConstant)mdtLocalConstant)
-#define mdImportScopeNil            ((mdImportScope)mdtImportScope)
-// TODO:
-// #define mdStateMachineMethodNil     ((mdStateMachineMethod)mdtStateMachineMethod)
-// #define mdCustomDebugInformationNil ((mdCustomDebugInformation)mdtCustomDebugInformation)
 
 #define mdStringNil                 ((mdString)mdtString)
 

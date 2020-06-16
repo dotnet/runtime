@@ -30,6 +30,8 @@ set(MDRUNTIME_HEADERS
   ../inc/metamodel.h
   ../inc/metamodelro.h
   ../inc/pdbheap.h
+  ../inc/portablepdbmdds.h
+  ../inc/portablepdbmdi.h
   ../inc/recordpool.h
   metamodelcolumndefs.h
   mdinternaldisp.h

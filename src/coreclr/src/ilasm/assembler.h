@@ -18,6 +18,7 @@
 #include "asmtemplates.h"
 
 #include "portable_pdb.h"
+#include "portablepdbmdi.h"
 
 // Disable the "initialization of static local vars is no thread safe" error
 #ifdef _MSC_VER
@@ -779,8 +780,8 @@ public:
     mdToken m_tkSysEnum;
     BOOL    m_fDidCoInitialise;
 
-    IMetaDataDispenserEx *m_pDisp;
-    IMetaDataEmit2      *m_pEmitter;
+    IMetaDataDispenserEx2 *m_pDisp;
+    IMetaDataEmit3      *m_pEmitter;
     ICeeFileGen        *m_pCeeFileGen;
     IMetaDataImport2    *m_pImporter;			// Import interface.
     HCEEFILE m_pCeeFile;

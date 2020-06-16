@@ -563,24 +563,6 @@ DECLARE_INTERFACE_(IMetaDataEmit, IUnknown)
 };      // IMetaDataEmit
 
 //-------------------------------------
-//--- Portable PDBstream data structure
-//-------------------------------------
-typedef struct PDB_ID
-{
-    GUID            pdbGuid;
-    ULONG           pdbTimeStamp;
-} PDB_ID;
-
-typedef struct PORT_PDB_STREAM {
-    PDB_ID          id;
-    mdMethodDef     entryPoint;
-    ULONG64         referencedTypeSystemTables;
-    ULONG           *typeSystemTableRows;
-    ULONG           typeSystemTableRowsSize;
-} PORTABLE_PDB_STREAM;
-
-
-//-------------------------------------
 //--- IMetaDataEmit2
 //-------------------------------------
 // {F5DD9950-F693-42e6-830E-7B833E8146A9}
@@ -631,41 +613,6 @@ DECLARE_INTERFACE_(IMetaDataEmit2, IMetaDataEmit)
 
     STDMETHOD(ResetENCLog)() PURE;          // S_OK or error.
 
-    STDMETHOD(GetReferencedTypeSysTables)(  // S_OK or error.
-        ULONG64     *refTables,             // [OUT] Bit vector of referenced type system metadata tables.
-        ULONG       refTableRows[],         // [OUT] Array of number of rows for each referenced type system table.
-        const ULONG maxTableRowsSize,       // [IN]  Max size of the rows array.
-        ULONG       *tableRowsSize) PURE;   // [OUT] Actual size of the rows array.
-
-    STDMETHOD(DefinePdbStream)(             // S_OK or error.
-        PORT_PDB_STREAM *pdbStream) PURE;   // [IN] Portable pdb stream data.
-
-    STDMETHOD(DefineDocument)(              // S_OK or error.
-        char        *docName,               // [IN] Document name (string will be tokenized).
-        GUID        *hashAlg,               // [IN] Hash algorithm GUID.
-        BYTE        *hashVal,               // [IN] Hash value.
-        ULONG       hashValSize,            // [IN] Hash value size.
-        GUID        *lang,                  // [IN] Language GUID.
-        mdDocument  *docMdToken) PURE;      // [OUT] Token of the defined document.
-
-    STDMETHOD(DefineSequencePoints)(        // S_OK or error.
-        ULONG       docRid,                 // [IN] Document RID.
-        BYTE        *sequencePtsBlob,       // [IN] Sequence point blob.
-        ULONG       sequencePtsBlobSize) PURE; // [IN] Sequence point blob size.
-
-    STDMETHOD(DefineLocalScope)(            // S_OK or error.
-        ULONG       methodDefRid,           // [IN] Method RID.
-        ULONG       importScopeRid,         // [IN] Import scope RID.
-        ULONG       firstLocalVarRid,       // [IN] First local variable RID (of the continous run).
-        ULONG       firstLocalConstRid,     // [IN] First local constant RID (of the continous run).
-        ULONG       startOffset,            // [IN] Start offset of the scope.
-        ULONG       length) PURE;           // [IN] Scope length.
-
-    STDMETHOD(DefineLocalVariable)(         // S_OK or error.
-        USHORT      attribute,              // [IN] Variable attribute.
-        USHORT      index,                  // [IN] Variable index (slot).
-        char        *name,                  // [IN] Variable name.
-        mdLocalVariable *locVarToken) PURE; // [OUT] Token of the defined variable.
 };
 
 //-------------------------------------
@@ -1512,11 +1459,6 @@ DECLARE_INTERFACE_(IMetaDataDispenserEx, IMetaDataDispenser)
         ULONG    cchName,                   // [IN]  the name buffer's size
         ULONG    *pcName) PURE;             // [OUT] the number of characters returend in the buffer
 
-    STDMETHOD(DefinePortablePdbScope)(      // Return code.
-        REFCLSID    rclsid,                 // [in] What version to create.
-        DWORD       dwCreateFlags,          // [in] Flags on the create.
-        REFIID      riid,                   // [in] The interface desired.
-        IUnknown * *ppIUnk) PURE;           // [out] Return interface on success.
 };
 
 //*****************************************************************************

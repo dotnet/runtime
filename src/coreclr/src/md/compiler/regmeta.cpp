@@ -591,6 +591,13 @@ RegMeta::QueryInterface(
         *ppUnk = (IMetaDataEmit2 *)this;
         fIsInterfaceRW = true;
     }
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+    else if (riid == IID_IMetaDataEmit3)
+    {
+        *ppUnk = (IMetaDataEmit3 *)this;
+        fIsInterfaceRW = true;
+    }
+#endif
     else if (riid == IID_IMetaDataAssemblyEmit)
     {
         *ppUnk = (IMetaDataAssemblyEmit *)this;

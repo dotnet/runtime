@@ -78,19 +78,35 @@ PortablePdbWritter::~PortablePdbWritter()
     m_documentList.RESET(true);
 }
 
-HRESULT PortablePdbWritter::Init(IMetaDataEmit2* pdbEmitter)
+HRESULT PortablePdbWritter::Init(IMetaDataDispenserEx2* mdDispenser)
 {
+    HRESULT hr = S_OK;
+    if (m_pdbEmitter != NULL)
+    {
+        m_pdbEmitter->Release();
+        m_pdbEmitter = NULL;
+    }
     m_currentDocument = NULL;
     m_documentList.RESET(true);
-    m_pdbEmitter = pdbEmitter;
+
     memset(m_pdbStream.typeSystemTableRows, 0, sizeof(ULONG) * TBL_COUNT);
     time_t now;
     time(&now);
     m_pdbStream.id.pdbTimeStamp = (ULONG)now;
-    return CoCreateGuid(&m_pdbStream.id.pdbGuid);
+    hr = CoCreateGuid(&m_pdbStream.id.pdbGuid);
+
+    if (FAILED(hr)) goto exit;
+
+    hr = mdDispenser->DefinePortablePdbScope(
+        CLSID_CorMetaDataRuntime,
+        0,
+        IID_IMetaDataEmit3,
+        (IUnknown**)&m_pdbEmitter);
+exit:
+    return hr;
 }
 
-IMetaDataEmit2* PortablePdbWritter::GetEmitter()
+IMetaDataEmit3* PortablePdbWritter::GetEmitter()
 {
     return m_pdbEmitter;
 }
@@ -110,7 +126,7 @@ Document* PortablePdbWritter::GetCurrentDocument()
     return m_currentDocument;
 }
 
-HRESULT PortablePdbWritter::BuildPdbStream(IMetaDataEmit2* peEmitter, mdMethodDef entryPoint)
+HRESULT PortablePdbWritter::BuildPdbStream(IMetaDataEmit3* peEmitter, mdMethodDef entryPoint)
 {
     HRESULT hr = S_OK;
 

@@ -7,6 +7,8 @@
 
 #include "ilasmpch.h"
 #include "asmtemplates.h"
+#include "portablepdbmdds.h"
+#include "portablepdbmdi.h"
 
 //*****************************************************************************
 // Document
@@ -41,12 +43,12 @@ class PortablePdbWritter
 public:
     PortablePdbWritter();
     ~PortablePdbWritter();
-    HRESULT         Init(IMetaDataEmit2* pdbEmitter);
-    IMetaDataEmit2* GetEmitter();
+    HRESULT         Init(IMetaDataDispenserEx2* mdDispenser);
+    IMetaDataEmit3* GetEmitter();
     GUID*           GetGuid();
     ULONG           GetTimestamp();
     Document*       GetCurrentDocument();
-    HRESULT         BuildPdbStream(IMetaDataEmit2* peEmitter, mdMethodDef entryPoint);
+    HRESULT         BuildPdbStream(IMetaDataEmit3* peEmitter, mdMethodDef entryPoint);
     HRESULT         DefineDocument(char* name, GUID* language);
     HRESULT         DefineSequencePoints(Method* method);
     HRESULT         DefineLocalScope(Method* method);
@@ -58,7 +60,7 @@ private:
     BOOL            _DefineLocalScope(mdMethodDef methodDefToken, Scope* currScope, mdLocalVariable* firstLocVarToken);
 
 private:
-    IMetaDataEmit2* m_pdbEmitter;
+    IMetaDataEmit3* m_pdbEmitter;
     PORT_PDB_STREAM m_pdbStream;
     DocumentList    m_documentList;
     Document*       m_currentDocument;

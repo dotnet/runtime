@@ -10,6 +10,7 @@
 #endif
 
 #include "metamodel.h"
+#include "portablepdbmdds.h"
 
 /* Simple storage class (similar to StgPool) holding pdbstream data
 ** for portable PDB metadata.
@@ -20,7 +21,7 @@ public:
     PdbHeap();
     ~PdbHeap();
 
-    __checkReturn HRESULT SetData(PORTABLE_PDB_STREAM* data);
+    __checkReturn HRESULT SetData(PORT_PDB_STREAM* data);
     __checkReturn HRESULT SaveToStream(IStream* stream);
     BOOL    IsEmpty();
     ULONG   GetSize();

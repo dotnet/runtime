@@ -31,6 +31,8 @@ set(MDRUNTIMERW_HEADERS
   ../inc/metamodelro.h
   ../inc/metamodelrw.h
   ../inc/pdbheap.h
+  ../inc/portablepdbmdds.h
+  ../inc/portablepdbmdi.h
   ../inc/rwutil.h
   ../inc/stgio.h
   ../inc/stgtiggerstorage.h

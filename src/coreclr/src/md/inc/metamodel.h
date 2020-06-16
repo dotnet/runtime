@@ -22,6 +22,11 @@
 #include "../datablob.h"
 #include "../debug_metadata.h"
 
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#include "portablepdbmdds.h"
+#include "portablepdbmdi.h"
+#endif
+
 #define ALLOCATED_MEMORY_MARKER 0xff
 
 // Version numbers for metadata format.
