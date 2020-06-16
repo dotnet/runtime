@@ -171,7 +171,7 @@ namespace System.Formats.Cbor
                         throw new ArgumentException(SR.Cbor_Writer_PayloadIsNotValidCbor, e);
                     }
 
-                    if (reader.HasData)
+                    if (reader.BytesRemaining > 0)
                     {
                         throw new ArgumentException(SR.Cbor_Writer_PayloadIsNotValidCbor);
                     }

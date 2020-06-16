@@ -51,14 +51,9 @@ namespace System.Formats.Cbor
         public int CurrentDepth => _nestedDataItems is null ? 0 : _nestedDataItems.Count;
 
         /// <summary>
-        ///   Gets the total number of bytes that have been consumed by the reader.
+        ///   Gets the total number of unread bytes in the buffer.
         /// </summary>
-        public int BytesRead => _offset;
-
-        /// <summary>
-        ///   Indicates whether or not the reader has remaining data available to process.
-        /// </summary>
-        public bool HasData => _offset != _data.Length;
+        public int BytesRemaining => _data.Length - _offset;
 
         /// <summary>
         ///   Construct a CborReader instance over <paramref name="data"/> with given configuration.

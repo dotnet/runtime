@@ -325,7 +325,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, mode);
             Assert.Throws<FormatException>(() => reader.ReadByteString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -360,7 +360,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, mode);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -393,7 +393,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, mode);
             Assert.Throws<FormatException>(() => reader.ReadStartByteString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -404,7 +404,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, mode);
             Assert.Throws<FormatException>(() => reader.ReadByteString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -437,7 +437,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, mode);
             Assert.Throws<FormatException>(() => reader.ReadStartTextString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -448,7 +448,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, mode);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -466,7 +466,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadByteString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -484,7 +484,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
             
             Assert.Throws<InvalidOperationException>(() => reader.ReadTextString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -503,7 +503,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.TryReadByteString(buffer, out int _));
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -522,7 +522,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.TryReadTextString(buffer, out int _));
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -546,7 +546,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadByteString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -570,7 +570,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -596,7 +596,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.TryReadByteString(buffer, out int _));
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -632,7 +632,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadByteString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -643,7 +643,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -670,7 +670,7 @@ namespace System.Formats.Cbor.Tests
             FormatException exn = Assert.Throws<FormatException>(() => reader.ReadTextString());
             Assert.NotNull(exn.InnerException);
             Assert.IsType<System.Text.DecoderFallbackException>(exn.InnerException);
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -703,7 +703,7 @@ namespace System.Formats.Cbor.Tests
             FormatException exn = Assert.Throws<FormatException>(() => reader.TryReadTextString(buffer, out int _));
             Assert.NotNull(exn.InnerException);
             Assert.IsType<System.Text.DecoderFallbackException>(exn.InnerException);
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
@@ -713,7 +713,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadTextString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
@@ -723,7 +723,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadByteString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
@@ -735,11 +735,11 @@ namespace System.Formats.Cbor.Tests
             reader.ReadStartByteString();
             reader.ReadByteString();
 
-            int bytesRead = reader.BytesRead;
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Equal(CborReaderState.FormatError, reader.PeekState());
             // throws FormatException even if it's the right major type we're trying to read
             Assert.Throws<FormatException>(() => reader.ReadInt64());
-            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Fact]
@@ -751,11 +751,11 @@ namespace System.Formats.Cbor.Tests
             reader.ReadStartTextString();
             reader.ReadTextString();
 
-            int bytesRead = reader.BytesRead;
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Equal(CborReaderState.FormatError, reader.PeekState());
             // throws FormatException even if it's the right major type we're trying to read
             Assert.Throws<FormatException>(() => reader.ReadInt64());
-            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Fact]
@@ -767,9 +767,9 @@ namespace System.Formats.Cbor.Tests
 
             reader.ReadStartByteString();
 
-            int bytesRead = reader.BytesRead;
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<FormatException>(() => reader.ReadStartByteString());
-            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Fact]
@@ -780,7 +780,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadByteString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
@@ -792,9 +792,9 @@ namespace System.Formats.Cbor.Tests
 
             reader.ReadStartTextString();
 
-            int bytesRead = reader.BytesRead;
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<FormatException>(() => reader.ReadStartTextString());
-            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Fact]
@@ -805,7 +805,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadTextString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
@@ -815,7 +815,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadByteString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
@@ -825,7 +825,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -856,7 +856,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, conformanceMode);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
     }
 }
