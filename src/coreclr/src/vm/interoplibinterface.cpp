@@ -103,9 +103,20 @@ namespace
                 , _wrapperId { wrapperId }
             {
                 _ASSERTE(identity != NULL);
+                _ASSERTE(wrapperId != ComWrappersNative::InvalidWrapperId);
             }
 
-            size_t Hash() const { return (size_t)_identity ^ (_wrapperId >> 32) ^ (_wrapperId & 0xFFFFFFFF); }
+            DWORD Hash() const
+            {
+                DWORD hash = (_wrapperId >> 32) ^ (_wrapperId & 0xFFFFFFFF);
+#if POINTER_BITS == 32
+                return hash ^ (DWORD)_identity;
+#else
+                INT64 identityInt64 = (INT64)_identity;
+                return hash ^ (identityInt64 >> 32) ^ (identityInt64 & 0xFFFFFFFF);
+#endif
+            }
+
             bool operator==(const Key & rhs) const { return _identity == rhs._identity && _wrapperId == rhs._wrapperId; }
 
         private:

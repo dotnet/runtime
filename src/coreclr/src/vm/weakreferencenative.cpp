@@ -164,7 +164,9 @@ NativeComWeakHandleInfo* GetComWeakReferenceInfo(OBJECTREF* pObject)
         return nullptr;
     }
 
-    return new NativeComWeakHandleInfo { pWeakReference.Extract(), wrapperId };
+    NewHolder<NativeComWeakHandleInfo> info = new NativeComWeakHandleInfo { pWeakReference.GetValue(), wrapperId };
+    pWeakReference.SuppressRelease();
+    return info.Extract();
 }
 
 // Given an object handle that stores a native COM weak reference, attempt to create an RCW
@@ -419,48 +421,6 @@ MethodTable *pWeakReferenceOfTCanonMT = NULL;
 
 //************************************************************************
 
-namespace
-{
-    void CreateAndSetHandle(WEAKREFERENCEREF* weakRefPROTECTED, OBJECTREF* targetPROTECTED, CLR_BOOL trackResurrection)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-            PRECONDITION(CheckPointer(weakRefPROTECTED));
-            PRECONDITION(CheckPointer(targetPROTECTED));
-        }
-        CONTRACTL_END;
-
-        ASSERT_PROTECTED(weakRefPROTECTED);
-        ASSERT_PROTECTED(targetPROTECTED);
-
-#ifdef FEATURE_COMINTEROP
-        NewHolder<NativeComWeakHandleInfo> comWeakHandleInfo = nullptr;
-        if (*targetPROTECTED != NULL)
-        {
-            SyncBlock* pSyncBlock = (*targetPROTECTED)->PassiveGetSyncBlock();
-            if (pSyncBlock != nullptr && pSyncBlock->GetInteropInfoNoCreate() != nullptr)
-            {
-                comWeakHandleInfo = GetComWeakReferenceInfo(targetPROTECTED);
-            }
-        }
-
-        if (comWeakHandleInfo != nullptr)
-        {
-            (*weakRefPROTECTED)->m_Handle = SetNativeComWeakReferenceHandle(GetAppDomain()->CreateNativeComWeakHandle(*targetPROTECTED, comWeakHandleInfo));
-            comWeakHandleInfo.SuppressRelease();
-        }
-        else
-#endif // FEATURE_COMINTEROP
-        {
-            (*weakRefPROTECTED)->m_Handle = GetAppDomain()->CreateTypedHandle(*targetPROTECTED,
-                trackResurrection ? HNDTYPE_WEAK_LONG : HNDTYPE_WEAK_SHORT);
-        }
-    }
-}
-
 FCIMPL3(void, WeakReferenceNative::Create, WeakReferenceObject * pThisUNSAFE, Object * pTargetUNSAFE, CLR_BOOL trackResurrection)
 {
     FCALL_CONTRACT;
@@ -485,7 +445,29 @@ FCIMPL3(void, WeakReferenceNative::Create, WeakReferenceObject * pThisUNSAFE, Ob
     _ASSERTE(gc.pThis->GetMethodTable()->CanCastToClass(pWeakReferenceMT));
 
     // Create the handle.
-    CreateAndSetHandle(&gc.pThis, &gc.pTarget, trackResurrection);
+#ifdef FEATURE_COMINTEROP
+    NativeComWeakHandleInfo *comWeakHandleInfo = nullptr;
+    if (gc.pTarget != NULL)
+    {
+        SyncBlock *pSyncBlock = gc.pTarget->PassiveGetSyncBlock();
+        if (pSyncBlock != nullptr && pSyncBlock->GetInteropInfoNoCreate() != nullptr)
+        {
+            comWeakHandleInfo = GetComWeakReferenceInfo(&gc.pTarget);
+        }
+    }
+
+    if (comWeakHandleInfo != nullptr)
+    {
+        NewHolder<NativeComWeakHandleInfo> infoHolder(comWeakHandleInfo);
+        gc.pThis->m_Handle = SetNativeComWeakReferenceHandle(GetAppDomain()->CreateNativeComWeakHandle(gc.pTarget, infoHolder));
+        infoHolder.SuppressRelease();
+    }
+    else
+#endif // FEATURE_COMINTEROP
+    {
+        gc.pThis->m_Handle = GetAppDomain()->CreateTypedHandle(gc.pTarget,
+            trackResurrection ? HNDTYPE_WEAK_LONG : HNDTYPE_WEAK_SHORT);
+    }
 
     HELPER_METHOD_FRAME_END();
 }
@@ -514,7 +496,29 @@ FCIMPL3(void, WeakReferenceOfTNative::Create, WeakReferenceObject * pThisUNSAFE,
 
     _ASSERTE(gc.pThis->GetMethodTable()->GetCanonicalMethodTable() == pWeakReferenceOfTCanonMT);
 
-    CreateAndSetHandle(&gc.pThis, &gc.pTarget, trackResurrection);
+#ifdef FEATURE_COMINTEROP
+    NativeComWeakHandleInfo *comWeakHandleInfo = nullptr;
+    if (gc.pTarget != NULL)
+    {
+        SyncBlock *pSyncBlock = gc.pTarget->PassiveGetSyncBlock();
+        if (pSyncBlock != nullptr && pSyncBlock->GetInteropInfoNoCreate() != nullptr)
+        {
+            comWeakHandleInfo = GetComWeakReferenceInfo(&gc.pTarget);
+        }
+    }
+
+    if (comWeakHandleInfo != nullptr)
+    {
+        NewHolder<NativeComWeakHandleInfo> infoHolder(comWeakHandleInfo);
+        gc.pThis->m_Handle = SetNativeComWeakReferenceHandle(GetAppDomain()->CreateNativeComWeakHandle(gc.pTarget, infoHolder));
+        infoHolder.SuppressRelease();
+    }
+    else
+#endif // FEATURE_COMINTEROP
+    {
+        gc.pThis->m_Handle = GetAppDomain()->CreateTypedHandle(gc.pTarget,
+            trackResurrection ? HNDTYPE_WEAK_LONG : HNDTYPE_WEAK_SHORT);
+    }
 
     HELPER_METHOD_FRAME_END();
 }

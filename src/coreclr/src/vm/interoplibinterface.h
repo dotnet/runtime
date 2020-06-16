@@ -12,7 +12,7 @@
 class ComWrappersNative
 {
 public:
-    static const INT64 InvalidWrapperId = -1;
+    static const INT64 InvalidWrapperId = 0;
 
 public: // Native QCalls for the abstract ComWrappers managed type.
     static void QCALLTYPE GetIUnknownImpl(

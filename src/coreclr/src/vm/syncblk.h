@@ -841,9 +841,9 @@ public:
 
         CrstHolder lock(&m_managedObjectComWrapperLock);
 
-        ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
         if (callback != NULL)
         {
+            ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
             while (iter != m_managedObjectComWrapperMap->End())
             {
                 callback(iter->Value());

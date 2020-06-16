@@ -135,6 +135,11 @@ namespace System.Runtime.InteropServices
         /// <param name="instance">The managed object to expose outside the .NET runtime.</param>
         /// <param name="flags">Flags used to configure the generated interface.</param>
         /// <returns>The generated COM interface that can be passed outside the .NET runtime.</returns>
+        /// <remarks>
+        /// If a COM representation was previously created for the specified <paramref name="instance" /> using
+        /// this <see cref="ComWrappers" /> instance, the previously created COM interface will be returned.
+        /// If not, a new one will be created.
+        /// </remarks>
         public IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
         {
             IntPtr ptr;
@@ -214,6 +219,11 @@ namespace System.Runtime.InteropServices
         /// <param name="externalComObject">Object to import for usage into the .NET runtime.</param>
         /// <param name="flags">Flags used to describe the external object.</param>
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
+        /// <remarks>
+        /// If a managed object was previously created for the specified <paramref name="externalComObject" />
+        /// using this <see cref="ComWrappers" /> instance, the previously created object will be returned.
+        /// If not, a new one will be created.
+        /// </remarks>
         public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {
             object? obj;
