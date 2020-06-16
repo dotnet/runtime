@@ -1670,7 +1670,13 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
             if (activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
                 !ilCodeVersion.HasAnyOptimizedNativeCodeVersion(activeCodeVersion))
             {
-                GetAppDomain()->GetTieredCompilationManager()->AsyncPromoteToTier1(activeCodeVersion, &scheduleTieringBackgroundWork);
+                TieredCompilationManager * tieredCompilationManager = GetAppDomain()->GetTieredCompilationManager();
+                tieredCompilationManager->AsyncPromoteToTier1(activeCodeVersion, &scheduleTieringBackgroundWork);
+
+                if (scheduleTieringBackgroundWork)
+                {
+                    tieredCompilationManager->ScheduleBackgroundWork(); // requires GC_TRIGGERS
+                }
             }
 #else
 #error FEATURE_INTERPRETER depends on FEATURE_TIERED_COMPILATION now
