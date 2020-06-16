@@ -54,6 +54,9 @@ namespace System.Formats.Cbor
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
         ///   The written data is not accepted under the current conformance mode.
         /// </exception>
+#if CBOR_CLS_COMPLIANCE // remove once migrated from tests project
+        [CLSCompliant(false)]
+#endif
         public void WriteUInt32(uint value) => WriteUInt64(value);
 
         /// <summary>
@@ -65,6 +68,9 @@ namespace System.Formats.Cbor
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
         ///   The written data is not accepted under the current conformance mode.
         /// </exception>
+#if CBOR_CLS_COMPLIANCE // remove once migrated from tests project
+        [CLSCompliant(false)]
+#endif
         public void WriteUInt64(ulong value)
         {
             WriteUnsignedInteger(CborMajorType.UnsignedInteger, value);
@@ -84,6 +90,9 @@ namespace System.Formats.Cbor
         ///   This method supports encoding integers between -18446744073709551616 and -1.
         ///   Useful for handling values that do not fit in the <see cref="long"/> type.
         /// </remarks>
+#if CBOR_CLS_COMPLIANCE // remove once migrated from tests project
+        [CLSCompliant(false)]
+#endif
         public void WriteCborNegativeIntegerEncoding(ulong value)
         {
             WriteUnsignedInteger(CborMajorType.NegativeInteger, value);

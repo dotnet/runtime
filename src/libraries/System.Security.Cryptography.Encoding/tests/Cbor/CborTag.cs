@@ -7,6 +7,9 @@ namespace System.Formats.Cbor
     /// <summary>
     ///   Represents a CBOR semantic tag (major type 6).
     /// </summary>
+#if CBOR_CLS_COMPLIANCE // remove once migrated from tests project
+    [CLSCompliant(false)]
+#endif
     public enum CborTag : ulong
     {
         /// <summary>

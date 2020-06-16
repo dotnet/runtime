@@ -48,6 +48,9 @@ namespace System.Formats.Cbor
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
+#if CBOR_CLS_COMPLIANCE // remove once migrated from tests project
+        [CLSCompliant(false)]
+#endif
         public uint ReadUInt32()
         {
             uint value = checked((uint)PeekUnsignedInteger(out int bytesRead));
@@ -94,6 +97,9 @@ namespace System.Formats.Cbor
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
+#if CBOR_CLS_COMPLIANCE // remove once migrated from tests project
+        [CLSCompliant(false)]
+#endif
         public ulong ReadUInt64()
         {
             ulong value = PeekUnsignedInteger(out int bytesRead);
@@ -123,6 +129,9 @@ namespace System.Formats.Cbor
         ///   This method supports decoding integers between -18446744073709551616 and -1.
         ///   Useful for handling values that do not fit in the <see cref="long"/> type.
         /// </remarks>
+#if CBOR_CLS_COMPLIANCE // remove once migrated from tests project
+        [CLSCompliant(false)]
+#endif
         public ulong ReadCborNegativeIntegerEncoding()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.NegativeInteger);
