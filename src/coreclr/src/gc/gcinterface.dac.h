@@ -184,6 +184,7 @@ struct GcDacVars {
   uint8_t major_version_number;
   uint8_t minor_version_number;
   size_t generation_size;
+  size_t total_generation_count;
 #ifdef DACCESS_COMPILE
  #define GC_DAC_VAR(type, name)       DPTR(type) name;
  #define GC_DAC_PTR_VAR(type, name)   DPTR(type*) name;
