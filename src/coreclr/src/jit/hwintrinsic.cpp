@@ -680,8 +680,18 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, var_types baseType)
     return false;
 }
 
+// HWIntrinsicSignatureReader: a helper class that "reads" a list of hardware intrinsic arguments and stores
+// the corresponding argument type descriptors as the fields of the class instance.
+//
 struct HWIntrinsicSignatureReader final
 {
+    // Read: enumerates the list of arguments of a hardware intrinsic and stores the CORINFO_CLASS_HANDLE
+    // and var_types values of each operand into the corresponding fields of the class instance.
+    //
+    // Arguments:
+    //    compHnd -- an instance of COMP_HANDLE class.
+    //    sig     -- a hardware intrinsic signature.
+    //
     void Read(COMP_HANDLE compHnd, CORINFO_SIG_INFO* sig)
     {
         CORINFO_ARG_LIST_HANDLE args = sig->args;
