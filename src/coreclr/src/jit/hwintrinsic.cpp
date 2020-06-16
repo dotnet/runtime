@@ -813,7 +813,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         // InsertSelectedScalar intrinsic has two immediate operands.
         // Since all the remaining intrinsics on both platforms have only one immediate
-        // operand to no complicate the shared logic even further we ensure here that
+        // operand, in order to not complicate the shared logic even further we ensure here that
         // 1) The second immediate operand immOp2 is constant and
         // 2) its value belongs to [0, sizeof(op3) / sizeof(op3.BaseType)).
         // If either is false, we should fallback to the managed implementation Insert(dst, dstIdx, Extract(src,
