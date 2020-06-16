@@ -3657,9 +3657,11 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
  * This matters when we're comparing arrays of IntPtr.  IntPtr[] is generally
  * assignable to int[] or long[], depending on architecture.  But for signature
  * compatability, IntPtr[] is distinct from both of them.
+ *
+ * Similarly for ulong* and IntPtr*, etc.
  */
 static MonoClass*
-array_type_to_reduced_element_type (MonoClass *array_klass)
+composite_type_to_reduced_element_type (MonoClass *array_klass)
 {
 	switch (m_class_get_byval_arg (m_class_get_element_class (array_klass))->type) {
 	case MONO_TYPE_I:
@@ -3868,8 +3870,8 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 		}
 
 		if (signature_assignment) {
-			eclass = array_type_to_reduced_element_type (klass);
-			eoclass = array_type_to_reduced_element_type (oklass);
+			eclass = composite_type_to_reduced_element_type (klass);
+			eoclass = composite_type_to_reduced_element_type (oklass);
 		} else {
 			eclass = m_class_get_cast_class (klass);
 			eoclass = m_class_get_cast_class (oklass);
@@ -3940,6 +3942,40 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 		else
 			mono_class_is_assignable_from_checked (m_class_get_cast_class (klass), oklass, result, error);
 		return;
+	} else if (m_class_get_class_kind (klass) == MONO_CLASS_POINTER) {
+		if (m_class_get_class_kind (oklass) != MONO_CLASS_POINTER) {
+			*result = FALSE;
+			return;
+		}
+
+		if (m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR) {
+			/*
+			 * if both klass and oklass are fnptr, and they're equal, we would have returned at the
+			 * beginning.
+			 */
+			/* Is this right? or do we need to look at signature compatability? */
+			*result = FALSE;
+			return;
+		}
+
+		if (m_class_get_byval_arg (oklass)->type != MONO_TYPE_PTR) {
+			*result = FALSE;
+		}
+		g_assert (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR);
+
+		MonoClass *eclass;
+		MonoClass *eoclass;
+		if (signature_assignment) {
+			eclass = composite_type_to_reduced_element_type (klass);
+			eoclass = composite_type_to_reduced_element_type (oklass);
+		} else {
+			eclass = m_class_get_cast_class (klass);
+			eoclass = m_class_get_cast_class (oklass);
+		}
+
+		*result = (eclass == eoclass);
+		return;
+
 	} else if (klass == mono_defaults.object_class) {
 		if (m_class_get_class_kind (oklass) == MONO_CLASS_POINTER)
 			*result = FALSE;
