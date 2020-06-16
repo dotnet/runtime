@@ -225,9 +225,7 @@ namespace System.Net.Security
                             ref outCredential._handle,
                             out timeStamp);
 
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
-#endif
+            if (NetEventSource.IsEnabled) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
             if (errorCode != 0)
             {
@@ -307,9 +305,7 @@ namespace System.Net.Security
                 authdata.paCred = copiedPtr;
             }
 
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
-#endif
+            if (NetEventSource.IsEnabled) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
             if (errorCode != 0)
             {
@@ -401,13 +397,7 @@ namespace System.Net.Security
             ref SecurityBuffer outSecBuffer,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(null, $"credential:{inCredentials}, crefContext:{refContext}, targetName:{targetName}, inFlags:{inFlags}, endianness:{endianness}");
-                NetEventSource.Info(null, $"inSecBuffers.Length = {inSecBuffers.Length}");
-            }
-#endif
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, $"credential:{inCredentials}, crefContext:{refContext}, targetName:{targetName}, inFlags:{inFlags}, endianness:{endianness}");
 
             if (inCredentials == null)
             {
@@ -639,13 +629,7 @@ namespace System.Net.Security
             ref SecurityBuffer outSecBuffer,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(null, $"credential={inCredentials}, refContext={refContext}, inFlags={inFlags}");
-                NetEventSource.Info(null, $"inSecBuffers.Length = {inSecBuffers.Length}");
-            }
-#endif
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, $"credential={inCredentials}, refContext={refContext}, inFlags={inFlags}");
 
             if (inCredentials == null)
             {
@@ -900,9 +884,6 @@ namespace System.Net.Security
                     inSecBuffer.unmanagedToken != null ? inSecBuffer.unmanagedToken.DangerousGetHandle() :
                     inSecBuffer.token == null || inSecBuffer.token.Length == 0 ? IntPtr.Zero :
                     (IntPtr)(pinnedToken + inSecBuffer.offset);
-#if TRACE_VERBOSE
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"SecBuffer: cbBuffer:{inSecBuffer.size} BufferType: {inSecBuffer.type}");
-#endif
 
                 Interop.SspiCli.CredHandle contextHandle = refContext != null ? refContext._handle : default;
                 if (refContext == null || refContext.IsInvalid)
@@ -964,9 +945,6 @@ namespace System.Net.Security
                     inSecBuffer.unmanagedToken != null ? inSecBuffer.unmanagedToken.DangerousGetHandle() :
                     inSecBuffer.token == null || inSecBuffer.token.Length == 0 ? IntPtr.Zero :
                     (IntPtr)(pinnedInSecBufferToken + inSecBuffer.offset);
-#if TRACE_VERBOSE
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"SecBuffer: cbBuffer:{inSecBuffer.size} BufferType:{inSecBuffer.type}");
-#endif
 
                 Interop.SspiCli.CredHandle contextHandle = refContext != null ? refContext._handle : default;
 
