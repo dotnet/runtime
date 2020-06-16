@@ -330,4 +330,7 @@
   <data name="Cbor_Writer_DecimalOverflow" xml:space="preserve">
     <value>Value was either too large or too small for a Decimal.</value>
   </data>
+  <data name="Cbor_Writer_DestinationBufferTooSmall" xml:space="preserve">
+    <value>The destination buffer is too small to hold the encoded value.</value>
+  </data>
 </root>

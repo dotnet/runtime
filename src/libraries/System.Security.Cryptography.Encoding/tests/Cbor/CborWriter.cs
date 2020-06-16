@@ -193,6 +193,30 @@ namespace System.Formats.Cbor
         ///   Write the encoded representation of the data to <paramref name="destination"/>.
         /// </summary>
         /// <param name="destination">The buffer in which to write.</param>
+        /// <returns>The number of bytes written to <paramref name="destination"/>.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   The writer does not contain a complete CBOR value or sequence of root-level values.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The destination buffer is not large enough to hold the encoded value.
+        /// </exception>
+        public int Encode(Span<byte> destination)
+        {
+            ReadOnlySpan<byte> encoding = GetSpanEncoding();
+
+            if (encoding.Length > destination.Length)
+            {
+                throw new ArgumentException(SR.Cbor_Writer_DestinationBufferTooSmall, nameof(destination));
+            }
+
+            encoding.CopyTo(destination);
+            return encoding.Length;
+        }
+
+        /// <summary>
+        ///   Write the encoded representation of the data to <paramref name="destination"/>.
+        /// </summary>
+        /// <param name="destination">The buffer in which to write.</param>
         /// <param name="bytesWritten">
         ///   On success, receives the number of bytes written to <paramref name="destination"/>.
         /// </param>

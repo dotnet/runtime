@@ -152,12 +152,45 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(hexEncodedValue, hexResult.ToLower());
         }
 
+        [Theory]
+        [InlineData(42)]
+        [InlineData("value1")]
+        [InlineData(new object[] { new object[] { 1, 2, 3 } })]
+        public static void EncodeSpan_HappyPath(object value)
+        {
+            var writer = new CborWriter();
+            Helpers.WriteValue(writer, value);
+
+            byte[] encoding = writer.Encode();
+            byte[] target = new byte[encoding.Length];
+
+            int bytesWritten = writer.Encode(target);
+
+            Assert.Equal(encoding.Length, bytesWritten);
+            Assert.Equal(encoding, target);
+        }
 
         [Theory]
         [InlineData(42)]
         [InlineData("value1")]
         [InlineData(new object[] { new object[] { 1, 2, 3 } })]
-        public static void TryWriteEncoding_HappyPath(object value)
+        public static void EncodeSpan_DestinationTooSmall_ShouldThrowArgumentException(object value)
+        {
+            var writer = new CborWriter();
+            Helpers.WriteValue(writer, value);
+
+            byte[] encoding = writer.Encode();
+            byte[] target = new byte[encoding.Length - 1];
+
+            Assert.Throws<ArgumentException>(() => writer.Encode(target));
+            Assert.All(target, b => Assert.Equal(0, b));
+        }
+
+        [Theory]
+        [InlineData(42)]
+        [InlineData("value1")]
+        [InlineData(new object[] { new object[] { 1, 2, 3 } })]
+        public static void TryEncode_HappyPath(object value)
         {
             var writer = new CborWriter();
             Helpers.WriteValue(writer, value);
@@ -176,7 +209,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(42)]
         [InlineData("value1")]
         [InlineData(new object[] { new object[] { 1, 2, 3 } })]
-        public static void TryWriteEncoding_DestinationTooSmall_ShouldReturnFalse(object value)
+        public static void TryEncode_DestinationTooSmall_ShouldReturnFalse(object value)
         {
             var writer = new CborWriter();
             Helpers.WriteValue(writer, value);
