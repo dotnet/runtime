@@ -315,6 +315,9 @@ mono_wasm_load_runtime (const char *managed_path, int enable_debugging)
 
 	//monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
 	//monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
+    // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
+    // output will be sent to the console.  Right now this is the only way to emit debug logging from
+    // corlib assemblies.
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #ifdef ENABLE_NETCORE
 	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 0);
