@@ -144,11 +144,11 @@ namespace System.Formats.Cbor.Tests
         [InlineData(ushort.MaxValue, "39ffff")]
         [InlineData(uint.MaxValue, "3affffffff")]
         [InlineData(ulong.MaxValue, "3bffffffffffffffff")]
-        public static void WriteCborNegativeIntegerEncoding_SingleValue_HappyPath(ulong input, string hexExpectedEncoding)
+        public static void WriteCborNegativeIntegerRepresentation_SingleValue_HappyPath(ulong input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             var writer = new CborWriter();
-            writer.WriteCborNegativeIntegerEncoding(input);
+            writer.WriteCborNegativeIntegerRepresentation(input);
             AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
     }

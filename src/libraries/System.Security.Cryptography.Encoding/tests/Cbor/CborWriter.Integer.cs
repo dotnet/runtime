@@ -78,7 +78,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes the provided value as a negative integer encoding (major type 1).
+        ///   Writes the provided value as a CBOR negative integer representation (major type 1).
         /// </summary>
         /// <param name="value">An unsigned integer denoting -1 minus the integer.</param>
         /// <exception cref="InvalidOperationException">
@@ -93,7 +93,7 @@ namespace System.Formats.Cbor
 #if CBOR_CLS_COMPLIANCE // remove once migrated from tests project
         [CLSCompliant(false)]
 #endif
-        public void WriteCborNegativeIntegerEncoding(ulong value)
+        public void WriteCborNegativeIntegerRepresentation(ulong value)
         {
             WriteUnsignedInteger(CborMajorType.NegativeInteger, value);
             AdvanceDataItemCounters();

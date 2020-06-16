@@ -258,7 +258,7 @@ namespace System.Formats.Cbor
                         break;
 
                     case CborReaderState.NegativeInteger:
-                        mantissa = -1m - ReadCborNegativeIntegerEncoding();
+                        mantissa = -1m - ReadCborNegativeIntegerRepresentation();
                         break;
 
                     case CborReaderState.Tag:

@@ -109,7 +109,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Reads the next data item as a CBOR negative integer encoding (major type 1).
+        ///   Reads the next data item as a CBOR negative integer representation (major type 1).
         /// </summary>
         /// <returns>
         ///   An unsigned integer denoting -1 minus the integer.
@@ -132,7 +132,7 @@ namespace System.Formats.Cbor
 #if CBOR_CLS_COMPLIANCE // remove once migrated from tests project
         [CLSCompliant(false)]
 #endif
-        public ulong ReadCborNegativeIntegerEncoding()
+        public ulong ReadCborNegativeIntegerRepresentation()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.NegativeInteger);
             ulong value = DecodeUnsignedInteger(header, GetRemainingBytes(), out int bytesRead);

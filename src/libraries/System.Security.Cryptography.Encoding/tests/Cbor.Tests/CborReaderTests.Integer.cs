@@ -149,11 +149,11 @@ namespace System.Formats.Cbor.Tests
         [InlineData(ushort.MaxValue, "39ffff")]
         [InlineData(uint.MaxValue, "3affffffff")]
         [InlineData(ulong.MaxValue, "3bffffffffffffffff")]
-        public static void ReadCborNegativeIntegerEncoding_SingleValue_HappyPath(ulong expectedResult, string hexEncoding)
+        public static void ReadCborNegativeIntegerRepresentation_SingleValue_HappyPath(ulong expectedResult, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
-            ulong actualResult = reader.ReadCborNegativeIntegerEncoding();
+            ulong actualResult = reader.ReadCborNegativeIntegerRepresentation();
             Assert.Equal(expectedResult, actualResult);
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
@@ -371,12 +371,12 @@ namespace System.Formats.Cbor.Tests
         [InlineData("a0")] // {}
         [InlineData("f97e00")] // NaN
         [InlineData("fb3ff199999999999a")] // 1.1
-        public static void ReadCborNegativeIntegerEncoding_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
+        public static void ReadCborNegativeIntegerRepresentation_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<InvalidOperationException>(() => reader.ReadCborNegativeIntegerEncoding());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadCborNegativeIntegerRepresentation());
 
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
@@ -417,12 +417,12 @@ namespace System.Formats.Cbor.Tests
         [InlineData("3912")]
         [InlineData("3a000000")]
         [InlineData("3b00000000000000")]
-        public static void ReadCborNegativeIntegerEncoding_InvalidData_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadCborNegativeIntegerRepresentation_InvalidData_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<FormatException>(() => reader.ReadCborNegativeIntegerEncoding());
+            Assert.Throws<FormatException>(() => reader.ReadCborNegativeIntegerRepresentation());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
@@ -449,12 +449,12 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void ReadCborNegativeIntegerEncoding_EmptyBuffer_ShouldThrowFormatException()
+        public static void ReadCborNegativeIntegerRepresentation_EmptyBuffer_ShouldThrowFormatException()
         {
             byte[] encoding = Array.Empty<byte>();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<FormatException>(() => reader.ReadCborNegativeIntegerEncoding());
+            Assert.Throws<FormatException>(() => reader.ReadCborNegativeIntegerRepresentation());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
     }

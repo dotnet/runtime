@@ -97,7 +97,7 @@ namespace System.Formats.Cbor
                     break;
 
                 case CborReaderState.NegativeInteger:
-                    ReadCborNegativeIntegerEncoding();
+                    ReadCborNegativeIntegerRepresentation();
                     break;
 
                 case CborReaderState.ByteString:

@@ -138,7 +138,7 @@ namespace System.Formats.Cbor
                 }
                 else
                 {
-                    WriteCborNegativeIntegerEncoding((ulong)(-1m - mantissa));
+                    WriteCborNegativeIntegerRepresentation((ulong)(-1m - mantissa));
                 }
             }
             else
