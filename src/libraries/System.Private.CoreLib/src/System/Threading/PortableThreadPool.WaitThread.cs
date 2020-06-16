@@ -184,9 +184,12 @@ namespace System.Threading
             {
                 while (true)
                 {
-                    ProcessRemovals();
-                    int numUserWaits = _numUserWaits;
-                    int preWaitTimeMs = Environment.TickCount;
+                    // This value is taken inside the lock after processing removals. In this iteration these are the number of
+                    // user waits that will be waited upon. Any new waits will wake the wait and the next iteration would
+                    // consider them.
+                    int numUserWaits = ProcessRemovals();
+
+                    int currentTimeMs = Environment.TickCount;
 
                     // Recalculate Timeout
                     int timeoutDurationMs = Timeout.Infinite;
@@ -205,15 +208,15 @@ namespace System.Threading
                                 continue;
                             }
 
-                            int handleTimeoutDurationMs = registeredWait.TimeoutTimeMs - preWaitTimeMs;
+                            int handleTimeoutDurationMs = Math.Max(0, registeredWait.TimeoutTimeMs - currentTimeMs);
 
                             if (timeoutDurationMs == Timeout.Infinite)
                             {
-                                timeoutDurationMs = handleTimeoutDurationMs > 0 ? handleTimeoutDurationMs : 0;
+                                timeoutDurationMs = handleTimeoutDurationMs;
                             }
                             else
                             {
-                                timeoutDurationMs = Math.Min(handleTimeoutDurationMs > 0 ? handleTimeoutDurationMs : 0, timeoutDurationMs);
+                                timeoutDurationMs = Math.Min(handleTimeoutDurationMs, timeoutDurationMs);
                             }
 
                             if (timeoutDurationMs == 0)
@@ -243,27 +246,22 @@ namespace System.Threading
                         RegisteredWaitHandle signaledHandle = _registeredWaits[signaledHandleIndex - 1];
                         Debug.Assert(signaledHandle != null);
                         QueueWaitCompletion(signaledHandle, false);
+                        continue;
                     }
-                    else
-                    {
-                        if (numUserWaits == 0)
-                        {
-                            if (ThreadPoolInstance.TryRemoveWaitThread(this))
-                            {
-                                return;
-                            }
-                        }
 
-                        int elapsedDurationMs = Environment.TickCount - preWaitTimeMs; // Calculate using relative time to ensure we don't have issues with overflow wraparound
-                        for (int i = 0; i < numUserWaits; i++)
+                    if (numUserWaits == 0 && ThreadPoolInstance.TryRemoveWaitThread(this))
+                    {
+                        return;
+                    }
+
+                    currentTimeMs = Environment.TickCount;
+                    for (int i = 0; i < numUserWaits; i++)
+                    {
+                        RegisteredWaitHandle registeredHandle = _registeredWaits[i];
+                        Debug.Assert(registeredHandle != null);
+                        if (!registeredHandle.IsInfiniteTimeout && currentTimeMs - registeredHandle.TimeoutTimeMs >= 0)
                         {
-                            RegisteredWaitHandle registeredHandle = _registeredWaits[i];
-                            Debug.Assert(registeredHandle != null);
-                            int handleTimeoutDurationMs = registeredHandle.TimeoutTimeMs - preWaitTimeMs;
-                            if (elapsedDurationMs >= handleTimeoutDurationMs)
-                            {
-                                QueueWaitCompletion(registeredHandle, true);
-                            }
+                            QueueWaitCompletion(registeredHandle, true);
                         }
                     }
                 }
@@ -273,7 +271,7 @@ namespace System.Threading
             /// Go through the <see cref="_pendingRemoves"/> array and remove those registered wait handles from the <see cref="_registeredWaits"/>
             /// and <see cref="_waitHandles"/> arrays, filling the holes along the way.
             /// </summary>
-            private void ProcessRemovals()
+            private int ProcessRemovals()
             {
                 PortableThreadPool threadPoolInstance = ThreadPoolInstance;
                 threadPoolInstance._waitThreadLock.Acquire();
@@ -287,7 +285,7 @@ namespace System.Threading
 
                     if (_numPendingRemoves == 0 || _numUserWaits == 0)
                     {
-                        return;
+                        return _numUserWaits; // return the value taken inside the lock for the caller
                     }
                     int originalNumUserWaits = _numUserWaits;
                     int originalNumPendingRemoves = _numPendingRemoves;
@@ -338,6 +336,7 @@ namespace System.Threading
 
                     Debug.Assert(originalNumUserWaits - originalNumPendingRemoves == _numUserWaits,
                         $"{originalNumUserWaits} - {originalNumPendingRemoves} == {_numUserWaits}");
+                    return _numUserWaits; // return the value taken inside the lock for the caller
                 }
                 finally
                 {
@@ -357,7 +356,7 @@ namespace System.Threading
                 // If the handle is a repeating handle, set up the next call. Otherwise, remove it from the wait thread.
                 if (registeredHandle.Repeating)
                 {
-                    registeredHandle.RestartTimeout(Environment.TickCount);
+                    registeredHandle.RestartTimeout();
                 }
                 else
                 {

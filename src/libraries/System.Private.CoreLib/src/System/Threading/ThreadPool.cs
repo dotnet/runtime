@@ -1069,7 +1069,10 @@ namespace System.Threading
             Callback = callbackHelper;
             TimeoutDurationMs = millisecondsTimeout;
             Repeating = repeating;
-            RestartTimeout(Environment.TickCount);
+            if (!IsInfiniteTimeout)
+            {
+                RestartTimeout();
+            }
         }
 
         private static AutoResetEvent? s_cachedEvent;
@@ -1114,9 +1117,10 @@ namespace System.Threading
 
         internal bool IsInfiniteTimeout => TimeoutDurationMs == -1;
 
-        internal void RestartTimeout(int currentTimeMs)
+        internal void RestartTimeout()
         {
-            TimeoutTimeMs = currentTimeMs + TimeoutDurationMs;
+            Debug.Assert(!IsInfiniteTimeout);
+            TimeoutTimeMs = Environment.TickCount + TimeoutDurationMs;
         }
 
         /// <summary>
