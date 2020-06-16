@@ -8,6 +8,9 @@
     <CoverageReportInputPath>$(ArtifactsBinDir)\*.Tests\**\coverage.opencover.xml</CoverageReportInputPath>
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
     <EnableCoverageSupport>true</EnableCoverageSupport>
+
+    <TestAssemblies Condition="'$(TestAssemblies)' == ''">true</TestAssemblies>
+    <TestLinker Condition="'$(TestLinker)' == ''">false</TestLinker>
   </PropertyGroup>
   
   <!-- Projects that don't support code coverage measurement. -->
@@ -17,7 +20,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Transactions.Local\tests\System.Transactions.Local.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(LinkerTests)' != 'true'">
+  <ItemGroup Condition="'$(TestAssemblies)' == 'true'">
     <!-- We currently only test with C# projects. -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
@@ -26,7 +29,7 @@
                       Condition="'$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(LinkerTests)' == 'true'">
+  <ItemGroup Condition="'$(TestLinker)' == 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.LinkerTests.proj"
                       Exclude="@(ProjectExclusions)" />
   </ItemGroup>
