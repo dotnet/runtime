@@ -23,6 +23,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			TestProperty_int_1 ();
 			TestField_int_1 ();
 			NoInlining ();
+			TestPropagation ();
 		}
 
 		[Kept]
@@ -71,6 +72,34 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		static void Reached_1 ()
+		{
+		}
+
+		[Kept]
+		static int PropagateProperty {
+			[Kept]
+			get {
+				return Property;
+			}
+		}
+
+		[Kept]
+		static void TestPropagation ()
+		{
+			// We don't propagate return values across method calls
+			if (PropagateProperty != 3)
+				Propagation_Reached1 ();
+			else
+				Propagation_Reached2 ();
+		}
+
+		[Kept]
+		static void Propagation_Reached1 ()
+		{
+		}
+
+		[Kept]
+		static void Propagation_Reached2 ()
 		{
 		}
 	}

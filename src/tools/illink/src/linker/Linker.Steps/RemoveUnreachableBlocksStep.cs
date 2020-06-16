@@ -167,15 +167,21 @@ namespace Mono.Linker.Steps
 				switch (instr.OpCode.Code) {
 
 				case Code.Call:
+				case Code.Callvirt:
 					var target = (MethodReference) instr.Operand;
 					var md = target.Resolve ();
 					if (md == null)
 						break;
 
-					if (!md.IsStatic)
+					if (!constExprMethods.TryGetValue (md, out targetResult))
 						break;
 
-					if (!constExprMethods.TryGetValue (md, out targetResult))
+					// Allow inlining results of instance methods which are explicitly annotated
+					// but don't allow inling results of any other instance method.
+					// See https://github.com/mono/linker/issues/1243 for discussion as to why.
+					// Also explicitly prevent inlining results of virtual methods.
+					if (!md.IsStatic &&
+						(md.IsVirtual || Annotations.GetAction (md) != MethodAction.ConvertToStub))
 						break;
 
 					if (md.HasParameters)
