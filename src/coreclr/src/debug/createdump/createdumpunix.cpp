@@ -4,10 +4,8 @@
 
 #include "createdump.h"
 
-bool g_diagnostics = false;
-
 //
-// The Linux create dump code
+// The Linux/MacOS create dump code
 //
 bool
 CreateDump(const char* dumpPath, int pid, MINIDUMP_TYPE minidumpType)
