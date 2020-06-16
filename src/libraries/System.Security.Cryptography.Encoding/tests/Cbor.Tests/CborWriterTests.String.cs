@@ -26,6 +26,17 @@ namespace System.Formats.Cbor.Tests
             AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
+        [Fact]
+        public static void WriteByteString_NullValue_HappyPath()
+        {
+            byte[]? input = null;
+            byte[]? expectedEncoding = "40".HexToByteArray();
+
+            var writer = new CborWriter();
+            writer.WriteByteString(input);
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
+        }
+
         [Theory]
         [InlineData(new string[] { }, "5fff")]
         [InlineData(new string[] { "" }, "5f40ff")]
@@ -57,6 +68,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
+        [InlineData(null, "60")]
         [InlineData("", "60")]
         [InlineData("a", "6161")]
         [InlineData("IETF", "6449455446")]
