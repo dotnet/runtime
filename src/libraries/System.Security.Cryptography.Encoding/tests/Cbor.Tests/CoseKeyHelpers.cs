@@ -42,7 +42,7 @@ namespace System.Formats.Cbor.Tests
             CoseKeyAlgorithm? alg = (algorithmName != null) ? MapHashAlgorithmNameToCoseKeyAlg(algorithmName.Value) : (CoseKeyAlgorithm?)null;
 
             // Begin writing a CBOR object
-            writer.WriteStartMap();
+            writer.WriteStartMap(definiteLength: null);
 
             // NB labels should be sorted according to CTAP2 canonical encoding rules.
             // While the CborWriter will attempt to sort the encodings on its own,

@@ -73,7 +73,7 @@ namespace System.Formats.Cbor.Tests
         {
             var writer = new CborWriter();
 
-            writer.WriteStartArray();
+            writer.WriteStartArray(null);
             writer.WriteTag(CborTag.Uri);
             Assert.Throws<InvalidOperationException>(() => writer.WriteEndArray());
         }

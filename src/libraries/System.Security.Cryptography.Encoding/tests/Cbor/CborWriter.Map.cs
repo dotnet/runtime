@@ -17,49 +17,24 @@ namespace System.Formats.Cbor
         private Stack<List<KeyValuePairEncodingRange>>? _pooledKeyValuePairEncodingRangeLists;
 
         /// <summary>
-        ///   Writes the start of a definite-length map (major type 5).
+        ///   Writes the start of a map (major type 5).
         /// </summary>
-        /// <param name="definiteLength">The definite length of the map.</param>
+        /// <param name="definiteLength">
+        ///   Writes a definite-length map if inhabited,
+        ///   or an indefinite-length map if <see langword="null" />.
+        /// </param>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   The <paramref name="definiteLength"/> parameter cannot be negative.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
-        ///   The major type of the encoded value is not permitted in the parent data item
-        /// </exception>
-        /// <remarks>
-        ///   Map contents are written as if arrays twice the length of the map's declared size.
-        ///   For instance, a map of size <c>1</c> containing a key of type int with a value of type string
-        ///   must be written by successive calls to <see cref="WriteInt32(int)"/> and <see cref="WriteTextString(ReadOnlySpan{char})"/>.
-        ///   It is up to the caller to keep track of whether the next call is a key or a value.
-        ///
-        ///   Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of any type,
-        ///   for instance a map can contain keys that are maps themselves.
-        /// </remarks>
-        public void WriteStartMap(int definiteLength)
-        {
-            if (definiteLength < 0 || definiteLength > int.MaxValue / 2)
-            {
-                throw new ArgumentOutOfRangeException(nameof(definiteLength));
-            }
-
-            WriteUnsignedInteger(CborMajorType.Map, (ulong)definiteLength);
-            PushDataItem(CborMajorType.Map, definiteLength: 2 * definiteLength);
-            _currentKeyOffset = _offset;
-        }
-
-        /// <summary>
-        ///   Writes the start of an indefinite-length map (major type 5).
-        /// </summary>
-        /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance mode
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         /// <remarks>
         ///   In canonical conformance modes, the writer will reject indefinite-length writes unless
         ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
-        ///
+        ///   
         ///   Map contents are written as if arrays twice the length of the map's declared size.
         ///   For instance, a map of size <c>1</c> containing a key of type int with a value of type string
         ///   must be written by successive calls to <see cref="WriteInt32(int)"/> and <see cref="WriteTextString(ReadOnlySpan{char})"/>.
@@ -68,17 +43,16 @@ namespace System.Formats.Cbor
         ///   Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of any type,
         ///   for instance a map can contain keys that are maps themselves.
         /// </remarks>
-        public void WriteStartMap()
+        public void WriteStartMap(int? definiteLength)
         {
-            if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
+            if (definiteLength is null)
             {
-                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
+                WriteStartMapIndefiniteLength();
             }
-
-            EnsureWriteCapacity(1);
-            WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
-            PushDataItem(CborMajorType.Map, definiteLength: null);
-            _currentKeyOffset = _offset;
+            else
+            {
+                WriteStartMapDefiniteLength(definiteLength.Value);
+            }
         }
 
         /// <summary>
@@ -98,6 +72,31 @@ namespace System.Formats.Cbor
 
             PopDataItem(CborMajorType.Map);
             AdvanceDataItemCounters();
+        }
+
+        private void WriteStartMapDefiniteLength(int definiteLength)
+        {
+            if (definiteLength < 0 || definiteLength > int.MaxValue / 2)
+            {
+                throw new ArgumentOutOfRangeException(nameof(definiteLength));
+            }
+
+            WriteUnsignedInteger(CborMajorType.Map, (ulong)definiteLength);
+            PushDataItem(CborMajorType.Map, definiteLength: 2 * definiteLength);
+            _currentKeyOffset = _offset;
+        }
+
+        private void WriteStartMapIndefiniteLength()
+        {
+            if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
+            {
+                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
+            }
+
+            EnsureWriteCapacity(1);
+            WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
+            PushDataItem(CborMajorType.Map, definiteLength: null);
+            _currentKeyOffset = _offset;
         }
 
         //

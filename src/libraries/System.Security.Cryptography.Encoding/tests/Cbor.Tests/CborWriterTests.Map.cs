@@ -321,7 +321,7 @@ namespace System.Formats.Cbor.Tests
         public static void EndWriteMap_IndefiniteLength_OddItems_ShouldThrowInvalidOperationException(int length)
         {
             var writer = new CborWriter();
-            writer.WriteStartMap();
+            writer.WriteStartMap(null);
 
             for (int i = 1; i < length; i++)
             {
@@ -386,7 +386,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteStartMap_IndefiniteLength_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceMode conformanceMode)
         {
             var writer = new CborWriter(conformanceMode, convertIndefiniteLengthEncodings: false);
-            Assert.Throws<InvalidOperationException>(() => writer.WriteStartMap());
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartMap(null));
         }
     }
 }

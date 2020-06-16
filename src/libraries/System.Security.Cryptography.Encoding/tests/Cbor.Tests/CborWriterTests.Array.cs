@@ -227,7 +227,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteStartArray_IndefiniteLength_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceMode conformanceMode)
         {
             var writer = new CborWriter(conformanceMode, convertIndefiniteLengthEncodings: false);
-            Assert.Throws<InvalidOperationException>(() => writer.WriteStartArray());
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartArray(null));
         }
     }
 }

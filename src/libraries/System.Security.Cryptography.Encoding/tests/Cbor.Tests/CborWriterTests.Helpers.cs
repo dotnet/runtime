@@ -92,7 +92,7 @@ namespace System.Formats.Cbor.Tests
                 }
                 else
                 {
-                    writer.WriteStartArray();
+                    writer.WriteStartArray(null);
                 }
 
                 foreach (object value in values)
@@ -116,7 +116,7 @@ namespace System.Formats.Cbor.Tests
                 }
                 else
                 {
-                    writer.WriteStartMap();
+                    writer.WriteStartMap(null);
                 }
 
                 foreach (object value in keyValuePairs.Skip(1))
@@ -156,8 +156,8 @@ namespace System.Formats.Cbor.Tests
                     case nameof(writer.WriteTextString): writer.WriteTextString(""); break;
                     case nameof(writer.WriteStartTextString): writer.WriteStartTextString(); break;
                     case nameof(writer.WriteStartByteString): writer.WriteStartByteString(); break;
-                    case nameof(writer.WriteStartArray): writer.WriteStartArray(); break;
-                    case nameof(writer.WriteStartMap): writer.WriteStartMap(); break;
+                    case nameof(writer.WriteStartArray): writer.WriteStartArray(null); break;
+                    case nameof(writer.WriteStartMap): writer.WriteStartMap(null); break;
                     case nameof(writer.WriteEndByteString): writer.WriteEndByteString(); break;
                     case nameof(writer.WriteEndTextString): writer.WriteEndTextString(); break;
                     case nameof(writer.WriteEndArray): writer.WriteEndArray(); break;
