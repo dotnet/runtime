@@ -108,9 +108,8 @@ namespace System.Xml.Schema
                     }
                     break;
                 case NamespaceList.ListType.Set:
-                    foreach (string? wildcard in list.Enumerate)
+                    foreach (string wildcard in list.Enumerate)
                     {
-                        Debug.Assert(wildcard != null);
                         AddWildcard(wildcard, particle);
                     }
                     break;
@@ -152,9 +151,8 @@ namespace System.Xml.Schema
 
             if (_wildcards != null)
             {
-                foreach (string? wildcard in _wildcards.Keys)
+                foreach (string wildcard in _wildcards.Keys)
                 {
-                    Debug.Assert(wildcard != null);
                     if (list.Allows(wildcard))
                     {
                         match.Add(_wildcards[wildcard]);
@@ -223,9 +221,7 @@ namespace System.Xml.Schema
         /// </summary>
         public string NameOf(int symbol)
         {
-#pragma warning disable CS8605 // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
             foreach (DictionaryEntry de in _names)
-#pragma warning restore CS8605
             {
                 if ((int)de.Value! == symbol)
                 {
@@ -235,9 +231,7 @@ namespace System.Xml.Schema
 
             if (_wildcards != null)
             {
-#pragma warning disable CS8605 // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                 foreach (DictionaryEntry de in _wildcards)
-#pragma warning restore CS8605
                 {
                     if ((int)de!.Value! == symbol)
                     {
@@ -389,9 +383,7 @@ namespace System.Xml.Schema
         public override void ExpandTree(InteriorNode parent, SymbolsDictionary symbols, Positions positions)
         {
             SyntaxTreeNode? replacementNode = null;
-#pragma warning disable CS8605 // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
             foreach (int symbol in GetResolvedSymbols(symbols))
-#pragma warning restore CS8605
             {
                 if (symbols.GetParticle(symbol) != particle)
                 {
@@ -2249,9 +2241,7 @@ namespace System.Xml.Schema
         public override ArrayList? ExpectedElements(ValidationState context, bool isRequiredOnly)
         {
             ArrayList? names = null;
-#pragma warning disable CS8605 // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
             foreach (DictionaryEntry entry in _elements)
-#pragma warning restore CS8605
             {
                 if (!context.AllElementsSet![(int)entry.Value!] && (!isRequiredOnly || _isRequired[(int)entry.Value]))
                 {
@@ -2270,9 +2260,7 @@ namespace System.Xml.Schema
         public override ArrayList ExpectedParticles(ValidationState context, bool isRequiredOnly, XmlSchemaSet schemaSet)
         {
             ArrayList expectedParticles = new ArrayList();
-#pragma warning disable CS8605 // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
             foreach (DictionaryEntry entry in _elements)
-#pragma warning restore CS8605
             {
                 if (!context.AllElementsSet![(int)entry.Value!] && (!isRequiredOnly || _isRequired[(int)entry.Value]))
                 {

@@ -69,7 +69,7 @@ namespace System.Xml.Schema
                     case NamespaceList.ListType.Set:
                         StringBuilder sb = new StringBuilder();
                         int i = 1;
-                        foreach (string? wildcardNS in _namespaceList.Enumerate)
+                        foreach (string wildcardNS in _namespaceList.Enumerate)
                         {
                             sb.Append(wildcardNS + ":*");
                             if (i < _namespaceList.Enumerate.Count)

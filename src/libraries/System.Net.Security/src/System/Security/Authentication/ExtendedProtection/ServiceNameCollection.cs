@@ -59,7 +59,7 @@ namespace System.Security.Authentication.ExtendedProtection
         {
             string? searchName = NormalizeServiceName(searchServiceName);
 
-            foreach (string? serviceName in InnerList)
+            foreach (string serviceName in InnerList)
             {
                 if (string.Equals(serviceName, searchName, StringComparison.OrdinalIgnoreCase))
                 {
@@ -95,13 +95,13 @@ namespace System.Security.Authentication.ExtendedProtection
 
             // NullReferenceException is thrown when serviceNames is null,
             // which is consistent with the behavior of the .NET Framework.
-            foreach (object? item in serviceNames)
+            foreach (object item in serviceNames)
             {
                 // To match the behavior of the .NET Framework, when an item
                 // in the collection is not a string:
                 //  - Throw InvalidCastException when expectStrings is true.
                 //  - Throw ArgumentException when expectStrings is false.
-                AddIfNew(expectStrings ? (string)item! : (item as string)!);
+                AddIfNew(expectStrings ? (string)item : (item as string)!);
             }
         }
 
@@ -125,9 +125,9 @@ namespace System.Security.Authentication.ExtendedProtection
         {
             Debug.Assert(serviceNames != null);
 
-            foreach (string? serviceName in serviceNames)
+            foreach (string serviceName in serviceNames)
             {
-                AddIfNew(serviceName!);
+                AddIfNew(serviceName);
             }
         }
 
