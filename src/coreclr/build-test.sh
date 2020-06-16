@@ -51,7 +51,6 @@ generate_layout()
 {
     echo "${__MsgPrefix}Creating test overlay..."
 
-    __TestDir="$__ProjectDir"/tests
     __ProjectFilesDir="$__TestDir"
     __TestBinDir="$__TestWorkingDir"
 
@@ -125,7 +124,7 @@ generate_layout()
     build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/src/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
     if [[ "$__TargetOS" != "OSX" && "$__SkipStressDependencies" == 0 ]]; then
-        nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
+        nextCommand="\"${__RepoRootDir}/src/coreclr/tests/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
         echo "Resolve runtime dependences via $nextCommand"
         eval $nextCommand
 
@@ -273,7 +272,6 @@ build_Tests()
 {
     echo "${__MsgPrefix}Building Tests..."
 
-    __TestDir="$__ProjectDir"/tests
     __ProjectFilesDir="$__TestDir"
     __TestBinDir="$__TestWorkingDir"
 
@@ -683,7 +681,7 @@ __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
-__TestDir="$__ProjectDir/tests"
+__TestDir="${__RepoRootDir}/src/tests"
 __TestWorkingDir="$__RootBinDir/tests/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__TargetOS.$__BuildArch.$__BuildType"
