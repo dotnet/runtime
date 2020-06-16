@@ -4867,9 +4867,7 @@ bool MethodDesc::IsJitOptimizationDisabled()
 
 #ifdef FEATURE_INTERPRETER
     static ConfigDWORD s_ForceInterpreterTier0;
-    static ConfigDWORD s_ForceInterpreterAlways;
-    if (s_ForceInterpreterAlways.val(CLRConfig::INTERNAL_ForceInterpreterAlways) == 0 &&
-        s_ForceInterpreterTier0.val(CLRConfig::INTERNAL_ForceInterpreterTier0) != 0)
+    if (s_ForceInterpreterTier0.val(CLRConfig::INTERNAL_ForceInterpreterTier0) != 0)
     {
         return false;
     }
