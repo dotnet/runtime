@@ -35,7 +35,7 @@ namespace System.Text.Tests
             new EncodingInformation(65001, "utf-8")
         };
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestGetEncodings()
         {
             RemoteExecutor.Invoke(() => {
@@ -48,7 +48,7 @@ namespace System.Text.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestGetEncodingsWithProvider()
         {
             RemoteExecutor.Invoke(() => {
