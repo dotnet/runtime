@@ -2150,7 +2150,12 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
         // Additionally, we make sure none of the hardware intrinsic method bodies get pregenerated in crossgen
         // (see ZapInfo::CompileMethod) but get JITted instead. The JITted method will have the correct
         // answer for the CPU the code is running on.
+#if defined(TARGET_ARM64)
+        fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic);
+#else
         fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic) || (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
+#endif 
+
 
         if (fIsPlatformHWIntrinsic)
         {
