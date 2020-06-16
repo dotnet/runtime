@@ -85,7 +85,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Write the encoded representation of the data to <paramref name="destination"/>.
+        ///   Attempts to write the encoded representation of the data to <paramref name="destination"/>.
         /// </summary>
         /// <param name="destination">The buffer in which to write.</param>
         /// <param name="bytesWritten">
@@ -121,6 +121,30 @@ namespace System.Formats.Asn1
             bytesWritten = _offset;
             _buffer.AsSpan(0, _offset).CopyTo(destination);
             return true;
+        }
+
+        /// <summary>
+        ///   Writes the encoded representation of the data to <paramref name="destination"/>.
+        /// </summary>
+        /// <param name="destination">The buffer in which to write.</param>
+        /// <returns>
+        ///   The number of bytes written to <paramref name="destination" />.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+        ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
+        /// </exception>
+        public int Encode(Span<byte> destination)
+        {
+            // Since TryEncode doesn't have any side effects on the return false paths, just
+            // call it from here and do argument validation late.
+            if (!TryEncode(destination, out int bytesWritten))
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
+
+            Debug.Assert(bytesWritten == _offset);
+            return bytesWritten;
         }
 
         /// <summary>
@@ -168,7 +192,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Determines if <see cref="Encode"/> would produce an output identical to
+        ///   Determines if <see cref="Encode()"/> would produce an output identical to
         ///   <paramref name="other"/>.
         /// </summary>
         /// <returns>
@@ -185,7 +209,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Determines if <see cref="Encode"/> would produce an output identical to
+        ///   Determines if <see cref="Encode()"/> would produce an output identical to
         ///   <paramref name="other"/>.
         /// </summary>
         /// <returns>
