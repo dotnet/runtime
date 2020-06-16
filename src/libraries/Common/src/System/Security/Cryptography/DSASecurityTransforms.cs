@@ -5,10 +5,10 @@
 #nullable enable
 using System.Buffers;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
-using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -203,6 +203,9 @@ namespace System.Security.Cryptography
 
                 private static SafeSecKeyRefHandle ImportKey(DSAParameters parameters)
                 {
+                    AsnWriter keyWriter;
+                    bool hasPrivateKey;
+
                     if (parameters.X != null)
                     {
                         // DSAPrivateKey ::= SEQUENCE(
@@ -214,25 +217,44 @@ namespace System.Security.Cryptography
                         //   x INTEGER,
                         // )
 
-                        using (AsnWriter privateKeyWriter = new AsnWriter(AsnEncodingRules.DER))
+                        keyWriter = new AsnWriter(AsnEncodingRules.DER);
+
+                        using (keyWriter.PushSequence())
                         {
-                            privateKeyWriter.PushSequence();
-                            privateKeyWriter.WriteInteger(0);
-                            privateKeyWriter.WriteKeyParameterInteger(parameters.P);
-                            privateKeyWriter.WriteKeyParameterInteger(parameters.Q);
-                            privateKeyWriter.WriteKeyParameterInteger(parameters.G);
-                            privateKeyWriter.WriteKeyParameterInteger(parameters.Y);
-                            privateKeyWriter.WriteKeyParameterInteger(parameters.X);
-                            privateKeyWriter.PopSequence();
-                            return Interop.AppleCrypto.ImportEphemeralKey(privateKeyWriter.EncodeAsSpan(), true);
+                            keyWriter.WriteInteger(0);
+                            keyWriter.WriteKeyParameterInteger(parameters.P);
+                            keyWriter.WriteKeyParameterInteger(parameters.Q);
+                            keyWriter.WriteKeyParameterInteger(parameters.G);
+                            keyWriter.WriteKeyParameterInteger(parameters.Y);
+                            keyWriter.WriteKeyParameterInteger(parameters.X);
                         }
+
+                        hasPrivateKey = true;
                     }
                     else
                     {
-                        using (AsnWriter writer = DSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters))
-                        {
-                            return Interop.AppleCrypto.ImportEphemeralKey(writer.EncodeAsSpan(), false);
-                        }
+                        keyWriter = DSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters);
+                        hasPrivateKey = false;
+                    }
+
+                    byte[] rented = CryptoPool.Rent(keyWriter.GetEncodedLength());
+
+                    if (!keyWriter.TryEncode(rented, out int written))
+                    {
+                        Debug.Fail("TryEncode failed with a pre-allocated buffer");
+                        throw new InvalidOperationException();
+                    }
+
+                    // Explicitly clear the inner buffer
+                    keyWriter.Reset();
+
+                    try
+                    {
+                        return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), hasPrivateKey);
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(rented, written);
                     }
                 }
 

@@ -232,6 +232,155 @@ namespace CoreXml.Test.XLinq
                 }
             }
         }
+
+        [Theory]
+        [MemberData(nameof(RoundtripOptions_MemberData))]
+        public static async Task RoundtripSyncAsyncCheckAndMatches_XmlReader(bool document, LoadOptions loadOptions, SaveOptions saveOptions)
+        {
+            // Create reader and writer settings
+            var readerSettings = new XmlReaderSettings();
+            var writerSettings = new XmlWriterSettings();
+            if ((saveOptions & SaveOptions.OmitDuplicateNamespaces) != 0)
+            {
+                writerSettings.NamespaceHandling = NamespaceHandling.OmitDuplicates;
+            }
+            if ((saveOptions & SaveOptions.DisableFormatting) != 0)
+            {
+                writerSettings.Indent = false;
+                writerSettings.NewLineHandling = NewLineHandling.None;
+            }
+
+            // Roundtrip XML using synchronous and XmlReader/Writer
+            CheckSyncAsyncStream syncInput = new CheckSyncAsyncStream(async: false, FilePathUtil.getStream(GetTestFileName()));
+            MemoryStream syncOutputMemory = new MemoryStream();
+            CheckSyncAsyncStream syncOutput = new CheckSyncAsyncStream(async: false, syncOutputMemory);
+            using (XmlReader syncReader = XmlReader.Create(syncInput, readerSettings))
+            using (XmlWriter syncWriter = XmlWriter.Create(syncOutput, writerSettings))
+            {
+                if (document)
+                {
+                    XDocument syncDoc = XDocument.Load(syncReader, loadOptions);
+                    syncDoc.Save(syncWriter);
+                }
+                else
+                {
+                    XElement syncElement = XElement.Load(syncReader, loadOptions);
+                    syncElement.Save(syncWriter);
+                }
+            }
+
+            // Roundtrip XML using asynchronous and XmlReader/Writer
+            readerSettings.Async = true;
+            writerSettings.Async = true;
+            CheckSyncAsyncStream asyncInput = new CheckSyncAsyncStream(async: true, FilePathUtil.getStream(GetTestFileName()));
+            MemoryStream asyncOutputMemory = new MemoryStream();
+            CheckSyncAsyncStream asyncOutput = new CheckSyncAsyncStream(async: true, asyncOutputMemory);
+            using (XmlReader asyncReader = XmlReader.Create(asyncInput, readerSettings))
+            await using (XmlWriter asyncWriter = XmlWriter.Create(asyncOutput, writerSettings))
+            {
+                if (document)
+                {
+                    XDocument asyncDoc = await XDocument.LoadAsync(asyncReader, loadOptions, CancellationToken.None);
+                    await asyncDoc.SaveAsync(asyncWriter, CancellationToken.None);
+                }
+                else
+                {
+                    XElement asyncElement = await XElement.LoadAsync(asyncReader, loadOptions, CancellationToken.None);
+                    await asyncElement.SaveAsync(asyncWriter, CancellationToken.None);
+                }
+            }
+
+            // Compare to make sure the synchronous and asynchronous results are the same
+            Assert.Equal(syncOutputMemory.ToArray(), asyncOutputMemory.ToArray());
+        }
+
+        [Theory]
+        [MemberData(nameof(RoundtripOptions_MemberData))]
+        public static async Task RoundtripSyncAsyncCheckAndMatches_StreamReader(bool document, LoadOptions loadOptions, SaveOptions saveOptions)
+        {
+            // Roundtrip XML using synchronous and StreamReader/Writer
+            CheckSyncAsyncStream syncInput = new CheckSyncAsyncStream(async: false, FilePathUtil.getStream(GetTestFileName()));
+            MemoryStream syncOutputMemory = new MemoryStream();
+            CheckSyncAsyncStream syncOutput = new CheckSyncAsyncStream(async: false, syncOutputMemory);
+            using (StreamReader syncReader = new StreamReader(syncInput))
+            using (StreamWriter syncWriter = new StreamWriter(syncOutput))
+            {
+                if (document)
+                {
+                    XDocument syncDoc = XDocument.Load(syncReader, loadOptions);
+                    syncDoc.Save(syncWriter, saveOptions);
+                }
+                else
+                {
+                    XElement syncElement = XElement.Load(syncReader, loadOptions);
+                    syncElement.Save(syncWriter, saveOptions);
+                }
+            }
+
+            // Roundtrip XML using asynchronous and StreamReader/Writer
+            CheckSyncAsyncStream asyncInput = new CheckSyncAsyncStream(async: true, FilePathUtil.getStream(GetTestFileName()));
+            MemoryStream asyncOutputMemory = new MemoryStream();
+            CheckSyncAsyncStream asyncOutput = new CheckSyncAsyncStream(async: true, asyncOutputMemory);
+            using (StreamReader asyncReader = new StreamReader(asyncInput))
+            await using (StreamWriter asyncWriter = new StreamWriter(asyncOutput))
+            {
+                if (document)
+                {
+                    XDocument asyncDoc = await XDocument.LoadAsync(asyncReader, loadOptions, CancellationToken.None);
+                    await asyncDoc.SaveAsync(asyncWriter, saveOptions, CancellationToken.None);
+                }
+                else
+                {
+                    XElement asyncElement = await XElement.LoadAsync(asyncReader, loadOptions, CancellationToken.None);
+                    await asyncElement.SaveAsync(asyncWriter, saveOptions, CancellationToken.None);
+                }
+            }
+
+            // Compare to make sure the synchronous and asynchronous results are the same
+            Assert.Equal(syncOutputMemory.ToArray(), asyncOutputMemory.ToArray());
+        }
+
+        [Theory]
+        [MemberData(nameof(RoundtripOptions_MemberData))]
+        public static async Task RoundtripSyncAsyncCheckAndMatches_Stream(bool document, LoadOptions loadOptions, SaveOptions saveOptions)
+        {
+            // Roundtrip XML using synchronous and Stream
+            MemoryStream syncOutputMemory = new MemoryStream();
+            CheckSyncAsyncStream syncOutput = new CheckSyncAsyncStream(async: false, syncOutputMemory);
+            using (Stream syncStream = new CheckSyncAsyncStream(async: false, FilePathUtil.getStream(GetTestFileName())))
+            {
+                if (document)
+                {
+                    XDocument syncDoc = XDocument.Load(syncStream, loadOptions);
+                    syncDoc.Save(syncOutput, saveOptions);
+                }
+                else
+                {
+                    XElement syncElement = XElement.Load(syncStream, loadOptions);
+                    syncElement.Save(syncOutput, saveOptions);
+                }
+            }
+
+            // Roundtrip XML using asynchronous and Stream
+            MemoryStream asyncOutputMemory = new MemoryStream();
+            CheckSyncAsyncStream asyncOutput = new CheckSyncAsyncStream(async: true, asyncOutputMemory);
+            await using (Stream asyncStream = new CheckSyncAsyncStream(async: true, FilePathUtil.getStream(GetTestFileName())))
+            {
+                if (document)
+                {
+                    XDocument asyncDoc = await XDocument.LoadAsync(asyncStream, loadOptions, CancellationToken.None);
+                    await asyncDoc.SaveAsync(asyncOutput, saveOptions, CancellationToken.None);
+                }
+                else
+                {
+                    XElement asyncElement = await XElement.LoadAsync(asyncStream, loadOptions, CancellationToken.None);
+                    await asyncElement.SaveAsync(asyncOutput, saveOptions, CancellationToken.None);
+                }
+            }
+
+            // Compare to make sure the synchronous and asynchronous results are the same
+            Assert.Equal(syncOutputMemory.ToArray(), asyncOutputMemory.ToArray());
+        }
     }
 
     public class ForceSyncAsyncStream : MemoryStream
@@ -266,5 +415,104 @@ namespace CoreXml.Test.XLinq
             Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Write is called");
             return Task.CompletedTask;
         }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+        {
+            Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Write is called");
+            return default;
+        }
+    }
+
+    public class CheckSyncAsyncStream : Stream
+    {
+        private readonly Stream _stream;
+
+        private readonly bool _isAsync;
+        private bool _isAsyncInProgress;
+
+        public CheckSyncAsyncStream(bool async, Stream stream = null)
+        {
+            _stream = stream ?? new MemoryStream();
+            _isAsync = async;
+        }
+
+        public override void Flush()
+        {
+            if (!_isAsyncInProgress)
+                Assert.False(_isAsync, "Stream is in asynchronous mode when synchronous Flush is called");
+            _stream.Flush();
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Flush is called");
+                _isAsyncInProgress = true;
+                return _stream.FlushAsync(cancellationToken);
+            }
+            finally
+            {
+                _isAsyncInProgress = false;
+            }
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            if (!_isAsyncInProgress)
+                Assert.False(_isAsync, "Stream is in asynchronous mode when synchronous Write is called");
+            _stream.Write(buffer, offset, count);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            try
+            {
+                Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Write is called");
+                _isAsyncInProgress = true;
+                return _stream.WriteAsync(buffer, offset, count, cancellationToken);
+            }
+            finally
+            {
+                _isAsyncInProgress = false;
+            }
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            if (!_isAsyncInProgress)
+                Assert.False(_isAsync, "Stream is in asynchronous mode when synchronous Read is called");
+            return _stream.Read(buffer, offset, count);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            try
+            {
+                Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Read is called");
+                _isAsyncInProgress = true;
+                return _stream.ReadAsync(buffer, offset, count, cancellationToken);
+            }
+            finally
+            {
+                _isAsyncInProgress = false;
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _stream.Dispose();
+            }
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
+        public override void SetLength(long value) => _stream.SetLength(value);
+        public override bool CanRead => _stream.CanRead;
+        public override bool CanSeek => _stream.CanSeek;
+        public override bool CanWrite => _stream.CanWrite;
+        public override long Length => _stream.Length;
+        public override long Position { get => _stream.Position; set => _stream.Position = value; }
     }
 }

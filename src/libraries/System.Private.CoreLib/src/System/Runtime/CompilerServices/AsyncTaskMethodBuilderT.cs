@@ -60,7 +60,7 @@ namespace System.Runtime.CompilerServices
             AwaitOnCompleted(ref awaiter, ref stateMachine, ref m_task);
 
         internal static void AwaitOnCompleted<TAwaiter, TStateMachine>(
-            ref TAwaiter awaiter, ref TStateMachine stateMachine, [NotNull] ref Task<TResult>? taskField)
+            ref TAwaiter awaiter, ref TStateMachine stateMachine, ref Task<TResult>? taskField)
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {

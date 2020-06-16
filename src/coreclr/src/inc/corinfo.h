@@ -217,12 +217,12 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 8b2226a2-ac30-4f5c-ae5c-926c792ecdb9 */
-    0x8b2226a2,
-    0xac30,
-    0x4f5c,
-    { 0xae, 0x5c, 0x92, 0x6c, 0x79, 0x2e, 0xcd, 0xb9 }
-};
+SELECTANY const GUID JITEEVersionIdentifier = { /* 2ca8d539-5db9-4831-8f1b-ade425f036bd */
+    0x2ca8d539,
+    0x5db9,
+    0x4831,
+    {0x8f, 0x1b, 0xad, 0xe4, 0x25, 0xf0, 0x36, 0xbd}
+  };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -822,7 +822,7 @@ enum CorInfoFlag
     CORINFO_FLG_ARRAY                 = 0x00080000, // class is an array class (initialized differently)
     CORINFO_FLG_OVERLAPPING_FIELDS    = 0x00100000, // struct or class has fields that overlap (aka union)
     CORINFO_FLG_INTERFACE             = 0x00200000, // it is an interface
-    // unused                         = 0x00400000,
+    CORINFO_FLG_DONT_PROMOTE          = 0x00400000, // don't try to promote fields (used for types outside of AOT compilation version bubble)
     CORINFO_FLG_CUSTOMLAYOUT          = 0x00800000, // does this struct have custom layout?
     CORINFO_FLG_CONTAINS_GC_PTR       = 0x01000000, // does the class contain a gc ptr ?
     CORINFO_FLG_DELEGATE              = 0x02000000, // is this a subclass of delegate or multicast delegate ?
@@ -2743,7 +2743,7 @@ public:
             ) = 0;
 
     // Returns type of HFA for valuetype
-    virtual CorInfoType getHFAType (
+    virtual CorInfoHFAElemType getHFAType (
             CORINFO_CLASS_HANDLE hClass
             ) = 0;
 

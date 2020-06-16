@@ -27,6 +27,7 @@ internal static partial class Interop
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_IndexOfOrdinalIgnoreCase")]
         internal static extern unsafe int IndexOfOrdinalIgnoreCase(string target, int cwTargetLength, char* pSource, int cwSourceLength, bool findLast);
+
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_IndexOfOrdinalIgnoreCase")]
         internal static extern unsafe int IndexOfOrdinalIgnoreCase(char* target, int cwTargetLength, char* pSource, int cwSourceLength, bool findLast);
 

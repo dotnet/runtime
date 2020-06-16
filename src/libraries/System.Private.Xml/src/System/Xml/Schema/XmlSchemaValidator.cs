@@ -735,6 +735,7 @@ namespace System.Xml.Schema
             {
                 throw new ArgumentNullException(nameof(defaultAttributes));
             }
+
             CheckStateTransition(ValidatorState.Attribute, "GetUnspecifiedDefaultAttributes");
             GetUnspecifiedDefaultAttributes(defaultAttributes, false);
         }
@@ -1066,6 +1067,7 @@ namespace System.Xml.Schema
                                 continue;
                             }
                         }
+
                         XmlSchemaDatatype datatype = attdef.Datatype;
                         if (createNodeData)
                         {
@@ -1090,6 +1092,7 @@ namespace System.Xml.Schema
                             {
                                 attrValidInfo.typedAttributeValue = attdef.DefaultValueTyped;
                             }
+
                             attSchemaInfo.IsDefault = true;
                             attSchemaInfo.Validity = XmlSchemaValidity.Valid;
                             attSchemaInfo.SchemaType = attdef.SchemaType;
@@ -1103,6 +1106,7 @@ namespace System.Xml.Schema
                         {
                             defaultAttributes.Add(attdef.SchemaAttribute);
                         }
+
                         CheckTokenizedTypes(datatype, attdef.DefaultValueTyped, true);
                         if (HasIdentityConstraints)
                         {
@@ -1111,7 +1115,6 @@ namespace System.Xml.Schema
                     }
                 }
             }
-            return;
         }
 
         internal XmlSchemaSet SchemaSet

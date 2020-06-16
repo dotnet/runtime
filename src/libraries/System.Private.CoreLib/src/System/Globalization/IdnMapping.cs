@@ -152,10 +152,19 @@ namespace System.Globalization
             (_allowUnassigned ? 100 : 200) + (_useStd3AsciiRules ? 1000 : 2000);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe string GetStringForOutput(string originalString, char* input, int inputLength, char* output, int outputLength) =>
-            originalString.Length == inputLength && new ReadOnlySpan<char>(input, inputLength).SequenceEqual(new ReadOnlySpan<char>(output, outputLength)) ?
-                originalString :
-                new string(output, 0, outputLength);
+        private static unsafe string GetStringForOutput(string originalString, char* input, int inputLength, char* output, int outputLength)
+        {
+            Debug.Assert(inputLength > 0);
+
+            if (originalString.Length == inputLength &&
+                inputLength == outputLength &&
+                CompareInfo.EqualsOrdinalIgnoreCase(ref *input, ref *output, inputLength))
+            {
+                return originalString;
+            }
+
+            return new string(output, 0, outputLength);
+        }
 
         //
         // Invariant implementation

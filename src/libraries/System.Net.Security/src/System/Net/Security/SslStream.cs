@@ -109,6 +109,8 @@ namespace System.Net.Security
             _certSelectionDelegate = userCertificateSelectionCallback == null ? null : new LocalCertSelectionCallback(UserCertSelectionCallbackWrapper);
 
             _innerStream = innerStream;
+
+            if (NetEventSource.IsEnabled) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
 
         public SslApplicationProtocol NegotiatedApplicationProtocol
@@ -304,8 +306,13 @@ namespace System.Net.Security
             AuthenticateAsClient(options);
         }
 
-        private void AuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions)
+        public void AuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
+            if (sslClientAuthenticationOptions == null)
+            {
+                throw new ArgumentNullException(nameof(sslClientAuthenticationOptions));
+            }
+
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
@@ -337,8 +344,13 @@ namespace System.Net.Security
             AuthenticateAsServer(options);
         }
 
-        private void AuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions)
+        public void AuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
+            if (sslServerAuthenticationOptions == null)
+            {
+                throw new ArgumentNullException(nameof(sslServerAuthenticationOptions));
+            }
+
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
 
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
@@ -367,6 +379,11 @@ namespace System.Net.Security
 
         public Task AuthenticateAsClientAsync(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken = default)
         {
+            if (sslClientAuthenticationOptions == null)
+            {
+                throw new ArgumentNullException(nameof(sslClientAuthenticationOptions));
+            }
+
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
@@ -417,6 +434,11 @@ namespace System.Net.Security
 
         public Task AuthenticateAsServerAsync(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken = default)
         {
+            if (sslServerAuthenticationOptions == null)
+            {
+                throw new ArgumentNullException(nameof(sslServerAuthenticationOptions));
+            }
+
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
@@ -464,7 +486,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -540,7 +562,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 return _context!.ConnectionInfo?.TlsCipherSuite ?? default(TlsCipherSuite);
             }
         }
@@ -549,7 +571,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -563,7 +585,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -578,7 +600,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -592,7 +614,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -607,7 +629,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -622,7 +644,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -742,8 +764,7 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateParameters(buffer, offset, count);
-            SyncSslIOAdapter reader = new SyncSslIOAdapter(this);
-            ValueTask<int> vt = ReadAsyncInternal(reader, new Memory<byte>(buffer, offset, count));
+            ValueTask<int> vt = ReadAsyncInternal(new SyncReadWriteAdapter(InnerStream), new Memory<byte>(buffer, offset, count));
             Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
             return vt.GetAwaiter().GetResult();
         }
@@ -755,8 +776,7 @@ namespace System.Net.Security
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateParameters(buffer, offset, count);
 
-            SyncSslIOAdapter writeAdapter = new SyncSslIOAdapter(this);
-            ValueTask vt = WriteAsyncInternal(writeAdapter, new ReadOnlyMemory<byte>(buffer, offset, count));
+            ValueTask vt = WriteAsyncInternal(new SyncReadWriteAdapter(InnerStream), new ReadOnlyMemory<byte>(buffer, offset, count));
             Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
             vt.GetAwaiter().GetResult();
         }
@@ -792,26 +812,23 @@ namespace System.Net.Security
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            AsyncSslIOAdapter writeAdapter = new AsyncSslIOAdapter(this, cancellationToken);
-            return WriteAsyncInternal(writeAdapter, buffer);
+            return WriteAsyncInternal(new AsyncReadWriteAdapter(InnerStream, cancellationToken), buffer);
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateParameters(buffer, offset, count);
-            AsyncSslIOAdapter read = new AsyncSslIOAdapter(this, cancellationToken);
-            return ReadAsyncInternal(read, new Memory<byte>(buffer, offset, count)).AsTask();
+            return ReadAsyncInternal(new AsyncReadWriteAdapter(InnerStream, cancellationToken), new Memory<byte>(buffer, offset, count)).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            AsyncSslIOAdapter read = new AsyncSslIOAdapter(this, cancellationToken);
-            return ReadAsyncInternal(read, buffer);
+            return ReadAsyncInternal(new AsyncReadWriteAdapter(InnerStream, cancellationToken), buffer);
         }
 
         private void ThrowIfExceptional()
@@ -843,6 +860,17 @@ namespace System.Net.Security
             ThrowIfExceptional();
 
             if (!IsAuthenticated)
+            {
+                ThrowNotAuthenticated();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ThrowIfExceptionalOrNotHandshake()
+        {
+            ThrowIfExceptional();
+
+            if (!IsAuthenticated && _context?.ConnectionInfo == null)
             {
                 ThrowNotAuthenticated();
             }

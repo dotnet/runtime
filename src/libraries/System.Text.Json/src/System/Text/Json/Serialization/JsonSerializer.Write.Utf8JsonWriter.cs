@@ -10,22 +10,6 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Internal version that allows re-entry with preserving WriteStack so that JsonPath works correctly.
-        /// </summary>
-        // If this is made public, we will also want to have a non-generic version.
-        internal static void Serialize<T>(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state, string? propertyName = null)
-        {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            JsonConverter jsonConverter = state.Current.InitializeReEntry(typeof(T), options, propertyName);
-            bool success = jsonConverter.TryWriteAsObject(writer, value, options, ref state);
-            Debug.Assert(success);
-        }
-
-        /// <summary>
         /// Write one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
         /// <param name="writer">The writer to write.</param>

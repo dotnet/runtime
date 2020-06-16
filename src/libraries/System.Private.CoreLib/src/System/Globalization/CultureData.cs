@@ -625,11 +625,16 @@ namespace System.Globalization
             // Calendar specific data
             invariant._iFirstDayOfWeek = 0;                      // first day of week
             invariant._iFirstWeekOfYear = 0;                      // first week of year
-            invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };       // all available calendar type(s).  The first one is the default calendar
 
-            // Store for specific data about each calendar
-            invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
-            invariant._calendars[0] = CalendarData.Invariant;
+            // all available calendar type(s).  The first one is the default calendar
+            invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };
+
+            if (!GlobalizationMode.Invariant)
+            {
+                // Store for specific data about each calendar
+                invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
+                invariant._calendars[0] = CalendarData.Invariant;
+            }
 
             // Text information
             invariant._iReadingLayout = 0;
@@ -844,10 +849,6 @@ namespace System.Globalization
             return true;
         }
 
-        private bool InitCultureDataCore() => GlobalizationMode.UseNls ?
-                                                NlsInitCultureData() :
-                                                IcuInitCultureData();
-
         /// We'd rather people use the named version since this doesn't allow custom locales
         internal static CultureData GetCultureData(int culture, bool bUseUserOverride)
         {
@@ -866,8 +867,7 @@ namespace System.Globalization
             }
 
             // Convert the lcid to a name, then use that
-            // Note that this will return neutral names (unlike Vista native API)
-            localeName = GlobalizationMode.UseNls ? NlsLCIDToLocaleName(culture) : IcuLCIDToLocaleName(culture);
+            localeName = LCIDToLocaleName(culture);
 
             if (!string.IsNullOrEmpty(localeName))
             {
@@ -1670,7 +1670,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_waCalendars == null)
+                if (_waCalendars == null && !GlobalizationMode.Invariant)
                 {
                     // We pass in an array of ints, and native side fills it up with count calendars.
                     // We then have to copy that list to a new array of the right size.
@@ -1738,7 +1738,7 @@ namespace System.Globalization
                     }
                 }
 
-                return _waCalendars;
+                return _waCalendars!;
             }
         }
 
@@ -1753,6 +1753,11 @@ namespace System.Globalization
 
         internal CalendarData GetCalendar(CalendarId calendarId)
         {
+            if (GlobalizationMode.Invariant)
+            {
+                return CalendarData.Invariant;
+            }
+
             Debug.Assert(calendarId > 0 && calendarId <= CalendarId.LAST_CALENDAR,
                 "[CultureData.GetCalendar] Expect calendarId to be in a valid range");
 
@@ -1920,13 +1925,7 @@ namespace System.Globalization
 
         internal bool IsInvariantCulture => string.IsNullOrEmpty(Name);
 
-        internal bool IsWin32Installed => GlobalizationMode.UseNls;
-
         internal bool IsReplacementCulture => GlobalizationMode.UseNls ? NlsIsReplacementCulture : false;
-
-        internal static unsafe CultureData GetCurrentRegionData() => GlobalizationMode.UseNls ?
-                                                                        NlsGetCurrentRegionData() :
-                                                                        CultureInfo.CurrentCulture._cultureData;
 
         /// <summary>
         /// Get an instance of our default calendar
@@ -1937,7 +1936,7 @@ namespace System.Globalization
             {
                 if (GlobalizationMode.Invariant)
                 {
-                    return CultureInfo.GetCalendarInstance(CalendarIds[0]);
+                    return new GregorianCalendar();
                 }
 
                 CalendarId defaultCalId = (CalendarId)GetLocaleInfoCore(LocaleNumberData.CalendarType);

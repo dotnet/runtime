@@ -38,7 +38,9 @@ namespace ILCompiler
         public bool Resilient { get; set; }
         public bool Map { get; set; }
         public int Parallelism { get; set; }
-
+        public ReadyToRunMethodLayoutAlgorithm MethodLayout { get; set; }
+        public ReadyToRunFileLayoutAlgorithm FileLayout { get; set; }
+        public int? CustomPESectionAlignment { get; set; }
 
         public string SingleMethodTypeName { get; set; }
         public string SingleMethodName { get; set; }
@@ -174,9 +176,21 @@ namespace ILCompiler
                 { 
                     Argument = new Argument<int>(() => Environment.ProcessorCount)
                 },
+                new Option(new[] { "--custom-pe-section-alignment" }, SR.CustomPESectionAlignmentOption)
+                { 
+                    Argument = new Argument<int?>()
+                },
                 new Option(new[] { "--map" }, SR.MapFileOption)
                 {
                     Argument = new Argument<bool>()
+                },
+                new Option(new[] { "--method-layout" }, SR.MethodLayoutOption)
+                {
+                    Argument = new Argument<ReadyToRunMethodLayoutAlgorithm>()
+                },
+                new Option(new[] { "--file-layout" }, SR.FileLayoutOption)
+                {
+                    Argument = new Argument<ReadyToRunFileLayoutAlgorithm>()
                 },
             };
         }

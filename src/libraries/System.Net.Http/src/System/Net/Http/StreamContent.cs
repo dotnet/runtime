@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ namespace System.Net.Http
 {
     public class StreamContent : HttpContent
     {
-        private Stream _content = null!; // Initialized in helper
+        private Stream _content;
         private int _bufferSize;
         private bool _contentConsumed;
         private long _start;
@@ -41,6 +42,7 @@ namespace System.Net.Http
             InitializeContent(content, bufferSize);
         }
 
+        [MemberNotNull(nameof(_content))]
         private void InitializeContent(Stream content, int bufferSize)
         {
             _content = content;

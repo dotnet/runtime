@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Runtime.InteropServices;
-using System.Xml.Linq;
 
 namespace System
 {
@@ -32,16 +32,14 @@ namespace System
         public static bool IsFedora => IsDistroAndVersion("fedora");
 
         // OSX family
+        public static bool IsOSXLike =>
+            RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")) ||
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
+            RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNotOSX => !IsOSX;
-        public static Version OSXVersion => IsOSX ?
-            ToVersion(Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystemVersion) :
-            throw new PlatformNotSupportedException();
-        private static Lazy<Version> m_osxProductVersion = new Lazy<Version>(GetOSXProductVersion);
-        public static bool IsMacOsHighSierraOrHigher => IsOSX && (m_osxProductVersion.Value.Major > 10 || (m_osxProductVersion.Value.Major == 10 && m_osxProductVersion.Value.Minor >= 13));
-        public static bool IsNotMacOsHighSierraOrHigher => !IsMacOsHighSierraOrHigher;
-        public static bool IsMacOsMojaveOrHigher => IsOSX && (m_osxProductVersion.Value.Major > 10 || (m_osxProductVersion.Value.Major == 10 && m_osxProductVersion.Value.Minor >= 14));
-        public static bool IsMacOsCatalinaOrHigher => IsOSX && (m_osxProductVersion.Value.Major > 10 || (m_osxProductVersion.Value.Major == 10 && m_osxProductVersion.Value.Minor >= 15));
+        public static bool IsMacOsMojaveOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 14);
+        public static bool IsMacOsCatalinaOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 15);
 
         // RedHat family covers RedHat and CentOS
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
@@ -54,7 +52,7 @@ namespace System
             libc.geteuid() == 0 :
             throw new PlatformNotSupportedException();
 
-        public static Version OpenSslVersion => !IsOSX && !IsWindows ?
+        public static Version OpenSslVersion => !IsOSXLike && !IsWindows ?
             GetOpenSslVersion() :
             throw new PlatformNotSupportedException();
 
@@ -106,56 +104,6 @@ namespace System
             }
         }
 
-        private static Version GetOSXProductVersion()
-        {
-            if (IsOSX)
-            {
-                try
-                {
-                    // <plist version="1.0">
-                    // <dict>
-                    //         <key>ProductBuildVersion</key>
-                    //         <string>17A330h</string>
-                    //         <key>ProductCopyright</key>
-                    //         <string>1983-2017 Apple Inc.</string>
-                    //         <key>ProductName</key>
-                    //         <string>Mac OS X</string>
-                    //         <key>ProductUserVisibleVersion</key>
-                    //         <string>10.13</string>
-                    //         <key>ProductVersion</key>
-                    //         <string>10.13</string>
-                    // </dict>
-                    // </plist>
-
-                    XElement dict = XDocument.Load("/System/Library/CoreServices/SystemVersion.plist").Root.Element("dict");
-                    if (dict != null)
-                    {
-                        foreach (XElement key in dict.Elements("key"))
-                        {
-                            if ("ProductVersion".Equals(key.Value))
-                            {
-                                XElement stringElement = key.NextNode as XElement;
-                                if (stringElement != null && stringElement.Name.LocalName.Equals("string"))
-                                {
-                                    string versionString = stringElement.Value;
-                                    if (versionString != null)
-                                    {
-                                        return Version.Parse(versionString);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                catch
-                {
-                }
-            }
-
-            // In case of exception, couldn't get the version or non osx
-            return new Version(0, 0, 0);
-        }
-
         private static Version s_opensslVersion;
         private static Version GetOpenSslVersion()
         {
@@ -204,11 +152,71 @@ namespace System
             }
         }
 
-        private static DistroInfo GetDistroInfo() => new DistroInfo()
+        private static DistroInfo GetDistroInfo()
         {
-            Id = Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystem,
-            VersionId = ToVersion(Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystemVersion)
-        };
+            DistroInfo result = new DistroInfo();
+
+            if (IsFreeBSD)
+            {
+                result.Id = "FreeBSD";
+                // example:
+                // FreeBSD 11.0-RELEASE-p1 FreeBSD 11.0-RELEASE-p1 #0 r306420: Thu Sep 29 01:43:23 UTC 2016     root@releng2.nyi.freebsd.org:/usr/obj/usr/src/sys/GENERIC
+                // What we want is major release as minor releases should be compatible.
+                result.VersionId = ToVersion(RuntimeInformation.OSDescription.Split()[1].Split('.')[0]);
+            }
+            else if (IsIllumos)
+            {
+                // examples:
+                //   on OmniOS
+                //       SunOS 5.11 omnios-r151018-95eaa7e
+                //   on OpenIndiana Hipster:
+                //       SunOS 5.11 illumos-63878f749f
+                //   on SmartOS:
+                //       SunOS 5.11 joyent_20200408T231825Z
+                var versionDescription = RuntimeInformation.OSDescription.Split(' ')[2];
+                switch (versionDescription)
+                {
+                    case string version when version.StartsWith("omnios"):
+                        result.Id = "OmniOS";
+                        result.VersionId = ToVersion(version.Substring("omnios-r".Length, 2)); // e.g. 15
+                        break;
+                    case string version when version.StartsWith("joyent"):
+                        result.Id = "SmartOS";
+                        result.VersionId = ToVersion(version.Substring("joyent_".Length, 4)); // e.g. 2020
+                        break;
+                    case string version when version.StartsWith("illumos"):
+                        result.Id = "OpenIndiana";
+                        // version-less
+                        break;
+                }
+            }
+            else if (IsSolaris)
+            {
+                // example:
+                //   SunOS 5.11 11.3
+                result.Id = "Solaris";
+                result.VersionId = ToVersion(RuntimeInformation.OSDescription.Split(' ')[2]); // e.g. 11.3
+            }
+            else if (File.Exists("/etc/os-release"))
+            {
+                foreach (string line in File.ReadAllLines("/etc/os-release"))
+                {
+                    if (line.StartsWith("ID=", StringComparison.Ordinal))
+                    {
+                        result.Id = line.Substring(3).Trim('"', '\'');
+                    }
+                    else if (line.StartsWith("VERSION_ID=", StringComparison.Ordinal))
+                    {
+                        result.VersionId = ToVersion(line.Substring(11).Trim('"', '\''));
+                    }
+                }
+            }
+
+            result.Id ??= "Linux";
+            result.VersionId ??= ToVersion(string.Empty);
+
+            return result;
+        }
 
         private static bool IsRedHatFamilyAndVersion(int major = -1, int minor = -1, int build = -1, int revision = -1)
         {

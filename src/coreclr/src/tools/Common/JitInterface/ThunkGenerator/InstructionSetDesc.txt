@@ -50,6 +50,7 @@ instructionset     ,X86   ,Popcnt    ,        ,15 ,POPCNT   ,popcnt
 implication        ,X86   ,POPCNT    ,SSE42
 instructionset     ,X86   ,          ,        ,   ,Vector128,
 instructionset     ,X86   ,          ,        ,   ,Vector256,
+implication        ,X86   ,Vector256 ,AVX
 
 ; Definition of X64 instruction sets (Define )
 definearch         ,X64   ,64Bit     ,X64

@@ -14,11 +14,12 @@
     <OutputPath>$(BinDir)</OutputPath>
     <Platforms>AnyCPU;x64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Reflection.Metadata" Version="1.6.0" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.7.0" />
+    <PackageReference Include="System.Reflection.Metadata" Version="1.8.1" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.7.1" />
   </ItemGroup>
 
   <ItemGroup>

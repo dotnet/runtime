@@ -2,7 +2,7 @@
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/core/sdk:3.0.100-buster
 FROM $SDK_BASE_IMAGE as target
 
-ARG TESTHOST_LOCATION=./artifacts/bin/testhost
+ARG TESTHOST_LOCATION=/repo/artifacts/bin/testhost
 ARG TFM=netcoreapp5.0
 ARG OS=Linux
 ARG ARCH=x64

@@ -634,7 +634,7 @@ namespace Internal.JitInterface
         CORINFO_FLG_ARRAY = 0x00080000, // class is an array class (initialized differently)
         CORINFO_FLG_OVERLAPPING_FIELDS = 0x00100000, // struct or class has fields that overlap (aka union)
         CORINFO_FLG_INTERFACE = 0x00200000, // it is an interface
-        // CORINFO_FLG_UNUSED = 0x00400000,
+        CORINFO_FLG_DONT_PROMOTE = 0x00400000, // don't try to promote fieds of types outside of AOT compilation version bubble
         CORINFO_FLG_CUSTOMLAYOUT = 0x00800000, // does this struct have custom layout?
         CORINFO_FLG_CONTAINS_GC_PTR = 0x01000000, // does the class contain a gc ptr ?
         CORINFO_FLG_DELEGATE = 0x02000000, // is this a subclass of delegate or multicast delegate ?
@@ -746,6 +746,17 @@ namespace Internal.JitInterface
         CORINFO_HANDLETYPE_CLASS,
         CORINFO_HANDLETYPE_METHOD,
         CORINFO_HANDLETYPE_FIELD
+    }
+
+    // Enum used for HFA type recognition.
+    // Supported across architectures, so that it can be used in altjits and cross-compilation.
+    public enum CorInfoHFAElemType
+    {
+        CORINFO_HFA_ELEM_NONE,
+        CORINFO_HFA_ELEM_FLOAT,
+        CORINFO_HFA_ELEM_DOUBLE,
+        CORINFO_HFA_ELEM_VECTOR64,
+        CORINFO_HFA_ELEM_VECTOR128,
     }
 
     /* data to optimize delegate construction */

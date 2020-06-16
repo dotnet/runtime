@@ -168,13 +168,6 @@ namespace Generics
         /* in */  PTR_VOID pExactGenericArgsToken,
         /* out*/  TypeHandle *pSpecificClass,
         /* out*/  MethodDesc** pSpecificMethod);
-
-    inline void DetermineCCWTemplateAndGUIDPresenceOnNonCanonicalMethodTable(
-        // Input
-        MethodTable *pOldMT,
-        BOOL fNewMTContainsGenericVariables,
-        // Output
-        BOOL *pfHasGuidInfo, BOOL *pfHasCCWTemplate);
 };
 
 #endif

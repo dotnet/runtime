@@ -87,40 +87,52 @@ get_pe_debug_info (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *
 				   int *ppdb_uncompressed_size, int *ppdb_compressed_size)
 {
 	MonoPEDirEntry *debug_dir_entry;
-	ImageDebugDirectory *debug_dir;
+	ImageDebugDirectory debug_dir;
 	int idx;
 	gboolean guid_found = FALSE;
+	guint8 *data;
 
 	*ppdb_data = NULL;
 
-	debug_dir_entry = &image->image_info->cli_header.datadir.pe_debug;
+	debug_dir_entry = (MonoPEDirEntry *) &image->image_info->cli_header.datadir.pe_debug;
 	if (!debug_dir_entry->size)
 		return FALSE;
 
 	int offset = mono_cli_rva_image_map (image, debug_dir_entry->rva);
 	for (idx = 0; idx < debug_dir_entry->size / sizeof (ImageDebugDirectory); ++idx) {
-		debug_dir = (ImageDebugDirectory*)(image->raw_data + offset) + idx;
-		if (debug_dir->type == DEBUG_DIR_ENTRY_CODEVIEW && debug_dir->major_version == 0x100 && debug_dir->minor_version == 0x504d) {
+		data = (guint8 *) ((ImageDebugDirectory *) (image->raw_data + offset) + idx);
+		debug_dir.characteristics = read32(data);
+		debug_dir.time_date_stamp = read32(data + 4);
+		debug_dir.major_version   = read16(data + 8);
+		debug_dir.minor_version   = read16(data + 10);
+		debug_dir.type            = read32(data + 12);
+		debug_dir.size_of_data    = read32(data + 16);
+		debug_dir.address         = read32(data + 20);
+		debug_dir.pointer         = read32(data + 24);
+		
+		if (debug_dir.type == DEBUG_DIR_ENTRY_CODEVIEW && debug_dir.major_version == 0x100 && debug_dir.minor_version == 0x504d) {
 			/* This is a 'CODEVIEW' debug directory */
-			CodeviewDebugDirectory *dir = (CodeviewDebugDirectory*)(image->raw_data + debug_dir->pointer);
+			CodeviewDebugDirectory dir;
+			data  = (guint8 *) (image->raw_data + debug_dir.pointer);
+			dir.signature = read32(data);
 
-			if (dir->signature == 0x53445352) {
-				memcpy (out_guid, dir->guid, 16);
-				*out_age = dir->age;
-				*out_timestamp = debug_dir->time_date_stamp;
+			if (dir.signature == 0x53445352) {
+				memcpy (out_guid, data + 4, 16);
+				*out_age = read32(data + 20);
+				*out_timestamp = debug_dir.time_date_stamp;
 				guid_found = TRUE;
 			}
 		}
-		if (debug_dir->type == DEBUG_DIR_ENTRY_PPDB && debug_dir->major_version >= 0x100 && debug_dir->minor_version == 0x100) {
+		if (debug_dir.type == DEBUG_DIR_ENTRY_PPDB && debug_dir.major_version >= 0x100 && debug_dir.minor_version == 0x100) {
 			/* Embedded PPDB blob */
 			/* See src/System.Reflection.Metadata/src/System/Reflection/PortableExecutable/PEReader.EmbeddedPortablePdb.cs in corefx */
-			guint8 *data = (guint8*)(image->raw_data + debug_dir->pointer);
+			data = (guint8*)(image->raw_data + debug_dir.pointer);
 			guint32 magic = read32 (data);
 			g_assert (magic == EMBEDDED_PPDB_MAGIC);
 			guint32 size = read32 (data + 4);
 			*ppdb_data = data + 8;
 			*ppdb_uncompressed_size = size;
-			*ppdb_compressed_size = debug_dir->size_of_data - 8;
+			*ppdb_compressed_size = debug_dir.size_of_data - 8;
 		}
 	}
 	return guid_found;
@@ -156,7 +168,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	MonoImageOpenStatus status;
 	guint8 pe_guid [16];
 	gint32 pe_age;
-	gint32 pe_timestamp;
+	gint32 pe_timestamp, pdb_timestamp;
 	guint8 *ppdb_data = NULL;
 	guint8 *to_free = NULL;
 	int ppdb_size = 0, ppdb_compressed_size = 0;
@@ -230,7 +242,8 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	g_assert (pdb_stream);
 
 	/* The pdb id is a concentation of the pe guid and the timestamp */
-	if (memcmp (pe_guid, pdb_stream->guid, 16) != 0 || memcmp (&pe_timestamp, pdb_stream->guid + 16, 4) != 0) {
+	pdb_timestamp = read32(pdb_stream->guid + 16);
+	if (memcmp (pe_guid, pdb_stream->guid, 16) != 0 || pe_timestamp != pdb_timestamp) {
 		g_warning ("Symbol file %s doesn't match image %s", ppdb_image->name,
 				   image->name);
 		mono_image_close (ppdb_image);
@@ -484,7 +497,7 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 	if (source_files)
 		sindexes = g_ptr_array_new ();
 
-	if (!method->token)
+	if (!method->token || tables [MONO_TABLE_METHODBODY].rows == 0)
 		return;
 
 	method_idx = mono_metadata_token_index (method->token);

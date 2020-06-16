@@ -14,7 +14,7 @@ namespace System.Tests
         public static void Ctor_Empty()
         {
             var exception = new NotSupportedException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_NOTSUPPORTED, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_NOTSUPPORTED, validateMessage: false);
         }
 
         [Fact]
@@ -22,7 +22,7 @@ namespace System.Tests
         {
             string message = "not supported";
             var exception = new NotSupportedException(message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_NOTSUPPORTED, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_NOTSUPPORTED, message: message);
         }
 
         [Fact]
@@ -31,7 +31,7 @@ namespace System.Tests
             string message = "not supported";
             var innerException = new Exception("Inner exception");
             var exception = new NotSupportedException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_NOTSUPPORTED, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_NOTSUPPORTED, innerException: innerException, message: message);
         }
     }
 }

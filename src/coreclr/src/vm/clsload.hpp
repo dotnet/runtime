@@ -494,7 +494,6 @@ class ClassLoader
     friend class Assembly;
     friend class Module;
     friend class InstantiatedMethodDesc;
-    friend class CLRPrivTypeCacheWinRT;
 
     // the following two classes are friends because they will call LoadTypeHandleForTypeKey by token directly
     friend class COMDynamicWrite;
@@ -760,9 +759,7 @@ private:
 
     VOID AddAvailableClassHaveLock(Module *          pModule,
                                    mdTypeDef         classdef,
-                                   AllocMemTracker * pamTracker,
-                                   LPCSTR            szWinRtNamespacePrefix,
-                                   DWORD             cchWinRtNamespacePrefix);
+                                   AllocMemTracker * pamTracker);
 
     VOID AddExportedTypeDontHaveLock(Module *pManifestModule,
                                      mdExportedType cl,
@@ -969,9 +966,17 @@ private:
 
     // Phase CLASS_LOAD_EXACTPARENTS of class loading
     // Load exact parents and interfaces and dependent structures (generics dictionary, vtable fixes)
-    static void LoadExactParents(MethodTable *pMT);
+    static void LoadExactParents(MethodTable* pMT);
 
     static void LoadExactParentAndInterfacesTransitively(MethodTable *pMT);
+
+    static void ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT);
+
+    static bool IsCompatibleWith(TypeHandle hType1, TypeHandle hType2);
+    static CorElementType GetReducedTypeElementType(TypeHandle hType);
+    static CorElementType GetVerificationTypeElementType(TypeHandle hType);
+    static bool AreVerificationTypesEqual(TypeHandle hType1, TypeHandle hType2);
+    static bool IsMethodSignatureCompatibleWith(FnPtrTypeDesc* fn1TD, FnPtrTypeDesc* fn2TD);
 
     // Create a non-canonical instantiation of a generic type based off the canonical instantiation
     // (For example, MethodTable for List<string> is based on the MethodTable for List<__Canon>)

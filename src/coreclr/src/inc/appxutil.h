@@ -14,8 +14,6 @@
 
 //---------------------------------------------------------------------------------------------
 // Forward declarations
-template <typename T>
-class NewArrayHolder;
 BOOL WinRTSupported();
 
 

@@ -10765,7 +10765,12 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Check that the offset is properly aligned (i.e. the ddd in [ddd])
-        assert((emitChkAlign == false) || (ins == INS_lea) || (((size_t)addr & (byteSize - 1)) == 0));
+        // When SMALL_CODE is set, we only expect 4-byte alignment, otherwise
+        // we expect the same alignment as the size of the constant.
+
+        assert((emitChkAlign == false) || (ins == INS_lea) ||
+               ((emitComp->compCodeOpt() == Compiler::SMALL_CODE) && (((size_t)addr & 3) == 0)) ||
+               (((size_t)addr & (byteSize - 1)) == 0));
     }
     else
     {

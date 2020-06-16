@@ -215,8 +215,9 @@ namespace Internal.Cryptography.Pal
 
             IntPtr privateKeyPtr;
 
-            // If the certificate has a key handle instead of a key prov info, return the
+            // If the certificate has a key handle without a key prov info, return the
             // ephemeral key
+            if (!certificateContext.HasPersistedPrivateKey)
             {
                 int cbData = IntPtr.Size;
 

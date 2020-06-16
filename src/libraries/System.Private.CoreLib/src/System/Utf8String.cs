@@ -13,20 +13,6 @@ using System.Text.Unicode;
 using Internal.Runtime.CompilerServices;
 #endif
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if SYSTEM_PRIVATE_CORELIB
-#if TARGET_64BIT
-using nint = System.Int64;
-using nuint = System.UInt64;
-#else
-using nint = System.Int32;
-using nuint = System.UInt32;
-#endif
-#else
-using nint = System.Int64; // https://github.com/dotnet/runtime/issues/33575 - use long/ulong outside of corelib until the compiler supports it
-using nuint = System.UInt64;
-#endif
-
 namespace System
 {
     /// <summary>
@@ -133,7 +119,7 @@ namespace System
 #if SYSTEM_PRIVATE_CORELIB
             return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), index);
 #else
-            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), (IntPtr)index);
+            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), (nint)index);
 #endif
         }
 

@@ -5,8 +5,8 @@ parameters:
   osSubgroup: ''
   crossrootfsDir: ''
   framework: ''
-  isOfficialBuild: false
   isOfficialAllConfigurations: false
+  isSourceBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
   timeoutInMinutes: 150
@@ -17,6 +17,7 @@ parameters:
   variables: {}
   name: ''
   displayName: ''
+  testDisplayName: ''
   testScope: ''
   pool: ''
 
@@ -37,7 +38,6 @@ jobs:
       pool: ${{ parameters.pool }}
       variables:
         - _buildScriptFileName: build
-        - _BuildConfig: ${{ parameters.buildConfig }}
 
         - _msbuildCommonParameters: ''
         # rename this variable, due to collision with build-native.proj
@@ -91,9 +91,12 @@ jobs:
           - _runtimeConfigurationArg: -rc ${{ parameters.liveRuntimeBuildConfig }}
           # Download full product dependencies for mono or test
           - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
-            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
+            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
             - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
-          - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
+          - ${{ if eq(parameters.testDisplayName, '') }}:
+            - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
+          - ${{ if ne(parameters.testDisplayName, '') }}:
+            - _testRunNamePrefixSuffix: ${{ parameters.testDisplayName }}
 
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -105,6 +108,9 @@ jobs:
 
         - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
+
+        # we need to override this value to support build-coreclr-and-libraries-job.yml
+        - _BuildConfig: ${{ parameters.buildConfig }}
 
       dependsOn:
       - checkout

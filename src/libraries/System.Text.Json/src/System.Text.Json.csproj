@@ -14,14 +14,12 @@
   <PropertyGroup>
     <!-- For the inbox library (that is shipping with the product), this should always be true. -->
     <!-- BUILDING_INBOX_LIBRARY is only false when building the netstandard compatible NuGet package. -->
-    <DefineConstants Condition="$(TargetFramework.StartsWith('netcoreapp'))">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
-    <NoWarn Condition="!$(TargetFramework.StartsWith('netcoreapp'))">$(NoWarn);nullable</NoWarn>   
+    <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
+    <NoWarn Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs"
-             Link="Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs" />
-    <Compile Include="$(CommonPath)System\HexConverter.cs"
-             Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs" Link="Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="System\Text\Json\BitStack.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.DbRow.cs" />
@@ -125,7 +123,6 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt32Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt64Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UriConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\DefaultReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.Cache.cs" />
@@ -156,18 +153,22 @@
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Stream.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.String.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Utf8JsonWriter.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializerDefaults.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Converters.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonStringEnumConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonValueConverterOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\MemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\MetadataPropertyName.cs" />
     <Compile Include="System\Text\Json\Serialization\ParameterRef.cs" />
     <Compile Include="System\Text\Json\Serialization\PooledByteBufferWriter.cs" />
+    <Compile Include="System\Text\Json\Serialization\PreserveReferenceHandler.cs" />
+    <Compile Include="System\Text\Json\Serialization\PreserveReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\PropertyRef.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStack.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStackFrame.cs" />
-    <Compile Include="System\Text\Json\Serialization\ReferenceHandling.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReferenceHandler.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReferenceHandlerOfT.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\ReflectionEmitMemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\ReflectionMemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\StackFrameObjectState.cs" />
@@ -211,11 +212,10 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.String.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' or '$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <!-- Common or Common-branched source files -->
-    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs"
-             Link="Common\System\Buffers\ArrayBufferWriter.cs" />
+    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -223,11 +223,10 @@
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' or '$(TargetsNetFx)' == 'true' or '$(TargetFramework)' == 'netcoreapp3.0'">
-    <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs"
-             Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4')) or '$(TargetFramework)' == 'netcoreapp3.0'">
+    <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs" Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Reflection.Primitives" />

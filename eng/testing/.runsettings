@@ -4,7 +4,7 @@
     <!-- Timeout in ms, 5 minutes -->
     <TestSessionTimeout>300000</TestSessionTimeout>
     <!-- Directory for test run reports. E.g. trx, coverage etc. -->
-    <ResultsDirectory>.\</ResultsDirectory>
+    <ResultsDirectory>.\TestResults\</ResultsDirectory>
     <!-- Working directory for test invocation. Results directory can be relative to this. Used by IDEs. -->
     <SolutionDirectory>.\</SolutionDirectory>
     <!-- Degree of parallelization, spawns n test hosts to run tests. -->
@@ -25,16 +25,8 @@
   </RunConfiguration>
   <LoggerRunSettings>
     <Loggers>
-      <Logger uri="logger://Microsoft/TestPlatform/TrxLogger/v1">
-        <Configuration>
-          <LogFileName>testResults.trx</LogFileName>
-        </Configuration>
-      </Logger>
-      <Logger uri="logger://Microsoft/TestPlatform/HtmlLogger/v1">
-        <Configuration>
-          <LogFileName>testResults.html</LogFileName>
-        </Configuration>
-      </Logger>
+      <Logger friendlyName="trx" />
+      <Logger friendlyName="html" />
       <Logger friendlyName="console">
         <Configuration>
           <Verbosity>Minimal</Verbosity>
@@ -55,11 +47,7 @@
           <IncludeTestAssembly>false</IncludeTestAssembly>
         </Configuration>
       </DataCollector>
-      <DataCollector friendlyName="blame" enabled="true">
-        <Configuration>
-          <CollectDump CollectAlways="false" DumpType="mini" />
-        </Configuration>
-      </DataCollector>
+      <DataCollector friendlyName="blame" enabled="true" />
     </DataCollectors>
   </DataCollectionRunSettings>
 </RunSettings>

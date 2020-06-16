@@ -14,7 +14,7 @@ namespace System.Configuration.Tests
     /// </summary>
     public class CustomHostTests
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Does not apply to .NET Framework.")]
         public void FilePathIsPopulatedCorrectly()
         {

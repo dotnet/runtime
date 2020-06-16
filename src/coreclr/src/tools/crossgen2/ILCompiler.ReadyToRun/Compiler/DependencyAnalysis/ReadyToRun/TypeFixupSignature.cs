@@ -88,7 +88,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     ValueTypeShapeCharacteristics.Vector64Aggregate => CorElementType.ELEMENT_TYPE_R8,
                     // See MethodTable::GetHFAType
                     ValueTypeShapeCharacteristics.Vector128Aggregate => CorElementType.ELEMENT_TYPE_VALUETYPE,
-                    ValueTypeShapeCharacteristics.Vector256Aggregate => CorElementType.ELEMENT_TYPE_VALUETYPE,
                     _ => CorElementType.Invalid
                 };
                 dataBuilder.EmitUInt((uint)elementType);

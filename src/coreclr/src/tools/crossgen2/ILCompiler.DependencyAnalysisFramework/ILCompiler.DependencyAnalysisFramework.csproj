@@ -39,5 +39,24 @@
     <Compile Include="IDependencyNode.cs" />
     <Compile Include="NoLogStrategy.cs" />
     <Compile Include="PerfEventSource.cs" />
+    <Compile Include="..\..\Common\Sorting\ArrayAccessor.cs">
+      <Link>Sorting\ArrayAccessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Sorting\ICompareAsEqualAction.cs">
+      <Link>Sorting\ICompareAsEqualAction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Sorting\ISortableDataStructureAccessor.cs">
+      <Link>Sorting\ISortableDataStructureAccessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Sorting\ListAccessor.cs">
+      <Link>Sorting\ListAccessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Sorting\MergeSort.cs">
+      <Link>Sorting\MergeSort.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Sorting\MergeSortCore.cs">
+      <Link>Sorting\MergeSortCore.cs</Link>
+    </Compile>
+
   </ItemGroup>
 </Project>

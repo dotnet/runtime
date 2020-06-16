@@ -65,9 +65,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override readonly bool Equals(object? obj)
         {
-            if (!(obj is Vector2))
-                return false;
-            return Equals((Vector2)obj);
+            return (obj is Vector2 other) && Equals(other);
         }
 
         /// <summary>
@@ -207,9 +205,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Lerp(Vector2 value1, Vector2 value2, float amount)
         {
-            return new Vector2(
-                value1.X + (value2.X - value1.X) * amount,
-                value1.Y + (value2.Y - value1.Y) * amount);
+            return (value1 * (1.0f - amount)) + (value2 * amount);
         }
 
         /// <summary>

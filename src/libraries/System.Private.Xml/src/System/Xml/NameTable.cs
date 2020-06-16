@@ -103,7 +103,7 @@ namespace System.Xml
             // Compatibility check for len < 0, just throw the same exception as new string(key, start, len)
             if (len < 0)
             {
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(len));
             }
 
             int hashCode = ComputeHash32(key, start, len);

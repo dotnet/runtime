@@ -221,7 +221,10 @@ namespace System.Net.Http.Functional.Tests
             {
                 Assert.Same(string.Empty, await client.GetStringAsync(CreateFakeUri()));
                 Assert.Same(Array.Empty<byte>(), await client.GetByteArrayAsync(CreateFakeUri()));
-                Assert.Same(Stream.Null, await client.GetStreamAsync(CreateFakeUri()));
+
+                Stream s = await client.GetStreamAsync(CreateFakeUri());
+                Assert.NotNull(s);
+                Assert.Equal(-1, s.ReadByte());
             }
         }
 
@@ -681,7 +684,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.NotNull(proxy);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DefaultProxy_SetGet_Roundtrips()
         {
             RemoteExecutor.Invoke(() =>
@@ -692,7 +695,7 @@ namespace System.Net.Http.Functional.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DefaultProxy_Credentials_SetGet_Roundtrips()
         {
             RemoteExecutor.Invoke(() =>

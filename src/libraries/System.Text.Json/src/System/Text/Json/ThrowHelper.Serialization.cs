@@ -163,9 +163,9 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_SerializerDictionaryKeyNull(Type policyType)
+        public static void ThrowInvalidOperationException_NamingPolicyReturnNull(JsonNamingPolicy namingPolicy)
         {
-            throw new InvalidOperationException(SR.Format(SR.SerializerDictionaryKeyNull, policyType));
+            throw new InvalidOperationException(SR.Format(SR.NamingPolicyReturnNull, namingPolicy));
         }
 
         [DoesNotReturn]
@@ -509,11 +509,8 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataDuplicateIdFound(string id, ref ReadStack state)
+        public static void ThrowJsonException_MetadataDuplicateIdFound(string id)
         {
-            // Set so JsonPath throws exception with $id in it.
-            state.Current.JsonPropertyName = JsonSerializer.s_metadataId.EncodedUtf8Bytes.ToArray();
-
             ThrowJsonException(SR.Format(SR.MetadataDuplicateIdFound, id));
         }
 

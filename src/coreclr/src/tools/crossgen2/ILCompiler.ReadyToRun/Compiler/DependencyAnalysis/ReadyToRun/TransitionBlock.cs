@@ -492,7 +492,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfX8Register;
 
-            public override bool IsRetBuffPassedAsFirstArg => true;
+            public override bool IsRetBuffPassedAsFirstArg => false;
         }
     }
 }

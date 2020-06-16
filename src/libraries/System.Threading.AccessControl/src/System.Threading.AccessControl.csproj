@@ -13,7 +13,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs"
              Link="Interop\Windows\Kernel32\Interop.MAX_PATH.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
              Link="Common\Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
@@ -42,7 +42,7 @@
     <Compile Include="System\Threading\SemaphoreAcl.cs" />
     <Compile Include="System\Threading\ThreadingAclExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Compile Include="System\Threading\EventWaitHandleAcl.net46.cs" />
@@ -50,7 +50,7 @@
     <Compile Include="System\Threading\SemaphoreAcl.net46.cs" />
     <Compile Include="System\Threading\ThreadingAclExtensions.net46.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Reference Include="System.Memory" />
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Principal.Windows" />

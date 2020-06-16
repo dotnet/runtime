@@ -604,7 +604,7 @@ namespace System.Diagnostics.Tests
             Assert.True(IdIsW3CFormat(activity.Id));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_W3CWhenDefaultIsW3C()
         {
             RemoteExecutor.Invoke(() =>
@@ -617,7 +617,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_HierarchicalWhenDefaultIsW3CButHierarchicalParentId()
         {
             RemoteExecutor.Invoke(() =>
@@ -642,7 +642,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("0000000000000000", activity.SpanId.ToHexString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_W3CWhenForcedAndHierarchicalParentId()
         {
             RemoteExecutor.Invoke(() =>
@@ -763,7 +763,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityTraceFlags.None, activity.ActivityTraceFlags);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_W3CForcedOverridesParentActivityIdFormat()
         {
             RemoteExecutor.Invoke(() =>
@@ -841,7 +841,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetIdFormat_OverridesForcedW3C()
         {
             RemoteExecutor.Invoke(() =>
@@ -855,7 +855,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetIdFormat_OverridesForcedHierarchical()
         {
             RemoteExecutor.Invoke(() =>
@@ -936,7 +936,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TraceIdBeforeStart_NoParent()
         {
             RemoteExecutor.Invoke(() =>

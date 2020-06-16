@@ -24,7 +24,7 @@ namespace System.Net
         private ContextFlagsPal _contextFlags;
 
         private bool _isCompleted;
-        private string _package = null!;
+        private string _package;
         private string? _lastProtocolName;
         private string? _protocolName;
         private string? _clientSpecifiedSpn;
@@ -98,6 +98,7 @@ namespace System.Net
             Initialize(isServer, package, credential, spn, requestedContextFlags, channelBinding);
         }
 
+        [MemberNotNull(nameof(_package))]
         private void Initialize(bool isServer, string package, NetworkCredential credential, string? spn, ContextFlagsPal requestedContextFlags, ChannelBinding? channelBinding)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, package, spn, requestedContextFlags);

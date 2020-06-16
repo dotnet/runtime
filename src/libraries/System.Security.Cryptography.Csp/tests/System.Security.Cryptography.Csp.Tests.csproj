@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="CreateTransformCompat.cs" />
     <Compile Include="CspParametersTests.cs" />
     <Compile Include="RSAImportExportCspBlobTests.cs" />
@@ -28,8 +29,6 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\TestData.cs" />
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
              Link="CommonTest\System\IO\PositionValueStream.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="AesCryptoServiceProviderTests.cs" />
     <Compile Include="DESCryptoServiceProviderProvider.cs" />
     <Compile Include="DESCryptoServiceProviderTests.cs" />

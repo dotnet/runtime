@@ -11,10 +11,10 @@
   <ItemGroup>
     <Compile Include="System.IO.FileSystem.AccessControl.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <ProjectReference Include="..\..\System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
     <ProjectReference Include="..\..\System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
   </ItemGroup>

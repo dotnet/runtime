@@ -9,7 +9,7 @@
   <ItemGroup>
     <Compile Include="System.Data.Odbc.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Data" />

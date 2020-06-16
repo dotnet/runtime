@@ -76,6 +76,7 @@
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm64' and '$(BuildArchitecture)' != 'arm64'">x64</CoreCLRCrossTargetComponentDirName>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsWindows)' == 'true'">x86</CoreCLRCrossTargetComponentDirName>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
+    <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'armel' and '$(BuildArchitecture)' != 'armel' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
   </PropertyGroup>
 
   <Target Name="ResolveRuntimeFilesFromLocalBuild">
@@ -133,9 +134,9 @@
         <IsNative>true</IsNative>
       </RuntimeFiles>
 
-      <MonoCrossFiles Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'"
+      <MonoCrossFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="$(MonoArtifactsPath)\cross\*.*" />
-      <MonoIncludeFiles Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'"
+      <MonoIncludeFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="$(MonoArtifactsPath)\include\**\*.*" />
     </ItemGroup>
 
@@ -173,6 +174,8 @@
         $(LibrariesAllBinArtifactsPath)*.dll;
         $(LibrariesAllBinArtifactsPath)*.pdb"
         IsNative="" />
+      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(IncludeOOBLibraries)' != 'true'"
+                                          Include="$(LibrariesNativeArtifactsPath)libSystem.IO.Ports.Native.*" />
       <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)*.dll;
         $(LibrariesNativeArtifactsPath)*.dylib;
@@ -181,6 +184,12 @@
         $(LibrariesNativeArtifactsPath)*.dbg;
         $(LibrariesNativeArtifactsPath)*.dwarf;
         $(LibrariesNativeArtifactsPath)*.pdb"
+        IsNative="true"
+        Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+                             Include="
+        $(LibrariesNativeArtifactsPath)dotnet.js;
+        $(LibrariesNativeArtifactsPath)dotnet.wasm;"
         IsNative="true" />
     </ItemGroup>
 

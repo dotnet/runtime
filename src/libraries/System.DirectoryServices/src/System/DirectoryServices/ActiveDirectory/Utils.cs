@@ -689,7 +689,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                 }
                 NativeMethods.DsUnBind dsUnBind = (NativeMethods.DsUnBind)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(NativeMethods.DsUnBind));
-                int result = dsUnBind(ref dsHandle);
+                _ = dsUnBind(ref dsHandle);
             }
         }
 
@@ -782,7 +782,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw ExceptionHelper.GetExceptionFromCOMException(context, e);
             }
 
-            string crossRefDN = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DistinguishedName);
+            _ = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DistinguishedName);
             return res.GetDirectoryEntry();
         }
 
@@ -1446,8 +1446,6 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
                     }
                 }
-
-                string[] propertiesToLoad2 = new string[5];
 
                 ADSearcher searcher2 = new ADSearcher(searchRootEntry, filter2, Array.Empty<string>(), SearchScope.Subtree);
                 SearchResultCollection resCol = null;

@@ -60,6 +60,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <semaphore.h>
 #include <stdint.h>
 #include <dlfcn.h>
+#include <limits.h>
 
 #ifdef __linux__
 #include <sys/syscall.h> // __NR_membarrier
@@ -3302,8 +3303,6 @@ Function:
 BOOL
 PROCCreateCrashDump(char** argv)
 {
-#if HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
-
     // Fork the core dump child process.
     pid_t childpid = fork();
 
@@ -3324,6 +3323,7 @@ PROCCreateCrashDump(char** argv)
     }
     else
     {
+#if HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
         // Gives the child process permission to use /proc/<pid>/mem and ptrace
         if (prctl(PR_SET_PTRACER, childpid, 0, 0, 0) == -1)
         {
@@ -3331,6 +3331,7 @@ PROCCreateCrashDump(char** argv)
             // supported but createdump works just fine.
             ERROR("PPROCCreateCrashDump: prctl() FAILED %d (%s)\n", errno, strerror(errno));
         }
+#endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
         // Parent waits until the child process is done
         int wstatus = 0;
         int result = waitpid(childpid, &wstatus, 0);
@@ -3342,7 +3343,6 @@ PROCCreateCrashDump(char** argv)
         }
         return !WIFEXITED(wstatus) || WEXITSTATUS(wstatus) == 0;
     }
-#endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
     return true;
 }
 
