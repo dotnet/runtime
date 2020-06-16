@@ -129,11 +129,6 @@
     <None Include="Resources\Misc\Signed.cmd" />
     <None Include="Resources\Misc\Signed.cs" />
     <EmbeddedResource Include="Resources\Misc\Signed.exe" />
-
-    <!-- We have some tests that open System.Reflection.Metadata.Tests.dll via File.OpenRead and create a 
-    PEReader from that stream. With this we tell our test infrastructure, to include this assembly as part
-    of our Browser Virtual File System to be able to find it at runtime -->
-    <WasmFilesToIncludeInFileSystem Include="$(AssemblyName).dll" TargetPath="%(Identity)" />
   </ItemGroup>
   <ItemGroup>
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->

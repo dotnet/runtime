@@ -114,16 +114,6 @@
     <ItemGroup>
       <AssemblySearchPaths Include="$(PublishDir)"/>
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
-
-      <!-- Extensibility point to specify binaries or assemblies that are built as part of the test assembly and that we read the files during tests
-      i.e System.Reflection.Metadata.Tests opens itself and inspects metadata using PEReader. 
-      
-      We check any items that the path is not fully qualified (relative paths) and we map them to local assets from the PublishDir. This way
-      we don't need to add a target (PublishDir value is modified in common targets) in test projects to get the right path to the asset. -->
-      <_filesToIncludeInFileSystem Include="@(WasmFilesToIncludeInFileSystem -> '$(PublishDir)%(Identity)')"
-                                   Condition="!$([System.IO.Path]::IsPathFullyQualified('%(WasmFilesToIncludeInFileSystem.Identity)'))" />
-      <_filesToIncludeInFileSystem Include="@(WasmFilesToIncludeInFileSystem)"
-                                   Condition="$([System.IO.Path]::IsPathFullyQualified('%(WasmFilesToIncludeInFileSystem.Identity)'))" />
     </ItemGroup>
 
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
@@ -133,7 +123,7 @@
       MainAssembly="$(PublishDir)WasmTestRunner.dll"
       MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
       ExtraAssemblies="$(PublishDir)$(AssemblyName).dll"
-      FilesToIncludeInFileSystem="@(_filesToIncludeInFileSystem)"
+      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       AssemblySearchPaths="@(AssemblySearchPaths)" />
   </Target>
 
