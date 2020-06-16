@@ -1266,6 +1266,9 @@ mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc, gboolea
 mono_bool
 mono_class_is_assignable_from_internal (MonoClass *klass, MonoClass *oklass);
 
+gboolean
+mono_type_byref_is_assignable_from (MonoType *type, MonoType *ctype);
+
 gboolean mono_is_corlib_image (MonoImage *image);
 
 MonoType*

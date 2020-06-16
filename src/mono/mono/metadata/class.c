@@ -3614,6 +3614,52 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
 	return FALSE;
 }
 
+static MonoType*
+mono_type_get_underlying_type_ignore_byref (MonoType *type)
+{
+	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass))
+		return mono_class_enum_basetype_internal (type->data.klass);
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class))
+		return mono_class_enum_basetype_internal (type->data.generic_class->container_class);
+	return type;
+}
+
+/**
+ * mono_type_byref_is_assignable_from:
+ * \param type The type assignee
+ * \param ctype The type being assigned
+ *
+ * Given two byref types, returns \c TRUE if values of the second type are assignable to locations of the first type.
+ *
+ *
+ */
+gboolean
+mono_type_byref_is_assignable_from (MonoType *type, MonoType *ctype)
+{
+	g_assert (type->byref);
+	g_assert (ctype->byref);
+	MonoType *t = mono_type_get_underlying_type_ignore_byref (type);
+	MonoType *ot = mono_type_get_underlying_type_ignore_byref (ctype);
+
+	MonoClass *klass = mono_class_from_mono_type_internal (t);
+	MonoClass *klassc = mono_class_from_mono_type_internal (ot);
+
+	if (mono_type_is_primitive (t)) {
+		return mono_type_is_primitive (ot) && m_class_get_instance_size (klass) == m_class_get_instance_size (klassc);
+	} else if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) {
+		return t->type == ot->type && t->data.generic_param->num == ot->data.generic_param->num;
+	} else if (t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR) {
+		return t->type == ot->type;
+	} else {
+		if (ot->type == MONO_TYPE_VAR || ot->type == MONO_TYPE_MVAR)
+			return FALSE;
+
+		if (m_class_is_valuetype (klass))
+			return klass == klassc;
+		return m_class_is_valuetype (klass) == m_class_is_valuetype (klassc) && klass == klassc;
+	}
+}
+
 /**
  * mono_class_is_assignable_from_internal:
  * \param klass the class to be assigned to
