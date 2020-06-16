@@ -161,10 +161,9 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter();
             Helpers.WriteValue(writer, value);
 
-            byte[] encoding = writer.Encode();
-            byte[] target = new byte[encoding.Length];
-
+            byte[] target = new byte[writer.BytesWritten];
             int bytesWritten = writer.Encode(target);
+            byte[] encoding = writer.Encode();
 
             Assert.Equal(encoding.Length, bytesWritten);
             Assert.Equal(encoding, target);

@@ -101,17 +101,16 @@ namespace System.Formats.Cbor.Tests
 
 #if CBOR_PROPERTY_TESTS
         [Property(Replay = ReplaySeed, MaxTest = MaxTests)]
-        public static void Roundtrip_ByteString(byte[]? input)
+        public static void Roundtrip_ByteString(byte[] input)
         {
 #else
         [Theory]
-        [InlineData(null)]
         [InlineData("")]
         [InlineData("01020304")]
         [InlineData("ffffffffffffffffffffffffffff")]
-        public static void Roundtrip_ByteString(string? hexInput)
+        public static void Roundtrip_ByteString(string hexInput)
         {
-            byte[]? input = hexInput?.HexToByteArray();
+            byte[] input = hexInput.HexToByteArray();
 #endif
             var writer = new CborWriter();
             writer.WriteByteString(input);
@@ -126,7 +125,6 @@ namespace System.Formats.Cbor.Tests
         [Property(Replay = ReplaySeed, MaxTest = MaxTests)]
 #else
         [Theory]
-        [InlineData(null)]
         [InlineData("")]
         [InlineData("a")]
         [InlineData("IETF")]
@@ -135,7 +133,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData("\u6c34")]
         [InlineData("\ud800\udd51")]
 #endif
-        public static void Roundtrip_TextString(string? input)
+        public static void Roundtrip_TextString(string input)
         {
             var writer = new CborWriter();
             writer.WriteTextString(input);
@@ -148,17 +146,16 @@ namespace System.Formats.Cbor.Tests
 
 #if CBOR_PROPERTY_TESTS
         [Property(Replay = ReplaySeed, MaxTest = MaxTests)]
-        public static void ByteString_Encoding_ShouldContainInputBytes(byte[]? input)
+        public static void ByteString_Encoding_ShouldContainInputBytes(byte[] input)
         {
 #else
         [Theory]
-        [InlineData(null)]
         [InlineData("")]
         [InlineData("01020304")]
         [InlineData("ffffffffffffffffffffffffffff")]
-        public static void ByteString_Encoding_ShouldContainInputBytes(string? hexInput)
+        public static void ByteString_Encoding_ShouldContainInputBytes(string hexInput)
         {
-            byte[]? input = hexInput?.HexToByteArray();
+            byte[] input = hexInput.HexToByteArray();
 #endif
             var writer = new CborWriter();
             writer.WriteByteString(input);

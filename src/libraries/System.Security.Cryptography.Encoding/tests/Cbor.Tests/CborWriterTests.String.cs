@@ -27,14 +27,10 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void WriteByteString_NullValue_HappyPath()
+        public static void WriteByteString_NullValue_ShouldThrowArgumentNullException()
         {
-            byte[]? input = null;
-            byte[]? expectedEncoding = "40".HexToByteArray();
-
             var writer = new CborWriter();
-            writer.WriteByteString(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
+            Assert.Throws<ArgumentNullException>(() => writer.WriteByteString(null!));
         }
 
         [Theory]
@@ -68,7 +64,6 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(null, "60")]
         [InlineData("", "60")]
         [InlineData("a", "6161")]
         [InlineData("IETF", "6449455446")]
@@ -108,6 +103,13 @@ namespace System.Formats.Cbor.Tests
             var writer = new CborWriter(convertIndefiniteLengthEncodings: true);
             Helpers.WriteChunkedTextString(writer, chunkInputs);
             AssertHelper.HexEqual(expectedEncoding, writer.Encode());
+        }
+
+        [Fact]
+        public static void WriteTextString_NullValue_ShouldThrowArgumentNullException()
+        {
+            var writer = new CborWriter();
+            Assert.Throws<ArgumentNullException>(() => writer.WriteTextString(null!));
         }
 
         [Theory]

@@ -20,23 +20,28 @@ namespace System.Formats.Cbor
         ///   Writes a buffer as a byte string encoding (major type 2).
         /// </summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="ArgumentException">
-        ///   The supplied string is not a valid UTF-8 encoding, which is not permitted under the current conformance mode.
+        /// <exception cref="ArgumentNullException">
+        ///   The provided value cannot be null.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
         ///   The written data is not accepted under the current conformance mode.
         /// </exception>
-        public void WriteByteString(byte[]? value) => WriteByteString(value.AsSpan());
+        public void WriteByteString(byte[] value)
+        {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            WriteByteString(value.AsSpan());
+        }
 
         /// <summary>
         ///   Writes a buffer as a byte string encoding (major type 2).
         /// </summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="ArgumentException">
-        ///   The supplied string is not a valid UTF-8 encoding, which is not permitted under the current conformance mode.
-        /// </exception>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
@@ -110,21 +115,38 @@ namespace System.Formats.Cbor
         ///   Writes a buffer as a UTF-8 string encoding (major type 3).
         /// </summary>
         /// <param name="value">The value to write.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   The provided value cannot be null.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The supplied string is not a valid UTF-8 encoding, which is not permitted under the current conformance mode.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance mode
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
-        public void WriteTextString(string? value) => WriteTextString(value.AsSpan());
+        public void WriteTextString(string value)
+        {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            WriteTextString(value.AsSpan());
+        }
 
         /// <summary>
         ///   Writes a buffer as a UTF-8 string encoding (major type 3).
         /// </summary>
         /// <param name="value">The value to write.</param>
+        /// <exception cref="ArgumentException">
+        ///   The supplied string is not a valid UTF-8 encoding, which is not permitted under the current conformance mode.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance mode
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         public void WriteTextString(ReadOnlySpan<char> value)
         {

@@ -206,7 +206,7 @@ namespace System.Formats.Cbor
 
             if (encoding.Length > destination.Length)
             {
-                throw new ArgumentException(SR.Cbor_Writer_DestinationBufferTooSmall, nameof(destination));
+                throw new ArgumentException(SR.Argument_EncodeDestinationTooSmall, nameof(destination));
             }
 
             encoding.CopyTo(destination);

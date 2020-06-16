@@ -332,7 +332,7 @@ namespace System.Formats.Cbor
                 type: _currentMajorType,
                 frameOffset: _frameOffset,
                 definiteLength: _definiteLength,
-                itemsWritten: _itemsRead,
+                itemsRead: _itemsRead,
                 currentKeyOffset: _currentKeyOffset,
                 previousKeyEncodingRange: _previousKeyEncodingRange,
                 keyEncodingRanges: _keyEncodingRanges
@@ -445,7 +445,7 @@ namespace System.Formats.Cbor
                 CborMajorType? type,
                 int frameOffset,
                 int? definiteLength,
-                int itemsWritten,
+                int itemsRead,
                 int? currentKeyOffset,
                 (int Offset, int Length)? previousKeyEncodingRange,
                 HashSet<(int Offset, int Length)>? keyEncodingRanges)
@@ -453,7 +453,7 @@ namespace System.Formats.Cbor
                 MajorType = type;
                 FrameOffset = frameOffset;
                 DefiniteLength = definiteLength;
-                ItemsWritten = itemsWritten;
+                ItemsRead = itemsRead;
 
                 CurrentKeyOffset = currentKeyOffset;
                 PreviousKeyEncodingRange = previousKeyEncodingRange;
@@ -463,7 +463,7 @@ namespace System.Formats.Cbor
             public CborMajorType? MajorType { get; }
             public int FrameOffset { get; }
             public int? DefiniteLength { get; }
-            public int ItemsWritten { get; }
+            public int ItemsRead { get; }
 
             public int? CurrentKeyOffset { get; }
             public (int Offset, int Length)? PreviousKeyEncodingRange { get; }
@@ -475,7 +475,7 @@ namespace System.Formats.Cbor
             _currentMajorType = frame.MajorType;
             _frameOffset = frame.FrameOffset;
             _definiteLength = frame.DefiniteLength;
-            _itemsRead = frame.ItemsWritten;
+            _itemsRead = frame.ItemsRead;
             _currentKeyOffset = frame.CurrentKeyOffset;
             _previousKeyEncodingRange = frame.PreviousKeyEncodingRange;
             _keyEncodingRanges = frame.KeyEncodingRanges;
@@ -495,7 +495,7 @@ namespace System.Formats.Cbor
                 int depth,
                 int offset,
                 int frameOffset,
-                int itemsWritten,
+                int itemsRead,
                 int? currentKeyOffset,
                 (int Offset, int Length)? previousKeyEncodingRange)
 
@@ -503,7 +503,7 @@ namespace System.Formats.Cbor
                 Depth = depth;
                 Offset = offset;
                 FrameOffset = frameOffset;
-                ItemsWritten = itemsWritten;
+                ItemsRead = itemsRead;
                 CurrentKeyOffset = currentKeyOffset;
                 PreviousKeyEncodingRange = previousKeyEncodingRange;
             }
@@ -511,7 +511,7 @@ namespace System.Formats.Cbor
             public int Depth { get; }
             public int Offset { get; }
             public int FrameOffset { get; }
-            public int ItemsWritten { get; }
+            public int ItemsRead { get; }
 
             public int? CurrentKeyOffset { get; }
             public (int Offset, int Length)? PreviousKeyEncodingRange { get; }
@@ -523,7 +523,7 @@ namespace System.Formats.Cbor
                 depth: CurrentDepth,
                 offset: _offset,
                 frameOffset: _frameOffset,
-                itemsWritten: _itemsRead,
+                itemsRead: _itemsRead,
                 currentKeyOffset: _currentKeyOffset,
                 previousKeyEncodingRange: _previousKeyEncodingRange);
         }
@@ -558,14 +558,14 @@ namespace System.Formats.Cbor
 
             // Remove any key encodings added after the current checkpoint.
             // This is only needed when rolling back key reads in the Strict conformance mode.
-            if (_keyEncodingRanges != null && _itemsRead > checkpoint.ItemsWritten)
+            if (_keyEncodingRanges != null && _itemsRead > checkpoint.ItemsRead)
             {
                 int checkpointOffset = checkpoint.Offset;
                 _keyEncodingRanges.RemoveWhere(key => key.Offset >= checkpointOffset);
             }
 
             _offset = checkpoint.Offset;
-            _itemsRead = checkpoint.ItemsWritten;
+            _itemsRead = checkpoint.ItemsRead;
             _previousKeyEncodingRange = checkpoint.PreviousKeyEncodingRange;
             _currentKeyOffset = checkpoint.CurrentKeyOffset;
             _cachedState = CborReaderState.None;
