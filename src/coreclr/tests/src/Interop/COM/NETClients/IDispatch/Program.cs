@@ -168,6 +168,37 @@ namespace NetClient
             }
         }
 
+        static void Validate_Enumerator()
+        {
+            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var expected = System.Linq.Enumerable.Range(0, 10);
+
+            Console.WriteLine($"Calling {nameof(DispatchTesting.GetEnumerator)} ...");
+            var enumerator = dispatchTesting.GetEnumerator(); 
+            Assert.AreAllEqual(expected, GetEnumerable(enumerator));
+
+            enumerator.Reset();
+            Assert.AreAllEqual(expected, GetEnumerable(enumerator));
+
+            Console.WriteLine($"Calling {nameof(DispatchTesting.ExplicitGetEnumerator)} ...");
+            var enumeratorExplicit = dispatchTesting.ExplicitGetEnumerator();
+            Assert.AreAllEqual(expected, GetEnumerable(enumeratorExplicit));
+
+            enumeratorExplicit.Reset();
+            Assert.AreAllEqual(expected, GetEnumerable(enumeratorExplicit));
+
+            System.Collections.Generic.IEnumerable<int> GetEnumerable(System.Collections.IEnumerator e)
+            {
+               var list = new System.Collections.Generic.List<int>();
+               while (e.MoveNext())
+               {
+                   list.Add((int)e.Current);
+               }
+
+               return list;
+            }
+        }
+
         static int Main(string[] doNotUse)
         {
             // RegFree COM is not supported on Windows Nano
@@ -184,6 +215,7 @@ namespace NetClient
                 Validate_Exception();
                 Validate_StructNotSupported();
                 Validate_LCID_Marshaled();
+                Validate_Enumerator();
             }
             catch (Exception e)
             {

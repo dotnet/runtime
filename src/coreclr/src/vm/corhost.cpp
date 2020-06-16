@@ -38,10 +38,6 @@
 #include "dwreport.h"
 #endif // !TARGET_UNIX
 
-#ifdef FEATURE_COMINTEROP
-#include "winrttypenameconverter.h"
-#endif
-
 #ifndef DACCESS_COMPILE
 
 extern void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading);
@@ -637,9 +633,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     LPCWSTR pwzPlatformResourceRoots = NULL;
     LPCWSTR pwzAppPaths = NULL;
     LPCWSTR pwzAppNiPaths = NULL;
-#ifdef FEATURE_COMINTEROP
-    LPCWSTR pwzAppLocalWinMD = NULL;
-#endif
 
     for (int i = 0; i < nProperties; i++)
     {
@@ -679,13 +672,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             extern void ParseUseEntryPointFilter(LPCWSTR value);
             ParseUseEntryPointFilter(pPropertyValues[i]);
         }
-#ifdef FEATURE_COMINTEROP
-        else
-        if (wcscmp(pPropertyNames[i], W("APP_LOCAL_WINMETADATA")) == 0)
-        {
-            pwzAppLocalWinMD = pPropertyValues[i];
-        }
-#endif
     }
 
     pDomain->SetNativeDllSearchDirectories(pwzNativeDllSearchDirectories);
@@ -704,13 +690,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             sAppPaths,
             sAppNiPaths));
     }
-
-#ifdef FEATURE_COMINTEROP
-    if (WinRTSupported())
-    {
-        pDomain->SetWinrtApplicationContext(pwzAppLocalWinMD);
-    }
-#endif
 
     *pAppDomainID=DefaultADID;
 
@@ -1125,7 +1104,7 @@ void SetupTLSForThread(Thread* pThread)
 void FreeClrDebugState(LPVOID pTlsData);
 #endif
 
-// Called here from a thread detach or from destruction of a Thread object. 
+// Called here from a thread detach or from destruction of a Thread object.
 void ThreadDetaching()
 {
     // Can not cause memory allocation during thread detach, so no real contracts.
@@ -1160,94 +1139,7 @@ void ThreadDetaching()
 
 HRESULT CorHost2::DllGetActivationFactory(DWORD appDomainID, LPCWSTR wszTypeName, IActivationFactory ** factory)
 {
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-    // WinRT activation currently supported in default domain only
-    if (appDomainID != DefaultADID)
-        return HOST_E_INVALIDOPERATION;
-
-    HRESULT hr = S_OK;
-
-    Thread *pThread = GetThread();
-    if (pThread == NULL)
-    {
-        pThread = SetupThreadNoThrow(&hr);
-        if (pThread == NULL)
-        {
-            return hr;
-        }
-    }
-
-    return DllGetActivationFactoryImpl(NULL, wszTypeName, NULL, factory);
-#else
     return E_NOTIMPL;
-#endif
 }
-
-
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-
-HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(LPCWSTR wszAssemblyName,
-                                                      LPCWSTR wszTypeName,
-                                                      LPCWSTR wszCodeBase,
-                                                      IActivationFactory ** factory)
-{
-    CONTRACTL
-    {
-        DISABLED(NOTHROW);
-        GC_TRIGGERS;
-        MODE_ANY;
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    AppDomain* pDomain = SystemDomain::System()->DefaultDomain();
-    _ASSERTE(pDomain);
-
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr);
-    {
-        GCX_COOP();
-
-        bool bIsPrimitive;
-        TypeHandle typeHandle = WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeName(wszTypeName, /* pLoadBinder */ nullptr, &bIsPrimitive);
-        if (!bIsPrimitive && !typeHandle.IsNull() && !typeHandle.IsTypeDesc() && typeHandle.AsMethodTable()->IsExportedToWinRT())
-        {
-            struct _gc {
-                OBJECTREF type;
-            } gc;
-            memset(&gc, 0, sizeof(gc));
-
-
-            IActivationFactory* activationFactory;
-            GCPROTECT_BEGIN(gc);
-
-            gc.type = typeHandle.GetManagedClassObject();
-
-            MethodDescCallSite mdcs(METHOD__WINDOWSRUNTIMEMARSHAL__GET_ACTIVATION_FACTORY_FOR_TYPE);
-            ARG_SLOT args[1] = {
-                ObjToArgSlot(gc.type)
-            };
-            activationFactory = (IActivationFactory*)mdcs.Call_RetLPVOID(args);
-
-            *factory = activationFactory;
-
-            GCPROTECT_END();
-        }
-        else
-        {
-            hr = COR_E_TYPELOAD;
-        }
-    }
-    END_EXTERNAL_ENTRYPOINT;
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
-}
-
-#endif // !FEATURE_COMINTEROP_MANAGED_ACTIVATION
-
 
 #endif // !DACCESS_COMPILE

@@ -56,8 +56,8 @@ namespace System.ComponentModel.Design.Serialization.Tests
             Assert.Throws<ArgumentNullException>("sourceOwner", () => service[null, member]);
             Assert.Throws<ArgumentNullException>("sourceOwner", () => service[null, member] = new MemberRelationship());
 
-            Assert.Throws<ArgumentNullException>("Owner", () => service[new MemberRelationship()]);
-            Assert.Throws<ArgumentNullException>("Owner", () => service[new MemberRelationship()] = new MemberRelationship());
+            Assert.Throws<ArgumentException>("source", () => service[new MemberRelationship()]);
+            Assert.Throws<ArgumentException>("source", () => service[new MemberRelationship()] = new MemberRelationship());
         }
 
         [Fact]

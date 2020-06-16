@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -750,7 +751,7 @@ namespace Internal.NativeCrypto
             // check that this is indeed an RSA/DSS key.
             byte[] algid = CapiHelper.GetKeyParameter(hKey, Constants.CLR_ALGID);
 
-            int dwAlgId = (algid[0] | (algid[1] << 8) | (algid[2] << 16) | (algid[3] << 24));
+            int dwAlgId = BinaryPrimitives.ReadInt32LittleEndian(algid);
 
             if ((keyType == CspAlgorithmType.Rsa && dwAlgId != CALG_RSA_KEYX && dwAlgId != CALG_RSA_SIGN) ||
                 (keyType == CspAlgorithmType.Dss && dwAlgId != CALG_DSS_SIGN))

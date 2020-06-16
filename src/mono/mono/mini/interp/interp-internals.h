@@ -148,9 +148,7 @@ struct InterpMethod {
 	void **data_items;
 	guint32 *local_offsets;
 	guint32 *exvar_offsets;
-	gpointer jit_wrapper;
-	gpointer jit_addr;
-	MonoMethodSignature *jit_sig;
+	gpointer jit_call_info;
 	gpointer jit_entry;
 	gpointer llvmonly_unbox_entry;
 	MonoType *rtype;
@@ -204,8 +202,6 @@ typedef struct {
 	unsigned char *vt_sp;
 	const unsigned short  *ip;
 	GSList *finally_ips;
-	FrameClauseArgs *clause_args;
-	gboolean is_void : 1;
 } InterpState;
 
 struct InterpFrame {
@@ -217,8 +213,6 @@ struct InterpFrame {
 	InterpFrame    *next_free;
 	/* Stack fragments this frame was allocated from */
 	StackFragment *data_frag;
-	/* exception info */
-	const unsigned short  *ip;
 	/* State saved before calls */
 	/* This is valid if state.ip != NULL */
 	InterpState state;

@@ -252,7 +252,7 @@ namespace
         return _printable_delegate_name_t{ delegate_name };
     }
 
-    int call_delegate_flavour(
+    int call_load_assembly_and_get_function_pointer_flavour(
         load_assembly_and_get_function_pointer_fn delegate,
         const pal::char_t *assembly_path,
         const pal::char_t *type_name,
@@ -294,7 +294,7 @@ namespace
         return rc;
     }
 
-    bool load_assembly_and_get_function_pointer_test(
+    bool component_load_assembly_and_get_function_pointer_test(
         const hostfxr_exports &hostfxr,
         const pal::char_t *config_path,
         int argc,
@@ -327,7 +327,50 @@ namespace
             else
             {
                 test_output << log_prefix << _X("hostfxr_get_runtime_delegate succeeded: ") << std::hex << std::showbase << rc << std::endl;
-                rc = call_delegate_flavour(delegate, assembly_path, type_name, method_name, log_prefix, test_output);
+                rc = call_load_assembly_and_get_function_pointer_flavour(delegate, assembly_path, type_name, method_name, log_prefix, test_output);
+            }
+        }
+
+        int rcClose = hostfxr.close(handle);
+        if (rcClose != StatusCode::Success)
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc << std::endl;
+
+        return rc == StatusCode::Success && rcClose == StatusCode::Success;
+    }
+
+    bool app_load_assembly_and_get_function_pointer_test(
+        const hostfxr_exports &hostfxr,
+        int argc,
+        const pal::char_t *argv[],
+        const pal::char_t *log_prefix,
+        pal::stringstream_t &test_output)
+    {
+        hostfxr_handle handle;
+        int rc = hostfxr.init_command_line(argc, argv, nullptr, &handle);
+        if (rc != StatusCode::Success)
+        {
+            test_output << _X("hostfxr_initialize_for_command_line failed: ") << std::hex << std::showbase << rc << std::endl;
+            return false;
+        }
+
+        test_output << log_prefix << _X("hostfxr_initialize_for_command_line succeeded: ") << std::hex << std::showbase << rc << std::endl;
+
+        for (int i = 1; i <= argc - 3; i += 3)
+        {
+            const pal::char_t *assembly_path = argv[i];
+            const pal::char_t *type_name = argv[i + 1];
+            const pal::char_t *method_name = argv[i + 2];
+
+            load_assembly_and_get_function_pointer_fn delegate = nullptr;
+            rc = hostfxr.get_delegate(handle, hostfxr_delegate_type::hdt_load_assembly_and_get_function_pointer, (void **)&delegate);
+            if (rc != StatusCode::Success)
+            {
+                test_output << log_prefix << _X("hostfxr_get_runtime_delegate failed: ") << std::hex << std::showbase << rc << std::endl;
+            }
+            else
+            {
+                test_output << log_prefix << _X("hostfxr_get_runtime_delegate succeeded: ") << std::hex << std::showbase << rc << std::endl;
+                rc = call_load_assembly_and_get_function_pointer_flavour(delegate, assembly_path, type_name, method_name, log_prefix, test_output);
             }
         }
 
@@ -560,7 +603,7 @@ bool host_context_test::non_context_mixed(
     return success;
 }
 
-bool host_context_test::load_assembly_and_get_function_pointer(
+bool host_context_test::component_load_assembly_and_get_function_pointer(
     const pal::string_t &hostfxr_path,
     const pal::char_t *config_path,
     int argc,
@@ -569,5 +612,16 @@ bool host_context_test::load_assembly_and_get_function_pointer(
 {
     hostfxr_exports hostfxr{ hostfxr_path };
 
-    return load_assembly_and_get_function_pointer_test(hostfxr, config_path, argc, argv, config_log_prefix, test_output);
+    return component_load_assembly_and_get_function_pointer_test(hostfxr, config_path, argc, argv, config_log_prefix, test_output);
+}
+
+bool host_context_test::app_load_assembly_and_get_function_pointer(
+    const pal::string_t &hostfxr_path,
+    int argc,
+    const pal::char_t *argv[],
+    pal::stringstream_t &test_output)
+{
+    hostfxr_exports hostfxr{ hostfxr_path };
+
+    return app_load_assembly_and_get_function_pointer_test(hostfxr, argc, argv, config_log_prefix, test_output);
 }

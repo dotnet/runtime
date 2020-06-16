@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,7 +19,6 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem.Ecma;
-using System.Linq;
 
 namespace ILCompiler
 {
@@ -230,8 +228,12 @@ namespace ILCompiler
 
         private bool _generateMapFile;
 
+        private ProfileDataManager _profileData;
+        private ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
+
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
+        private readonly int? _customPESectionAlignment;
 
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -244,7 +246,11 @@ namespace ILCompiler
             InstructionSetSupport instructionSetSupport,
             bool resilient,
             bool generateMapFile,
-            int parallelism)
+            int parallelism,
+            ProfileDataManager profileData,
+            ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
+            ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm,
+            int? customPESectionAlignment)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -258,6 +264,7 @@ namespace ILCompiler
             _resilient = resilient;
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;
+            _customPESectionAlignment = customPESectionAlignment;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
             _inputFiles = inputFiles;
@@ -268,17 +275,25 @@ namespace ILCompiler
             string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport);
             ReadyToRunInstructionSetSupportSignature instructionSetSupportSig = new ReadyToRunInstructionSetSupportSignature(instructionSetSupportString);
             _dependencyGraph.AddRoot(new Import(NodeFactory.EagerImports, instructionSetSupportSig), "Baseline instruction set support");
+
+            _profileData = profileData;
+
+            _fileLayoutOptimizer = new ReadyToRunFileLayoutOptimizer(methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
         }
+
+
 
         public override void Compile(string outputFile)
         {
             _dependencyGraph.ComputeMarkedNodes();
             var nodes = _dependencyGraph.MarkedNodeList;
 
+            nodes = _fileLayoutOptimizer.ApplyProfilerGuidedMethodSort(nodes);
+
             using (PerfEventSource.StartStopEvents.EmittingEvents())
             {
                 NodeFactory.SetMarkingComplete();
-                ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: null, nodes, NodeFactory, _generateMapFile);
+                ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: null, nodes, NodeFactory, _generateMapFile, _customPESectionAlignment);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
                 if (moduleGroup.IsCompositeBuildMode)
@@ -302,7 +317,7 @@ namespace ILCompiler
             EcmaModule inputModule = NodeFactory.TypeSystemContext.GetModuleFromPath(inputFile);
 
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
-            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule);
+            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile);
             NodeFactory componentFactory = new NodeFactory(
                 _nodeFactory.TypeSystemContext,
                 _nodeFactory.CompilationModuleGroup,
@@ -327,7 +342,7 @@ namespace ILCompiler
             }
             componentGraph.ComputeMarkedNodes();
             componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode, ownerExecutableNode);
-            ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: inputModule, componentGraph.MarkedNodeList, componentFactory, generateMapFile: false);
+            ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: inputModule, componentGraph.MarkedNodeList, componentFactory, generateMapFile: false, customPESectionAlignment: null);
         }
 
         public override void WriteDependencyLog(string outputFileName)

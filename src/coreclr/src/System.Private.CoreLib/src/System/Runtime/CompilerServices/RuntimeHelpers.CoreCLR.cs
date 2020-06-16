@@ -288,6 +288,12 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static unsafe extern TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern long GetILBytesJitted();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int GetMethodsJittedCount();
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
@@ -339,7 +345,8 @@ namespace System.Runtime.CompilerServices
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
-                                                             | 0x00400000;// enum_flag_ICastable;
+                                                             | 0x00400000 // enum_flag_ICastable;
+                                                             | 0x00200000;// enum_flag_IDynamicInterfaceCastable;
 
         private const int DebugClassNamePtr = // adjust for debug_m_szClassName
 #if DEBUG

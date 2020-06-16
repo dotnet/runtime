@@ -89,50 +89,6 @@ var_types Compiler::getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
     return baseType;
 }
 
-//------------------------------------------------------------------------
-// impUnsupportedHWIntrinsic: returns a node for an unsupported HWIntrinsic
-//
-// Arguments:
-//    helper     - JIT helper ID for the exception to be thrown
-//    method     - method handle of the intrinsic function.
-//    sig        - signature of the intrinsic call
-//    mustExpand - true if the intrinsic must return a GenTree*; otherwise, false
-//
-// Return Value:
-//    a gtNewMustThrowException if mustExpand is true; otherwise, nullptr
-//
-GenTree* Compiler::impUnsupportedHWIntrinsic(unsigned              helper,
-                                             CORINFO_METHOD_HANDLE method,
-                                             CORINFO_SIG_INFO*     sig,
-                                             bool                  mustExpand)
-{
-    // We've hit some error case and may need to return a node for the given error.
-    //
-    // When `mustExpand=false`, we are attempting to inline the intrinsic directly into another method. In this
-    // scenario, we need to return `nullptr` so that a GT_CALL to the intrinsic is emitted instead. This is to
-    // ensure that everything continues to behave correctly when optimizations are enabled (e.g. things like the
-    // inliner may expect the node we return to have a certain signature, and the `MustThrowException` node won't
-    // match that).
-    //
-    // When `mustExpand=true`, we are in a GT_CALL to the intrinsic and are attempting to JIT it. This will generally
-    // be in response to an indirect call (e.g. done via reflection) or in response to an earlier attempt returning
-    // `nullptr` (under `mustExpand=false`). In that scenario, we are safe to return the `MustThrowException` node.
-
-    if (mustExpand)
-    {
-        for (unsigned i = 0; i < sig->numArgs; i++)
-        {
-            impPopStack();
-        }
-
-        return gtNewMustThrowException(helper, JITtype2varType(sig->retType), sig->retTypeClass);
-    }
-    else
-    {
-        return nullptr;
-    }
-}
-
 CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, var_types simdBaseType)
 {
     if (simdType == TYP_SIMD16)
@@ -526,11 +482,14 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
 GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr)
 {
     GenTree* arg = nullptr;
-    if (argType == TYP_STRUCT)
+    if (varTypeIsStruct(argType))
     {
-        unsigned int argSizeBytes;
-        var_types    base = getBaseTypeAndSizeOfSIMDType(argClass, &argSizeBytes);
-        argType           = getSIMDTypeForSize(argSizeBytes);
+        if (!varTypeIsSIMD(argType))
+        {
+            unsigned int argSizeBytes;
+            var_types    base = getBaseTypeAndSizeOfSIMDType(argClass, &argSizeBytes);
+            argType           = getSIMDTypeForSize(argSizeBytes);
+        }
         assert(varTypeIsSIMD(argType));
         arg = impSIMDPopStack(argType, expectAddr);
         assert(varTypeIsSIMD(arg->TypeGet()));
@@ -552,13 +511,15 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
 //    intrinsic     -- intrinsic ID
 //    immOp         -- the immediate operand of the intrinsic
 //    mustExpand    -- true if the compiler is compiling the fallback(GT_CALL) of this intrinsics
-//    immUpperBound -- upper bound for a value of the immediate operand (for a non-full-range imm-intrinsic)
+//    immLowerBound -- lower incl. bound for a value of the immediate operand (for a non-full-range imm-intrinsic)
+//    immUpperBound -- upper incl. bound for a value of the immediate operand (for a non-full-range imm-intrinsic)
 //
 // Return Value:
 //     add a GT_HW_INTRINSIC_CHK node for non-full-range imm-intrinsic, which would throw ArgumentOutOfRangeException
 //     when the imm-argument is not in the valid range
 //
-GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immUpperBound)
+GenTree* Compiler::addRangeCheckIfNeeded(
+    NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound)
 {
     assert(immOp != nullptr);
     // Full-range imm-intrinsics do not need the range-check
@@ -572,19 +533,37 @@ GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* immO
             )
     {
         assert(!immOp->IsCnsIntOrI());
-        GenTree* upperBoundNode = gtNewIconNode(immUpperBound, TYP_INT);
-        GenTree* index          = nullptr;
-        if ((immOp->gtFlags & GTF_SIDE_EFFECT) != 0)
+        assert(varTypeIsUnsigned(immOp));
+
+        // Bounds check for value of an immediate operand
+        //   (immLowerBound <= immOp) && (immOp <= immUpperBound)
+        //
+        // implemented as a single comparison in the form of
+        //
+        // if ((immOp - immLowerBound) >= (immUpperBound - immLowerBound + 1))
+        // {
+        //     throw new ArgumentOutOfRangeException();
+        // }
+        //
+        // The value of (immUpperBound - immLowerBound + 1) is denoted as adjustedUpperBound.
+
+        const ssize_t adjustedUpperBound     = (ssize_t)immUpperBound - immLowerBound + 1;
+        GenTree*      adjustedUpperBoundNode = gtNewIconNode(adjustedUpperBound, TYP_INT);
+
+        GenTree* immOpDup = nullptr;
+
+        immOp = impCloneExpr(immOp, &immOpDup, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                             nullptr DEBUGARG("Clone an immediate operand for immediate value bounds check"));
+
+        if (immLowerBound != 0)
         {
-            index = fgInsertCommaFormTemp(&immOp);
+            immOpDup = gtNewOperNode(GT_SUB, TYP_INT, immOpDup, gtNewIconNode(immLowerBound, TYP_INT));
         }
-        else
-        {
-            index = gtCloneExpr(immOp);
-        }
+
         GenTreeBoundsChk* hwIntrinsicChk = new (this, GT_HW_INTRINSIC_CHK)
-            GenTreeBoundsChk(GT_HW_INTRINSIC_CHK, TYP_VOID, index, upperBoundNode, SCK_RNGCHK_FAIL);
+            GenTreeBoundsChk(GT_HW_INTRINSIC_CHK, TYP_VOID, immOpDup, adjustedUpperBoundNode, SCK_RNGCHK_FAIL);
         hwIntrinsicChk->gtThrowKind = SCK_ARG_RNG_EXCPN;
+
         return gtNewOperNode(GT_COMMA, immOp->TypeGet(), hwIntrinsicChk, immOp);
     }
     else
@@ -628,6 +607,71 @@ static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 }
 
 //------------------------------------------------------------------------
+// isSupportedBaseType
+//
+// Arguments:
+//    intrinsicId - HW intrinsic id
+//    baseType - Base type of the intrinsic.
+//
+// Return Value:
+//    returns true if the baseType is supported for given intrinsic.
+//
+static bool isSupportedBaseType(NamedIntrinsic intrinsic, var_types baseType)
+{
+    // We don't actually check the intrinsic outside of the false case as we expect
+    // the exposed managed signatures are either generic and support all types
+    // or they are explicit and support the type indicated.
+    if (varTypeIsArithmetic(baseType))
+    {
+        return true;
+    }
+
+#ifdef TARGET_XARCH
+    assert((intrinsic == NI_Vector128_As) || (intrinsic == NI_Vector128_AsByte) ||
+           (intrinsic == NI_Vector128_AsDouble) || (intrinsic == NI_Vector128_AsInt16) ||
+           (intrinsic == NI_Vector128_AsInt32) || (intrinsic == NI_Vector128_AsInt64) ||
+           (intrinsic == NI_Vector128_AsSByte) || (intrinsic == NI_Vector128_AsSingle) ||
+           (intrinsic == NI_Vector128_AsUInt16) || (intrinsic == NI_Vector128_AsUInt32) ||
+           (intrinsic == NI_Vector128_AsUInt64) || (intrinsic == NI_Vector128_get_AllBitsSet) ||
+           (intrinsic == NI_Vector128_get_Count) || (intrinsic == NI_Vector128_get_Zero) ||
+           (intrinsic == NI_Vector128_GetElement) || (intrinsic == NI_Vector128_WithElement) ||
+           (intrinsic == NI_Vector128_ToScalar) || (intrinsic == NI_Vector128_ToVector256) ||
+           (intrinsic == NI_Vector128_ToVector256Unsafe) || (intrinsic == NI_Vector256_As) ||
+           (intrinsic == NI_Vector256_AsByte) || (intrinsic == NI_Vector256_AsDouble) ||
+           (intrinsic == NI_Vector256_AsInt16) || (intrinsic == NI_Vector256_AsInt32) ||
+           (intrinsic == NI_Vector256_AsInt64) || (intrinsic == NI_Vector256_AsSByte) ||
+           (intrinsic == NI_Vector256_AsSingle) || (intrinsic == NI_Vector256_AsUInt16) ||
+           (intrinsic == NI_Vector256_AsUInt32) || (intrinsic == NI_Vector256_AsUInt64) ||
+           (intrinsic == NI_Vector256_get_AllBitsSet) || (intrinsic == NI_Vector256_get_Count) ||
+           (intrinsic == NI_Vector256_get_Zero) || (intrinsic == NI_Vector256_GetElement) ||
+           (intrinsic == NI_Vector256_WithElement) || (intrinsic == NI_Vector256_GetLower) ||
+           (intrinsic == NI_Vector256_ToScalar));
+#endif // TARGET_XARCH
+#ifdef TARGET_ARM64
+    assert((intrinsic == NI_Vector64_As) || (intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector64_AsDouble) ||
+           (intrinsic == NI_Vector64_AsInt16) || (intrinsic == NI_Vector64_AsInt32) ||
+           (intrinsic == NI_Vector64_AsInt64) || (intrinsic == NI_Vector64_AsSByte) ||
+           (intrinsic == NI_Vector64_AsSingle) || (intrinsic == NI_Vector64_AsUInt16) ||
+           (intrinsic == NI_Vector64_AsUInt32) || (intrinsic == NI_Vector64_AsUInt64) ||
+           (intrinsic == NI_Vector64_get_AllBitsSet) || (intrinsic == NI_Vector64_get_Count) ||
+           (intrinsic == NI_Vector64_get_Zero) || (intrinsic == NI_Vector64_GetElement) ||
+           (intrinsic == NI_Vector64_ToScalar) || (intrinsic == NI_Vector64_ToVector128) ||
+           (intrinsic == NI_Vector64_ToVector128Unsafe) || (intrinsic == NI_Vector64_WithElement) ||
+           (intrinsic == NI_Vector128_As) || (intrinsic == NI_Vector128_AsByte) ||
+           (intrinsic == NI_Vector128_AsDouble) || (intrinsic == NI_Vector128_AsInt16) ||
+           (intrinsic == NI_Vector128_AsInt32) || (intrinsic == NI_Vector128_AsInt64) ||
+           (intrinsic == NI_Vector128_AsSByte) || (intrinsic == NI_Vector128_AsSingle) ||
+           (intrinsic == NI_Vector128_AsUInt16) || (intrinsic == NI_Vector128_AsUInt32) ||
+           (intrinsic == NI_Vector128_AsUInt64) || (intrinsic == NI_Vector128_get_AllBitsSet) ||
+           (intrinsic == NI_Vector128_get_Count) || (intrinsic == NI_Vector128_get_Zero) ||
+           (intrinsic == NI_Vector128_GetElement) || (intrinsic == NI_Vector128_GetLower) ||
+           (intrinsic == NI_Vector128_GetUpper) || (intrinsic == NI_Vector128_ToScalar) ||
+           (intrinsic == NI_Vector128_WithElement));
+#endif // TARGET_ARM64
+    return false;
+}
+
+//------------------------------------------------------------------------
 // impHWIntrinsic: Import a hardware intrinsic as a GT_HWINTRINSIC node if possible
 //
 // Arguments:
@@ -658,9 +702,38 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
         retType  = getSIMDTypeForSize(sizeBytes);
         assert(sizeBytes != 0);
+
+        // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
+        // rather than deferring the decision after getting the baseType of arg.
+        if (!isSupportedBaseType(intrinsic, baseType))
+        {
+            return nullptr;
+        }
     }
 
-    baseType          = getBaseTypeFromArgIfNeeded(intrinsic, clsHnd, sig, baseType);
+    baseType = getBaseTypeFromArgIfNeeded(intrinsic, clsHnd, sig, baseType);
+
+    if (baseType == TYP_UNKNOWN)
+    {
+        if (category != HW_Category_Scalar)
+        {
+            unsigned int sizeBytes;
+            baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
+            assert((category == HW_Category_Special) || (sizeBytes != 0));
+        }
+        else
+        {
+            baseType = retType;
+        }
+    }
+
+    // Immediately return if the category is other than scalar/special and this is not a supported base type.
+    if ((category != HW_Category_Special) && (category != HW_Category_Scalar) &&
+        !isSupportedBaseType(intrinsic, baseType))
+    {
+        return nullptr;
+    }
+
     unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
 
     GenTree* immOp = nullptr;
@@ -727,6 +800,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         var_types               argType  = TYP_UNKNOWN;
         CORINFO_CLASS_HANDLE    argClass;
 
+        int immLowerBound = 0;
         int immUpperBound = 0;
 
         if (immOp != nullptr)
@@ -734,11 +808,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #if defined(TARGET_XARCH)
             immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
 #elif defined(TARGET_ARM64)
-            immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic, simdSize, baseType);
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, baseType, &immLowerBound, &immUpperBound);
 #endif
         }
 
         assert(numArgs >= 0);
+
         if (!isScalar && ((HWIntrinsicInfo::lookupIns(intrinsic, baseType) == INS_invalid) ||
                           ((simdSize != 8) && (simdSize != 16) && (simdSize != 32))))
         {
@@ -786,7 +861,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
                 op2     = getArgForHWIntrinsic(argType, argClass);
 
-                op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immUpperBound);
+                op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
 
                 argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
                 op1     = getArgForHWIntrinsic(argType, argClass);
@@ -837,12 +912,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_ARM64
                 if (intrinsic == NI_AdvSimd_Insert)
                 {
-                    op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immUpperBound);
+                    op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
                 }
                 else
 #endif
                 {
-                    op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immUpperBound);
+                    op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immLowerBound, immUpperBound);
                 }
 
                 retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic)
@@ -880,7 +955,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         return retNode;
     }
 
-    return impSpecialIntrinsic(intrinsic, clsHnd, method, sig);
+    return impSpecialIntrinsic(intrinsic, clsHnd, method, sig, baseType, retType, simdSize);
 }
 
 #endif // FEATURE_HW_INTRINSICS

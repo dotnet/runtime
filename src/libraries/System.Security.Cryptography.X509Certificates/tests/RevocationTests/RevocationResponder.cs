@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Net;
-using System.Security.Cryptography.Asn1;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
@@ -17,6 +17,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             Environment.GetEnvironmentVariable("TRACE_REVOCATION_RESPONSE") != null;
 
         private readonly HttpListener _listener;
+
+        private readonly Dictionary<string, CertificateAuthority> _aiaPaths =
+            new Dictionary<string, CertificateAuthority>();
 
         private readonly Dictionary<string, CertificateAuthority> _crlPaths
             = new Dictionary<string, CertificateAuthority>();
@@ -39,6 +42,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         internal void AddCertificateAuthority(CertificateAuthority authority)
         {
+            if (authority.AiaHttpUri != null && authority.AiaHttpUri.StartsWith(UriPrefix))
+            {
+                _aiaPaths.Add(authority.AiaHttpUri.Substring(UriPrefix.Length - 1), authority);
+            }
+
             if (authority.CdpUri != null && authority.CdpUri.StartsWith(UriPrefix))
             {
                 _crlPaths.Add(authority.CdpUri.Substring(UriPrefix.Length - 1), authority);
@@ -149,6 +157,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             CertificateAuthority authority;
             string url = context.Request.RawUrl;
 
+            if (_aiaPaths.TryGetValue(url, out authority))
+            {
+                byte[] certData = authority.GetCertData();
+
+                responded = true;
+                context.Response.StatusCode = 200;
+                context.Response.ContentType = "application/pkix-cert";
+                context.Response.Close(certData, willBlock: true);
+                Trace($"Responded with {certData.Length}-byte certificate from {authority.SubjectName}.");
+                return;
+            }
+
             if (_crlPaths.TryGetValue(url, out authority))
             {
                 byte[] crl = authority.GetCrl();
@@ -156,7 +176,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 responded = true;
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "application/pkix-crl";
-                context.Response.Close(crl, willBlock: false);
+                context.Response.Close(crl, willBlock: true);
                 Trace($"Responded with {crl.Length}-byte CRL from {authority.SubjectName}.");
                 return;
             }
@@ -194,7 +214,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         context.Response.StatusCode = 200;
                         context.Response.StatusDescription = "OK";
                         context.Response.ContentType = "application/ocsp-response";
-                        context.Response.Close(ocspResponse, willBlock: false);
+                        context.Response.Close(ocspResponse, willBlock: true);
 
                         if (authority.HasOcspDelegation)
                         {
@@ -316,7 +336,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     ReadOnlyMemory<byte> wholeExtension = requestExtensions.PeekEncodedValue();
                     AsnReader extension = requestExtensions.ReadSequence();
 
-                    if (extension.ReadObjectIdentifierAsString() == "1.3.6.1.5.5.7.48.1.2")
+                    if (extension.ReadObjectIdentifier() == "1.3.6.1.5.5.7.48.1.2")
                     {
                         nonceExtension = wholeExtension;
                     }

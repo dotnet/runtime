@@ -84,7 +84,7 @@ namespace System.Text.Json
                 unescapedPropertyName = propertyName;
             }
 
-            if (options.ReferenceHandling.ShouldReadPreservedReferences())
+            if (options.ReferenceHandler != null)
             {
                 if (propertyName.Length > 0 && propertyName[0] == '$')
                 {
@@ -122,7 +122,7 @@ namespace System.Text.Json
                 }
 
                 extensionData = jsonPropertyInfo.RuntimeClassInfo.CreateObject();
-                jsonPropertyInfo.SetValueAsObject(obj, extensionData);
+                jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, extensionData);
             }
 
             // We don't add the value to the dictionary here because we need to support the read-ahead functionality for Streams.

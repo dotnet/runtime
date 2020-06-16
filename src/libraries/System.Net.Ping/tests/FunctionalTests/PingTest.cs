@@ -54,7 +54,7 @@ namespace System.Net.NetworkInformation.Tests
 
         private static void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses, ITestOutputHelper output)
         {
-            if (pingReply.Status == IPStatus.TimedOut && pingReply.Address.AddressFamily == AddressFamily.InterNetworkV6 && PlatformDetection.IsOSX)
+            if (pingReply.Status == IPStatus.TimedOut && pingReply.Address.AddressFamily == AddressFamily.InterNetworkV6 && PlatformDetection.IsOSXLike)
             {
                 // Workaround OSX ping6 bug, see https://github.com/dotnet/runtime/issues/19861
                 return;
@@ -663,17 +663,17 @@ namespace System.Net.NetworkInformation.Tests
 
             using (Ping p = new Ping())
             {
-                TaskCompletionSource<bool> tcs = null;
+                TaskCompletionSource tcs = null;
                 PingCompletedEventArgs ea = null;
                 p.PingCompleted += (s, e) =>
                 {
                     ea = e;
-                    tcs.TrySetResult(true);
+                    tcs.TrySetResult();
                 };
                 Action reset = () =>
                 {
                     ea = null;
-                    tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 };
 
                 // Several normal iterations
@@ -888,7 +888,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]

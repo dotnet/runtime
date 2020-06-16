@@ -16,7 +16,6 @@ namespace System.Data
         internal string _schemaUri;
         internal XmlElement _schemaRoot;
         internal DataSet _ds;
-        private static readonly char[] s_colonArray = new char[] { ':' };
 
         internal XDRSchema(DataSet ds, bool fInline)
         {
@@ -294,7 +293,7 @@ namespace System.Data
         private Type ParseDataType(string dt, string dtValues)
         {
             string strType = dt;
-            string[] parts = dt.Split(s_colonArray);  // ":"
+            string[] parts = dt.Split(':');
 
             if (parts.Length > 2)
             {

@@ -74,13 +74,13 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         [Fact]
         public async Task RunWorkerAsync_NoOnWorkHandler_SetsResultToNull()
         {
-            var tcs = new TaskCompletionSource<bool>();
+            var tcs = new TaskCompletionSource();
             var backgroundWorker = new BackgroundWorker { WorkerReportsProgress = true };
             backgroundWorker.RunWorkerCompleted += (sender, e) =>
             {
                 Assert.Null(e.Result);
                 Assert.False(backgroundWorker.IsBusy);
-                tcs.SetResult(true);
+                tcs.SetResult();
             };
 
             backgroundWorker.RunWorkerAsync();
@@ -328,6 +328,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37136", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         public void TestFinalization()
         {
             // BackgroundWorker has a finalizer that exists purely for backwards compatibility

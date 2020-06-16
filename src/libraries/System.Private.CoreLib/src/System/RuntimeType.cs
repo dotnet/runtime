@@ -75,7 +75,7 @@ namespace System
         public override MemberInfo[] GetDefaultMembers()
         {
             // See if we have cached the default member name
-            MemberInfo[] members = null!;
+            MemberInfo[]? members = null;
 
             string? defaultMemberName = GetDefaultMemberName();
             if (defaultMemberName != null)

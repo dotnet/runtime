@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security.Cryptography.Asn1;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs12;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
@@ -96,9 +96,17 @@ namespace System.Security.Cryptography.Pkcs
         private static byte[] EncodeBagValue(string certificateType, ReadOnlyMemory<byte> encodedCertificate)
         {
             // Read to ensure that there is precisely one legally encoded value.
-            AsnReader reader = new AsnReader(encodedCertificate, AsnEncodingRules.BER);
-            reader.ReadEncodedValue();
-            reader.ThrowIfNotEmpty();
+            if (!AsnDecoder.TryReadEncodedValue(
+                encodedCertificate.Span,
+                AsnEncodingRules.BER,
+                out _,
+                out _,
+                out _,
+                out int consumed) ||
+                consumed != encodedCertificate.Length)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
 
             // No need to copy encodedCertificate here, because it will be copied into the
             // return value.
@@ -108,11 +116,9 @@ namespace System.Security.Cryptography.Pkcs
                 CertValue = encodedCertificate,
             };
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
-            {
-                certBagAsn.Encode(writer);
-                return writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
+            certBagAsn.Encode(writer);
+            return writer.Encode();
         }
 
         internal static Pkcs12CertBag DecodeValue(ReadOnlyMemory<byte> bagValue)

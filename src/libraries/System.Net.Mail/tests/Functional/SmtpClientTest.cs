@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 //
-// SmtpClientTest.cs - NUnit Test Cases for System.Net.Mail.SmtpClient
+// SmtpClientTest.cs - Unit Test Cases for System.Net.Mail.SmtpClient
 //
 // Authors:
 //   John Luke (john.luke@gmail.com)

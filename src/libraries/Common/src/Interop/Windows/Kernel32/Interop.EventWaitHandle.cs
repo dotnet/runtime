@@ -20,10 +20,10 @@ internal static partial class Interop
         [DllImport(Libraries.Kernel32, SetLastError = true)]
         internal static extern bool ResetEvent(SafeWaitHandle handle);
 
-        [DllImport(Libraries.Kernel32, EntryPoint = "CreateEventExW", SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport(Libraries.Kernel32, EntryPoint = "CreateEventExW", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern SafeWaitHandle CreateEventEx(IntPtr lpSecurityAttributes, string? name, uint flags, uint desiredAccess);
 
-        [DllImport(Libraries.Kernel32, EntryPoint = "OpenEventW", SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport(Libraries.Kernel32, EntryPoint = "OpenEventW", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern SafeWaitHandle OpenEvent(uint desiredAccess, bool inheritHandle, string name);
     }
 }

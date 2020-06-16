@@ -41,7 +41,7 @@ namespace System.Numerics.Tensors
 
                 foreach (T item in fromArray)
                 {
-                    if (!item.Equals(Zero))
+                    if (!item!.Equals(Zero))
                     {
                         var destIndex = ArrayUtilities.TransformIndexByStrides(index, sourceStrides, false, strides);
                         values[destIndex] = item;
@@ -54,7 +54,7 @@ namespace System.Numerics.Tensors
             {
                 foreach (T item in fromArray)
                 {
-                    if (!item.Equals(Zero))
+                    if (!item!.Equals(Zero))
                     {
                         values[index] = item;
                     }
@@ -87,7 +87,7 @@ namespace System.Numerics.Tensors
         /// <param name="value">The new value to set at the specified position in this Tensor.</param>
         public override void SetValue(int index, T value)
         {
-            if (value.Equals(Zero))
+            if (value!.Equals(Zero))
             {
                 values.Remove(index);
             }

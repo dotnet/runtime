@@ -1058,7 +1058,7 @@ namespace System.Data
             {
                 if (text[_pos] == esc)
                 {
-                    if (_pos + 1 < text.Length && charsToEscape.IndexOf(text[_pos + 1]) >= 0)
+                    if (_pos + 1 < text.Length && charsToEscape.Contains(text[_pos + 1]))
                     {
                         _pos++;
                     }

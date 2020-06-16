@@ -5,9 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Numerics;
 using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.X509Certificates.Asn1;
 
@@ -134,10 +134,19 @@ namespace Internal.Cryptography.Pal
 
                     if (ext != null)
                     {
-                        // Try a V1 template structure, just a string:
-                        AsnReader reader = new AsnReader(ext.RawData, AsnEncodingRules.DER);
-                        string decodedName = reader.ReadAnyAsnString();
-                        reader.ThrowIfNotEmpty();
+                        string decodedName;
+
+                        try
+                        {
+                            // Try a V1 template structure, just a string:
+                            AsnReader reader = new AsnReader(ext.RawData, AsnEncodingRules.DER);
+                            decodedName = reader.ReadAnyAsnString();
+                            reader.ThrowIfNotEmpty();
+                        }
+                        catch (AsnContentException e)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                        }
 
                         // If this doesn't match, maybe a V2 template will
                         if (StringComparer.OrdinalIgnoreCase.Equals(templateName, decodedName))

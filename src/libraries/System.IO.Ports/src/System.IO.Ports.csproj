@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);NOSPAN</DefineConstants>
+    <DefineConstants>$(DefineConstants);NOSPAN;SERIAL_PORTS</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Nullable>annotations</Nullable>
     <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0-Linux;netstandard2.0-OSX;netstandard2.0;net461-Windows_NT;netstandard2.0-FreeBSD;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
@@ -129,14 +129,8 @@
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Read.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Write.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Poll.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Shutdown.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Shutdown.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
+             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>

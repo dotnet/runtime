@@ -3,8 +3,6 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
-  managedTestBuildOsGroup: ''
-  managedTestBuildOsSubgroup: ''
   container: ''
   testGroup: ''
   crossrootfsDir: ''
@@ -19,12 +17,11 @@ parameters:
   stagedBuild: false
   displayNameArgs: ''
   runInUnloadableContext: false
+  runtimeVariant: ''
   variables: {}
   pool: ''
   runtimeFlavor: 'coreclr'
   runtimeFlavorDisplayName: 'CoreCLR'
-  runtimeMode: ''
-  runtimeModeDisplayName: ''
 
 ### Test run job
 
@@ -38,8 +35,6 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
-    managedTestBuildOsGroup: ${{ parameters.managedTestBuildOsGroup }}
-    managedTestBuildOsSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
@@ -47,6 +42,7 @@ jobs:
     stagedBuild: ${{ parameters.stagedBuild }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     helixType: 'build/tests/'
+    runtimeVariant: ${{ parameters.runtimeVariant }}
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
 
@@ -57,22 +53,22 @@ jobs:
     dependsOn:
     - ${{ if ne(parameters.corefxTests, true) }}:
       - ${{ if eq(parameters.testGroup, 'innerloop') }}:
-        - '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+        - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.testGroup, 'innerloop') }}:
-        - '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+        - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
     - ${{ if ne(parameters.stagedBuild, true) }}:
-      - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
         - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
     # Compute job name from template parameters
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      name: 'run_test_p0_${{ parameters.runtimeFlavor }}${{ parameters.runtimeMode }}_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeModeDisplayName}} Pri0 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      name: 'run_test_p0_${{ parameters.runtimeFlavor }}${{ parameters.runtimeVariant }}_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeVariant}} Pri0 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
       name: 'run_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeModeDisplayName }} Pri1 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeVariant }} Pri1 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     variables:
     - name: testhostArg
@@ -106,10 +102,6 @@ jobs:
       - ${{ if eq(parameters.compositeBuildMode, true) }}:
         - name: crossgenArg
           value: 'composite'
-
-    - ${{ if eq(parameters.runtimeMode, 'interpreter') }}:
-      - name: RuntimeModeDisplayName
-        value: 'Interpreter' 
 
     # Set job timeouts
     #
@@ -199,9 +191,9 @@ jobs:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(managedTestArtifactRootFolderPath)'
-          artifactFileName: '$(managedTestArtifactName)$(archiveExtension)'
-          artifactName: '$(managedTestArtifactName)'
-          displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
+          artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
+          artifactName: '$(managedGenericTestArtifactName)'
+          displayName: 'generic managed test artifacts'
 
 
     # Download product binaries directory
@@ -222,13 +214,14 @@ jobs:
           artifactName: '$(coreClrProductArtifactName)'
           displayName: 'CoreCLR product download for Mono'
 
+
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
     - ${{ if ne(parameters.corefxTests, true) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(microsoftNetSdkIlFolderPath)'
-          artifactFileName: '$(microsoftNetSdkIlArtifactName)$(archiveExtension)'
+          artifactFileName: '$(microsoftNetSdkIlArtifactName).tar.gz'
           artifactName: '$(microsoftNetSdkIlArtifactName)'
           displayName: 'Microsoft.NET.Sdk.IL package'
 
@@ -249,7 +242,7 @@ jobs:
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipstressdependencies copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
         displayName: Copy native test components to test output folder
 
 
@@ -264,9 +257,15 @@ jobs:
       displayName: Generate test wrappers
 
 
+    # Compose the Core_Root folder containing all artifacts needed for running
+    # CoreCLR tests.
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) generatelayoutonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+      displayName: Generate CORE_ROOT
+
+
     # Crossgen framework assemblies prior to triggering readyToRun execution runs.
     - ${{ if eq(parameters.readyToRun, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) crossgenframeworkonly $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
         displayName: Crossgen framework assemblies
 
     # Overwrite coreclr runtime binaries with mono ones
@@ -285,6 +284,7 @@ jobs:
         buildConfig: $(buildConfigUpper)
         archType: ${{ parameters.archType }}
         osGroup: ${{ parameters.osGroup }}
+        osSubgroup: ${{ parameters.osSubgroup}}
         coreClrRepoRoot: $(coreClrRepoRoot)
         runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
 
@@ -335,7 +335,10 @@ jobs:
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           scenarios:
           - normal
-          - no_tiered_compilation
+          - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+            - no_tiered_compilation
+          - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+            - interpreter
         ${{ if in(parameters.testGroup, 'jitstress') }}:
           scenarios:
           - jitminopts
@@ -453,12 +456,13 @@ jobs:
           - jitguardeddevirtualization
           - jitehwritethru
           - jitobjectstackallocation
+          - jitpgo
 
     # Publish Logs
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_${{ parameters.runtimeMode }}_$(LogNamePrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
+        artifactName: '${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_$(LogNamePrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()

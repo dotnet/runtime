@@ -136,7 +136,7 @@ namespace System.Runtime.InteropServices
         {
             IntPtr ptr;
             if (!TryGetOrCreateComInterfaceForObjectInternal(this, instance, flags, out ptr))
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(instance));
 
             return ptr;
         }
@@ -215,7 +215,7 @@ namespace System.Runtime.InteropServices
         {
             object? obj;
             if (!TryGetOrCreateObjectForComInstanceInternal(this, externalComObject, flags, null, out obj))
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(externalComObject));
 
             return obj!;
         }
@@ -271,7 +271,7 @@ namespace System.Runtime.InteropServices
 
             object? obj;
             if (!TryGetOrCreateObjectForComInstanceInternal(this, externalComObject, flags, wrapper, out obj))
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(externalComObject));
 
             return obj!;
         }

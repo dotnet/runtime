@@ -16,7 +16,7 @@
 #include <mono/utils/mono-dl-fallback.h>
 #include <mono/jit/jit.h>
 
-#include "pinvoke-table.h"
+#include "pinvoke.h"
 
 #ifdef CORE_BINDINGS
 void core_initialize_internals ();
@@ -42,6 +42,7 @@ int32_t mini_parse_debug_option (const char *option);
 static MonoClass* datetime_class;
 static MonoClass* datetimeoffset_class;
 static MonoClass* uri_class;
+static MonoClass* safehandle_class;
 
 int mono_wasm_enable_gc;
 
@@ -167,10 +168,9 @@ static void *sysglobal_native_handle;
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 {
-	for (int i = 0; i < sizeof (pinvoke_tables) / sizeof (void*); ++i) {
-		if (!strcmp (name, pinvoke_names [i]))
-			return pinvoke_tables [i];
-	}
+	void* handle = wasm_dl_lookup_pinvoke_table (name);
+	if (handle)
+		return handle;
 
 #ifdef ENABLE_NETCORE
 	if (!strcmp (name, "System.Globalization.Native"))
@@ -182,17 +182,6 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 #endif
 
 	return NULL;
-}
-
-static mono_bool
-wasm_dl_is_pinvoke_tables (void* handle)
-{
-	for (int i = 0; i < sizeof (pinvoke_tables) / sizeof (void*); ++i) {
-		if (pinvoke_tables [i] == handle) {
-			return 1;
-		}
-	}
-	return 0;
 }
 
 static void*
@@ -306,7 +295,7 @@ icall_table_lookup_symbol (void *func)
 
 void mono_initialize_internals ()
 {
-	mono_add_internal_call ("WebAssembly.Runtime::InvokeJS", mono_wasm_invoke_js);
+	mono_add_internal_call ("Interop/Runtime::InvokeJS", mono_wasm_invoke_js);
 	// TODO: what happens when two types in different assemblies have the same FQN?
 
 	// Blazor specific custom routines - see dotnet_support.js for backing code
@@ -324,8 +313,8 @@ mono_wasm_load_runtime (const char *managed_path, int enable_debugging)
 {
 	const char *interp_opts = "";
 
-	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-	monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
+	//monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
+	//monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
 #ifdef ENABLE_NETCORE
 	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 0);
 #endif
@@ -524,6 +513,7 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_DATE 20
 #define MARSHAL_TYPE_DATEOFFSET 21
 #define MARSHAL_TYPE_URI 22
+#define MARSHAL_TYPE_SAFEHANDLE 23
 
 // typed array marshalling
 #define MARSHAL_ARRAY_BYTE 11
@@ -549,6 +539,8 @@ mono_wasm_get_obj_type (MonoObject *obj)
 		MonoException** exc = NULL;
 		uri_class = mono_get_uri_class(exc);
 	}
+	if (!safehandle_class)
+		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
 
 	MonoClass *klass = mono_object_get_class (obj);
 	MonoType *type = mono_class_get_type (klass);
@@ -612,6 +604,9 @@ mono_wasm_get_obj_type (MonoObject *obj)
 			return MARSHAL_TYPE_DELEGATE;
 		if (class_is_task(klass))
 			return MARSHAL_TYPE_TASK;
+		if (safehandle_class && (klass == safehandle_class || mono_class_is_subclass_of(klass, safehandle_class, 0))) {
+			return MARSHAL_TYPE_SAFEHANDLE;
+		}
 
 		return MARSHAL_TYPE_OBJECT;
 	}

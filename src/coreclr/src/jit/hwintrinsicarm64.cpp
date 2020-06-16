@@ -177,19 +177,24 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
 }
 
 //------------------------------------------------------------------------
-// lookupImmUpperBound: Gets the upper bound for the imm-value of a given NamedIntrinsic
+// lookupImmBounds: Gets the lower and upper bounds for the imm-value of a given NamedIntrinsic
 //
 // Arguments:
 //    intrinsic -- NamedIntrinsic associated with the HWIntrinsic to lookup
 //    simdType  -- vector size
 //    baseType  -- base type of the Vector64/128<T>
+//    pImmLowerBound [OUT] - The lower incl. bound for a value of the intrinsic immediate operand
+//    pImmUpperBound [OUT] - The upper incl. bound for a value of the intrinsic immediate operand
 //
-// Return Value:
-//     The upper bound for a value of the intrinsic immediate operand
-int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types baseType)
+void HWIntrinsicInfo::lookupImmBounds(
+    NamedIntrinsic intrinsic, int simdSize, var_types baseType, int* pImmLowerBound, int* pImmUpperBound)
 {
     assert(HWIntrinsicInfo::lookupCategory(intrinsic) == HW_Category_IMM);
 
+    assert(pImmLowerBound != nullptr);
+    assert(pImmUpperBound != nullptr);
+
+    int immLowerBound = 0;
     int immUpperBound = 0;
 
     if (HWIntrinsicInfo::HasFullRangeImm(intrinsic))
@@ -207,15 +212,80 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize,
             case NI_AdvSimd_ExtractVector64:
             case NI_AdvSimd_Insert:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
-                immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType);
+            case NI_Vector64_GetElement:
+            case NI_Vector128_GetElement:
+                immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
                 break;
 
+            case NI_AdvSimd_ShiftLeftLogical:
+            case NI_AdvSimd_ShiftLeftLogicalAndInsert:
+            case NI_AdvSimd_ShiftLeftLogicalAndInsertScalar:
+            case NI_AdvSimd_ShiftLeftLogicalSaturate:
+            case NI_AdvSimd_ShiftLeftLogicalSaturateScalar:
+            case NI_AdvSimd_ShiftLeftLogicalSaturateUnsigned:
+            case NI_AdvSimd_ShiftLeftLogicalSaturateUnsignedScalar:
+            case NI_AdvSimd_ShiftLeftLogicalScalar:
+            case NI_AdvSimd_ShiftLeftLogicalWideningLower:
+            case NI_AdvSimd_ShiftLeftLogicalWideningUpper:
+            case NI_AdvSimd_Arm64_ShiftLeftLogicalSaturateScalar:
+            case NI_AdvSimd_Arm64_ShiftLeftLogicalSaturateUnsignedScalar:
+                // The left shift amount is in the range 0 to the element width in bits minus 1.
+                immUpperBound = BITS_PER_BYTE * genTypeSize(baseType) - 1;
+                break;
+
+            case NI_AdvSimd_ShiftRightAndInsert:
+            case NI_AdvSimd_ShiftRightArithmetic:
+            case NI_AdvSimd_ShiftRightArithmeticAdd:
+            case NI_AdvSimd_ShiftRightArithmeticAddScalar:
+            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateLower:
+            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUnsignedLower:
+            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUnsignedUpper:
+            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUpper:
+            case NI_AdvSimd_ShiftRightArithmeticRounded:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedAdd:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedAddScalar:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateLower:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUpper:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedScalar:
+            case NI_AdvSimd_ShiftRightArithmeticScalar:
+            case NI_AdvSimd_ShiftRightLogical:
+            case NI_AdvSimd_ShiftRightLogicalAdd:
+            case NI_AdvSimd_ShiftRightLogicalAddScalar:
+            case NI_AdvSimd_ShiftRightLogicalAndInsertScalar:
+            case NI_AdvSimd_ShiftRightLogicalNarrowingLower:
+            case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateLower:
+            case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateUpper:
+            case NI_AdvSimd_ShiftRightLogicalNarrowingUpper:
+            case NI_AdvSimd_ShiftRightLogicalRounded:
+            case NI_AdvSimd_ShiftRightLogicalRoundedAdd:
+            case NI_AdvSimd_ShiftRightLogicalRoundedAddScalar:
+            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingLower:
+            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingSaturateLower:
+            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingSaturateUpper:
+            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingUpper:
+            case NI_AdvSimd_ShiftRightLogicalRoundedScalar:
+            case NI_AdvSimd_ShiftRightLogicalScalar:
+            case NI_AdvSimd_Arm64_ShiftRightArithmeticNarrowingSaturateScalar:
+            case NI_AdvSimd_Arm64_ShiftRightArithmeticNarrowingSaturateUnsignedScalar:
+            case NI_AdvSimd_Arm64_ShiftRightArithmeticRoundedNarrowingSaturateScalar:
+            case NI_AdvSimd_Arm64_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar:
+            case NI_AdvSimd_Arm64_ShiftRightLogicalNarrowingSaturateScalar:
+            case NI_AdvSimd_Arm64_ShiftRightLogicalRoundedNarrowingSaturateScalar:
+                // The right shift amount, in the range 1 to the element width in bits.
+                immLowerBound = 1;
+                immUpperBound = BITS_PER_BYTE * genTypeSize(baseType);
+                break;
             default:
                 unreached();
         }
     }
 
-    return immUpperBound;
+    assert(immLowerBound <= immUpperBound);
+
+    *pImmLowerBound = immLowerBound;
+    *pImmUpperBound = immUpperBound;
 }
 
 //------------------------------------------------------------------------
@@ -234,7 +304,12 @@ bool HWIntrinsicInfo::isInImmRange(NamedIntrinsic id, int ival, int simdSize, va
 {
     assert(HWIntrinsicInfo::lookupCategory(id) == HW_Category_IMM);
 
-    return ival <= lookupImmUpperBound(id, simdSize, baseType) && ival >= 0;
+    int immLowerBound = 0;
+    int immUpperBound = 0;
+
+    lookupImmBounds(id, simdSize, baseType, &immLowerBound, &immUpperBound);
+
+    return (immLowerBound <= ival) && (ival <= immUpperBound);
 }
 
 //------------------------------------------------------------------------
@@ -260,7 +335,9 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    intrinsic  -- id of the intrinsic function.
 //    clsHnd     -- class handle containing the intrinsic function.
 //    method     -- method handle of the intrinsic function.
-//    sig        -- signature of the intrinsic call
+//    sig        -- signature of the intrinsic call.
+//    baseType   -- generic argument of the intrinsic.
+//    retType    -- return type of the intrinsic.
 //
 // Return Value:
 //    The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic
@@ -268,52 +345,16 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_CLASS_HANDLE  clsHnd,
                                        CORINFO_METHOD_HANDLE method,
-                                       CORINFO_SIG_INFO*     sig)
+                                       CORINFO_SIG_INFO*     sig,
+                                       var_types             baseType,
+                                       var_types             retType,
+                                       unsigned              simdSize)
 {
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
     int                 numArgs  = sig->numArgs;
-    var_types           retType  = JITtype2varType(sig->retType);
-    var_types           baseType = TYP_UNKNOWN;
 
-    if ((retType == TYP_STRUCT) && featureSIMD)
-    {
-        unsigned int sizeBytes;
-        baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
-        retType  = getSIMDTypeForSize(sizeBytes);
-        assert(sizeBytes != 0);
-
-        if (!varTypeIsArithmetic(baseType))
-        {
-            assert((intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector128_As) ||
-                   (intrinsic == NI_Vector64_get_Zero) || (intrinsic == NI_Vector64_get_AllBitsSet) ||
-                   (intrinsic == NI_Vector128_get_Zero) || (intrinsic == NI_Vector128_get_AllBitsSet));
-            return nullptr;
-        }
-    }
-
-    baseType = getBaseTypeFromArgIfNeeded(intrinsic, clsHnd, sig, baseType);
-
-    if (baseType == TYP_UNKNOWN)
-    {
-        if (category != HW_Category_Scalar)
-        {
-            unsigned int sizeBytes;
-            baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
-            assert(sizeBytes != 0);
-        }
-        else
-        {
-            baseType = retType;
-        }
-    }
-
-    if (!varTypeIsArithmetic(baseType))
-    {
-        return nullptr;
-    }
-
-    unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
     assert(numArgs >= 0);
+    assert(varTypeIsArithmetic(baseType));
 
     GenTree* retNode = nullptr;
     GenTree* op1     = nullptr;
@@ -321,13 +362,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
+        case NI_Vector64_As:
         case NI_Vector64_AsByte:
+        case NI_Vector64_AsDouble:
         case NI_Vector64_AsInt16:
         case NI_Vector64_AsInt32:
+        case NI_Vector64_AsInt64:
         case NI_Vector64_AsSByte:
         case NI_Vector64_AsSingle:
         case NI_Vector64_AsUInt16:
         case NI_Vector64_AsUInt32:
+        case NI_Vector64_AsUInt64:
         case NI_Vector128_As:
         case NI_Vector128_AsByte:
         case NI_Vector128_AsDouble:
@@ -339,6 +384,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_AsUInt16:
         case NI_Vector128_AsUInt32:
         case NI_Vector128_AsUInt64:
+        case NI_Vector128_AsVector:
+        case NI_Vector128_AsVector4:
+        case NI_Vector128_AsVector128:
         {
             assert(!sig->hasThis());
             assert(numArgs == 1);
@@ -357,6 +405,47 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
             break;
         }
+
+        case NI_Vector64_Create:
+        case NI_Vector128_Create:
+        {
+            // We shouldn't handle this as an intrinsic if the
+            // respective ISAs have been disabled by the user.
+
+            if (!compExactlyDependsOn(InstructionSet_AdvSimd))
+            {
+                break;
+            }
+
+            if (sig->numArgs == 1)
+            {
+                op1     = impPopStack().val;
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
+            else if (sig->numArgs == 2)
+            {
+                op2     = impPopStack().val;
+                op1     = impPopStack().val;
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, baseType, simdSize);
+            }
+            else
+            {
+                assert(sig->numArgs >= 3);
+
+                GenTreeArgList* tmp = nullptr;
+
+                for (unsigned i = 0; i < sig->numArgs; i++)
+                {
+                    tmp        = gtNewArgList(impPopStack().val);
+                    tmp->gtOp2 = op1;
+                    op1        = tmp;
+                }
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
+            break;
+        }
+
         case NI_Vector64_get_Count:
         case NI_Vector128_get_Count:
         {
@@ -368,6 +457,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = countNode;
             break;
         }
+
         case NI_Vector64_get_Zero:
         case NI_Vector64_get_AllBitsSet:
         case NI_Vector128_get_Zero:
@@ -379,6 +469,80 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
             break;
         }
+
+        case NI_Vector64_WithElement:
+        case NI_Vector128_WithElement:
+        {
+            assert(numArgs == 3);
+            GenTree* indexOp = impStackTop(1).val;
+            if (!indexOp->OperIsConst())
+            {
+                // If index is not constant use software fallback.
+                return nullptr;
+            }
+
+            ssize_t imm8  = indexOp->AsIntCon()->IconValue();
+            ssize_t count = simdSize / genTypeSize(baseType);
+
+            if (imm8 >= count || imm8 < 0)
+            {
+                // Using software fallback if index is out of range (throw exeception)
+                return nullptr;
+            }
+
+            GenTree* valueOp = impPopStack().val;
+            impPopStack(); // pop the indexOp that we already have.
+            GenTree* vectorOp = impSIMDPopStack(getSIMDTypeForSize(simdSize));
+
+            switch (baseType)
+            {
+                case TYP_LONG:
+                case TYP_ULONG:
+                case TYP_DOUBLE:
+                    if (simdSize == 16)
+                    {
+                        retNode = gtNewSimdHWIntrinsicNode(retType, vectorOp, gtNewIconNode(imm8), valueOp,
+                                                           NI_AdvSimd_Insert, baseType, simdSize);
+                    }
+                    else
+                    {
+                        retNode = gtNewSimdHWIntrinsicNode(retType, valueOp, NI_Vector64_Create, baseType, simdSize);
+                    }
+                    break;
+
+                case TYP_FLOAT:
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                case TYP_SHORT:
+                case TYP_USHORT:
+                case TYP_INT:
+                case TYP_UINT:
+                    retNode = gtNewSimdHWIntrinsicNode(retType, vectorOp, gtNewIconNode(imm8), valueOp,
+                                                       NI_AdvSimd_Insert, baseType, simdSize);
+                    break;
+
+                default:
+                    return nullptr;
+            }
+
+            break;
+        }
+
+        case NI_Vector128_GetUpper:
+        {
+            // Converts to equivalent managed code:
+            //   AdvSimd.ExtractVector128(vector, Vector128<T>.Zero, 8 / sizeof(T)).GetLower();
+            assert(numArgs == 1);
+            op1            = impPopStack().val;
+            GenTree* zero  = gtNewSimdHWIntrinsicNode(retType, NI_Vector128_get_Zero, baseType, simdSize);
+            ssize_t  index = 8 / genTypeSize(baseType);
+
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
+                                               baseType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, retNode, NI_Vector128_GetLower, baseType, 8);
+            break;
+        }
+
         default:
         {
             return nullptr;

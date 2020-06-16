@@ -1872,7 +1872,7 @@ void ThreadBaseObject::SetInternal(Thread *it)
 
     // Now the native Thread will only be destroyed after the managed Thread is collected.
     // Tell the GC that the managed Thread actually represents much more memory.
-    GCInterface::NewAddMemoryPressure(sizeof(Thread));
+    GCInterface::AddMemoryPressure(sizeof(Thread));
 }
 
 void ThreadBaseObject::ClearInternal()
@@ -1881,7 +1881,7 @@ void ThreadBaseObject::ClearInternal()
 
     _ASSERTE(m_InternalThread != NULL);
     m_InternalThread = NULL;
-    GCInterface::NewRemoveMemoryPressure(sizeof(Thread));
+    GCInterface::RemoveMemoryPressure(sizeof(Thread));
 }
 
 #endif // #ifndef DACCESS_COMPILE

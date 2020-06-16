@@ -4,8 +4,10 @@
     <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- Test fails to build on .NET Core 3.0 preview3 -->
-    <DisableProjectBuild Condition="'$(TargetOS)' == 'OSX'">true</DisableProjectBuild>
+
+    <!-- Test stack overflows on OSX -->
+    <!-- https://github.com/dotnet/roslyn/issues/44758 -->
+    <DisableProjectBuild>true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NestedGenericClasses.cs" />

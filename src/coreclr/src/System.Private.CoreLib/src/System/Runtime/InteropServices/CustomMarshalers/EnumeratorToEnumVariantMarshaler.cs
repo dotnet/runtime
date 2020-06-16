@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Runtime.InteropServices.ComTypes;
+using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
@@ -41,12 +41,12 @@ namespace System.Runtime.InteropServices.CustomMarshalers
 
             if (ManagedObj is EnumeratorViewOfEnumVariant view)
             {
-                return Marshal.GetComInterfaceForObject<object, IEnumVARIANT>(view.GetUnderlyingObject());
+                return Marshal.GetComInterfaceForObject<object, ComTypes.IEnumVARIANT>(view.GetUnderlyingObject());
             }
 
             EnumVariantViewOfEnumerator nativeView = new EnumVariantViewOfEnumerator((IEnumerator)ManagedObj);
 
-            return Marshal.GetComInterfaceForObject<EnumVariantViewOfEnumerator, IEnumVARIANT>(nativeView);
+            return Marshal.GetComInterfaceForObject<EnumVariantViewOfEnumerator, ComTypes.IEnumVARIANT>(nativeView);
         }
 
         public object MarshalNativeToManaged(IntPtr pNativeData)
@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
                 return (comObject as IEnumerator)!;
             }
 
-            return ComDataHelpers.GetOrCreateManagedViewFromComData<IEnumVARIANT, EnumeratorViewOfEnumVariant>(comObject, var => new EnumeratorViewOfEnumVariant(var));
+            return ComDataHelpers.GetOrCreateManagedViewFromComData<ComTypes.IEnumVARIANT, EnumeratorViewOfEnumVariant>(comObject, var => new EnumeratorViewOfEnumVariant(var));
         }
     }
 }

@@ -23,7 +23,8 @@ namespace Microsoft.Extensions.Logging
         private volatile bool _disposed;
         private IDisposable _changeTokenRegistration;
         private LoggerFilterOptions _filterOptions;
-        private LoggerExternalScopeProvider _scopeProvider;
+        private LoggerFactoryScopeProvider _scopeProvider;
+        private LoggerFactoryOptions _factoryOptions;
 
         /// <summary>
         /// Creates a new <see cref="LoggerFactory"/> instance.
@@ -54,8 +55,28 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="providers">The providers to use in producing <see cref="ILogger"/> instances.</param>
         /// <param name="filterOption">The filter option to use.</param>
-        public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption)
+        public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption) : this(providers, filterOption, null)
         {
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="LoggerFactory"/> instance.
+        /// </summary>
+        /// <param name="providers">The providers to use in producing <see cref="ILogger"/> instances.</param>
+        /// <param name="filterOption">The filter option to use.</param>
+        /// <param name="options">The <see cref="LoggerFactoryOptions"/>.</param>
+        public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption, IOptions<LoggerFactoryOptions> options = null)
+        {
+            _factoryOptions = options == null || options.Value == null ? new LoggerFactoryOptions() : options.Value;
+
+            const ActivityTrackingOptions ActivityTrackingOptionsMask = ~(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId |
+                                                                          ActivityTrackingOptions.TraceFlags | ActivityTrackingOptions.TraceState);
+
+            if ((_factoryOptions.ActivityTrackingOptions & ActivityTrackingOptionsMask) != 0)
+            {
+                throw new ArgumentException(SR.Format(SR.InvalidActivityTrackingOptions, _factoryOptions.ActivityTrackingOptions), nameof(options));
+            }
+
             foreach (var provider in providers)
             {
                 AddProviderRegistration(provider, dispose: false);
@@ -164,7 +185,7 @@ namespace Microsoft.Extensions.Logging
             {
                 if (_scopeProvider == null)
                 {
-                    _scopeProvider = new LoggerExternalScopeProvider();
+                    _scopeProvider = new LoggerFactoryScopeProvider(_factoryOptions.ActivityTrackingOptions);
                 }
 
                 supportsExternalScope.SetScopeProvider(_scopeProvider);

@@ -84,8 +84,7 @@ namespace System
 
             bool hasUnicode = false;
 
-            if (IriParsing &&
-                (CheckForUnicode(_string) || CheckForEscapedUnreserved(_string)))
+            if (IriParsing && CheckForUnicodeOrEscapedUnreserved(_string))
             {
                 _flags |= Flags.HasUnicode;
                 hasUnicode = true;
@@ -213,49 +212,30 @@ namespace System
             }
         }
 
-        //
         // Unescapes entire string and checks if it has unicode chars
-        //
-        private bool CheckForUnicode(string data)
+        // Also checks for sequences that are 3986 Unreserved characters as these should be un-escaped
+        private static bool CheckForUnicodeOrEscapedUnreserved(string data)
         {
             for (int i = 0; i < data.Length; i++)
             {
                 char c = data[i];
                 if (c == '%')
                 {
-                    if (i + 2 < data.Length)
+                    if ((uint)(i + 2) < (uint)data.Length)
                     {
-                        if (UriHelper.EscapedAscii(data[i + 1], data[i + 2]) > 0x7F)
+                        char value = UriHelper.DecodeHexChars(data[i + 1], data[i + 2]);
+
+                        if (value >= UriHelper.UnreservedTable.Length || UriHelper.UnreservedTable[value])
                         {
                             return true;
                         }
+
                         i += 2;
                     }
                 }
                 else if (c > 0x7F)
                 {
                     return true;
-                }
-            }
-            return false;
-        }
-
-        // Does this string have any %6A sequences that are 3986 Unreserved characters?  These should be un-escaped.
-        private unsafe bool CheckForEscapedUnreserved(string data)
-        {
-            fixed (char* tempPtr = data)
-            {
-                for (int i = 0; i < data.Length - 2; ++i)
-                {
-                    if (tempPtr[i] == '%' && IsHexDigit(tempPtr[i + 1]) && IsHexDigit(tempPtr[i + 2])
-                        && tempPtr[i + 1] >= '0' && tempPtr[i + 1] <= '7') // max 0x7F
-                    {
-                        char ch = UriHelper.EscapedAscii(tempPtr[i + 1], tempPtr[i + 2]);
-                        if (ch != c_DummyChar && UriHelper.IsUnreserved(ch))
-                        {
-                            return true;
-                        }
-                    }
                 }
             }
             return false;
@@ -302,24 +282,23 @@ namespace System
             if (baseUri.IsNotAbsoluteUri)
                 return false;
 
-            UriFormatException? e;
+            UriFormatException? e = null;
             string? newUriString = null;
 
             bool dontEscape;
             if (baseUri.Syntax.IsSimple)
             {
                 dontEscape = relativeUri.UserEscaped;
-                result = ResolveHelper(baseUri, relativeUri, ref newUriString, ref dontEscape, out e);
-                Debug.Assert(e is null || result is null);
+                result = ResolveHelper(baseUri, relativeUri, ref newUriString, ref dontEscape);
             }
             else
             {
                 dontEscape = false;
                 newUriString = baseUri.Syntax.InternalResolve(baseUri, relativeUri, out e);
-            }
 
-            if (e != null)
-                return false;
+                if (e != null)
+                    return false;
+            }
 
             if (result is null)
                 result = CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e);
@@ -665,13 +644,11 @@ namespace System
         // to  return combined URI strings from both Uris
         // otherwise if e != null on output the operation has failed
         //
-        internal static Uri? ResolveHelper(Uri baseUri, Uri? relativeUri, ref string? newUriString, ref bool userEscaped,
-            out UriFormatException? e)
+        internal static Uri? ResolveHelper(Uri baseUri, Uri? relativeUri, ref string? newUriString, ref bool userEscaped)
         {
             Debug.Assert(!baseUri.IsNotAbsoluteUri && !baseUri.UserDrivenParsing, "Uri::ResolveHelper()|baseUri is not Absolute or is controlled by User Parser.");
 
-            e = null;
-            string relativeStr = string.Empty;
+            string relativeStr;
 
             if ((object?)relativeUri != null)
             {
@@ -739,16 +716,9 @@ namespace System
                 // If we are here then input like "http://host/path/" + "C:\x" will produce the result  http://host/path/c:/x
             }
 
+            GetCombinedString(baseUri, relativeStr, userEscaped, ref newUriString);
 
-            ParsingError err = GetCombinedString(baseUri, relativeStr, userEscaped, ref newUriString);
-
-            if (err != ParsingError.None)
-            {
-                e = GetException(err);
-                return null;
-            }
-
-            if ((object?)newUriString == (object)baseUri._string)
+            if (ReferenceEquals(newUriString, baseUri._string))
                 return baseUri;
 
             return null;
@@ -871,18 +841,19 @@ namespace System
             {
                 //a relative uri could have quite tricky form, it's better to fix it now.
                 string? newUriString = null;
-                UriFormatException? e;
                 bool dontEscape = false;
 
-                uriLink = ResolveHelper(this, uriLink, ref newUriString, ref dontEscape, out e)!;
-                if (e != null)
-                    return false;
+                uriLink = ResolveHelper(this, uriLink, ref newUriString, ref dontEscape)!;
 
-                if ((object?)uriLink == null)
+                if (uriLink is null)
+                {
+                    UriFormatException? e = null;
+
                     uriLink = CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e)!;
 
-                if (e != null)
-                    return false;
+                    if (e != null)
+                        return false;
+                }
             }
 
             if (Syntax.SchemeName != uriLink.Syntax.SchemeName)

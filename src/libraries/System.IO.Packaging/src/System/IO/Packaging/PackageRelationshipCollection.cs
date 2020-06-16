@@ -35,7 +35,7 @@ namespace System.IO.Packaging
         /// <returns></returns>
         public IEnumerator<PackageRelationship> GetEnumerator()
         {
-            List<PackageRelationship>.Enumerator relationshipsEnumerator = _relationships.GetEnumerator();
+            IEnumerator<PackageRelationship> relationshipsEnumerator = _relationships.GetEnumerator();
 
             if (_filter == null)
                 return relationshipsEnumerator;
@@ -49,7 +49,7 @@ namespace System.IO.Packaging
         /// Constructor
         /// </summary>
         /// <remarks>For use by PackagePart</remarks>
-        internal PackageRelationshipCollection(InternalRelationshipCollection relationships, string filter)
+        internal PackageRelationshipCollection(InternalRelationshipCollection relationships, string? filter)
         {
             Debug.Assert(relationships != null, "relationships parameter cannot be null");
 
@@ -62,7 +62,7 @@ namespace System.IO.Packaging
         #region Private Members
 
         private readonly InternalRelationshipCollection _relationships;
-        private readonly string _filter;
+        private readonly string? _filter;
 
         #endregion
 

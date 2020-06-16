@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.Contracts;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
@@ -873,7 +874,7 @@ namespace System
         protected override PropertyInfo? GetPropertyImpl(
             string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (name == null) throw new ArgumentNullException();
+            if (name == null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<PropertyInfo> candidates = GetPropertyCandidates(name, bindingAttr, types, false);
 
@@ -911,7 +912,7 @@ namespace System
 
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
-            if (name == null) throw new ArgumentNullException();
+            if (name == null) throw new ArgumentNullException(nameof(name));
 
             bool ignoreCase;
             MemberListType listType;
@@ -978,7 +979,7 @@ namespace System
 
         public override Type? GetInterface(string fullname, bool ignoreCase)
         {
-            if (fullname == null) throw new ArgumentNullException();
+            if (fullname == null) throw new ArgumentNullException(nameof(fullname));
 
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -1031,7 +1032,7 @@ namespace System
 
         public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
         {
-            if (fullname == null) throw new ArgumentNullException();
+            if (fullname == null) throw new ArgumentNullException(nameof(fullname));
 
             bool ignoreCase;
             bindingAttr &= ~BindingFlags.Static;
@@ -1059,7 +1060,7 @@ namespace System
 
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            if (name == null) throw new ArgumentNullException();
+            if (name == null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<MethodInfo> methods = default;
             ListBuilder<ConstructorInfo> constructors = default;
@@ -1268,6 +1269,7 @@ namespace System
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(
             string name, BindingFlags bindingFlags, Binder? binder, object? target,
             object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)

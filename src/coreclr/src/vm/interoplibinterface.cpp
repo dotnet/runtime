@@ -5,7 +5,6 @@
 // Runtime headers
 #include "common.h"
 #include "rcwrefcache.h"
-#include "rcwwalker.h"
 #include "olecontexthelpers.h"
 #include "finalizerthread.h"
 
@@ -470,7 +469,7 @@ namespace
         args[ARGNUM_1]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
         args[ARGNUM_2]  = PTR_TO_ARGHOLDER(externalComObject);
         args[ARGNUM_3]  = DWORD_TO_ARGHOLDER(flags);
-        CALL_MANAGED_METHOD(retObjRef, OBJECTREF, args);
+        CALL_MANAGED_METHOD_RETREF(retObjRef, OBJECTREF, args);
 
         return retObjRef;
     }
@@ -802,6 +801,11 @@ namespace
     }
 }
 
+namespace
+{
+    BOOL g_isGlobalPeggingOn = TRUE;
+}
+
 namespace InteropLibImports
 {
     void* MemAlloc(_In_ size_t sizeInBytes, _In_ AllocScenario scenario) noexcept
@@ -844,7 +848,7 @@ namespace InteropLibImports
         HRESULT hr = S_OK;
         BEGIN_EXTERNAL_ENTRYPOINT(&hr)
         {
-            GCInterface::NewAddMemoryPressure(memoryInBytes);
+            GCInterface::AddMemoryPressure(memoryInBytes);
         }
         END_EXTERNAL_ENTRYPOINT;
 
@@ -863,7 +867,7 @@ namespace InteropLibImports
         HRESULT hr = S_OK;
         BEGIN_EXTERNAL_ENTRYPOINT(&hr)
         {
-            GCInterface::NewRemoveMemoryPressure(memoryInBytes);
+            GCInterface::RemoveMemoryPressure(memoryInBytes);
         }
         END_EXTERNAL_ENTRYPOINT;
 
@@ -981,7 +985,7 @@ namespace InteropLibImports
         }
         CONTRACTL_END;
 
-        return (RCWWalker::s_bIsGlobalPeggingOn != FALSE);
+        return (VolatileLoad(&g_isGlobalPeggingOn) != FALSE);
     }
 
     void SetGlobalPeggingState(_In_ bool state) noexcept
@@ -995,7 +999,7 @@ namespace InteropLibImports
         CONTRACTL_END;
 
         BOOL newState = state ? TRUE : FALSE;
-        VolatileStore(&RCWWalker::s_bIsGlobalPeggingOn, newState);
+        VolatileStore(&g_isGlobalPeggingOn, newState);
     }
 
     HRESULT GetOrCreateTrackerTargetForExternal(
@@ -1385,8 +1389,7 @@ void ComWrappersNative::MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe)
 
 void QCALLTYPE GlobalComWrappersForMarshalling::SetGlobalInstanceRegisteredForMarshalling()
 {
-    // QCALL contracts are not used here because the managed declaration
-    // uses the SuppressGCTransition attribute
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
     _ASSERTE(!g_IsGlobalComWrappersRegisteredForMarshalling);
     g_IsGlobalComWrappersRegisteredForMarshalling = true;
@@ -1455,8 +1458,7 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
 
 void QCALLTYPE GlobalComWrappersForTrackerSupport::SetGlobalInstanceRegisteredForTrackerSupport()
 {
-    // QCALL contracts are not used here because the managed declaration
-    // uses the SuppressGCTransition attribute
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
     _ASSERTE(!g_IsGlobalComWrappersRegisteredForTrackerSupport);
     g_IsGlobalComWrappersRegisteredForTrackerSupport = true;
@@ -1568,20 +1570,6 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMINTEROP
-    //
-    // Let GC detect managed/native cycles with input from jupiter
-    // Jupiter will
-    // 1. Report reference from RCW to CCW based on native reference in Jupiter
-    // 2. Identify the subset of CCWs that needs to be rooted
-    //
-    // We'll build the references from RCW to CCW using
-    // 1. Preallocated arrays
-    // 2. Dependent handles
-    //
-    RCWWalker::OnGCStarted(nCondemnedGeneration);
-#endif // FEATURE_COMINTEROP
-
 #ifdef FEATURE_COMWRAPPERS
     //
     // Note that we could get nested GCStart/GCEnd calls, such as :
@@ -1625,13 +1613,6 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-#ifdef FEATURE_COMINTEROP
-    //
-    // Tell Jupiter GC has finished
-    //
-    RCWWalker::OnGCFinished(nCondemnedGeneration);
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMWRAPPERS
     //

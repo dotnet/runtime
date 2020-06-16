@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
@@ -47,7 +48,7 @@ namespace Internal.Cryptography.Pal
             PrivateKeyInfoAsn privateKeyInfo = PrivateKeyInfoAsn.Decode(pkcs8, AsnEncodingRules.BER);
             AsymmetricAlgorithm key;
 
-            switch (privateKeyInfo.PrivateKeyAlgorithm.Algorithm.Value)
+            switch (privateKeyInfo.PrivateKeyAlgorithm.Algorithm)
             {
                 case Oids.Rsa:
                     key = new RSAImplementation.RSASecurityTransforms();
@@ -62,7 +63,7 @@ namespace Internal.Cryptography.Pal
                 default:
                     throw new CryptographicException(
                         SR.Cryptography_UnknownAlgorithmIdentifier,
-                        privateKeyInfo.PrivateKeyAlgorithm.Algorithm.Value);
+                        privateKeyInfo.PrivateKeyAlgorithm.Algorithm);
             }
 
             key.ImportPkcs8PrivateKey(pkcs8.Span, out int bytesRead);

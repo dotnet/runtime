@@ -253,7 +253,7 @@ namespace System.Threading
             public ushort _waiterCount;
             [FieldOffset(6)]
             public byte _spinnerCount;
-            [FieldOffset(8)]
+            [FieldOffset(7)]
             public byte _countOfWaitersSignaledToWake;
 
             [FieldOffset(0)]

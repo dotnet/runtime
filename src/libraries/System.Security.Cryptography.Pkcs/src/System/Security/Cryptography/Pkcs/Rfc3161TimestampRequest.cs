@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs.Asn1;
@@ -16,6 +17,8 @@ namespace System.Security.Cryptography.Pkcs
     {
         private byte[] _encodedBytes = null!; // Initided using object initializer
         private Rfc3161TimeStampReq _parsedData;
+        private Oid? _hashAlgorithmId;
+        private Oid? _requestedPolicyId;
 
         private Rfc3161TimestampRequest()
         {
@@ -23,8 +26,8 @@ namespace System.Security.Cryptography.Pkcs
 
         public int Version => _parsedData.Version;
         public ReadOnlyMemory<byte> GetMessageHash() => _parsedData.MessageImprint.HashedMessage;
-        public Oid HashAlgorithmId => _parsedData.MessageImprint.HashAlgorithm.Algorithm;
-        public Oid? RequestedPolicyId => _parsedData.ReqPolicy;
+        public Oid HashAlgorithmId => (_hashAlgorithmId ??= new Oid(_parsedData.MessageImprint.HashAlgorithm.Algorithm, null));
+        public Oid? RequestedPolicyId => _parsedData.ReqPolicy == null ? null : (_requestedPolicyId ??= new Oid(_parsedData.ReqPolicy, null));
         public bool RequestSignerCertificate => _parsedData.CertReq;
         public ReadOnlyMemory<byte>? GetNonce() => _parsedData.Nonce;
         public bool HasExtensions => _parsedData.Extensions?.Length > 0;
@@ -94,6 +97,16 @@ namespace System.Security.Cryptography.Pkcs
                 bytesConsumed = 0;
                 status = Rfc3161RequestResponseStatus.DoesNotParse;
                 return false;
+            }
+            catch (AsnContentException) when (!shouldThrow)
+            {
+                bytesConsumed = 0;
+                status = Rfc3161RequestResponseStatus.DoesNotParse;
+                return false;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
             // bytesRead will be set past this point
@@ -292,13 +305,13 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     HashAlgorithm =
                     {
-                        Algorithm = hashAlgorithmId,
+                        Algorithm = hashAlgorithmId.Value!,
                         Parameters = AlgorithmIdentifierAsn.ExplicitDerNull,
                     },
 
                     HashedMessage = hash,
                 },
-                ReqPolicy = requestedPolicyId,
+                ReqPolicy = requestedPolicyId?.Value,
                 CertReq = requestSignerCertificates,
                 Nonce = nonce,
             };
@@ -312,21 +325,19 @@ namespace System.Security.Cryptography.Pkcs
             // The RFC implies DER (see TryParse), and DER is the most widely understood given that
             // CER isn't specified.
             const AsnEncodingRules ruleSet = AsnEncodingRules.DER;
-            using (AsnWriter writer = new AsnWriter(ruleSet))
+            AsnWriter writer = new AsnWriter(ruleSet);
+            req.Encode(writer);
+
+            byte[] encodedBytes = writer.Encode();
+
+            // Make sure everything normalizes
+            req = Rfc3161TimeStampReq.Decode(encodedBytes, ruleSet);
+
+            return new Rfc3161TimestampRequest
             {
-                req.Encode(writer);
-
-                byte[] encodedBytes = writer.Encode();
-
-                // Make sure everything normalizes
-                req = Rfc3161TimeStampReq.Decode(encodedBytes, ruleSet);
-
-                return new Rfc3161TimestampRequest
-                {
-                    _encodedBytes = writer.Encode(),
-                    _parsedData = req,
-                };
-            }
+                _encodedBytes = writer.Encode(),
+                _parsedData = req,
+            };
         }
 
         public static bool TryDecode(
@@ -357,6 +368,9 @@ namespace System.Security.Cryptography.Pkcs
 
                 bytesConsumed = firstElement.Length;
                 return true;
+            }
+            catch (AsnContentException)
+            {
             }
             catch (CryptographicException)
             {

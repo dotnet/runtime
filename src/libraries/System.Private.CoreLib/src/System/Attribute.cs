@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System
@@ -15,6 +16,8 @@ namespace System
         protected Attribute() { }
 
 #if !CORERT
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Unused fields don't make a difference for equality")]
         public override bool Equals(object? obj)
         {
             if (obj == null)
@@ -47,6 +50,8 @@ namespace System
             return true;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Unused fields don't make a difference for hashcode quality")]
         public override int GetHashCode()
         {
             Type type = GetType();

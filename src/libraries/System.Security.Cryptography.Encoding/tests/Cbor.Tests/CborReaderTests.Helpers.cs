@@ -96,7 +96,7 @@ namespace System.Formats.Cbor.Tests
 
                     case string[] expectedChunks:
                         Assert.Equal(CborReaderState.StartTextString, reader.PeekState());
-                        reader.ReadStartTextStringIndefiniteLength();
+                        reader.ReadStartTextString();
                         foreach(string expectedChunk in expectedChunks)
                         {
                             Assert.Equal(CborReaderState.TextString, reader.PeekState());
@@ -104,12 +104,12 @@ namespace System.Formats.Cbor.Tests
                             Assert.Equal(expectedChunk, chunk);
                         }
                         Assert.Equal(CborReaderState.EndTextString, reader.PeekState());
-                        reader.ReadEndTextStringIndefiniteLength();
+                        reader.ReadEndTextString();
                         break;
 
                     case byte[][] expectedChunks:
                         Assert.Equal(CborReaderState.StartByteString, reader.PeekState());
-                        reader.ReadStartByteStringIndefiniteLength();
+                        reader.ReadStartByteString();
                         foreach (byte[] expectedChunk in expectedChunks)
                         {
                             Assert.Equal(CborReaderState.ByteString, reader.PeekState());
@@ -117,7 +117,7 @@ namespace System.Formats.Cbor.Tests
                             Assert.Equal(expectedChunk.ByteArrayToHex(), chunk.ByteArrayToHex());
                         }
                         Assert.Equal(CborReaderState.EndByteString, reader.PeekState());
-                        reader.ReadEndByteStringIndefiniteLength();
+                        reader.ReadEndByteString();
                         break;
 
                     case object[] nested when CborWriterTests.Helpers.IsCborMapRepresentation(nested):
@@ -243,9 +243,10 @@ namespace System.Formats.Cbor.Tests
                 // tagged values
                 "c202",
                 "d82076687474703a2f2f7777772e6578616d706c652e636f6d",
-                // special values
+                // simple values
                 "f4",
                 "f6",
+                // floating point encodings
                 "fa47c35000",
             };
 
@@ -296,10 +297,8 @@ namespace System.Formats.Cbor.Tests
                 "f9ff",
                 "faffffff",
                 "fbffffffffffffff",
-                // special value missing data
+                // two-byte simple value missing data
                 "f8",
-                // invalid special value
-                "f81f",
             };
     }
 }

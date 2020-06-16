@@ -17,7 +17,7 @@ namespace System.Tests
         public static void Ctor_Empty()
         {
             var exception = new SecurityException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_SECURITY, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_SECURITY, validateMessage: false);
         }
 
         [Fact]
@@ -25,7 +25,7 @@ namespace System.Tests
         {
             string message = "security problem";
             var exception = new SecurityException(message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_SECURITY, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_SECURITY, message: message);
         }
 
         [Fact]
@@ -34,7 +34,7 @@ namespace System.Tests
             string message = "security problem";
             var innerException = new Exception("Inner exception");
             var exception = new SecurityException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_SECURITY, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_SECURITY, innerException: innerException, message: message);
         }
 
         [Fact]
@@ -42,7 +42,7 @@ namespace System.Tests
         {
             string message = "security problem";
             var exception = new SecurityException(message, typeof(SecurityExceptionTests));
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_SECURITY, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_SECURITY, message: message);
             Assert.Equal(typeof(SecurityExceptionTests), exception.PermissionType);
         }
 
@@ -51,7 +51,7 @@ namespace System.Tests
         {
             string message = "security problem";
             var exception = new SecurityException(message, typeof(SecurityExceptionTests), "permission state");
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_SECURITY, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_SECURITY, message: message);
             Assert.Equal(typeof(SecurityExceptionTests), exception.PermissionType);
             Assert.Equal("permission state", exception.PermissionState);
         }

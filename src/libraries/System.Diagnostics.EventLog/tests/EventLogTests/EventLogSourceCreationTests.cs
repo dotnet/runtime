@@ -9,7 +9,7 @@ namespace System.Diagnostics.Tests
 {
     public class EventLogSourceCreationTests
     {
-        [Trait(XunitConstants.Category, "EventLog")] // Unreliable Win32 API call
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36135")]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void CheckSourceExistenceAndDeletion()
         {
@@ -29,7 +29,7 @@ namespace System.Diagnostics.Tests
             Assert.False(EventLog.SourceExists(source));
         }
 
-        [Trait(XunitConstants.Category, "EventLog")] // Unreliable Win32 API call
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36135")]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void LogNameWithSame8FirstChars_NetCore()
@@ -56,7 +56,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Trait(XunitConstants.Category, "EventLog")] // Unreliable Win32 API call
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36135")]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         public void LogNameWithSame8FirstChars_NetFramework()
@@ -145,7 +145,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentNullException>(() => EventLog.CreateEventSource(null));
         }
 
-        [Trait(XunitConstants.Category, "EventLog")] // Unreliable Win32 API call
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36135")]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void SourceAlreadyExistsWhenCreatingSource()
         {

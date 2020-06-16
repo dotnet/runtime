@@ -4622,9 +4622,17 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 #endif
 
-    if (emitConsDsc.align16)
+    // This restricts the emitConsDsc.alignment to: 1, 2, 4, 8, 16, or 32 bytes
+    // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
+    assert(isPow2(emitConsDsc.alignment) && (emitConsDsc.alignment <= 32));
+
+    if (emitConsDsc.alignment == 16)
     {
         allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN);
+    }
+    else if (emitConsDsc.alignment == 32)
+    {
+        allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN);
     }
 
 #ifdef TARGET_ARM64
@@ -4637,7 +4645,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 
     UNATIVE_OFFSET roDataAlignmentDelta = 0;
-    if (emitConsDsc.dsdOffs)
+    if (emitConsDsc.dsdOffs && (emitConsDsc.alignment == TARGET_POINTER_SIZE))
     {
         UNATIVE_OFFSET roDataAlignment = TARGET_POINTER_SIZE; // 8 Byte align by default.
         roDataAlignmentDelta = (UNATIVE_OFFSET)ALIGN_UP(emitTotalHotCodeSize, roDataAlignment) - emitTotalHotCodeSize;
@@ -5320,50 +5328,54 @@ UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
  *  block.
  */
 
-UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, bool align)
+UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET alignment)
 {
     unsigned     secOffs;
     dataSection* secDesc;
 
     assert(emitDataSecCur == nullptr);
 
-    /* The size better not be some kind of an odd thing */
+    // The size must not be zero and must be a multiple of 4 bytes
+    // Additionally, 4 bytes is the minimum alignment that will
+    // actually be used. That is, if the user requests an alignment
+    // of 1 or 2, they will get  something that is at least 4-byte
+    // aligned. We allow the others since 4 is at least 1/2 and its
+    // simpler to allow it than to check and block.
+    assert((size != 0) && ((size % 4) == 0));
 
-    assert(size && size % sizeof(int) == 0);
+    // This restricts the alignment to: 1, 2, 4, 8, 16, or 32 bytes
+    // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
+
+    const size_t MaxAlignment = 32;
+    assert(isPow2(alignment) && (alignment <= MaxAlignment));
 
     /* Get hold of the current offset */
-
     secOffs = emitConsDsc.dsdOffs;
 
-    if (align)
+    if (alignment > 4)
     {
-        // Data can have any size but since alignment is deduced from the size there's no
-        // way to have a larger data size (e.g. 128) and request 4/8/16 byte alignment.
-        // As such, we restrict data above 16 bytes to be a multiple of 16 and assume 16-byte
-        // alignment. Alignment greater than 16 requires VM support (see ICorJitInfo::allocMem).
-        assert((size <= 16) || ((size % 16) == 0));
+        // As per the above comment, the minimum alignment is actually 4
+        // bytes so we don't need to make any adjustments if the requested
+        // alignment is 1, 2, or 4.
+        //
+        // The maximum requested alignment is tracked and the memory allocator
+        // will end up ensuring offset 0 is at an address matching that
+        // alignment. So if the requested alignment is greater than 4, we need
+        // to pad the space out so the offset is a multiple of the requested.
 
-        if (size >= 16)
-        {
-            emitConsDsc.align16 = true;
-        }
+        uint8_t zero[MaxAlignment] = {};
 
-        while ((secOffs % size) != 0)
-        {
-            /* Need to skip 4 bytes to honor alignment */
-            /* Must allocate a dummy 4 byte integer */
-            int zero = 0;
-            emitDataGenBeg(4, false);
-            emitDataGenData(0, &zero, 4);
-            emitDataGenEnd();
+        UNATIVE_OFFSET zeroSize  = alignment - (secOffs % alignment);
+        UNATIVE_OFFSET zeroAlign = 4;
 
-            /* Get the new secOffs */
-            secOffs = emitConsDsc.dsdOffs;
-        }
+        emitAnyConst(&zero, zeroSize, zeroAlign);
+        secOffs = emitConsDsc.dsdOffs;
     }
 
-    /* Advance the current offset */
+    assert((secOffs % alignment) == 0);
+    emitConsDsc.alignment = max(emitConsDsc.alignment, alignment);
 
+    /* Advance the current offset */
     emitConsDsc.dsdOffs += size;
 
     /* Allocate a data section descriptor and add it to the list */
@@ -5451,7 +5463,7 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
  *  Emit the given block of bits into the current data section.
  */
 
-void emitter::emitDataGenData(unsigned offs, const void* data, size_t size)
+void emitter::emitDataGenData(unsigned offs, const void* data, UNATIVE_OFFSET size)
 {
     assert(emitDataSecCur && (emitDataSecCur->dsSize >= offs + size));
 
@@ -5498,19 +5510,13 @@ void emitter::emitDataGenEnd()
  * Parameters:
  *     cnsAddr  - memory location containing constant value
  *     cnsSize  - size of constant in bytes
- *     dblAlign - whether to double align the data section constant
+ *     cnsAlign - alignment of constant in bytes
  *
  * Returns constant number as offset into data section.
  */
-UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, unsigned cnsSize, bool dblAlign)
+UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign)
 {
-    // When generating SMALL_CODE, we don't bother with dblAlign
-    if (dblAlign && (emitComp->compCodeOpt() == Compiler::SMALL_CODE))
-    {
-        dblAlign = false;
-    }
-
-    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, dblAlign);
+    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, cnsAlign);
     emitDataGenData(0, cnsAddr, cnsSize);
     emitDataGenEnd();
 
@@ -5522,33 +5528,18 @@ UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, unsigned cnsSize, boo
 //
 // Arguments:
 //    cnsAddr   - pointer to the data to be placed in the data section
-//    cnsSize   - size of the data
-//    alignment - indicates how to align the constant
+//    cnsSize   - size of the data in bytes
+//    cnsAlign  - alignment of the data in bytes
 //
 // Return Value:
 //    A field handle representing the data offset to access the constant.
 //
-CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, unsigned cnsSize, emitDataAlignment alignment)
+CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign)
 {
-    bool align;
-
-    switch (alignment)
-    {
-        case emitDataAlignment::None:
-            align = false;
-            break;
-        case emitDataAlignment::Preferred:
-            align = (emitComp->compCodeOpt() != Compiler::SMALL_CODE);
-            break;
-        case emitDataAlignment::Required:
-        default:
-            align = true;
-            break;
-    }
-
-    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, align);
+    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, cnsAlign);
     emitDataGenData(0, cnsAddr, cnsSize);
     emitDataGenEnd();
+
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
@@ -5572,26 +5563,35 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 
     void* cnsAddr;
     float f;
-    bool  dblAlign;
 
     if (attr == EA_4BYTE)
     {
-        f        = forceCastToFloat(constValue);
-        cnsAddr  = &f;
-        dblAlign = false;
+        f       = forceCastToFloat(constValue);
+        cnsAddr = &f;
     }
     else
     {
-        cnsAddr  = &constValue;
-        dblAlign = true;
+        cnsAddr = &constValue;
     }
 
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
 
-    UNATIVE_OFFSET cnsSize = (attr == EA_4BYTE) ? 4 : 8;
-    UNATIVE_OFFSET cnum    = emitDataConst(cnsAddr, cnsSize, dblAlign);
+    UNATIVE_OFFSET cnsSize  = (attr == EA_4BYTE) ? 4 : 8;
+    UNATIVE_OFFSET cnsAlign = cnsSize;
+
+#ifdef TARGET_XARCH
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        // Some platforms don't require doubles to be aligned and so
+        // we can use a smaller alignment to help with smaller code
+
+        cnsAlign = 1;
+    }
+#endif // TARGET_XARCH
+
+    UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, cnsAlign);
     return emitComp->eeFindJitDataOffs(cnum);
 }
 

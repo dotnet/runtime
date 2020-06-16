@@ -54,6 +54,13 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         private readonly MapFileBuilder _mapFileBuilder;
 
+        /// <summary>
+        /// If non-null, the PE file will be laid out such that it can naturally be mapped with a higher alignment than 4KB
+        /// This is used to support loading via large pages on Linux
+        /// </summary>
+        private readonly int? _customPESectionAlignment;
+
+
 #if DEBUG
         private struct NodeInfo
         {
@@ -72,12 +79,13 @@ namespace ILCompiler.DependencyAnalysis
         Dictionary<string, NodeInfo> _previouslyWrittenNodeNames = new Dictionary<string, NodeInfo>();
 #endif
 
-        public ReadyToRunObjectWriter(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile)
+        public ReadyToRunObjectWriter(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile, int? customPESectionAlignment)
         {
             _objectFilePath = objectFilePath;
             _componentModule = componentModule;
             _nodes = nodes;
             _nodeFactory = factory;
+            _customPESectionAlignment = customPESectionAlignment;
 
             if (generateMapFile)
             {
@@ -127,7 +135,8 @@ namespace ILCompiler.DependencyAnalysis
                     headerBuilder,
                     r2rHeaderExportSymbol,
                     Path.GetFileName(_objectFilePath),
-                    getRuntimeFunctionsTable);
+                    getRuntimeFunctionsTable,
+                    _customPESectionAlignment);
 
                 NativeDebugDirectoryEntryNode nativeDebugDirectoryEntryNode = null;
 
@@ -150,8 +159,6 @@ namespace ILCompiler.DependencyAnalysis
                     if (node is NativeDebugDirectoryEntryNode nddeNode)
                     {
                         // There should be only one NativeDebugDirectoryEntry.
-                        // This assert will need to be revisited when we implement the composite R2R format, where we'll need to figure
-                        // out how native symbols will be emitted, and verify that the DiaSymReader library is able to consume them.
                         Debug.Assert(nativeDebugDirectoryEntryNode == null);
                         nativeDebugDirectoryEntryNode = nddeNode;
                     }
@@ -176,11 +183,8 @@ namespace ILCompiler.DependencyAnalysis
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section, _mapFileBuilder);
                 }
 
-                if (!_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode || _componentModule != null)
-                {
-                    r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
-                    r2rPeBuilder.SetDebugDirectory(_nodeFactory.DebugDirectoryNode, _nodeFactory.DebugDirectoryNode.Size);
-                }
+                r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
+                r2rPeBuilder.SetDebugDirectory(_nodeFactory.DebugDirectoryNode, _nodeFactory.DebugDirectoryNode.Size);
 
                 if (_nodeFactory.Win32ResourcesNode != null)
                 {
@@ -275,10 +279,10 @@ namespace ILCompiler.DependencyAnalysis
             r2rPeBuilder.AddObjectData(data, section, name, mapFileBuilder);
         }
 
-        public static void EmitObject(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile)
+        public static void EmitObject(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile, int? customPESectionAlignment)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
-            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(objectFilePath, componentModule, nodes, factory, generateMapFile);
+            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(objectFilePath, componentModule, nodes, factory, generateMapFile, customPESectionAlignment);
             objectWriter.EmitPortableExecutable();
         }
     }

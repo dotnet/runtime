@@ -26,44 +26,44 @@ namespace System.Xml
         private readonly bool _useAsync;
 
         // main buffer
-        protected byte[] bufBytes;
+        protected byte[] _bufBytes;
 
         // output stream
-        protected Stream stream;
+        protected Stream _stream;
 
         // encoding of the stream or text writer
-        protected Encoding encoding;
+        protected Encoding _encoding;
 
         // char type tables
-        protected XmlCharType xmlCharType = XmlCharType.Instance;
+        protected XmlCharType _xmlCharType = XmlCharType.Instance;
 
         // buffer positions
-        protected int bufPos = 1;     // buffer position starts at 1, because we need to be able to safely step back -1 in case we need to
-                                      // close an empty element or in CDATA section detection of double ]; bufBytes[0] will always be 0
-        protected int textPos = 1;    // text end position; don't indent first element, pi, or comment
-        protected int contentPos;     // element content end position
-        protected int cdataPos;       // cdata end position
-        protected int attrEndPos;     // end of the last attribute
-        protected int bufLen = BUFSIZE;
+        protected int _bufPos = 1;     // buffer position starts at 1, because we need to be able to safely step back -1 in case we need to
+                                       // close an empty element or in CDATA section detection of double ]; bufBytes[0] will always be 0
+        protected int _textPos = 1;    // text end position; don't indent first element, pi, or comment
+        protected int _contentPos;     // element content end position
+        protected int _cdataPos;       // cdata end position
+        protected int _attrEndPos;     // end of the last attribute
+        protected int _bufLen = BUFSIZE;
 
         // flags
-        protected bool writeToNull;
-        protected bool hadDoubleBracket;
-        protected bool inAttributeValue;
+        protected bool _writeToNull;
+        protected bool _hadDoubleBracket;
+        protected bool _inAttributeValue;
 
 
         // writer settings
-        protected NewLineHandling newLineHandling;
-        protected bool closeOutput;
-        protected bool omitXmlDeclaration;
-        protected string newLineChars;
-        protected bool checkCharacters;
+        protected NewLineHandling _newLineHandling;
+        protected bool _closeOutput;
+        protected bool _omitXmlDeclaration;
+        protected string _newLineChars;
+        protected bool _checkCharacters;
 
-        protected XmlStandalone standalone;
-        protected XmlOutputMethod outputMethod;
+        protected XmlStandalone _standalone;
+        protected XmlOutputMethod _outputMethod;
 
-        protected bool autoXmlDeclaration;
-        protected bool mergeCDataSections;
+        protected bool _autoXmlDeclaration;
+        protected bool _mergeCDataSections;
 
         //
         // Constants
@@ -81,19 +81,19 @@ namespace System.Xml
             _useAsync = settings.Async;
 
             // copy settings
-            newLineHandling = settings.NewLineHandling;
-            omitXmlDeclaration = settings.OmitXmlDeclaration;
-            newLineChars = settings.NewLineChars;
-            checkCharacters = settings.CheckCharacters;
-            closeOutput = settings.CloseOutput;
+            _newLineHandling = settings.NewLineHandling;
+            _omitXmlDeclaration = settings.OmitXmlDeclaration;
+            _newLineChars = settings.NewLineChars;
+            _checkCharacters = settings.CheckCharacters;
+            _closeOutput = settings.CloseOutput;
 
-            standalone = settings.Standalone;
-            outputMethod = settings.OutputMethod;
-            mergeCDataSections = settings.MergeCDataSections;
+            _standalone = settings.Standalone;
+            _outputMethod = settings.OutputMethod;
+            _mergeCDataSections = settings.MergeCDataSections;
 
-            if (checkCharacters && newLineHandling == NewLineHandling.Replace)
+            if (_checkCharacters && _newLineHandling == NewLineHandling.Replace)
             {
-                ValidateContentChars(newLineChars, "NewLineChars", false);
+                ValidateContentChars(_newLineChars, "NewLineChars", false);
             }
         }
 
@@ -102,33 +102,33 @@ namespace System.Xml
         {
             Debug.Assert(stream != null && settings != null);
 
-            this.stream = stream;
-            this.encoding = settings.Encoding;
+            this._stream = stream;
+            this._encoding = settings.Encoding;
 
             // the buffer is allocated will OVERFLOW in order to reduce checks when writing out constant size markup
             if (settings.Async)
             {
-                bufLen = ASYNCBUFSIZE;
+                _bufLen = ASYNCBUFSIZE;
             }
 
-            bufBytes = new byte[bufLen + OVERFLOW];
+            _bufBytes = new byte[_bufLen + OVERFLOW];
             // Output UTF-8 byte order mark if Encoding object wants it
             if (!stream.CanSeek || stream.Position == 0)
             {
-                ReadOnlySpan<byte> bom = encoding.Preamble;
+                ReadOnlySpan<byte> bom = _encoding.Preamble;
                 if (bom.Length != 0)
                 {
-                    bom.CopyTo(new Span<byte>(bufBytes).Slice(1));
-                    bufPos += bom.Length;
-                    textPos += bom.Length;
+                    bom.CopyTo(new Span<byte>(_bufBytes).Slice(1));
+                    _bufPos += bom.Length;
+                    _textPos += bom.Length;
                 }
             }
 
             // Write the xml declaration
             if (settings.AutoXmlDeclaration)
             {
-                WriteXmlDeclaration(standalone);
-                autoXmlDeclaration = true;
+                WriteXmlDeclaration(_standalone);
+                _autoXmlDeclaration = true;
             }
         }
 
@@ -142,17 +142,17 @@ namespace System.Xml
             {
                 XmlWriterSettings settings = new XmlWriterSettings();
 
-                settings.Encoding = encoding;
-                settings.OmitXmlDeclaration = omitXmlDeclaration;
-                settings.NewLineHandling = newLineHandling;
-                settings.NewLineChars = newLineChars;
-                settings.CloseOutput = closeOutput;
+                settings.Encoding = _encoding;
+                settings.OmitXmlDeclaration = _omitXmlDeclaration;
+                settings.NewLineHandling = _newLineHandling;
+                settings.NewLineChars = _newLineChars;
+                settings.CloseOutput = _closeOutput;
                 settings.ConformanceLevel = ConformanceLevel.Auto;
-                settings.CheckCharacters = checkCharacters;
+                settings.CheckCharacters = _checkCharacters;
 
-                settings.AutoXmlDeclaration = autoXmlDeclaration;
-                settings.Standalone = standalone;
-                settings.OutputMethod = outputMethod;
+                settings.AutoXmlDeclaration = _autoXmlDeclaration;
+                settings.Standalone = _standalone;
+                settings.OutputMethod = _outputMethod;
 
                 settings.ReadOnly = true;
                 return settings;
@@ -163,7 +163,7 @@ namespace System.Xml
         internal override void WriteXmlDeclaration(XmlStandalone standalone)
         {
             // Output xml declaration only if user allows it and it was not already output
-            if (!omitXmlDeclaration && !autoXmlDeclaration)
+            if (!_omitXmlDeclaration && !_autoXmlDeclaration)
             {
                 RawText("<?xml version=\"");
 
@@ -171,10 +171,10 @@ namespace System.Xml
                 RawText("1.0");
 
                 // Encoding
-                if (encoding != null)
+                if (_encoding != null)
                 {
                     RawText("\" encoding=\"");
-                    RawText(encoding.WebName);
+                    RawText(_encoding.WebName);
                 }
 
                 // Standalone
@@ -191,7 +191,7 @@ namespace System.Xml
         internal override void WriteXmlDeclaration(string xmldecl)
         {
             // Output xml declaration only if user allows it and it was not already output
-            if (!omitXmlDeclaration && !autoXmlDeclaration)
+            if (!_omitXmlDeclaration && !_autoXmlDeclaration)
             {
                 WriteProcessingInstruction("xml", xmldecl);
             }
@@ -213,27 +213,27 @@ namespace System.Xml
                 {
                     RawText(sysid);
                 }
-                bufBytes[bufPos++] = (byte)'"';
+                _bufBytes[_bufPos++] = (byte)'"';
             }
             else if (sysid != null)
             {
                 RawText(" SYSTEM \"");
                 RawText(sysid);
-                bufBytes[bufPos++] = (byte)'"';
+                _bufBytes[_bufPos++] = (byte)'"';
             }
             else
             {
-                bufBytes[bufPos++] = (byte)' ';
+                _bufBytes[_bufPos++] = (byte)' ';
             }
 
             if (subset != null)
             {
-                bufBytes[bufPos++] = (byte)'[';
+                _bufBytes[_bufPos++] = (byte)'[';
                 RawText(subset);
-                bufBytes[bufPos++] = (byte)']';
+                _bufBytes[_bufPos++] = (byte)']';
             }
 
-            bufBytes[bufPos++] = (byte)'>';
+            _bufBytes[_bufPos++] = (byte)'>';
         }
 
         // Serialize the beginning of an element start tag: "<prefix:localName"
@@ -242,27 +242,27 @@ namespace System.Xml
             Debug.Assert(localName != null && localName.Length > 0);
             Debug.Assert(prefix != null);
 
-            bufBytes[bufPos++] = (byte)'<';
+            _bufBytes[_bufPos++] = (byte)'<';
             if (prefix != null && prefix.Length != 0)
             {
                 RawText(prefix);
-                bufBytes[bufPos++] = (byte)':';
+                _bufBytes[_bufPos++] = (byte)':';
             }
 
             RawText(localName);
 
-            attrEndPos = bufPos;
+            _attrEndPos = _bufPos;
         }
 
         // Serialize the end of an element start tag in preparation for content serialization: ">"
         internal override void StartElementContent()
         {
-            bufBytes[bufPos++] = (byte)'>';
+            _bufBytes[_bufPos++] = (byte)'>';
 
             // StartElementContent is always called; therefore, in order to allow shortcut syntax, we save the
             // position of the '>' character.  If WriteEndElement is called and no other characters have been
             // output, then the '>' character can be overwritten with the shortcut syntax " />".
-            contentPos = bufPos;
+            _contentPos = _bufPos;
         }
 
         // Serialize an element end tag: "</prefix:localName>", if content was output.  Otherwise, serialize
@@ -272,27 +272,27 @@ namespace System.Xml
             Debug.Assert(localName != null && localName.Length > 0);
             Debug.Assert(prefix != null);
 
-            if (contentPos != bufPos)
+            if (_contentPos != _bufPos)
             {
                 // Content has been output, so can't use shortcut syntax
-                bufBytes[bufPos++] = (byte)'<';
-                bufBytes[bufPos++] = (byte)'/';
+                _bufBytes[_bufPos++] = (byte)'<';
+                _bufBytes[_bufPos++] = (byte)'/';
 
                 if (prefix != null && prefix.Length != 0)
                 {
                     RawText(prefix);
-                    bufBytes[bufPos++] = (byte)':';
+                    _bufBytes[_bufPos++] = (byte)':';
                 }
                 RawText(localName);
-                bufBytes[bufPos++] = (byte)'>';
+                _bufBytes[_bufPos++] = (byte)'>';
             }
             else
             {
                 // Use shortcut syntax; overwrite the already output '>' character
-                bufPos--;
-                bufBytes[bufPos++] = (byte)' ';
-                bufBytes[bufPos++] = (byte)'/';
-                bufBytes[bufPos++] = (byte)'>';
+                _bufPos--;
+                _bufBytes[_bufPos++] = (byte)' ';
+                _bufBytes[_bufPos++] = (byte)'/';
+                _bufBytes[_bufPos++] = (byte)'>';
             }
         }
 
@@ -302,16 +302,16 @@ namespace System.Xml
             Debug.Assert(localName != null && localName.Length > 0);
             Debug.Assert(prefix != null);
 
-            bufBytes[bufPos++] = (byte)'<';
-            bufBytes[bufPos++] = (byte)'/';
+            _bufBytes[_bufPos++] = (byte)'<';
+            _bufBytes[_bufPos++] = (byte)'/';
 
             if (prefix != null && prefix.Length != 0)
             {
                 RawText(prefix);
-                bufBytes[bufPos++] = (byte)':';
+                _bufBytes[_bufPos++] = (byte)':';
             }
             RawText(localName);
-            bufBytes[bufPos++] = (byte)'>';
+            _bufBytes[_bufPos++] = (byte)'>';
         }
 
         // Serialize an attribute tag using double quotes around the attribute value: 'prefix:localName="'
@@ -320,30 +320,30 @@ namespace System.Xml
             Debug.Assert(localName != null && localName.Length > 0);
             Debug.Assert(prefix != null);
 
-            if (attrEndPos == bufPos)
+            if (_attrEndPos == _bufPos)
             {
-                bufBytes[bufPos++] = (byte)' ';
+                _bufBytes[_bufPos++] = (byte)' ';
             }
 
             if (prefix != null && prefix.Length > 0)
             {
                 RawText(prefix);
-                bufBytes[bufPos++] = (byte)':';
+                _bufBytes[_bufPos++] = (byte)':';
             }
             RawText(localName);
-            bufBytes[bufPos++] = (byte)'=';
-            bufBytes[bufPos++] = (byte)'"';
+            _bufBytes[_bufPos++] = (byte)'=';
+            _bufBytes[_bufPos++] = (byte)'"';
 
-            inAttributeValue = true;
+            _inAttributeValue = true;
         }
 
         // Serialize the end of an attribute value using double quotes: '"'
         public override void WriteEndAttribute()
         {
 
-            bufBytes[bufPos++] = (byte)'"';
-            inAttributeValue = false;
-            attrEndPos = bufPos;
+            _bufBytes[_bufPos++] = (byte)'"';
+            _inAttributeValue = false;
+            _attrEndPos = _bufPos;
         }
 
         internal override void WriteNamespaceDeclaration(string prefix, string namespaceName)
@@ -375,19 +375,19 @@ namespace System.Xml
             {
                 RawText(" xmlns:");
                 RawText(prefix);
-                bufBytes[bufPos++] = (byte)'=';
-                bufBytes[bufPos++] = (byte)'"';
+                _bufBytes[_bufPos++] = (byte)'=';
+                _bufBytes[_bufPos++] = (byte)'"';
             }
 
-            inAttributeValue = true;
+            _inAttributeValue = true;
         }
 
         internal override void WriteEndNamespaceDeclaration()
         {
-            inAttributeValue = false;
+            _inAttributeValue = false;
 
-            bufBytes[bufPos++] = (byte)'"';
-            attrEndPos = bufPos;
+            _bufBytes[_bufPos++] = (byte)'"';
+            _attrEndPos = _bufPos;
         }
 
         // Serialize a CData section.  If the "]]>" pattern is found within
@@ -396,34 +396,34 @@ namespace System.Xml
         {
             Debug.Assert(text != null);
 
-            if (mergeCDataSections && bufPos == cdataPos)
+            if (_mergeCDataSections && _bufPos == _cdataPos)
             {
                 // Merge adjacent cdata sections - overwrite the "]]>" characters
-                Debug.Assert(bufPos >= 4);
-                bufPos -= 3;
+                Debug.Assert(_bufPos >= 4);
+                _bufPos -= 3;
             }
             else
             {
                 // Start a new cdata section
-                bufBytes[bufPos++] = (byte)'<';
-                bufBytes[bufPos++] = (byte)'!';
-                bufBytes[bufPos++] = (byte)'[';
-                bufBytes[bufPos++] = (byte)'C';
-                bufBytes[bufPos++] = (byte)'D';
-                bufBytes[bufPos++] = (byte)'A';
-                bufBytes[bufPos++] = (byte)'T';
-                bufBytes[bufPos++] = (byte)'A';
-                bufBytes[bufPos++] = (byte)'[';
+                _bufBytes[_bufPos++] = (byte)'<';
+                _bufBytes[_bufPos++] = (byte)'!';
+                _bufBytes[_bufPos++] = (byte)'[';
+                _bufBytes[_bufPos++] = (byte)'C';
+                _bufBytes[_bufPos++] = (byte)'D';
+                _bufBytes[_bufPos++] = (byte)'A';
+                _bufBytes[_bufPos++] = (byte)'T';
+                _bufBytes[_bufPos++] = (byte)'A';
+                _bufBytes[_bufPos++] = (byte)'[';
             }
 
             WriteCDataSection(text);
 
-            bufBytes[bufPos++] = (byte)']';
-            bufBytes[bufPos++] = (byte)']';
-            bufBytes[bufPos++] = (byte)'>';
+            _bufBytes[_bufPos++] = (byte)']';
+            _bufBytes[_bufPos++] = (byte)']';
+            _bufBytes[_bufPos++] = (byte)'>';
 
-            textPos = bufPos;
-            cdataPos = bufPos;
+            _textPos = _bufPos;
+            _cdataPos = _bufPos;
         }
 
         // Serialize a comment.
@@ -431,16 +431,16 @@ namespace System.Xml
         {
             Debug.Assert(text != null);
 
-            bufBytes[bufPos++] = (byte)'<';
-            bufBytes[bufPos++] = (byte)'!';
-            bufBytes[bufPos++] = (byte)'-';
-            bufBytes[bufPos++] = (byte)'-';
+            _bufBytes[_bufPos++] = (byte)'<';
+            _bufBytes[_bufPos++] = (byte)'!';
+            _bufBytes[_bufPos++] = (byte)'-';
+            _bufBytes[_bufPos++] = (byte)'-';
 
             WriteCommentOrPi(text, '-');
 
-            bufBytes[bufPos++] = (byte)'-';
-            bufBytes[bufPos++] = (byte)'-';
-            bufBytes[bufPos++] = (byte)'>';
+            _bufBytes[_bufPos++] = (byte)'-';
+            _bufBytes[_bufPos++] = (byte)'-';
+            _bufBytes[_bufPos++] = (byte)'>';
         }
 
         // Serialize a processing instruction.
@@ -449,18 +449,18 @@ namespace System.Xml
             Debug.Assert(name != null && name.Length > 0);
             Debug.Assert(text != null);
 
-            bufBytes[bufPos++] = (byte)'<';
-            bufBytes[bufPos++] = (byte)'?';
+            _bufBytes[_bufPos++] = (byte)'<';
+            _bufBytes[_bufPos++] = (byte)'?';
             RawText(name);
 
             if (text.Length > 0)
             {
-                bufBytes[bufPos++] = (byte)' ';
+                _bufBytes[_bufPos++] = (byte)' ';
                 WriteCommentOrPi(text, '?');
             }
 
-            bufBytes[bufPos++] = (byte)'?';
-            bufBytes[bufPos++] = (byte)'>';
+            _bufBytes[_bufPos++] = (byte)'?';
+            _bufBytes[_bufPos++] = (byte)'>';
         }
 
         // Serialize an entity reference.
@@ -468,16 +468,16 @@ namespace System.Xml
         {
             Debug.Assert(name != null && name.Length > 0);
 
-            bufBytes[bufPos++] = (byte)'&';
+            _bufBytes[_bufPos++] = (byte)'&';
             RawText(name);
-            bufBytes[bufPos++] = (byte)';';
+            _bufBytes[_bufPos++] = (byte)';';
 
-            if (bufPos > bufLen)
+            if (_bufPos > _bufLen)
             {
                 FlushBuffer();
             }
 
-            textPos = bufPos;
+            _textPos = _bufPos;
         }
 
         // Serialize a character entity reference.
@@ -485,24 +485,24 @@ namespace System.Xml
         {
             string strVal = ((int)ch).ToString("X", NumberFormatInfo.InvariantInfo);
 
-            if (checkCharacters && !xmlCharType.IsCharData(ch))
+            if (_checkCharacters && !_xmlCharType.IsCharData(ch))
             {
                 // we just have a single char, not a surrogate, therefore we have to pass in '\0' for the second char
                 throw XmlConvert.CreateInvalidCharException(ch, '\0');
             }
 
-            bufBytes[bufPos++] = (byte)'&';
-            bufBytes[bufPos++] = (byte)'#';
-            bufBytes[bufPos++] = (byte)'x';
+            _bufBytes[_bufPos++] = (byte)'&';
+            _bufBytes[_bufPos++] = (byte)'#';
+            _bufBytes[_bufPos++] = (byte)'x';
             RawText(strVal);
-            bufBytes[bufPos++] = (byte)';';
+            _bufBytes[_bufPos++] = (byte)';';
 
-            if (bufPos > bufLen)
+            if (_bufPos > _bufLen)
             {
                 FlushBuffer();
             }
 
-            textPos = bufPos;
+            _textPos = _bufPos;
         }
 
         // Serialize a whitespace node.
@@ -514,7 +514,7 @@ namespace System.Xml
             fixed (char* pSrc = ws)
             {
                 char* pSrcEnd = pSrc + ws.Length;
-                if (inAttributeValue)
+                if (_inAttributeValue)
                 {
                     WriteAttributeTextBlock(pSrc, pSrcEnd);
                 }
@@ -534,7 +534,7 @@ namespace System.Xml
             fixed (char* pSrc = text)
             {
                 char* pSrcEnd = pSrc + text.Length;
-                if (inAttributeValue)
+                if (_inAttributeValue)
                 {
                     WriteAttributeTextBlock(pSrc, pSrcEnd);
                 }
@@ -550,12 +550,12 @@ namespace System.Xml
         {
             int surrogateChar = XmlCharType.CombineSurrogateChar(lowChar, highChar);
 
-            bufBytes[bufPos++] = (byte)'&';
-            bufBytes[bufPos++] = (byte)'#';
-            bufBytes[bufPos++] = (byte)'x';
+            _bufBytes[_bufPos++] = (byte)'&';
+            _bufBytes[_bufPos++] = (byte)'#';
+            _bufBytes[_bufPos++] = (byte)'x';
             RawText(surrogateChar.ToString("X", NumberFormatInfo.InvariantInfo));
-            bufBytes[bufPos++] = (byte)';';
-            textPos = bufPos;
+            _bufBytes[_bufPos++] = (byte)';';
+            _textPos = _bufPos;
         }
 
         // Serialize either attribute or element text using XML rules.
@@ -569,7 +569,7 @@ namespace System.Xml
 
             fixed (char* pSrcBegin = &buffer[index])
             {
-                if (inAttributeValue)
+                if (_inAttributeValue)
                 {
                     WriteAttributeTextBlock(pSrcBegin, pSrcBegin + count);
                 }
@@ -594,7 +594,7 @@ namespace System.Xml
                 WriteRawWithCharChecking(pSrcBegin, pSrcBegin + count);
             }
 
-            textPos = bufPos;
+            _textPos = _bufPos;
         }
 
         // Serialize raw data.
@@ -608,7 +608,7 @@ namespace System.Xml
                 WriteRawWithCharChecking(pSrcBegin, pSrcBegin + data.Length);
             }
 
-            textPos = bufPos;
+            _textPos = _bufPos;
         }
 
         // Flush all bytes in the buffer to output and close the output stream or writer.
@@ -622,26 +622,26 @@ namespace System.Xml
             finally
             {
                 // Future calls to Close or Flush shouldn't write to Stream or Writer
-                writeToNull = true;
+                _writeToNull = true;
 
-                if (stream != null)
+                if (_stream != null)
                 {
                     try
                     {
-                        stream.Flush();
+                        _stream.Flush();
                     }
                     finally
                     {
                         try
                         {
-                            if (closeOutput)
+                            if (_closeOutput)
                             {
-                                stream.Dispose();
+                                _stream.Dispose();
                             }
                         }
                         finally
                         {
-                            stream = null;
+                            _stream = null;
                         }
                     }
                 }
@@ -653,9 +653,9 @@ namespace System.Xml
         {
             FlushBuffer();
             FlushEncoder();
-            if (stream != null)
+            if (_stream != null)
             {
-                stream.Flush();
+                _stream.Flush();
             }
         }
 
@@ -668,40 +668,40 @@ namespace System.Xml
             try
             {
                 // Output all characters (except for previous characters stored at beginning of buffer)
-                if (!writeToNull)
+                if (!_writeToNull)
                 {
-                    if (bufPos - 1 > 0)
+                    if (_bufPos - 1 > 0)
                     {
-                        Debug.Assert(stream != null);
-                        stream.Write(bufBytes, 1, bufPos - 1);
+                        Debug.Assert(_stream != null);
+                        _stream.Write(_bufBytes, 1, _bufPos - 1);
                     }
                 }
             }
             catch
             {
                 // Future calls to flush (i.e. when Close() is called) don't attempt to write to stream
-                writeToNull = true;
+                _writeToNull = true;
                 throw;
             }
             finally
             {
                 // Move last buffer character to the beginning of the buffer (so that previous character can always be determined)
-                bufBytes[0] = bufBytes[bufPos - 1];
-                if (IsSurrogateByte(bufBytes[0]))
+                _bufBytes[0] = _bufBytes[_bufPos - 1];
+                if (IsSurrogateByte(_bufBytes[0]))
                 {
                     // Last character was the first byte in a surrogate encoding, so move last three
                     // bytes of encoding to the beginning of the buffer.
-                    bufBytes[1] = bufBytes[bufPos];
-                    bufBytes[2] = bufBytes[bufPos + 1];
-                    bufBytes[3] = bufBytes[bufPos + 2];
+                    _bufBytes[1] = _bufBytes[_bufPos];
+                    _bufBytes[2] = _bufBytes[_bufPos + 1];
+                    _bufBytes[3] = _bufBytes[_bufPos + 2];
                 }
 
                 // Reset buffer position
-                textPos = (textPos == bufPos) ? 1 : 0;
-                attrEndPos = (attrEndPos == bufPos) ? 1 : 0;
-                contentPos = 0;    // Needs to be zero, since overwriting '>' character is no longer possible
-                cdataPos = 0;      // Needs to be zero, since overwriting ']]>' characters is no longer possible
-                bufPos = 1;        // Buffer position starts at 1, because we need to be able to safely step back -1 in case we need to
+                _textPos = (_textPos == _bufPos) ? 1 : 0;
+                _attrEndPos = (_attrEndPos == _bufPos) ? 1 : 0;
+                _contentPos = 0;    // Needs to be zero, since overwriting '>' character is no longer possible
+                _cdataPos = 0;      // Needs to be zero, since overwriting ']]>' characters is no longer possible
+                _bufPos = 1;        // Buffer position starts at 1, because we need to be able to safely step back -1 in case we need to
                                    // close an empty element or in CDATA section detection of double ]; bufBytes[0] will always be 0
             }
         }
@@ -716,20 +716,20 @@ namespace System.Xml
         // are entitized.
         protected unsafe void WriteAttributeTextBlock(char* pSrc, char* pSrcEnd)
         {
-            fixed (byte* pDstBegin = bufBytes)
+            fixed (byte* pDstBegin = _bufBytes)
             {
-                byte* pDst = pDstBegin + bufPos;
+                byte* pDst = pDstBegin + _bufPos;
 
                 int ch = 0;
                 while (true)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
-                    if (pDstEnd > pDstBegin + bufLen)
+                    if (pDstEnd > pDstBegin + _bufLen)
                     {
-                        pDstEnd = pDstBegin + bufLen;
+                        pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
+                    while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -746,7 +746,7 @@ namespace System.Xml
                     // end of buffer
                     if (pDst >= pDstEnd)
                     {
-                        bufPos = (int)(pDst - pDstBegin);
+                        _bufPos = (int)(pDst - pDstBegin);
                         FlushBuffer();
                         pDst = pDstBegin + 1;
                         continue;
@@ -772,7 +772,7 @@ namespace System.Xml
                             pDst++;
                             break;
                         case (char)0x9:
-                            if (newLineHandling == NewLineHandling.None)
+                            if (_newLineHandling == NewLineHandling.None)
                             {
                                 *pDst = (byte)ch;
                                 pDst++;
@@ -784,7 +784,7 @@ namespace System.Xml
                             }
                             break;
                         case (char)0xD:
-                            if (newLineHandling == NewLineHandling.None)
+                            if (_newLineHandling == NewLineHandling.None)
                             {
                                 *pDst = (byte)ch;
                                 pDst++;
@@ -796,7 +796,7 @@ namespace System.Xml
                             }
                             break;
                         case (char)0xA:
-                            if (newLineHandling == NewLineHandling.None)
+                            if (_newLineHandling == NewLineHandling.None)
                             {
                                 *pDst = (byte)ch;
                                 pDst++;
@@ -830,7 +830,7 @@ namespace System.Xml
                     }
                     pSrc++;
                 }
-                bufPos = (int)(pDst - pDstBegin);
+                _bufPos = (int)(pDst - pDstBegin);
             }
         }
 
@@ -838,20 +838,20 @@ namespace System.Xml
         // are entitized.
         protected unsafe void WriteElementTextBlock(char* pSrc, char* pSrcEnd)
         {
-            fixed (byte* pDstBegin = bufBytes)
+            fixed (byte* pDstBegin = _bufBytes)
             {
-                byte* pDst = pDstBegin + bufPos;
+                byte* pDst = pDstBegin + _bufPos;
 
                 int ch = 0;
                 while (true)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
-                    if (pDstEnd > pDstBegin + bufLen)
+                    if (pDstEnd > pDstBegin + _bufLen)
                     {
-                        pDstEnd = pDstBegin + bufLen;
+                        pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
+                    while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -868,7 +868,7 @@ namespace System.Xml
                     // end of buffer
                     if (pDst >= pDstEnd)
                     {
-                        bufPos = (int)(pDst - pDstBegin);
+                        _bufPos = (int)(pDst - pDstBegin);
                         FlushBuffer();
                         pDst = pDstBegin + 1;
                         continue;
@@ -893,7 +893,7 @@ namespace System.Xml
                             pDst++;
                             break;
                         case (char)0xA:
-                            if (newLineHandling == NewLineHandling.Replace)
+                            if (_newLineHandling == NewLineHandling.Replace)
                             {
                                 pDst = WriteNewLine(pDst);
                             }
@@ -904,7 +904,7 @@ namespace System.Xml
                             }
                             break;
                         case (char)0xD:
-                            switch (newLineHandling)
+                            switch (_newLineHandling)
                             {
                                 case NewLineHandling.Replace:
                                     // Replace "\r\n", or "\r" with NewLineChars
@@ -949,9 +949,9 @@ namespace System.Xml
                     }
                     pSrc++;
                 }
-                bufPos = (int)(pDst - pDstBegin);
-                textPos = bufPos;
-                contentPos = 0;
+                _bufPos = (int)(pDst - pDstBegin);
+                _textPos = _bufPos;
+                _contentPos = 0;
             }
         }
 
@@ -967,18 +967,18 @@ namespace System.Xml
 
         protected unsafe void RawText(char* pSrcBegin, char* pSrcEnd)
         {
-            fixed (byte* pDstBegin = bufBytes)
+            fixed (byte* pDstBegin = _bufBytes)
             {
-                byte* pDst = pDstBegin + bufPos;
+                byte* pDst = pDstBegin + _bufPos;
                 char* pSrc = pSrcBegin;
 
                 int ch = 0;
                 while (true)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
-                    if (pDstEnd > pDstBegin + bufLen)
+                    if (pDstEnd > pDstBegin + _bufLen)
                     {
-                        pDstEnd = pDstBegin + bufLen;
+                        pDstEnd = pDstBegin + _bufLen;
                     }
 
                     while (pDst < pDstEnd && ((ch = *pSrc) <= 0x7F))
@@ -998,7 +998,7 @@ namespace System.Xml
                     // end of buffer
                     if (pDst >= pDstEnd)
                     {
-                        bufPos = (int)(pDst - pDstBegin);
+                        _bufPos = (int)(pDst - pDstBegin);
                         FlushBuffer();
                         pDst = pDstBegin + 1;
                         continue;
@@ -1024,27 +1024,27 @@ namespace System.Xml
                     }
                 }
 
-                bufPos = (int)(pDst - pDstBegin);
+                _bufPos = (int)(pDst - pDstBegin);
             }
         }
 
         protected unsafe void WriteRawWithCharChecking(char* pSrcBegin, char* pSrcEnd)
         {
-            fixed (byte* pDstBegin = bufBytes)
+            fixed (byte* pDstBegin = _bufBytes)
             {
                 char* pSrc = pSrcBegin;
-                byte* pDst = pDstBegin + bufPos;
+                byte* pDst = pDstBegin + _bufPos;
 
                 int ch = 0;
                 while (true)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
-                    if (pDstEnd > pDstBegin + bufLen)
+                    if (pDstEnd > pDstBegin + _bufLen)
                     {
-                        pDstEnd = pDstBegin + bufLen;
+                        pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch <= 0x7F))
+                    while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch <= 0x7F))
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -1062,7 +1062,7 @@ namespace System.Xml
                     // end of buffer
                     if (pDst >= pDstEnd)
                     {
-                        bufPos = (int)(pDst - pDstBegin);
+                        _bufPos = (int)(pDst - pDstBegin);
                         FlushBuffer();
                         pDst = pDstBegin + 1;
                         continue;
@@ -1079,7 +1079,7 @@ namespace System.Xml
                             pDst++;
                             break;
                         case (char)0xD:
-                            if (newLineHandling == NewLineHandling.Replace)
+                            if (_newLineHandling == NewLineHandling.Replace)
                             {
                                 // Normalize "\r\n", or "\r" to NewLineChars
                                 if (pSrc + 1 < pSrcEnd && pSrc[1] == '\n')
@@ -1096,7 +1096,7 @@ namespace System.Xml
                             }
                             break;
                         case (char)0xA:
-                            if (newLineHandling == NewLineHandling.Replace)
+                            if (_newLineHandling == NewLineHandling.Replace)
                             {
                                 pDst = WriteNewLine(pDst);
                             }
@@ -1129,7 +1129,7 @@ namespace System.Xml
                     }
                     pSrc++;
                 }
-                bufPos = (int)(pDst - pDstBegin);
+                _bufPos = (int)(pDst - pDstBegin);
             }
         }
 
@@ -1137,7 +1137,7 @@ namespace System.Xml
         {
             if (text.Length == 0)
             {
-                if (bufPos >= bufLen)
+                if (_bufPos >= _bufLen)
                 {
                     FlushBuffer();
                 }
@@ -1146,24 +1146,24 @@ namespace System.Xml
             // write text
             fixed (char* pSrcBegin = text)
 
-            fixed (byte* pDstBegin = bufBytes)
+            fixed (byte* pDstBegin = _bufBytes)
             {
                 char* pSrc = pSrcBegin;
 
                 char* pSrcEnd = pSrcBegin + text.Length;
 
-                byte* pDst = pDstBegin + bufPos;
+                byte* pDst = pDstBegin + _bufPos;
 
                 int ch = 0;
                 while (true)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
-                    if (pDstEnd > pDstBegin + bufLen)
+                    if (pDstEnd > pDstBegin + _bufLen)
                     {
-                        pDstEnd = pDstBegin + bufLen;
+                        pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar && ch <= 0x7F))
+                    while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar && ch <= 0x7F))
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -1181,7 +1181,7 @@ namespace System.Xml
                     // end of buffer
                     if (pDst >= pDstEnd)
                     {
-                        bufPos = (int)(pDst - pDstBegin);
+                        _bufPos = (int)(pDst - pDstBegin);
                         FlushBuffer();
                         pDst = pDstBegin + 1;
                         continue;
@@ -1221,7 +1221,7 @@ namespace System.Xml
                             pDst++;
                             break;
                         case (char)0xD:
-                            if (newLineHandling == NewLineHandling.Replace)
+                            if (_newLineHandling == NewLineHandling.Replace)
                             {
                                 // Normalize "\r\n", or "\r" to NewLineChars
                                 if (pSrc + 1 < pSrcEnd && pSrc[1] == '\n')
@@ -1238,7 +1238,7 @@ namespace System.Xml
                             }
                             break;
                         case (char)0xA:
-                            if (newLineHandling == NewLineHandling.Replace)
+                            if (_newLineHandling == NewLineHandling.Replace)
                             {
                                 pDst = WriteNewLine(pDst);
                             }
@@ -1277,7 +1277,7 @@ namespace System.Xml
                     }
                     pSrc++;
                 }
-                bufPos = (int)(pDst - pDstBegin);
+                _bufPos = (int)(pDst - pDstBegin);
             }
         }
 
@@ -1285,7 +1285,7 @@ namespace System.Xml
         {
             if (text.Length == 0)
             {
-                if (bufPos >= bufLen)
+                if (_bufPos >= _bufLen)
                 {
                     FlushBuffer();
                 }
@@ -1296,24 +1296,24 @@ namespace System.Xml
 
             fixed (char* pSrcBegin = text)
 
-            fixed (byte* pDstBegin = bufBytes)
+            fixed (byte* pDstBegin = _bufBytes)
             {
                 char* pSrc = pSrcBegin;
 
                 char* pSrcEnd = pSrcBegin + text.Length;
 
-                byte* pDst = pDstBegin + bufPos;
+                byte* pDst = pDstBegin + _bufPos;
 
                 int ch = 0;
                 while (true)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
-                    if (pDstEnd > pDstBegin + bufLen)
+                    if (pDstEnd > pDstBegin + _bufLen)
                     {
-                        pDstEnd = pDstBegin + bufLen;
+                        pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']' && ch <= 0x7F))
+                    while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']' && ch <= 0x7F))
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -1331,7 +1331,7 @@ namespace System.Xml
                     // end of buffer
                     if (pDst >= pDstEnd)
                     {
-                        bufPos = (int)(pDst - pDstBegin);
+                        _bufPos = (int)(pDst - pDstBegin);
                         FlushBuffer();
                         pDst = pDstBegin + 1;
                         continue;
@@ -1341,7 +1341,7 @@ namespace System.Xml
                     switch (ch)
                     {
                         case '>':
-                            if (hadDoubleBracket && pDst[-1] == (byte)']')
+                            if (_hadDoubleBracket && pDst[-1] == (byte)']')
                             {   // pDst[-1] will always correct - there is a padding character at bufBytes[0]
                                 // The characters "]]>" were found within the CData text
                                 pDst = RawEndCData(pDst);
@@ -1353,17 +1353,17 @@ namespace System.Xml
                         case ']':
                             if (pDst[-1] == (byte)']')
                             {   // pDst[-1] will always correct - there is a padding character at bufBytes[0]
-                                hadDoubleBracket = true;
+                                _hadDoubleBracket = true;
                             }
                             else
                             {
-                                hadDoubleBracket = false;
+                                _hadDoubleBracket = false;
                             }
                             *pDst = (byte)']';
                             pDst++;
                             break;
                         case (char)0xD:
-                            if (newLineHandling == NewLineHandling.Replace)
+                            if (_newLineHandling == NewLineHandling.Replace)
                             {
                                 // Normalize "\r\n", or "\r" to NewLineChars
                                 if (pSrc + 1 < pSrcEnd && pSrc[1] == '\n')
@@ -1380,7 +1380,7 @@ namespace System.Xml
                             }
                             break;
                         case (char)0xA:
-                            if (newLineHandling == NewLineHandling.Replace)
+                            if (_newLineHandling == NewLineHandling.Replace)
                             {
                                 pDst = WriteNewLine(pDst);
                             }
@@ -1421,7 +1421,7 @@ namespace System.Xml
                     }
                     pSrc++;
                 }
-                bufPos = (int)(pDst - pDstBegin);
+                _bufPos = (int)(pDst - pDstBegin);
             }
         }
 
@@ -1467,10 +1467,10 @@ namespace System.Xml
 
         private unsafe byte* InvalidXmlChar(int ch, byte* pDst, bool entitize)
         {
-            Debug.Assert(!xmlCharType.IsWhiteSpace((char)ch));
-            Debug.Assert(!xmlCharType.IsAttributeValueChar((char)ch));
+            Debug.Assert(!_xmlCharType.IsWhiteSpace((char)ch));
+            Debug.Assert(!_xmlCharType.IsAttributeValueChar((char)ch));
 
-            if (checkCharacters)
+            if (_checkCharacters)
             {
                 // This method will never be called on surrogates, so it is ok to pass in '\0' to the CreateInvalidCharException
                 throw XmlConvert.CreateInvalidCharException((char)ch, '\0');
@@ -1572,12 +1572,12 @@ namespace System.Xml
         // Write NewLineChars to the specified buffer position and return an updated position.
         protected unsafe byte* WriteNewLine(byte* pDst)
         {
-            fixed (byte* pDstBegin = bufBytes)
+            fixed (byte* pDstBegin = _bufBytes)
             {
-                bufPos = (int)(pDst - pDstBegin);
+                _bufPos = (int)(pDst - pDstBegin);
                 // Let RawText do the real work
-                RawText(newLineChars);
-                return pDstBegin + bufPos;
+                RawText(_newLineChars);
+                return pDstBegin + _bufPos;
             }
         }
 
@@ -1715,7 +1715,7 @@ namespace System.Xml
         {
             if (allowOnlyWhitespace)
             {
-                if (!xmlCharType.IsOnlyWhitespace(chars))
+                if (!_xmlCharType.IsOnlyWhitespace(chars))
                 {
                     throw new ArgumentException(SR.Format(SR.Xml_IndentCharsNotWhitespace, propertyName));
                 }
@@ -1725,7 +1725,7 @@ namespace System.Xml
                 string error = null;
                 for (int i = 0; i < chars.Length; i++)
                 {
-                    if (!xmlCharType.IsTextChar(chars[i]))
+                    if (!_xmlCharType.IsTextChar(chars[i]))
                     {
                         switch (chars[i])
                         {
@@ -1775,14 +1775,14 @@ namespace System.Xml
         //
         // Fields
         //
-        protected int indentLevel;
-        protected bool newLineOnAttributes;
-        protected string indentChars;
+        protected int _indentLevel;
+        protected bool _newLineOnAttributes;
+        protected string _indentChars;
 
-        protected bool mixedContent;
+        protected bool _mixedContent;
         private BitStack _mixedContentStack;
 
-        protected ConformanceLevel conformanceLevel = ConformanceLevel.Auto;
+        protected ConformanceLevel _conformanceLevel = ConformanceLevel.Auto;
 
         //
         // Constructors
@@ -1804,8 +1804,8 @@ namespace System.Xml
 
                 settings.ReadOnly = false;
                 settings.Indent = true;
-                settings.IndentChars = indentChars;
-                settings.NewLineOnAttributes = newLineOnAttributes;
+                settings.IndentChars = _indentChars;
+                settings.NewLineOnAttributes = _newLineOnAttributes;
                 settings.ReadOnly = true;
 
                 return settings;
@@ -1815,7 +1815,7 @@ namespace System.Xml
         public override void WriteDocType(string name, string pubid, string sysid, string subset)
         {
             // Add indentation
-            if (!mixedContent && base.textPos != base.bufPos)
+            if (!_mixedContent && base._textPos != base._bufPos)
             {
                 WriteIndent();
             }
@@ -1827,12 +1827,12 @@ namespace System.Xml
             Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
 
             // Add indentation
-            if (!mixedContent && base.textPos != base.bufPos)
+            if (!_mixedContent && base._textPos != base._bufPos)
             {
                 WriteIndent();
             }
-            indentLevel++;
-            _mixedContentStack.PushBit(mixedContent);
+            _indentLevel++;
+            _mixedContentStack.PushBit(_mixedContent);
 
             base.WriteStartElement(prefix, localName, ns);
         }
@@ -1840,16 +1840,16 @@ namespace System.Xml
         internal override void StartElementContent()
         {
             // If this is the root element and we're writing a document
-            //   do not inherit the mixedContent flag into the root element.
+            //   do not inherit the _mixedContent flag into the root element.
             //   This is to allow for whitespace nodes on root level
             //   without disabling indentation for the whole document.
-            if (indentLevel == 1 && conformanceLevel == ConformanceLevel.Document)
+            if (_indentLevel == 1 && _conformanceLevel == ConformanceLevel.Document)
             {
-                mixedContent = false;
+                _mixedContent = false;
             }
             else
             {
-                mixedContent = _mixedContentStack.PeekBit();
+                _mixedContent = _mixedContentStack.PeekBit();
             }
             base.StartElementContent();
         }
@@ -1857,22 +1857,22 @@ namespace System.Xml
         internal override void OnRootElement(ConformanceLevel currentConformanceLevel)
         {
             // Just remember the current conformance level
-            conformanceLevel = currentConformanceLevel;
+            _conformanceLevel = currentConformanceLevel;
         }
 
         internal override void WriteEndElement(string prefix, string localName, string ns)
         {
             // Add indentation
-            indentLevel--;
-            if (!mixedContent && base.contentPos != base.bufPos)
+            _indentLevel--;
+            if (!_mixedContent && base._contentPos != base._bufPos)
             {
                 // There was content, so try to indent
-                if (base.textPos != base.bufPos)
+                if (base._textPos != base._bufPos)
                 {
                     WriteIndent();
                 }
             }
-            mixedContent = _mixedContentStack.PopBit();
+            _mixedContent = _mixedContentStack.PopBit();
 
             base.WriteEndElement(prefix, localName, ns);
         }
@@ -1880,16 +1880,16 @@ namespace System.Xml
         internal override void WriteFullEndElement(string prefix, string localName, string ns)
         {
             // Add indentation
-            indentLevel--;
-            if (!mixedContent && base.contentPos != base.bufPos)
+            _indentLevel--;
+            if (!_mixedContent && base._contentPos != base._bufPos)
             {
                 // There was content, so try to indent
-                if (base.textPos != base.bufPos)
+                if (base._textPos != base._bufPos)
                 {
                     WriteIndent();
                 }
             }
-            mixedContent = _mixedContentStack.PopBit();
+            _mixedContent = _mixedContentStack.PopBit();
 
             base.WriteFullEndElement(prefix, localName, ns);
         }
@@ -1898,7 +1898,7 @@ namespace System.Xml
         public override void WriteStartAttribute(string prefix, string localName, string ns)
         {
             // Add indentation
-            if (newLineOnAttributes)
+            if (_newLineOnAttributes)
             {
                 WriteIndent();
             }
@@ -1908,13 +1908,13 @@ namespace System.Xml
 
         public override void WriteCData(string text)
         {
-            mixedContent = true;
+            _mixedContent = true;
             base.WriteCData(text);
         }
 
         public override void WriteComment(string text)
         {
-            if (!mixedContent && base.textPos != base.bufPos)
+            if (!_mixedContent && base._textPos != base._bufPos)
             {
                 WriteIndent();
             }
@@ -1924,7 +1924,7 @@ namespace System.Xml
 
         public override void WriteProcessingInstruction(string target, string text)
         {
-            if (!mixedContent && base.textPos != base.bufPos)
+            if (!_mixedContent && base._textPos != base._bufPos)
             {
                 WriteIndent();
             }
@@ -1934,55 +1934,55 @@ namespace System.Xml
 
         public override void WriteEntityRef(string name)
         {
-            mixedContent = true;
+            _mixedContent = true;
             base.WriteEntityRef(name);
         }
 
         public override void WriteCharEntity(char ch)
         {
-            mixedContent = true;
+            _mixedContent = true;
             base.WriteCharEntity(ch);
         }
 
         public override void WriteSurrogateCharEntity(char lowChar, char highChar)
         {
-            mixedContent = true;
+            _mixedContent = true;
             base.WriteSurrogateCharEntity(lowChar, highChar);
         }
 
         public override void WriteWhitespace(string ws)
         {
-            mixedContent = true;
+            _mixedContent = true;
             base.WriteWhitespace(ws);
         }
 
         public override void WriteString(string text)
         {
-            mixedContent = true;
+            _mixedContent = true;
             base.WriteString(text);
         }
 
         public override void WriteChars(char[] buffer, int index, int count)
         {
-            mixedContent = true;
+            _mixedContent = true;
             base.WriteChars(buffer, index, count);
         }
 
         public override void WriteRaw(char[] buffer, int index, int count)
         {
-            mixedContent = true;
+            _mixedContent = true;
             base.WriteRaw(buffer, index, count);
         }
 
         public override void WriteRaw(string data)
         {
-            mixedContent = true;
+            _mixedContent = true;
             base.WriteRaw(data);
         }
 
         public override void WriteBase64(byte[] buffer, int index, int count)
         {
-            mixedContent = true;
+            _mixedContent = true;
             base.WriteBase64(buffer, index, count);
         }
 
@@ -1991,25 +1991,25 @@ namespace System.Xml
         //
         private void Init(XmlWriterSettings settings)
         {
-            indentLevel = 0;
-            indentChars = settings.IndentChars;
-            newLineOnAttributes = settings.NewLineOnAttributes;
+            _indentLevel = 0;
+            _indentChars = settings.IndentChars;
+            _newLineOnAttributes = settings.NewLineOnAttributes;
             _mixedContentStack = new BitStack();
 
             // check indent characters that they are valid XML characters
-            if (base.checkCharacters)
+            if (base._checkCharacters)
             {
-                if (newLineOnAttributes)
+                if (_newLineOnAttributes)
                 {
-                    base.ValidateContentChars(indentChars, "IndentChars", true);
-                    base.ValidateContentChars(newLineChars, "NewLineChars", true);
+                    base.ValidateContentChars(_indentChars, "IndentChars", true);
+                    base.ValidateContentChars(_newLineChars, "NewLineChars", true);
                 }
                 else
                 {
-                    base.ValidateContentChars(indentChars, "IndentChars", false);
-                    if (base.newLineHandling != NewLineHandling.Replace)
+                    base.ValidateContentChars(_indentChars, "IndentChars", false);
+                    if (base._newLineHandling != NewLineHandling.Replace)
                     {
-                        base.ValidateContentChars(newLineChars, "NewLineChars", false);
+                        base.ValidateContentChars(_newLineChars, "NewLineChars", false);
                     }
                 }
             }
@@ -2018,10 +2018,10 @@ namespace System.Xml
         // Add indentation to output.  Write newline and then repeat IndentChars for each indent level.
         private void WriteIndent()
         {
-            RawText(base.newLineChars);
-            for (int i = indentLevel; i > 0; i--)
+            RawText(base._newLineChars);
+            for (int i = _indentLevel; i > 0; i--)
             {
-                RawText(indentChars);
+                RawText(_indentChars);
             }
         }
     }

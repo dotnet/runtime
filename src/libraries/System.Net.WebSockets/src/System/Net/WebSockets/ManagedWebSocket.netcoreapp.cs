@@ -44,7 +44,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                return new ValueTask<ValueWebSocketReceiveResult>(Task.FromException<ValueWebSocketReceiveResult>(exc));
+                return ValueTask.FromException<ValueWebSocketReceiveResult>(exc);
             }
         }
 

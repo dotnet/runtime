@@ -437,7 +437,7 @@ namespace System.Net.Http.Functional.Tests
                 bool called = false;
                 var content = new StreamContent(new DelegateStream(
                     canReadFunc: () => true,
-                    readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                    readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
                         int result = 1;
                         if (called)
@@ -445,11 +445,17 @@ namespace System.Net.Http.Functional.Tests
                             result = 0;
                             Assert.False(cancellationToken.IsCancellationRequested);
                             tokenSource.Cancel();
-                            Assert.True(cancellationToken.IsCancellationRequested);
+
+                            // Wait for cancellation to occur.  It should be very quickly after it's been requested.
+                            var tcs = new TaskCompletionSource<bool>();
+                            using (cancellationToken.Register(() => tcs.SetResult(true)))
+                            {
+                                await tcs.Task;
+                            }
                         }
 
                         called = true;
-                        return Task.FromResult(result);
+                        return result;
                     }
                 ));
                 yield return new object[] { content, tokenSource };
@@ -467,7 +473,7 @@ namespace System.Net.Http.Functional.Tests
                     lengthFunc: () => 1,
                     positionGetFunc: () => 0,
                     positionSetFunc: _ => {},
-                    readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                    readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
                         int result = 1;
                         if (called)
@@ -475,11 +481,17 @@ namespace System.Net.Http.Functional.Tests
                             result = 0;
                             Assert.False(cancellationToken.IsCancellationRequested);
                             tokenSource.Cancel();
-                            Assert.True(cancellationToken.IsCancellationRequested);
+
+                            // Wait for cancellation to occur.  It should be very quickly after it's been requested.
+                            var tcs = new TaskCompletionSource<bool>();
+                            using (cancellationToken.Register(() => tcs.SetResult(true)))
+                            {
+                                await tcs.Task;
+                            }
                         }
 
                         called = true;
-                        return Task.FromResult(result);
+                        return result;
                     }
                 )));
                 yield return new object[] { content, tokenSource };
@@ -497,7 +509,7 @@ namespace System.Net.Http.Functional.Tests
                     lengthFunc: () => 1,
                     positionGetFunc: () => 0,
                     positionSetFunc: _ => {},
-                    readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                    readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
                         int result = 1;
                         if (called)
@@ -505,11 +517,17 @@ namespace System.Net.Http.Functional.Tests
                             result = 0;
                             Assert.False(cancellationToken.IsCancellationRequested);
                             tokenSource.Cancel();
-                            Assert.True(cancellationToken.IsCancellationRequested);
+
+                            // Wait for cancellation to occur.  It should be very quickly after it's been requested.
+                            var tcs = new TaskCompletionSource<bool>();
+                            using (cancellationToken.Register(() => tcs.SetResult(true)))
+                            {
+                                await tcs.Task;
+                            }
                         }
 
                         called = true;
-                        return Task.FromResult(result);
+                        return result;
                     }
                 )));
                 yield return new object[] { content, tokenSource };
@@ -522,12 +540,11 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(PostAsync_Cancel_CancellationTokenPassedToContent_MemberData))]
         public async Task PostAsync_Cancel_CancellationTokenPassedToContent(HttpContent content, CancellationTokenSource cancellationTokenSource)
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion > HttpVersion.Version11)
+            if (IsWinHttpHandler)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {

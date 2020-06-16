@@ -3,118 +3,115 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class KeyValuePairConverter<TKey, TValue> : JsonValueConverter<KeyValuePair<TKey, TValue>>
+    internal sealed class KeyValuePairConverter<TKey, TValue> :
+        SmallObjectWithParameterizedConstructorConverter<KeyValuePair<TKey, TValue>, TKey, TValue, object, object>
     {
-        private const string KeyName = "Key";
-        private const string ValueName = "Value";
+        private const string KeyNameCLR = "Key";
+        private const string ValueNameCLR = "Value";
 
-        // todo: https://github.com/dotnet/runtime/issues/1197
-        // move these to JsonSerializerOptions and use the proper encoding.
-        private static readonly JsonEncodedText _keyName = JsonEncodedText.Encode(KeyName, encoder: null);
-        private static readonly JsonEncodedText _valueName = JsonEncodedText.Encode(ValueName, encoder: null);
+        private const int NumProperties = 2;
 
-        // todo: https://github.com/dotnet/runtime/issues/32352
-        // it is possible to cache the underlying converters since this is an internal converter and
-        // an instance is created only once for each JsonSerializerOptions instance.
+        // Property name for "Key" and "Value" with Options.PropertyNamingPolicy applied.
+        private string _keyName = null!;
+        private string _valueName = null!;
 
-        internal override bool OnTryRead(
-            ref Utf8JsonReader reader,
-            Type typeToConvert, JsonSerializerOptions options,
-            ref ReadStack state,
-            out KeyValuePair<TKey, TValue> value)
+        private static readonly ConstructorInfo s_constructorInfo =
+            typeof(KeyValuePair<TKey, TValue>).GetConstructor(new[] { typeof(TKey), typeof(TValue) })!;
+
+        internal override void Initialize(JsonSerializerOptions options)
         {
-            if (reader.TokenType != JsonTokenType.StartObject)
+            JsonNamingPolicy? namingPolicy = options.PropertyNamingPolicy;
+            if (namingPolicy == null)
             {
-                ThrowHelper.ThrowJsonException();
+                _keyName = KeyNameCLR;
+                _valueName = ValueNameCLR;
+            }
+            else
+            {
+                _keyName = namingPolicy.ConvertName(KeyNameCLR);
+                _valueName = namingPolicy.ConvertName(ValueNameCLR);
+
+                // Validation for the naming policy will occur during JsonPropertyInfo creation.
             }
 
-            TKey k = default!;
-            bool keySet = false;
+            ConstructorInfo = s_constructorInfo;
+            Debug.Assert(ConstructorInfo != null);
+        }
 
-            TValue v = default!;
-            bool valueSet = false;
+        /// <summary>
+        /// Lookup the constructor parameter given its name in the reader.
+        /// </summary>
+        protected override bool TryLookupConstructorParameter(
+            ref ReadStack state,
+            ref Utf8JsonReader reader,
+            JsonSerializerOptions options,
+            out JsonParameterInfo? jsonParameterInfo)
+        {
+            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            ArgumentState? argState = state.Current.CtorArgumentState;
 
-            // Get the first property.
-            reader.ReadWithVerify();
-            if (reader.TokenType != JsonTokenType.PropertyName)
-            {
-                ThrowHelper.ThrowJsonException();
-            }
+            Debug.Assert(classInfo.ClassType == ClassType.Object);
+            Debug.Assert(argState != null);
+            Debug.Assert(_keyName != null);
+            Debug.Assert(_valueName != null);
+
+            bool caseInsensitiveMatch = options.PropertyNameCaseInsensitive;
 
             string propertyName = reader.GetString()!;
-            if (propertyName == KeyName)
+            state.Current.JsonPropertyNameAsString = propertyName;
+
+            if (!argState.FoundKey &&
+                FoundKeyProperty(propertyName, caseInsensitiveMatch))
             {
-                reader.ReadWithVerify();
-                k = JsonSerializer.Deserialize<TKey>(ref reader, options, ref state, KeyName);
-                keySet = true;
+                jsonParameterInfo = classInfo.ParameterCache![_keyName];
+                argState.FoundKey = true;
             }
-            else if (propertyName == ValueName)
+            else if (!argState.FoundValue &&
+                FoundValueProperty(propertyName, caseInsensitiveMatch))
             {
-                reader.ReadWithVerify();
-                v = JsonSerializer.Deserialize<TValue>(ref reader, options, ref state, ValueName);
-                valueSet = true;
+                jsonParameterInfo = classInfo.ParameterCache![_valueName];
+                argState.FoundValue = true;
             }
             else
             {
                 ThrowHelper.ThrowJsonException();
+                jsonParameterInfo = null;
+                return false;
             }
 
-            // Get the second property.
-            reader.ReadWithVerify();
-            if (reader.TokenType != JsonTokenType.PropertyName)
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-
-            propertyName = reader.GetString()!;
-            if (propertyName == KeyName)
-            {
-                reader.ReadWithVerify();
-                k = JsonSerializer.Deserialize<TKey>(ref reader, options, ref state, KeyName);
-                keySet = true;
-            }
-            else if (propertyName == ValueName)
-            {
-                reader.ReadWithVerify();
-                v = JsonSerializer.Deserialize<TValue>(ref reader, options, ref state, ValueName);
-                valueSet = true;
-            }
-            else
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-
-            if (!keySet || !valueSet)
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-
-            reader.ReadWithVerify();
-
-            if (reader.TokenType != JsonTokenType.EndObject)
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-
-            value = new KeyValuePair<TKey, TValue>(k!, v!);
+            Debug.Assert(jsonParameterInfo != null);
+            argState.ParameterIndex++;
+            argState.JsonParameterInfo = jsonParameterInfo;
             return true;
         }
 
-        internal override bool OnTryWrite(Utf8JsonWriter writer, KeyValuePair<TKey, TValue> value, JsonSerializerOptions options, ref WriteStack state)
+        protected override void EndRead(ref ReadStack state)
         {
-            writer.WriteStartObject();
+            Debug.Assert(state.Current.PropertyIndex == 0);
 
-            writer.WritePropertyName(_keyName);
-            JsonSerializer.Serialize(writer, value.Key, options, ref state, KeyName);
+            if (state.Current.CtorArgumentState!.ParameterIndex != NumProperties)
+            {
+                ThrowHelper.ThrowJsonException();
+            }
+        }
 
-            writer.WritePropertyName(_valueName);
-            JsonSerializer.Serialize(writer, value.Value, options, ref state, ValueName);
+        private bool FoundKeyProperty(string propertyName, bool caseInsensitiveMatch)
+        {
+            return propertyName == _keyName ||
+                (caseInsensitiveMatch && string.Equals(propertyName, _keyName, StringComparison.OrdinalIgnoreCase)) ||
+                propertyName == KeyNameCLR;
+        }
 
-            writer.WriteEndObject();
-            return true;
+        private bool FoundValueProperty(string propertyName, bool caseInsensitiveMatch)
+        {
+            return propertyName == _valueName ||
+                (caseInsensitiveMatch && string.Equals(propertyName, _valueName, StringComparison.OrdinalIgnoreCase)) ||
+                propertyName == ValueNameCLR;
         }
     }
 }

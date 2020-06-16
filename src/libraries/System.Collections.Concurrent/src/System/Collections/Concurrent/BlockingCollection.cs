@@ -43,14 +43,14 @@ namespace System.Collections.Concurrent
     [DebuggerDisplay("Count = {Count}, Type = {_collection}")]
     public class BlockingCollection<T> : IEnumerable<T>, ICollection, IDisposable, IReadOnlyCollection<T>
     {
-        private IProducerConsumerCollection<T> _collection = null!;
+        private IProducerConsumerCollection<T> _collection;
         private int _boundedCapacity;
         private const int NON_BOUNDED = -1;
         private SemaphoreSlim? _freeNodes;
-        private SemaphoreSlim _occupiedNodes = null!;
+        private SemaphoreSlim _occupiedNodes;
         private bool _isDisposed;
-        private CancellationTokenSource _consumersCancellationTokenSource = null!;
-        private CancellationTokenSource _producersCancellationTokenSource = null!;
+        private CancellationTokenSource _consumersCancellationTokenSource;
+        private CancellationTokenSource _producersCancellationTokenSource;
 
         private volatile int _currentAdders;
         private const int COMPLETE_ADDING_ON_MASK = unchecked((int)0x80000000);
@@ -211,6 +211,10 @@ namespace System.Collections.Concurrent
         /// <param name="collection">The collection to use as the underlying data store.</param>
         /// <param name="boundedCapacity">The bounded size of the collection.</param>
         /// <param name="collectionCount">The number of items currently in the underlying collection.</param>
+        [MemberNotNull(nameof(_collection))]
+        [MemberNotNull(nameof(_consumersCancellationTokenSource))]
+        [MemberNotNull(nameof(_producersCancellationTokenSource))]
+        [MemberNotNull(nameof(_occupiedNodes))]
         private void Initialize(IProducerConsumerCollection<T> collection, int boundedCapacity, int collectionCount)
         {
             Debug.Assert(boundedCapacity > 0 || boundedCapacity == NON_BOUNDED);

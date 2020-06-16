@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -271,24 +272,23 @@ namespace Internal.Cryptography.Pal
         {
             SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
             {
-                Algorithm = new AlgorithmIdentifierAsn { Algorithm = new Oid(Oids.Dsa, null), Parameters = encodedParameters },
+                Algorithm = new AlgorithmIdentifierAsn { Algorithm = Oids.Dsa, Parameters = encodedParameters },
                 SubjectPublicKey = encodedKeyValue,
             };
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            spki.Encode(writer);
+
+            DSA dsa = new DSAOpenSsl();
+            try
             {
-                spki.Encode(writer);
-                DSA dsa = new DSAOpenSsl();
-                try
-                {
-                    dsa.ImportSubjectPublicKeyInfo(writer.EncodeAsSpan(), out _);
-                    return dsa;
-                }
-                catch (Exception)
-                {
-                    dsa.Dispose();
-                    throw;
-                }
+                dsa.ImportSubjectPublicKeyInfo(writer.Encode(), out _);
+                return dsa;
+            }
+            catch (Exception)
+            {
+                dsa.Dispose();
+                throw;
             }
         }
     }

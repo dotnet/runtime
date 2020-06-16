@@ -106,9 +106,7 @@ namespace System.Numerics
         [Intrinsic]
         public readonly bool Equals(Vector3 other)
         {
-            return X == other.X &&
-                   Y == other.Y &&
-                   Z == other.Z;
+            return this == other;
         }
         #endregion Public Instance Methods
 
@@ -294,9 +292,9 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector3 left, Vector3 right)
         {
-            return (left.X == right.X &&
-                    left.Y == right.Y &&
-                    left.Z == right.Z);
+            return left.X == right.X &&
+                   left.Y == right.Y &&
+                   left.Z == right.Z;
         }
 
         /// <summary>
@@ -309,9 +307,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Vector3 left, Vector3 right)
         {
-            return (left.X != right.X ||
-                    left.Y != right.Y ||
-                    left.Z != right.Z);
+            return !(left == right);
         }
         #endregion Public Static Operators
     }

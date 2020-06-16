@@ -32,7 +32,7 @@ namespace System.Net.Http.Tests
             CleanEnv();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Ctor_NoEnvironmentVariables_NotHttpEnvironmentProxy()
         {
             RemoteExecutor.Invoke(() =>
@@ -45,7 +45,7 @@ namespace System.Net.Http.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Ctor_ProxyEnvironmentVariableSet_IsHttpEnvironmentProxy()
         {
             var options = new RemoteInvokeOptions();

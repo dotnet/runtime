@@ -48,34 +48,6 @@ namespace System.Text.Json
         // Use an array (instead of List<T>) for highest performance.
         private volatile PropertyRef[]? _propertyRefsSorted;
 
-        private Dictionary<string, JsonPropertyInfo> CreatePropertyCache(int capacity)
-        {
-            StringComparer comparer;
-
-            if (Options.PropertyNameCaseInsensitive)
-            {
-                comparer = StringComparer.OrdinalIgnoreCase;
-            }
-            else
-            {
-                comparer = StringComparer.Ordinal;
-            }
-
-            return new Dictionary<string, JsonPropertyInfo>(capacity, comparer);
-        }
-
-        public Dictionary<string, JsonParameterInfo> CreateParameterCache(int capacity, JsonSerializerOptions options)
-        {
-            if (options.PropertyNameCaseInsensitive)
-            {
-                return new Dictionary<string, JsonParameterInfo>(capacity, StringComparer.OrdinalIgnoreCase);
-            }
-            else
-            {
-                return new Dictionary<string, JsonParameterInfo>(capacity);
-            }
-        }
-
         public static JsonPropertyInfo AddProperty(PropertyInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
         {
             JsonIgnoreCondition? ignoreCondition = JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(propertyInfo)?.Condition;
@@ -139,13 +111,17 @@ namespace System.Text.Json
             JsonConverter converter,
             JsonSerializerOptions options)
         {
-            return CreateProperty(
+            JsonPropertyInfo jsonPropertyInfo = CreateProperty(
                 declaredPropertyType: declaredPropertyType,
                 runtimePropertyType: runtimePropertyType,
                 propertyInfo: null, // Not a real property so this is null.
                 parentClassType: typeof(object), // a dummy value (not used)
                 converter: converter,
                 options);
+
+            Debug.Assert(jsonPropertyInfo.IsForClassInfo);
+
+            return jsonPropertyInfo;
         }
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
