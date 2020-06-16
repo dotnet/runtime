@@ -9051,10 +9051,6 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             m_curStackHt++; didIntrinsic = true;
             break;
 #endif // INTERP_ILSTUBS
-        case CORINFO_INTRINSIC_GetIsSupported:
-            DoGetIsSupported();
-            didIntrinsic = true;
-            break;
         default:
 #if INTERP_TRACING
             InterlockedIncrement(&s_totalInterpCallsToIntrinsicsUnhandled);
@@ -9074,6 +9070,15 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             thrd->m_dwLastError = thrd->m_dwLastErrorInterp;
             didIntrinsic = true;
         }
+
+#ifdef FEATURE_INTERPRETER
+        if (strcmp(methToCall->GetModule()->GetSimpleName(), "System.Private.CoreLib") == 0 &&
+            strcmp(methToCall->GetName(), "get_IsSupported") == 0)
+        {
+            DoGetIsSupported();
+            didIntrinsic = true;
+        }
+#endif
 
 #if FEATURE_SIMD
         if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
