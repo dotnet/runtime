@@ -32,6 +32,8 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Production code references -->
+    <Compile Include="..\..\src\System\Net\Security\NetEventSource.Security.cs"
+             Link="ProductionCode\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslStream.cs"
              Link="ProductionCode\System\Net\Security\SslStream.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslClientAuthenticationOptions.cs"
@@ -54,6 +56,8 @@
              Link="ProductionCode\Common\System\Net\TlsAlertType.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsAlertMessage.cs"
              Link="ProductionCode\Common\System\Net\TlsAlertMessage.cs" />
+    <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
+             Link="ProductionCode\Common\System\Net\TlsFrameHelper.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"
              Link="Common\Interop\Windows\SChannel\Interop.Alerts.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"

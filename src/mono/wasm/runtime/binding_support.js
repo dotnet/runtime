@@ -899,7 +899,7 @@ var BindingSupportLib = {
 					if (typeof ___mono_wasm_global___ !== "undefined" && ___mono_wasm_global___ === obj)
 						ownsHandle = false;
 
-					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, typeof wasm_type === "undefined" ? -1 : wasm_type);
+					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, ownsHandle, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					this.mono_wasm_object_registry[handle] = obj;
 						
 				}

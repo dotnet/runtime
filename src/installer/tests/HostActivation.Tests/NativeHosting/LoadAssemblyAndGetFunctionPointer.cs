@@ -11,14 +11,14 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 {
-    public partial class ComponentActivation : IClassFixture<ComponentActivation.SharedTestState>
+    public partial class LoadAssemblyAndGetFunctionPointer : IClassFixture<LoadAssemblyAndGetFunctionPointer.SharedTestState>
     {
         private const string ComponentLoadAssemblyAndGetFunctionPointerArg = "component_load_assembly_and_get_function_pointer";
         private const string AppLoadAssemblyAndGetFunctionPointerArg = "app_load_assembly_and_get_function_pointer";
 
         private readonly SharedTestState sharedState;
 
-        public ComponentActivation(SharedTestState sharedTestState)
+        public LoadAssemblyAndGetFunctionPointer(SharedTestState sharedTestState)
         {
             sharedState = sharedTestState;
         }
@@ -262,8 +262,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             protected override void Dispose(bool disposing)
             {
+                if (ApplicationFixture != null)
+                    ApplicationFixture.Dispose();
                 if (ComponentWithNoDependenciesFixture != null)
                     ComponentWithNoDependenciesFixture.Dispose();
+                if (SelfContainedApplicationFixture != null)
+                    SelfContainedApplicationFixture.Dispose();
 
                 base.Dispose(disposing);
             }

@@ -12,7 +12,6 @@ parameters:
   # 'pr' - the queues used for a pull request for the platform. Typically a small set.
   # 'ci' - the queues used for a CI (post-merge) test run.
   # 'all' - the queues used for non-PR, non-CI test runs, e.g., Manual or Scheduled runs. Typically this is all available queues.
-  # 'corefx' - the queues used for a corefx test run.
   helixQueueGroup: 'pr'
   # helixQueuesTemplate is a yaml template which will be expanded in order to set up the helix queues
   # for the given platform and helixQueueGroup.

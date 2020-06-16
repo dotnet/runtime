@@ -365,7 +365,7 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Thread CreateInternal();
 
-        [PreserveDependency(nameof(StartCallback))]
+        [DynamicDependency(nameof(StartCallback))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void StartInternal(Thread runtime_thread);
 

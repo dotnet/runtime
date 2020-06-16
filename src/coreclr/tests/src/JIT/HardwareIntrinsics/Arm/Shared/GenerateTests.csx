@@ -1789,13 +1789,39 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
 
 private static void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
 {
+    // Too many tests may time out in CI or various stress modes
+    const int MaxGroupSize = 256;
+
+    var numGroups = (inputs.Length + (MaxGroupSize - 1)) / MaxGroupSize;
+
+    if (numGroups == 1)
+    {
+        ProcessInputGroup(groupName, -1, inputs);
+    }
+    else
+    {
+        for (var i = 0; i < numGroups; i++)
+        {
+            var groupStart = i * MaxGroupSize;
+            var groupSize = Math.Min(MaxGroupSize, inputs.Length - groupStart);
+
+            var inputGroup = inputs.Skip(groupStart).Take(groupSize).ToArray();
+            ProcessInputGroup(groupName, i, inputGroup);
+        }
+    }
+}
+
+private static void ProcessInputGroup(string groupName, int index, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
+{
     var directoryName = Path.Combine("..", groupName);
     Directory.CreateDirectory(directoryName);
 
-    var debugProjectFileName = Path.Combine(directoryName, $"{groupName}_r.csproj");
-    var releaseProjectFileName = Path.Combine(directoryName, $"{groupName}_ro.csproj");
+    var fileGroupName = (index >= 0) ? $"{groupName}_Part{index}" : groupName;
 
-    var testListFileName = Path.Combine(directoryName, $"Program.{groupName}.cs");
+    var debugProjectFileName = Path.Combine(directoryName, $"{fileGroupName}_r.csproj");
+    var releaseProjectFileName = Path.Combine(directoryName, $"{fileGroupName}_ro.csproj");
+
+    var testListFileName = Path.Combine(directoryName, $"Program.{fileGroupName}.cs");
 
     using (var debugProjectFile = new StreamWriter(debugProjectFileName, append: false))
     using (var releaseProjectFile = new StreamWriter(releaseProjectFileName, append: false))
@@ -1843,13 +1869,13 @@ namespace JIT.HardwareIntrinsics.Arm
             ProcessInput(debugProjectFile, releaseProjectFile, testListFile, groupName, input);
         }
 
-        debugProjectFile.WriteLine($@"    <Compile Include=""Program.{groupName}.cs"" />
+        debugProjectFile.WriteLine($@"    <Compile Include=""Program.{fileGroupName}.cs"" />
     <Compile Include=""..\Shared\Helpers.cs"" />
     <Compile Include=""..\Shared\Program.cs"" />
   </ItemGroup>
 </Project>");
 
-        releaseProjectFile.WriteLine($@"    <Compile Include=""Program.{groupName}.cs"" />
+        releaseProjectFile.WriteLine($@"    <Compile Include=""Program.{fileGroupName}.cs"" />
     <Compile Include=""..\Shared\Helpers.cs"" />
     <Compile Include=""..\Shared\Program.cs"" />
   </ItemGroup>
