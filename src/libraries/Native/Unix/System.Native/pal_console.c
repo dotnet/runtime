@@ -182,15 +182,16 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
     {
         termios.c_iflag &= (uint32_t)(~(IXON | IXOFF));
         termios.c_lflag &= (uint32_t)(~(ECHO | ICANON | IEXTEN));
+
+        if (disableCrLfConversions)
+        {
+            // Disable any CR-to-NL, NL-to-CR or Ignore-CR settings
+            // Required for scenaria where the precise input character is needed
+            // such as System.Console.ReadKey()
+            termios.c_iflag &= (uint32_t)(~(ICRNL | INLCR | IGNCR));
+        }
     }
 
-    if (disableCrLfConversions)
-    {
-        // Disable any CR-to-NL, NL-to-CR or Ignore-CR settings
-        // Required for scenaria where the precise input character is needed
-        // such as System.Console.ReadKey()
-        termios.c_iflag &= (uint32_t)(~(ICRNL | INLCR | IGNCR));
-    }
 
     termios.c_cc[VMIN] = minChars;
     termios.c_cc[VTIME] = decisecondsTimeout;
@@ -230,7 +231,7 @@ void UninitializeTerminal()
     }
 }
 
-void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout, int32_t disableCrLfConversions)
+void SystemNative_InitializeConsoleBeforeRead(int32_t disableCrLfConversions, uint8_t minChars, uint8_t decisecondsTimeout)
 {
     assert(disableCrLfConversions == 0 || disableCrLfConversions == 1);
 
@@ -382,7 +383,7 @@ void SystemNative_GetControlCharacters(
 
 int32_t SystemNative_StdinReady()
 {
-    SystemNative_InitializeConsoleBeforeRead(1, 0, false);
+    SystemNative_InitializeConsoleBeforeRead(false, 1, 0);
     struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
     int rv = poll(&fd, 1, 0) > 0 ? 1 : 0;
     SystemNative_UninitializeConsoleAfterRead();

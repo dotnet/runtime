@@ -13,7 +13,7 @@ internal static partial class Interop
         internal static extern unsafe int ReadStdin(byte* buffer, int bufferSize);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_InitializeConsoleBeforeRead")]
-        internal static extern unsafe void InitializeConsoleBeforeRead(byte minChars = 1, byte decisecondsTimeout = 0, bool disableCrLfConversions = false);
+        internal static extern unsafe void InitializeConsoleBeforeRead(bool disableCrLfConversions, byte minChars = 1, byte decisecondsTimeout = 0);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_UninitializeConsoleAfterRead")]
         internal static extern unsafe void UninitializeConsoleAfterRead();

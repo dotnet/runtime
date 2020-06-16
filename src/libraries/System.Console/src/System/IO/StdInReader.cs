@@ -88,7 +88,7 @@ namespace System.IO
             Debug.Assert(_tmpKeys.Count == 0);
             string? readLineStr = null;
 
-            Interop.Sys.InitializeConsoleBeforeRead();
+            Interop.Sys.InitializeConsoleBeforeRead(disableCrLfConversions: false);
             try
             {
                 // Read key-by-key until we've read a line.
