@@ -941,6 +941,48 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	return klass;
 }
 
+/*
+ * For a composite class like uint32[], uint32*, set MonoClass:cast_class to the corresponding "intermediate type" (for
+ * arrays) or "verification type" (for pointers) in the sense of ECMA I.8.7.3.  This will be used by
+ * mono_class_is_assignable_from.
+ *
+ * Assumes MonoClass:cast_class is already set (for example if it's an array of
+ * some enum) and adjusts it.
+ */
+static void
+class_composite_fixup_cast_class (MonoClass *klass, gboolean for_ptr)
+{
+	switch (m_class_get_byval_arg (m_class_get_cast_class (klass))->type) {
+	case MONO_TYPE_BOOLEAN:
+		if (!for_ptr)
+			break;
+		klass->cast_class = mono_defaults.byte_class;
+		break;
+	case MONO_TYPE_I1:
+		klass->cast_class = mono_defaults.byte_class;
+		break;
+	case MONO_TYPE_U2:
+		klass->cast_class = mono_defaults.int16_class;
+		break;
+	case MONO_TYPE_U4:
+#if TARGET_SIZEOF_VOID_P == 4
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
+		klass->cast_class = mono_defaults.int32_class;
+		break;
+	case MONO_TYPE_U8:
+#if TARGET_SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
+		klass->cast_class = mono_defaults.int64_class;
+		break;
+	default:
+		break;
+	}
+}
+
 static gboolean
 class_kind_may_contain_generic_instances (MonoTypeKind kind)
 {
@@ -1093,30 +1135,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	else
 		klass->cast_class = eclass;
 
-	switch (m_class_get_byval_arg (m_class_get_cast_class (klass))->type) {
-	case MONO_TYPE_I1:
-		klass->cast_class = mono_defaults.byte_class;
-		break;
-	case MONO_TYPE_U2:
-		klass->cast_class = mono_defaults.int16_class;
-		break;
-	case MONO_TYPE_U4:
-#if TARGET_SIZEOF_VOID_P == 4
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-#endif
-		klass->cast_class = mono_defaults.int32_class;
-		break;
-	case MONO_TYPE_U8:
-#if TARGET_SIZEOF_VOID_P == 8
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-#endif
-		klass->cast_class = mono_defaults.int64_class;
-		break;
-	default:
-		break;
-	}
+	class_composite_fixup_cast_class (klass, FALSE);
 
 	klass->element_class = eclass;
 
@@ -1437,8 +1456,15 @@ mono_class_create_ptr (MonoType *type)
 	result->inited = TRUE;
 	result->instance_size = MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer);
 	result->min_align = sizeof (gpointer);
-	result->cast_class = result->element_class = el_class;
+	result->element_class = el_class;
 	result->blittable = TRUE;
+
+	if (el_class->enumtype)
+		result->cast_class = el_class->element_class;
+	else
+		result->cast_class = el_class;
+	class_composite_fixup_cast_class (result, TRUE);
+
 
 	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_PTR;
 	result->this_arg.data.type = result->_byval_arg.data.type = m_class_get_byval_arg (el_class);
