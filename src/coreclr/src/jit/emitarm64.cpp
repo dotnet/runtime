@@ -6275,7 +6275,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             // Only has encodings for H or S elemsize
             assert((elemsize == EA_2BYTE) || (elemsize == EA_4BYTE));
             // Only has encodings for V0..V15
-            if ((elemsize == EA_2BYTE) && (reg3 >= REG_V16))
+            if ((elemsize == EA_2BYTE) && ((genRegMask(reg3) & RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
             {
                 noway_assert(!"Invalid reg3");
             }
@@ -6367,7 +6367,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             elemsize = optGetElemsize(opt);
             assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
             // Restricted to V0-V15 when element size is H
-            if ((elemsize == EA_2BYTE) && (reg3 >= REG_V16))
+            if ((elemsize == EA_2BYTE) && ((genRegMask(reg3) & RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
             {
                 assert(!"Invalid reg3");
             }
@@ -6388,7 +6388,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             elemsize = optGetElemsize(opt);
             assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
             // Restricted to V0-V15 when element size is H
-            if ((elemsize == EA_2BYTE) && (reg3 >= REG_V16))
+            if ((elemsize == EA_2BYTE) && ((genRegMask(reg3) & RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
             {
                 assert(!"Invalid reg3");
             }
