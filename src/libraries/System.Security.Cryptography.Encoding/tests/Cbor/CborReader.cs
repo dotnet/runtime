@@ -28,17 +28,17 @@ namespace System.Formats.Cbor
         private (int Offset, int Length)? _previousKeyEncodingRange; // previous key encoding range
         private HashSet<(int Offset, int Length)>? _keyEncodingRanges; // all key encoding ranges up to encoding equality
 
-        // flag used to temporarily disable conformance level checks,
+        // flag used to temporarily disable conformance mode checks,
         // e.g. during a skip operation over nonconforming encodings.
-        private bool _isConformanceLevelCheckEnabled = true;
+        private bool _isConformanceModeCheckEnabled = true;
 
         // keeps a cached copy of the reader state; 'None' denotes uncomputed state
         private CborReaderState _cachedState = CborReaderState.None;
 
         /// <summary>
-        ///   The conformance level used by this reader.
+        ///   The conformance mode used by this reader.
         /// </summary>
-        public CborConformanceLevel ConformanceLevel { get; }
+        public CborConformanceMode ConformanceMode { get; }
 
         /// <summary>
         ///   Declares whether this reader allows multiple root-level CBOR data items.
@@ -64,9 +64,9 @@ namespace System.Formats.Cbor
         ///   Construct a CborReader instance over <paramref name="data"/> with given configuration.
         /// </summary>
         /// <param name="data">The CBOR encoded data to read.</param>
-        /// <param name="conformanceLevel">
-        ///   Specifies a conformance level guiding the conformance checks performed on the encoded data.
-        ///   Defaults to <see cref="CborConformanceLevel.Lax" /> conformance level.
+        /// <param name="conformanceMode">
+        ///   Specifies a conformance mode guiding the checks performed on the encoded data.
+        ///   Defaults to <see cref="CborConformanceMode.Lax" /> conformance mode.
         /// </param>
         /// <param name="allowMultipleRootLevelValues">
         ///   Specify if multiple root-level values are to be supported by the reader.
@@ -74,14 +74,14 @@ namespace System.Formats.Cbor
         ///   if trying to read beyond the scope of one root-level CBOR data item.
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="conformanceLevel"/> is not defined.
+        ///   <paramref name="conformanceMode"/> is not defined.
         /// </exception>
-        public CborReader(ReadOnlyMemory<byte> data, CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool allowMultipleRootLevelValues = false)
+        public CborReader(ReadOnlyMemory<byte> data, CborConformanceMode conformanceMode = CborConformanceMode.Lax, bool allowMultipleRootLevelValues = false)
         {
-            CborConformanceLevelHelpers.Validate(conformanceLevel);
+            CborConformanceModeHelpers.Validate(conformanceMode);
 
             _data = data;
-            ConformanceLevel = conformanceLevel;
+            ConformanceMode = conformanceMode;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
             _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
         }
@@ -106,7 +106,7 @@ namespace System.Formats.Cbor
         /// <returns>A <see cref="ReadOnlySpan{T}"/> view of the encoded value.</returns>
         /// <exception cref="FormatException">
         ///   The data item is not a valid CBOR data item encoding. -or-
-        ///   The CBOR encoding is not valid under the current conformance level
+        ///   The CBOR encoding is not valid under the current conformance mode
         /// </exception>
         public ReadOnlySpan<byte> ReadEncodedValue()
         {
@@ -114,7 +114,7 @@ namespace System.Formats.Cbor
             int initialOffset = _offset;
 
             // call skip to read and validate the next value
-            SkipValue(disableConformanceLevelChecks: false);
+            SkipValue(disableConformanceModeChecks: false);
 
             // return the slice corresponding to the consumed value
             return _data.Span.Slice(initialOffset, _offset - initialOffset);
@@ -557,7 +557,7 @@ namespace System.Formats.Cbor
             }
 
             // Remove any key encodings added after the current checkpoint.
-            // This is only needed when rolling back key reads in the Strict conformance level.
+            // This is only needed when rolling back key reads in the Strict conformance mode.
             if (_keyEncodingRanges != null && _itemsRead > checkpoint.ItemsWritten)
             {
                 int checkpointOffset = checkpoint.Offset;

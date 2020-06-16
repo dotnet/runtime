@@ -250,7 +250,7 @@ namespace System.Formats.Cbor.Tests
         public static void ReadDateTimeOffset_StrictConformance_OnError_ShouldPreserveReaderState()
         {
             string hexEncoding = "a20101c06001"; // { 1 : 1 , 0("") : 1 } conforming CBOR with invalid date/time schema
-            var reader = new CborReader(hexEncoding.HexToByteArray(), CborConformanceLevel.Strict);
+            var reader = new CborReader(hexEncoding.HexToByteArray(), CborConformanceMode.Strict);
 
             reader.ReadStartMap();
             reader.ReadInt32();
@@ -259,7 +259,7 @@ namespace System.Formats.Cbor.Tests
             Assert.Throws<FormatException>(() => reader.ReadDateTimeOffset()); // throws a format exception due to malformed date/time string
             // the following operation would original throw a false positive duplicate key error,
             // due to the checkpoint restore logic not properly resetting key uniqueness validation
-            reader.SkipValue(disableConformanceLevelChecks: false);
+            reader.SkipValue(disableConformanceModeChecks: false);
 
             reader.ReadInt32();
             reader.ReadEndMap();
@@ -489,67 +489,67 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [MemberData(nameof(SupportedConformanceTaggedValues))]
-        public static void ReadTaggedValue_SupportedConformance_ShouldSucceed(CborConformanceLevel level, object expectedValue, string hexEncoding)
+        public static void ReadTaggedValue_SupportedConformance_ShouldSucceed(CborConformanceMode mode, object expectedValue, string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
             Helpers.VerifyValue(reader, expectedValue);
         }
 
         public static IEnumerable<object[]> SupportedConformanceTaggedValues =>
-            from l in new[] { CborConformanceLevel.Lax, CborConformanceLevel.Strict, CborConformanceLevel.Canonical }
+            from l in new[] { CborConformanceMode.Lax, CborConformanceMode.Strict, CborConformanceMode.Canonical }
             from v in TaggedValues
             select new object[] { l, v.value, v.hexEncoding };
 
         [Theory]
         [MemberData(nameof(UnsupportedConformanceTaggedValues))]
-        public static void ReadTaggedValue_UnsupportedConformance_ShouldThrowFormatException(CborConformanceLevel level, object expectedValue, string hexEncoding)
+        public static void ReadTaggedValue_UnsupportedConformance_ShouldThrowFormatException(CborConformanceMode mode, object expectedValue, string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
             Assert.Throws<FormatException>(() => Helpers.VerifyValue(reader, expectedValue));
             Assert.Equal(0, reader.BytesRead);
         }
 
         public static IEnumerable<object[]> UnsupportedConformanceTaggedValues =>
-            from l in new[] { CborConformanceLevel.Ctap2Canonical }
+            from l in new[] { CborConformanceMode.Ctap2Canonical }
             from v in TaggedValues
             select new object[] { l, v.value, v.hexEncoding };
 
         [Theory]
         [MemberData(nameof(TaggedValuesSupportedConformance))]
-        public static void PeekTag_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void PeekTag_SupportedConformanceMode_ShouldSucceed(CborConformanceMode mode, string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
             reader.PeekTag();
         }
 
         public static IEnumerable<object[]> TaggedValuesSupportedConformance =>
-            from l in new[] { CborConformanceLevel.Lax, CborConformanceLevel.Strict, CborConformanceLevel.Canonical }
+            from l in new[] { CborConformanceMode.Lax, CborConformanceMode.Strict, CborConformanceMode.Canonical }
             from v in TaggedValues
             select new object[] { l, v.hexEncoding };
 
         [Theory]
         [MemberData(nameof(TaggedValuesUnsupportedConformance))]
-        public static void PeekTag_UnsupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        public static void PeekTag_UnsupportedConformanceMode_ShouldThrowFormatException(CborConformanceMode mode, string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
             Assert.Throws<FormatException>(() => reader.PeekTag());
         }
 
         public static IEnumerable<object[]> TaggedValuesUnsupportedConformance =>
-            from l in new[] { CborConformanceLevel.Ctap2Canonical }
+            from l in new[] { CborConformanceMode.Ctap2Canonical }
             from v in TaggedValues
             select new object[] { l, v.hexEncoding };
 
         [Theory]
         [MemberData(nameof(UnsupportedConformanceInvalidTypes))]
-        public static void PeekTag_InvalidType_UnsupportedConformanceLevel_ShouldThrowInvalidOperationException(CborConformanceLevel level, string hexEncoding)
+        public static void PeekTag_InvalidType_UnsupportedConformanceMode_ShouldThrowInvalidOperationException(CborConformanceMode mode, string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
             Assert.Throws<InvalidOperationException>(() => reader.PeekTag());
         }
 
         public static IEnumerable<object[]> UnsupportedConformanceInvalidTypes =>
-            from l in new[] { CborConformanceLevel.Ctap2Canonical }
+            from l in new[] { CborConformanceMode.Ctap2Canonical }
             from e in new[] { "01", "40", "60" }
             select new object[] { l, e };
 

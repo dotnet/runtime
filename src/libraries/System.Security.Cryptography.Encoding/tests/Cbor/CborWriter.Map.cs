@@ -54,10 +54,10 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   The written data is not accepted under the current conformance mode
         /// </exception>
         /// <remarks>
-        ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
+        ///   In canonical conformance modes, the writer will reject indefinite-length writes unless
         ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
         ///
         ///   Map contents are written as if arrays twice the length of the map's declared size.
@@ -70,9 +70,9 @@ namespace System.Formats.Cbor
         /// </remarks>
         public void WriteStartMap()
         {
-            if (!ConvertIndefiniteLengthEncodings && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
             {
-                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
 
             EnsureWriteCapacity(1);
@@ -85,7 +85,7 @@ namespace System.Formats.Cbor
         ///   Writes the end of a map (major type 5).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   The written data is not accepted under the current conformance level. -or-
+        ///   The written data is not accepted under the current conformance mode. -or-
         ///   The definite-length map anticipates more data items. -or-
         ///   The latest key/value pair is lacking a value.
         /// </exception>
@@ -108,7 +108,7 @@ namespace System.Formats.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset == null);
 
-            if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
+            if (CborConformanceModeHelpers.RequiresUniqueKeys(ConformanceMode))
             {
                 HashSet<(int Offset, int Length)> keyEncodingRanges = GetKeyEncodingRanges();
 
@@ -120,7 +120,7 @@ namespace System.Formats.Cbor
                     _buffer.AsSpan(currentKey.Offset, _offset).Fill(0);
                     _offset = currentKey.Offset;
 
-                    throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
+                    throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_ContainsDuplicateKeys, ConformanceMode));
                 }
             }
 
@@ -132,7 +132,7 @@ namespace System.Formats.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset != null);
 
-            if (CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel))
+            if (CborConformanceModeHelpers.RequiresSortedKeys(ConformanceMode))
             {
                 List<KeyValuePairEncodingRange> keyValuePairEncodingRanges = GetKeyValueEncodingRanges();
 
@@ -293,17 +293,17 @@ namespace System.Formats.Cbor
 
             public int GetHashCode((int Offset, int Length) range)
             {
-                return CborConformanceLevelHelpers.GetKeyEncodingHashCode(GetKeyEncoding(range));
+                return CborConformanceModeHelpers.GetKeyEncodingHashCode(GetKeyEncoding(range));
             }
 
             public bool Equals((int Offset, int Length) x, (int Offset, int Length) y)
             {
-                return CborConformanceLevelHelpers.AreEqualKeyEncodings(GetKeyEncoding(x), GetKeyEncoding(y));
+                return CborConformanceModeHelpers.AreEqualKeyEncodings(GetKeyEncoding(x), GetKeyEncoding(y));
             }
 
             public int Compare(KeyValuePairEncodingRange x, KeyValuePairEncodingRange y)
             {
-                return CborConformanceLevelHelpers.CompareKeyEncodings(GetKeyEncoding(in x), GetKeyEncoding(in y), _writer.ConformanceLevel);
+                return CborConformanceModeHelpers.CompareKeyEncodings(GetKeyEncoding(in x), GetKeyEncoding(in y), _writer.ConformanceMode);
             }
         }
     }

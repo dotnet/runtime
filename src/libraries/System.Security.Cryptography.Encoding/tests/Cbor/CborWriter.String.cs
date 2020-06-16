@@ -21,12 +21,12 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="ArgumentException">
-        ///   The supplied string is not a valid UTF-8 encoding, which is not permitted under the current conformance level.
+        ///   The supplied string is not a valid UTF-8 encoding, which is not permitted under the current conformance mode.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         public void WriteByteString(ReadOnlySpan<byte> value)
         {
@@ -53,18 +53,18 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   The written data is not accepted under the current conformance mode
         /// </exception>
         /// <remarks>
         ///   Pushes a context where definite-length chunks of the same major type can be written.
-        ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
+        ///   In canonical conformance modes, the writer will reject indefinite-length writes unless
         ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
         /// </remarks>
         public void WriteStartByteString()
         {
-            if (!ConvertIndefiniteLengthEncodings && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
             {
-                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
 
             if (ConvertIndefiniteLengthEncodings)
@@ -84,7 +84,7 @@ namespace System.Formats.Cbor
         ///   Writes the end of an indefinite-length byte string (major type 2).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   The written data is not accepted under the current conformance level
+        ///   The written data is not accepted under the current conformance mode
         /// </exception>
         public void WriteEndByteString()
         {
@@ -99,11 +99,11 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   The written data is not accepted under the current conformance mode
         /// </exception>
         public void WriteTextString(ReadOnlySpan<char> value)
         {
-            Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
+            Encoding utf8Encoding = CborConformanceModeHelpers.GetUtf8Encoding(ConformanceMode);
 
             int length;
             try
@@ -138,18 +138,18 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   The written data is not accepted under the current conformance mode
         /// </exception>
         /// <remarks>
         ///   Pushes a context where definite-length chunks of the same major type can be written.
-        ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
+        ///   In canonical conformance modes, the writer will reject indefinite-length writes unless
         ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
         /// </remarks>
         public void WriteStartTextString()
         {
-            if (!ConvertIndefiniteLengthEncodings && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
             {
-                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
 
             if (ConvertIndefiniteLengthEncodings)
@@ -169,7 +169,7 @@ namespace System.Formats.Cbor
         ///   Writes the end of an indefinite-length UTF-8 string (major type 3).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   The written data is not accepted under the current conformance level
+        ///   The written data is not accepted under the current conformance mode
         /// </exception>
         public void WriteEndTextString()
         {

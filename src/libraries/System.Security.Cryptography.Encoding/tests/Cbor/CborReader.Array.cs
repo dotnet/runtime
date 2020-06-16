@@ -20,7 +20,7 @@ namespace System.Formats.Cbor
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public int? ReadStartArray()
         {
@@ -28,9 +28,9 @@ namespace System.Formats.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
-                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                if (_isConformanceModeCheckEnabled && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
                 }
 
                 AdvanceBuffer(1);

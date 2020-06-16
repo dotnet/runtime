@@ -17,7 +17,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   The written data is not accepted under the current conformance mode
         /// </exception>
         public void WriteSingle(float value)
         {
@@ -35,7 +35,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   The written data is not accepted under the current conformance mode
         /// </exception>
         public void WriteDouble(double value)
         {
@@ -53,7 +53,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   The written data is not accepted under the current conformance mode
         /// </exception>
         public void WriteBoolean(bool value)
         {
@@ -66,7 +66,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   The written data is not accepted under the current conformance mode
         /// </exception>
         public void WriteNull()
         {
@@ -83,7 +83,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   The written data is not accepted under the current conformance mode
         /// </exception>
         public void WriteSimpleValue(CborSimpleValue value)
         {
@@ -93,9 +93,9 @@ namespace System.Formats.Cbor
                 WriteInitialByte(new CborInitialByte(CborMajorType.Simple, (CborAdditionalInfo)value));
             }
             else if (value <= (CborSimpleValue)CborAdditionalInfo.IndefiniteLength &&
-                     CborConformanceLevelHelpers.RequireCanonicalSimpleValueEncodings(ConformanceLevel))
+                     CborConformanceModeHelpers.RequireCanonicalSimpleValueEncodings(ConformanceMode))
             {
-                throw new ArgumentOutOfRangeException(SR.Format(SR.Cbor_ConformanceLevel_InvalidSimpleValueEncoding, ConformanceLevel));
+                throw new ArgumentOutOfRangeException(SR.Format(SR.Cbor_ConformanceMode_InvalidSimpleValueEncoding, ConformanceMode));
             }
             else
             {

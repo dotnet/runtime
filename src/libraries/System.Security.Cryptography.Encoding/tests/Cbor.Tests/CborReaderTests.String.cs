@@ -294,159 +294,159 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax, "5800")]
-        [InlineData(CborConformanceLevel.Lax, "590000")]
-        [InlineData(CborConformanceLevel.Lax, "5a00000000")]
-        [InlineData(CborConformanceLevel.Lax, "5b0000000000000000")]
-        [InlineData(CborConformanceLevel.Strict, "5800")]
-        [InlineData(CborConformanceLevel.Strict, "590000")]
-        [InlineData(CborConformanceLevel.Strict, "5a00000000")]
-        [InlineData(CborConformanceLevel.Strict, "5b0000000000000000")]
-        public static void ReadByteString_NonCanonicalLengths_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Lax, "5800")]
+        [InlineData(CborConformanceMode.Lax, "590000")]
+        [InlineData(CborConformanceMode.Lax, "5a00000000")]
+        [InlineData(CborConformanceMode.Lax, "5b0000000000000000")]
+        [InlineData(CborConformanceMode.Strict, "5800")]
+        [InlineData(CborConformanceMode.Strict, "590000")]
+        [InlineData(CborConformanceMode.Strict, "5a00000000")]
+        [InlineData(CborConformanceMode.Strict, "5b0000000000000000")]
+        public static void ReadByteString_NonCanonicalLengths_SupportedConformanceMode_ShouldSucceed(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             byte[] value = reader.ReadByteString();
             Assert.Equal(Array.Empty<byte>(), value);
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Canonical, "5800")]
-        [InlineData(CborConformanceLevel.Canonical, "590000")]
-        [InlineData(CborConformanceLevel.Canonical, "5a00000000")]
-        [InlineData(CborConformanceLevel.Canonical, "5b0000000000000000")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "5800")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "590000")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "5a00000000")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "5b0000000000000000")]
-        public static void ReadByteString_NonCanonicalLengths_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Canonical, "5800")]
+        [InlineData(CborConformanceMode.Canonical, "590000")]
+        [InlineData(CborConformanceMode.Canonical, "5a00000000")]
+        [InlineData(CborConformanceMode.Canonical, "5b0000000000000000")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "5800")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "590000")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "5a00000000")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "5b0000000000000000")]
+        public static void ReadByteString_NonCanonicalLengths_UnSupportedConformanceMode_ShouldThrowFormatException(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             Assert.Throws<FormatException>(() => reader.ReadByteString());
             Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax, "7800")]
-        [InlineData(CborConformanceLevel.Lax, "790000")]
-        [InlineData(CborConformanceLevel.Lax, "7a00000000")]
-        [InlineData(CborConformanceLevel.Lax, "7b0000000000000000")]
-        [InlineData(CborConformanceLevel.Strict, "7800")]
-        [InlineData(CborConformanceLevel.Strict, "790000")]
-        [InlineData(CborConformanceLevel.Strict, "7a00000000")]
-        [InlineData(CborConformanceLevel.Strict, "7b0000000000000000")]
-        public static void ReadTextString_NonCanonicalLengths_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Lax, "7800")]
+        [InlineData(CborConformanceMode.Lax, "790000")]
+        [InlineData(CborConformanceMode.Lax, "7a00000000")]
+        [InlineData(CborConformanceMode.Lax, "7b0000000000000000")]
+        [InlineData(CborConformanceMode.Strict, "7800")]
+        [InlineData(CborConformanceMode.Strict, "790000")]
+        [InlineData(CborConformanceMode.Strict, "7a00000000")]
+        [InlineData(CborConformanceMode.Strict, "7b0000000000000000")]
+        public static void ReadTextString_NonCanonicalLengths_SupportedConformanceMode_ShouldSucceed(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             string value = reader.ReadTextString();
             Assert.Equal("", value);
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Canonical, "7800")]
-        [InlineData(CborConformanceLevel.Canonical, "790000")]
-        [InlineData(CborConformanceLevel.Canonical, "7a00000000")]
-        [InlineData(CborConformanceLevel.Canonical, "7b0000000000000000")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "7800")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "790000")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "7a00000000")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "7b0000000000000000")]
-        public static void ReadTextString_NonCanonicalLengths_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Canonical, "7800")]
+        [InlineData(CborConformanceMode.Canonical, "790000")]
+        [InlineData(CborConformanceMode.Canonical, "7a00000000")]
+        [InlineData(CborConformanceMode.Canonical, "7b0000000000000000")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "7800")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "790000")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "7a00000000")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "7b0000000000000000")]
+        public static void ReadTextString_NonCanonicalLengths_UnSupportedConformanceMode_ShouldThrowFormatException(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
             Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax, "5f40ff")]
-        [InlineData(CborConformanceLevel.Strict, "5f40ff")]
-        public static void ReadByteString_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Lax, "5f40ff")]
+        [InlineData(CborConformanceMode.Strict, "5f40ff")]
+        public static void ReadByteString_IndefiniteLength_SupportedConformanceMode_ShouldSucceed(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             reader.ReadStartByteString();
             reader.ReadByteString();
             reader.ReadEndByteString();
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax, "5f40ff")]
-        [InlineData(CborConformanceLevel.Strict, "5f40ff")]
-        public static void ReadByteString_IndefiniteLength_AsSingleItem_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Lax, "5f40ff")]
+        [InlineData(CborConformanceMode.Strict, "5f40ff")]
+        public static void ReadByteString_IndefiniteLength_AsSingleItem_SupportedConformanceMode_ShouldSucceed(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             reader.ReadByteString();
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Canonical, "5f40ff")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "5f40ff")]
-        public static void ReadByteString_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatExceptoin(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Canonical, "5f40ff")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "5f40ff")]
+        public static void ReadByteString_IndefiniteLength_UnSupportedConformanceMode_ShouldThrowFormatExceptoin(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             Assert.Throws<FormatException>(() => reader.ReadStartByteString());
             Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Canonical, "5f40ff")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "5f40ff")]
-        public static void ReadByteString_IndefiniteLength_AsSingleItem_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Canonical, "5f40ff")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "5f40ff")]
+        public static void ReadByteString_IndefiniteLength_AsSingleItem_UnSupportedConformanceMode_ShouldThrowFormatException(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             Assert.Throws<FormatException>(() => reader.ReadByteString());
             Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax, "7f60ff")]
-        [InlineData(CborConformanceLevel.Strict, "7f60ff")]
-        public static void ReadTextString_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Lax, "7f60ff")]
+        [InlineData(CborConformanceMode.Strict, "7f60ff")]
+        public static void ReadTextString_IndefiniteLength_SupportedConformanceMode_ShouldSucceed(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             reader.ReadStartTextString();
             reader.ReadTextString();
             reader.ReadEndTextString();
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax, "7f60ff")]
-        [InlineData(CborConformanceLevel.Strict, "7f60ff")]
-        public static void ReadTextString_IndefiniteLength_AsSingleItem_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Lax, "7f60ff")]
+        [InlineData(CborConformanceMode.Strict, "7f60ff")]
+        public static void ReadTextString_IndefiniteLength_AsSingleItem_SupportedConformanceMode_ShouldSucceed(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             reader.ReadTextString();
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Canonical, "7f60ff")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "7f60ff")]
-        public static void ReadTextString_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatExceptoin(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Canonical, "7f60ff")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "7f60ff")]
+        public static void ReadTextString_IndefiniteLength_UnSupportedConformanceMode_ShouldThrowFormatExceptoin(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             Assert.Throws<FormatException>(() => reader.ReadStartTextString());
             Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Canonical, "7f60ff")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "7f60ff")]
-        public static void ReadTextString_IndefiniteLength_AsSingleItem_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Canonical, "7f60ff")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "7f60ff")]
+        public static void ReadTextString_IndefiniteLength_AsSingleItem_UnSupportedConformanceMode_ShouldThrowFormatException(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
             Assert.Equal(0, reader.BytesRead);
         }
@@ -647,26 +647,26 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax)]
-        public static void ReadTextString_InvalidUtf8_LaxConformance_ShouldSucceed(CborConformanceLevel conformanceLevel)
+        [InlineData(CborConformanceMode.Lax)]
+        public static void ReadTextString_InvalidUtf8_LaxConformance_ShouldSucceed(CborConformanceMode conformanceMode)
         {
             byte[] encoding = "62f090".HexToByteArray();
             string expected = "\ufffd"; // unicode replacement character
 
-            var reader = new CborReader(encoding, conformanceLevel);
+            var reader = new CborReader(encoding, conformanceMode);
             string actual = reader.ReadTextString();
 
             Assert.Equal(expected, actual);
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Strict)]
-        [InlineData(CborConformanceLevel.Canonical)]
-        [InlineData(CborConformanceLevel.Ctap2Canonical)]
-        public static void ReadTextString_InvalidUtf8_StrictConformance_ShouldThrowFormatException(CborConformanceLevel conformanceLevel)
+        [InlineData(CborConformanceMode.Strict)]
+        [InlineData(CborConformanceMode.Canonical)]
+        [InlineData(CborConformanceMode.Ctap2Canonical)]
+        public static void ReadTextString_InvalidUtf8_StrictConformance_ShouldThrowFormatException(CborConformanceMode conformanceMode)
         {
             byte[] encoding = "62f090".HexToByteArray();
-            var reader = new CborReader(encoding, conformanceLevel);
+            var reader = new CborReader(encoding, conformanceMode);
             FormatException exn = Assert.Throws<FormatException>(() => reader.ReadTextString());
             Assert.NotNull(exn.InnerException);
             Assert.IsType<System.Text.DecoderFallbackException>(exn.InnerException);
@@ -674,14 +674,14 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax)]
-        public static void TryReadTextString_InvalidUtf8_LaxConformance_ShouldSucceed(CborConformanceLevel conformanceLevel)
+        [InlineData(CborConformanceMode.Lax)]
+        public static void TryReadTextString_InvalidUtf8_LaxConformance_ShouldSucceed(CborConformanceMode conformanceMode)
         {
             byte[] encoding = "62f090".HexToByteArray();
             string expected = "\ufffd"; // unicode replacement character
 
             char[] buffer = new char[32];
-            var reader = new CborReader(encoding, conformanceLevel);
+            var reader = new CborReader(encoding, conformanceMode);
 
             bool result = reader.TryReadTextString(buffer, out int bytesRead);
 
@@ -691,14 +691,14 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Strict)]
-        [InlineData(CborConformanceLevel.Canonical)]
-        [InlineData(CborConformanceLevel.Ctap2Canonical)]
-        public static void TryReadTextString_InvalidUtf8_StrictConformance_ShouldThrowFormatException(CborConformanceLevel conformanceLevel)
+        [InlineData(CborConformanceMode.Strict)]
+        [InlineData(CborConformanceMode.Canonical)]
+        [InlineData(CborConformanceMode.Ctap2Canonical)]
+        public static void TryReadTextString_InvalidUtf8_StrictConformance_ShouldThrowFormatException(CborConformanceMode conformanceMode)
         {
             byte[] encoding = "62f090".HexToByteArray();
             char[] buffer = new char[32];
-            var reader = new CborReader(encoding, conformanceLevel);
+            var reader = new CborReader(encoding, conformanceMode);
 
             FormatException exn = Assert.Throws<FormatException>(() => reader.TryReadTextString(buffer, out int _));
             Assert.NotNull(exn.InnerException);
@@ -829,8 +829,8 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax)]
-        public static void ReadTextString_IndefiniteLengthConcatenated_InvalidUtf8Chunks_LaxConformance_ShouldSucceed(CborConformanceLevel conformanceLevel)
+        [InlineData(CborConformanceMode.Lax)]
+        public static void ReadTextString_IndefiniteLengthConcatenated_InvalidUtf8Chunks_LaxConformance_ShouldSucceed(CborConformanceMode conformanceMode)
         {
             // while the concatenated string is valid utf8, the individual chunks are not,
             // which is in violation of the CBOR format.
@@ -838,23 +838,23 @@ namespace System.Formats.Cbor.Tests
             string hexEncoding = "7f62f090628591ff";
             string expected = "\ufffd\ufffd\ufffd";
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, conformanceLevel);
+            var reader = new CborReader(encoding, conformanceMode);
             string actual = reader.ReadTextString();
             Assert.Equal(expected, actual);
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Strict)]
-        [InlineData(CborConformanceLevel.Canonical)]
-        [InlineData(CborConformanceLevel.Ctap2Canonical)]
-        public static void ReadTextString_IndefiniteLengthConcatenated_InvalidUtf8Chunks_StrictConformance_ShouldThrowFormatException(CborConformanceLevel conformanceLevel)
+        [InlineData(CborConformanceMode.Strict)]
+        [InlineData(CborConformanceMode.Canonical)]
+        [InlineData(CborConformanceMode.Ctap2Canonical)]
+        public static void ReadTextString_IndefiniteLengthConcatenated_InvalidUtf8Chunks_StrictConformance_ShouldThrowFormatException(CborConformanceMode conformanceMode)
         {
             // while the concatenated string is valid utf8, the individual chunks are not,
             // which is in violation of the CBOR format.
 
             string hexEncoding = "7f62f090628591ff";
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, conformanceLevel);
+            var reader = new CborReader(encoding, conformanceMode);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
             Assert.Equal(0, reader.BytesRead);
         }

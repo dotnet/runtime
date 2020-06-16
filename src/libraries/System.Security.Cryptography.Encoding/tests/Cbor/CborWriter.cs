@@ -35,9 +35,9 @@ namespace System.Formats.Cbor
         private HashSet<(int Offset, int Length)>? _keyEncodingRanges = null; // all key encoding ranges up to encoding equality
 
         /// <summary>
-        ///   The conformance level used by this writer.
+        ///   The conformance mode used by this writer.
         /// </summary>
-        public CborConformanceLevel ConformanceLevel { get; }
+        public CborConformanceMode ConformanceMode { get; }
 
         /// <summary>
         ///   Gets a value that indicates whether the writer automatically converts indefinite-length encodings into definite-length equivalents.
@@ -74,13 +74,13 @@ namespace System.Formats.Cbor
         /// <summary>
         ///   Create a new CborWriter instance with given configuration.
         /// </summary>
-        /// <param name="conformanceLevel">
-        ///   Specifies a <see cref="CborConformanceLevel"/> guiding the conformance checks performed on the encoded data.
-        ///   Defaults to <see cref="CborConformanceLevel.Lax" /> conformance level.
+        /// <param name="conformanceMode">
+        ///   Specifies a <see cref="CborConformanceMode"/> guiding the conformance checks performed on the encoded data.
+        ///   Defaults to <see cref="CborConformanceMode.Lax" /> conformance mode.
         /// </param>
         /// <param name="convertIndefiniteLengthEncodings">
         ///   Enables automatically converting indefinite-length encodings into definite-length equivalents.
-        ///   Allows use of indefinite-length write APIs in conformance levels that otherwise do not permit it.
+        ///   Allows use of indefinite-length write APIs in conformance modes that otherwise do not permit it.
         ///   Defaults to <see langword="false" />.
         /// </param>
         /// <param name="allowMultipleRootLevelValues">
@@ -88,13 +88,13 @@ namespace System.Formats.Cbor
         ///   The default is <see langword="false"/>.
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="conformanceLevel"/> is not a defined <see cref="CborConformanceLevel"/>.
+        ///   <paramref name="conformanceMode"/> is not a defined <see cref="CborConformanceMode"/>.
         /// </exception>
-        public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool convertIndefiniteLengthEncodings = false, bool allowMultipleRootLevelValues = false)
+        public CborWriter(CborConformanceMode conformanceMode = CborConformanceMode.Lax, bool convertIndefiniteLengthEncodings = false, bool allowMultipleRootLevelValues = false)
         {
-            CborConformanceLevelHelpers.Validate(conformanceLevel);
+            CborConformanceModeHelpers.Validate(conformanceMode);
 
-            ConformanceLevel = conformanceLevel;
+            ConformanceMode = conformanceMode;
             ConvertIndefiniteLengthEncodings = convertIndefiniteLengthEncodings;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
             _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
@@ -131,11 +131,11 @@ namespace System.Formats.Cbor
         /// <param name="encodedValue">The encoded value to write.</param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="encodedValue"/> is not a well-formed CBOR encoding. -or-
-        ///   <paramref name="encodedValue"/> is not valid under the current conformance level
+        ///   <paramref name="encodedValue"/> is not valid under the current conformance mode
         /// </exception>
         public void WriteEncodedValue(ReadOnlySpan<byte> encodedValue)
         {
-            ValidateEncoding(encodedValue, ConformanceLevel);
+            ValidateEncoding(encodedValue, ConformanceMode);
             EnsureWriteCapacity(encodedValue.Length);
 
             // even though the encoding might be valid CBOR, it might not be valid within the current writer context.
@@ -155,16 +155,16 @@ namespace System.Formats.Cbor
 
             AdvanceDataItemCounters();
 
-            static unsafe void ValidateEncoding(ReadOnlySpan<byte> encodedValue, CborConformanceLevel conformanceLevel)
+            static unsafe void ValidateEncoding(ReadOnlySpan<byte> encodedValue, CborConformanceMode conformanceMode)
             {
                 fixed (byte* ptr = &MemoryMarshal.GetReference(encodedValue))
                 {
                     using var manager = new PointerMemoryManager<byte>(ptr, encodedValue.Length);
-                    var reader = new CborReader(manager.Memory, conformanceLevel: conformanceLevel, allowMultipleRootLevelValues: false);
+                    var reader = new CborReader(manager.Memory, conformanceMode: conformanceMode, allowMultipleRootLevelValues: false);
 
                     try
                     {
-                        reader.SkipValue(disableConformanceLevelChecks: false);
+                        reader.SkipValue(disableConformanceModeChecks: false);
                     }
                     catch (FormatException e)
                     {

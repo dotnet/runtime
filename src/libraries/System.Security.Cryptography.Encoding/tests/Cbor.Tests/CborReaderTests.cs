@@ -65,10 +65,10 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void ConformanceLevel_DefaultValue_ShouldEqualLax()
+        public static void ConformanceMode_DefaultValue_ShouldEqualLax()
         {
             var reader = new CborReader(Array.Empty<byte>());
-            Assert.Equal(CborConformanceLevel.Lax, reader.ConformanceLevel);
+            Assert.Equal(CborConformanceMode.Lax, reader.ConformanceMode);
         }
 
         [Theory]
@@ -202,10 +202,10 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData((CborConformanceLevel)(-1))]
-        public static void InvalidConformanceLevel_ShouldThrowArgumentOutOfRangeException(CborConformanceLevel level)
+        [InlineData((CborConformanceMode)(-1))]
+        public static void InvalidConformanceMode_ShouldThrowArgumentOutOfRangeException(CborConformanceMode mode)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new CborReader(Array.Empty<byte>(), conformanceLevel: level));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CborReader(Array.Empty<byte>(), conformanceMode: mode));
         }
 
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new[] { x });

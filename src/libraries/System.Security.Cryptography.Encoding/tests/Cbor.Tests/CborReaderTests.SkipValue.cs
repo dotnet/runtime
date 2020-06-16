@@ -89,24 +89,24 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax)]
-        public static void SkipValue_ValidationEnabled_InvalidUtf8_LaxConformance_ShouldSucceed(CborConformanceLevel conformanceLevel)
+        [InlineData(CborConformanceMode.Lax)]
+        public static void SkipValue_ValidationEnabled_InvalidUtf8_LaxConformance_ShouldSucceed(CborConformanceMode conformanceMode)
         {
             byte[] encoding = "62f090".HexToByteArray();
-            var reader = new CborReader(encoding, conformanceLevel);
+            var reader = new CborReader(encoding, conformanceMode);
 
             reader.SkipValue();
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Strict)]
-        [InlineData(CborConformanceLevel.Canonical)]
-        [InlineData(CborConformanceLevel.Ctap2Canonical)]
-        public static void SkipValue_ValidationEnabled_InvalidUtf8_StrictConformance_ShouldThrowFormatException(CborConformanceLevel conformanceLevel)
+        [InlineData(CborConformanceMode.Strict)]
+        [InlineData(CborConformanceMode.Canonical)]
+        [InlineData(CborConformanceMode.Ctap2Canonical)]
+        public static void SkipValue_ValidationEnabled_InvalidUtf8_StrictConformance_ShouldThrowFormatException(CborConformanceMode conformanceMode)
         {
             byte[] encoding = "62f090".HexToByteArray();
-            var reader = new CborReader(encoding, conformanceLevel);
+            var reader = new CborReader(encoding, conformanceMode);
 
             FormatException exn = Assert.Throws<FormatException>(() => reader.SkipValue());
             Assert.NotNull(exn.InnerException);
@@ -117,48 +117,48 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [MemberData(nameof(NonConformingSkipValueEncodings))]
-        public static void SkipValue_ValidationDisabled_NonConformingValues_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void SkipValue_ValidationDisabled_NonConformingValues_ShouldSucceed(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
 
-            reader.SkipValue(disableConformanceLevelChecks: true);
+            reader.SkipValue(disableConformanceModeChecks: true);
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
         [MemberData(nameof(NonConformingSkipValueEncodings))]
-        public static void SkipValue_ValidationEnabled_NonConformingValues_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        public static void SkipValue_ValidationEnabled_NonConformingValues_ShouldThrowFormatException(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
 
             Assert.Throws<FormatException>(() => reader.SkipValue());
         }
 
         public static IEnumerable<object[]> NonConformingSkipValueEncodings =>
-            new (CborConformanceLevel Level, string Encoding)[]
+            new (CborConformanceMode Mode, string Encoding)[]
             {
-                (CborConformanceLevel.Ctap2Canonical, "1801"), // non-canonical integer representation
-                (CborConformanceLevel.Canonical, "5fff"), // indefinite-length byte string
-                (CborConformanceLevel.Canonical, "7fff"), // indefinite-length text string
-                (CborConformanceLevel.Canonical, "9fff"), // indefinite-length array
-                (CborConformanceLevel.Canonical, "bfff"), // indefinite-length map
-                (CborConformanceLevel.Strict, "a201020103"), // duplicate keys in map
-                (CborConformanceLevel.Canonical, "a201020103"), // duplicate keys in map
-                (CborConformanceLevel.Ctap2Canonical, "a202020101"), // unsorted keys in map
-                (CborConformanceLevel.Ctap2Canonical, "c001"), // tagged value
-                (CborConformanceLevel.Strict, "f81f"), // non-canonical simple value
-            }.Select(l => new object[] { l.Level, l.Encoding });
+                (CborConformanceMode.Ctap2Canonical, "1801"), // non-canonical integer representation
+                (CborConformanceMode.Canonical, "5fff"), // indefinite-length byte string
+                (CborConformanceMode.Canonical, "7fff"), // indefinite-length text string
+                (CborConformanceMode.Canonical, "9fff"), // indefinite-length array
+                (CborConformanceMode.Canonical, "bfff"), // indefinite-length map
+                (CborConformanceMode.Strict, "a201020103"), // duplicate keys in map
+                (CborConformanceMode.Canonical, "a201020103"), // duplicate keys in map
+                (CborConformanceMode.Ctap2Canonical, "a202020101"), // unsorted keys in map
+                (CborConformanceMode.Ctap2Canonical, "c001"), // tagged value
+                (CborConformanceMode.Strict, "f81f"), // non-canonical simple value
+            }.Select(l => new object[] { l.Mode, l.Encoding });
 
         [Fact]
         public static void SkipValue_SkippedValueFollowedByNonConformingValue_ShouldThrowFormatException()
         {
             byte[] encoding = "827fff7fff".HexToByteArray();
-            var reader = new CborReader(encoding, CborConformanceLevel.Ctap2Canonical);
+            var reader = new CborReader(encoding, CborConformanceMode.Ctap2Canonical);
 
             reader.ReadStartArray();
-            reader.SkipValue(disableConformanceLevelChecks: true);
+            reader.SkipValue(disableConformanceModeChecks: true);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
         }
 

@@ -17,7 +17,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         public void WriteInt32(int value) => WriteInt64(value);
 
@@ -28,7 +28,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         public void WriteInt64(long value)
         {
@@ -52,7 +52,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         public void WriteUInt32(uint value) => WriteUInt64(value);
 
@@ -63,7 +63,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         public void WriteUInt64(ulong value)
         {
@@ -78,7 +78,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         /// <remarks>
         ///   This method supports encoding integers between -18446744073709551616 and -1.

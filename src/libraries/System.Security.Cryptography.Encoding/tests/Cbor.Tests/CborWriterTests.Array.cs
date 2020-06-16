@@ -222,11 +222,11 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Canonical)]
-        [InlineData(CborConformanceLevel.Ctap2Canonical)]
-        public static void WriteStartArray_IndefiniteLength_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel conformanceLevel)
+        [InlineData(CborConformanceMode.Canonical)]
+        [InlineData(CborConformanceMode.Ctap2Canonical)]
+        public static void WriteStartArray_IndefiniteLength_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceMode conformanceMode)
         {
-            var writer = new CborWriter(conformanceLevel, convertIndefiniteLengthEncodings: false);
+            var writer = new CborWriter(conformanceMode, convertIndefiniteLengthEncodings: false);
             Assert.Throws<InvalidOperationException>(() => writer.WriteStartArray());
         }
     }

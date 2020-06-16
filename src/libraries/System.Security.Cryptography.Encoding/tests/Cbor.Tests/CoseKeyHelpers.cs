@@ -16,21 +16,21 @@ namespace System.Formats.Cbor.Tests
         public static byte[] ExportECDsaPublicKey(ECDsa ecDsa, HashAlgorithmName? hashAlgName)
         {
             ECParameters ecParams = ecDsa.ExportParameters(includePrivateParameters: false);
-            var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical, convertIndefiniteLengthEncodings: true);
+            var writer = new CborWriter(CborConformanceMode.Ctap2Canonical, convertIndefiniteLengthEncodings: true);
             WriteECParametersAsCosePublicKey(writer, ecParams, hashAlgName);
             return writer.Encode();
         }
 
         public static (ECDsa ecDsa, HashAlgorithmName? hashAlgName) ParseECDsaPublicKey(byte[] coseKey)
         {
-            var reader = new CborReader(coseKey, CborConformanceLevel.Ctap2Canonical);
+            var reader = new CborReader(coseKey, CborConformanceMode.Ctap2Canonical);
             (ECParameters ecParams, HashAlgorithmName? hashAlgName) = ReadECParametersAsCosePublicKey(reader);
             return (ECDsa.Create(ecParams), hashAlgName);
         }
 
         private static void WriteECParametersAsCosePublicKey(CborWriter writer, ECParameters ecParams, HashAlgorithmName? algorithmName)
         {
-            Debug.Assert(writer.ConformanceLevel == CborConformanceLevel.Ctap2Canonical && writer.ConvertIndefiniteLengthEncodings);
+            Debug.Assert(writer.ConformanceMode == CborConformanceMode.Ctap2Canonical && writer.ConvertIndefiniteLengthEncodings);
 
             if (ecParams.Q.X is null || ecParams.Q.Y is null)
             {
@@ -125,7 +125,7 @@ namespace System.Formats.Cbor.Tests
 
         private static (ECParameters, HashAlgorithmName?) ReadECParametersAsCosePublicKey(CborReader reader)
         {
-            Debug.Assert(reader.ConformanceLevel == CborConformanceLevel.Ctap2Canonical);
+            Debug.Assert(reader.ConformanceMode == CborConformanceMode.Ctap2Canonical);
 
             // CTAP2 conformance mode requires that fields are sorted by key encoding.
             // We take advantage of this by reading keys in that order.

@@ -23,7 +23,7 @@ namespace System.Formats.Cbor
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public int ReadInt32()
         {
@@ -46,7 +46,7 @@ namespace System.Formats.Cbor
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public uint ReadUInt32()
         {
@@ -69,7 +69,7 @@ namespace System.Formats.Cbor
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public long ReadInt64()
         {
@@ -92,7 +92,7 @@ namespace System.Formats.Cbor
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public ulong ReadUInt64()
         {
@@ -117,7 +117,7 @@ namespace System.Formats.Cbor
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         /// <remarks>
         ///   This method supports decoding integers between -18446744073709551616 and -1.
@@ -249,9 +249,9 @@ namespace System.Formats.Cbor
 
             void ValidateIsNonStandardIntegerRepresentationSupported()
             {
-                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresCanonicalIntegerRepresentation(ConformanceLevel))
+                if (_isConformanceModeCheckEnabled && CborConformanceModeHelpers.RequiresCanonicalIntegerRepresentation(ConformanceMode))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_NonCanonicalIntegerRepresentation, ConformanceLevel));
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_NonCanonicalIntegerRepresentation, ConformanceMode));
                 }
             }
         }

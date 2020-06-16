@@ -19,7 +19,7 @@ namespace System.Formats.Cbor
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public CborTag ReadTag()
         {
@@ -41,7 +41,7 @@ namespace System.Formats.Cbor
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         /// <remarks>
         ///   Useful in scenaria where the semantic value decoder needs to be determined at runtime.
@@ -61,7 +61,7 @@ namespace System.Formats.Cbor
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   invalid semantic date/time encoding. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public DateTimeOffset ReadDateTimeOffset()
         {
@@ -84,7 +84,7 @@ namespace System.Formats.Cbor
 
                 string dateString = ReadTextString();
 
-                // TODO determine if conformance levels should allow inexact date sting parsing
+                // TODO determine if conformance modes should allow inexact date sting parsing
                 if (!DateTimeOffset.TryParseExact(dateString, CborWriter.Rfc3339FormatString, null, DateTimeStyles.RoundtripKind, out DateTimeOffset result))
                 {
                     throw new FormatException(SR.Cbor_Reader_InvalidDateTimeEncoding);
@@ -112,7 +112,7 @@ namespace System.Formats.Cbor
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   invalid semantic date/time encoding. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public DateTimeOffset ReadUnixTimeSeconds()
         {
@@ -167,7 +167,7 @@ namespace System.Formats.Cbor
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   invalid semantic bignum encoding. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public BigInteger ReadBigInteger()
         {
@@ -220,7 +220,7 @@ namespace System.Formats.Cbor
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   invalid semantic decimal fraction encoding. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public decimal ReadDecimal()
         {
@@ -308,9 +308,9 @@ namespace System.Formats.Cbor
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Tag);
             CborTag result = (CborTag)DecodeUnsignedInteger(header, GetRemainingBytes(), out bytesRead);
 
-            if (_isConformanceLevelCheckEnabled && !CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
+            if (_isConformanceModeCheckEnabled && !CborConformanceModeHelpers.AllowsTags(ConformanceMode))
             {
-                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_TagsNotSupported, ConformanceLevel));
+                throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_TagsNotSupported, ConformanceMode));
             }
 
             return result;

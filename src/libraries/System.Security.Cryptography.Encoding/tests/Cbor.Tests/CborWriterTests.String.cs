@@ -99,26 +99,26 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax)]
-        public static void WriteTextString_InvalidUnicodeString_LaxConformance_ShouldSucceed(CborConformanceLevel conformanceLevel)
+        [InlineData(CborConformanceMode.Lax)]
+        public static void WriteTextString_InvalidUnicodeString_LaxConformance_ShouldSucceed(CborConformanceMode conformanceMode)
         {
             string invalidUnicodeString = "\ud800";
             byte[] expectedEncoding = { 0x63, 0xef, 0xbf, 0xbd };
 
-            var writer = new CborWriter(conformanceLevel);
+            var writer = new CborWriter(conformanceMode);
             writer.WriteTextString(invalidUnicodeString);
             AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Strict)]
-        [InlineData(CborConformanceLevel.Canonical)]
-        [InlineData(CborConformanceLevel.Ctap2Canonical)]
-        public static void WriteTextString_InvalidUnicodeString_StrictConformance_ShouldThrowArgumentException(CborConformanceLevel conformanceLevel)
+        [InlineData(CborConformanceMode.Strict)]
+        [InlineData(CborConformanceMode.Canonical)]
+        [InlineData(CborConformanceMode.Ctap2Canonical)]
+        public static void WriteTextString_InvalidUnicodeString_StrictConformance_ShouldThrowArgumentException(CborConformanceMode conformanceMode)
         {
             // NB Xunit's InlineDataAttribute will corrupt string literals containing invalid unicode
             string invalidUnicodeString = "\ud800";
-            var writer = new CborWriter(conformanceLevel);
+            var writer = new CborWriter(conformanceMode);
             ArgumentException exn = Assert.Throws<ArgumentException>(() => writer.WriteTextString(invalidUnicodeString));
             Assert.NotNull(exn.InnerException);
             Assert.IsType<System.Text.EncoderFallbackException>(exn.InnerException);
@@ -178,20 +178,20 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Canonical)]
-        [InlineData(CborConformanceLevel.Ctap2Canonical)]
-        public static void WriteStartByteString_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel conformanceLevel)
+        [InlineData(CborConformanceMode.Canonical)]
+        [InlineData(CborConformanceMode.Ctap2Canonical)]
+        public static void WriteStartByteString_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceMode conformanceMode)
         {
-            var writer = new CborWriter(conformanceLevel, convertIndefiniteLengthEncodings: false);
+            var writer = new CborWriter(conformanceMode, convertIndefiniteLengthEncodings: false);
             Assert.Throws<InvalidOperationException>(() => writer.WriteStartByteString());
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Canonical)]
-        [InlineData(CborConformanceLevel.Ctap2Canonical)]
-        public static void WriteStartTextString_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel conformanceLevel)
+        [InlineData(CborConformanceMode.Canonical)]
+        [InlineData(CborConformanceMode.Ctap2Canonical)]
+        public static void WriteStartTextString_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceMode conformanceMode)
         {
-            var writer = new CborWriter(conformanceLevel, convertIndefiniteLengthEncodings: false);
+            var writer = new CborWriter(conformanceMode, convertIndefiniteLengthEncodings: false);
             Assert.Throws<InvalidOperationException>(() => writer.WriteStartTextString());
         }
     }

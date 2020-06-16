@@ -87,7 +87,7 @@ namespace System.Formats.Cbor.Tests
             // Set up: build a nontrivial writer state.
             // Favor maps and Ctap2 canonicalization since
             // since that utilizes most of the moving parts.
-            var writer = new CborWriter(conformanceLevel: CborConformanceLevel.Ctap2Canonical);
+            var writer = new CborWriter(conformanceMode: CborConformanceMode.Ctap2Canonical);
 
             for (int i = 0; i < 10; i++)
             {
@@ -126,10 +126,10 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void ConformanceLevel_DefaultValue_ShouldEqualLax()
+        public static void ConformanceMode_DefaultValue_ShouldEqualLax()
         {
             var writer = new CborWriter();
-            Assert.Equal(CborConformanceLevel.Lax, writer.ConformanceLevel);
+            Assert.Equal(CborConformanceMode.Lax, writer.ConformanceMode);
         }
 
         [Fact]
@@ -282,13 +282,13 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Strict, "a201010101")] // duplicate key encodings
-        [InlineData(CborConformanceLevel.Canonical, "9f01ff")]  // indefinite-length array
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "a280800101")]  // unsorted key encodings
-        public static void WriteEncodedValue_InvalidConformance_ShouldThrowArgumentException(CborConformanceLevel conformanceLevel, string hexEncodedInput)
+        [InlineData(CborConformanceMode.Strict, "a201010101")] // duplicate key encodings
+        [InlineData(CborConformanceMode.Canonical, "9f01ff")]  // indefinite-length array
+        [InlineData(CborConformanceMode.Ctap2Canonical, "a280800101")]  // unsorted key encodings
+        public static void WriteEncodedValue_InvalidConformance_ShouldThrowArgumentException(CborConformanceMode conformanceMode, string hexEncodedInput)
         {
             byte[] encodedInput = hexEncodedInput.HexToByteArray();
-            var writer = new CborWriter(conformanceLevel);
+            var writer = new CborWriter(conformanceMode);
             Assert.Throws<ArgumentException>(() => writer.WriteEncodedValue(encodedInput));
         }
 
@@ -300,10 +300,10 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData((CborConformanceLevel)(-1))]
-        public static void InvalidConformanceLevel_ShouldThrowArgumentOutOfRangeException(CborConformanceLevel level)
+        [InlineData((CborConformanceMode)(-1))]
+        public static void InvalidConformanceMode_ShouldThrowArgumentOutOfRangeException(CborConformanceMode mode)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new CborWriter(conformanceLevel: level));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CborWriter(conformanceMode: mode));
         }
 
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new [] { x });

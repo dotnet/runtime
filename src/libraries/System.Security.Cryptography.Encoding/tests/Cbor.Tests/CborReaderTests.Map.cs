@@ -69,40 +69,40 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax, "bfff")]
-        [InlineData(CborConformanceLevel.Strict, "bfff")]
-        public static void ReadMap_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Lax, "bfff")]
+        [InlineData(CborConformanceMode.Strict, "bfff")]
+        public static void ReadMap_IndefiniteLength_SupportedConformanceMode_ShouldSucceed(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             int? length = reader.ReadStartMap();
             Assert.Null(length);
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Canonical, "bfff")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "bfff")]
-        public static void ReadMap_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Canonical, "bfff")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "bfff")]
+        public static void ReadMap_IndefiniteLength_UnSupportedConformanceMode_ShouldThrowFormatException(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             Assert.Throws<FormatException>(() => reader.ReadStartMap());
             Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax, "b800")]
-        [InlineData(CborConformanceLevel.Lax, "b90000")]
-        [InlineData(CborConformanceLevel.Lax, "ba00000000")]
-        [InlineData(CborConformanceLevel.Lax, "bb0000000000000000")]
-        [InlineData(CborConformanceLevel.Strict, "b800")]
-        [InlineData(CborConformanceLevel.Strict, "b90000")]
-        [InlineData(CborConformanceLevel.Strict, "ba00000000")]
-        [InlineData(CborConformanceLevel.Strict, "bb0000000000000000")]
-        public static void ReadMap_NonCanonicalLengths_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Lax, "b800")]
+        [InlineData(CborConformanceMode.Lax, "b90000")]
+        [InlineData(CborConformanceMode.Lax, "ba00000000")]
+        [InlineData(CborConformanceMode.Lax, "bb0000000000000000")]
+        [InlineData(CborConformanceMode.Strict, "b800")]
+        [InlineData(CborConformanceMode.Strict, "b90000")]
+        [InlineData(CborConformanceMode.Strict, "ba00000000")]
+        [InlineData(CborConformanceMode.Strict, "bb0000000000000000")]
+        public static void ReadMap_NonCanonicalLengths_SupportedConformanceMode_ShouldSucceed(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             int? length = reader.ReadStartMap();
             Assert.NotNull(length);
             Assert.Equal(0, length!.Value);
@@ -110,58 +110,58 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Canonical, "b800")]
-        [InlineData(CborConformanceLevel.Canonical, "b90000")]
-        [InlineData(CborConformanceLevel.Canonical, "ba00000000")]
-        [InlineData(CborConformanceLevel.Canonical, "bb0000000000000000")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "b800")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "b90000")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "ba00000000")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "bb0000000000000000")]
-        public static void ReadMap_NonCanonicalLengths_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        [InlineData(CborConformanceMode.Canonical, "b800")]
+        [InlineData(CborConformanceMode.Canonical, "b90000")]
+        [InlineData(CborConformanceMode.Canonical, "ba00000000")]
+        [InlineData(CborConformanceMode.Canonical, "bb0000000000000000")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "b800")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "b90000")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "ba00000000")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "bb0000000000000000")]
+        public static void ReadMap_NonCanonicalLengths_UnSupportedConformanceMode_ShouldThrowFormatException(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             Assert.Throws<FormatException>(() => reader.ReadStartMap());
             Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
-        [InlineData(CborConformanceLevel.Canonical, new object[] { Map, 1, 1, 2, 2, 3, 3 }, "a3010102020303")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, 1, 1, 2, 2, 3, 3 }, "a3010102020303")]
+        [InlineData(CborConformanceMode.Lax, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
+        [InlineData(CborConformanceMode.Strict, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
+        [InlineData(CborConformanceMode.Canonical, new object[] { Map, 1, 1, 2, 2, 3, 3 }, "a3010102020303")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { Map, 1, 1, 2, 2, 3, 3 }, "a3010102020303")]
         // indefinite length string payload
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5616200020061610082616360000100")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5616200020061610082616360000100")]
-        [InlineData(CborConformanceLevel.Canonical, new object[] { Map, 1, 0, 2, 0, "a", 0, "b", 0, new object[] { "c", "" }, 0 }, "a5010002006161006162008261636000")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, 1, 0, 2, 0, "a", 0, "b", 0, new object[] { "c", "" }, 0 }, "a5010002006161006162008261636000")]
+        [InlineData(CborConformanceMode.Lax, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5616200020061610082616360000100")]
+        [InlineData(CborConformanceMode.Strict, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5616200020061610082616360000100")]
+        [InlineData(CborConformanceMode.Canonical, new object[] { Map, 1, 0, 2, 0, "a", 0, "b", 0, new object[] { "c", "" }, 0 }, "a5010002006161006162008261636000")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { Map, 1, 0, 2, 0, "a", 0, "b", 0, new object[] { "c", "" }, 0 }, "a5010002006161006162008261636000")]
         // CBOR sorting rules do not match canonical string sorting
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, "aa", 0, "z", 0 }, "a262616100617a00")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, "aa", 0, "z", 0 }, "a262616100617a00")]
-        [InlineData(CborConformanceLevel.Canonical, new object[] { Map, "z", 0, "aa", 0 }, "a2617a0062616100")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, "z", 0, "aa", 0 }, "a2617a0062616100")]
+        [InlineData(CborConformanceMode.Lax, new object[] { Map, "aa", 0, "z", 0 }, "a262616100617a00")]
+        [InlineData(CborConformanceMode.Strict, new object[] { Map, "aa", 0, "z", 0 }, "a262616100617a00")]
+        [InlineData(CborConformanceMode.Canonical, new object[] { Map, "z", 0, "aa", 0 }, "a2617a0062616100")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { Map, "z", 0, "aa", 0 }, "a2617a0062616100")]
         // Test case distinguishing between RFC7049 and CTAP2 sorting rules
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
-        [InlineData(CborConformanceLevel.Canonical, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, 255, 0, "", 0 }, "a218ff006000")]
-        public static void ReadMap_SimpleValues_ShouldAcceptKeysSortedAccordingToConformanceLevel(CborConformanceLevel level, object expectedValue, string hexEncoding)
+        [InlineData(CborConformanceMode.Lax, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
+        [InlineData(CborConformanceMode.Strict, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
+        [InlineData(CborConformanceMode.Canonical, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { Map, 255, 0, "", 0 }, "a218ff006000")]
+        public static void ReadMap_SimpleValues_ShouldAcceptKeysSortedAccordingToConformanceMode(CborConformanceMode mode, object expectedValue, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             Helpers.VerifyValue(reader, expectedValue);
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0, new object[] { Map, 2, 2, 1, 1 }, 0 }, "a52000a30303020201010061610019010000a20202010100")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0, new object[] { Map, 2, 2, 1, 1 }, 0 }, "a52000a30303020201010061610019010000a20202010100")]
-        [InlineData(CborConformanceLevel.Canonical, new object[] { Map, -1, 0, "a", 0, 256, 0, new object[] { Map, 1, 1, 2, 2 }, 0, new object[] { Map, 1, 1, 2, 2, 3, 3 }, 0 }, "a5200061610019010000a20101020200a301010202030300")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, 256, 0, -1, 0, "a", 0, new object[] { Map, 1, 1, 2, 2 }, 0, new object[] { Map, 1, 1, 2, 2, 3, 3 }, 0 }, "a5190100002000616100a20101020200a301010202030300")]
-        public static void ReadMap_NestedValues_ShouldAcceptKeysSortedAccordingToConformanceLevel(CborConformanceLevel level, object expectedValue, string hexEncoding)
+        [InlineData(CborConformanceMode.Lax, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0, new object[] { Map, 2, 2, 1, 1 }, 0 }, "a52000a30303020201010061610019010000a20202010100")]
+        [InlineData(CborConformanceMode.Strict, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0, new object[] { Map, 2, 2, 1, 1 }, 0 }, "a52000a30303020201010061610019010000a20202010100")]
+        [InlineData(CborConformanceMode.Canonical, new object[] { Map, -1, 0, "a", 0, 256, 0, new object[] { Map, 1, 1, 2, 2 }, 0, new object[] { Map, 1, 1, 2, 2, 3, 3 }, 0 }, "a5200061610019010000a20101020200a301010202030300")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { Map, 256, 0, -1, 0, "a", 0, new object[] { Map, 1, 1, 2, 2 }, 0, new object[] { Map, 1, 1, 2, 2, 3, 3 }, 0 }, "a5190100002000616100a20101020200a301010202030300")]
+        public static void ReadMap_NestedValues_ShouldAcceptKeysSortedAccordingToConformanceMode(CborConformanceMode mode, object expectedValue, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding, level);
+            var reader = new CborReader(encoding, mode);
             Helpers.VerifyValue(reader, expectedValue);
         }
 
@@ -176,18 +176,18 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Strict, 42, "a2182a01182a02")]
-        [InlineData(CborConformanceLevel.Canonical, 42, "a2182a01182a02")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, 42, "a2182a01182a02")]
-        [InlineData(CborConformanceLevel.Strict, "foobar", "a266666f6f6261720166666f6f62617202")]
-        [InlineData(CborConformanceLevel.Canonical, "foobar", "a266666f6f6261720166666f6f62617202")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "foobar", "a266666f6f6261720166666f6f62617202")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
-        [InlineData(CborConformanceLevel.Canonical, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
-        public static void ReadMap_DuplicateKeys_StrictConformance_ShouldThrowFormatException(CborConformanceLevel level, object dupeKey, string hexEncoding)
+        [InlineData(CborConformanceMode.Strict, 42, "a2182a01182a02")]
+        [InlineData(CborConformanceMode.Canonical, 42, "a2182a01182a02")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, 42, "a2182a01182a02")]
+        [InlineData(CborConformanceMode.Strict, "foobar", "a266666f6f6261720166666f6f62617202")]
+        [InlineData(CborConformanceMode.Canonical, "foobar", "a266666f6f6261720166666f6f62617202")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "foobar", "a266666f6f6261720166666f6f62617202")]
+        [InlineData(CborConformanceMode.Strict, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
+        [InlineData(CborConformanceMode.Canonical, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
+        public static void ReadMap_DuplicateKeys_StrictConformance_ShouldThrowFormatException(CborConformanceMode mode, object dupeKey, string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
             reader.ReadStartMap();
             Helpers.VerifyValue(reader, dupeKey);
             reader.ReadInt32();
@@ -203,13 +203,13 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax, new object[] { 1, 2, 3, 0 }, "a40101020203030000")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { 1, 2, 3, 0 }, "a40101020203030000")]
-        [InlineData(CborConformanceLevel.Lax, new object[] { 1, "", 25, "a", 2 }, "a5010060001819006161000200")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { 1, 25, "", "a", 2 }, "a5010018190060006161000200")]
-        public static void ReadMap_UnsortedKeys_ConformanceNotRequiringSortedKeys_ShouldSucceed(CborConformanceLevel level, object[] keySequence, string hexEncoding)
+        [InlineData(CborConformanceMode.Lax, new object[] { 1, 2, 3, 0 }, "a40101020203030000")]
+        [InlineData(CborConformanceMode.Strict, new object[] { 1, 2, 3, 0 }, "a40101020203030000")]
+        [InlineData(CborConformanceMode.Lax, new object[] { 1, "", 25, "a", 2 }, "a5010060001819006161000200")]
+        [InlineData(CborConformanceMode.Strict, new object[] { 1, 25, "", "a", 2 }, "a5010018190060006161000200")]
+        public static void ReadMap_UnsortedKeys_ConformanceNotRequiringSortedKeys_ShouldSucceed(CborConformanceMode mode, object[] keySequence, string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
             reader.ReadStartMap();
             foreach (object key in keySequence)
             {
@@ -221,13 +221,13 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Canonical, new object[] { 1, 2, 3, 0 }, "a40101020203030000")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { 1, 2, 3, 0 }, "a40101020203030000")]
-        [InlineData(CborConformanceLevel.Canonical, new object[] { 1, "", 25, "a", 2 }, "a5010060001819006161000200")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { 1, 25, "", "a", 2 }, "a5010018190060006161000200")]
-        public static void ReadMap_UnsortedKeys_ConformanceRequiringSortedKeys_ShouldThrowFormatException(CborConformanceLevel level, object[] keySequence, string hexEncoding)
+        [InlineData(CborConformanceMode.Canonical, new object[] { 1, 2, 3, 0 }, "a40101020203030000")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { 1, 2, 3, 0 }, "a40101020203030000")]
+        [InlineData(CborConformanceMode.Canonical, new object[] { 1, "", 25, "a", 2 }, "a5010060001819006161000200")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { 1, 25, "", "a", 2 }, "a5010018190060006161000200")]
+        public static void ReadMap_UnsortedKeys_ConformanceRequiringSortedKeys_ShouldThrowFormatException(CborConformanceMode mode, object[] keySequence, string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
             reader.ReadStartMap();
             foreach (object key in keySequence.SkipLast(1))
             {
