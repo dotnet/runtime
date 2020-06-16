@@ -11,7 +11,7 @@ using Xunit;
 //
 public class TimeOut
 {
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [Fact]
     public static void OpenStandardXXX_WriteTimeOut()
     {
         using (Stream standardOut = Console.OpenStandardOutput(), standardIn = Console.OpenStandardInput(), standardError = Console.OpenStandardError())
@@ -26,7 +26,7 @@ public class TimeOut
         }
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [Fact]
     public static void OpenStandardXXX_ReadTimeOut()
     {
         using (Stream standardOut = Console.OpenStandardOutput(), standardIn = Console.OpenStandardInput(), standardError = Console.OpenStandardError())
@@ -41,7 +41,7 @@ public class TimeOut
         }
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [Fact]
     public static void OpenStandardXXX_CanTimeOut()
     {
         using (Stream standardOut = Console.OpenStandardOutput(), standardIn = Console.OpenStandardInput(), standardError = Console.OpenStandardError())

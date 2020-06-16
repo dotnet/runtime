@@ -78,7 +78,7 @@ public class SyncTextReader
         }
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [Fact]
     public void ReadToEnd()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);
@@ -92,7 +92,7 @@ public class SyncTextReader
         });
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [Fact]
     public void ReadBlock()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -110,7 +110,7 @@ public class SyncTextReader
         });
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [Fact]
     public void Read()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -128,7 +128,7 @@ public class SyncTextReader
         });
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [Fact]
     public void Peek()
     {
         const string expected = "ABC";
@@ -141,7 +141,7 @@ public class SyncTextReader
         });
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [Fact]
     public void ReadToEndAsync()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);
@@ -155,7 +155,7 @@ public class SyncTextReader
         });
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [Fact]
     public void ReadBlockAsync()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -179,7 +179,7 @@ public class SyncTextReader
         });
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [Fact]
     public void ReadAsync()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -203,7 +203,7 @@ public class SyncTextReader
         });
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [Fact]
     public void ReadLineAsync()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);

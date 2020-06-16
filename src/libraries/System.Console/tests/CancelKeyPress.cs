@@ -13,7 +13,7 @@ public partial class CancelKeyPressTests
 {
     private const int WaitFailTestTimeoutSeconds = 30;
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [Fact]
     public static void CanAddAndRemoveHandler()
     {
         ConsoleCancelEventHandler handler = (sender, e) =>
