@@ -207,51 +207,104 @@ namespace System.Threading.Tasks.Sources
             }
             _completed = true;
 
-            if (_continuation != null || Interlocked.CompareExchange(ref _continuation, ManualResetValueTaskSourceCoreShared.s_sentinel, null) != null)
+            if (_continuation is null && Interlocked.CompareExchange(ref _continuation, ManualResetValueTaskSourceCoreShared.s_sentinel, null) is null)
             {
-                if (_executionContext != null)
-                {
-                    ExecutionContext.RunInternal(
-                        _executionContext,
-                        (ref ManualResetValueTaskSourceCore<TResult> s) => s.InvokeContinuation(),
-                        ref this);
-                }
-                else
-                {
-                    InvokeContinuation();
-                }
+                return;
             }
-        }
 
-        /// <summary>
-        /// Invokes the continuation with the appropriate captured context / scheduler.
-        /// This assumes that if <see cref="_executionContext"/> is not null we're already
-        /// running within that <see cref="ExecutionContext"/>.
-        /// </summary>
-        private void InvokeContinuation()
-        {
-            Debug.Assert(_continuation != null);
-
-            switch (_capturedContext)
+            if (_executionContext is null)
             {
-                case null:
+                if (_capturedContext is null)
+                {
                     if (RunContinuationsAsynchronously)
                     {
-                        if (_executionContext != null)
-                        {
-                            ThreadPool.QueueUserWorkItem(_continuation, _continuationState, preferLocal: true);
-                        }
-                        else
-                        {
-                            ThreadPool.UnsafeQueueUserWorkItem(_continuation, _continuationState, preferLocal: true);
-                        }
+                        ThreadPool.UnsafeQueueUserWorkItem(_continuation, _continuationState, preferLocal: true);
                     }
                     else
                     {
                         _continuation(_continuationState);
                     }
-                    break;
 
+                    return;
+                }
+
+                InvokeSchedulerContinuation();
+                return;
+            }
+
+            ExecutionContext? currentContext = ExecutionContext.Capture();
+            // Restore the captured ExecutionContext before executing anything.
+            ExecutionContext.Restore(_executionContext);
+
+            if (_capturedContext is null)
+            {
+                if (RunContinuationsAsynchronously)
+                {
+                    ThreadPool.QueueUserWorkItem(_continuation, _continuationState, preferLocal: true);
+                    // Restore the current ExecutionContext.
+                    ExecutionContext.Restore(currentContext);
+                }
+                else
+                {
+                    // Running inline may throw; capture the edi if it does as we changed the ExecutionContext,
+                    // so need to restore it back before propagating the throw.
+                    ExceptionDispatchInfo? edi = InvokeInlineContinuation();
+                    // Restore the current ExecutionContext.
+                    ExecutionContext.Restore(currentContext);
+                    // Now rethrow the exception; if there is one.
+                    edi?.Throw();
+                }
+
+                return;
+            }
+
+            InvokeSchedulerContinuation();
+            // Restore the current ExecutionContext.
+            ExecutionContext.Restore(currentContext);
+        }
+
+        /// <summary>
+        /// Invokes the continuation inline and captures any exception thrown.
+        /// This assumes that if <see cref="_continuation"/> is not null we're already
+        /// running within that <see cref="ExecutionContext"/>.
+        /// </summary>
+        private ExceptionDispatchInfo? InvokeInlineContinuation()
+        {
+            Debug.Assert(_continuation != null);
+            Debug.Assert(_capturedContext == null);
+            Debug.Assert(!RunContinuationsAsynchronously);
+
+            ExceptionDispatchInfo? edi = null;
+            SynchronizationContext? syncContext = SynchronizationContext.Current;
+            try
+            {
+                _continuation(_continuationState);
+            }
+            catch (Exception ex)
+            {
+                // Note: we have a "catch" rather than a "finally" because we want
+                // to stop the first pass of EH here.  That way we can restore the previous
+                // context before any of our callers' EH filters run.
+                edi = ExceptionDispatchInfo.Capture(ex);
+            }
+
+            // Set sync context back to what it was prior to coming in
+            SynchronizationContext.SetSynchronizationContext(syncContext);
+            return edi;
+        }
+
+        /// <summary>
+        /// Invokes the continuation with the appropriate scheduler.
+        /// This assumes that if <see cref="_continuation"/> is not null we're already
+        /// running within that <see cref="ExecutionContext"/>.
+        /// </summary>
+        private void InvokeSchedulerContinuation()
+        {
+            Debug.Assert(_capturedContext != null);
+            Debug.Assert(_continuation != null);
+
+            switch (_capturedContext)
+            {
                 case SynchronizationContext sc:
                     sc.Post(s =>
                     {
