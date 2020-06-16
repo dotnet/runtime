@@ -63,10 +63,15 @@
     <Compile Include="System\Text\Json\Serialization\ClassType.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterList.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ArrayConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\AsyncEnumerableList.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ConcurrentQueueOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ConcurrentStackOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\DictionaryDefaultConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\DictionaryOfStringTValueConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IAsyncEnumerableConverterFactory.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IAsyncEnumerableOfTConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IAsyncEnumerableOfTObjectConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IAsyncEnumerableOfTValueConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ICollectionOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IDictionaryConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IDictionaryOfStringTValueConverter.cs" />

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 
@@ -15,6 +16,11 @@ namespace System.Text.Json
         /// The enumerator for resumable collections.
         /// </summary>
         public IEnumerator? CollectionEnumerator;
+
+        /// <summary>
+        /// The enumerator for resumable async enumerations.
+        /// </summary>
+        public IAsyncEnumerator<object>? AsyncEnumerator;
 
         /// <summary>
         /// The original JsonPropertyInfo that is not changed. It contains all properties.

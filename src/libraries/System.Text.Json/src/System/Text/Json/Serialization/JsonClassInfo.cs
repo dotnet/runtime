@@ -43,7 +43,8 @@ namespace System.Text.Json
                 if (_elementClassInfo == null && ElementType != null)
                 {
                     Debug.Assert(ClassType == ClassType.Enumerable ||
-                        ClassType == ClassType.Dictionary);
+                        ClassType == ClassType.Dictionary ||
+                        (GetIAsyncEnumerableInterface(Type) != null));
 
                     _elementClassInfo = Options.GetOrAddClass(ElementType);
                 }
@@ -196,6 +197,14 @@ namespace System.Text.Json
                             InitializeConstructorParameters(cache, converter.ConstructorInfo!);
                         }
 
+                        // Check if this object implements IAsyncEnumerable.
+                        var asyncEnumerableInterfaceType = GetIAsyncEnumerableInterface(Type);
+
+                        if (asyncEnumerableInterfaceType != null)
+                        {
+                            ElementType = asyncEnumerableInterfaceType.GetGenericArguments()[0];
+                        }
+
                         // Set the dictionary cache field at this point since it is completely initialized.
                         // It can now be safely accessed by other threads.
                         PropertyCache = cache;
@@ -223,6 +232,15 @@ namespace System.Text.Json
                     Debug.Fail($"Unexpected class type: {ClassType}");
                     throw new InvalidOperationException();
             }
+        }
+
+        private Type GetIAsyncEnumerableInterface(Type type)
+        {
+            foreach (var iface in type.GetInterfaces())
+                if (iface.IsGenericType && (iface.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>)))
+                    return iface;
+
+            return null!;
         }
 
         private void InitializeConstructorParameters(Dictionary<string, JsonPropertyInfo> propertyCache, ConstructorInfo constructorInfo)
