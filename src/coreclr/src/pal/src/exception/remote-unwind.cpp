@@ -65,8 +65,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 
-#include <link.h>
-
 #else // HOST_UNIX
 
 #include <windows.h>
@@ -98,6 +96,10 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 #endif // HOST_UNIX
 
 #if defined(HAVE_UNW_GET_ACCESSORS)
+
+#ifdef HOST_UNIX
+#include <link.h>
+#endif // HOST_UNIX
 
 #include <elf.h>
 
