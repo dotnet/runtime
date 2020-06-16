@@ -3076,6 +3076,12 @@ vtable_slot_has_preserve_base_overrides_attribute (MonoClass *klass, int slot, M
 static gboolean
 is_ok_for_covariant_ret (MonoType *type_impl, MonoType *type_decl)
 {
+	if (type_impl->byref ^ type_decl->byref)
+		return FALSE;
+
+	if (type_impl->byref) {
+		return mono_type_byref_is_assignable_from (type_decl, type_impl);
+	}
 	/* method declared to return an interface, impl returns a value type that implements the interface */
 	if (!mono_type_is_reference (type_impl) && mono_type_is_reference (type_decl))
 		return FALSE;
