@@ -35,7 +35,7 @@ namespace System.Text.Tests
             new EncodingInformation(65001, "utf-8")
         };
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void TestGetEncodings()
         {
             RemoteExecutor.Invoke(() => {
@@ -48,7 +48,7 @@ namespace System.Text.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void TestGetEncodingsWithProvider()
         {
             RemoteExecutor.Invoke(() => {
