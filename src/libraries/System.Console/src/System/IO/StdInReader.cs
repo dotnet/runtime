@@ -88,7 +88,7 @@ namespace System.IO
             Debug.Assert(_tmpKeys.Count == 0);
             string? readLineStr = null;
 
-            Interop.Sys.InitializeConsoleBeforeRead(disableCrLfConversions: false);
+            Interop.Sys.InitializeConsoleBeforeRead(convertCrToNl: true);
             try
             {
                 // Read key-by-key until we've read a line.
@@ -97,7 +97,7 @@ namespace System.IO
                     // Read the next key.  This may come from previously read keys, from previously read but
                     // unprocessed data, or from an actual stdin read.
                     bool previouslyProcessed;
-                    ConsoleKeyInfo keyInfo = ReadKeyCore(disableCrLfConversions: false, out previouslyProcessed);
+                    ConsoleKeyInfo keyInfo = ReadKeyCore(convertCrToNl: true, out previouslyProcessed);
                     if (!consumeKeys && keyInfo.Key != ConsoleKey.Backspace) // backspace is the only character not written out in the below if/elses.
                     {
                         _tmpKeys.Push(keyInfo);
@@ -364,8 +364,8 @@ namespace System.IO
 
         public ConsoleKeyInfo ReadKey(out bool previouslyProcessed)
         {
-            // Console.ReadKey() requires the precise input character
-            return ReadKeyCore(disableCrLfConversions: true, out previouslyProcessed);
+            // Disable CR to LF conversions for accurate key reporting
+            return ReadKeyCore(convertCrToNl: false, out previouslyProcessed);
         }
 
         /// <summary>
@@ -378,7 +378,7 @@ namespace System.IO
         /// not work, we simply return the char associated with that
         /// key with ConsoleKey set to default value.
         /// </summary>
-        private unsafe ConsoleKeyInfo ReadKeyCore(bool disableCrLfConversions, out bool previouslyProcessed)
+        private unsafe ConsoleKeyInfo ReadKeyCore(bool convertCrToNl, out bool previouslyProcessed)
         {
             // Order of reading:
             // 1. A read should first consult _availableKeys, as this contains input that has already been both read from stdin and processed into ConsoleKeyInfos.
@@ -392,7 +392,7 @@ namespace System.IO
             }
 
             previouslyProcessed = false;
-            Interop.Sys.InitializeConsoleBeforeRead(disableCrLfConversions: disableCrLfConversions);
+            Interop.Sys.InitializeConsoleBeforeRead(convertCrToNl: convertCrToNl);
             try
             {
                 ConsoleKey key;
