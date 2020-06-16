@@ -8,4 +8,23 @@
     <TargetingPackDir>{TargetingPackDir}</TargetingPackDir>
   </PropertyGroup>
 
+  <!-- Logic to override the default IlLink tasks that come from the SDK and use the one
+  we use in dotnet/runtime repo -->
+
+  <PropertyGroup>
+    <_ILLinkTasksDirectoryRoot>$(PkgMicrosoft_NET_ILLink_Tasks)\tools\</_ILLinkTasksDirectoryRoot>
+    <_ILLinkTasksTFM>netcoreapp3.0</_ILLinkTasksTFM>
+    <_ILLinkTasksDirectory>$(_ILLinkTasksDirectoryRoot)$(_ILLinkTasksTFM)\</_ILLinkTasksDirectory>
+    <ILLinkTasksAssembly>$(_ILLinkTasksDirectory)ILLink.Tasks.dll</ILLinkTasksAssembly>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.ILLink.Tasks"
+                      Version="{MicrosoftNETILLinkTasksVersion}"
+                      PrivateAssets="all"
+                      IsImplicitlyDefined="true"
+                      ExcludeAssets="build"
+                      GeneratePathProperty="true" />
+  </ItemGroup>
+
 </Project>

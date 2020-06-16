@@ -55,24 +55,37 @@
 
     <MakeDir Directories="$(_projectDir)" />
     <WriteLinesToFile File="$(_projectFile)"
-                      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)').Replace('{RuntimePackDir}', '%(TestConsoleApps.RuntimePackDirectory)').Replace('{TargetingPackDir}','$(MicrosoftNetCoreAppRefPackDir)').Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)'))"
+                      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)').Replace('{RuntimePackDir}', '%(TestConsoleApps.RuntimePackDirectory)').Replace('{TargetingPackDir}','$(MicrosoftNetCoreAppRefPackDir)').Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)').Replace('{MicrosoftNETILLinkTasksVersion}', '$(MicrosoftNETILLinkTasksVersion)'))"
                       Overwrite="true" />
     <Copy SourceFiles="$(_projectSourceFile)"
           DestinationFolder="$(_projectDir)" />
     <Message Text="Generated $(_projectFile)" />
   </Target>
 
-  <Target Name="PublishTrimmedProjects"
+  <Target Name="RestoreProjects"
           DependsOnTargets="GenerateProjects">
     <PropertyGroup>
       <TestRestoreCommand>"$(TestDotNetPath)"</TestRestoreCommand>
-      <TestRestoreCommand>$(TestRestoreCommand) msbuild /t:PublishTrimmed</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) restore</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) /nr:false</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) /warnaserror</TestRestoreCommand>
-      <TestRestoreCommand>$(TestRestoreCommand) -p:configuration=Release</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) -p:configuration=$(Configuration)</TestRestoreCommand>
     </PropertyGroup>
 
     <Exec Command="$(TestRestoreCommand)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
+  </Target>
+
+  <Target Name="PublishTrimmedProjects"
+          DependsOnTargets="RestoreProjects">
+    <PropertyGroup>
+      <TestPublishTrimmedCommand>"$(TestDotNetPath)"</TestPublishTrimmedCommand>
+      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) msbuild /t:PublishTrimmed</TestPublishTrimmedCommand>
+      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /nr:false</TestPublishTrimmedCommand>
+      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /warnaserror</TestPublishTrimmedCommand>
+      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) -p:configuration=$(Configuration)</TestPublishTrimmedCommand>
+    </PropertyGroup>
+
+    <Exec Command="$(TestPublishTrimmedCommand)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
   </Target>
 
   <Target Name="ExecuteApplications"
