@@ -1,0 +1,107 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
+using Microsoft.Win32.SafeHandles;
+
+namespace System.Threading
+{
+    public sealed class RegisteredWaitHandle : MarshalByRefObject
+    {
+    }
+
+    public static partial class ThreadPool
+    {
+        internal const bool EnableWorkerTracking = false;
+
+        private static bool _callbackQueued;
+
+        internal static void InitializeForThreadPoolThread() { }
+
+        public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
+        {
+            return false;
+        }
+
+        public static void GetMaxThreads(out int workerThreads, out int completionPortThreads)
+        {
+            workerThreads = 1;
+            completionPortThreads = 1;
+        }
+
+        public static bool SetMinThreads(int workerThreads, int completionPortThreads)
+        {
+            return false;
+        }
+
+        public static void GetMinThreads(out int workerThreads, out int completionPortThreads)
+        {
+            workerThreads = 1;
+            completionPortThreads = 0;
+        }
+
+        public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads)
+        {
+            workerThreads = 1;
+            completionPortThreads = 0;
+        }
+
+        public static int ThreadCount => 1;
+
+        public static long CompletedWorkItemCount => 0;
+
+        internal static void RequestWorkerThread()
+        {
+            if (_callbackQueued)
+                return;
+            _callbackQueued = true;
+            QueueCallback();
+        }
+
+        internal static bool KeepDispatching(int startTickCount)
+        {
+            return true;
+        }
+
+        internal static void NotifyWorkItemProgress()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        internal static bool NotifyWorkItemComplete()
+        {
+            return false;
+        }
+
+        private static RegisteredWaitHandle RegisterWaitForSingleObject(
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
+             object? state,
+             uint millisecondsTimeOutInterval,
+             bool executeOnlyOnce,
+             bool flowExecutionContext)
+        {
+            if (waitObject == null)
+                throw new ArgumentNullException(nameof(waitObject));
+
+            if (callBack == null)
+                throw new ArgumentNullException(nameof(callBack));
+
+            throw new PlatformNotSupportedException();
+        }
+
+        [DynamicDependency("Callback")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void QueueCallback();
+
+        private static void Callback()
+        {
+            _callbackQueued = false;
+            ThreadPoolWorkQueue.Dispatch();
+        }
+    }
+}
