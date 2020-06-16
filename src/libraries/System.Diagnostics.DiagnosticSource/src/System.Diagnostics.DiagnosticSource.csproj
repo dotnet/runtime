@@ -19,6 +19,7 @@
     <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1'">$(DefineConstants);EVENTSOURCE_ACTIVITY_SUPPORT</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);EVENTSOURCE_ENUMERATE_SUPPORT</DefineConstants>
     <DefineConstants Condition="$(TargetFramework.StartsWith('net4'))">$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS;ENABLE_HTTP_HANDLER</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(DefineConstants);NET5</DefineConstants>
     <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0'">true</ExcludeFromPackage>
   </PropertyGroup>
   <ItemGroup>
@@ -46,12 +47,14 @@
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <None Include="ActivityUserGuide.md" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' != 'net45' And '$(TargetFramework)' != 'netstandard1.1'">
-    <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
+  <ItemGroup Condition=" '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="System\Diagnostics\LocalAppContextSwitches.cs" />
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
       <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net45' And '$(TargetFramework)' != 'netstandard1.1'">
+    <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
     <Compile Include="System\Diagnostics\Activity.Current.net45.cs" />
@@ -85,9 +88,6 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Resources.ResourceManager" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
-    <Reference Include="System.AppContext" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Compile Include="AssemblyInfo.netfx.cs" />

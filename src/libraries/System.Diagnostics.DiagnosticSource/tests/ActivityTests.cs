@@ -593,6 +593,20 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void IdFormat_WithTheEnvironmentSwitch()
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_DIAGNOSTICS_DEFAULTACTIVITYIDFORMATISHIERARCHIAL", "true");
+
+            RemoteExecutor.Invoke(() =>
+            {
+                Activity activity = new Activity("activity15");
+                activity.Start();
+                 Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+            }, new RemoteInvokeOptions() { StartInfo = psi }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_HierarchicalWhenDefaultIsW3CButHierarchicalParentId()
         {
             RemoteExecutor.Invoke(() =>
