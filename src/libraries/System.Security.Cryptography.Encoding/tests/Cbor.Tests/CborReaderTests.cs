@@ -13,6 +13,13 @@ namespace System.Formats.Cbor.Tests
 {
     public partial class CborReaderTests
     {
+        [Theory]
+        [InlineData((CborConformanceMode)(-1))]
+        public static void InvalidConformanceMode_ShouldThrowArgumentOutOfRangeException(CborConformanceMode mode)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CborReader(Array.Empty<byte>(), conformanceMode: mode));
+        }
+
         [Fact]
         public static void Peek_EmptyBuffer_ShouldReturnEof()
         {
@@ -201,15 +208,29 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
-        [Theory]
-        [InlineData((CborConformanceMode)(-1))]
-        public static void InvalidConformanceMode_ShouldThrowArgumentOutOfRangeException(CborConformanceMode mode)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new CborReader(Array.Empty<byte>(), conformanceMode: mode));
-        }
-
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new[] { x });
         public static IEnumerable<object[]> EncodedValueInvalidInputs => CborReaderTests.InvalidCborValues.Select(x => new[] { x });
+
+        [Theory]
+        [MemberData(nameof(NonConformingSkipValueEncodings))]
+        public static void ReadEncodedValue_InvalidConformance_ConformanceCheckEnabled_ShouldThrowFormatException(CborConformanceMode mode, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, mode);
+            Assert.Throws<FormatException>(() => reader.ReadEncodedValue(disableConformanceModeChecks: false));
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
+        }
+
+        [Theory]
+        [MemberData(nameof(NonConformingSkipValueEncodings))]
+        public static void ReadEncodedValue_InvalidConformance_ConformanceCheckDisabled_ShouldSucceed(CborConformanceMode mode, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, mode);
+            ReadOnlyMemory<byte> encodedValue = reader.ReadEncodedValue(disableConformanceModeChecks: true);
+            Assert.Equal(encoding, encodedValue);
+            Assert.Equal(0, reader.BytesRemaining);
+        }
 
         [Theory]
         [InlineData("a501020326200121582065eda5a12577c2bae829437fe338701a10aaa375e1bb5b5de108de439c08551d2258201e52ed75701163f7f9e40ddf9f341b3dc9ba860af7e0ca7ca7e9eecd0084d19c",

@@ -98,21 +98,25 @@ namespace System.Formats.Cbor
         ///   Reads the next CBOR data item, returning a <see cref="ReadOnlySpan{T}"/> view
         ///   of the encoded value. For indefinite length encodings this includes the break byte.
         /// </summary>
-        /// <returns>A <see cref="ReadOnlySpan{T}"/> view of the encoded value.</returns>
+        /// <param name="disableConformanceModeChecks">
+        ///   Disable conformance mode validation for the read value,
+        ///   equivalent to using <see cref="CborConformanceMode.Lax"/>.
+        /// </param>
+        /// <returns>A <see cref="ReadOnlyMemory{T}"/> view of the encoded value.</returns>
         /// <exception cref="FormatException">
         ///   The data item is not a valid CBOR data item encoding. -or-
         ///   The CBOR encoding is not valid under the current conformance mode
         /// </exception>
-        public ReadOnlySpan<byte> ReadEncodedValue()
+        public ReadOnlyMemory<byte> ReadEncodedValue(bool disableConformanceModeChecks = false)
         {
             // keep a snapshot of the current offset
             int initialOffset = _offset;
 
             // call skip to read and validate the next value
-            SkipValue(disableConformanceModeChecks: false);
+            SkipValue(disableConformanceModeChecks: disableConformanceModeChecks);
 
             // return the slice corresponding to the consumed value
-            return _data.Span.Slice(initialOffset, _offset - initialOffset);
+            return _data.Slice(initialOffset, _offset - initialOffset);
         }
 
         private CborReaderState PeekStateCore(bool throwOnFormatErrors)
