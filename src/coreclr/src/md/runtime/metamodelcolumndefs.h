@@ -398,7 +398,7 @@
     SCHEMA_ITEM_CDTKN(GenericParamConstraint, Constraint, TypeDefOrRef)
     SCHEMA_TABLE_END(GenericParamConstraint)
 
-    /* Portable PDB tables */
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
     //-------------------------------------------------------------------------
     //Document
     SCHEMA_TABLE_START(Document)
@@ -451,4 +451,5 @@
     // TODO:
     // StateMachineMethod
     // CustomDebugInformation
+#endif // FEATURE_METADATA_EMIT_PORT_PDB
 // eof ------------------------------------------------------------------------

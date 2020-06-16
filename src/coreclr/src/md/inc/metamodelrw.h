@@ -382,7 +382,7 @@ public:
     AddTblRecord(MethodSpec)
     AddTblRecord(GenericParamConstraint)
 
-    /* Portable PDB tables */
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
     AddTblRecord(Document)
     AddTblRecord(MethodDebugInformation)
     AddTblRecord(LocalScope)
@@ -392,6 +392,7 @@ public:
     // TODO:
     // AddTblRecord(StateMachineMethod)
     // AddTblRecord(CustomDebugInformation)
+#endif // FEATURE_METADATA_EMIT_PORT_PDB
 
     // Specialized AddXxxToYyy() functions.
     __checkReturn HRESULT AddMethodToTypeDef(RID td, RID md);

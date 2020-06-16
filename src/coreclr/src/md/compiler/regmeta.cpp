@@ -277,6 +277,7 @@ ErrExit:
     return hr;
 } // RegMeta::CreateNewMD
 
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
 //*****************************************************************************
 // Create new stgdb for portable pdb
 //*****************************************************************************
@@ -321,6 +322,7 @@ RegMeta::CreateNewPortablePdbMD()
 ErrExit:
     return hr;
 } // RegMeta::CreateNewPortablePdbMD
+#endif // FEATURE_METADATA_EMIT_PORT_PDB
 
 #endif //FEATURE_METADATA_EMIT
 

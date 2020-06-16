@@ -164,7 +164,7 @@ const BYTE CMiniMdBase::s_MethodSpecCol[] = {2,
 const BYTE CMiniMdBase::s_GenericParamConstraintCol[] = {1,
   42,0,2,  64,2,2,
 };
-/* Portable PDB tables */
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
 // Dummy descriptors to fill the gap to 0x30
 const BYTE CMiniMdBase::s_Dummy1Col[] = { NULL };
 const BYTE CMiniMdBase::s_Dummy2Col[] = { NULL };
@@ -197,6 +197,7 @@ const BYTE CMiniMdBase::s_ImportScopeCol[] = { 2,
 // TODO:
 // const BYTE CMiniMdBase::s_StateMachineMethodCol[] = {};
 // const BYTE CMiniMdBase::s_CustomDebugInformationCol[] = {};
+#endif // #ifdef FEATURE_METADATA_EMIT_PORT_PDB
 
 const BYTE* const CMiniMdBase::s_TableColumnDescriptors[] = {
 s_ModuleCol,
@@ -244,7 +245,7 @@ s_NestedClassCol,
 s_GenericParamCol,
 s_MethodSpecCol,
 s_GenericParamConstraintCol,
-/* Portable PDB tables */
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
 // Dummy descriptors to fill the gap to 0x30
 s_Dummy1Col,
 s_Dummy2Col,
@@ -259,4 +260,5 @@ s_ImportScopeCol,
 // TODO:
 // s_StateMachineMethodCol,
 // s_CustomDebugInformationCol,
+#endif // #ifdef FEATURE_METADATA_EMIT_PORT_PDB
 };

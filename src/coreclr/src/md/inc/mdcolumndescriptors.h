@@ -49,7 +49,7 @@ static const BYTE s_NestedClassCol[];
 static const BYTE s_GenericParamCol[];
 static const BYTE s_MethodSpecCol[];
 static const BYTE s_GenericParamConstraintCol[];
-/* Portable PDB tables */
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
 // Dummy descriptors to fill the gap to 0x30
 static const BYTE s_Dummy1Col[];
 static const BYTE s_Dummy2Col[];
@@ -64,3 +64,4 @@ static const BYTE s_ImportScopeCol[];
 // TODO:
 // static const BYTE s_StateMachineMethodCol[];
 // static const BYTE s_CustomDebugInformationCol[];
+#endif // FEATURE_METADATA_EMIT_PORT_PDB

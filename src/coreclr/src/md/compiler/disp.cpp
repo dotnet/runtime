@@ -552,7 +552,7 @@ ErrExit:
     return E_NOTIMPL;
 #endif //!FEATURE_METADATA_EMIT
 } // Disp::DefineScope
-#endif
+#endif // FEATURE_METADATA_EMIT_PORT_PDB
 
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
 

@@ -370,6 +370,7 @@ ErrExit:
     return hr;
 } // RegMeta::AddInterfaceImpl
 
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
 //*******************************************************************************
 // Helper to determine path separator and number of separated parts.
 //
@@ -423,6 +424,8 @@ RegMeta::GetPathSeparator(
 
     return S_OK;
 } // RegMeta::GetPathSeparator
+#endif // FEATURE_METADATA_EMIT_PORT_PDB
+
 #endif //FEATURE_METADATA_EMIT && FEATURE_METADATA_INTERNAL_APIS
 
 #ifdef FEATURE_METADATA_INTERNAL_APIS

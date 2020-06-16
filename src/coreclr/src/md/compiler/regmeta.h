@@ -1301,10 +1301,12 @@ public:
     STDMETHOD(SetMDUpdateMode)(
         ULONG updateMode, ULONG *pPreviousUpdateMode);
 
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
     STDMETHODIMP GetPathSeparator(          // S_OK or error.
         char        *path,                  // [IN] Path string to search.
         char        *separator,             // [OUT] Separator used in path string, NULL if none.
         ULONG       *partsCount);           // [OUT] Number of parts separated by the separator.
+#endif
 
 //*****************************************************************************
 // IMetaDataHelper
@@ -1612,7 +1614,9 @@ public:
 
     HRESULT CreateNewMD();
 
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
     HRESULT CreateNewPortablePdbMD();
+#endif
 
     HRESULT OpenExistingMD(
         LPCWSTR     szDatabase,             // Name of database.
@@ -1977,6 +1981,9 @@ protected:
 #undef MiniMdTable
 #define MiniMdTable(x) HRESULT Validate##x(RID rid);
     MiniMdTables()
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+    PortablePdbMiniMdTables()
+#endif
 
     // Validate a record in a generic sense using Meta-Meta data.
     STDMETHODIMP ValidateRecord(ULONG ixTbl, ULONG ulRow);

@@ -1601,6 +1601,9 @@ public:
 #undef MiniMdTable
 #define MiniMdTable(tbl) ULONG getCount##tbl##s() { return _TBLCNT(tbl); }
     MiniMdTables();
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+    PortablePdbMiniMdTables();
+#endif
     // macro misspells some names.
     ULONG getCountProperties() {return getCountPropertys();}
     ULONG getCountMethodSemantics() {return getCountMethodSemanticss();}
@@ -1613,6 +1616,9 @@ public:
 #define MiniMdTable(tbl) __checkReturn HRESULT Get##tbl##Record(RID rid, tbl##Rec **ppRecord) { \
         return getRow(TBL_##tbl, rid, reinterpret_cast<void **>(ppRecord)); }
     MiniMdTables();
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+    PortablePdbMiniMdTables();
+#endif
 
     //*************************************************************************
     // These are specialized searching functions.  Mostly generic (ie, find

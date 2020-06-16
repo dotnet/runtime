@@ -22,7 +22,9 @@
 class StgIO;
 
 #include "mdcommon.h"
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
 #include "pdbheap.h"
+#endif
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -103,7 +105,7 @@ class CLiteWeightStgdbRW : public CLiteWeightStgdb<CMiniMdRW>
             CQuickBytes*            pqkSigEmit,
             ULONG*                  pcbSig);
 public:
-    CLiteWeightStgdbRW() : m_cbSaveSize(0), m_pStreamList(0), m_pNextStgdb(NULL), m_pStgIO(NULL), m_pPdbHeap(NULL)
+    CLiteWeightStgdbRW() : m_cbSaveSize(0), m_pStreamList(0), m_pNextStgdb(NULL), m_pStgIO(NULL)
     {
         m_wszFileName = NULL;
         m_pImage = NULL;
@@ -111,6 +113,9 @@ public:
         m_dwPEKind = (DWORD)(-1);
         m_dwDatabaseLFS = 0;
         m_dwDatabaseLFT = 0;
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+        m_pPdbHeap = NULL;
+#endif
     }
     ~CLiteWeightStgdbRW();
 
@@ -252,8 +257,9 @@ private:
     DWORD    m_dwDatabaseLFT;   // Low bytes of the database file's last write time
     DWORD    m_dwDatabaseLFS;   // Low bytes of the database file's size
     StgIO *  m_pStgIO;          // For file i/o.
+#ifdef FEATURE_METADATA_EMIT_PORT_PDB
     PdbHeap *m_pPdbHeap;
-
+#endif
 };  // class CLiteWeightStgdbRW
 
 #endif // __LiteWeightStgdb_h__
