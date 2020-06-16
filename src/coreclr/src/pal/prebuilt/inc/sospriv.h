@@ -2523,6 +2523,9 @@ EXTERN_C const IID IID_ISOSDacInterface8;
     ISOSDacInterface8 : public IUnknown
     {
     public:
+        virtual HRESULT STDMETHODCALLTYPE GetNumberGenerations(
+            unsigned int *pGenerations) = 0;
+
         virtual HRESULT STDMETHODCALLTYPE GetGenerationTable(
             unsigned int cGenerations,
             struct DacpGenerationData *pGenerationData,
@@ -2565,6 +2568,10 @@ EXTERN_C const IID IID_ISOSDacInterface8;
 
         ULONG ( STDMETHODCALLTYPE *Release )(
             ISOSDacInterface8 * This);
+
+        HRESULT ( STDMETHODCALLTYPE *GetNumberGenerations )(
+            ISOSDacInterface8 * This,
+            unsigned int *pGenerations);
 
         HRESULT ( STDMETHODCALLTYPE *GetGenerationTable )(
             ISOSDacInterface8 * This,
@@ -2614,6 +2621,9 @@ EXTERN_C const IID IID_ISOSDacInterface8;
 #define ISOSDacInterface8_Release(This) \
     ( (This)->lpVtbl -> Release(This) )
 
+
+#define ISOSDacInterface8_GetNumberGenerations(This,pGenerations)   \
+    ( (This)->lpVtbl -> GetNumberGenerations(This,pGenerations) )
 
 #define ISOSDacInterface8_GetGenerationTable(This,cGenerations,pGenerationData,pNeeded) \
     ( (This)->lpVtbl -> GetGenerationTable(This,cGenerations,pGenerationData,pNeeded) )

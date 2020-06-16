@@ -4501,6 +4501,21 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
     return hr;
 }
 
+HRESULT ClrDataAccess::GetNumberGenerations(unsigned int *pGenerations)
+{
+    if (pGenerations == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    *pGenerations = (unsigned int)(g_gcDacGlobals->total_generation_count);
+
+    SOSDacLeave();
+    return S_OK;
+}
+
 HRESULT ClrDataAccess::GetGenerationTable(unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded)
 {
     if (cGenerations > 0 && pGenerationData == NULL)
@@ -4511,7 +4526,7 @@ HRESULT ClrDataAccess::GetGenerationTable(unsigned int cGenerations, struct Dacp
     SOSDacEnter();
 
     HRESULT hr = S_OK;
-    unsigned int numGenerationTableEntries = NUMBERGENERATIONS + 1;
+    unsigned int numGenerationTableEntries = (unsigned int)(g_gcDacGlobals->total_generation_count);
     if (pNeeded != NULL)
     {
         *pNeeded = numGenerationTableEntries;
@@ -4519,11 +4534,11 @@ HRESULT ClrDataAccess::GetGenerationTable(unsigned int cGenerations, struct Dacp
 
     if (cGenerations < numGenerationTableEntries)
     {
-        hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+        hr = S_FALSE;
     }
     else
     {
-        for (unsigned int i=0; i < numGenerationTableEntries; i++)
+        for (unsigned int i = 0; i < numGenerationTableEntries; i++)
         {
             DPTR(dac_generation) generation = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
             pGenerationData[i].start_segment = (CLRDATA_ADDRESS) dac_cast<TADDR>(generation->start_segment);
@@ -4550,7 +4565,7 @@ HRESULT ClrDataAccess::GetFinalizationFillPointers(unsigned int cFillPointers, C
     SOSDacEnter();
 
     HRESULT hr = S_OK;
-    unsigned int numFillPointers = NUMBERGENERATIONS + 1 + dac_finalize_queue::ExtraSegCount;
+    unsigned int numFillPointers = (unsigned int)(g_gcDacGlobals->total_generation_count + dac_finalize_queue::ExtraSegCount);
     if (pNeeded != NULL)
     {
         *pNeeded = numFillPointers;
@@ -4558,7 +4573,7 @@ HRESULT ClrDataAccess::GetFinalizationFillPointers(unsigned int cFillPointers, C
 
     if (cFillPointers < numFillPointers)
     {
-        hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+        hr = S_FALSE;
     }
     else
     {
@@ -4597,7 +4612,7 @@ HRESULT ClrDataAccess::GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned 
 
     if (cGenerations < numGenerationTableEntries)
     {
-        hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+        hr = S_FALSE;
     }
     else
     {
@@ -4606,10 +4621,10 @@ HRESULT ClrDataAccess::GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned 
         for (unsigned int i = 0; i < numGenerationTableEntries; ++i)
         {
             DPTR(dac_generation) generation = ServerGenerationTableIndex(pHeap, i);
-            pGenerationData[i].start_segment     = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation->start_segment);
-            pGenerationData[i].allocation_start   = (CLRDATA_ADDRESS)(ULONG_PTR)generation->allocation_start;
+            pGenerationData[i].start_segment = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation->start_segment);
+            pGenerationData[i].allocation_start = (CLRDATA_ADDRESS)(ULONG_PTR)generation->allocation_start;
             DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
-            pGenerationData[i].allocContextPtr    = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_ptr;
+            pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_ptr;
             pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_limit;
         }
 
@@ -4642,7 +4657,7 @@ HRESULT ClrDataAccess::GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, 
 
     if (cFillPointers < numFillPointers)
     {
-        hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+        hr = S_FALSE;
     }
     else
     {
@@ -4650,7 +4665,7 @@ HRESULT ClrDataAccess::GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, 
 
         DPTR(dac_finalize_queue) fq = pHeap->finalize_queue;
         DPTR(uint8_t*) pFillPointerArray= dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
-        for(unsigned int i = 0; i < numFillPointers; ++i)
+        for (unsigned int i = 0; i < numFillPointers; ++i)
         {
             pFinalizationFillPointers[i] = (CLRDATA_ADDRESS) pFillPointerArray[i];
         }

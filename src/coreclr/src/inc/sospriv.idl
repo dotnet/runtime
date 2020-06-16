@@ -398,6 +398,8 @@ interface ISOSDacInterface7 : IUnknown
 ]
 interface ISOSDacInterface8 : IUnknown
 {
+    HRESULT GetNumberGenerations(unsigned int *pGenerations);
+
     // WKS
     HRESULT GetGenerationTable(unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded);
     HRESULT GetFinalizationFillPointers(unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded);

@@ -1197,6 +1197,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLRDATA_ADDRESS *methodDescs, int cMethodDescs, int *pcMethodDescs);
 
     // ISOSDacInterface8
+    virtual HRESULT STDMETHODCALLTYPE GetNumberGenerations(unsigned int *pGenerations);
     virtual HRESULT STDMETHODCALLTYPE GetGenerationTable(unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetFinalizationFillPointers(unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded);
 
