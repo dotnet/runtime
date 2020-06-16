@@ -442,7 +442,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                             // Owner type is needed for type specs to instantiating stubs or generics with signature variables still present
                             if (!method.Method.OwningType.IsDefType &&
-                                ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0 || method.Method.OwningType.ContainsSignatureVariables()))
+                                ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0 || method.Method.OwningType.ContainsSignatureVariables())
+                                || method.Method.IsArrayAddressMethod())
                             {
                                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
                             }
