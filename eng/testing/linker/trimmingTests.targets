@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <LinkerTestDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'linkerTests'))</LinkerTestDir>
-    <LinkerTestProjectsDir>$([MSBuild]::NormalizeDirectory('$(LinkerTestDir)', 'projects'))</LinkerTestProjectsDir>
+    <TrimmingTestDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'trimmingTests'))</TrimmingTestDir>
+    <TrimmingTestProjectsDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestDir)', 'projects'))</TrimmingTestProjectsDir>
     <TestDotNetPath>$([MSBuild]::NormalizePath('$(DotNetRoot)', 'dotnet'))</TestDotNetPath>
     <ProjectTemplate>$(MSBuildThisFileDirectory)project.csproj.template</ProjectTemplate>
   </PropertyGroup>
@@ -10,7 +10,7 @@
     <TestConsoleAppSourceFiles Include="$(MSBuildProjectDirectory)\*.cs" />
 
     <TestSupportFiles Include="$(MSBuildThisFileDirectory)SupportFiles\Directory.Build.*">
-      <DestinationFolder>$(LinkerTestDir)</DestinationFolder>
+      <DestinationFolder>$(TrimmingTestDir)</DestinationFolder>
     </TestSupportFiles>
   </ItemGroup>
 
@@ -24,7 +24,7 @@
   <Target Name="GetTestConsoleApps">
     <ItemGroup>
       <TestConsoleAppSourceFiles>
-        <ProjectDir>$([MSBuild]::NormalizeDirectory('$(LinkerTestProjectsDir)', '$(MSBuildProjectName)', '%(Filename)', '$(PackageRID)'))</ProjectDir>
+        <ProjectDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestProjectsDir)', '$(MSBuildProjectName)', '%(Filename)', '$(PackageRID)'))</ProjectDir>
         <TestRuntimeIdentifier>$(PackageRID)</TestRuntimeIdentifier>
       </TestConsoleAppSourceFiles>
       <!-- We need to separate Item metadata declaration in two in order to be able to use ProjectDir and TestRuntimeIdentifier bellow -->
@@ -81,7 +81,7 @@
           Outputs="_unused"
           Condition="'$(ArchiveTests)' != 'true'">
 
-    <Message Importance="High" Text="[Linker Tests] Running test: %(TestConsoleApps.ProjectCompileItems)..." />
+    <Message Importance="High" Text="[Trimming Tests] Running test: %(TestConsoleApps.ProjectCompileItems)..." />
     <Exec IgnoreExitCode="true" Command="%(TestConsoleApps.TestCommand)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.TestExecutionDirectory)">
       <Output TaskParameter="ExitCode" PropertyName="ExecutionExitCode" />
     </Exec>

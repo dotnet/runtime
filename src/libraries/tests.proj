@@ -10,7 +10,7 @@
     <EnableCoverageSupport>true</EnableCoverageSupport>
 
     <TestAssemblies Condition="'$(TestAssemblies)' == ''">true</TestAssemblies>
-    <TestLinker Condition="'$(TestLinker)' == ''">false</TestLinker>
+    <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
   </PropertyGroup>
   
   <!-- Projects that don't support code coverage measurement. -->
@@ -29,8 +29,8 @@
                       Condition="'$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TestLinker)' == 'true'">
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.LinkerTests.proj"
+  <ItemGroup Condition="'$(TestTrimming)' == 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
                       Exclude="@(ProjectExclusions)" />
   </ItemGroup>
 

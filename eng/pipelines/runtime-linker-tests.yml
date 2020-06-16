@@ -36,4 +36,4 @@ jobs:
       testGroup: innerloop
       nameSuffix: Runtime_Release
       buildArgs: -s clr+libs -c $(_BuildConfig)
-      extraStepsTemplate: /eng/pipelines/libraries/execute-linker-tests-steps.yml
+      extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
