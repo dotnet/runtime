@@ -67,7 +67,7 @@ namespace System.Formats.Cbor.Tests
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
             reader.ReadTag();
-            Assert.Equal(CborReaderState.EndOfData, reader.PeekState());
+            Assert.Throws<FormatException>(() => reader.PeekState());
         }
 
         [Theory]
@@ -134,7 +134,7 @@ namespace System.Formats.Cbor.Tests
 
             int bytesRemaining = reader.BytesRemaining;
 
-            Assert.Equal(CborReaderState.FormatError, reader.PeekState());
+            Assert.Throws<FormatException>(() => reader.PeekState());
             Assert.Throws<FormatException>(() => reader.ReadEndArray());
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }

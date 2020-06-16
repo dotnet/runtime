@@ -85,7 +85,7 @@ namespace System.Formats.Cbor
             CborReaderState state;
 
             // peek, skipping any tags we might encounter
-            while ((state = PeekStateCore(throwOnFormatErrors: true)) == CborReaderState.Tag)
+            while ((state = PeekStateCore()) == CborReaderState.Tag)
             {
                 ReadTag();
             }
@@ -163,12 +163,6 @@ namespace System.Formats.Cbor
                 case CborReaderState.SimpleValue:
                     ReadSimpleValue();
                     break;
-
-                case CborReaderState.EndOfData:
-                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
-                case CborReaderState.FormatError:
-                    Debug.Fail("Peek format errors should be surfaced as FormatExceptions.");
-                    throw new FormatException();
 
                 default:
                     throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_Skip_InvalidState, state));

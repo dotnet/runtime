@@ -387,20 +387,21 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData("bf")]
-        [InlineData("bf0102")]
-        [InlineData("bf01020304")]
-        public static void ReadMap_IndefiniteLength_MissingBreakByte_ShouldReportEndOfData(string hexEncoding)
+        [InlineData("bf", 0)]
+        [InlineData("bf0102", 2)]
+        [InlineData("bf01020304", 4)]
+        public static void ReadMap_IndefiniteLength_MissingBreakByte_ShouldThrowFormatException(string hexEncoding, int length)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             reader.ReadStartMap();
-            while (reader.PeekState() == CborReaderState.UnsignedInteger)
+            for (int i = 0; i < length; i++)
             {
+                Assert.Equal(CborReaderState.UnsignedInteger, reader.PeekState());
                 reader.ReadInt64();
             }
 
-            Assert.Equal(CborReaderState.EndOfData, reader.PeekState());
+            Assert.Throws<FormatException>(() => reader.PeekState());
         }
 
         [Theory]
@@ -441,7 +442,7 @@ namespace System.Formats.Cbor.Tests
 
             int bytesRemaining = reader.BytesRemaining;
 
-            Assert.Equal(CborReaderState.FormatError, reader.PeekState()); // don't want this to fail
+            Assert.Throws<FormatException>(() => reader.PeekState());
             Assert.Throws<FormatException>(() => reader.ReadEndMap());
 
             Assert.Equal(bytesRemaining, reader.BytesRemaining);

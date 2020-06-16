@@ -187,7 +187,7 @@ namespace System.Formats.Cbor.Tests
             reader.ReadStartMap();
             Assert.Equal(CborReaderState.UnsignedInteger, reader.PeekState());
             reader.ReadUInt64();
-            Assert.Equal(CborReaderState.FormatError, reader.PeekState());
+            Assert.Throws<FormatException>(() => reader.PeekState());
         }
 
         [Theory]

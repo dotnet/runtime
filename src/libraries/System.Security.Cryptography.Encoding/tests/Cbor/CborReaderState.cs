@@ -119,15 +119,5 @@ namespace System.Formats.Cbor
         ///   the reader will report this value even if the buffer contains trailing bytes.
         /// </remarks>
         Finished,
-
-        /// <summary>
-        ///   Indicates that the reader has encountered an incomplete CBOR document.
-        /// </summary>
-        EndOfData,
-
-        /// <summary>
-        ///   Indicates that the reader has encountered an error in the CBOR format encoding.
-        /// </summary>
-        FormatError,
     }
 }

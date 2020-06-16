@@ -736,8 +736,7 @@ namespace System.Formats.Cbor.Tests
             reader.ReadByteString();
 
             int bytesRemaining = reader.BytesRemaining;
-            Assert.Equal(CborReaderState.FormatError, reader.PeekState());
-            // throws FormatException even if it's the right major type we're trying to read
+            Assert.Throws<FormatException>(() => reader.PeekState());
             Assert.Throws<FormatException>(() => reader.ReadInt64());
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
@@ -752,8 +751,7 @@ namespace System.Formats.Cbor.Tests
             reader.ReadTextString();
 
             int bytesRemaining = reader.BytesRemaining;
-            Assert.Equal(CborReaderState.FormatError, reader.PeekState());
-            // throws FormatException even if it's the right major type we're trying to read
+            Assert.Throws<FormatException>(() => reader.PeekState());
             Assert.Throws<FormatException>(() => reader.ReadInt64());
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }

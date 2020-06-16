@@ -160,20 +160,22 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData("9f")]
-        [InlineData("9f01")]
-        [InlineData("9f0102")]
-        public static void ReadArray_IndefiniteLength_MissingBreakByte_ShouldReportEndOfData(string hexEncoding)
+        [InlineData("9f", 0)]
+        [InlineData("9f01", 1)]
+        [InlineData("9f0102", 2)]
+        public static void ReadArray_IndefiniteLength_MissingBreakByte_ShouldThrowFormatException(string hexEncoding, int length)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             reader.ReadStartArray();
-            while (reader.PeekState() == CborReaderState.UnsignedInteger)
+
+            for (int i = 0; i < length; i++)
             {
+                Assert.Equal(CborReaderState.UnsignedInteger, reader.PeekState());
                 reader.ReadInt64();
             }
 
-            Assert.Equal(CborReaderState.EndOfData, reader.PeekState());
+            Assert.Throws<FormatException>(() => reader.PeekState());
         }
 
         [Theory]

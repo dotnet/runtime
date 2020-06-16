@@ -21,10 +21,10 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void Peek_EmptyBuffer_ShouldReturnEof()
+        public static void Peek_EmptyBuffer_ShouldThrowFormatException()
         {
             var reader = new CborReader(ReadOnlyMemory<byte>.Empty);
-            Assert.Equal(CborReaderState.EndOfData, reader.PeekState());
+            Assert.Throws<FormatException>(() => reader.PeekState());
         }
 
         [Theory]
@@ -141,7 +141,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void CborReader_MultipleRootValuesAllowed_RootLevelBreakByte_ShouldReportAsFormatError()
+        public static void CborReader_MultipleRootValuesAllowed_RootLevelBreakByte_ShouldThrowFormatException()
         {
             string hexEncoding = "018101ff";
             var reader = new CborReader(hexEncoding.HexToByteArray(), allowMultipleRootLevelValues: true);
@@ -151,7 +151,7 @@ namespace System.Formats.Cbor.Tests
             reader.ReadInt32();
             reader.ReadEndArray();
 
-            Assert.Equal(CborReaderState.FormatError, reader.PeekState());
+            Assert.Throws<FormatException>(() => reader.PeekState());
         }
 
         [Fact]

@@ -84,11 +84,14 @@ namespace System.Formats.Cbor
         /// <summary>
         ///   Read the next CBOR token, without advancing the reader.
         /// </summary>
+        /// <exception cref="FormatException">
+        ///   The data item is not a valid CBOR data item encoding.
+        /// </exception>
         public CborReaderState PeekState()
         {
             if (_cachedState == CborReaderState.Undefined)
             {
-                _cachedState = PeekStateCore(throwOnFormatErrors:false);
+                _cachedState = PeekStateCore();
             }
 
             return _cachedState;
@@ -113,13 +116,13 @@ namespace System.Formats.Cbor
             int initialOffset = _offset;
 
             // call skip to read and validate the next value
-            SkipValue(disableConformanceModeChecks: disableConformanceModeChecks);
+            SkipValue(disableConformanceModeChecks);
 
             // return the slice corresponding to the consumed value
             return _data.Slice(initialOffset, _offset - initialOffset);
         }
 
-        private CborReaderState PeekStateCore(bool throwOnFormatErrors)
+        private CborReaderState PeekStateCore()
         {
             if (_definiteLength - _itemsRead == 0)
             {
@@ -130,6 +133,7 @@ namespace System.Formats.Cbor
                         // finished reading root-level document
                         Debug.Assert(!AllowMultipleRootLevelValues);
                         return CborReaderState.Finished;
+
                     case CborMajorType.Array: return CborReaderState.EndArray;
                     case CborMajorType.Map: return CborReaderState.EndMap;
                     default:
@@ -149,7 +153,7 @@ namespace System.Formats.Cbor
                 else
                 {
                     // incomplete CBOR document(s)
-                    return CborReaderState.EndOfData;
+                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
                 }
             }
 
@@ -160,9 +164,7 @@ namespace System.Formats.Cbor
             {
                 if (_isTagContext)
                 {
-                    return throwOnFormatErrors ?
-                        throw new FormatException(SR.Cbor_Reader_InvalidCbor_TagNotFollowedByValue) :
-                        CborReaderState.FormatError;
+                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_TagNotFollowedByValue);
                 }
 
                 if (_definiteLength is null)
@@ -172,18 +174,14 @@ namespace System.Formats.Cbor
                         case null:
                             // found a break byte at the end of a root-level data item sequence
                             Debug.Assert(AllowMultipleRootLevelValues);
-                            return throwOnFormatErrors ?
-                                throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedBreakByte) :
-                                CborReaderState.FormatError;
+                            throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedBreakByte);
 
                         case CborMajorType.ByteString: return CborReaderState.EndByteString;
                         case CborMajorType.TextString: return CborReaderState.EndTextString;
                         case CborMajorType.Array: return CborReaderState.EndArray;
                         case CborMajorType.Map when _itemsRead % 2 == 0: return CborReaderState.EndMap;
                         case CborMajorType.Map:
-                            return throwOnFormatErrors ?
-                                throw new FormatException(SR.Cbor_Reader_InvalidCbor_KeyMissingValue) :
-                                CborReaderState.FormatError;
+                            throw new FormatException(SR.Cbor_Reader_InvalidCbor_KeyMissingValue);
                         default:
                             Debug.Fail("CborReader internal error. Invalid CBOR major type pushed to stack.");
                             throw new Exception();
@@ -191,9 +189,7 @@ namespace System.Formats.Cbor
                 }
                 else
                 {
-                    return throwOnFormatErrors ?
-                        throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedBreakByte) :
-                        CborReaderState.FormatError;
+                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedBreakByte);
                 }
             }
 
@@ -206,9 +202,7 @@ namespace System.Formats.Cbor
                     case CborMajorType.TextString:
                         if (initialByte.MajorType != _currentMajorType.Value)
                         {
-                            return throwOnFormatErrors ?
-                                throw new FormatException(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem) :
-                                CborReaderState.FormatError;
+                            throw new FormatException(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem);
                         }
 
                         break;
@@ -232,13 +226,13 @@ namespace System.Formats.Cbor
                 case CborMajorType.Array: return CborReaderState.StartArray;
                 case CborMajorType.Map: return CborReaderState.StartMap;
                 case CborMajorType.Tag: return CborReaderState.Tag;
-                case CborMajorType.Simple: return MapSpecialValueTagToReaderState(initialByte.AdditionalInfo);
+                case CborMajorType.Simple: return MapSimpleValueDataToReaderState(initialByte.AdditionalInfo);
                 default:
                     Debug.Fail("CborReader internal error. Invalid CBOR major type.");
                     throw new Exception();
             };
 
-            static CborReaderState MapSpecialValueTagToReaderState (CborAdditionalInfo value)
+            static CborReaderState MapSimpleValueDataToReaderState (CborAdditionalInfo value)
             {
                 // https://tools.ietf.org/html/rfc7049#section-2.3
 
