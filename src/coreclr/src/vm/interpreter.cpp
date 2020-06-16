@@ -1636,7 +1636,6 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
 
         if (InterpretationStubToMethodInfo(stub) == md)
         {
-            CodeVersionManager::LockHolder _lockHolder;
 #if INTERP_TRACING
             if (s_TraceInterpreterJITTransitionFlag.val(CLRConfig::INTERNAL_TraceInterpreterJITTransition))
             {
@@ -1664,6 +1663,7 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
             // interpreter I didn't wring my hands too much trying to determine the ideal
             // policy.
 #ifdef FEATURE_TIERED_COMPILATION
+            CodeVersionManager::LockHolder _lockHolder;
             bool scheduleTieringBackgroundWork = false;
             NativeCodeVersion activeCodeVersion = md->GetCodeVersionManager()->GetActiveILCodeVersion(md).GetActiveNativeCodeVersion(md);
             ILCodeVersion ilCodeVersion = activeCodeVersion.GetILCodeVersion();
