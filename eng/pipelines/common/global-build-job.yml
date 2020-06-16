@@ -8,7 +8,7 @@ parameters:
   container: ''
   crossrootfsDir: ''
   variables: {}
-  timeoutInMinutes: ''
+  timeoutInMinutes: 120
   pool: ''
   condition: true
   isOfficialBuild: false
