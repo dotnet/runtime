@@ -621,6 +621,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/rngchk/RngchkStress3/*">
             <Issue>Needs Triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/readytorun/multifolder/**">
+            <Issue>https://github.com/dotnet/runtime/issues/37990</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x64 Unix failures on CoreCLR. -->
@@ -942,13 +945,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/tracevalidation/tracelogging/tracelogging/*">
             <Issue>https://github.com/dotnet/runtime/issues/32728</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-    <!-- Crossgen2 arm64-specific on Windows -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'crossgen2' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetArchitecture)' == 'arm64' or '$(AltJitArch)' == 'arm64')">
-        <ExcludeList Include="$(XunitTestBinBase)/readytorun/multifolder/multifolder/*">
-            <Issue>https://github.com/dotnet/runtime/issues/37990</Issue>
         </ExcludeList>
     </ItemGroup>
 
