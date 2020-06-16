@@ -35,6 +35,7 @@ using System.IO;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -217,12 +218,12 @@ namespace System.Reflection.Emit
         private bool manifest_module_used;
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [DynamicDependency("RuntimeResolve", typeof(ModuleBuilder))]
         private static extern void basic_init(AssemblyBuilder ab);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void UpdateNativeCustomAttributes(AssemblyBuilder ab);
 
-        [PreserveDependency("RuntimeResolve", "System.Reflection.Emit.ModuleBuilder")]
         internal AssemblyBuilder(AssemblyName n, string? directory, AssemblyBuilderAccess access, bool corlib_internal)
         {
             aname = (AssemblyName)n.Clone();
