@@ -925,6 +925,18 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<ulong> CompareTestScalar(Vector64<ulong> left, Vector64<ulong> right) => CompareTestScalar(left, right);
 
             /// <summary>
+            /// float64x2_t vcvt_f64_f32 (float32x2_t a)
+            ///   A64: FCVTL Vd.2D, Vn.2S
+            /// </summary>
+            public static Vector128<double> ConvertToDouble(Vector64<float> value) => ConvertToDouble(value);
+
+            /// <summary>
+            /// float64x2_t vcvt_high_f64_f32 (float32x4_t a)
+            ///   A64: FCVTL2 Vd.2D, Vn.4S
+            /// </summary>
+            public static Vector128<double> ConvertToDoubleUpper(Vector128<float> value) => ConvertToDoubleUpper(value);
+
+            /// <summary>
             /// float32x2_t vdiv_f32 (float32x2_t a, float32x2_t b)
             ///   A64: FDIV Vd.2S, Vn.2S, Vm.2S
             /// </summary>
