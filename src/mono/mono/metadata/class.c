@@ -3654,9 +3654,7 @@ mono_type_byref_is_assignable_from (MonoType *type, MonoType *ctype)
 		if (ot->type == MONO_TYPE_VAR || ot->type == MONO_TYPE_MVAR)
 			return FALSE;
 
-		if (m_class_is_valuetype (klass))
-			return klass == klassc;
-		return m_class_is_valuetype (klass) == m_class_is_valuetype (klassc) && klass == klassc;
+		return klass == klassc;
 	}
 }
 
