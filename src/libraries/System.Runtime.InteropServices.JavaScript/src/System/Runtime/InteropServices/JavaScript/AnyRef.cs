@@ -22,6 +22,12 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             SetHandle(jsHandle);
             AnyRefHandle = GCHandle.Alloc(this, ownsHandle ? GCHandleType.Weak : GCHandleType.Normal);
+            if (!ownsHandle)
+            {
+                bool _addRefSucceeded = false;
+                DangerousAddRef(ref _addRefSucceeded);
+                Debug.Assert(_addRefSucceeded);
+            }
         }
         internal int Int32Handle => (int)(IntPtr)AnyRefHandle;
 
