@@ -198,15 +198,26 @@ namespace System.Net.Security
 
                             for (int i = 0; i < toRemoveAttempt.Length; ++i)
                             {
-                                SafeFreeCredentials? freeCreds = toRemoveAttempt[i].Value.Target;
+                                cached = toRemoveAttempt[i].Value;
 
-                                if (freeCreds == null || freeCreds.IsClosed || freeCreds.IsInvalid)
+                                if (cached.Target == null)
                                 {
-                                    if (s_cachedCreds.TryRemove(toRemoveAttempt[i].Key, out SafeCredentialReference? removedCached))
-                                    {
-                                        removedCached.Dispose();
-                                    }
+                                    s_cachedCreds.TryRemove(toRemoveAttempt[i].Key, out _);
+                                    continue;
                                 }
+
+                                creds = cached.Target;
+                                cached.Dispose();
+
+                                if (creds != null && !creds.IsClosed && !creds.IsInvalid && (cached = SafeCredentialReference.CreateReference(creds)) != null)
+                                {
+                                    s_cachedCreds[toRemoveAttempt[i].Key] = cached;
+                                }
+                                else
+                                {
+                                    s_cachedCreds.TryRemove(toRemoveAttempt[i].Key, out _);
+                                }
+
                             }
                             if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Scavenged cache, New Cache Count = {s_cachedCreds.Count}");
                         }
