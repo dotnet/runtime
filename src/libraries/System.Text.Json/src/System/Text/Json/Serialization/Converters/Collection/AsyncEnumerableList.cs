@@ -24,7 +24,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             public T Current => _enumerator.Current;
-            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+            public ValueTask DisposeAsync() => new ValueTask(Task.CompletedTask);
             public ValueTask<bool> MoveNextAsync() => new ValueTask<bool>(_enumerator.MoveNext());
         }
     }
