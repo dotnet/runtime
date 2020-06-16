@@ -314,7 +314,10 @@ namespace System.Net.Http
             // Protected implementation of Dispose pattern.
             protected virtual void Dispose(bool disposing)
             {
-                if (disposing && !_isDisposed)
+                if (_isDisposed)
+                    return;
+
+                if (disposing)
                 {
                     _isDisposed = true;
                     _abortCts.Cancel();
