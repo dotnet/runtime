@@ -75,7 +75,7 @@ public class WasmAppBuilder : Task
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
-        Dictionary<string, List<string>> filesToMap = new Dictionary<string, List<string>>();
+        var filesToMap = new Dictionary<string, List<string>>();
         if (FilesToIncludeInFileSystem != null)
         {
             string supportFilesDir = Path.Join(AppDir, "supportFiles");

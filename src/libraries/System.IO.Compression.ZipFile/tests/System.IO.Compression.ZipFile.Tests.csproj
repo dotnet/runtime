@@ -24,6 +24,6 @@
              Link="Common\System\IO\Compression\ZipTestHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.IO.Compression.TestData" Version="$(SystemIOCompressionTestDataVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="System.IO.Compression.TestData" Version="$(SystemIOCompressionTestDataVersion)" />
   </ItemGroup>
 </Project>

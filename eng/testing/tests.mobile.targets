@@ -116,7 +116,10 @@
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
 
       <!-- Extensibility point to specify binaries or assemblies that are built as part of the test assembly and that we read the files during tests
-      i.e System.Reflection.Metadata.Tests opens itself and inspects metadata using PEReader. -->
+      i.e System.Reflection.Metadata.Tests opens itself and inspects metadata using PEReader. 
+      
+      We check any items that the path is not fully qualified (relative paths) and we map them to local assets from the PublishDir. This way
+      we don't need to add a target (PublishDir value is modified in common targets) in test projects to get the right path to the asset. -->
       <_filesToIncludeInFileSystem Include="@(WasmFilesToIncludeInFileSystem -> '$(PublishDir)%(Identity)')"
                                    Condition="!$([System.IO.Path]::IsPathFullyQualified('%(WasmFilesToIncludeInFileSystem.Identity)'))" />
       <_filesToIncludeInFileSystem Include="@(WasmFilesToIncludeInFileSystem)"
