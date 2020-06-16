@@ -129,6 +129,7 @@ public:
     // Liveness-related fields & methods
 public:
     void genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bool isDying DEBUGARG(GenTree* tree));
+    void genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int regIndex);
     void genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree);
 
 protected:

@@ -23,13 +23,69 @@ namespace ILCompiler.Reflection.ReadyToRun
         public string[] TypeParameters { get; }
     }
 
-    // Test implementation of ISignatureTypeProvider<TType, TGenericContext> that uses strings in ilasm syntax as TType.
-    // A real provider in any sort of perf constraints would not want to allocate strings freely like this, but it keeps test code simple.
-    public class DisassemblingTypeProvider : ISignatureTypeProvider<string, DisassemblingGenericContext>
+    public abstract class StringTypeProviderBase<TGenericContext> : ISignatureTypeProvider<string, TGenericContext>
     {
         public virtual string GetPrimitiveType(PrimitiveTypeCode typeCode)
         {
-            return typeCode.ToString();
+            switch (typeCode)
+            {
+                case PrimitiveTypeCode.Void:
+                    return "void";
+
+                case PrimitiveTypeCode.Boolean:
+                    return "bool";
+
+                case PrimitiveTypeCode.Char:
+                    return "char";
+
+                case PrimitiveTypeCode.SByte:
+                    return "sbyte";
+
+                case PrimitiveTypeCode.Byte:
+                    return "byte";
+
+                case PrimitiveTypeCode.Int16:
+                    return "short";
+
+                case PrimitiveTypeCode.UInt16:
+                    return "ushort";
+
+                case PrimitiveTypeCode.Int32:
+                    return "int";
+
+                case PrimitiveTypeCode.UInt32:
+                    return "uint";
+
+                case PrimitiveTypeCode.Int64:
+                    return "long";
+
+                case PrimitiveTypeCode.UInt64:
+                    return "ulong";
+
+                case PrimitiveTypeCode.Single:
+                    return "float";
+
+                case PrimitiveTypeCode.Double:
+                    return "double";
+
+                case PrimitiveTypeCode.String:
+                    return "string";
+
+                case PrimitiveTypeCode.TypedReference:
+                    return "typedbyref";
+
+                case PrimitiveTypeCode.IntPtr:
+                    return "IntPtr";
+
+                case PrimitiveTypeCode.UIntPtr:
+                    return "UIntPtr";
+
+                case PrimitiveTypeCode.Object:
+                    return "object";
+
+                default:
+                    throw new NotImplementedException();
+            }
         }
 
         public virtual string GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind = 0)
@@ -38,11 +94,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         public virtual string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind = 0)
-        {
-            return MetadataNameFormatter.FormatHandle(reader, handle);
-        }
-
-        public virtual string GetTypeFromSpecification(MetadataReader reader, DisassemblingGenericContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind = 0)
         {
             return MetadataNameFormatter.FormatHandle(reader, handle);
         }
@@ -60,24 +111,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         public virtual string GetByReferenceType(string elementType)
         {
             return "ref " + elementType;
-        }
-
-        public virtual string GetGenericMethodParameter(DisassemblingGenericContext genericContext, int index)
-        {
-            if (genericContext.MethodParameters == null || index >= genericContext.MethodParameters.Length)
-            {
-                return "!!" + index.ToString();
-            }
-            return genericContext.MethodParameters[index];
-        }
-
-        public virtual string GetGenericTypeParameter(DisassemblingGenericContext genericContext, int index)
-        {
-            if (genericContext.TypeParameters == null || index >= genericContext.TypeParameters.Length)
-            {
-                return "!" + index.ToString();
-            }
-            return genericContext.TypeParameters[index];
         }
 
         public virtual string GetPinnedType(string elementType)
@@ -125,11 +158,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             return builder.ToString();
         }
 
-        public virtual string GetTypeFromHandle(MetadataReader reader, DisassemblingGenericContext genericContext, EntityHandle handle)
-        {
-            return MetadataNameFormatter.FormatHandle(reader, handle);
-        }
-
         public virtual string GetModifiedType(string modifierType, string unmodifiedType, bool isRequired)
         {
             return unmodifiedType + (isRequired ? " modreq(" : " modopt(") + modifierType + ")";
@@ -171,6 +199,43 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             builder.Append(')');
             return builder.ToString();
+        }
+
+        public abstract string GetGenericMethodParameter(TGenericContext genericContext, int index);
+        public abstract string GetGenericTypeParameter(TGenericContext genericContext, int index);
+        public abstract string GetTypeFromSpecification(MetadataReader reader, TGenericContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind);
+    }
+
+    // Test implementation of ISignatureTypeProvider<TType, TGenericContext> that uses strings in ilasm syntax as TType.
+    // A real provider in any sort of perf constraints would not want to allocate strings freely like this, but it keeps test code simple.
+    public class DisassemblingTypeProvider : StringTypeProviderBase<DisassemblingGenericContext>
+    {
+        public override string GetGenericMethodParameter(DisassemblingGenericContext genericContext, int index)
+        {
+            if (genericContext.MethodParameters == null || index >= genericContext.MethodParameters.Length)
+            {
+                return "!!" + index.ToString();
+            }
+            return genericContext.MethodParameters[index];
+        }
+
+        public override string GetGenericTypeParameter(DisassemblingGenericContext genericContext, int index)
+        {
+            if (genericContext.TypeParameters == null || index >= genericContext.TypeParameters.Length)
+            {
+                return "!" + index.ToString();
+            }
+            return genericContext.TypeParameters[index];
+        }
+
+        public override string GetTypeFromSpecification(MetadataReader reader, DisassemblingGenericContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
+        {
+            return MetadataNameFormatter.FormatHandle(reader, handle);
+        }
+
+        public string GetTypeFromHandle(MetadataReader reader, DisassemblingGenericContext genericContext, EntityHandle handle)
+        {
+            return MetadataNameFormatter.FormatHandle(reader, handle);
         }
     }
 

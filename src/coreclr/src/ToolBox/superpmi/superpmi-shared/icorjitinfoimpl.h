@@ -614,7 +614,7 @@ CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO*       sig, /* IN */
                                  );
 
 // Returns type of HFA for valuetype
-CorInfoType getHFAType(CORINFO_CLASS_HANDLE hClass);
+CorInfoHFAElemType getHFAType(CORINFO_CLASS_HANDLE hClass);
 
 /*****************************************************************************
 * ICorErrorInfo contains methods to deal with SEH exceptions being thrown

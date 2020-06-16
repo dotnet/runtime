@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -30,6 +31,7 @@ namespace System.Runtime.Loader
         [MethodImplAttribute (MethodImplOptions.InternalCall)]
         private static extern void PrepareForAssemblyLoadContextRelease (IntPtr nativeAssemblyLoadContext, IntPtr assemblyLoadContextStrong);
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
@@ -40,6 +42,7 @@ namespace System.Runtime.Loader
             return InternalLoadFile(NativeALC, assemblyPath, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         internal Assembly InternalLoad(byte[] arrAssembly, byte[]? arrSymbols)
         {
             unsafe
@@ -90,12 +93,14 @@ namespace System.Runtime.Loader
         {
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Assembly InternalLoadFile(IntPtr nativeAssemblyLoadContext, string? assemblyFile, ref StackCrawlMark stackMark);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern IntPtr InternalInitializeNativeALC(IntPtr thisHandlePtr, bool representsTPALoadContext, bool isCollectible);
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Assembly InternalLoadFromStream(IntPtr nativeAssemblyLoadContext, IntPtr assm, int assmLength, IntPtr symbols, int symbolsLength);
 

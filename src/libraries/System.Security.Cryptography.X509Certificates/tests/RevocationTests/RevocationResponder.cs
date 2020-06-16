@@ -18,6 +18,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         private readonly HttpListener _listener;
 
+        private readonly Dictionary<string, CertificateAuthority> _aiaPaths =
+            new Dictionary<string, CertificateAuthority>();
+
         private readonly Dictionary<string, CertificateAuthority> _crlPaths
             = new Dictionary<string, CertificateAuthority>();
 
@@ -39,6 +42,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         internal void AddCertificateAuthority(CertificateAuthority authority)
         {
+            if (authority.AiaHttpUri != null && authority.AiaHttpUri.StartsWith(UriPrefix))
+            {
+                _aiaPaths.Add(authority.AiaHttpUri.Substring(UriPrefix.Length - 1), authority);
+            }
+
             if (authority.CdpUri != null && authority.CdpUri.StartsWith(UriPrefix))
             {
                 _crlPaths.Add(authority.CdpUri.Substring(UriPrefix.Length - 1), authority);
@@ -149,6 +157,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             CertificateAuthority authority;
             string url = context.Request.RawUrl;
 
+            if (_aiaPaths.TryGetValue(url, out authority))
+            {
+                byte[] certData = authority.GetCertData();
+
+                responded = true;
+                context.Response.StatusCode = 200;
+                context.Response.ContentType = "application/pkix-cert";
+                context.Response.Close(certData, willBlock: true);
+                Trace($"Responded with {certData.Length}-byte certificate from {authority.SubjectName}.");
+                return;
+            }
+
             if (_crlPaths.TryGetValue(url, out authority))
             {
                 byte[] crl = authority.GetCrl();
@@ -156,7 +176,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 responded = true;
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "application/pkix-crl";
-                context.Response.Close(crl, willBlock: false);
+                context.Response.Close(crl, willBlock: true);
                 Trace($"Responded with {crl.Length}-byte CRL from {authority.SubjectName}.");
                 return;
             }
@@ -194,7 +214,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         context.Response.StatusCode = 200;
                         context.Response.StatusDescription = "OK";
                         context.Response.ContentType = "application/ocsp-response";
-                        context.Response.Close(ocspResponse, willBlock: false);
+                        context.Response.Close(ocspResponse, willBlock: true);
 
                         if (authority.HasOcspDelegation)
                         {

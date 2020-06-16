@@ -657,5 +657,16 @@ namespace Internal.TypeSystem
                 return (GetTypeFlags(TypeFlags.IsByRefLike | TypeFlags.AttributeCacheComputed) & TypeFlags.IsByRefLike) != 0;
             }
         }
+
+        /// <summary>
+        /// Gets a value indicating whether this type implements <code>IDynamicInterfaceCastable</code>
+        /// </summary>
+        public bool IsIDynamicInterfaceCastable
+        {
+            get
+            {
+                return (GetTypeFlags(TypeFlags.IsIDynamicInterfaceCastable | TypeFlags.IsIDynamicInterfaceCastableComputed) & TypeFlags.IsIDynamicInterfaceCastable) != 0;
+            }
+        }
     }
 }

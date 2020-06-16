@@ -650,6 +650,9 @@
         "5.0.0.0": "5.0.0"
       }
     },
+    "Microsoft.Extensions.HostFactoryResolver.Sources": {
+      "InboxOn": {}
+    },
     "Microsoft.Extensions.Hosting": {
       "StableVersions": [
         "2.1.0",
@@ -5170,14 +5173,6 @@
       "InboxOn": {
         "netcoreapp3.0": "4.0.0.0",
         "net5.0": "5.0.0.0"
-      }
-    },
-    "System.Runtime.Intrinsics.Experimental": {
-      "BaselineVersion": "5.0.0",
-      "InboxOn": {},
-      "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
       }
     },
     "System.Runtime.Loader": {

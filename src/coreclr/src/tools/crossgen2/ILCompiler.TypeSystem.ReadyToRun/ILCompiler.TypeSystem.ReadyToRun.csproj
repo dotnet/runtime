@@ -217,6 +217,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\LayoutInt.cs">
       <Link>TypeSystem\Common\LayoutInt.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\LinqPoison.cs">
+      <Link>TypeSystem\Common\LinqPoison.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MetadataType.cs">
       <Link>TypeSystem\Common\MetadataType.cs</Link>
     </Compile>

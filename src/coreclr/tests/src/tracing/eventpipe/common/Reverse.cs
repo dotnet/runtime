@@ -63,6 +63,7 @@ namespace Tracing.Tests.Common
             return $"{{ Magic={Magic}; ClrInstanceId={RuntimeInstanceCookie}; ProcessId={ProcessId}; Unused={Unused}; }}";
         }
     }
+
     public class ReverseServer
     {
         public static string MakeServerAddress()
@@ -78,22 +79,17 @@ namespace Tracing.Tests.Common
         }
 
         private object _server; // _server ::= socket | NamedPipeServerStream
+        private int _bufferSize;
         private Socket _clientSocket; // only used on non-Windows
         private string _serverAddress;
 
         public ReverseServer(string serverAddress, int bufferSize = 16 * 1024)
         {
             _serverAddress = serverAddress;
+            _bufferSize = bufferSize;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                _server = new NamedPipeServerStream(
-                    serverAddress,
-                    PipeDirection.InOut,
-                    NamedPipeServerStream.MaxAllowedServerInstances,
-                    PipeTransmissionMode.Byte,
-                    PipeOptions.None,
-                    bufferSize,
-                    bufferSize);
+                _server = GetNewNamedPipeServer();
             }
             else
             {
@@ -117,13 +113,41 @@ namespace Tracing.Tests.Common
             switch (_server)
             {
                 case NamedPipeServerStream serverStream:
-                    await serverStream.WaitForConnectionAsync();
-                    return serverStream;
+                    try
+                    {
+                        await serverStream.WaitForConnectionAsync();
+                        return serverStream;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        _server = GetNewNamedPipeServer();
+                        return await AcceptAsync();
+                    }
+                    break;
                 case Socket socket:
                     _clientSocket = await socket.AcceptAsync();
                     return new NetworkStream(_clientSocket);
                 default:
                     throw new ArgumentException("Invalid server type");
+            }
+        }
+
+        private NamedPipeServerStream GetNewNamedPipeServer()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return new NamedPipeServerStream(
+                    _serverAddress,
+                    PipeDirection.InOut,
+                    NamedPipeServerStream.MaxAllowedServerInstances,
+                    PipeTransmissionMode.Byte,
+                    PipeOptions.None,
+                    _bufferSize,
+                    _bufferSize);
+            }
+            else
+            {
+                return null;
             }
         }
 
@@ -168,7 +192,7 @@ namespace Tracing.Tests.Common
         {
             var server = new ReverseServer(serverAddress);
             Logger.logger.Log("Waiting for connection");
-            Stream stream = await server.AcceptAsync();
+            using Stream stream = await server.AcceptAsync();
             Logger.logger.Log("Got a connection");
             IpcAdvertise advertise = IpcAdvertise.Parse(stream);
             server.Shutdown();

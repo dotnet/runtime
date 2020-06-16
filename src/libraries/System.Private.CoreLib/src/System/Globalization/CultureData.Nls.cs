@@ -466,22 +466,6 @@ namespace System.Globalization
             return Interop.Kernel32.LocaleNameToLCID(cultureName, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
         }
 
-        private static unsafe string? NlsLCIDToLocaleName(int culture)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseNls);
-
-            char* pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1]; // +1 for the null termination
-            int length = Interop.Kernel32.LCIDToLocaleName(culture, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
-
-            if (length > 0)
-            {
-                return new string(pBuffer);
-            }
-
-            return null;
-        }
-
         private int NlsGetAnsiCodePage(string cultureName)
         {
             Debug.Assert(GlobalizationMode.UseNls);

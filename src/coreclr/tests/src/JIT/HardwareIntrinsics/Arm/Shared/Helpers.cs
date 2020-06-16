@@ -1473,7 +1473,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public static short AddWideningUpper(short[] op1, sbyte[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
 
         public static sbyte ExtractNarrowing(short op1) => (sbyte)op1;
- 
+
         public static sbyte ExtractNarrowingUpper(sbyte[] op1, short[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
 
         public static sbyte FusedAddHalving(sbyte op1, sbyte op2) => (sbyte)((ushort)((short)op1 + (short)op2) >> 1);
@@ -1553,7 +1553,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int AddWideningUpper(int[] op1, short[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
 
         public static short ExtractNarrowing(int op1) => (short)op1;
- 
+
         public static short ExtractNarrowingUpper(short[] op1, int[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
 
         public static short FusedAddHalving(short op1, short op2) => (short)((uint)((int)op1 + (int)op2) >> 1);
@@ -1633,7 +1633,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long AddWideningUpper(long[] op1, int[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
 
         public static int ExtractNarrowing(long op1) => (int)op1;
- 
+
         public static int ExtractNarrowingUpper(int[] op1, long[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
 
         public static int FusedAddHalving(int op1, int op2) => (int)((ulong)((long)op1 + (long)op2) >> 1);
@@ -1713,7 +1713,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ushort AddWideningUpper(ushort[] op1, byte[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
 
         public static byte ExtractNarrowing(ushort op1) => (byte)op1;
- 
+
         public static byte ExtractNarrowingUpper(byte[] op1, ushort[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
 
         public static byte FusedAddHalving(byte op1, byte op2) => (byte)((ushort)((ushort)op1 + (ushort)op2) >> 1);
@@ -1793,7 +1793,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public static uint AddWideningUpper(uint[] op1, ushort[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
 
         public static ushort ExtractNarrowing(uint op1) => (ushort)op1;
- 
+
         public static ushort ExtractNarrowingUpper(ushort[] op1, uint[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
 
         public static ushort FusedAddHalving(ushort op1, ushort op2) => (ushort)((uint)((uint)op1 + (uint)op2) >> 1);
@@ -1873,7 +1873,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ulong AddWideningUpper(ulong[] op1, uint[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
 
         public static uint ExtractNarrowing(ulong op1) => (uint)op1;
- 
+
         public static uint ExtractNarrowingUpper(uint[] op1, ulong[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
 
         public static uint FusedAddHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 + (ulong)op2) >> 1);
@@ -4637,6 +4637,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return TableVectorExtension(i, zeros, indices, table);
         }
+
+        public static byte Clamp(int i, sbyte value, bool inclusive)
+        {
+            sbyte max = (sbyte)((i * 8) - (inclusive ? 0 : 1));
+            sbyte min = ( sbyte)(inclusive ? 1 : 0);
+            return (byte)Math.Max (min, Math.Min(value % max, max));
+        }
         public static byte TableVectorExtension(int i, byte[] defaultValues, byte[] indices, params byte[][] table)
         {
             byte[] fullTable = table.SelectMany(x => x).ToArray();
@@ -4654,6 +4661,133 @@ namespace JIT.HardwareIntrinsics.Arm
             Array.Fill<byte>(zeros, 0, 0, indices.Length);
 
             return TableVectorExtension(i, zeros, indices, table);
+        }
+
+        public static byte Clamp(int i, byte value, bool inclusive)
+        {
+            byte max = (byte)((i * 8) - (inclusive ? 0 : 1));
+            byte min = ( byte)(inclusive ? 1 : 0);
+            return (byte)Math.Max (min, Math.Min(value % max, max));
+        }
+        public static byte ShiftRightAndInsert(byte left, byte right, byte shift)
+        {
+            byte mask = (byte)~(byte.MaxValue >> shift);
+            byte value = (byte)(right >> shift);
+            byte newval = (byte)(((byte)left & mask) | value);
+            return newval;
+        }
+
+        public static byte ShiftLeftLogicalAndInsert(byte left, byte right, byte shift)
+        {
+            byte mask = (byte)~(byte.MaxValue << shift);
+            byte value = (byte)(right << shift);
+            byte newval = (byte)(((byte)left & mask) | value);
+            return newval;
+        }
+        public static short ShiftRightAndInsert(short left, short right, byte shift)
+        {
+            ushort mask = (ushort)~(ushort.MaxValue >> shift);
+            ushort value = (ushort)(right >> shift);
+            short newval = (short)(((ushort)left & mask) | value);
+            return newval;
+        }
+
+        public static short ShiftLeftLogicalAndInsert(short left, short right, byte shift)
+        {
+            ushort mask = (ushort)~(ushort.MaxValue << shift);
+            ushort value = (ushort)(right << shift);
+            short newval = (short)(((ushort)left & mask) | value);
+            return newval;
+        }
+        public static int ShiftRightAndInsert(int left, int right, byte shift)
+        {
+            uint mask = (uint)~(uint.MaxValue >> shift);
+            uint value = (uint)(right >> shift);
+            int newval = (int)(((uint)left & mask) | value);
+            return newval;
+        }
+
+        public static int ShiftLeftLogicalAndInsert(int left, int right, byte shift)
+        {
+            uint mask = (uint)~(uint.MaxValue << shift);
+            uint value = (uint)(right << shift);
+            int newval = (int)(((uint)left & mask) | value);
+            return newval;
+        }
+        public static long ShiftRightAndInsert(long left, long right, byte shift)
+        {
+            ulong mask = (ulong)~(ulong.MaxValue >> shift);
+            ulong value = (ulong)(right >> shift);
+            long newval = (long)(((ulong)left & mask) | value);
+            return newval;
+        }
+
+        public static long ShiftLeftLogicalAndInsert(long left, long right, byte shift)
+        {
+            ulong mask = (ulong)~(ulong.MaxValue << shift);
+            ulong value = (ulong)(right << shift);
+            long newval = (long)(((ulong)left & mask) | value);
+            return newval;
+        }
+        public static sbyte ShiftRightAndInsert(sbyte left, sbyte right, byte shift)
+        {
+            byte mask = (byte)~(byte.MaxValue >> shift);
+            byte value = (byte)(right >> shift);
+            sbyte newval = (sbyte)(((byte)left & mask) | value);
+            return newval;
+        }
+
+        public static sbyte ShiftLeftLogicalAndInsert(sbyte left, sbyte right, byte shift)
+        {
+            byte mask = (byte)~(byte.MaxValue << shift);
+            byte value = (byte)(right << shift);
+            sbyte newval = (sbyte)(((byte)left & mask) | value);
+            return newval;
+        }
+        public static ushort ShiftRightAndInsert(ushort left, ushort right, byte shift)
+        {
+            ushort mask = (ushort)~(ushort.MaxValue >> shift);
+            ushort value = (ushort)(right >> shift);
+            ushort newval = (ushort)(((ushort)left & mask) | value);
+            return newval;
+        }
+
+        public static ushort ShiftLeftLogicalAndInsert(ushort left, ushort right, byte shift)
+        {
+            ushort mask = (ushort)~(ushort.MaxValue << shift);
+            ushort value = (ushort)(right << shift);
+            ushort newval = (ushort)(((ushort)left & mask) | value);
+            return newval;
+        }
+        public static uint ShiftRightAndInsert(uint left, uint right, byte shift)
+        {
+            uint mask = (uint)~(uint.MaxValue >> shift);
+            uint value = (uint)(right >> shift);
+            uint newval = (uint)(((uint)left & mask) | value);
+            return newval;
+        }
+
+        public static uint ShiftLeftLogicalAndInsert(uint left, uint right, byte shift)
+        {
+            uint mask = (uint)~(uint.MaxValue << shift);
+            uint value = (uint)(right << shift);
+            uint newval = (uint)(((uint)left & mask) | value);
+            return newval;
+        }
+        public static ulong ShiftRightAndInsert(ulong left, ulong right, byte shift)
+        {
+            ulong mask = (ulong)~(ulong.MaxValue >> shift);
+            ulong value = (ulong)(right >> shift);
+            ulong newval = (ulong)(((ulong)left & mask) | value);
+            return newval;
+        }
+
+        public static ulong ShiftLeftLogicalAndInsert(ulong left, ulong right, byte shift)
+        {
+            ulong mask = (ulong)~(ulong.MaxValue << shift);
+            ulong value = (ulong)(right << shift);
+            ulong newval = (ulong)(((ulong)left & mask) | value);
+            return newval;
         }
 
     }

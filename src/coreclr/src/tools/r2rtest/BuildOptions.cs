@@ -117,7 +117,7 @@ namespace R2RTest
                 List<string> cpaotReferencePaths = new List<string>();
                 cpaotReferencePaths.Add(CoreRootOutputPath(CompilerIndex.CPAOT, isFramework));
                 cpaotReferencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
-                runners.Add(new Crossgen2Runner(this, crossgen2RunnerOptions: null, cpaotReferencePaths));
+                runners.Add(new Crossgen2Runner(this, new Crossgen2RunnerOptions(), cpaotReferencePaths));
             }
 
             if (Crossgen)

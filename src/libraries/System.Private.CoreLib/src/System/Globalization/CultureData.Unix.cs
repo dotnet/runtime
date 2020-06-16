@@ -78,6 +78,12 @@ namespace System.Globalization
             return true;
         }
 
+        private static string? LCIDToLocaleName(int culture)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            return IcuLocaleData.LCIDToLocaleName(culture);
+        }
+
         internal bool IsWin32Installed => false;
 
         internal static unsafe CultureData GetCurrentRegionData() => CultureInfo.CurrentCulture._cultureData;

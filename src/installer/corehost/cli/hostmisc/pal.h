@@ -76,7 +76,15 @@
 #else
 #define LIB_PREFIX _X("lib")
 #define MAKE_LIBNAME(NAME) (LIB_PREFIX _X(NAME) _X(".so"))
+#if defined(TARGET_FREEBSD)
+#define FALLBACK_HOST_RID _X("freebsd")
+#elif defined(TARGET_ILLUMOS)
+#define FALLBACK_HOST_RID _X("illumos")
+#elif defined(__sun)
+#define FALLBACK_HOST_RID _X("solaris")
+#else
 #define FALLBACK_HOST_RID _X("linux")
+#endif
 #endif
 
 #define LIBCORECLR_FILENAME (LIB_PREFIX _X("coreclr"))
@@ -146,7 +154,7 @@ namespace pal
     inline int strncasecmp(const char_t* str1, const char_t* str2, int len) { return ::_wcsnicmp(str1, str2, len); }
     inline int pathcmp(const pal::string_t &path1, const pal::string_t &path2) { return strcasecmp(path1.c_str(), path2.c_str()); }
     inline string_t to_string(int value) { return std::to_wstring(value); }
-	
+
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
     inline FILE * file_open(const string_t& path, const char_t* mode) { return ::_wfopen(path.c_str(), mode); }
 

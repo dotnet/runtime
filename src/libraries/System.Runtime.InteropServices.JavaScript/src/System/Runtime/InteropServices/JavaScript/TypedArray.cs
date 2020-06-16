@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices.JavaScript
         protected TypedArray(SharedArrayBuffer buffer, int byteOffset, int length) : base(Interop.Runtime.New<T>(buffer, byteOffset, length))
         { }
 
-        internal TypedArray(IntPtr jsHandle) : base(jsHandle)
+        internal TypedArray(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
         { }
 
         public TypedArrayTypeCode GetTypedArrayType()

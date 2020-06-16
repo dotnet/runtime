@@ -449,10 +449,44 @@ namespace ILCompiler.Reflection.ReadyToRun
                 bool[] isEntryPoint = new bool[nRuntimeFunctions];
 
                 // initialize R2RMethods
-                ParseMethodDefEntrypoints(isEntryPoint);
+                ParseMethodDefEntrypoints((section, reader) => ParseMethodDefEntrypointsSection(section, reader, isEntryPoint));
                 ParseInstanceMethodEntrypoints(isEntryPoint);
                 CountRuntimeFunctions(isEntryPoint);
             }
+        }
+
+        private Dictionary<int, ReadyToRunMethod> _runtimeFunctionToMethod = null;
+
+        private void EnsureEntrypointRuntimeFunctionToReadyToRunMethodDict()
+        {
+            EnsureMethods();
+
+            if (_runtimeFunctionToMethod == null)
+            {
+                _runtimeFunctionToMethod = new Dictionary<int, ReadyToRunMethod>();
+                foreach (var section in _methods)
+                {
+                    foreach (var method in section.Value)
+                    {
+                        if (!_runtimeFunctionToMethod.ContainsKey(method.EntryPointRuntimeFunctionId))
+                            _runtimeFunctionToMethod.Add(method.EntryPointRuntimeFunctionId, method);
+                    }
+                }
+            }
+        }
+
+        public IReadOnlyDictionary<TMethod, ReadyToRunMethod> GetCustomMethodToRuntimeFunctionMapping<TType, TMethod, TGenericContext>(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider)
+        {
+            EnsureEntrypointRuntimeFunctionToReadyToRunMethodDict();
+
+            Dictionary<TMethod, ReadyToRunMethod> customMethods = new Dictionary<TMethod, ReadyToRunMethod>();
+            if (ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection runtimeFunctionSection))
+            {
+                ParseMethodDefEntrypoints((section, reader) => ParseMethodDefEntrypointsSectionCustom<TType, TMethod, TGenericContext>(provider, customMethods, section, reader));
+                ParseInstanceMethodEntrypointsCustom<TType, TMethod, TGenericContext>(provider, customMethods);
+            }
+
+            return customMethods;
         }
 
         private bool TryLocateNativeReadyToRunHeader()
@@ -667,12 +701,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// Initialize non-generic R2RMethods with method signatures from MethodDefHandle, and runtime function indices from MethodDefEntryPoints
         /// </summary>
-        private void ParseMethodDefEntrypoints(bool[] isEntryPoint)
+        private void ParseMethodDefEntrypoints(Action<ReadyToRunSection, MetadataReader> methodDefSectionReader)
         {
             ReadyToRunSection methodEntryPointSection;
             if (ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.MethodDefEntryPoints, out methodEntryPointSection))
             {
-                ParseMethodDefEntrypointsSection(methodEntryPointSection, GetGlobalMetadataReader(), isEntryPoint);
+                methodDefSectionReader(methodEntryPointSection, GetGlobalMetadataReader());
             }
             else if (ReadyToRunAssemblyHeaders != null)
             {
@@ -680,7 +714,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     if (ReadyToRunAssemblyHeaders[assemblyIndex].Sections.TryGetValue(ReadyToRunSectionType.MethodDefEntryPoints, out methodEntryPointSection))
                     {
-                        ParseMethodDefEntrypointsSection(methodEntryPointSection, OpenReferenceAssembly(assemblyIndex + 1), isEntryPoint);
+                        methodDefSectionReader(methodEntryPointSection, OpenReferenceAssembly(assemblyIndex + 1));
                     }
                 }
             }
@@ -722,6 +756,69 @@ namespace ILCompiler.Reflection.ReadyToRun
                     }
                     sectionMethods.Add(method);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Parse a single method def entrypoint section. For composite R2R images, this method is called multiple times
+        /// are method entrypoints are stored separately for each component assembly of the composite R2R executable.
+        /// </summary>
+        /// <param name="section">Method entrypoint section to parse</param>
+        /// <param name="metadataReader">ECMA metadata reader representing this method entrypoint section</param>
+        /// <param name="isEntryPoint">Set to true for each runtime function index representing a method entrypoint</param>
+        private void ParseMethodDefEntrypointsSectionCustom<TType, TMethod, TGenericContext>(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider, Dictionary<TMethod, ReadyToRunMethod> foundMethods, ReadyToRunSection section, MetadataReader metadataReader)
+        {
+            int methodDefEntryPointsOffset = GetOffset(section.RelativeVirtualAddress);
+            NativeArray methodEntryPoints = new NativeArray(Image, (uint)methodDefEntryPointsOffset);
+            uint nMethodEntryPoints = methodEntryPoints.GetCount();
+
+            for (uint rid = 1; rid <= nMethodEntryPoints; rid++)
+            {
+                int offset = 0;
+                if (methodEntryPoints.TryGetAt(Image, rid - 1, ref offset))
+                {
+                    EntityHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)rid);
+                    int runtimeFunctionId;
+                    int? fixupOffset;
+                    GetRuntimeFunctionIndexFromOffset(offset, out runtimeFunctionId, out fixupOffset);
+                    ReadyToRunMethod r2rMethod = _runtimeFunctionToMethod[runtimeFunctionId];
+                    var customMethod = provider.GetMethodFromMethodDef(metadataReader, MetadataTokens.MethodDefinitionHandle((int)rid), default(TType));
+                    
+                    if (!Object.ReferenceEquals(customMethod, null) && !foundMethods.ContainsKey(customMethod))
+                        foundMethods.Add(customMethod, r2rMethod);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Initialize generic method instances with argument types and runtime function indices from InstanceMethodEntrypoints
+        /// </summary>
+        private void ParseInstanceMethodEntrypointsCustom<TType, TMethod, TGenericContext>(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider, Dictionary<TMethod, ReadyToRunMethod> foundMethods)
+        {
+            if (!ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.InstanceMethodEntryPoints, out ReadyToRunSection instMethodEntryPointSection))
+            {
+                return;
+            }
+            int instMethodEntryPointsOffset = GetOffset(instMethodEntryPointSection.RelativeVirtualAddress);
+            NativeParser parser = new NativeParser(Image, (uint)instMethodEntryPointsOffset);
+            NativeHashtable instMethodEntryPoints = new NativeHashtable(Image, parser, (uint)(instMethodEntryPointsOffset + instMethodEntryPointSection.Size));
+            NativeHashtable.AllEntriesEnumerator allEntriesEnum = instMethodEntryPoints.EnumerateAllEntries();
+            NativeParser curParser = allEntriesEnum.GetNext();
+            while (!curParser.IsNull())
+            {
+                MetadataReader mdReader = _composite ? null : _assemblyCache[0];
+                var decoder = new R2RSignatureDecoder<TType, TMethod, TGenericContext>(provider, default(TGenericContext), mdReader, this, (int)curParser.Offset);
+
+                TMethod customMethod = decoder.ParseMethod();
+
+                int runtimeFunctionId;
+                int? fixupOffset;
+                GetRuntimeFunctionIndexFromOffset((int)decoder.Offset, out runtimeFunctionId, out fixupOffset);
+                ReadyToRunMethod r2rMethod = _runtimeFunctionToMethod[runtimeFunctionId];
+                if (!Object.ReferenceEquals(customMethod, null) && !foundMethods.ContainsKey(customMethod))
+                    foundMethods.Add(customMethod, r2rMethod);
+                foundMethods.Add(customMethod, r2rMethod);
+                curParser = allEntriesEnum.GetNext();
             }
         }
 

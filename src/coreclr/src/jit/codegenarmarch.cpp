@@ -1354,116 +1354,69 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 }
 #endif // FEATURE_ARG_SPLIT
 
+#ifdef FEATURE_SIMD
 //----------------------------------------------------------------------------------
-// genMultiRegStoreToLocal: store multi-reg return value of a call node to a local
+// genMultiRegStoreToSIMDLocal: store multi-reg value to a single-reg SIMD local
 //
 // Arguments:
-//    treeNode  -  Gentree of GT_STORE_LCL_VAR
+//    lclNode  -  GentreeLclVar of GT_STORE_LCL_VAR
 //
 // Return Value:
 //    None
 //
-// Assumption:
-//    The child of store is a multi-reg node.
-//
-void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
+void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
 {
-    assert(treeNode->OperGet() == GT_STORE_LCL_VAR);
-    assert(varTypeIsStruct(treeNode) || varTypeIsMultiReg(treeNode));
-    GenTree* op1       = treeNode->gtGetOp1();
-    GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+    regNumber dst       = lclNode->GetRegNum();
+    GenTree*  op1       = lclNode->gtGetOp1();
+    GenTree*  actualOp1 = op1->gtSkipReloadOrCopy();
+    unsigned  regCount =
+        actualOp1->IsMultiRegLclVar() ? actualOp1->AsLclVar()->GetFieldCount(compiler) : actualOp1->GetMultiRegCount();
     assert(op1->IsMultiRegNode());
-    unsigned regCount = actualOp1->GetMultiRegCount();
-
-    // Assumption: current implementation requires that a multi-reg
-    // var in 'var = call' is flagged as lvIsMultiRegRet to prevent it from
-    // being promoted.
-    unsigned   lclNum = treeNode->AsLclVarCommon()->GetLclNum();
-    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
-    if (op1->OperIs(GT_CALL))
-    {
-        assert(regCount <= MAX_RET_REG_COUNT);
-        noway_assert(varDsc->lvIsMultiRegRet);
-    }
-
     genConsumeRegs(op1);
 
-    int offset = 0;
-
-    // Check for the case of an enregistered SIMD type that's returned in multiple registers.
-    if (varDsc->lvIsRegCandidate() && treeNode->GetRegNum() != REG_NA)
+    // Treat dst register as a homogenous vector with element size equal to the src size
+    // Insert pieces in reverse order
+    for (int i = regCount - 1; i >= 0; --i)
     {
-        assert(varTypeIsSIMD(treeNode));
-        assert(regCount != 0);
-
-        regNumber dst = treeNode->GetRegNum();
-
-        // Treat dst register as a homogenous vector with element size equal to the src size
-        // Insert pieces in reverse order
-        for (int i = regCount - 1; i >= 0; --i)
+        var_types type = op1->gtSkipReloadOrCopy()->GetRegTypeByIndex(i);
+        regNumber reg  = op1->GetRegByIndex(i);
+        if (op1->IsCopyOrReload())
         {
-            var_types type = op1->gtSkipReloadOrCopy()->GetRegTypeByIndex(i);
-            regNumber reg  = op1->GetRegByIndex(i);
-            if (op1->IsCopyOrReload())
+            // GT_COPY/GT_RELOAD will have valid reg for those positions
+            // that need to be copied or reloaded.
+            regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(i);
+            if (reloadReg != REG_NA)
             {
-                // GT_COPY/GT_RELOAD will have valid reg for those positions
-                // that need to be copied or reloaded.
-                regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(i);
-                if (reloadReg != REG_NA)
-                {
-                    reg = reloadReg;
-                }
-            }
-
-            assert(reg != REG_NA);
-            if (varTypeIsFloating(type))
-            {
-                // If the register piece was passed in a floating point register
-                // Use a vector mov element instruction
-                // src is not a vector, so it is in the first element reg[0]
-                // mov dst[i], reg[0]
-                // This effectively moves from `reg[0]` to `dst[i]`, leaving other dst bits unchanged till further
-                // iterations
-                // For the case where reg == dst, if we iterate so that we write dst[0] last, we eliminate the need for
-                // a temporary
-                GetEmitter()->emitIns_R_R_I_I(INS_mov, emitTypeSize(type), dst, reg, i, 0);
-            }
-            else
-            {
-                // If the register piece was passed in an integer register
-                // Use a vector mov from general purpose register instruction
-                // mov dst[i], reg
-                // This effectively moves from `reg` to `dst[i]`
-                GetEmitter()->emitIns_R_R_I(INS_mov, emitTypeSize(type), dst, reg, i);
+                reg = reloadReg;
             }
         }
 
-        genProduceReg(treeNode);
-    }
-    else
-    {
-        for (unsigned i = 0; i < regCount; ++i)
+        assert(reg != REG_NA);
+        if (varTypeIsFloating(type))
         {
-            var_types type = actualOp1->GetRegTypeByIndex(i);
-            regNumber reg  = op1->GetRegByIndex(i);
-            if (reg == REG_NA)
-            {
-                // GT_COPY/GT_RELOAD will have valid reg only for those positions
-                // that need to be copied or reloaded.
-                assert(op1->IsCopyOrReload());
-                reg = actualOp1->GetRegByIndex(i);
-            }
-
-            assert(reg != REG_NA);
-            GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
-            offset += genTypeSize(type);
+            // If the register piece was passed in a floating point register
+            // Use a vector mov element instruction
+            // src is not a vector, so it is in the first element reg[0]
+            // mov dst[i], reg[0]
+            // This effectively moves from `reg[0]` to `dst[i]`, leaving other dst bits unchanged till further
+            // iterations
+            // For the case where reg == dst, if we iterate so that we write dst[0] last, we eliminate the need for
+            // a temporary
+            GetEmitter()->emitIns_R_R_I_I(INS_mov, emitTypeSize(type), dst, reg, i, 0);
         }
-
-        // Update variable liveness.
-        genUpdateLife(treeNode);
-        varDsc->SetRegNum(REG_STK);
+        else
+        {
+            // If the register piece was passed in an integer register
+            // Use a vector mov from general purpose register instruction
+            // mov dst[i], reg
+            // This effectively moves from `reg` to `dst[i]`
+            GetEmitter()->emitIns_R_R_I(INS_mov, emitTypeSize(type), dst, reg, i);
+        }
     }
+
+    genProduceReg(lclNode);
 }
+#endif // FEATURE_SIMD
 
 //------------------------------------------------------------------------
 // genRangeCheck: generate code for GT_ARR_BOUNDS_CHECK node.

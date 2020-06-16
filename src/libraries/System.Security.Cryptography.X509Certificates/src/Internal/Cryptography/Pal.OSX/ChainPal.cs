@@ -602,7 +602,8 @@ namespace Internal.Cryptography.Pal
             X509Certificate2Collection customTrustStore,
             X509ChainTrustMode trustMode,
             DateTime verificationTime,
-            TimeSpan timeout)
+            TimeSpan timeout,
+            bool disableAia)
         {
             // If the time was given in Universal, it will stay Universal.
             // If the time was given in Local, it will be converted.
@@ -611,11 +612,6 @@ namespace Internal.Cryptography.Pal
             // This matches the "assume Local unless explicitly Universal" implicit contract.
             verificationTime = verificationTime.ToUniversalTime();
 
-            // The Windows (and other-Unix-PAL) behavior is to allow network until network operations
-            // have exceeded the specified timeout.  For Apple it's either on (and AIA fetching works),
-            // or off (and AIA fetching doesn't work).  And once an SSL policy is used, or revocation is
-            // being checked, the value is on anyways.
-            const bool allowNetwork = true;
             SecTrustChainPal chainPal = new SecTrustChainPal();
 
             try
@@ -629,7 +625,7 @@ namespace Internal.Cryptography.Pal
 
                 chainPal.Execute(
                     verificationTime,
-                    allowNetwork,
+                    !disableAia,
                     applicationPolicy,
                     certificatePolicy,
                     revocationFlag);

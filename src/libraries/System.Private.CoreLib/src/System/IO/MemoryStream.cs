@@ -544,51 +544,6 @@ namespace System.IO
             }
         }
 
-        public override void CopyTo(ReadOnlySpanAction<byte, object?> callback, object? state, int bufferSize)
-        {
-            // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Read() which a subclass might have overridden.
-            // To be safe we will only use this implementation in cases where we know it is safe to do so,
-            // and delegate to our base class (which will call into Read) when we are not sure.
-            if (GetType() != typeof(MemoryStream))
-            {
-                base.CopyTo(callback, state, bufferSize);
-                return;
-            }
-
-            StreamHelpers.ValidateCopyToArgs(this, callback, bufferSize);
-
-            // Retrieve a span until the end of the MemoryStream.
-            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(_buffer, _position, _length - _position);
-            _position = _length;
-
-            // Invoke the callback, using our internal span and avoiding any
-            // intermediary allocations.
-            callback(span, state);
-        }
-
-        public override Task CopyToAsync(Func<ReadOnlyMemory<byte>, object?, CancellationToken, ValueTask> callback, object? state, int bufferSize, CancellationToken cancellationToken)
-        {
-            // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to ReadAsync() which a subclass might have overridden.
-            // To be safe we will only use this implementation in cases where we know it is safe to do so,
-            // and delegate to our base class (which will call into ReadAsync) when we are not sure.
-            if (GetType() != typeof(MemoryStream))
-                return base.CopyToAsync(callback, state, bufferSize, cancellationToken);
-
-            StreamHelpers.ValidateCopyToArgs(this, callback, bufferSize);
-
-            // If canceled - return fast:
-            if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled(cancellationToken);
-
-            // Avoid copying data from this buffer into a temp buffer
-            ReadOnlyMemory<byte> memory = new ReadOnlyMemory<byte>(_buffer, _position, _length - _position);
-            _position = _length;
-
-            return callback(memory, state, cancellationToken).AsTask();
-        }
-
         public override long Seek(long offset, SeekOrigin loc)
         {
             EnsureNotClosed();

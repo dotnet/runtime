@@ -109,6 +109,8 @@ namespace System.Net.Security
             _certSelectionDelegate = userCertificateSelectionCallback == null ? null : new LocalCertSelectionCallback(UserCertSelectionCallbackWrapper);
 
             _innerStream = innerStream;
+
+            if (NetEventSource.IsEnabled) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
 
         public SslApplicationProtocol NegotiatedApplicationProtocol

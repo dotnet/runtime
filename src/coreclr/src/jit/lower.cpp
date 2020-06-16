@@ -296,8 +296,28 @@ GenTree* Lowering::LowerNode(GenTree* node)
         }
 
         case GT_LCL_VAR:
-            WidenSIMD12IfNecessary(node->AsLclVarCommon());
+        {
+            GenTreeLclVar* lclNode = node->AsLclVar();
+            WidenSIMD12IfNecessary(lclNode);
+            LclVarDsc* varDsc = comp->lvaGetDesc(lclNode);
+
+            // The consumer of this node must check compatibility of the fields.
+            // This merely checks whether it is possible for this to be a multireg node.
+            if (lclNode->IsMultiRegLclVar())
+            {
+                if (!varDsc->lvPromoted ||
+                    (comp->lvaGetPromotionType(varDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT) ||
+                    (varDsc->lvFieldCnt > MAX_MULTIREG_COUNT))
+                {
+                    lclNode->ClearMultiReg();
+                    if (lclNode->TypeIs(TYP_STRUCT))
+                    {
+                        comp->lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(Compiler::DNER_BlockOp));
+                    }
+                }
+            }
             break;
+        }
 
         case GT_STORE_LCL_VAR:
             WidenSIMD12IfNecessary(node->AsLclVarCommon());
@@ -2941,37 +2961,47 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
         BlockRange().InsertBefore(ret, bitcast);
         ContainCheckBitCast(bitcast);
     }
-    else
+    else if (ret->TypeGet() != TYP_VOID)
     {
-#ifdef DEBUG
-        if (ret->TypeGet() != TYP_VOID)
+        GenTree* retVal = ret->gtGetOp1();
+#if FEATURE_MULTIREG_RET
+        if (op1->OperIs(GT_LCL_VAR) && varTypeIsStruct(op1))
         {
-            GenTree* retVal = ret->gtGetOp1();
-            if (varTypeIsStruct(ret->TypeGet()) != varTypeIsStruct(retVal->TypeGet()))
+            ReturnTypeDesc retTypeDesc;
+            LclVarDsc*     varDsc = nullptr;
+            varDsc                = comp->lvaGetDesc(op1->AsLclVar()->GetLclNum());
+            retTypeDesc.InitializeStructReturnType(comp, varDsc->lvVerTypeInfo.GetClassHandle());
+            if (retTypeDesc.GetReturnRegCount() > 1)
             {
-                if (varTypeIsStruct(ret->TypeGet()))
+                CheckMultiRegLclVar(op1->AsLclVar(), &retTypeDesc);
+            }
+        }
+        else
+#ifdef DEBUG
+            if (varTypeIsStruct(ret->TypeGet()) != varTypeIsStruct(retVal->TypeGet()))
+        {
+            if (varTypeIsStruct(ret->TypeGet()))
+            {
+                assert(!comp->compDoOldStructRetyping());
+                bool actualTypesMatch = false;
+                if (genActualType(comp->info.compRetNativeType) == genActualType(retVal->TypeGet()))
                 {
-                    assert(!comp->compDoOldStructRetyping());
-                    bool actualTypesMatch = false;
-                    if (genActualType(comp->info.compRetNativeType) == genActualType(retVal->TypeGet()))
-                    {
-                        // This could happen if we have retyped op1 as a primitive type during struct promotion,
-                        // check `retypedFieldsMap` for details.
-                        actualTypesMatch = true;
-                    }
-                    bool constStructInit = retVal->IsConstInitVal();
-                    assert(actualTypesMatch || constStructInit);
+                    // This could happen if we have retyped op1 as a primitive type during struct promotion,
+                    // check `retypedFieldsMap` for details.
+                    actualTypesMatch = true;
                 }
-                else
-                {
+                bool constStructInit = retVal->IsConstInitVal();
+                assert(actualTypesMatch || constStructInit);
+            }
+            else
+            {
 #ifdef FEATURE_SIMD
-                    assert(comp->compDoOldStructRetyping());
-                    assert(ret->TypeIs(TYP_DOUBLE));
-                    assert(retVal->TypeIs(TYP_SIMD8));
+                assert(comp->compDoOldStructRetyping());
+                assert(ret->TypeIs(TYP_DOUBLE));
+                assert(retVal->TypeIs(TYP_SIMD8));
 #else  // !FEATURE_SIMD
-                    unreached();
+                unreached();
 #endif // !FEATURE_SIMD
-                }
             }
         }
 #endif // DEBUG
@@ -2979,6 +3009,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
         {
             LowerRetStruct(ret);
         }
+#endif // !FEATURE_MULTIREG_RET
     }
 
     // Method doing PInvokes has exactly one return block unless it has tail calls.
@@ -3018,7 +3049,17 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         }
     }
 
-    if ((lclStore->TypeGet() == TYP_STRUCT) && (src->OperGet() != GT_PHI))
+    bool srcIsMultiReg = src->IsMultiRegNode();
+    if (srcIsMultiReg || lclStore->IsMultiRegLclVar())
+    {
+        const ReturnTypeDesc* retTypeDesc = nullptr;
+        if (src->OperIs(GT_CALL))
+        {
+            retTypeDesc = src->AsCall()->GetReturnTypeDesc();
+        }
+        CheckMultiRegLclVar(lclStore->AsLclVar(), retTypeDesc);
+    }
+    if (!srcIsMultiReg && (lclStore->TypeGet() == TYP_STRUCT) && (src->OperGet() != GT_PHI))
     {
         if (src->OperGet() == GT_CALL)
         {
@@ -5814,6 +5855,12 @@ bool Lowering::CheckBlock(Compiler* compiler, BasicBlock* block)
 }
 #endif
 
+//------------------------------------------------------------------------
+// Lowering::LowerBlock: Lower all the nodes in a BasicBlock
+//
+// Arguments:
+//   block    - the block to lower.
+//
 void Lowering::LowerBlock(BasicBlock* block)
 {
     assert(block == comp->compCurBB); // compCurBB must already be set.
@@ -5955,6 +6002,74 @@ bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
         default:
             return false;
     }
+}
+
+//------------------------------------------------------------------------
+// Lowering::CheckMultiRegLclVar: Check whether a MultiReg GT_LCL_VAR node can
+//                                remain a multi-reg.
+//
+// Arguments:
+//   lclNode     - the GT_LCL_VAR or GT_STORE_LCL_VAR node.
+//   retTypeDesc - a return type descriptor either for a call source of a store of
+//                 the local, or for the GT_RETURN consumer of the local.
+//
+// Notes:
+//   If retTypeDesc is non-null, this method will check that the fields are compatible.
+//   Otherwise, it will only check that the lclVar is independently promoted
+//   (i.e. it is marked lvPromoted and not lvDoNotEnregister).
+//
+bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc* retTypeDesc)
+{
+    bool canEnregister = false;
+#if FEATURE_MULTIREG_RET
+    LclVarDsc* varDsc = comp->lvaGetDesc(lclNode->GetLclNum());
+    if ((comp->lvaEnregMultiRegVars) && varDsc->lvPromoted)
+    {
+        // We can enregister if we have a promoted struct and all the fields' types match the ABI requirements.
+        // Note that we don't promote structs with explicit layout, so we don't need to check field offsets, and
+        // if we have multiple types packed into a single register, we won't have matching reg and field counts,
+        // so we can tolerate mismatches of integer size.
+        if (varDsc->lvPromoted && (comp->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT))
+        {
+            // If we have no retTypeDesc, we only care that it is independently promoted.
+            if (retTypeDesc == nullptr)
+            {
+                canEnregister = true;
+            }
+            else
+            {
+                unsigned regCount = retTypeDesc->GetReturnRegCount();
+
+                if (regCount == varDsc->lvFieldCnt)
+                {
+                    canEnregister = true;
+                }
+            }
+        }
+    }
+#ifdef TARGET_XARCH
+    // For local stores on XARCH we only handle mismatched src/dest register count for
+    // calls of SIMD type. If the source was another lclVar similarly promoted, we would
+    // have broken it into multiple stores.
+    if (lclNode->OperIs(GT_STORE_LCL_VAR) && !lclNode->gtGetOp1()->OperIs(GT_CALL))
+    {
+        canEnregister = false;
+    }
+#endif // TARGET_XARCH
+    if (canEnregister)
+    {
+        lclNode->SetMultiReg();
+    }
+    else
+    {
+        lclNode->ClearMultiReg();
+        if (varDsc->lvPromoted && !varDsc->lvDoNotEnregister)
+        {
+            comp->lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(Compiler::DNER_BlockOp));
+        }
+    }
+#endif
+    return canEnregister;
 }
 
 //------------------------------------------------------------------------
@@ -6149,10 +6264,13 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
             // This must be a multi-reg return or an HFA of a single element.
             assert(varDsc->lvIsMultiRegRet || (varDsc->lvIsHfa() && varTypeIsValidHfaType(varDsc->lvType)));
 
-            // Mark var as contained if not enregistrable.
+            // Mark var as contained if not enregisterable.
             if (!varTypeIsEnregisterable(op1))
             {
-                MakeSrcContained(ret, op1);
+                if (!op1->IsMultiRegLclVar())
+                {
+                    MakeSrcContained(ret, op1);
+                }
             }
         }
     }

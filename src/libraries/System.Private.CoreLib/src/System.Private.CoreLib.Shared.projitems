@@ -9,7 +9,24 @@
   <PropertyGroup>
     <Nullable>enable</Nullable>
     <IsOSXLike Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</IsOSXLike>
+    <SupportsArmIntrinsics Condition="'$(Platform)' == 'arm64'">true</SupportsArmIntrinsics>
+    <SupportsX86Intrinsics Condition="'$(Platform)' == 'x64' or ('$(Platform)' == 'x86' and '$(TargetsUnix)' != 'true')">true</SupportsX86Intrinsics>
+    <ILLinkSharedDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkSharedDirectory>
   </PropertyGroup>
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.Shared.xml" />
+    <!-- TODO: Enable these substitutions files for more platforms once https://github.com/mono/linker/issues/1260 is fixed -->
+    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.LittleEndian.xml"
+                             Condition="'$(Platform)' == 'wasm'" />
+
+    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.32bit.xml"
+                             Condition="'$(Platform)' == 'wasm'" />
+
+    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.NoArmIntrinsics.xml"
+                             Condition="'$(Platform)' == 'wasm'" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.NoX86Intrinsics.xml"
+                             Condition="'$(Platform)' == 'wasm'" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Padding.cs" />
@@ -632,6 +649,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IntrinsicAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsByRefLikeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsConst.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsReadOnlyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsVolatile.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IteratorStateMachineAttribute.cs" />
@@ -640,6 +658,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\MethodCodeType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\MethodImplAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\MethodImplOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ModuleInitializerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ReferenceAssemblyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\PreserveBaseOverridesAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RuntimeCompatibilityAttribute.cs" />
@@ -726,6 +745,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomMarshaler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomQueryInterface.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\IDynamicInterfaceCastable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InterfaceTypeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InvalidComObjectException.cs" />
@@ -854,25 +874,27 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIUtility.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\CodePageDataItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Decoder.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\DecoderBestFitFallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\DecoderExceptionFallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\DecoderFallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\DecoderNLS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\DecoderReplacementFallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Encoder.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncoderBestFitFallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncoderExceptionFallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncoderFallback.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncoderLatin1BestFitFallback.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncoderLatin1BestFitFallback.Data.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncoderNLS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncoderReplacementFallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Encoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Encoding.Internal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingInfo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingNLS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingTable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Latin1Encoding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Latin1Encoding.Sealed.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Latin1Utility.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Latin1Utility.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\NormalizationForm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Rune.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\SpanRuneEnumerator.cs" />
@@ -1080,9 +1102,6 @@
     </Compile>
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
-      <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">
       <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>
@@ -1791,7 +1810,7 @@
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' == 'true' and ('$(Platform)' == 'x64' or ('$(Platform)' == 'x86' and '$(TargetsUnix)' != 'true'))">
+  <ItemGroup Condition="'$(SupportsX86Intrinsics)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2.cs" />
@@ -1809,7 +1828,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Ssse3.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\X86Base.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' != 'true' or ('$(Platform)' != 'x64' and ('$(Platform)' != 'x86' or ('$(Platform)' == 'x86' and '$(TargetsUnix)' == 'true')))">
+  <ItemGroup Condition="'$(SupportsX86Intrinsics)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2.PlatformNotSupported.cs" />
@@ -1827,7 +1846,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Ssse3.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\X86Base.PlatformNotSupported.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' == 'true' and '$(Platform)' == 'arm64'">
+  <ItemGroup Condition="'$(SupportsArmIntrinsics)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\AdvSimd.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Aes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\ArmBase.cs" />
@@ -1835,7 +1854,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha256.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' != 'true' or '$(Platform)' != 'arm64'">
+  <ItemGroup Condition="'$(SupportsArmIntrinsics)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\AdvSimd.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Aes.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\ArmBase.PlatformNotSupported.cs" />

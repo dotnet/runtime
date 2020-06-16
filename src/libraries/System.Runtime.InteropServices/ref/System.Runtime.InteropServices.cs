@@ -355,6 +355,11 @@ namespace System.Runtime.InteropServices
         System32 = 2048,
         SafeDirectories = 4096,
     }
+    [System.AttributeUsage(System.AttributeTargets.Interface, AllowMultiple=false, Inherited=false)]
+    public sealed class DynamicInterfaceCastableImplementationAttribute : Attribute
+    {
+        public DynamicInterfaceCastableImplementationAttribute() { }
+    }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class ErrorWrapper
     {
@@ -411,6 +416,11 @@ namespace System.Runtime.InteropServices
     public partial interface ICustomQueryInterface
     {
         System.Runtime.InteropServices.CustomQueryInterfaceResult GetInterface(ref System.Guid iid, out System.IntPtr ppv);
+    }
+    public partial interface IDynamicInterfaceCastable
+    {
+        bool IsInterfaceImplemented(System.RuntimeTypeHandle interfaceType, bool throwIfNotImplemented);
+        System.RuntimeTypeHandle GetInterfaceImplementation(System.RuntimeTypeHandle interfaceType);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class ImportedFromTypeLibAttribute : System.Attribute

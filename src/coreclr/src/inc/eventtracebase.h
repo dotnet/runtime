@@ -204,8 +204,7 @@ struct ProfilingScanContext;
 
 #define ETWOnStartup(StartEventName, EndEventName) \
     ETWTraceStartup trace##StartEventName##(Microsoft_Windows_DotNETRuntimePrivateHandle, &StartEventName, &StartupId, &EndEventName, &StartupId);
-#define ETWFireEvent(EventName) \
-    ETWTraceStartup::StartupTraceEvent(Microsoft_Windows_DotNETRuntimePrivateHandle, &EventName, &StartupId);
+#define ETWFireEvent(EventName) FireEtw##EventName(GetClrInstanceId())
 
 #ifndef FEATURE_REDHAWK
 // Headers
