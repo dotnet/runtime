@@ -316,6 +316,13 @@ public class ReadAndWrite
         Assert.Throws<PlatformNotSupportedException>(() => Console.OutputEncoding = curEncoding );
     }
 
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Browser)]
+    public static void InputEncoding_Browser()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.InputEncoding );
+    }
+
     static readonly string[] s_testLines = new string[] {
         "3232 Hello32 Hello 5032 Hello 50 532 Hello 50 5 aTrueaabcdbc1.23123.4561.23439505050System.ObjectHello World",
         "32",
@@ -344,6 +351,7 @@ public class ReadAndWrite
     };
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void ReadAndReadLine()
     {
         TextWriter savedStandardOutput = Console.Out;
