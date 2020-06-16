@@ -78,10 +78,10 @@ namespace System.Formats.Cbor.Tests
         [Theory]
         [InlineData("61ff")]
         [InlineData("62f090")]
-        public static void SkipValue_InvalidUtf8_ShouldSucceed(string hexEncoding)
+        public static void SkipValue_InvalidUtf8_LaxConformance_ShouldSucceed(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding);
+            var reader = new CborReader(encoding, CborConformanceMode.Lax);
 
             reader.SkipValue();
 

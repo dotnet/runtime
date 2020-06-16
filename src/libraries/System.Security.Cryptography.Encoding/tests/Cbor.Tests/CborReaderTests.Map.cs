@@ -167,10 +167,10 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [InlineData(new object[] { Map, "a", 1, "a", 2 }, "a2616101616102")]
-        public static void ReadMap_DuplicateKeys_ShouldSucceed(object[] values, string hexEncoding)
+        public static void ReadMap_DuplicateKeys_LaxConformance_ShouldSucceed(object[] values, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborReader(encoding);
+            var reader = new CborReader(encoding, CborConformanceMode.Lax);
             Helpers.VerifyMap(reader, values);
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }

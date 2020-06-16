@@ -65,10 +65,10 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void ConformanceMode_DefaultValue_ShouldEqualLax()
+        public static void ConformanceMode_DefaultValue_ShouldEqualStrict()
         {
             var reader = new CborReader(Array.Empty<byte>());
-            Assert.Equal(CborConformanceMode.Lax, reader.ConformanceMode);
+            Assert.Equal(CborConformanceMode.Strict, reader.ConformanceMode);
         }
 
         [Theory]

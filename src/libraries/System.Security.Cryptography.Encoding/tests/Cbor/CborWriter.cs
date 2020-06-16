@@ -76,7 +76,7 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="conformanceMode">
         ///   Specifies a <see cref="CborConformanceMode"/> guiding the conformance checks performed on the encoded data.
-        ///   Defaults to <see cref="CborConformanceMode.Lax" /> conformance mode.
+        ///   Defaults to <see cref="CborConformanceMode.Strict" /> conformance mode.
         /// </param>
         /// <param name="convertIndefiniteLengthEncodings">
         ///   Enables automatically converting indefinite-length encodings into definite-length equivalents.
@@ -90,7 +90,7 @@ namespace System.Formats.Cbor
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="conformanceMode"/> is not a defined <see cref="CborConformanceMode"/>.
         /// </exception>
-        public CborWriter(CborConformanceMode conformanceMode = CborConformanceMode.Lax, bool convertIndefiniteLengthEncodings = false, bool allowMultipleRootLevelValues = false)
+        public CborWriter(CborConformanceMode conformanceMode = CborConformanceMode.Strict, bool convertIndefiniteLengthEncodings = false, bool allowMultipleRootLevelValues = false)
         {
             CborConformanceModeHelpers.Validate(conformanceMode);
 

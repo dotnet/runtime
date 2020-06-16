@@ -66,7 +66,7 @@ namespace System.Formats.Cbor
         /// <param name="data">The CBOR encoded data to read.</param>
         /// <param name="conformanceMode">
         ///   Specifies a conformance mode guiding the checks performed on the encoded data.
-        ///   Defaults to <see cref="CborConformanceMode.Lax" /> conformance mode.
+        ///   Defaults to <see cref="CborConformanceMode.Strict" /> conformance mode.
         /// </param>
         /// <param name="allowMultipleRootLevelValues">
         ///   Specify if multiple root-level values are to be supported by the reader.
@@ -76,7 +76,7 @@ namespace System.Formats.Cbor
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="conformanceMode"/> is not defined.
         /// </exception>
-        public CborReader(ReadOnlyMemory<byte> data, CborConformanceMode conformanceMode = CborConformanceMode.Lax, bool allowMultipleRootLevelValues = false)
+        public CborReader(ReadOnlyMemory<byte> data, CborConformanceMode conformanceMode = CborConformanceMode.Strict, bool allowMultipleRootLevelValues = false)
         {
             CborConformanceModeHelpers.Validate(conformanceMode);
 

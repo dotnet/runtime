@@ -173,10 +173,10 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [InlineData(new object[] { Map, "a", 1, "a", 2 }, "a2616101616102")]
-        public static void WriteMap_DuplicateKeys_ShouldSucceed(object[] values, string expectedHexEncoding)
+        public static void WriteMap_DuplicateKeys_LaxConformance_ShouldSucceed(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            var writer = new CborWriter();
+            var writer = new CborWriter(CborConformanceMode.Lax);
             Helpers.WriteMap(writer, values);
             byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);

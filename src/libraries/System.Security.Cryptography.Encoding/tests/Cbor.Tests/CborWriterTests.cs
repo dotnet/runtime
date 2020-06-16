@@ -126,10 +126,10 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void ConformanceMode_DefaultValue_ShouldEqualLax()
+        public static void ConformanceMode_DefaultValue_ShouldEqualStrict()
         {
             var writer = new CborWriter();
-            Assert.Equal(CborConformanceMode.Lax, writer.ConformanceMode);
+            Assert.Equal(CborConformanceMode.Strict, writer.ConformanceMode);
         }
 
         [Fact]
