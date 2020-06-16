@@ -43,14 +43,6 @@ namespace System.Net.Sockets
 
         internal bool OwnsHandle { get; }
 
-        // Socket continuations are dispatched to the ThreadPool from the event thread.
-        // This avoids continuations blocking the event handling.
-        // Setting PreferInlineCompletions allows continuations to run directly on the event thread.
-        // PreferInlineCompletions defaults to false and can be set to true using the DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS envvar.
-        internal static readonly bool InlineSocketCompletionsEnabled = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1";
-
-        internal bool PreferInlineCompletions { get; set; } = InlineSocketCompletionsEnabled;
-
         private bool TryOwnClose()
         {
             return OwnsHandle && Interlocked.CompareExchange(ref _ownClose, 1, 0) == 0;
