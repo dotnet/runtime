@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -154,8 +155,8 @@ namespace System.Text
             // Remember code page
             _codePage = codePage;
 
-            this.encoderFallback = encoderFallback ?? new InternalEncoderBestFitFallback(this);
-            this.decoderFallback = decoderFallback ?? new InternalDecoderBestFitFallback(this);
+            this.encoderFallback = encoderFallback ?? EncoderFallback.ReplacementFallback;
+            this.decoderFallback = decoderFallback ?? DecoderFallback.ReplacementFallback;
         }
 
         // Default fallback that we'll use.
@@ -165,8 +166,8 @@ namespace System.Text
         {
             // For UTF-X encodings, we use a replacement fallback with an "\xFFFD" string,
             // For ASCII we use "?" replacement fallback, etc.
-            encoderFallback = new InternalEncoderBestFitFallback(this);
-            decoderFallback = new InternalDecoderBestFitFallback(this);
+            encoderFallback = EncoderFallback.ReplacementFallback;
+            decoderFallback = DecoderFallback.ReplacementFallback;
         }
 
         // Converts a byte array from one encoding to another. The bytes in the
@@ -290,8 +291,15 @@ namespace System.Text
                 GetEncoding(EncodingTable.GetCodePageFromName(name), encoderFallback, decoderFallback);
         }
 
-        // Return a list of all EncodingInfo objects describing all of our encodings
-        public static EncodingInfo[] GetEncodings() => EncodingTable.GetEncodings();
+        /// <summary>
+        /// Get the <see cref="EncodingInfo"/> list from the runtime and all registered encoding providers
+        /// </summary>
+        /// <returns>The list of the <see cref="EncodingProvider"/> objects</returns>
+        public static EncodingInfo[] GetEncodings()
+        {
+            Dictionary<int, EncodingInfo>? result = EncodingProvider.GetEncodingListFromProviders();
+            return result == null ? EncodingTable.GetEncodings() : EncodingTable.GetEncodings(result);
+        }
 
         public virtual byte[] GetPreamble() => Array.Empty<byte>();
 
@@ -1083,14 +1091,6 @@ namespace System.Text
 
             return new TranscodingStream(innerStream, innerStreamEncoding, outerStreamEncoding, leaveOpen);
         }
-
-        internal virtual char[] GetBestFitUnicodeToBytesData() =>
-            // Normally we don't have any best fit data.
-            Array.Empty<char>();
-
-        internal virtual char[] GetBestFitBytesToUnicodeData() =>
-            // Normally we don't have any best fit data.
-            Array.Empty<char>();
 
         [DoesNotReturn]
         internal void ThrowBytesOverflow() =>

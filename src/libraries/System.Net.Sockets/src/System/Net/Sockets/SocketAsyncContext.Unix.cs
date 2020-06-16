@@ -686,7 +686,7 @@ namespace System.Net.Sockets
             // If we successfully process all enqueued operations, then the state becomes Ready;
             // otherwise, the state becomes Waiting and we wait for another epoll notification.
 
-            private enum QueueState : byte
+            private enum QueueState : int
             {
                 Ready = 0,          // Indicates that data MAY be available on the socket.
                                     // Queue must be empty.
@@ -729,18 +729,31 @@ namespace System.Net.Sockets
                 _sequenceNumber = 0;
             }
 
-            // IsReady returns the current _sequenceNumber, which must be passed to StartAsyncOperation below.
+            // IsReady returns whether an operation can be executed immediately.
+            // observedSequenceNumber must be passed to StartAsyncOperation.
             public bool IsReady(SocketAsyncContext context, out int observedSequenceNumber)
             {
-                using (Lock())
+                // It is safe to read _state and _sequence without using Lock.
+                // - The return value is soley based on Volatile.Read of _state.
+                // - The Volatile.Read of _sequenceNumber ensures we read a value before executing the operation.
+                //   This is needed to retry the operation in StartAsyncOperation in case the _sequenceNumber incremented.
+                // - Because no Lock is taken, it is possible we observe a sequence number increment before the state
+                //   becomes Ready. When that happens, observedSequenceNumber is decremented, and StartAsyncOperation will
+                //   execute the operation because the sequence number won't match.
+
+                Debug.Assert(sizeof(QueueState) == sizeof(int));
+                QueueState state = (QueueState)Volatile.Read(ref Unsafe.As<QueueState, int>(ref _state));
+                observedSequenceNumber = Volatile.Read(ref _sequenceNumber);
+
+                bool isReady = state == QueueState.Ready || state == QueueState.Stopped;
+                if (!isReady)
                 {
-                    observedSequenceNumber = _sequenceNumber;
-                    bool isReady = (_state == QueueState.Ready) || (_state == QueueState.Stopped);
-
-                    Trace(context, $"{isReady}");
-
-                    return isReady;
+                    observedSequenceNumber--;
                 }
+
+                Trace(context, $"{isReady}");
+
+                return isReady;
             }
 
             // Return true for pending, false for completed synchronously (including failure and abort)
@@ -748,7 +761,7 @@ namespace System.Net.Sockets
             {
                 Trace(context, $"Enter");
 
-                if (!context._registered)
+                if (!context.IsRegistered)
                 {
                     context.Register();
                 }
@@ -1087,6 +1100,7 @@ namespace System.Net.Sockets
                                 if (_tail == null)
                                 {
                                     _state = QueueState.Ready;
+                                    _sequenceNumber++;
                                 }
                             }
                         }
@@ -1162,8 +1176,8 @@ namespace System.Net.Sockets
         private readonly SafeSocketHandle _socket;
         private OperationQueue<ReadOperation> _receiveQueue;
         private OperationQueue<WriteOperation> _sendQueue;
-        private SocketAsyncEngine.Token _asyncEngineToken;
-        private bool _registered;
+        private SocketAsyncEngine? _asyncEngine;
+        private bool IsRegistered => _asyncEngine != null;
         private bool _nonBlockingSet;
 
         private readonly object _registerLock = new object();
@@ -1181,29 +1195,24 @@ namespace System.Net.Sockets
             Debug.Assert(_nonBlockingSet);
             lock (_registerLock)
             {
-                if (!_registered)
+                if (_asyncEngine == null)
                 {
-                    Debug.Assert(!_asyncEngineToken.WasAllocated);
-                    var token = new SocketAsyncEngine.Token(this);
-
-                    Interop.Error errorCode;
-                    if (!token.TryRegister(_socket, out errorCode))
+                    bool addedRef = false;
+                    try
                     {
-                        token.Free();
-                        if (errorCode == Interop.Error.ENOMEM || errorCode == Interop.Error.ENOSPC)
+                        _socket.DangerousAddRef(ref addedRef);
+                        IntPtr handle = _socket.DangerousGetHandle();
+                        Volatile.Write(ref _asyncEngine, SocketAsyncEngine.RegisterSocket(handle, this));
+
+                        Trace("Registered");
+                    }
+                    finally
+                    {
+                        if (addedRef)
                         {
-                            throw new OutOfMemoryException();
-                        }
-                        else
-                        {
-                            throw new InternalException(errorCode);
+                            _socket.DangerousRelease();
                         }
                     }
-
-                    _asyncEngineToken = token;
-                    _registered = true;
-
-                    Trace("Registered");
                 }
             }
         }
@@ -1216,12 +1225,10 @@ namespace System.Net.Sockets
             aborted |= _sendQueue.StopAndAbort(this);
             aborted |= _receiveQueue.StopAndAbort(this);
 
-            lock (_registerLock)
-            {
-                // Freeing the token will prevent any future event delivery.  This socket will be unregistered
-                // from the event port automatically by the OS when it's closed.
-                _asyncEngineToken.Free();
-            }
+            // We don't need to synchronize with Register.
+            // This method is called when the handle gets released.
+            // The Register method will throw ODE when it tries to use the handle at this point.
+            _asyncEngine?.UnregisterSocket(_socket.DangerousGetHandle());
 
             return aborted;
         }
@@ -1565,7 +1572,7 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public SocketError ReceiveFromAsync(Memory<byte> buffer,  SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
+        public SocketError ReceiveFromAsync(Memory<byte> buffer, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetNonBlocking();
 

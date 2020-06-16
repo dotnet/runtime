@@ -7443,6 +7443,230 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<float> ReciprocalStep(Vector128<float> left, Vector128<float> right) => ReciprocalStep(left, right);
 
         /// <summary>
+        /// uint8x8_t vsli_n_u8(uint8x8_t a, uint8x8_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.8 Dd, Dm, #n
+        ///   A64: SLI Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<byte> ShiftLeftLogicalAndInsert(Vector64<byte> left, Vector64<byte> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int16x4_t vsli_n_s16(int16x4_t a, int16x4_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.16 Dd, Dm, #n
+        ///   A64: SLI Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<short> ShiftLeftLogicalAndInsert(Vector64<short> left, Vector64<short> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int32x2_t vsli_n_s32(int32x2_t a, int32x2_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.32 Dd, Dm, #n
+        ///   A64: SLI Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<int> ShiftLeftLogicalAndInsert(Vector64<int> left, Vector64<int> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int8x8_t vsli_n_s8(int8x8_t a, int8x8_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.8 Dd, Dm, #n
+        ///   A64: SLI Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftLeftLogicalAndInsert(Vector64<sbyte> left, Vector64<sbyte> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint16x4_t vsli_n_u16(uint16x4_t a, uint16x4_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.16 Dd, Dm, #n
+        ///   A64: SLI Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<ushort> ShiftLeftLogicalAndInsert(Vector64<ushort> left, Vector64<ushort> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint32x2_t vsli_n_u32(uint32x2_t a, uint32x2_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.32 Dd, Dm, #n
+        ///   A64: SLI Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<uint> ShiftLeftLogicalAndInsert(Vector64<uint> left, Vector64<uint> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint8x16_t vsliq_n_u8(uint8x16_t a, uint8x16_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.8 Qd, Qm, #n
+        ///   A64: SLI Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<byte> ShiftLeftLogicalAndInsert(Vector128<byte> left, Vector128<byte> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int16x8_t vsliq_n_s16(int16x8_t a, int16x8_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.16 Qd, Qm, #n
+        ///   A64: SLI Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<short> ShiftLeftLogicalAndInsert(Vector128<short> left, Vector128<short> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int32x4_t vsliq_n_s32(int32x4_t a, int32x4_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.32 Qd, Qm, #n
+        ///   A64: SLI Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<int> ShiftLeftLogicalAndInsert(Vector128<int> left, Vector128<int> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int64x2_t vsliq_n_s64(int64x2_t a, int64x2_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.64 Qd, Qm, #n
+        ///   A64: SLI Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<long> ShiftLeftLogicalAndInsert(Vector128<long> left, Vector128<long> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int8x16_t vsliq_n_s8(int8x16_t a, int8x16_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.8 Qd, Qm, #n
+        ///   A64: SLI Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<sbyte> ShiftLeftLogicalAndInsert(Vector128<sbyte> left, Vector128<sbyte> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint16x8_t vsliq_n_u16(uint16x8_t a, uint16x8_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.16 Qd, Qm, #n
+        ///   A64: SLI Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<ushort> ShiftLeftLogicalAndInsert(Vector128<ushort> left, Vector128<ushort> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint32x4_t vsliq_n_u32(uint32x4_t a, uint32x4_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.32 Qd, Qm, #n
+        ///   A64: SLI Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<uint> ShiftLeftLogicalAndInsert(Vector128<uint> left, Vector128<uint> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint64x2_t vsliq_n_u64(uint64x2_t a, uint64x2_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.64 Qd, Qm, #n
+        ///   A64: SLI Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<ulong> ShiftLeftLogicalAndInsert(Vector128<ulong> left, Vector128<ulong> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int64_t vslid_n_s64(int64_t a, int64_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.64 Dd, Dm, #n
+        ///   A64: SLI Dd, Dn, #n
+        /// </summary>
+        public static Vector64<long> ShiftLeftLogicalAndInsertScalar(Vector64<long> left, Vector64<long> right, byte shift) => ShiftLeftLogicalAndInsertScalar(left, right, shift);
+
+        /// <summary>
+        /// uint64_t vslid_n_u64(uint64_t a, uint64_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.64 Dd, Dm, #n
+        ///   A64: SLI Dd, Dn, #n
+        /// </summary>
+        public static Vector64<ulong> ShiftLeftLogicalAndInsertScalar(Vector64<ulong> left, Vector64<ulong> right, byte shift) => ShiftLeftLogicalAndInsertScalar(left, right, shift);
+
+        /// <summary>
+        /// uint8x8_t vsri_n_u8(uint8x8_t a, uint8x8_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.8 Dd, Dm, #n
+        ///   A64: SRI Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<byte> ShiftRightAndInsert(Vector64<byte> left, Vector64<byte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int16x4_t vsri_n_s16(int16x4_t a, int16x4_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.16 Dd, Dm, #n
+        ///   A64: SRI Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<short> ShiftRightAndInsert(Vector64<short> left, Vector64<short> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int32x2_t vsri_n_s32(int32x2_t a, int32x2_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.32 Dd, Dm, #n
+        ///   A64: SRI Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<int> ShiftRightAndInsert(Vector64<int> left, Vector64<int> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int8x8_t vsri_n_s8(int8x8_t a, int8x8_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.8 Dd, Dm, #n
+        ///   A64: SRI Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightAndInsert(Vector64<sbyte> left, Vector64<sbyte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint16x4_t vsri_n_u16(uint16x4_t a, uint16x4_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.16 Dd, Dm, #n
+        ///   A64: SRI Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<ushort> ShiftRightAndInsert(Vector64<ushort> left, Vector64<ushort> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint32x2_t vsri_n_u32(uint32x2_t a, uint32x2_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.32 Dd, Dm, #n
+        ///   A64: SRI Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<uint> ShiftRightAndInsert(Vector64<uint> left, Vector64<uint> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint8x16_t vsriq_n_u8(uint8x16_t a, uint8x16_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.8 Qd, Qm, #n
+        ///   A64: SRI Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<byte> ShiftRightAndInsert(Vector128<byte> left, Vector128<byte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int16x8_t vsriq_n_s16(int16x8_t a, int16x8_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.16 Qd, Qm, #n
+        ///   A64: SRI Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<short> ShiftRightAndInsert(Vector128<short> left, Vector128<short> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int32x4_t vsriq_n_s32(int32x4_t a, int32x4_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.32 Qd, Qm, #n
+        ///   A64: SRI Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<int> ShiftRightAndInsert(Vector128<int> left, Vector128<int> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int64x2_t vsriq_n_s64(int64x2_t a, int64x2_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.64 Qd, Qm, #n
+        ///   A64: SRI Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<long> ShiftRightAndInsert(Vector128<long> left, Vector128<long> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int8x16_t vsriq_n_s8(int8x16_t a, int8x16_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.8 Qd, Qm, #n
+        ///   A64: SRI Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightAndInsert(Vector128<sbyte> left, Vector128<sbyte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint16x8_t vsriq_n_u16(uint16x8_t a, uint16x8_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.16 Qd, Qm, #n
+        ///   A64: SRI Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<ushort> ShiftRightAndInsert(Vector128<ushort> left, Vector128<ushort> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint32x4_t vsriq_n_u32(uint32x4_t a, uint32x4_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.32 Qd, Qm, #n
+        ///   A64: SRI Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<uint> ShiftRightAndInsert(Vector128<uint> left, Vector128<uint> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint64x2_t vsriq_n_u64(uint64x2_t a, uint64x2_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.64 Qd, Qm, #n
+        ///   A64: SRI Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<ulong> ShiftRightAndInsert(Vector128<ulong> left, Vector128<ulong> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int64_t vsrid_n_s64(int64_t a, int64_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.64 Dd, Dm, #n
+        ///   A64: SRI Dd, Dn, #n
+        /// </summary>
+        public static Vector64<long> ShiftRightLogicalAndInsertScalar(Vector64<long> left, Vector64<long> right, byte shift) => ShiftRightLogicalAndInsertScalar(left, right, shift);
+
+        /// <summary>
+        /// uint64_t vsrid_n_u64(uint64_t a, uint64_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.64 Dd, Dm, #n
+        ///   A64: SRI Dd, Dn, #n
+        /// </summary>
+        public static Vector64<ulong> ShiftRightLogicalAndInsertScalar(Vector64<ulong> left, Vector64<ulong> right, byte shift) => ShiftRightLogicalAndInsertScalar(left, right, shift);
+
+        /// <summary>
         /// int16x4_t vshl_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VSHL.S16 Dd, Dn, Dm
         ///   A64: SSHL Vd.4H, Vn.4H, Vm.4H

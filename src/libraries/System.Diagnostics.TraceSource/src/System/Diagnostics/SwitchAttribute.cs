@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace System.Diagnostics
 {
@@ -12,8 +12,8 @@ namespace System.Diagnostics
                     AttributeTargets.Event | AttributeTargets.Method | AttributeTargets.Property)]
     public sealed class SwitchAttribute : Attribute
     {
-        private Type _type = null!; // Initialized using property
-        private string _name = null!;
+        private Type _type;
+        private string _name;
 
         public SwitchAttribute(string switchName, Type switchType)
         {
@@ -24,6 +24,7 @@ namespace System.Diagnostics
         public string SwitchName
         {
             get { return _name; }
+            [MemberNotNull(nameof(_name))]
             set
             {
                 if (value == null)
@@ -38,6 +39,7 @@ namespace System.Diagnostics
         public Type SwitchType
         {
             get { return _type; }
+            [MemberNotNull(nameof(_type))]
             set
             {
                 if (value == null)

@@ -26,6 +26,8 @@
 #include <mach-o/dyld.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
+#elif defined(__sun)
+#include <sys/utsname.h>
 #endif
 
 #if defined(TARGET_LINUX)
@@ -583,20 +585,85 @@ pal::string_t pal::get_current_os_rid_platform()
 pal::string_t pal::get_current_os_rid_platform()
 {
     pal::string_t ridOS;
-
     char str[256];
-
     size_t size = sizeof(str);
     int ret = sysctlbyname("kern.osrelease", str, &size, NULL, 0);
+
     if (ret == 0)
     {
-        char *pos = strchr(str,'.');
+        char *pos = strchr(str, '.');
         if (pos)
         {
-            *pos = '\0';
+            ridOS.append(_X("freebsd."))
+                 .append(str, pos - str);
         }
-        ridOS.append(_X("freebsd."));
-        ridOS.append(str);
+    }
+
+    return ridOS;
+}
+#elif defined(TARGET_ILLUMOS)
+pal::string_t pal::get_current_os_rid_platform()
+{
+    // Code:
+    //   struct utsname u;
+    //   if (uname(&u) != -1)
+    //       printf("sysname: %s, release: %s, version: %s, machine: %s\n", u.sysname, u.release, u.version, u.machine);
+    //
+    // Output examples:
+    //   on OmniOS
+    //       sysname: SunOS, release: 5.11, version: omnios-r151018-95eaa7e, machine: i86pc
+    //   on OpenIndiana Hipster:
+    //       sysname: SunOS, release: 5.11, version: illumos-63878f749f, machine: i86pc
+    //   on SmartOS:
+    //       sysname: SunOS, release: 5.11, version: joyent_20200408T231825Z, machine: i86pc
+
+    pal::string_t ridOS;
+    struct utsname utsname_obj;
+    if (uname(&utsname_obj) < 0)
+    {
+        return ridOS;
+    }
+
+    if (strncmp(utsname_obj.version, "omnios", strlen("omnios")) == 0)
+    {
+        ridOS.append(_X("omnios."))
+             .append(utsname_obj.version, strlen("omnios-r"), 2); // e.g. omnios.15
+    }
+    else if (strncmp(utsname_obj.version, "illumos-", strlen("illumos-")) == 0)
+    {
+        ridOS.append(_X("openindiana")); // version-less
+    }
+    else if (strncmp(utsname_obj.version, "joyent_", strlen("joyent_")) == 0)
+    {
+        ridOS.append(_X("smartos."))
+             .append(utsname_obj.version, strlen("joyent_"), 4); // e.g. smartos.2020
+    }
+
+    return ridOS;
+}
+#elif defined(__sun)
+pal::string_t pal::get_current_os_rid_platform()
+{
+    // Code:
+    //   struct utsname u;
+    //   if (uname(&u) != -1)
+    //       printf("sysname: %s, release: %s, version: %s, machine: %s\n", u.sysname, u.release, u.version, u.machine);
+    //
+    // Output example on Solaris 11:
+    //       sysname: SunOS, release: 5.11, version: 11.3, machine: i86pc
+
+    pal::string_t ridOS;
+    struct utsname utsname_obj;
+    if (uname(&utsname_obj) < 0)
+    {
+        return ridOS;
+    }
+
+    char *pos = strchr(utsname_obj.version, '.');
+    if (pos)
+    {
+        ridOS.append(_X("solaris."))
+             .append(utsname_obj.version, pos - utsname_obj.version); // e.g. solaris.11
     }
 
     return ridOS;

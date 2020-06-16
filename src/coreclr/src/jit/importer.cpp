@@ -804,6 +804,7 @@ void Compiler::impAssignTempGen(unsigned             tmpNum,
         assert(tiVerificationNeeded || varType == TYP_UNDEF || varTypeIsStruct(varType));
         lvaSetStruct(tmpNum, structType, false);
 
+        varType = lvaTable[tmpNum].lvType;
         // Now, set the type of the struct value. Note that lvaSetStruct may modify the type
         // of the lclVar to a specialized type (e.g. TYP_SIMD), based on the handle (structType)
         // that has been passed in for the value being assigned to the temp, in which case we
@@ -812,9 +813,12 @@ void Compiler::impAssignTempGen(unsigned             tmpNum,
         // type, this would not be necessary - but that requires additional JIT/EE interface
         // calls that may not actually be required - e.g. if we only access a field of a struct.
 
-        val->gtType = lvaTable[tmpNum].lvType;
+        if (compDoOldStructRetyping())
+        {
+            val->gtType = varType;
+        }
 
-        GenTree* dst = gtNewLclvNode(tmpNum, val->gtType);
+        GenTree* dst = gtNewLclvNode(tmpNum, varType);
         asg          = impAssignStruct(dst, val, structType, curLevel, pAfterStmt, ilOffset, block);
     }
     else
@@ -1224,7 +1228,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                     lcl->gtFlags |= GTF_DONT_CSE;
                     varDsc->lvIsMultiRegRet = true;
                 }
-                else if (lcl->gtType != src->gtType)
+                else if ((lcl->gtType != src->gtType) && compDoOldStructRetyping())
                 {
                     // We change this to a GT_LCL_FLD (from a GT_ADDR of a GT_LCL_VAR)
                     lcl->ChangeOper(GT_LCL_FLD);
@@ -1434,9 +1438,22 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             dest = gtNewOperNode(GT_IND, asgType, destAddr);
         }
     }
-    else
+    else if (compDoOldStructRetyping())
     {
         dest->gtType = asgType;
+    }
+    if (dest->OperIs(GT_LCL_VAR) &&
+        (src->IsMultiRegNode() ||
+         (src->OperIs(GT_RET_EXPR) && src->AsRetExpr()->gtInlineCandidate->AsCall()->HasMultiRegRetVal())))
+    {
+        if (lvaEnregMultiRegVars && varTypeIsStruct(dest))
+        {
+            dest->AsLclVar()->SetMultiReg();
+        }
+        if (src->OperIs(GT_CALL))
+        {
+            lvaGetDesc(dest->AsLclVar())->lvIsMultiRegRet = true;
+        }
     }
 
     dest->gtFlags |= destFlags;
@@ -8011,7 +8028,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     CORINFO_CLASS_HANDLE actualMethodRetTypeSigClass;
     actualMethodRetTypeSigClass = sig->retTypeSigClass;
-    if (varTypeIsStruct(callRetTyp))
+    if (varTypeIsStruct(callRetTyp) && compDoOldStructRetyping())
     {
         callRetTyp   = impNormStructType(actualMethodRetTypeSigClass);
         call->gtType = callRetTyp;
@@ -13886,7 +13903,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
                         {
                             // Append a tree to zero-out the temp
-                            newObjThisPtr = gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet());
+                            newObjThisPtr = gtNewLclvNode(lclNum, lclDsc->TypeGet());
 
                             newObjThisPtr = gtNewBlkOpNode(newObjThisPtr,    // Dest
                                                            gtNewIconNode(0), // Value
@@ -16656,7 +16673,14 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     impAssignTempGen(lvaInlineeReturnSpillTemp, op2, se.seTypeInfo.GetClassHandle(),
                                      (unsigned)CHECK_SPILL_ALL);
 
-                    GenTree* tmpOp2 = gtNewLclvNode(lvaInlineeReturnSpillTemp, op2->TypeGet());
+                    var_types lclRetType = op2->TypeGet();
+                    if (!compDoOldStructRetyping())
+                    {
+                        LclVarDsc* varDsc = lvaGetDesc(lvaInlineeReturnSpillTemp);
+                        lclRetType        = varDsc->lvType;
+                    }
+
+                    GenTree* tmpOp2 = gtNewLclvNode(lvaInlineeReturnSpillTemp, lclRetType);
 
                     if (compDoOldStructRetyping())
                     {
@@ -18832,10 +18856,8 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 //   properties are used later by impInlineFetchArg to determine how best to
 //   pass the argument into the inlinee.
 
-void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
-                                      GenTree*      curArgVal,
-                                      unsigned      argNum,
-                                      InlineResult* inlineResult)
+void Compiler::impInlineRecordArgInfo(
+    InlineInfo* pInlineInfo, GenTree* curArgVal, unsigned argNum, unsigned __int64 bbFlags, InlineResult* inlineResult)
 {
     InlArgInfo* inlCurArgInfo = &pInlineInfo->inlArgInfo[argNum];
 
@@ -18846,6 +18868,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     }
 
     inlCurArgInfo->argNode = curArgVal;
+    inlCurArgInfo->bbFlags = bbFlags;
 
     GenTree* lclVarTree;
 
@@ -19002,9 +19025,10 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
     if (thisArg)
     {
-        inlArgInfo[0].argIsThis = true;
-        GenTree* actualThisArg  = thisArg->GetNode()->gtRetExprVal();
-        impInlineRecordArgInfo(pInlineInfo, actualThisArg, argCnt, inlineResult);
+        inlArgInfo[0].argIsThis        = true;
+        unsigned __int64 bbFlags       = 0;
+        GenTree*         actualThisArg = thisArg->GetNode()->gtRetExprVal(&bbFlags);
+        impInlineRecordArgInfo(pInlineInfo, actualThisArg, argCnt, bbFlags, inlineResult);
 
         if (inlineResult->IsFailure())
         {
@@ -19039,8 +19063,9 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             continue;
         }
 
-        GenTree* actualArg = use.GetNode()->gtRetExprVal();
-        impInlineRecordArgInfo(pInlineInfo, actualArg, argCnt, inlineResult);
+        unsigned __int64 bbFlags   = 0;
+        GenTree*         actualArg = use.GetNode()->gtRetExprVal(&bbFlags);
+        impInlineRecordArgInfo(pInlineInfo, actualArg, argCnt, bbFlags, inlineResult);
 
         if (inlineResult->IsFailure())
         {
@@ -20271,7 +20296,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     if ((objClass == nullptr) || !isExact)
     {
         // Walk back through any return expression placeholders
-        actualThisObj = thisObj->gtRetExprVal();
+        unsigned __int64 bbFlags = 0;
+        actualThisObj            = thisObj->gtRetExprVal(&bbFlags);
 
         // See if we landed on a call to a special intrinsic method
         if (actualThisObj->IsCall())

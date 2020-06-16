@@ -17,7 +17,6 @@ namespace System.Runtime.InteropServices.JavaScript
         public Uint8ClampedArray(int length) : base(length)
         { }
 
-
         public Uint8ClampedArray(ArrayBuffer buffer) : base(buffer)
         { }
 
@@ -36,7 +35,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public Uint8ClampedArray(SharedArrayBuffer buffer, int byteOffset, int length) : base(buffer, byteOffset, length)
         { }
 
-        internal Uint8ClampedArray(IntPtr js_handle) : base(js_handle)
+        internal Uint8ClampedArray(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
         { }
 
         /// <summary>

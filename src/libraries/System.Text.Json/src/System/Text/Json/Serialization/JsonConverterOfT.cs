@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization
 {
@@ -219,7 +220,7 @@ namespace System.Text.Json.Serialization
                     VerifyRead(
                         state.Current.OriginalTokenType,
                         state.Current.OriginalDepth,
-                        bytesConsumed : 0,
+                        bytesConsumed: 0,
                         isValueConverter: false,
                         ref reader);
 
@@ -228,6 +229,13 @@ namespace System.Text.Json.Serialization
             }
 
             state.Pop(success);
+            return success;
+        }
+
+        internal override sealed bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
+        {
+            bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T typedValue);
+            value = typedValue;
             return success;
         }
 

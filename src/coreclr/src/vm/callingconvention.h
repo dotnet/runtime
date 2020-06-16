@@ -50,21 +50,21 @@ struct ArgLocDesc
 #endif // UNIX_AMD64_ABI
 
 #ifdef FEATURE_HFA
-    static unsigned getHFAFieldSize(CorElementType  hfaType)
+    static unsigned getHFAFieldSize(CorInfoHFAElemType  hfaType)
     {
         switch (hfaType)
         {
-        case ELEMENT_TYPE_R4: return 4;
-        case ELEMENT_TYPE_R8: return 8;
-            // We overload VALUETYPE for 16-byte vectors.
-        case ELEMENT_TYPE_VALUETYPE: return 16;
+        case CORINFO_HFA_ELEM_FLOAT: return 4;
+        case CORINFO_HFA_ELEM_DOUBLE: return 8;
+        case CORINFO_HFA_ELEM_VECTOR64: return 8;
+        case CORINFO_HFA_ELEM_VECTOR128: return 16;
         default: _ASSERTE(!"Invalid HFA Type"); return 0;
         }
     }
 #endif
 #if defined(TARGET_ARM64)
     unsigned m_hfaFieldSize;      // Size of HFA field in bytes.
-    void setHFAFieldSize(CorElementType  hfaType)
+    void setHFAFieldSize(CorInfoHFAElemType  hfaType)
     {
         m_hfaFieldSize = getHFAFieldSize(hfaType);
     }
@@ -624,7 +624,7 @@ public:
 
             if (!m_argTypeHandle.IsNull() && m_argTypeHandle.IsHFA())
             {
-                CorElementType type = m_argTypeHandle.GetHFAType();
+                CorInfoHFAElemType type = m_argTypeHandle.GetHFAType();
                 pLoc->setHFAFieldSize(type);
                 pLoc->m_cFloatReg = GetArgSize()/pLoc->m_hfaFieldSize;
 
@@ -1350,7 +1350,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         // that are passed in FP argument registers if possible.
         if (thValueType.IsHFA())
         {
-            CorElementType type = thValueType.GetHFAType();
+            CorInfoHFAElemType type = thValueType.GetHFAType();
 
             m_argLocDescForStructInRegs.Init();
             m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
@@ -1528,7 +1528,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
 #ifdef FEATURE_HFA
             if (thValueType.IsHFA() && !this->IsVarArg())
             {
-                CorElementType hfaType = thValueType.GetHFAType();
+                CorInfoHFAElemType hfaType = thValueType.GetHFAType();
 
                 int hfaFieldSize = ArgLocDesc::getHFAFieldSize(hfaType);
                 flags |= ((4 * hfaFieldSize) << RETURN_FP_SIZE_SHIFT);

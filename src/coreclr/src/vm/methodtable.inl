@@ -19,7 +19,7 @@
 #include "threadstatics.h"
 
 //==========================================================================================
-inline PTR_EEClass MethodTable::GetClass_NoLogging()
+FORCEINLINE PTR_EEClass MethodTable::GetClass_NoLogging()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 

@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Internal.Cryptography
 {
@@ -17,26 +18,26 @@ namespace Internal.Cryptography
     //
     internal sealed class HMACCommon
     {
-        public HMACCommon(string hashAlgorithmId, byte[] key, int blockSize) : this(hashAlgorithmId, blockSize)
+        public HMACCommon(string hashAlgorithmId, byte[] key, int blockSize) :
+            this(hashAlgorithmId, (ReadOnlySpan<byte>)key, blockSize)
         {
-            ChangeKey(key);
+            // If the key is smaller than the block size, the delegated ctor won't have initialized ActualKey,
+            // so set it here as would ChangeKey.
+            ActualKey ??= key;
         }
 
-        internal HMACCommon(string hashAlgorithmId, ReadOnlySpan<byte> key, int blockSize) : this(hashAlgorithmId, blockSize)
-        {
-            // note: will not set ActualKey if key size is smaller or equal than blockSize
-            //       this is to avoid extra allocation. ActualKey can still be used if key is generated.
-            //       Otherwise the ReadOnlySpan overload would actually be slower than byte array overload.
-            ChangeKey(key);
-        }
-
-        private HMACCommon(string hashAlgorithmId, int blockSize)
+        internal HMACCommon(string hashAlgorithmId, ReadOnlySpan<byte> key, int blockSize)
         {
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithmId));
             Debug.Assert(blockSize > 0 || blockSize == -1);
 
             _hashAlgorithmId = hashAlgorithmId;
             _blockSize = blockSize;
+
+            // note: will not set ActualKey if key size is smaller or equal than blockSize
+            //       this is to avoid extra allocation. ActualKey can still be used if key is generated.
+            //       Otherwise the ReadOnlySpan overload would actually be slower than byte array overload.
+            ActualKey = ChangeKeyImpl(key);
         }
 
         public int HashSizeInBits => _hMacProvider.HashSizeInBytes * 8;
@@ -46,12 +47,7 @@ namespace Internal.Cryptography
             ActualKey = ChangeKeyImpl(key) ?? key;
         }
 
-        internal void ChangeKey(ReadOnlySpan<byte> key)
-        {
-            // note: does not set key when it's smaller than blockSize
-            ActualKey = ChangeKeyImpl(key);
-        }
-
+        [MemberNotNull(nameof(_hMacProvider))]
         private byte[]? ChangeKeyImpl(ReadOnlySpan<byte> key)
         {
             byte[]? modifiedKey = null;
@@ -69,7 +65,7 @@ namespace Internal.Cryptography
                 modifiedKey = _lazyHashProvider.FinalizeHashAndReset();
             }
 
-            HashProvider oldHashProvider = _hMacProvider;
+            HashProvider? oldHashProvider = _hMacProvider;
             _hMacProvider = null!;
             oldHashProvider?.Dispose(true);
             _hMacProvider = HashProviderDispenser.CreateMacProvider(_hashAlgorithmId, key);
@@ -105,7 +101,7 @@ namespace Internal.Cryptography
         }
 
         private readonly string _hashAlgorithmId;
-        private HashProvider _hMacProvider = null!; // Initialized in helper
+        private HashProvider _hMacProvider;
         private volatile HashProvider? _lazyHashProvider;
         private readonly int _blockSize;
     }

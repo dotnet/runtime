@@ -108,7 +108,6 @@ if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedA
 
 if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipStressDependencies=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "buildtesthostonly"     (set __SkipNative=1&set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildtestwrappersonly" (set __SkipNative=1&set __SkipManaged=1&set __BuildTestWrappersOnly=1&set __SkipGenerateLayout=1&set __SkipStressDependencies=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "crossgenframeworkonly" (set __SkipRestorePackages=1&set __SkipStressDependencies=1&set __SkipNative=1&set __SkipManaged=1&set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
@@ -557,15 +556,11 @@ if defined __DoCrossgen (
 
 if defined __DoCrossgen2 (
     set __CrossgenArg="/p:Crossgen2=true"
-    if "%__BuildArch%" == "x64" (
-        echo %__MsgPrefix%Running crossgen2 on framework assemblies in CORE_ROOT: %CORE_ROOT%
-        call :PrecompileFX
-        if ERRORLEVEL 1 (
-            echo %__ErrMsgPrefix%%__MsgPrefix%Error: crossgen2 precompilation of framework assemblies failed
-            exit /b 1
-        )
-    ) else (
-        echo "%__MsgPrefix%Crossgen2 only supported on x64, for now"
+    echo %__MsgPrefix%Running crossgen2 on framework assemblies in CORE_ROOT: %CORE_ROOT%
+    call :PrecompileFX
+    if ERRORLEVEL 1 (
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: crossgen2 precompilation of framework assemblies failed
+        exit /b 1
     )
 )
 
@@ -595,7 +590,6 @@ echo Build architecture: one of x64, x86, arm, arm64 ^(default: x64^).
 echo Build type: one of Debug, Checked, Release ^(default: Debug^).
 echo skipmanaged: skip the managed tests build
 echo skipnative: skip the native tests build
-echo buildtesthostonly: build the CoreFX testhost only
 echo skiprestorepackages: skip package restore
 echo runtimeid ^<ID^>: Builds a test overlay for the specified OS ^(Only supported when building against packages^). Supported IDs are:
 echo     alpine.3.4.3-x64: Builds overlay for Alpine 3.4.3
@@ -613,7 +607,7 @@ echo     win-x64: Builds overlay for portable Windows
 echo     win7-x64: Builds overlay for Windows 7
 echo crossgen: Precompiles the framework managed assemblies
 echo copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.
-echo skipgeneratelayout: Do not generate the Core_Root layout or the CoreFX testhost.
+echo skipgeneratelayout: Do not generate the Core_Root layout
 echo generatelayoutonly: Generate the Core_Root layout without building managed or native test components
 echo targetsNonWindows:
 echo Exclude- Optional parameter - specify location of default exclusion file ^(defaults to tests\issues.targets if not specified^)
@@ -642,10 +636,19 @@ set __FailedAssemblies=
 set __CompositeOutputDir=%CORE_ROOT%\composite.out
 set __CompositeResponseFile=%__CompositeOutputDir%\framework-r2r.dll.rsp
 
+set __CrossgenDir=%__BinDir%
+if /i "%__BuildArch%" == "arm" (set __CrossgenDir=!__CrossgenDir!\x86)
+if /i "%__BuildArch%" == "arm64" (set __CrossgenDir=!__CrossgenDir!\x64)
+
+set __CrossgenExe="%__CrossgenDir%\crossgen.exe"
+set __Crossgen2Dll="%__RepoRootDir%\dotnet.cmd" "%__CrossgenDir%\crossgen2\crossgen2.dll"
+
 if defined __CompositeBuildMode (
     mkdir !__CompositeOutputDir!
+    del /Q !__CompositeResponseFile!
     echo --composite>>!__CompositeResponseFile!
     echo -O>>!__CompositeResponseFile!
+    echo --targetarch:%__BuildArch%>>!__CompositeResponseFile!
     echo --out^:%__CompositeOutputDir%\framework-r2r.dll>>!__CompositeResponseFile!
 )
 
@@ -669,8 +672,7 @@ if defined __CompositeBuildMode (
 )
 
 if defined __CompositeBuildMode (
-    set __CompositeCommandLine="%__RepoRootDir%\dotnet.cmd"
-    set __CompositeCommandLine=!__CompositeCommandLine! "%CORE_ROOT%\crossgen2\crossgen2.dll"
+    set __CompositeCommandLine=%__Crossgen2Dll%
     set __CompositeCommandLine=!__CompositeCommandLine! "@%__CompositeResponseFile%"
     echo Building composite R2R framework^: !__CompositeCommandLine!
     call !__CompositeCommandLine!
@@ -691,15 +693,6 @@ REM Compile the managed assemblies in Core_ROOT before running the tests
 set AssemblyPath=%1
 set AssemblyName=%2
 
-set __CrossgenExe="%__BinDir%\crossgen.exe"
-if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%__BinDir%\x86\crossgen.exe" )
-if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%__BinDir%\x64\crossgen.exe" )
-set __CrossgenExe=%__CrossgenExe%
-
-if defined __DoCrossgen2 (
-    set __CrossgenExe="%__RepoRootDir%\dotnet.cmd" "%CORE_ROOT%\crossgen2\crossgen2.dll"
-)
-
 REM Intentionally avoid using the .dll extension to prevent
 REM subsequent compilations from picking it up as a reference
 set __CrossgenOutputFile="%CORE_ROOT%\temp.ni._dll"
@@ -710,7 +703,7 @@ if defined __DoCrossgen (
     echo !__CrossgenCmd!
     !__CrossgenCmd!
 ) else (
-    set __CrossgenCmd=!__CrossgenExe! -r:"!CORE_ROOT!\System.*.dll" -r:"!CORE_ROOT!\Microsoft.*.dll" -r:"!CORE_ROOT!\mscorlib.dll" -r:"!CORE_ROOT!\netstandard.dll" -O --inputbubble --out:!__CrossgenOutputFile! !AssemblyPath!
+    set __CrossgenCmd=!__Crossgen2Dll! -r:"!CORE_ROOT!\System.*.dll" -r:"!CORE_ROOT!\Microsoft.*.dll" -r:"!CORE_ROOT!\mscorlib.dll" -r:"!CORE_ROOT!\netstandard.dll" -O --inputbubble --out:!__CrossgenOutputFile! !AssemblyPath! --targetarch %__BuildArch%
     echo !__CrossgenCmd!
     call !__CrossgenCmd!
 )

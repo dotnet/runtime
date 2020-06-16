@@ -218,6 +218,8 @@ void HWIntrinsicInfo::lookupImmBounds(
                 break;
 
             case NI_AdvSimd_ShiftLeftLogical:
+            case NI_AdvSimd_ShiftLeftLogicalAndInsert:
+            case NI_AdvSimd_ShiftLeftLogicalAndInsertScalar:
             case NI_AdvSimd_ShiftLeftLogicalSaturate:
             case NI_AdvSimd_ShiftLeftLogicalSaturateScalar:
             case NI_AdvSimd_ShiftLeftLogicalSaturateUnsigned:
@@ -231,6 +233,7 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = BITS_PER_BYTE * genTypeSize(baseType) - 1;
                 break;
 
+            case NI_AdvSimd_ShiftRightAndInsert:
             case NI_AdvSimd_ShiftRightArithmetic:
             case NI_AdvSimd_ShiftRightArithmeticAdd:
             case NI_AdvSimd_ShiftRightArithmeticAddScalar:
@@ -250,6 +253,7 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_AdvSimd_ShiftRightLogical:
             case NI_AdvSimd_ShiftRightLogicalAdd:
             case NI_AdvSimd_ShiftRightLogicalAddScalar:
+            case NI_AdvSimd_ShiftRightLogicalAndInsertScalar:
             case NI_AdvSimd_ShiftRightLogicalNarrowingLower:
             case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateLower:
             case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateUpper:

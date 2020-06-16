@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Xml;                   //Required for Content Type File manipulation
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Packaging
 {
@@ -72,7 +73,7 @@ namespace System.IO.Packaging
         /// </summary>
         /// <param name="partUri"></param>
         /// <returns></returns>
-        protected override PackagePart GetPartCore(Uri partUri)
+        protected override PackagePart? GetPartCore(Uri partUri)
         {
             //Currently the design has two aspects which makes it possible to return
             //a null from this method -
@@ -108,7 +109,7 @@ namespace System.IO.Packaging
             partUri = PackUriHelper.ValidatePartUri(partUri);
 
             string partZipName = GetZipItemNameFromOpcName(PackUriHelper.GetStringForPartUri(partUri));
-            ZipArchiveEntry zipArchiveEntry = _zipArchive.GetEntry(partZipName);
+            ZipArchiveEntry? zipArchiveEntry = _zipArchive.GetEntry(partZipName);
             if (zipArchiveEntry != null)
             {
                 // Case of an atomic part.
@@ -163,10 +164,9 @@ namespace System.IO.Packaging
                 if (IsZipItemValidOpcPartOrPiece(zipArchiveEntry.FullName))
                 {
                     Uri partUri = new Uri(GetOpcNameFromZipItemName(zipArchiveEntry.FullName), UriKind.Relative);
-                    PackUriHelper.ValidatedPartUri validatedPartUri;
-                    if (PackUriHelper.TryValidatePartUri(partUri, out validatedPartUri))
+                    if (PackUriHelper.TryValidatePartUri(partUri, out PackUriHelper.ValidatedPartUri? validatedPartUri))
                     {
-                        ContentType contentType = _contentTypeHelper.GetContentType(validatedPartUri);
+                        ContentType? contentType = _contentTypeHelper.GetContentType(validatedPartUri);
                         if (contentType != null)
                         {
                             // In case there was some redundancy between pieces and/or the atomic
@@ -234,7 +234,7 @@ namespace System.IO.Packaging
                     else
                     {
                     }
-                    _containerStream = null;
+                    _containerStream = null!;
                 }
             }
             finally
@@ -260,8 +260,8 @@ namespace System.IO.Packaging
         internal ZipPackage(string path, FileMode packageFileMode, FileAccess packageFileAccess, FileShare share)
             : base(packageFileAccess)
         {
-            ZipArchive zipArchive = null;
-            ContentTypeHelper contentTypeHelper = null;
+            ZipArchive? zipArchive = null;
+            ContentTypeHelper? contentTypeHelper = null;
             _packageFileMode = packageFileMode;
             _packageFileAccess = packageFileAccess;
 
@@ -304,8 +304,8 @@ namespace System.IO.Packaging
         internal ZipPackage(Stream s, FileMode packageFileMode, FileAccess packageFileAccess)
             : base(packageFileAccess)
         {
-            ZipArchive zipArchive = null;
-            ContentTypeHelper contentTypeHelper = null;
+            ZipArchive? zipArchive = null;
+            ContentTypeHelper? contentTypeHelper = null;
             _packageFileMode = packageFileMode;
             _packageFileAccess = packageFileAccess;
 
@@ -516,7 +516,7 @@ namespace System.IO.Packaging
         /// </summary>
         private sealed class ExtensionEqualityComparer : IEqualityComparer<string>
         {
-            bool IEqualityComparer<string>.Equals(string extensionA, string extensionB)
+            bool IEqualityComparer<string>.Equals(string? extensionA, string? extensionB)
             {
                 Debug.Assert(extensionA != null, "extension should not be null");
                 Debug.Assert(extensionB != null, "extension should not be null");
@@ -626,7 +626,7 @@ namespace System.IO.Packaging
 
 
             //Returns the content type for the part, if present, else returns null.
-            internal ContentType GetContentType(PackUriHelper.ValidatedPartUri partUri)
+            internal ContentType? GetContentType(PackUriHelper.ValidatedPartUri partUri)
             {
                 //Step 1: Check if there is an override entry present corresponding to the
                 //partUri provided. Override takes precedence over the default entries
@@ -672,7 +672,7 @@ namespace System.IO.Packaging
                     {
                         // delete and re-create entry for content part.  When writing this, the stream will not truncate the content
                         // if the XML is shorter than the existing content part.
-                        var contentTypefullName = _contentTypeZipArchiveEntry.FullName;
+                        var contentTypefullName = _contentTypeZipArchiveEntry!.FullName;
                         var thisArchive = _contentTypeZipArchiveEntry.Archive;
                         _zipStreamManager.Close(_contentTypeZipArchiveEntry);
                         _contentTypeZipArchiveEntry.Delete();
@@ -716,6 +716,7 @@ namespace System.IO.Packaging
                 }
             }
 
+            [MemberNotNull(nameof(_overrideDictionary))]
             private void EnsureOverrideDictionary()
             {
                 // The part Uris are stored in the Override Dictionary in their original form , but they are compared
@@ -728,7 +729,7 @@ namespace System.IO.Packaging
             {
                 // Find the content type stream, allowing for interleaving. Naming collisions
                 // (as between an atomic and an interleaved part) will result in an exception being thrown.
-                Stream s = OpenContentTypeStream(zipFiles);
+                Stream? s = OpenContentTypeStream(zipFiles);
 
                 // Allow non-existent content type stream.
                 if (s == null)
@@ -816,7 +817,7 @@ namespace System.IO.Packaging
             /// <remarks>
             /// The input array is lexicographically sorted
             /// </remarks>
-            private Stream OpenContentTypeStream(System.Collections.ObjectModel.ReadOnlyCollection<ZipArchiveEntry> zipFiles)
+            private Stream? OpenContentTypeStream(System.Collections.ObjectModel.ReadOnlyCollection<ZipArchiveEntry> zipFiles)
             {
                 foreach (ZipArchiveEntry zipFileInfo in zipFiles)
                 {
@@ -977,13 +978,13 @@ namespace System.IO.Packaging
                     throw new XmlException(SR.Format(SR.RequiredAttributeMissing, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 
-            private Dictionary<PackUriHelper.ValidatedPartUri, ContentType> _overrideDictionary;
+            private Dictionary<PackUriHelper.ValidatedPartUri, ContentType>? _overrideDictionary;
             private readonly Dictionary<string, ContentType> _defaultDictionary;
             private readonly ZipArchive _zipArchive;
             private readonly FileMode _packageFileMode;
             private readonly FileAccess _packageFileAccess;
             private readonly ZipStreamManager _zipStreamManager;
-            private ZipArchiveEntry _contentTypeZipArchiveEntry;
+            private ZipArchiveEntry? _contentTypeZipArchiveEntry;
             private bool _contentTypeStreamExists;
             private bool _dirty;
             private CompressionLevel _cachedCompressionLevel;

@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -30,7 +32,7 @@ namespace Microsoft.Extensions.Internal
     static class ActivatorUtilities
     {
         private static readonly MethodInfo GetServiceInfo =
-            GetMethodInfo<Func<IServiceProvider, Type, Type, bool, object>>((sp, t, r, c) => GetService(sp, t, r, c));
+            GetMethodInfo<Func<IServiceProvider, Type, Type, bool, object?>>((sp, t, r, c) => GetService(sp, t, r, c));
 
         /// <summary>
         /// Instantiate a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
@@ -105,7 +107,7 @@ namespace Microsoft.Extensions.Internal
         /// </returns>
         public static ObjectFactory CreateFactory(Type instanceType, Type[] argumentTypes)
         {
-            FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
+            FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo? constructor, out int?[]? parameterMap);
 
             var provider = Expression.Parameter(typeof(IServiceProvider), "provider");
             var argumentArray = Expression.Parameter(typeof(object[]), "argumentArray");
@@ -159,7 +161,7 @@ namespace Microsoft.Extensions.Internal
             return mc.Method;
         }
 
-        private static object GetService(IServiceProvider sp, Type type, Type requiredBy, bool isDefaultParameterRequired)
+        private static object? GetService(IServiceProvider sp, Type type, Type requiredBy, bool isDefaultParameterRequired)
         {
             var service = sp.GetService(type);
             if (service == null && !isDefaultParameterRequired)
@@ -216,25 +218,28 @@ namespace Microsoft.Extensions.Internal
             Type instanceType,
             Type[] argumentTypes,
             out ConstructorInfo matchingConstructor,
-            out int?[] parameterMap)
+            out int?[] matchingParameterMap)
         {
-            matchingConstructor = null;
-            parameterMap = null;
+            ConstructorInfo? constructorInfo = null;
+            int?[]? parameterMap = null;
 
-            if (!TryFindPreferredConstructor(instanceType, argumentTypes, ref matchingConstructor, ref parameterMap) &&
-                !TryFindMatchingConstructor(instanceType, argumentTypes, ref matchingConstructor, ref parameterMap))
+            if (!TryFindPreferredConstructor(instanceType, argumentTypes, ref constructorInfo, ref parameterMap) &&
+                !TryFindMatchingConstructor(instanceType, argumentTypes, ref constructorInfo, ref parameterMap))
             {
                 var message = $"A suitable constructor for type '{instanceType}' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor.";
                 throw new InvalidOperationException(message);
             }
+
+            matchingConstructor = constructorInfo;
+            matchingParameterMap = parameterMap;
         }
 
         // Tries to find constructor based on provided argument types
         private static bool TryFindMatchingConstructor(
             Type instanceType,
             Type[] argumentTypes,
-            ref ConstructorInfo matchingConstructor,
-            ref int?[] parameterMap)
+            [NotNullWhen(true)] ref ConstructorInfo? matchingConstructor,
+            [NotNullWhen(true)] ref int?[]? parameterMap)
         {
             foreach (var constructor in instanceType.GetTypeInfo().DeclaredConstructors)
             {
@@ -255,15 +260,21 @@ namespace Microsoft.Extensions.Internal
                 }
             }
 
-            return matchingConstructor != null;
+            if (matchingConstructor != null)
+            {
+                Debug.Assert(parameterMap != null);
+                return true;
+            }
+
+            return false;
         }
 
         // Tries to find constructor marked with ActivatorUtilitiesConstructorAttribute
         private static bool TryFindPreferredConstructor(
             Type instanceType,
             Type[] argumentTypes,
-            ref ConstructorInfo matchingConstructor,
-            ref int?[] parameterMap)
+            [NotNullWhen(true)] ref ConstructorInfo? matchingConstructor,
+            [NotNullWhen(true)] ref int?[]? parameterMap)
         {
             var seenPreferred = false;
             foreach (var constructor in instanceType.GetTypeInfo().DeclaredConstructors)
@@ -291,7 +302,13 @@ namespace Microsoft.Extensions.Internal
                 }
             }
 
-            return matchingConstructor != null;
+            if (matchingConstructor != null)
+            {
+                Debug.Assert(parameterMap != null);
+                return true;
+            }
+
+            return false;
         }
 
         // Creates an injective parameterMap from givenParameterTypes to assignable constructorParameters.
@@ -334,13 +351,13 @@ namespace Microsoft.Extensions.Internal
         {
             private readonly ConstructorInfo _constructor;
             private readonly ParameterInfo[] _parameters;
-            private readonly object[] _parameterValues;
+            private readonly object?[] _parameterValues;
 
             public ConstructorMatcher(ConstructorInfo constructor)
             {
                 _constructor = constructor;
                 _parameters = _constructor.GetParameters();
-                _parameterValues = new object[_parameters.Length];
+                _parameterValues = new object?[_parameters.Length];
             }
 
             public int Match(object[] givenParameters)

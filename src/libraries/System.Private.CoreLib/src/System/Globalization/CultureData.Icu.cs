@@ -234,14 +234,6 @@ namespace System.Globalization
             return result.Slice(0, resultPos).ToString();
         }
 
-        private static string? IcuLCIDToLocaleName(int culture)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseNls);
-
-            return IcuLocaleData.LCIDToLocaleName(culture);
-        }
-
         private static int IcuLocaleNameToLCID(string cultureName)
         {
             Debug.Assert(!GlobalizationMode.Invariant);

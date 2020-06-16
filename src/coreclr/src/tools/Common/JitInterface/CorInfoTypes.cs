@@ -748,6 +748,17 @@ namespace Internal.JitInterface
         CORINFO_HANDLETYPE_FIELD
     }
 
+    // Enum used for HFA type recognition.
+    // Supported across architectures, so that it can be used in altjits and cross-compilation.
+    public enum CorInfoHFAElemType
+    {
+        CORINFO_HFA_ELEM_NONE,
+        CORINFO_HFA_ELEM_FLOAT,
+        CORINFO_HFA_ELEM_DOUBLE,
+        CORINFO_HFA_ELEM_VECTOR64,
+        CORINFO_HFA_ELEM_VECTOR128,
+    }
+
     /* data to optimize delegate construction */
     public unsafe struct DelegateCtorArgs
     {

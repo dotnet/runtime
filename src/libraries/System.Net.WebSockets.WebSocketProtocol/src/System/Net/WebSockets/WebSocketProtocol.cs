@@ -12,7 +12,7 @@ namespace System.Net.WebSockets
         public static WebSocket CreateFromStream(
             Stream stream,
             bool isServer,
-            string subProtocol,
+            string? subProtocol,
             TimeSpan keepAliveInterval)
         {
             if (stream == null)

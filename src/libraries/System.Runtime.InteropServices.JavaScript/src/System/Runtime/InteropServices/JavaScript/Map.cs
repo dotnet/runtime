@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -25,7 +24,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Initializes a new instance of the Map class.
         /// </summary>
         /// <param name="jsHandle">Js handle.</param>
-        internal Map(IntPtr jsHandle) : base(jsHandle)
+        /// <param name="ownsHandle">Whether or not the handle is owned by the clr or not.</param>
+        internal Map(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
         { }
 
         /// <summary>

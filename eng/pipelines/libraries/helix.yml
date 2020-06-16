@@ -12,11 +12,11 @@ parameters:
   interpreter: ''
   condition: always()
   extraHelixArguments: ''
+  scenarios: ''
 
 steps:
   - script: ${{ parameters.msbuildScript }}
             $(Build.SourcesDirectory)/src/libraries/sendtohelix.proj
-            /t:test
             /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
             /p:TargetArchitecture=${{ parameters.archGroup }}
             /p:Configuration=${{ parameters.configuration }}
@@ -33,3 +33,4 @@ steps:
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
       HelixTargetQueues: ${{ parameters.helixQueues }} # Pass queues to MSBuild as env var to avoid need of escaping them
+      _Scenarios: ${{ join(',', parameters.scenarios) }} # Pass scenarios to MSBuild as env var to avoid need of escaping comma separated list

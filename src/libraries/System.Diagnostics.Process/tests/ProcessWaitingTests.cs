@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessWaitingTests : ProcessTestBase
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MultipleProcesses_StartAllKillAllWaitAll()
         {
             const int Iters = 10;
@@ -24,7 +24,7 @@ namespace System.Diagnostics.Tests
             foreach (Process p in processes) Assert.True(p.WaitForExit(WaitInMS));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task MultipleProcesses_StartAllKillAllWaitAllAsync()
         {
             const int Iters = 10;
@@ -42,7 +42,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MultipleProcesses_SerialStartKillWait()
         {
             const int Iters = 10;
@@ -55,7 +55,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task MultipleProcesses_SerialStartKillWaitAsync()
         {
             const int Iters = 10;
@@ -72,7 +72,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MultipleProcesses_ParallelStartKillWait()
         {
             const int Tasks = 4, ItersPerTask = 10;
@@ -89,7 +89,7 @@ namespace System.Diagnostics.Tests
             Task.WaitAll(Enumerable.Range(0, Tasks).Select(_ => Task.Run(work)).ToArray());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task MultipleProcesses_ParallelStartKillWaitAsync()
         {
             const int Tasks = 4, ItersPerTask = 10;
@@ -134,7 +134,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SingleProcess_TryWaitMultipleTimesBeforeCompleting()
         {
             Process p = CreateProcessLong();
@@ -154,7 +154,7 @@ namespace System.Diagnostics.Tests
             Assert.True(p.WaitForExit(0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task SingleProcess_TryWaitAsyncMultipleTimesBeforeCompleting()
         {
             Process p = CreateProcessLong();
@@ -208,7 +208,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(TaskStatus.RanToCompletion, task.Status);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task SingleProcess_WaitAfterExited(bool addHandlerBeforeStart)
@@ -234,7 +234,7 @@ namespace System.Diagnostics.Tests
             p.WaitForExit(); // wait for event handlers to complete
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task SingleProcess_WaitAsyncAfterExited(bool addHandlerBeforeStart)
@@ -264,7 +264,7 @@ namespace System.Diagnostics.Tests
             Assert.True(p.HasExited);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(127)]
@@ -281,7 +281,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SingleProcess_CopiesShareExitInformation()
         {
             Process p = CreateProcessLong();
@@ -299,7 +299,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task SingleProcess_CopiesShareExitAsyncInformation()
         {
             using Process p = CreateProcessLong();
@@ -333,7 +333,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void WaitForPeerProcess()
         {
             Process child1 = CreateProcessLong();
@@ -359,7 +359,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemoteExecutor.SuccessExitCode, child2.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task WaitAsyncForPeerProcess()
         {
             using Process child1 = CreateProcessLong();
@@ -397,7 +397,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemoteExecutor.SuccessExitCode, child2.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void WaitForSignal()
         {
             const string ExpectedSignal = "Signal";
@@ -443,7 +443,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemotelyInvokable.SuccessExitCode, p.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task WaitAsyncForSignal()
         {
             const string expectedSignal = "Signal";
@@ -492,7 +492,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemotelyInvokable.SuccessExitCode, p.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void WaitChain()
         {
             Process root = CreateProcess(() =>
@@ -519,7 +519,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemoteExecutor.SuccessExitCode, root.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task WaitAsyncChain()
         {
             Process root = CreateProcess(async () =>
@@ -565,7 +565,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemoteExecutor.SuccessExitCode, root.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void WaitForSelfTerminatingChild()
         {
             Process child = CreateProcessPortable(RemotelyInvokable.SelfTerminate);
@@ -574,7 +574,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(RemoteExecutor.SuccessExitCode, child.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task WaitAsyncForSelfTerminatingChild()
         {
             Process child = CreateProcessPortable(RemotelyInvokable.SelfTerminate);
@@ -587,7 +587,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(RemoteExecutor.SuccessExitCode, child.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task WaitAsyncForProcess()
         {
             Process p = CreateSleepProcess(WaitInMS);

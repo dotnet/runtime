@@ -848,7 +848,7 @@ public:
             CORINFO_ARG_LIST_HANDLE    args
             );
 
-    CorInfoType getHFAType (
+    CorInfoHFAElemType getHFAType (
             CORINFO_CLASS_HANDLE hClass
             );
 

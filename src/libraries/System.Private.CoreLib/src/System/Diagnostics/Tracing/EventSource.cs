@@ -337,6 +337,11 @@ namespace System.Diagnostics.Tracing
             return GetName(eventSourceType, EventManifestOptions.None);
         }
 
+#if !ES_BUILD_STANDALONE
+        private const DynamicallyAccessedMemberTypes ManifestMemberTypes = DynamicallyAccessedMemberTypes.PublicNestedTypes
+            | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods;
+#endif
+
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
         /// documented at in EventManifest Schema https://docs.microsoft.com/en-us/windows/desktop/WES/eventmanifestschema-schema.
@@ -347,7 +352,12 @@ namespace System.Diagnostics.Tracing
         /// <param name="assemblyPathToIncludeInManifest">The manifest XML fragment contains the string name of the DLL name in
         /// which it is embedded.  This parameter specifies what name will be used</param>
         /// <returns>The XML data string</returns>
-        public static string? GenerateManifest(Type eventSourceType, string? assemblyPathToIncludeInManifest)
+        public static string? GenerateManifest(
+#if !ES_BUILD_STANDALONE
+            [DynamicallyAccessedMembers(ManifestMemberTypes)]
+#endif
+            Type eventSourceType,
+            string? assemblyPathToIncludeInManifest)
         {
             return GenerateManifest(eventSourceType, assemblyPathToIncludeInManifest, EventManifestOptions.None);
         }
@@ -363,7 +373,13 @@ namespace System.Diagnostics.Tracing
         /// <param name="flags">The flags to customize manifest generation. If flags has bit OnlyIfNeededForRegistration specified
         /// this returns null when the eventSourceType does not require explicit registration</param>
         /// <returns>The XML data string or null</returns>
-        public static string? GenerateManifest(Type eventSourceType, string? assemblyPathToIncludeInManifest, EventManifestOptions flags)
+        public static string? GenerateManifest(
+#if !ES_BUILD_STANDALONE
+            [DynamicallyAccessedMembers(ManifestMemberTypes)]
+#endif
+            Type eventSourceType,
+            string? assemblyPathToIncludeInManifest,
+            EventManifestOptions flags)
         {
             if (eventSourceType == null)
                 throw new ArgumentNullException(nameof(eventSourceType));
@@ -2870,7 +2886,13 @@ namespace System.Diagnostics.Tracing
 
         // Helper to deal with the fact that the type we are reflecting over might be loaded in the ReflectionOnly context.
         // When that is the case, we have the build the custom assemblies on a member by hand.
-        internal static Attribute? GetCustomAttributeHelper(MemberInfo member, Type attributeType, EventManifestOptions flags = EventManifestOptions.None)
+        internal static Attribute? GetCustomAttributeHelper(
+            MemberInfo member,
+#if !ES_BUILD_STANDALONE
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties)]
+#endif
+            Type attributeType,
+            EventManifestOptions flags = EventManifestOptions.None)
         {
             // AllowEventSourceOverride is an option that allows either Microsoft.Diagnostics.Tracing or
             // System.Diagnostics.Tracing EventSource to be considered valid.  This should not mattter anywhere but in Microsoft.Diagnostics.Tracing (nuget package).
@@ -2906,11 +2928,9 @@ namespace System.Diagnostics.Tracing
 
                     if (attr != null)
                     {
-                        Type t = attr.GetType();
-
                         foreach (CustomAttributeNamedArgument namedArgument in data.NamedArguments)
                         {
-                            PropertyInfo p = t.GetProperty(namedArgument.MemberInfo.Name, BindingFlags.Public | BindingFlags.Instance)!;
+                            PropertyInfo p = attributeType.GetProperty(namedArgument.MemberInfo.Name, BindingFlags.Public | BindingFlags.Instance)!;
                             object value = namedArgument.TypedValue.Value!;
 
                             if (p.PropertyType.IsEnum)
@@ -2997,7 +3017,13 @@ namespace System.Diagnostics.Tracing
         // return the UTF8 bytes.  It also sets up the code:EventData structures needed to dispatch events
         // at run time.  'source' is the event source to place the descriptors.  If it is null,
         // then the descriptors are not creaed, and just the manifest is generated.
-        private static byte[]? CreateManifestAndDescriptors(Type eventSourceType, string? eventSourceDllName, EventSource? source,
+        private static byte[]? CreateManifestAndDescriptors(
+#if !ES_BUILD_STANDALONE
+            [DynamicallyAccessedMembers(ManifestMemberTypes)]
+#endif
+            Type eventSourceType,
+            string? eventSourceDllName,
+            EventSource? source,
             EventManifestOptions flags = EventManifestOptions.None)
         {
             ManifestBuilder? manifest = null;
