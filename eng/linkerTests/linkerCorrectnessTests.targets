@@ -1,18 +1,15 @@
 <Project>
   <PropertyGroup>
-    <LinkerTestDir>$(ArtifactsBinDir)linkerTests/</LinkerTestDir>
-    <LinkerTestProjectsDir>$(LinkerTestDir)projects/</LinkerTestProjectsDir>
-    <TestDotNetPath>$(DotNetRoot)dotnet</TestDotNetPath>
-    <ProjectTemplate>$(MSBuildThisFileDirectory)project.csproj.template</ProjectTemplate>
+    <LinkerTestDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'linkerTests'))</LinkerTestDir>
+    <LinkerTestProjectsDir>$([MSBuild]::NormalizeDirectory('$(LinkerTestDir)', 'projects'))</LinkerTestProjectsDir>
+    <TestDotNetPath>$([MSBuild]::NormalizePath('$(DotNetRoot)', 'dotnet'))</TestDotNetPath>
+    <ProjectTemplate>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', 'project.csproj.template'))</ProjectTemplate>
   </PropertyGroup>
 
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="$(MSBuildProjectDirectory)/*.cs" />
 
-    <TestSupportFiles Include="$(MSBuildThisFileDirectory)SupportFiles/Directory.Build.props">
-      <DestinationFolder>$(LinkerTestDir)</DestinationFolder>
-    </TestSupportFiles>
-    <TestSupportFiles Include="$(MSBuildThisFileDirectory)SupportFiles/Directory.Build.targets">
+    <TestSupportFiles Include="$(MSBuildThisFileDirectory)SupportFiles/Directory.Build.*">
       <DestinationFolder>$(LinkerTestDir)</DestinationFolder>
     </TestSupportFiles>
   </ItemGroup>
@@ -27,13 +24,14 @@
   <Target Name="GetTestConsoleApps">
     <ItemGroup>
       <TestConsoleAppSourceFiles>
-        <ProjectDir>$(LinkerTestProjectsDir)$(MSBuildProjectName)/%(Filename)/$(PackageRID)/</ProjectDir>
+        <ProjectDir>$([MSBuild]::NormalizeDirectory('$(LinkerTestProjectsDir)', '$(MSBuildProjectName)', '%(Filename)', '$(PackageRID)'))</ProjectDir>
         <TestRuntimeIdentifier>$(PackageRID)</TestRuntimeIdentifier>
       </TestConsoleAppSourceFiles>
+      <!-- We need to separate Item metadata declaration in two in order to be able to use ProjectDir and TestRuntimeIdentifier bellow -->
       <TestConsoleAppSourceFiles>
-        <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
-        <TestCommand>%(ProjectDir)bin\Release\net5.0\%(TestRuntimeIdentifier)\publish\project</TestCommand>
-        <TestExecutionDirectory>%(ProjectDir)bin\Release\net5.0\%(TestRuntimeIdentifier)\publish\</TestExecutionDirectory>
+        <ProjectFile>$([MSBuild]::NormalizePath('%(ProjectDir)', 'project.csproj'))</ProjectFile>
+        <TestCommand>$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', 'net5.0', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
+        <TestExecutionDirectory>$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', 'net5.0', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
         <RuntimePackDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.%(TestRuntimeIdentifier)', '$(Configuration)'))</RuntimePackDirectory>
       </TestConsoleAppSourceFiles>
     </ItemGroup>
@@ -96,6 +94,7 @@
           Outputs="_unused"
           Condition="'$(ArchiveTests)' != 'true'">
 
+    <Message Importance="High" Text="[Linker Tests] Running test: %(TestConsoleApps.ProjectCompileItems)..." />
     <Exec IgnoreExitCode="true" Command="%(TestConsoleApps.TestCommand)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.TestExecutionDirectory)">
       <Output TaskParameter="ExitCode" PropertyName="ExecutionExitCode" />
     </Exec>
