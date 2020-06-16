@@ -940,6 +940,18 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<float> ConvertToSingleLower(Vector128<double> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float32x2_t vcvtx_f32_f64 (float64x2_t a)
+            ///   A64: FCVTXN Vd.2S, Vn.2D
+            /// </summary>
+            public static Vector64<float> ConvertToSingleRoundToOddLower(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vcvtx_high_f32_f64 (float32x2_t r, float64x2_t a)
+            ///   A64: FCVTXN2 Vd.4S, Vn.2D
+            /// </summary>
+            public static Vector128<float> ConvertToSingleRoundToOddUpper(Vector64<float> lower, Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float32x4_t vcvt_high_f32_f64 (float32x2_t r, float64x2_t a)
             ///   A64: FCVTN2 Vd.4S, Vn.2D
             /// </summary>
