@@ -107,7 +107,7 @@ namespace ILCompiler
             /// <summary>
             /// CoreCLR DomainLocalModule::NormalDynamicEntry::OffsetOfDataBlob for Arm
             /// </summary>
-            private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobArm = 4;
+            private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobArm = 8;
 
             protected override bool CompareKeyToValue(EcmaModule key, ModuleFieldLayout value)
             {
