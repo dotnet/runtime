@@ -65,6 +65,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 
+#include <link.h>
+
 #else // HOST_UNIX
 
 #include <windows.h>
@@ -81,6 +83,9 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 
 #define ASSERT(x, ...)
 #define TRACE(x, ...)
+#undef ERROR
+#define ERROR(x, ...)
+
 
 #ifdef TARGET_64BIT
 #define ElfW(foo) Elf64_ ## foo
@@ -95,7 +100,6 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 #if defined(HAVE_UNW_GET_ACCESSORS)
 
 #include <elf.h>
-#include <link.h>
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
 #define PRIx PRIx32

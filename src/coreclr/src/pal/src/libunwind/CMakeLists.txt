@@ -92,6 +92,8 @@ if(CLR_CMAKE_HOST_WIN32)
     # Windows builds will only support remote unwind
     add_definitions(-DUNW_REMOTE_ONLY)
 
+    add_definitions(-DHAVE_UNW_GET_ACCESSORS)
+
     # Disable security warnings
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
