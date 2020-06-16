@@ -1,0 +1,97 @@
+<Project>
+  <PropertyGroup>
+    <TrimmingTestDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'trimmingTests'))</TrimmingTestDir>
+    <TrimmingTestProjectsDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestDir)', 'projects'))</TrimmingTestProjectsDir>
+    <TestDotNetPath>$([MSBuild]::NormalizePath('$(DotNetRoot)', 'dotnet'))</TestDotNetPath>
+    <ProjectTemplate>$(MSBuildThisFileDirectory)project.csproj.template</ProjectTemplate>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="$(MSBuildProjectDirectory)\*.cs" />
+
+    <TestSupportFiles Include="$(MSBuildThisFileDirectory)SupportFiles\Directory.Build.*">
+      <DestinationFolder>$(TrimmingTestDir)</DestinationFolder>
+    </TestSupportFiles>
+  </ItemGroup>
+
+  <Target Name="CreateTestDir"
+          Inputs="@(TestSupportFiles)"
+          Outputs="@(TestSupportFiles->'%(DestinationFolder)\%(FileName)%(Extension)')">
+    <MakeDir Directories="%(TestSupportFiles.DestinationFolder)" />
+    <Copy SourceFiles="@(TestSupportFiles)" DestinationFolder="%(TestSupportFiles.DestinationFolder)" />
+  </Target>
+
+  <Target Name="GetTestConsoleApps">
+    <ItemGroup>
+      <TestConsoleAppSourceFiles>
+        <ProjectDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestProjectsDir)', '$(MSBuildProjectName)', '%(Filename)', '$(PackageRID)'))</ProjectDir>
+        <TestRuntimeIdentifier>$(PackageRID)</TestRuntimeIdentifier>
+      </TestConsoleAppSourceFiles>
+      <!-- We need to separate Item metadata declaration in two in order to be able to use ProjectDir and TestRuntimeIdentifier bellow -->
+      <TestConsoleAppSourceFiles>
+        <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
+        <TestCommand>$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
+        <TestExecutionDirectory>$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
+        <RuntimePackDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.%(TestRuntimeIdentifier)', '$(Configuration)'))</RuntimePackDirectory>
+      </TestConsoleAppSourceFiles>
+    </ItemGroup>
+
+    <ItemGroup>
+      <TestConsoleApps Include="@(TestConsoleAppSourceFiles->'%(ProjectFile)')">
+        <ProjectCompileItems>%(Identity)</ProjectCompileItems>
+      </TestConsoleApps>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GenerateProjects"
+          DependsOnTargets="GetTestConsoleApps;CreateTestDir"
+          Inputs="@(TestConsoleAppSourceFiles);$(ProjectTemplate);@(TestSupportFiles)"
+          Outputs="%(TestConsoleApps.Identity)">
+    <PropertyGroup>
+      <_projectDir>%(TestConsoleApps.ProjectDir)\</_projectDir>
+      <_projectFile>%(TestConsoleApps.ProjectFile)</_projectFile>
+      <_projectSourceFile>%(TestConsoleApps.ProjectCompileItems)</_projectSourceFile>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(_projectDir)" />
+    <WriteLinesToFile File="$(_projectFile)"
+                      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)').Replace('{RuntimePackDir}', '%(TestConsoleApps.RuntimePackDirectory)').Replace('{TargetingPackDir}','$(MicrosoftNetCoreAppRefPackDir)').Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)'))"
+                      Overwrite="true" />
+    <Copy SourceFiles="$(_projectSourceFile)"
+          DestinationFolder="$(_projectDir)" />
+    <Message Text="Generated $(_projectFile)" />
+  </Target>
+
+  <Target Name="PublishTrimmedProjects"
+          DependsOnTargets="GenerateProjects">
+    <PropertyGroup>
+      <TestRestoreCommand>"$(TestDotNetPath)"</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) msbuild /t:PublishTrimmed</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) /nr:false</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) /warnaserror</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) -p:configuration=Release</TestRestoreCommand>
+    </PropertyGroup>
+
+    <Exec Command="$(TestRestoreCommand)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
+  </Target>
+
+  <Target Name="ExecuteApplications"
+          DependsOnTargets="PublishTrimmedProjects"
+          Inputs="%(TestConsoleApps.Identity)"
+          Outputs="_unused"
+          Condition="'$(ArchiveTests)' != 'true'">
+
+    <Message Importance="High" Text="[Trimming Tests] Running test: %(TestConsoleApps.ProjectCompileItems)..." />
+    <Exec IgnoreExitCode="true" Command="%(TestConsoleApps.TestCommand)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.TestExecutionDirectory)">
+      <Output TaskParameter="ExitCode" PropertyName="ExecutionExitCode" />
+    </Exec>
+
+    <Error Condition="'$(ExecutionExitCode)' != '100'" Text="Error: [Failed Test]: %(TestConsoleApps.ProjectCompileItems) The Command %(TestConsoleApps.TestCommand) return a non-success exit code." />
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="ExecuteApplications" />
+
+  <!-- define test to do nothing, for this project Build does all the testing -->
+  <Target Name="Test" DependsOnTargets="Build" />
+  <Target Name="VSTest" DependsOnTargets="Build" />
+</Project>
