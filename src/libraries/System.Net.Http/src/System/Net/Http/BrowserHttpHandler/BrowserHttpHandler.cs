@@ -281,7 +281,7 @@ namespace System.Net.Http
             private readonly JSObject _abortController;
             private readonly CancellationTokenSource _abortCts;
             private readonly CancellationTokenRegistration _abortRegistration;
-            private bool _isDisposed = false;
+            private bool _isDisposed;
 
             public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenSource abortCts, CancellationTokenRegistration abortRegistration)
             {
