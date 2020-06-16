@@ -1863,6 +1863,9 @@
       
         <!-- The following only fail in the mono interpreter, but we don't have a way to exclude based on scenario yet -->
 
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/zeroinit/tail/**">
+            <Issue>https://github.com/dotnet/runtime/issues/37955</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/rtchecks/overflow/overflow04_div/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
