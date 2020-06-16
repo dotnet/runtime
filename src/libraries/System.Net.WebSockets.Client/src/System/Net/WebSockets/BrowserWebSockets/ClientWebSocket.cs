@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
-using System.Net.WebSockets;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -167,7 +163,6 @@ namespace System.Net.WebSockets
                     // Setup the onError callback
                     _onError = new Action<JSObject>((errorEvt) =>
                     {
-
                         errorEvt.Dispose();
                     });
 
@@ -210,7 +205,6 @@ namespace System.Net.WebSockets
                                     // Aborted/Disposed during connect.
                                     throw new ObjectDisposedException(GetType().FullName);
                                 }
-
                                 tcsConnect.SetResult(true);
                             }
                         }
