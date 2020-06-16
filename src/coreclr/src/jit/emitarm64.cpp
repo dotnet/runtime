@@ -5827,6 +5827,7 @@ void emitter::emitIns_R_R_R(
                     elemsize = EA_1BYTE;
                     opt      = optMakeArrangement(size, elemsize);
                 }
+                assert(isValidArrangement(size, opt));
                 fmt = IF_DV_3C;
                 break;
             }
@@ -5850,6 +5851,7 @@ void emitter::emitIns_R_R_R(
                 elemsize = EA_1BYTE;
                 opt      = optMakeArrangement(size, elemsize);
             }
+            assert(isValidArrangement(size, opt));
             fmt = IF_DV_3C;
             break;
 
