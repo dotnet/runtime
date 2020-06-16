@@ -1003,7 +1003,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_XARCH
                 if ((intrinsic == NI_SSE42_Crc32) || (intrinsic == NI_SSE42_X64_Crc32))
                 {
-                    // TODO - currently we use the BaseType to bring the type of the second argument
+                    // TODO-XArch-Cleanup: currently we use the BaseType to bring the type of the second argument
                     // to the code generator. May encode the overload info in other way.
                     retNode->AsHWIntrinsic()->gtSIMDBaseType = sigReader.op2VarType;
                 }
