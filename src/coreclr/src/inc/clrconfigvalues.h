@@ -395,8 +395,8 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterIL, W("TraceInterpreterIL"), 0
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterOstack, W("TraceInterpreterOstack"), 0, "Logs operand stack after each IL instruction of interpreted methods to the console")
 CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterVerbose, W("TraceInterpreterVerbose"), 0, "Logs interpreter progress with detailed messages to the console")
 CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterJITTransition, W("TraceInterpreterJITTransition"), 0, "Logs when the interpreter determines a method should be JITted")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ForceInterpreterTier0, W("ForceInterpreterTier0"), 0, "If non-zero, force the interpreter to be used as Tier 0 in Tiered Compilation") // this has no effect in Release
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ForceInterpreterAlways, W("ForceInterpreterAlways"), 0, "If non-zero, force the interpreter to be used always") // this suppresses ForceInterpreterTier0
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_ForceJitOptimization, W("ForceJitOptimization"), 0, "If non-zero, force JIT optimization to be enabled") // this has no effect in Release
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_ForceInterpreter, W("ForceInterpreter"), 0, "If non-zero, force the interpreter to be used")
 #endif
 // The JIT queries this ConfigDWORD but it doesn't know if FEATURE_INTERPRETER is enabled
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterFallback, W("InterpreterFallback"), 0, "Fallback to the interpreter when the JIT compiler fails")
