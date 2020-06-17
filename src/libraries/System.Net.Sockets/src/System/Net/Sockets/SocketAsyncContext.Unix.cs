@@ -843,7 +843,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context, bool skipAsyncEvents = false)
+            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context, bool skipAsyncEvents = false, bool processAsyncEvents = true)
             {
                 AsyncOperation op;
                 using (Lock())
@@ -864,6 +864,7 @@ namespace System.Net.Sockets
                             Debug.Assert(_isNextOperationSynchronous == (op.Event != null));
                             if (skipAsyncEvents && !_isNextOperationSynchronous)
                             {
+                                Debug.Assert(!processAsyncEvents);
                                 // Return the operation to indicate that the async operation was not processed, without making
                                 // any state changes because async operations are being skipped
                                 return op;
@@ -901,6 +902,11 @@ namespace System.Net.Sockets
                 {
                     // Async operation.  The caller will figure out how to process the IO.
                     Debug.Assert(!skipAsyncEvents);
+                    if (processAsyncEvents)
+                    {
+                        op.Process();
+                        return null;
+                    }
                     return op;
                 }
             }
@@ -1188,6 +1194,14 @@ namespace System.Net.Sockets
 
             _receiveQueue.Init();
             _sendQueue.Init();
+        }
+
+        public bool PreferInlineCompletions
+        {
+            // Socket.PreferInlineCompletions is an experimental API with internal access modifier.
+            // PreserveDependency ensures the setter is available externally using reflection.
+            [PreserveDependency("set_PreferInlineCompletions", "System.Net.Sockets.Socket")]
+            get => _socket.PreferInlineCompletions;
         }
 
         private void Register()
@@ -2051,14 +2065,32 @@ namespace System.Net.Sockets
             return events;
         }
 
-        public unsafe void HandleEvents(Interop.Sys.SocketEvents events)
+        // Called on the epoll thread.
+        public void HandleEventsInline(Interop.Sys.SocketEvents events)
         {
             if ((events & Interop.Sys.SocketEvents.Error) != 0)
             {
-                // Set the Read and Write flags as well; the processing for these events
+                // Set the Read and Write flags; the processing for these events
                 // will pick up the error.
+                events ^= Interop.Sys.SocketEvents.Error;
                 events |= Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write;
             }
+
+            if ((events & Interop.Sys.SocketEvents.Read) != 0)
+            {
+                _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this, processAsyncEvents: true);
+            }
+
+            if ((events & Interop.Sys.SocketEvents.Write) != 0)
+            {
+                _sendQueue.ProcessSyncEventOrGetAsyncEvent(this, processAsyncEvents: true);
+            }
+        }
+
+        // Called on ThreadPool thread.
+        public unsafe void HandleEvents(Interop.Sys.SocketEvents events)
+        {
+            Debug.Assert((events & Interop.Sys.SocketEvents.Error) == 0);
 
             AsyncOperation? receiveOperation =
                 (events & Interop.Sys.SocketEvents.Read) != 0 ? _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this) : null;
