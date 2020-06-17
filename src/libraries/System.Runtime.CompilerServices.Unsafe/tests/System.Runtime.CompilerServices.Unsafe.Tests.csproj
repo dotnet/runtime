@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="UnsafeTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <ProjectReference Include="..\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+  </ItemGroup>
 </Project>

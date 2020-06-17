@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
-    <ReferenceFromRuntime Include="Microsoft.Extensions.FileProviders.Physical" />
+    <ProjectReference Include="..\src\Microsoft.Extensions.FileProviders.Physical.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 
 </Project>

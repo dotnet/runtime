@@ -14,4 +14,7 @@
     <Compile Include="SemaphoreAclTests.cs" />
     <Compile Include="ThreadingAclExtensionsTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Threading.AccessControl.csproj" />
+  </ItemGroup>
 </Project>

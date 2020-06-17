@@ -6,4 +6,7 @@
     <Compile Include="DispatchProxyTests.cs" />
     <Compile Include="TestTypes.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <ProjectReference Include="..\src\System.Reflection.DispatchProxy.csproj" />
+  </ItemGroup>
 </Project>

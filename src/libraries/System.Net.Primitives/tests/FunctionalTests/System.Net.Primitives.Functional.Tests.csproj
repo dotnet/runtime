@@ -27,7 +27,4 @@
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
              Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Memory" />
-  </ItemGroup>
 </Project>

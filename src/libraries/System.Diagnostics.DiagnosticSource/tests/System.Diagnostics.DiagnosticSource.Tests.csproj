@@ -18,4 +18,8 @@
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs" Link="Common\System\Net\Configuration.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs" Link="Common\System\Net\Configuration.Http.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.csproj" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
 </Project>

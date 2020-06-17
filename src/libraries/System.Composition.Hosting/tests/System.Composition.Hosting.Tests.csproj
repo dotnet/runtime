@@ -12,4 +12,10 @@
     <Compile Include="System\Composition\Hosting\Core\LifetimeContextTests.cs" />
     <Compile Include="System\Composition\Hosting\Core\ExportDescriptorTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Composition.Hosting.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <Reference Include="System.ComponentModel.Composition" />
+  </ItemGroup>
 </Project>

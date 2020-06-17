@@ -50,4 +50,8 @@
     <Compile Include="UtilsTests.cs" />
     <Compile Include="VBMathTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.CodePages\src\System.Text.Encoding.CodePages.csproj" />
+    <Reference Include="Microsoft.VisualBasic" />
+  </ItemGroup>
 </Project>

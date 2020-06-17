@@ -15,8 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ReferenceFromRuntime Include="Microsoft.Extensions.Configuration.Json" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+    <ProjectReference Include="..\src\Microsoft.Extensions.Configuration.Json.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Binder\src\Microsoft.Extensions.Configuration.Binder.csproj" />  
   </ItemGroup>
 
 </Project>

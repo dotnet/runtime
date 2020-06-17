@@ -65,4 +65,10 @@
     <EmbeddedResource Include="EncryptedXmlSample1.xml" />
     <EmbeddedResource Include="XmlLicenseSample.xml" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Cryptography.Xml.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <Reference Include="System.Security" />
+  </ItemGroup>
 </Project>

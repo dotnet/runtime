@@ -29,4 +29,8 @@
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <Reference Include="System.Net.Http" />
+    <ProjectReference Include="..\..\src\System.Net.Http.Json.csproj" />
+  </ItemGroup>
 </Project>

@@ -5,4 +5,10 @@
   <ItemGroup>
     <Compile Include="RegistryAclExtensionsTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\Microsoft.Win32.Registry.AccessControl.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
+  </ItemGroup>
 </Project>

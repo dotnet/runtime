@@ -5,8 +5,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <!-- Must reference the Utf8String reference assembly, which is normally excluded from unit test projects. -->
-    <IncludeUtf8StringAsmRef>true</IncludeUtf8StringAsmRef>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false'">
     <Compile Include="System\Char8Tests.cs" />
@@ -45,5 +43,11 @@
   </ItemGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' and '$(TargetFramework)' == '$(NetFrameworkCurrent)'">
     <Compile Include="System\MemoryTests.netfx.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Utf8String.Experimental.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
 </Project>

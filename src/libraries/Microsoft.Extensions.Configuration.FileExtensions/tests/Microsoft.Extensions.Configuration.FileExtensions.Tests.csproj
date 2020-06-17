@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <ProjectReference Include="..\src\Microsoft.Extensions.Configuration.FileExtensions.csproj" />
   </ItemGroup>
 
 </Project>

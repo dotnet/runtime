@@ -8,4 +8,10 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Cryptography.ProtectedData.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetFrameworkCurrent)'))">
+    <Reference Include="System.Security" />
+  </ItemGroup>
 </Project>

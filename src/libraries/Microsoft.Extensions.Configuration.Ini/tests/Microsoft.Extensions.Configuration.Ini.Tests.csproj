@@ -15,7 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ReferenceFromRuntime Include="Microsoft.Extensions.Configuration.Ini" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Binder\src\Microsoft.Extensions.Configuration.Binder.csproj" />
+    <ProjectReference Include="..\src\Microsoft.Extensions.Configuration.Ini.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 
 </Project>

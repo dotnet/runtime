@@ -8,4 +8,12 @@
              Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="ReflectionTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Composition.TypedParts.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Convention\src\System.Composition.Convention.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <!-- S.C.DataAnnotations targeting .NET Framework isn't live built anymore. -->
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+  </ItemGroup>
 </Project>

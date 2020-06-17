@@ -22,4 +22,7 @@
     <Compile Include="System\Diagnostics\Reader\EventLogWatcherTests.cs" /> 
     <Compile Include="System\Diagnostics\Reader\ProviderMetadataTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="..\src\System.Diagnostics.EventLog.csproj" />
+  </ItemGroup>
 </Project>

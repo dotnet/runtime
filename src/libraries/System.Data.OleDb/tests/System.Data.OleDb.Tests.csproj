@@ -12,4 +12,11 @@
     <Compile Include="OleDbDataReaderTests.cs" />
     <Compile Include="OleDbParameterTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="..\src\System.Data.OleDb.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetFrameworkCurrent)'))">
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data.DataSetExtensions" />
+  </ItemGroup>
 </Project>

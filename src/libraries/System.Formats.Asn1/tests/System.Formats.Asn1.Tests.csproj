@@ -52,4 +52,8 @@
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <ProjectReference Include="..\src\System.Formats.Asn1.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
+  </ItemGroup>
 </Project>

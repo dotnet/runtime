@@ -56,4 +56,7 @@
     <Compile Include="TestData.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\Microsoft.Win32.Registry.csproj" />
+  </ItemGroup>
 </Project>

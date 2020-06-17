@@ -58,4 +58,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.ServiceModel.Syndication.csproj" />
+  </ItemGroup>
 </Project>

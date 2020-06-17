@@ -16,4 +16,7 @@
     <Compile Include="..\..\src\System\Net\Http\Json\TranscodingWriteStream.cs"
              Link="ProductionCode\System\Net\Http\Json\TranscodingWriteStream.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <ProjectReference Include="..\..\src\System.Net.Http.Json.csproj" />
+  </ItemGroup>
 </Project>

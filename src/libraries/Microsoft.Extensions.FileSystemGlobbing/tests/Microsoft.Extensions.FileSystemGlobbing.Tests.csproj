@@ -5,4 +5,8 @@
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\src\Microsoft.Extensions.FileSystemGlobbing.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -39,4 +39,7 @@
   <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
     <Compile Include="ConnectionStrings.Unix.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Data.Odbc.csproj" />
+  </ItemGroup>
 </Project>

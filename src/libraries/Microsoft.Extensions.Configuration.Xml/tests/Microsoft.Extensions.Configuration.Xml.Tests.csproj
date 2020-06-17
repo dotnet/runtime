@@ -28,7 +28,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ReferenceFromRuntime Include="Microsoft.Extensions.Configuration.Xml" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Binder\src\Microsoft.Extensions.Configuration.Binder.csproj" />  
+    <ProjectReference Include="..\src\Microsoft.Extensions.Configuration.Xml.csproj" SkipUseReferenceAssembly="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <Reference Include="System.Security" />
   </ItemGroup>
 
 </Project>

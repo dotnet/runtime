@@ -42,4 +42,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\ValidationResultTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ValidatorTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+  </ItemGroup>
 </Project>

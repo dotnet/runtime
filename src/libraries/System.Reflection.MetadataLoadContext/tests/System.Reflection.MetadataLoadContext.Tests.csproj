@@ -71,4 +71,7 @@
     <Compile Include="src\TestUtils\TestUtils.JittedRuntimes.cs" />
     <Compile Include="src\TestUtils\TypeWrapper.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Reflection.MetadataLoadContext.csproj" />
+  </ItemGroup>
 </Project>

@@ -10,4 +10,7 @@
     <Compile Include="System\Composition\ExportFactoryTests.cs" />
     <Compile Include="System\Composition\ExportTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Composition.Runtime.csproj" />
+  </ItemGroup>
 </Project>

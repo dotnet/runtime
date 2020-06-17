@@ -18,4 +18,9 @@
     <Compile Include="..\src\XunitLoggerProvider.cs"
              Link="tests\DI.Common\Common\src\XunitLoggerProvider.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\src\Microsoft.Extensions.Logging.csproj" />
+  </ItemGroup>
 </Project>
