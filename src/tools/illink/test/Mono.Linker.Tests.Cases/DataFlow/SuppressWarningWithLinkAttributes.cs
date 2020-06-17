@@ -12,13 +12,13 @@ using System.Text;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
-	[SetupLinkAttributesFile ("SupressWarningWithLinkAttributes.xml")]
-	[LogDoesNotContain ("Unrecognized reflection pattern warning IL2006: Mono.Linker.Tests.Cases.DataFlow.SupressWarningWithLinkAttributes::ReadFromInstanceField()")]
-	class SupressWarningWithLinkAttributes
+	[SetupLinkAttributesFile ("SuppressWarningWithLinkAttributes.xml")]
+	[LogDoesNotContain ("Unrecognized reflection pattern warning IL2006: Mono.Linker.Tests.Cases.DataFlow.SuppressWarningWithLinkAttributes::ReadFromInstanceField()")]
+	class SuppressWarningWithLinkAttributes
 	{
 		public static void Main ()
 		{
-			var instance = new SupressWarningWithLinkAttributes ();
+			var instance = new SuppressWarningWithLinkAttributes ();
 
 			instance.ReadFromInstanceField ();
 		}
@@ -27,8 +27,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		Type PropertyWithDefaultConstructor { get; set; }
 
-		[UnrecognizedReflectionAccessPattern (typeof (SupressWarningWithLinkAttributes), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (SupressWarningWithLinkAttributes), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (SuppressWarningWithLinkAttributes), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (SuppressWarningWithLinkAttributes), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		[RecognizedReflectionAccessPattern]
 		private void ReadFromInstanceField ()
 		{
