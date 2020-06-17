@@ -71,7 +71,7 @@
     <HelixPreCommand Include="${HELIX_CORRELATION_PAYLOAD}/dotnet/dotnet tool install --tool-path ${HELIX_WORKITEM_PAYLOAD}/xharness-cli --version $(MicrosoftDotNetXHarnessCLIVersion) --add-source https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet-eng/nuget/v3/index.json Microsoft.DotNet.XHarness.CLI" />
     <HelixPreCommand Include="export DOTNET_ROOT=${HELIX_CORRELATION_PAYLOAD}/dotnet" />
     <HelixPreCommand Include="export PATH=${HELIX_WORKITEM_PAYLOAD}/xharness-cli:$PATH" />
-  </PropertyGroup>
+  </ItemGroup>
 
   <ItemGroup Condition="'$(HelixCommand)' == '' and '$(BuildAllConfigurations)' == 'true'">
     <HelixPreCommand Include="set DOTNET_CLI_TELEMETRY_OPTOUT=1" />
