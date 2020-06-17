@@ -12,6 +12,10 @@
     <TestSupportFiles Include="$(MSBuildThisFileDirectory)SupportFiles\Directory.Build.*">
       <DestinationFolder>$(TrimmingTestDir)</DestinationFolder>
     </TestSupportFiles>
+
+    <CliEnvironment Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
+    <CliEnvironment Include="DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
+    <CliEnvironment Include="DOTNET_MULTILEVEL_LOOKUP=0" />
   </ItemGroup>
 
   <Target Name="CreateTestDir"
@@ -55,7 +59,12 @@
 
     <MakeDir Directories="$(_projectDir)" />
     <WriteLinesToFile File="$(_projectFile)"
-                      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)').Replace('{RuntimePackDir}', '%(TestConsoleApps.RuntimePackDirectory)').Replace('{TargetingPackDir}','$(MicrosoftNetCoreAppRefPackDir)').Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)'))"
+                      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)')
+                                                 .Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)')
+                                                 .Replace('{RuntimePackDir}', '%(TestConsoleApps.RuntimePackDirectory)')
+                                                 .Replace('{TargetingPackDir}','$(MicrosoftNetCoreAppRefPackDir)')
+                                                 .Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)')
+                                                 .Replace('{MicrosoftNETILLinkTasksVersion}', '$(MicrosoftNETILLinkTasksVersion)'))"
                       Overwrite="true" />
     <Copy SourceFiles="$(_projectSourceFile)"
           DestinationFolder="$(_projectDir)" />
@@ -65,14 +74,14 @@
   <Target Name="PublishTrimmedProjects"
           DependsOnTargets="GenerateProjects">
     <PropertyGroup>
-      <TestRestoreCommand>"$(TestDotNetPath)"</TestRestoreCommand>
-      <TestRestoreCommand>$(TestRestoreCommand) msbuild /t:PublishTrimmed</TestRestoreCommand>
-      <TestRestoreCommand>$(TestRestoreCommand) /nr:false</TestRestoreCommand>
-      <TestRestoreCommand>$(TestRestoreCommand) /warnaserror</TestRestoreCommand>
-      <TestRestoreCommand>$(TestRestoreCommand) -p:configuration=Release</TestRestoreCommand>
+      <TestPublishTrimmedCommand>"$(TestDotNetPath)"</TestPublishTrimmedCommand>
+      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) build /t:PublishTrimmed</TestPublishTrimmedCommand>
+      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /nr:false</TestPublishTrimmedCommand>
+      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /warnaserror</TestPublishTrimmedCommand>
+      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) -p:configuration=$(Configuration)</TestPublishTrimmedCommand>
     </PropertyGroup>
 
-    <Exec Command="$(TestRestoreCommand)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
+    <Exec Command="$(TestPublishTrimmedCommand)" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
   </Target>
 
   <Target Name="ExecuteApplications"
