@@ -145,7 +145,7 @@ namespace System.Xml.Schema
             _qualifiedName = value;
         }
 
-        internal void SetAttributeType(XmlSchemaSimpleType value)
+        internal void SetAttributeType(XmlSchemaSimpleType? value)
         {
             _attributeType = value;
         }

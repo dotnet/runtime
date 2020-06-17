@@ -84,7 +84,7 @@ namespace System.Xml.Schema
 
         internal abstract XmlSchemaDatatype DeriveByRestriction(XmlSchemaObjectCollection facets, XmlNameTable nameTable, XmlSchemaType schemaType);
 
-        internal abstract XmlSchemaDatatype DeriveByList(XmlSchemaType schemaType);
+        internal abstract XmlSchemaDatatype DeriveByList(XmlSchemaType? schemaType);
 
         internal abstract void VerifySchemaValid(XmlSchemaObjectTable notations, XmlSchemaObject caller);
 

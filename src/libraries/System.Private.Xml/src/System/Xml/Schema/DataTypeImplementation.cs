@@ -316,9 +316,9 @@ namespace System.Xml.Schema
             return s_enumToTypeCode[(int)typeCode];
         }
 
-        internal static XmlSchemaSimpleType GetSimpleTypeFromXsdType(XmlQualifiedName qname)
+        internal static XmlSchemaSimpleType? GetSimpleTypeFromXsdType(XmlQualifiedName qname)
         {
-            return (XmlSchemaSimpleType)s_builtinTypes[qname]!;
+            return (XmlSchemaSimpleType?)s_builtinTypes[qname];
         }
 
         internal static XmlSchemaSimpleType GetNormalizedStringTypeV1Compat()
@@ -376,7 +376,7 @@ namespace System.Xml.Schema
             return dt;
         }
 
-        internal override XmlSchemaDatatype DeriveByList(XmlSchemaType schemaType)
+        internal override XmlSchemaDatatype DeriveByList(XmlSchemaType? schemaType)
         {
             return DeriveByList(0, schemaType);
         }
@@ -391,6 +391,7 @@ namespace System.Xml.Schema
             {
                 throw new XmlSchemaException(SR.Sch_ListFromNonatomic, string.Empty);
             }
+
             DatatypeImplementation dt = new Datatype_List(this, minSize);
             dt._variety = XmlSchemaDatatypeVariety.List;
             dt._restriction = null;
@@ -468,7 +469,7 @@ namespace System.Xml.Schema
             return false;
         }
 
-        internal abstract XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType);
+        internal abstract XmlValueConverter CreateValueConverter(XmlSchemaType schemaType);
 
         internal override FacetsChecker FacetsChecker { get { return miscFacetsChecker; } }
 
@@ -478,7 +479,7 @@ namespace System.Xml.Schema
             {
                 if (_valueConverter == null)
                 {
-                    _valueConverter = CreateValueConverter(_parentSchemaType);
+                    _valueConverter = CreateValueConverter(_parentSchemaType!);
                 }
                 return _valueConverter;
             }
@@ -925,7 +926,7 @@ namespace System.Xml.Schema
         private readonly DatatypeImplementation _itemType;
         private readonly int _minListSize;
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             XmlSchemaType? listItemType = null;
             XmlSchemaSimpleType? simpleType;
@@ -1185,7 +1186,7 @@ namespace System.Xml.Schema
         private static readonly Type s_listValueType = typeof(object[]);
         private readonly XmlSchemaSimpleType[] _types;
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlUnionConverter.Create(schemaType);
         }
@@ -1383,7 +1384,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(string);
         private static readonly Type s_listValueType = typeof(string[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlUntypedConverter.Untyped;
         }
@@ -1417,7 +1418,7 @@ namespace System.Xml.Schema
 
     internal class Datatype_anyAtomicType : Datatype_anySimpleType
     {
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlAnyConverter.AnyAtomic;
         }
@@ -1428,7 +1429,7 @@ namespace System.Xml.Schema
 
     internal class Datatype_untypedAtomicType : Datatype_anyAtomicType
     {
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlUntypedConverter.Untyped;
         }
@@ -1463,7 +1464,7 @@ namespace System.Xml.Schema
     */
     internal class Datatype_string : Datatype_anySimpleType
     {
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlStringConverter.Create(schemaType);
         }
@@ -1534,9 +1535,9 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(bool);
         private static readonly Type s_listValueType = typeof(bool[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
-            return XmlBooleanConverter.Create(schemaType);
+            return XmlBooleanConverter.Create(schemaType!);
         }
 
         internal override FacetsChecker FacetsChecker { get { return miscFacetsChecker; } }
@@ -1614,7 +1615,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(float);
         private static readonly Type s_listValueType = typeof(float[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlNumeric2Converter.Create(schemaType);
         }
@@ -1703,7 +1704,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(double);
         private static readonly Type s_listValueType = typeof(double[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlNumeric2Converter.Create(schemaType);
         }
@@ -1795,7 +1796,7 @@ namespace System.Xml.Schema
         private static readonly Type s_listValueType = typeof(decimal[]);
         private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(decimal.MinValue, decimal.MaxValue);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlNumeric10Converter.Create(schemaType);
         }
@@ -1887,7 +1888,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(TimeSpan);
         private static readonly Type s_listValueType = typeof(TimeSpan[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlMiscConverter.Create(schemaType);
         }
@@ -2033,7 +2034,7 @@ namespace System.Xml.Schema
         private static readonly Type s_listValueType = typeof(DateTime[]);
         private readonly XsdDateTimeFlags _dateTimeFlags;
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlDateTimeConverter.Create(schemaType);
         }
@@ -2431,7 +2432,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(byte[]);
         private static readonly Type s_listValueType = typeof(byte[][]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlMiscConverter.Create(schemaType);
         }
@@ -2532,7 +2533,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(byte[]);
         private static readonly Type s_listValueType = typeof(byte[][]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlMiscConverter.Create(schemaType);
         }
@@ -2632,7 +2633,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(Uri);
         private static readonly Type s_listValueType = typeof(Uri[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlMiscConverter.Create(schemaType);
         }
@@ -2730,7 +2731,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(XmlQualifiedName);
         private static readonly Type s_listValueType = typeof(XmlQualifiedName[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlMiscConverter.Create(schemaType);
         }
@@ -3066,7 +3067,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(XmlQualifiedName);
         private static readonly Type s_listValueType = typeof(XmlQualifiedName[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
             return XmlMiscConverter.Create(schemaType);
         }
