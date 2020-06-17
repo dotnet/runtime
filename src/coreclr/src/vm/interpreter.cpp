@@ -9074,16 +9074,20 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 // TODO: The following check for hardware intrinsics is not a production-level
 //       solution and may produce incorrect results.
 #ifdef FEATURE_INTERPRETER
-        if (strcmp(methToCall->GetModule()->GetSimpleName(), "System.Private.CoreLib") == 0 &&
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-            strncmp(methToCall->GetClass()->GetDebugClassName(), "System.Runtime.Intrinsics.X86", 29) == 0 &&
-#elif defined(TARGET_ARM64)
-            strncmp(methToCall->GetClass()->GetDebugClassName(), "System.Runtime.Intrinsics.Arm", 29) == 0 &&
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
-            strcmp(methToCall->GetName(), "get_IsSupported") == 0)
+        static ConfigDWORD s_InterpreterHWIntrinsicsIsSupportedFalse;
+        if (s_InterpreterHWIntrinsicsIsSupportedFalse.val(CLRConfig::INTERNAL_InterpreterHWIntrinsicsIsSupportedFalse) != 0)
         {
-            DoGetIsSupported();
-            didIntrinsic = true;
+            if (strcmp(methToCall->GetModule()->GetSimpleName(), "System.Private.CoreLib") == 0 &&
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+                strncmp(methToCall->GetClass()->GetDebugClassName(), "System.Runtime.Intrinsics.X86", 29) == 0 &&
+#elif defined(TARGET_ARM64)
+                strncmp(methToCall->GetClass()->GetDebugClassName(), "System.Runtime.Intrinsics.Arm", 29) == 0 &&
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+                strcmp(methToCall->GetName(), "get_IsSupported") == 0)
+            {
+                DoGetIsSupported();
+                didIntrinsic = true;
+            }
         }
 #endif // FEATURE_INTERPRETER
 
