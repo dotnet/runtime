@@ -281,4 +281,4 @@ FOR_ALL_ICU_FUNCTIONS
 #define usearch_last(...) usearch_last_ptr(__VA_ARGS__)
 #define usearch_openFromCollator(...) usearch_openFromCollator_ptr(__VA_ARGS__)
 
-#endif // !defined(ICU_STATIC_LINKING)
+#endif // !defined(STATIC_ICU)
