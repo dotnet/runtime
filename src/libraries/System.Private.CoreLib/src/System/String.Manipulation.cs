@@ -1656,7 +1656,12 @@ namespace System
 
         private void MakeSeparatorListVectorized(ref ValueListBuilder<int> sepListBuilder, char c, char? c2 = null, char? c3 = null)
         {
-            ReadOnlySpan<byte> shuffleConstantData = new byte[] { 0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+            // Constant that defines indices of characters within an AVX-Register
+            const ulong indicesConstant = 0xFEDCBA9876543210;
+            ReadOnlySpan<byte> shuffleConstantData = new byte[] {
+                0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                0xFF, 0xFF, 0xFF, 0xFF, 0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+            };
             Vector256<byte> shuffleConstant = Unsafe.ReadUnaligned<Vector256<byte>>(ref MemoryMarshal.GetReference(shuffleConstantData));
 
             Vector256<ushort> v1 = Vector256.Create(c);
@@ -1669,8 +1674,7 @@ namespace System
 
             for (; i < cond; i += Vector256<ushort>.Count)
             {
-                ref char ci = ref Unsafe.Add(ref c0, i);
-                Vector256<ushort> charVector = Unsafe.As<char, Vector256<ushort>>(ref ci);
+                Vector256<ushort> charVector = ReadVector(ref c0, i);
                 Vector256<ushort> cmp = Avx2.CompareEqual(charVector, v1);
 
                 if (v2 is Vector256<ushort> vecSep2)
@@ -1689,7 +1693,7 @@ namespace System
                 mask = Avx2.Shuffle(mask, shuffleConstant);
 
                 Vector128<byte> res = Sse2.Or(mask.GetLower(), mask.GetUpper());
-                ulong extractedBits = Bmi2.X64.ParallelBitExtract(0xFEDCBA9876543210, Sse2.X64.ConvertToUInt64(res.AsUInt64()));
+                ulong extractedBits = Bmi2.X64.ParallelBitExtract(indicesConstant, Sse2.X64.ConvertToUInt64(res.AsUInt64()));
 
                 while (true)
                 {
@@ -1706,6 +1710,13 @@ namespace System
                 {
                     sepListBuilder.Append(i);
                 }
+            }
+
+            static Vector256<ushort> ReadVector(ref char c0, int offset)
+            {
+                ref char ci = ref Unsafe.Add(ref c0, offset);
+                ref byte b = ref Unsafe.As<char, byte>(ref ci);
+                return Unsafe.ReadUnaligned<Vector256<ushort>>(ref b);
             }
         }
 
