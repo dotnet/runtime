@@ -1068,7 +1068,7 @@ namespace Microsoft.Extensions.FileProviders
             await TokenNotFiredForInvalidPathStartingWithSlash(slashes);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData("/\0/")]
         // Testing Unix specific behaviour on leading slashes.
         [PlatformSpecific(TestPlatforms.AnyUnix)]

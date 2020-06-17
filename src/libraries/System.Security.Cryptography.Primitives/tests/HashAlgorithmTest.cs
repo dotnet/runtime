@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Hashing.Tests
             Assert.Equal(input.Sum(b => (long)b), BitConverter.ToInt64(output, 0));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(10)]
         [InlineData(4096)]
@@ -59,7 +59,7 @@ namespace System.Security.Cryptography.Hashing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ComputeHashAsync_SupportsCancellation()
         {
             using (CancellationTokenSource cancellationSource = new CancellationTokenSource(100))
