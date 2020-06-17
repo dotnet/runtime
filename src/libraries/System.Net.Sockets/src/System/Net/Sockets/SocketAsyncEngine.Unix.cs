@@ -198,7 +198,6 @@ namespace System.Net.Sockets
                     Debug.Assert(numEvents > 0, $"Unexpected numEvents: {numEvents}");
 
                     if (handler.HandleSocketEvents(numEvents))
-                                }
                     {
                         ScheduleToProcessEvents();
                     }
@@ -319,12 +318,20 @@ namespace System.Net.Sockets
                     {
                         SocketAsyncContext context = contextWrapper.Context;
 
-                        Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
-                        if (events != Interop.Sys.SocketEvents.None)
+                        if (context.PreferInlineCompletions)
                         {
-                            var ev = new SocketIOEvent(context, events);
-                            _eventQueue.Enqueue(ev);
-                            enqueuedEvent = true;
+                            context.HandleEventsInline(socketEvent.Events);
+                        }
+                        else
+                        {
+                            Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
+                            
+                            if (events != Interop.Sys.SocketEvents.None)
+                            {
+                                var ev = new SocketIOEvent(context, events);
+                                _eventQueue.Enqueue(ev);
+                                enqueuedEvent = true;
+                            }
                         }
                     }
                 }
