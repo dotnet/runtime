@@ -35,7 +35,7 @@ typedef struct MonoQCallDef
 {
     const char* class_name;
     const char* namespace_name;
-    const void**  functions;
+    const void **functions;
 } MonoQCallDef;
 
 typedef struct MonoQCallFunc {
