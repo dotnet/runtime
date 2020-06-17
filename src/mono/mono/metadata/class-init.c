@@ -3538,6 +3538,38 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 						if (slot == -1)
 							goto fail;
 
+#ifdef FEATURE_COVARIANT_RETURNS
+						if (vtable[slot] && vtable[slot]->is_covariant_override_impl) {
+							/* is it enough to check that the new definition is subsumed by
+							 * the prior one, or do we need to go up through the class
+							 * hierarchy? */
+							/*
+							 * note we check against the _previous impl_ not "m1" the method
+							 * we're implicitly overriding.  This is because our signature
+							 * may match somewhere up the class hierarchy that's not as
+							 * specific as we wanted:
+							 *
+							 * class A {
+							 *   public virtual A Foo ();
+							 * }
+							 *
+							 * class B : A  {
+							 *   public override B Foo (); // override with covariant return.  ok.
+							 * }
+							 *
+							 * class C : B {
+							 *   public override A Foo (); // bad.
+							 * }
+							 *
+							 * The signature of "C C::Foo" will match "A A::Foo", but
+							 * signature A C::Foo() isn't subsumed by B B::Foo()
+							 */
+							if (!check_signature_covariant (klass, cm, vtable[slot]))
+							    goto fail;
+							cm->is_covariant_override_impl = TRUE;
+						}
+#endif /* FEATURE_COVARIANT_RETURNS */
+
 						if (is_wcf_hack_disabled () && !mono_method_can_access_method_full (cm, m1, NULL)) {
 							char *body_name = mono_method_full_name (cm, TRUE);
 							char *decl_name = mono_method_full_name (m1, TRUE);
@@ -3585,6 +3617,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		gboolean compare_sigs = FALSE;
 		if (!MONO_CLASS_IS_INTERFACE_INTERNAL (decl->klass)) {
 			g_assert (decl->slot != -1);
+			MonoMethod *prev_impl = vtable [decl->slot];
 			vtable [decl->slot] = impl;
 #ifdef FEATURE_COVARIANT_RETURNS
 			gboolean impl_newslot = (impl->flags & METHOD_ATTRIBUTE_NEW_SLOT) != 0;
@@ -3606,53 +3639,59 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				(klass->parent &&
 				 vtable_slot_has_preserve_base_overrides_attribute (klass->parent, decl->slot, &impl_class));
 
-			/* Historically, mono didn't do a signature equivalence check for explicit overrides, but we need one for covariant returns */
-			compare_sigs =
-				TRUE;
-
 			if (has_preserve_base_overrides) {
 				if (impl_class == decl->klass) {
 					TRACE_INTERFACE_VTABLE (printf ("preserve base overrides attribute is on slot %d is on the decl method %s; not adding any more overrides\n", decl->slot, mono_method_full_name (decl, 1)));
 				} else {
 					g_assert (impl_class == klass || decl->slot < impl_class->vtable_size);
-					MonoMethod *prev_impl = impl_class == klass ? impl : impl_class->vtable [decl->slot];
-					/*
-					 * if we see any method that occupies the declared slot anywhere in the inheritance
-					 * chain, add a mapping to replace it with our current implementation.
-					 */
-					TRACE_INTERFACE_VTABLE (printf ("override decl [slot %d] %s in class %s has method %s in this slot and it has the preserve base overrides attribute.  overridden by %s\n", decl->slot, mono_method_full_name (decl, 1), mono_type_full_name (m_class_get_byval_arg (impl_class)), mono_method_full_name (prev_impl, 1), mono_method_full_name (impl, 1)));
+					MonoMethod *impl_with_attr = impl_class == klass ? impl : impl_class->vtable [decl->slot];
+					TRACE_INTERFACE_VTABLE (printf ("override decl [slot %d] %s in class %s has method %s in this slot and it has the preserve base overrides attribute.  overridden by %s\n", decl->slot, mono_method_full_name (decl, 1), mono_type_full_name (m_class_get_byval_arg (impl_class)), mono_method_full_name (impl_with_attr, 1), mono_method_full_name (impl, 1)));
 					g_assert (impl_class != NULL);
-					MonoMethod *last_checked_prev_override = NULL;
-					for (MonoClass *cur_class = klass->parent; cur_class ; cur_class = cur_class->parent) {
-						if (decl->slot >= cur_class->vtable_size)
-							break;
-						prev_impl = cur_class->vtable[decl->slot];
+				}
+			}
+
+			/* Historically, mono didn't do a signature equivalence check for explicit overrides, but we need one for covariant returns */
+			/* If the previous impl in the slot had the covariant signature bit set, or if the signature of the proposed impl doesn't match the signature of the previous impl, check for covariance */
+			if (prev_impl != NULL &&
+			    (prev_impl->is_covariant_override_impl ||
+			     !mono_metadata_signature_equal (mono_method_signature_internal (impl), mono_method_signature_internal (prev_impl)))) {
+				compare_sigs = TRUE;
+				impl->is_covariant_override_impl = TRUE;
+			}
+
+			/* if we saw the attribute or if we think we need to check impl sigs, we will need to traverse the class hierarchy. */
+			if (has_preserve_base_overrides || compare_sigs) {
+				MonoMethod *last_checked_prev_override = NULL;
+				for (MonoClass *cur_class = klass->parent; cur_class ; cur_class = cur_class->parent) {
+					if (decl->slot >= cur_class->vtable_size)
+						break;
+					prev_impl = cur_class->vtable[decl->slot];
+					if (has_preserve_base_overrides) {
 						g_hash_table_insert (override_map, prev_impl, impl);
 						TRACE_INTERFACE_VTABLE (do {
 								char *full_name = mono_type_full_name (m_class_get_byval_arg (cur_class));
 								printf ("  slot %d of %s was %s adding override to %s\n", decl->slot, full_name, mono_method_full_name (prev_impl, 1), mono_method_full_name (impl, 1));
 								g_free (full_name);
 							} while (0));
-						if (prev_impl != last_checked_prev_override) {
-							/*
-							 * the new impl should be subsumed by the prior one, ie this
-							 * newest leaf class provides the most specific implementation
-							 * of the method of any of its ancestor classes.
-							 */
-							/*
-							 * but as we go up the inheritance hierarchy only check if the
-							 * prev_impl method is changing.  If it's the same one in the
-							 * slot the whole time, don't bother checking it over and
-							 * over.
-							 */
-							if (!check_signature_covariant (klass, impl, prev_impl))
-								goto fail;
-							last_checked_prev_override = prev_impl;
-						}
-
+					}
+					if (compare_sigs && prev_impl != last_checked_prev_override) {
+						/*
+						 * the new impl should be subsumed by the prior one, ie this
+						 * newest leaf class provides the most specific implementation
+						 * of the method of any of its ancestor classes.
+						 */
+						/*
+						 * but as we go up the inheritance hierarchy only check if the
+						 * prev_impl method is changing.  If it's the same one in the
+						 * slot the whole time, don't bother checking it over and
+						 * over.
+						 */
+						/* FIXME: do we need to check all the way up? can we just check the most derived one? */
+						if (!check_signature_covariant (klass, impl, prev_impl))
+							goto fail;
+						last_checked_prev_override = prev_impl;
 					}
 				}
-
 			}
 #endif /* FEATURE_COVARIANT_RETURNS */
 

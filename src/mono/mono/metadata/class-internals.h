@@ -75,7 +75,8 @@ struct _MonoMethod {
 	unsigned int skip_visibility:1; /* whenever to skip JIT visibility checks */
 	unsigned int verification_success:1; /* whether this method has been verified successfully.*/
 	unsigned int is_reabstracted:1; /* whenever this is a reabstraction of another interface */
-	signed int slot : 16;
+	unsigned int is_covariant_override_impl:1; /* whether this is an override with a signature different from its declared method */
+	signed int slot : 15;
 
 	/*
 	 * If is_generic is TRUE, the generic_container is stored in image->property_hash, 
