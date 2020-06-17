@@ -1688,7 +1688,7 @@ namespace System
                 Vector256<byte> mask = Avx2.ShiftLeftLogical(cmp.AsUInt64(), 4).AsByte();
                 mask = Avx2.Shuffle(mask, shuffleConstant);
 
-                Vector128<byte> res = Sse2.Or(Avx2.ExtractVector128(mask, 0), Avx2.ExtractVector128(mask, 1));
+                Vector128<byte> res = Sse2.Or(mask.GetLower(), mask.GetUpper());
                 ulong extractedBits = Bmi2.X64.ParallelBitExtract(0xFEDCBA9876543210, Sse2.X64.ConvertToUInt64(res.AsUInt64()));
 
                 while (true)
