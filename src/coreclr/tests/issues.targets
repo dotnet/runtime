@@ -1494,9 +1494,6 @@
 	<ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/Interfaces/**">
 	  <Issue>https://github.com/dotnet/runtime/issues/37509</Issue>
 	</ExcludeList>
-	<ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/ReturnTypeValidation/**">
-	  <Issue>https://github.com/dotnet/runtime/issues/37509</Issue>
-	</ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/347422/b347422/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
