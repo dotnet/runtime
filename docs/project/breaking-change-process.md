@@ -15,6 +15,7 @@ There are people on the team that can help you work through a breaking change, i
    * Goals and motivation for the change
    * Pre-change behavior
    * Post-change behavior
+   * Versions of the product this change affects
    * Errors or other behavior you can expect when running old code that breaks
    * Workarounds and mitigations, including [AppContext switches](https://docs.microsoft.com/dotnet/api/system.appcontext)
    * Link to the issue for the feature or bug fix that the breaking change is associated with.
@@ -31,6 +32,7 @@ There are people on the team that can help you work through a breaking change, i
 Notes:
 
 * We add quirk switches to .NET Core re-actively, only once we get feedback that they are really needed for something important. We do not add them proactively like in .NET Framework just because they might be needed in theory.
+* In terms of product versions that the change affects, consider both .NET Core and .NET Framework (see: [.NET Framework compatibility mode](https://docs.microsoft.com/dotnet/standard/net-standard#net-framework-compatibility-mode)). Consider source and binary compatibility.
 
 ## Examples
 
