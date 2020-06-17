@@ -4603,7 +4603,6 @@ HRESULT ClrDataAccess::GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned 
 
     HRESULT hr = S_OK;
 #ifdef FEATURE_SVR_GC
-    // NUMBERGENERATIONS is hardcoded to the previous number of generations, doesn't account for POH
     unsigned int numGenerationTableEntries = (unsigned int)(g_gcDacGlobals->total_generation_count);
     if (pNeeded != NULL)
     {
@@ -4648,7 +4647,6 @@ HRESULT ClrDataAccess::GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, 
 
     HRESULT hr = S_OK;
 #ifdef FEATURE_SVR_GC
-    // NUMBERGENERATIONS is hardcoded to the previous number of generations, doesn't account for POH
     unsigned int numFillPointers = (unsigned int)(g_gcDacGlobals->total_generation_count + dac_finalize_queue::ExtraSegCount);
     if (pNeeded != NULL)
     {

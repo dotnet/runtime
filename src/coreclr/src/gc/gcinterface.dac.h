@@ -18,6 +18,8 @@
 #define MAX_GC_MECHANISM_BITS_COUNT     2
 #define MAX_GLOBAL_GC_MECHANISMS_COUNT  6
 
+// The number of generations is hardcoded in to the dac APIS (DacpGcHeapDetails hard codes the size of its arrays)
+// this cannot change
 #define NUMBERGENERATIONS               4
 #define INITIAL_HANDLE_TABLE_ARRAY_SIZE 10
 #define HANDLE_MAX_INTERNAL_TYPES       12
