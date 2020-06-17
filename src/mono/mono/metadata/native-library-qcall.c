@@ -64,7 +64,7 @@ find_impls_index_for_class (MonoMethod* method)
             int cmp = strcmp (c_qcalls[i].class_name, c_qcalls[i-1].class_name);
             if (cmp == 0)
                 cmp = strcmp (c_qcalls[i].namespace_name, c_qcalls[i-1].namespace_name);
-            g_assert(cmp > 0);
+            g_assert (cmp > 0);
         }
     }
 #endif // DEBUG
