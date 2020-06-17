@@ -4434,6 +4434,34 @@ void emitter::emitIns_R_R(
             fmt = IF_DV_2A;
             break;
 
+        case INS_fcvtxn:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+
+            if (insOptsAnyArrangement(opt))
+            {
+                // Vector operation
+                assert(size == EA_8BYTE);
+                assert(opt == INS_OPTS_2S);
+                fmt = IF_DV_2A;
+            }
+            else
+            {
+                // Scalar operation
+                assert(insOptsNone(opt));
+                assert(size == EA_4BYTE);
+                fmt = IF_DV_2G;
+            }
+            break;
+
+        case INS_fcvtxn2:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(size == EA_16BYTE);
+            assert(opt == INS_OPTS_4S);
+            fmt = IF_DV_2A;
+            break;
+
         case INS_scvtf:
         case INS_ucvtf:
             if (insOptsAnyArrangement(opt))
@@ -4683,6 +4711,29 @@ void emitter::emitIns_R_R(
             assert(isValidArrangement(size, opt));
             assert((opt != INS_OPTS_1D) && (opt != INS_OPTS_2D)); // The encoding size = 11, Q = x is reserved
             fmt = IF_DV_2T;
+            break;
+
+        case INS_sqabs:
+        case INS_sqneg:
+        case INS_suqadd:
+        case INS_usqadd:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+
+            if (insOptsAnyArrangement(opt))
+            {
+                // Vector operation
+                assert(isValidArrangement(size, opt));
+                assert(opt != INS_OPTS_1D); // The encoding size = 11, Q = 0 is reserved
+                fmt = IF_DV_2M;
+            }
+            else
+            {
+                // Scalar operation
+                assert(insOptsNone(opt));
+                assert(isValidVectorElemsize(size));
+                fmt = IF_DV_2L;
+            }
             break;
 
         default:
@@ -14097,6 +14148,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fcvtl2:
                 case INS_fcvtn:
                 case INS_fcvtn2:
+                case INS_fcvtxn:
+                case INS_fcvtxn2:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
@@ -14142,6 +14195,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_frintz:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_fcvtxn:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
 
                 case INS_fcmeq:
@@ -14557,8 +14615,19 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             switch (ins)
             {
                 case INS_abs:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                case INS_sqneg:
+                case INS_suqadd:
+                case INS_usqadd:
+                    if (id->idOpSize() == EA_16BYTE)
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    }
+                    else
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    }
+
+                    result.insLatency = PERFSCORE_LATENCY_3C;
                     break;
 
                 case INS_addv:
@@ -14602,6 +14671,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_shll2:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+
+                case INS_sqabs:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
 
                 default:
