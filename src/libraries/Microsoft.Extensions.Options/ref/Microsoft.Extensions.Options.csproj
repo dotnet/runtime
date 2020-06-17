@@ -2,12 +2,14 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="System.ComponentModel.Annotations" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Options.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\Microsoft.Extensions.DependencyInjection.Abstractions\ref\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
     <ProjectReference Include="..\..\Microsoft.Extensions.Primitives\ref\Microsoft.Extensions.Primitives.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.ComponentModel.Annotations" Version="$(SystemComponentModelAnnotationsVersion)" />
   </ItemGroup>
 </Project>

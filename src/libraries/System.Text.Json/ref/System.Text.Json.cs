@@ -184,7 +184,7 @@ namespace System.Text.Json
     }
     public static partial class JsonSerializer
     {
-#if NETCOREAPP
+#if NETCOREAPP && !NETCOREAPP3_0
         private const System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes MembersAccessedOnRead = System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties;
         private const System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes MembersAccessedOnWrite = System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties;
         public static object? Deserialize(System.ReadOnlySpan<byte> utf8Json, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnRead)] System.Type returnType, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
@@ -518,7 +518,7 @@ namespace System.Text.Json.Serialization
     public partial class JsonConverterAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         protected JsonConverterAttribute() { }
-#if NETCOREAPP
+#if NETCOREAPP && !NETCOREAPP3_0
         public JsonConverterAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type converterType) { }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public System.Type? ConverterType { get { throw null; } }

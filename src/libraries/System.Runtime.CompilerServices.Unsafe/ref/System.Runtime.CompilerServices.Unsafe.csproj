@@ -8,9 +8,5 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.CompilerServices.Unsafe.cs" />
-    <Reference Include="System.Runtime" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
   </ItemGroup>
 </Project>

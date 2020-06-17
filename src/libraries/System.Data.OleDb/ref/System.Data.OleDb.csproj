@@ -13,9 +13,6 @@
     <Compile Condition="!$(TargetFramework.StartsWith('net4'))" Include="System.Data.OleDb.Manual.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
     <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">

@@ -10,8 +10,4 @@
   <ItemGroup>
     <Compile Include="System.IO.Ports.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-  </ItemGroup>
 </Project>

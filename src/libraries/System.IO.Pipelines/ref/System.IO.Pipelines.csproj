@@ -10,8 +10,8 @@
     <Compile Include="System.IO.Pipelines.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>
 </Project>

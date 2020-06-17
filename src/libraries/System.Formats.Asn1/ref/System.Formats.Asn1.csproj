@@ -7,6 +7,6 @@
     <Compile Include="System.Formats.Asn1.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>
