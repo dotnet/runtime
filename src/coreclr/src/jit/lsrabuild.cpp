@@ -2491,8 +2491,8 @@ void LinearScan::buildIntervals()
         if (compiler->lvaKeepAliveAndReportThis())
         {
             // If we need to KeepAliveAndReportThis, add a dummy exposed use of it at the end
-            unsigned keepAliveVarNum = compiler->info.compThisArg;
-            assert(compiler->info.compIsStatic == false);
+            const unsigned keepAliveVarNum = compiler->info.compThisArg;
+            assert(!compiler->info.compIsStatic);
             LclVarDsc* varDsc = compiler->lvaTable + keepAliveVarNum;
             if (isCandidateVar(varDsc))
             {
