@@ -4538,16 +4538,23 @@ HRESULT ClrDataAccess::GetGenerationTable(unsigned int cGenerations, struct Dacp
     }
     else
     {
-        for (unsigned int i = 0; i < numGenerationTableEntries; i++)
+        if (g_gcDacGlobals->generation_table.IsValid())
         {
-            DPTR(dac_generation) generation = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
-            pGenerationData[i].start_segment = (CLRDATA_ADDRESS) dac_cast<TADDR>(generation->start_segment);
+            for (unsigned int i = 0; i < numGenerationTableEntries; i++)
+            {
+                DPTR(dac_generation) generation = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
+                pGenerationData[i].start_segment = (CLRDATA_ADDRESS) dac_cast<TADDR>(generation->start_segment);
 
-            pGenerationData[i].allocation_start = (CLRDATA_ADDRESS) generation->allocation_start;
+                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS) generation->allocation_start;
 
-            DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
-            pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)alloc_context->alloc_ptr;
-            pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)alloc_context->alloc_limit;
+                DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
+                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)alloc_context->alloc_ptr;
+                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)alloc_context->alloc_limit;
+            }
+        }
+        else
+        {
+            hr = E_FAIL;
         }
     }
 
@@ -4586,6 +4593,10 @@ HRESULT ClrDataAccess::GetFinalizationFillPointers(unsigned int cFillPointers, C
                 pFinalizationFillPointers[i] = (CLRDATA_ADDRESS)*TableIndex(fillPointersTable, i, sizeof(uint8_t*));
             }
         }
+        else
+        {
+            hr = E_FAIL;
+        }
     }
 
     SOSDacLeave();
@@ -4617,16 +4628,22 @@ HRESULT ClrDataAccess::GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned 
     {
         DPTR(dac_gc_heap) pHeap = __DPtr<dac_gc_heap>(TO_TADDR(heapAddr));
 
-        for (unsigned int i = 0; i < numGenerationTableEntries; ++i)
+        if (pHeap.IsValid())
         {
-            DPTR(dac_generation) generation = ServerGenerationTableIndex(pHeap, i);
-            pGenerationData[i].start_segment = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation->start_segment);
-            pGenerationData[i].allocation_start = (CLRDATA_ADDRESS)(ULONG_PTR)generation->allocation_start;
-            DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
-            pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_ptr;
-            pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_limit;
+            for (unsigned int i = 0; i < numGenerationTableEntries; ++i)
+            {
+                DPTR(dac_generation) generation = ServerGenerationTableIndex(pHeap, i);
+                pGenerationData[i].start_segment = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation->start_segment);
+                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS)(ULONG_PTR)generation->allocation_start;
+                DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
+                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_ptr;
+                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_limit;
+            }
         }
-
+        else
+        {
+            hr = E_FAIL;
+        }
     }
 #else
         hr = E_NOTIMPL;
@@ -4661,11 +4678,18 @@ HRESULT ClrDataAccess::GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, 
     {
         DPTR(dac_gc_heap) pHeap = __DPtr<dac_gc_heap>(TO_TADDR(heapAddr));
 
-        DPTR(dac_finalize_queue) fq = pHeap->finalize_queue;
-        DPTR(uint8_t*) pFillPointerArray= dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
-        for (unsigned int i = 0; i < numFillPointers; ++i)
+        if (pHeap.IsValid())
         {
-            pFinalizationFillPointers[i] = (CLRDATA_ADDRESS) pFillPointerArray[i];
+            DPTR(dac_finalize_queue) fq = pHeap->finalize_queue;
+            DPTR(uint8_t*) pFillPointerArray= dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
+            for (unsigned int i = 0; i < numFillPointers; ++i)
+            {
+                pFinalizationFillPointers[i] = (CLRDATA_ADDRESS) pFillPointerArray[i];
+            }
+        }
+        else
+        {
+            hr = E_FAIL;
         }
     }
 #else
