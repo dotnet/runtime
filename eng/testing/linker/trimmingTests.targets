@@ -12,6 +12,10 @@
     <TestSupportFiles Include="$(MSBuildThisFileDirectory)SupportFiles\Directory.Build.*">
       <DestinationFolder>$(TrimmingTestDir)</DestinationFolder>
     </TestSupportFiles>
+
+    <CliEnvironment Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
+    <CliEnvironment Include="DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
+    <CliEnvironment Include="DOTNET_MULTILEVEL_LOOKUP=0" />
   </ItemGroup>
 
   <Target Name="CreateTestDir"
@@ -77,7 +81,7 @@
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) -p:configuration=$(Configuration)</TestPublishTrimmedCommand>
     </PropertyGroup>
 
-    <Exec Command="$(TestPublishTrimmedCommand)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
+    <Exec Command="$(TestPublishTrimmedCommand)" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
   </Target>
 
   <Target Name="ExecuteApplications"
