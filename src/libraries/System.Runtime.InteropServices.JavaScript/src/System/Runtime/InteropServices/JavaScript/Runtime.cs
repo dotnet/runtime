@@ -195,7 +195,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     if (!_rawToJS.TryGetValue(rawObj, out jsObject))
                     {
-                        _rawToJS.Add(jsId, jsObject = new JSObject(jsId, rawObj));
+                        _rawToJS.Add(rawObj, jsObject = new JSObject(jsId, rawObj));
                     }
                 }
             }

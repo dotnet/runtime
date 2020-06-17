@@ -65,12 +65,4 @@
     <CLRTestBuildAllTargets></CLRTestBuildAllTargets>
   </PropertyGroup>
 
-  <!-- Where to put a "testhost" for running corefx tests -->
-  <PropertyGroup>
-    <TestHostVersion>$(ProductVersion)</TestHostVersion>
-    <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(TestWorkingDir)', 'testhost'))</TestHostRootPath>
-    <NETCoreAppTestHostFxrPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'host', 'fxr', '$(TestHostVersion)'))</NETCoreAppTestHostFxrPath>
-    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(TestHostVersion)'))</NETCoreAppTestSharedFrameworkPath>
-  </PropertyGroup>
-
 </Project>

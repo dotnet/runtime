@@ -1764,6 +1764,7 @@ namespace System.Net.Sockets.Tests
         public async Task BlockingAsyncContinuations_OperationsStillCompleteSuccessfully()
         {
             if (UsesSync) return;
+            if (Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1") return;
 
             using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

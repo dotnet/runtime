@@ -8,6 +8,7 @@ using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Configuration
@@ -35,7 +36,8 @@ namespace Microsoft.Extensions.Configuration
             {
                 _changeTokenRegistration = ChangeToken.OnChange(
                     () => Source.FileProvider.Watch(Source.Path),
-                    () => {
+                    () =>
+                    {
                         Thread.Sleep(Source.ReloadDelay);
                         Load(reload: true);
                     });
@@ -46,7 +48,7 @@ namespace Microsoft.Extensions.Configuration
         /// The source settings for this provider.
         /// </summary>
         public FileConfigurationSource Source { get; }
-        
+
         /// <summary>
         /// Generates a string representing this provider name and relevant details.
         /// </summary>
@@ -80,16 +82,34 @@ namespace Microsoft.Extensions.Configuration
                 {
                     Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 }
-                using (var stream = file.CreateReadStream())
+
+                static Stream OpenRead(IFileInfo fileInfo)
                 {
-                    try
+                    if (fileInfo.PhysicalPath != null)
                     {
-                        Load(stream);
+                        // The default physical file info assumes asynchronous IO which results in unnecessary overhead
+                        // especally since the configuration system is synchronous. This uses the same settings
+                        // and disables async IO.
+                        return new FileStream(
+                            fileInfo.PhysicalPath,
+                            FileMode.Open,
+                            FileAccess.Read,
+                            FileShare.ReadWrite,
+                            bufferSize: 1,
+                            FileOptions.SequentialScan);
                     }
-                    catch (Exception e)
-                    {
-                        HandleException(ExceptionDispatchInfo.Capture(e));
-                    }
+
+                    return fileInfo.CreateReadStream();
+                }
+
+                using Stream stream = OpenRead(file);
+                try
+                {
+                    Load(stream);
+                }
+                catch (Exception e)
+                {
+                    HandleException(ExceptionDispatchInfo.Capture(e));
                 }
             }
             // REVIEW: Should we raise this in the base as well / instead?

@@ -15,8 +15,6 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs"
              Link="Common\System\Collections\Generic\ArrayBuilder.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs"
-             Link="Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs" />
     <Compile Include="System\Dynamic\Utils\CacheDict.cs" />
     <Compile Include="System\Dynamic\Utils\ContractUtils.cs" />
     <Compile Include="System\Dynamic\Utils\ExpressionUtils.cs" />
