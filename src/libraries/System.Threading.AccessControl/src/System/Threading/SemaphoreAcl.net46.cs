@@ -13,7 +13,7 @@ namespace System.Threading
             int maximumCount,
             string? name,
             out bool createdNew,
-            SemaphoreSecurity semaphoreSecurity)
+            SemaphoreSecurity? semaphoreSecurity)
         {
             return new Semaphore(initialCount, maximumCount, name, out createdNew, semaphoreSecurity);
         }

@@ -23,7 +23,7 @@ namespace System.Threading
         /// <paramref name="maximumCount" /> is not a positive number.</exception>
         /// <exception cref="ArgumentException"><paramref name="initialCount" /> is greater than <paramref name="maximumCount" />.</exception>
         /// <exception cref="WaitHandleCannotBeOpenedException">A semaphore handle with the system-wide name '<paramref name="name" />' cannot be created. A semaphore handle of a different type might have the same name.</exception>
-        public static unsafe Semaphore Create(int initialCount, int maximumCount, string? name, out bool createdNew, SemaphoreSecurity semaphoreSecurity)
+        public static unsafe Semaphore Create(int initialCount, int maximumCount, string? name, out bool createdNew, SemaphoreSecurity? semaphoreSecurity)
         {
             if (semaphoreSecurity == null)
             {
