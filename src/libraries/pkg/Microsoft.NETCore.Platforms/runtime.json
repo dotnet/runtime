@@ -5,6 +5,12 @@
         "linux-musl"
       ]
     },
+    "alpine-arm64": {
+      "#import": [
+        "alpine",
+        "linux-musl-arm64"
+      ]
+    },
     "alpine-x64": {
       "#import": [
         "alpine",
@@ -14,6 +20,12 @@
     "alpine.3.10": {
       "#import": [
         "alpine.3.9"
+      ]
+    },
+    "alpine.3.10-arm64": {
+      "#import": [
+        "alpine.3.10",
+        "alpine.3.9-arm64"
       ]
     },
     "alpine.3.10-x64": {
@@ -27,6 +39,12 @@
         "alpine.3.10"
       ]
     },
+    "alpine.3.11-arm64": {
+      "#import": [
+        "alpine.3.11",
+        "alpine.3.10-arm64"
+      ]
+    },
     "alpine.3.11-x64": {
       "#import": [
         "alpine.3.11",
@@ -36,6 +54,12 @@
     "alpine.3.12": {
       "#import": [
         "alpine.3.11"
+      ]
+    },
+    "alpine.3.12-arm64": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-arm64"
       ]
     },
     "alpine.3.12-x64": {
@@ -49,6 +73,12 @@
         "alpine"
       ]
     },
+    "alpine.3.6-arm64": {
+      "#import": [
+        "alpine.3.6",
+        "alpine-arm64"
+      ]
+    },
     "alpine.3.6-x64": {
       "#import": [
         "alpine.3.6",
@@ -58,6 +88,12 @@
     "alpine.3.7": {
       "#import": [
         "alpine.3.6"
+      ]
+    },
+    "alpine.3.7-arm64": {
+      "#import": [
+        "alpine.3.7",
+        "alpine.3.6-arm64"
       ]
     },
     "alpine.3.7-x64": {
@@ -71,6 +107,12 @@
         "alpine.3.7"
       ]
     },
+    "alpine.3.8-arm64": {
+      "#import": [
+        "alpine.3.8",
+        "alpine.3.7-arm64"
+      ]
+    },
     "alpine.3.8-x64": {
       "#import": [
         "alpine.3.8",
@@ -80,6 +122,12 @@
     "alpine.3.9": {
       "#import": [
         "alpine.3.8"
+      ]
+    },
+    "alpine.3.9-arm64": {
+      "#import": [
+        "alpine.3.9",
+        "alpine.3.8-arm64"
       ]
     },
     "alpine.3.9-x64": {
