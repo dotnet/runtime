@@ -85,7 +85,7 @@ int32_t CryptoNative_HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len)
     return ret;
 }
 
-HMAC_CTX* CryptoNative_HmacDup(const HMAC_CTX* ctx)
+static HMAC_CTX* CryptoNative_HmacDup(const HMAC_CTX* ctx)
 {
     assert(ctx != NULL);
 
