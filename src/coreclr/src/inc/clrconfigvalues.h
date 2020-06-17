@@ -484,6 +484,8 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_PartialNGen, W("PartialNGen"), (DWORD)-1, "Gen
 
 CONFIG_DWORD_INFO(INTERNAL_NoASLRForNgen, W("NoASLRForNgen"), 0, "Turn off IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE bit in generated ngen images. Makes nidump output repeatable from run to run.")
 
+RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_NativeImageSearchPaths, W("NativeImageSearchPaths"), "Extra search paths for native composite R2R images", CLRConfig::EEConfig_default)
+
 #ifdef CROSSGEN_COMPILE
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_CrossGenAssumeInputSigned, W("CrossGenAssumeInputSigned"), 1, "CrossGen should assume that its input assemblies will be signed before deployment")
 #endif

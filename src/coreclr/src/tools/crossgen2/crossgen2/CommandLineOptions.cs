@@ -16,6 +16,8 @@ namespace ILCompiler
         public string[] Reference { get; set; }
         public string InstructionSet { get; set; }
         public FileInfo OutputFilePath { get; set; }
+
+        public DirectoryInfo CompositeRootPath { get; set; }
         public bool Optimize { get; set; }
         public bool OptimizeSpace { get; set; }
         public bool OptimizeTime { get; set; }
@@ -91,6 +93,10 @@ namespace ILCompiler
                 new Option(new[] { "--outputfilepath", "--out", "-o" }, SR.OutputFilePath)
                 {
                     Argument = new Argument<FileInfo>()
+                },
+                new Option(new[] { "--compositerootpath", "--crp" }, SR.CompositeRootPath)
+                {
+                    Argument = new Argument<DirectoryInfo>()
                 },
                 new Option(new[] { "--optimize", "-O" }, SR.EnableOptimizationsOption) 
                 { 

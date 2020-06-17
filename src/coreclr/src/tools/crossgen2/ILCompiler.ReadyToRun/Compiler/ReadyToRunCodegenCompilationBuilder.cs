@@ -20,6 +20,7 @@ namespace ILCompiler
     public sealed class ReadyToRunCodegenCompilationBuilder : CompilationBuilder
     {
         private readonly IEnumerable<string> _inputFiles;
+        private readonly string _compositeRootPath;
         private bool _ibcTuning;
         private bool _resilient;
         private bool _generateMapFile;
@@ -38,10 +39,15 @@ namespace ILCompiler
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
         private ILProvider _ilProvider = new ReadyToRunILProvider();
 
-        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, ReadyToRunCompilationModuleGroupBase group, IEnumerable<string> inputFiles)
+        public ReadyToRunCodegenCompilationBuilder(
+            CompilerTypeSystemContext context,
+            ReadyToRunCompilationModuleGroupBase group,
+            IEnumerable<string> inputFiles,
+            string compositeRootPath)
             : base(context, group, new CoreRTNameMangler())
         {
             _inputFiles = inputFiles;
+            _compositeRootPath = compositeRootPath;
 
             // R2R field layout needs compilation group information
             ((ReadyToRunCompilerContext)context).SetCompilationGroup(group);
@@ -224,6 +230,7 @@ namespace ILCompiler
                 _logger,
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
                 _inputFiles,
+                _compositeRootPath,
                 _instructionSetSupport,
                 _resilient,
                 _generateMapFile,

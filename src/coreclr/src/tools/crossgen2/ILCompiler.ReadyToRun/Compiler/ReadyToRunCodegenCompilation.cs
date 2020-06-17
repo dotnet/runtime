@@ -222,6 +222,8 @@ namespace ILCompiler
         /// </summary>
         private readonly IEnumerable<string> _inputFiles;
 
+        private readonly string _compositeRootPath;
+        
         private bool _resilient;
 
         private int _parallelism;
@@ -243,6 +245,7 @@ namespace ILCompiler
             Logger logger,
             DevirtualizationManager devirtualizationManager,
             IEnumerable<string> inputFiles,
+            string compositeRootPath,
             InstructionSetSupport instructionSetSupport,
             bool resilient,
             bool generateMapFile,
@@ -268,6 +271,7 @@ namespace ILCompiler
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
             _inputFiles = inputFiles;
+            _compositeRootPath = compositeRootPath;
             CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
@@ -281,7 +285,7 @@ namespace ILCompiler
             _fileLayoutOptimizer = new ReadyToRunFileLayoutOptimizer(methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
         }
 
-
+        private readonly static string s_folderUpPrefix = ".." + Path.DirectorySeparatorChar;
 
         public override void Compile(string outputFile)
         {
@@ -299,13 +303,19 @@ namespace ILCompiler
                 if (moduleGroup.IsCompositeBuildMode)
                 {
                     // In composite mode with standalone MSIL we rewrite all input MSIL assemblies to the
-                    // output folder, adding a format R2R header to them with forwarding information to
+                    // output folder, adding a formal R2R header to them with forwarding information to
                     // the composite executable.
                     string outputDirectory = Path.GetDirectoryName(outputFile);
                     string ownerExecutableName = Path.GetFileName(outputFile);
                     foreach (string inputFile in _inputFiles)
                     {
-                        string standaloneMsilOutputFile = Path.Combine(outputDirectory, Path.GetFileName(inputFile));
+                        string relativeMsilPath = Path.GetRelativePath(_compositeRootPath, inputFile);
+                        if (relativeMsilPath.StartsWith(s_folderUpPrefix))
+                        {
+                            // Input file not in the composite root, emit to root output folder
+                            relativeMsilPath = Path.GetFileName(inputFile);
+                        }
+                        string standaloneMsilOutputFile = Path.Combine(outputDirectory, relativeMsilPath);
                         RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName);
                     }
                 }
@@ -315,6 +325,8 @@ namespace ILCompiler
         private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName)
         {
             EcmaModule inputModule = NodeFactory.TypeSystemContext.GetModuleFromPath(inputFile);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
 
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
             DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile);

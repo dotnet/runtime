@@ -273,4 +273,7 @@
   <data name="FileLayoutOption" xml:space="preserve">
     <value>Layout non-method contents of file using profile driven optimization assuming the layout algorithm specified. The default value is DefaultSort, which indicates that complex layout is disabled</value>
   </data>
+  <data name="CompositeRootPath" xml:space="preserve">
+    <value>Logical root folder for composite builds; defaults to directory of 1st input file.</value>
+  </data>
 </root>
