@@ -31,8 +31,11 @@ namespace System.Net.WebSockets
             WebSocketHandle.CheckPlatformSupport();
 
             _state = (int)InternalState.Created;
+#if TARGETS_BROWSER
+            _options = new ClientWebSocketOptions();
+#else
             _options = new ClientWebSocketOptions() { Proxy = DefaultWebProxy.Instance };
-
+#endif
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
