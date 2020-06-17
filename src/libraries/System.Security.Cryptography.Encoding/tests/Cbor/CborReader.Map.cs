@@ -22,7 +22,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -45,7 +45,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceModeCheckEnabled && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_RequiresDefiniteLengthItems, ConformanceMode));
+                    throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_RequiresDefiniteLengthItems, ConformanceMode));
                 }
 
                 AdvanceBuffer(1);
@@ -60,7 +60,7 @@ namespace System.Formats.Cbor
 
                 if (2 * (ulong)mapSize > (ulong)(buffer.Length - bytesRead))
                 {
-                    throw new FormatException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
+                    throw new CborContentException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
                 }
 
                 AdvanceBuffer(bytesRead);
@@ -80,7 +80,7 @@ namespace System.Formats.Cbor
         ///   the current context is not a map. -or-
         ///   the reader is not at the end of the map
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -93,7 +93,7 @@ namespace System.Formats.Cbor
 
                 if (_itemsRead % 2 != 0)
                 {
-                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_KeyMissingValue);
+                    throw new CborContentException(SR.Cbor_Reader_InvalidCbor_KeyMissingValue);
                 }
 
                 PopDataItem(expectedType: CborMajorType.Map);
@@ -156,12 +156,12 @@ namespace System.Formats.Cbor
                 if (cmp > 0)
                 {
                     ResetBuffer(currentKeyEncodingRange.Offset);
-                    throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_KeysNotInSortedOrder, ConformanceMode));
+                    throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_KeysNotInSortedOrder, ConformanceMode));
                 }
                 else if (cmp == 0 && CborConformanceModeHelpers.RequiresUniqueKeys(ConformanceMode))
                 {
                     ResetBuffer(currentKeyEncodingRange.Offset);
-                    throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_ContainsDuplicateKeys, ConformanceMode));
+                    throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_ContainsDuplicateKeys, ConformanceMode));
                 }
             }
 
@@ -177,7 +177,7 @@ namespace System.Formats.Cbor
             if (!keyEncodingRanges.Add(currentKeyEncodingRange))
             {
                 ResetBuffer(currentKeyEncodingRange.Offset);
-                throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_ContainsDuplicateKeys, ConformanceMode));
+                throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_ContainsDuplicateKeys, ConformanceMode));
             }
         }
 

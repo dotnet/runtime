@@ -82,11 +82,11 @@ namespace System.Formats.Cbor.Tests
         [Theory]
         [InlineData(CborConformanceMode.Canonical, "bfff")]
         [InlineData(CborConformanceMode.Ctap2Canonical, "bfff")]
-        public static void ReadMap_IndefiniteLength_UnSupportedConformanceMode_ShouldThrowFormatException(CborConformanceMode mode, string hexEncoding)
+        public static void ReadMap_IndefiniteLength_UnSupportedConformanceMode_ShouldThrowCborContentException(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, mode);
-            Assert.Throws<FormatException>(() => reader.ReadStartMap());
+            Assert.Throws<CborContentException>(() => reader.ReadStartMap());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
@@ -118,11 +118,11 @@ namespace System.Formats.Cbor.Tests
         [InlineData(CborConformanceMode.Ctap2Canonical, "b90000")]
         [InlineData(CborConformanceMode.Ctap2Canonical, "ba00000000")]
         [InlineData(CborConformanceMode.Ctap2Canonical, "bb0000000000000000")]
-        public static void ReadMap_NonCanonicalLengths_UnSupportedConformanceMode_ShouldThrowFormatException(CborConformanceMode mode, string hexEncoding)
+        public static void ReadMap_NonCanonicalLengths_UnSupportedConformanceMode_ShouldThrowCborContentException(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, mode);
-            Assert.Throws<FormatException>(() => reader.ReadStartMap());
+            Assert.Throws<CborContentException>(() => reader.ReadStartMap());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
@@ -185,7 +185,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(CborConformanceMode.Strict, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
         [InlineData(CborConformanceMode.Canonical, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
         [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
-        public static void ReadMap_DuplicateKeys_StrictConformance_ShouldThrowFormatException(CborConformanceMode mode, object dupeKey, string hexEncoding)
+        public static void ReadMap_DuplicateKeys_StrictConformance_ShouldThrowCborContentException(CborConformanceMode mode, object dupeKey, string hexEncoding)
         {
             var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
             reader.ReadStartMap();
@@ -195,7 +195,7 @@ namespace System.Formats.Cbor.Tests
             int bytesRemaining = reader.BytesRemaining;
             CborReaderState state = reader.PeekState();
 
-            Assert.Throws<FormatException>(() => Helpers.VerifyValue(reader, dupeKey));
+            Assert.Throws<CborContentException>(() => Helpers.VerifyValue(reader, dupeKey));
 
             // ensure reader state is preserved
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
@@ -225,7 +225,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { 1, 2, 3, 0 }, "a40101020203030000")]
         [InlineData(CborConformanceMode.Canonical, new object[] { 1, "", 25, "a", 2 }, "a5010060001819006161000200")]
         [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { 1, 25, "", "a", 2 }, "a5010018190060006161000200")]
-        public static void ReadMap_UnsortedKeys_ConformanceRequiringSortedKeys_ShouldThrowFormatException(CborConformanceMode mode, object[] keySequence, string hexEncoding)
+        public static void ReadMap_UnsortedKeys_ConformanceRequiringSortedKeys_ShouldThrowCborContentException(CborConformanceMode mode, object[] keySequence, string hexEncoding)
         {
             var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
             reader.ReadStartMap();
@@ -239,7 +239,7 @@ namespace System.Formats.Cbor.Tests
             CborReaderState state = reader.PeekState();
 
             // the final element violates sorting invariant
-            Assert.Throws<FormatException>(() => Helpers.VerifyValue(reader, keySequence.Last()));
+            Assert.Throws<CborContentException>(() => Helpers.VerifyValue(reader, keySequence.Last()));
 
             // ensure reader state is preserved
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
@@ -367,7 +367,7 @@ namespace System.Formats.Cbor.Tests
         [Theory]
         [InlineData("a2011907e4", 2, 1)]
         [InlineData("a6011a01344224031a01344224", 6, 2)]
-        public static void ReadMap_IncorrectDefiniteLength_ShouldThrowFormatException(string hexEncoding, int expectedLength, int actualLength)
+        public static void ReadMap_IncorrectDefiniteLength_ShouldThrowCborContentException(string hexEncoding, int expectedLength, int actualLength)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
@@ -382,7 +382,7 @@ namespace System.Formats.Cbor.Tests
             }
 
             int bytesRemaining = reader.BytesRemaining;
-            Assert.Throws<FormatException>(() => reader.ReadInt64());
+            Assert.Throws<CborContentException>(() => reader.ReadInt64());
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
@@ -390,7 +390,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData("bf", 0)]
         [InlineData("bf0102", 2)]
         [InlineData("bf01020304", 4)]
-        public static void ReadMap_IndefiniteLength_MissingBreakByte_ShouldThrowFormatException(string hexEncoding, int length)
+        public static void ReadMap_IndefiniteLength_MissingBreakByte_ShouldThrowCborContentException(string hexEncoding, int length)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
@@ -401,7 +401,7 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadInt64();
             }
 
-            Assert.Throws<FormatException>(() => reader.PeekState());
+            Assert.Throws<CborContentException>(() => reader.PeekState());
         }
 
         [Theory]
@@ -430,7 +430,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData("bf01ff", 1)]
         [InlineData("bf010203ff", 3)]
         [InlineData("bf0102030405ff", 5)]
-        public static void ReadMap_IndefiniteLength_OddKeyValuePairs_ShouldThrowFormatException(string hexEncoding, int length)
+        public static void ReadMap_IndefiniteLength_OddKeyValuePairs_ShouldThrowCborContentException(string hexEncoding, int length)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
@@ -442,8 +442,8 @@ namespace System.Formats.Cbor.Tests
 
             int bytesRemaining = reader.BytesRemaining;
 
-            Assert.Throws<FormatException>(() => reader.PeekState());
-            Assert.Throws<FormatException>(() => reader.ReadEndMap());
+            Assert.Throws<CborContentException>(() => reader.PeekState());
+            Assert.Throws<CborContentException>(() => reader.ReadEndMap());
 
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
@@ -451,7 +451,7 @@ namespace System.Formats.Cbor.Tests
         [Theory]
         [InlineData("a201811907e4", 2, 1)]
         [InlineData("a61907e4811907e402811907e4", 6, 2)]
-        public static void ReadMap_IncorrectDefiniteLength_NestedValues_ShouldThrowFormatException(string hexEncoding, int expectedLength, int actualLength)
+        public static void ReadMap_IncorrectDefiniteLength_NestedValues_ShouldThrowCborContentException(string hexEncoding, int expectedLength, int actualLength)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
@@ -470,18 +470,18 @@ namespace System.Formats.Cbor.Tests
             }
 
             int bytesRemaining = reader.BytesRemaining;
-            Assert.Throws<FormatException>(() => reader.ReadInt64());
+            Assert.Throws<CborContentException>(() => reader.ReadInt64());
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Fact]
-        public static void ReadStartMap_EmptyBuffer_ShouldThrowFormatException()
+        public static void ReadStartMap_EmptyBuffer_ShouldThrowCborContentException()
         {
             byte[] encoding = Array.Empty<byte>();
             var reader = new CborReader(encoding);
 
             int bytesRemaining = reader.BytesRemaining;
-            Assert.Throws<FormatException>(() => reader.ReadStartMap());
+            Assert.Throws<CborContentException>(() => reader.ReadStartMap());
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
@@ -513,12 +513,12 @@ namespace System.Formats.Cbor.Tests
         [InlineData("b912")]
         [InlineData("ba000000")]
         [InlineData("bb00000000000000")]
-        public static void ReadStartMap_InvalidData_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadStartMap_InvalidData_ShouldThrowCborContentException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<FormatException>(() => reader.ReadStartMap());
+            Assert.Throws<CborContentException>(() => reader.ReadStartMap());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
@@ -527,12 +527,12 @@ namespace System.Formats.Cbor.Tests
         [InlineData("b20101")]
         [InlineData("bb8000000000000000")] // long.MaxValue + 1
         [InlineData("bbffffffffffffffff")] // ulong.MaxValue
-        public static void ReadStartMap_BufferTooSmall_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadStartMap_BufferTooSmall_ShouldThrowCborContentException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<FormatException>(() => reader.ReadStartMap());
+            Assert.Throws<CborContentException>(() => reader.ReadStartMap());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
     }

@@ -17,7 +17,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -30,7 +30,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceModeCheckEnabled && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
+                    throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
                 }
 
                 AdvanceBuffer(1);
@@ -55,7 +55,7 @@ namespace System.Formats.Cbor
         ///   the current context is not an array. -or-
         ///   the reader is not at the end of the array.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data
         /// </exception>

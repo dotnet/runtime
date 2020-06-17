@@ -21,7 +21,7 @@ namespace System.Formats.Cbor
         /// <exception cref="OverflowException">
         ///   the encoded integer is out of range for <see cref="int"/>.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -44,7 +44,7 @@ namespace System.Formats.Cbor
         /// <exception cref="OverflowException">
         ///   the encoded integer is out of range for <see cref="uint"/>.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -70,7 +70,7 @@ namespace System.Formats.Cbor
         /// <exception cref="OverflowException">
         ///   the encoded integer is out of range for <see cref="long"/>.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -93,7 +93,7 @@ namespace System.Formats.Cbor
         /// <exception cref="OverflowException">
         ///   the encoded integer is out of range for <see cref="ulong"/>.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -121,7 +121,7 @@ namespace System.Formats.Cbor
         /// <exception cref="OverflowException">
         ///   the encoded integer is out of range for <see cref="uint"/>
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -188,7 +188,7 @@ namespace System.Formats.Cbor
             // conservative check: ensure the buffer has the minimum required length for declared definite length.
             if (length > (ulong)(data.Length - bytesRead))
             {
-                throw new FormatException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
+                throw new CborContentException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
             }
 
             return (int)length;
@@ -254,14 +254,14 @@ namespace System.Formats.Cbor
                     return result;
 
                 default:
-                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_InvalidIntegerEncoding);
+                    throw new CborContentException(SR.Cbor_Reader_InvalidCbor_InvalidIntegerEncoding);
             }
 
             void ValidateIsNonStandardIntegerRepresentationSupported()
             {
                 if (_isConformanceModeCheckEnabled && CborConformanceModeHelpers.RequiresCanonicalIntegerRepresentation(ConformanceMode))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_NonCanonicalIntegerRepresentation, ConformanceMode));
+                    throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_NonCanonicalIntegerRepresentation, ConformanceMode));
                 }
             }
         }

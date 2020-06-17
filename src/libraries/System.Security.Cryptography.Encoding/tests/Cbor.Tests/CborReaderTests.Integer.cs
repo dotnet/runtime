@@ -189,11 +189,11 @@ namespace System.Formats.Cbor.Tests
         [InlineData(CborConformanceMode.Ctap2Canonical, "1a0000ffff")]
         [InlineData(CborConformanceMode.Ctap2Canonical, "1b00000000ffffffff")]
         [InlineData(CborConformanceMode.Ctap2Canonical, "1b0000000000000001")]
-        public static void ReadUInt64_NonCanonicalEncodings_UnSupportedConformanceMode_ShouldThrowFormatException(CborConformanceMode mode, string hexEncoding)
+        public static void ReadUInt64_NonCanonicalEncodings_UnSupportedConformanceMode_ShouldThrowCborContentException(CborConformanceMode mode, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data, mode);
-            Assert.Throws<FormatException>(() => reader.ReadUInt64());
+            Assert.Throws<CborContentException>(() => reader.ReadUInt64());
             Assert.Equal(data.Length, reader.BytesRemaining);
         }
 
@@ -228,11 +228,11 @@ namespace System.Formats.Cbor.Tests
         [InlineData(CborConformanceMode.Ctap2Canonical, "3a0000ffff")]
         [InlineData(CborConformanceMode.Ctap2Canonical, "3b00000000ffffffff")]
         [InlineData(CborConformanceMode.Ctap2Canonical, "3b0000000000000001")]
-        public static void ReadInt64_NonCanonicalEncodings_UnSupportedConformanceMode_ShouldThrowFormatException(CborConformanceMode mode, string hexEncoding)
+        public static void ReadInt64_NonCanonicalEncodings_UnSupportedConformanceMode_ShouldThrowCborContentException(CborConformanceMode mode, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data, mode);
-            Assert.Throws<FormatException>(() => reader.ReadInt64());
+            Assert.Throws<CborContentException>(() => reader.ReadInt64());
             Assert.Equal(data.Length, reader.BytesRemaining);
         }
 
@@ -398,11 +398,11 @@ namespace System.Formats.Cbor.Tests
         [InlineData("3912")]
         [InlineData("3a000000")]
         [InlineData("3b00000000000000")]
-        public static void ReadInt64_InvalidData_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadInt64_InvalidData_ShouldThrowCborContentException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Throws<FormatException>(() => reader.ReadInt64());
+            Assert.Throws<CborContentException>(() => reader.ReadInt64());
 
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
@@ -417,44 +417,44 @@ namespace System.Formats.Cbor.Tests
         [InlineData("3912")]
         [InlineData("3a000000")]
         [InlineData("3b00000000000000")]
-        public static void ReadCborNegativeIntegerRepresentation_InvalidData_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadCborNegativeIntegerRepresentation_InvalidData_ShouldThrowCborContentException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<FormatException>(() => reader.ReadCborNegativeIntegerRepresentation());
+            Assert.Throws<CborContentException>(() => reader.ReadCborNegativeIntegerRepresentation());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
         [InlineData("1f")]
         [InlineData("3f")]
-        public static void ReadInt64_IndefiniteLengthIntegers_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadInt64_IndefiniteLengthIntegers_ShouldThrowCborContentException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<FormatException>(() => reader.ReadInt64());
+            Assert.Throws<CborContentException>(() => reader.ReadInt64());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
-        public static void ReadUInt64_EmptyBuffer_ShouldThrowFormatException()
+        public static void ReadUInt64_EmptyBuffer_ShouldThrowCborContentException()
         {
             byte[] encoding = Array.Empty<byte>();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<FormatException>(() => reader.ReadUInt64());
+            Assert.Throws<CborContentException>(() => reader.ReadUInt64());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
-        public static void ReadCborNegativeIntegerRepresentation_EmptyBuffer_ShouldThrowFormatException()
+        public static void ReadCborNegativeIntegerRepresentation_EmptyBuffer_ShouldThrowCborContentException()
         {
             byte[] encoding = Array.Empty<byte>();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<FormatException>(() => reader.ReadCborNegativeIntegerRepresentation());
+            Assert.Throws<CborContentException>(() => reader.ReadCborNegativeIntegerRepresentation());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
     }

@@ -166,7 +166,7 @@ namespace System.Formats.Cbor
                     {
                         reader.SkipValue(disableConformanceModeChecks: false);
                     }
-                    catch (FormatException e)
+                    catch (CborContentException e)
                     {
                         throw new ArgumentException(SR.Cbor_Writer_PayloadIsNotValidCbor, e);
                     }

@@ -90,7 +90,7 @@ namespace System.Formats.Cbor
         ///   equivalent to using <see cref="CborConformanceMode.Lax"/>.
         /// </param>
         /// <returns>A <see cref="ReadOnlyMemory{T}"/> view of the encoded value.</returns>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   The data item is not a valid CBOR data item encoding. -or-
         ///   The CBOR encoding is not valid under the current conformance mode
         /// </exception>
@@ -121,7 +121,7 @@ namespace System.Formats.Cbor
                     throw new InvalidOperationException(SR.Cbor_Reader_NoMoreDataItemsToRead);
                 }
 
-                throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
+                throw new CborContentException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
             }
 
             var nextByte = new CborInitialByte(_data.Span[_offset]);
@@ -140,7 +140,7 @@ namespace System.Formats.Cbor
                         break;
                     }
 
-                    throw new FormatException(SR.Format(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem, (int)nextByte.MajorType));
+                    throw new CborContentException(SR.Format(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem, (int)nextByte.MajorType));
             }
 
             return nextByte;
@@ -215,7 +215,7 @@ namespace System.Formats.Cbor
 
             if (_isTagContext)
             {
-                throw new FormatException(SR.Cbor_Reader_InvalidCbor_TagNotFollowedByValue);
+                throw new CborContentException(SR.Cbor_Reader_InvalidCbor_TagNotFollowedByValue);
             }
 
             if (_currentMajorType == CborMajorType.Map)
@@ -271,7 +271,7 @@ namespace System.Formats.Cbor
         {
             if (_data.Length - _offset < length)
             {
-                throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
+                throw new CborContentException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
             }
         }
 
@@ -279,7 +279,7 @@ namespace System.Formats.Cbor
         {
             if (buffer.Length < requiredLength)
             {
-                throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
+                throw new CborContentException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
             }
         }
 

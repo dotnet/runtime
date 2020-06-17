@@ -169,11 +169,11 @@ namespace System.Formats.Cbor.Tests
         [InlineData(CborConformanceMode.Strict, "f81f")]
         [InlineData(CborConformanceMode.Canonical, "f801")]
         [InlineData(CborConformanceMode.Ctap2Canonical, "f800")]
-        public static void ReadSimpleValue_UnsupportedRanges_UnsupportedConformance_ShouldThrowFormatException(CborConformanceMode conformanceMode, string hexEncoding)
+        public static void ReadSimpleValue_UnsupportedRanges_UnsupportedConformance_ShouldThrowCborContentException(CborConformanceMode conformanceMode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, conformanceMode);
-            Assert.Throws<FormatException>(() => reader.ReadSimpleValue());
+            Assert.Throws<CborContentException>(() => reader.ReadSimpleValue());
         }
 
         [Theory]

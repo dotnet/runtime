@@ -24,7 +24,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   the next date item does not have the correct major type.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -40,7 +40,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceModeCheckEnabled && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
+                    throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
                 }
 
                 return ReadIndefiniteLengthByteStringConcatenated();
@@ -70,7 +70,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -86,7 +86,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceModeCheckEnabled && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
+                    throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
                 }
 
                 return TryReadIndefiniteLengthByteStringConcatenated(destination, out bytesWritten);
@@ -120,7 +120,7 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type. -or-
         ///   the data item is an indefinite-length byte string.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -151,7 +151,7 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type. -or-
         ///   the next data item is a definite-length encoded string.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -167,7 +167,7 @@ namespace System.Formats.Cbor
 
             if (_isConformanceModeCheckEnabled && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
             {
-                throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
+                throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
 
             AdvanceBuffer(1);
@@ -181,7 +181,7 @@ namespace System.Formats.Cbor
         ///   the current context is not an indefinite-length string. -or-
         ///   the reader is not at the end of the string
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   there was an unexpected end of CBOR encoding data
         /// </exception>
         public void ReadEndIndefiniteLengthByteString()
@@ -199,7 +199,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -215,7 +215,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceModeCheckEnabled && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
+                    throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
                 }
 
                 return ReadIndefiniteLengthTextStringConcatenated();
@@ -234,7 +234,7 @@ namespace System.Formats.Cbor
             }
             catch (DecoderFallbackException e)
             {
-                throw new FormatException(SR.Cbor_Reader_InvalidCbor_InvalidUtf8StringEncoding, e);
+                throw new CborContentException(SR.Cbor_Reader_InvalidCbor_InvalidUtf8StringEncoding, e);
             }
 
             AdvanceBuffer(bytesRead + length);
@@ -256,7 +256,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -272,7 +272,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceModeCheckEnabled && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
+                    throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
                 }
 
                 return TryReadIndefiniteLengthTextStringConcatenated(destination, out charsWritten);
@@ -310,7 +310,7 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type. -or-
         ///   the data item is an indefinite-length text string.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -348,7 +348,7 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type. -or-
         ///   the next data item is a definite-length encoded string.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -364,7 +364,7 @@ namespace System.Formats.Cbor
 
             if (_isConformanceModeCheckEnabled && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
             {
-                throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
+                throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
 
             AdvanceBuffer(1);
@@ -378,7 +378,7 @@ namespace System.Formats.Cbor
         ///   the current context is not an indefinite-length string. -or-
         ///   the reader is not at the end of the string
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   there was an unexpected end of CBOR encoding data
         /// </exception>
         public void ReadEndIndefiniteLengthTextString()
@@ -534,7 +534,7 @@ namespace System.Formats.Cbor
 
                 if (header.InitialByte != CborInitialByte.IndefiniteLengthBreakByte && header.MajorType != expectedType)
                 {
-                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem);
+                    throw new CborContentException(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem);
                 }
 
                 return header;
@@ -573,7 +573,7 @@ namespace System.Formats.Cbor
             }
             catch (DecoderFallbackException e)
             {
-                throw new FormatException(SR.Cbor_Reader_InvalidCbor_InvalidUtf8StringEncoding, e);
+                throw new CborContentException(SR.Cbor_Reader_InvalidCbor_InvalidUtf8StringEncoding, e);
             }
         }
 

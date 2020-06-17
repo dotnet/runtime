@@ -21,5 +21,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)CborConformanceLevel.cs" Link="Common\System\Formats\Cbor\CborConformanceLevel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CborInitialByte.cs" Link="Common\System\Formats\Cbor\CborInitialByte.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CborTag.cs" Link="Common\System\Formats\Cbor\CborTag.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborContentException.cs" Link="Common\System\Formats\Cbor\CborContentException.cs" />
   </ItemGroup>
 </Project>

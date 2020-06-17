@@ -17,7 +17,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -39,7 +39,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -58,7 +58,7 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type. -or-
         ///   the next date item does not have the correct semantic tag.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   invalid semantic date/time encoding. -or-
@@ -80,7 +80,7 @@ namespace System.Formats.Cbor
                     case CborReaderState.StartIndefiniteLengthTextString:
                         break;
                     default:
-                        throw new FormatException(SR.Cbor_Reader_InvalidDateTimeEncoding);
+                        throw new CborContentException(SR.Cbor_Reader_InvalidDateTimeEncoding);
                 }
 
                 string dateString = ReadTextString();
@@ -88,7 +88,7 @@ namespace System.Formats.Cbor
                 // TODO determine if conformance modes should allow inexact date sting parsing
                 if (!DateTimeOffset.TryParseExact(dateString, CborWriter.Rfc3339FormatString, null, DateTimeStyles.RoundtripKind, out DateTimeOffset result))
                 {
-                    throw new FormatException(SR.Cbor_Reader_InvalidDateTimeEncoding);
+                    throw new CborContentException(SR.Cbor_Reader_InvalidDateTimeEncoding);
                 }
 
                 return result;
@@ -109,7 +109,7 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type. -or-
         ///   the next date item does not have the correct semantic tag.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   invalid semantic date/time encoding. -or-
@@ -138,14 +138,14 @@ namespace System.Formats.Cbor
 
                         if (double.IsNaN(seconds) || double.IsInfinity(seconds))
                         {
-                            throw new FormatException(SR.Cbor_Reader_InvalidUnixTimeEncoding);
+                            throw new CborContentException(SR.Cbor_Reader_InvalidUnixTimeEncoding);
                         }
 
                         TimeSpan timespan = TimeSpan.FromSeconds(seconds);
                         return DateTimeOffset.UnixEpoch + timespan;
 
                     default:
-                        throw new FormatException(SR.Cbor_Reader_InvalidUnixTimeEncoding);
+                        throw new CborContentException(SR.Cbor_Reader_InvalidUnixTimeEncoding);
                 }
             }
             catch
@@ -164,7 +164,7 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type. -or-
         ///   the next date item does not have the correct semantic tag.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   invalid semantic bignum encoding. -or-
@@ -191,7 +191,7 @@ namespace System.Formats.Cbor
                     case CborReaderState.StartIndefiniteLengthByteString:
                         break;
                     default:
-                        throw new FormatException(SR.Cbor_Reader_InvalidBigNumEncoding);
+                        throw new CborContentException(SR.Cbor_Reader_InvalidBigNumEncoding);
                 }
 
                 byte[] unsignedBigEndianEncoding = ReadByteString();
@@ -217,7 +217,7 @@ namespace System.Formats.Cbor
         /// <exception cref="OverflowException">
         ///   Decoded decimal fraction is either too large or too small for a <see cref="decimal"/> value.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   invalid semantic decimal fraction encoding. -or-
@@ -235,7 +235,7 @@ namespace System.Formats.Cbor
 
                 if (PeekState() != CborReaderState.StartArray || ReadStartArray() != 2)
                 {
-                    throw new FormatException(SR.Cbor_Reader_InvalidDecimalEncoding);
+                    throw new CborContentException(SR.Cbor_Reader_InvalidDecimalEncoding);
                 }
 
                 decimal mantissa; // signed integral component of the decimal value
@@ -249,7 +249,7 @@ namespace System.Formats.Cbor
                         break;
 
                     default:
-                        throw new FormatException(SR.Cbor_Reader_InvalidDecimalEncoding);
+                        throw new CborContentException(SR.Cbor_Reader_InvalidDecimalEncoding);
                 }
 
                 switch (PeekState())
@@ -271,13 +271,13 @@ namespace System.Formats.Cbor
                                 break;
 
                             default:
-                                throw new FormatException(SR.Cbor_Reader_InvalidDecimalEncoding);
+                                throw new CborContentException(SR.Cbor_Reader_InvalidDecimalEncoding);
                         }
 
                         break;
 
                     default:
-                        throw new FormatException(SR.Cbor_Reader_InvalidDecimalEncoding);
+                        throw new CborContentException(SR.Cbor_Reader_InvalidDecimalEncoding);
                 }
 
                 ReadEndArray();
@@ -311,7 +311,7 @@ namespace System.Formats.Cbor
 
             if (_isConformanceModeCheckEnabled && !CborConformanceModeHelpers.AllowsTags(ConformanceMode))
             {
-                throw new FormatException(SR.Format(SR.Cbor_ConformanceMode_TagsNotSupported, ConformanceMode));
+                throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_TagsNotSupported, ConformanceMode));
             }
 
             return result;

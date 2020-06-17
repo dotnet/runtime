@@ -19,7 +19,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   the reader is not at the start of new value.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -41,7 +41,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   the reader is at the root context
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.

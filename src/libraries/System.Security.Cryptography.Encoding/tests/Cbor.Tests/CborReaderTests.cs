@@ -21,10 +21,10 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void Peek_EmptyBuffer_ShouldThrowFormatException()
+        public static void Peek_EmptyBuffer_ShouldThrowCborContentException()
         {
             var reader = new CborReader(ReadOnlyMemory<byte>.Empty);
-            Assert.Throws<FormatException>(() => reader.PeekState());
+            Assert.Throws<CborContentException>(() => reader.PeekState());
         }
 
         [Theory]
@@ -95,10 +95,10 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void Read_EmptyBuffer_ShouldThrowFormatException()
+        public static void Read_EmptyBuffer_ShouldThrowCborContentException()
         {
             var reader = new CborReader(ReadOnlyMemory<byte>.Empty);
-            Assert.Throws<FormatException>(() => reader.ReadInt64());
+            Assert.Throws<CborContentException>(() => reader.ReadInt64());
         }
 
         [Fact]
@@ -141,7 +141,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void CborReader_MultipleRootValuesAllowed_RootLevelBreakByte_ShouldThrowFormatException()
+        public static void CborReader_MultipleRootValuesAllowed_RootLevelBreakByte_ShouldThrowCborContentException()
         {
             string hexEncoding = "018101ff";
             var reader = new CborReader(hexEncoding.HexToByteArray(), allowMultipleRootLevelValues: true);
@@ -151,7 +151,7 @@ namespace System.Formats.Cbor.Tests
             reader.ReadInt32();
             reader.ReadEndArray();
 
-            Assert.Throws<FormatException>(() => reader.PeekState());
+            Assert.Throws<CborContentException>(() => reader.PeekState());
         }
 
         [Fact]
@@ -200,11 +200,11 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [MemberData(nameof(EncodedValueInvalidInputs))]
-        public static void ReadEncodedValue_InvalidCbor_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadEncodedValue_InvalidCbor_ShouldThrowCborContentException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Throws<FormatException>(() => reader.ReadEncodedValue());
+            Assert.Throws<CborContentException>(() => reader.ReadEncodedValue());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
@@ -213,11 +213,11 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [MemberData(nameof(NonConformingSkipValueEncodings))]
-        public static void ReadEncodedValue_InvalidConformance_ConformanceCheckEnabled_ShouldThrowFormatException(CborConformanceMode mode, string hexEncoding)
+        public static void ReadEncodedValue_InvalidConformance_ConformanceCheckEnabled_ShouldThrowCborContentException(CborConformanceMode mode, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, mode);
-            Assert.Throws<FormatException>(() => reader.ReadEncodedValue(disableConformanceModeChecks: false));
+            Assert.Throws<CborContentException>(() => reader.ReadEncodedValue(disableConformanceModeChecks: false));
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 

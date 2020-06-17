@@ -330,4 +330,7 @@
   <data name="Cbor_Writer_DecimalOverflow" xml:space="preserve">
     <value>Value was either too large or too small for a Decimal.</value>
   </data>
+  <data name="CborContentException_DefaultMessage" xml:space="preserve">
+    <value>The CBOR encoding is invalid.</value>
+  </data>
 </root>
