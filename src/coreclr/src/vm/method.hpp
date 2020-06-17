@@ -1313,7 +1313,7 @@ public:
 #ifndef CROSSGEN_COMPILE
         // This is the only case currently. In the future, a method that does not have a vtable slot may still record entry
         // point slots that need to be backpatched on entry point change, and in such cases the conditions here may be changed.
-        return IsVersionableWithVtableSlotBackpatch();
+        return IsVersionableWithVtableSlotBackpatch() || IsVersionableWithPrecode();
 #else
         // Entry point slot backpatch is disabled for CrossGen
         return false;
@@ -1330,11 +1330,15 @@ private:
         WRAPPER_NO_CONTRACT;
         _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
 
-        // At the moment this is the only case, see MayHaveEntryPointSlotsToBackpatch()
+        if (IsVersionableWithPrecode())
+        {
+            return GetOrCreatePrecode()->GetEntryPoint();
+        }
         _ASSERTE(IsVersionableWithVtableSlotBackpatch());
         return GetTemporaryEntryPoint();
     }
 
+#ifndef DACCESS_COMPILE
     // Gets the entry point stored in the primary storage location for backpatching. Entry point slot backpatch uses this entry
     // point as an oracle to determine if the entry point actually changed and warrants backpatching.
     PCODE GetEntryPointToBackpatch_Locked()
@@ -1343,11 +1347,28 @@ private:
         _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
         _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
 
+        if (IsVersionableWithPrecode())
+        {
+            Precode *precode = GetOrCreatePrecode();
+            if (precode->IsPointingToPrestub())
+                return precode->GetEntryPoint();
+
+            PCODE targetCode = precode->GetTarget();
+            if (StubManager::IsStub(targetCode))
+            {
+                TraceDestination precodeDest;
+                if (StubManager::TraceStub(targetCode, &precodeDest))
+                {
+                    return precodeDest.GetAddress();
+                }
+            }
+            return targetCode;
+        }
         // At the moment this is the only case, see MayHaveEntryPointSlotsToBackpatch()
+
         _ASSERTE(IsVersionableWithVtableSlotBackpatch());
         return GetMethodEntryPoint();
     }
-
     // Sets the entry point stored in the primary storage location for backpatching. Entry point slot backpatch uses this entry
     // point as an oracle to determine if the entry point actually changed and warrants backpatching.
     void SetEntryPointToBackpatch_Locked(PCODE entryPoint)
@@ -1357,12 +1378,25 @@ private:
         _ASSERTE(entryPoint != NULL);
         _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
 
+        if (IsVersionableWithPrecode())
+        {
+            Precode *precode = GetOrCreatePrecode();
+            if (entryPoint == precode->GetEntryPoint())
+            {
+                precode->ResetTargetInterlocked();
+            }
+            else
+            {
+                precode->SetTargetInterlocked(entryPoint, FALSE /* fOnlyRedirectFromPrestub */);
+            }
+            return;
+        }
         // At the moment this is the only case, see MayHaveEntryPointSlotsToBackpatch(). If that changes in the future, this
         // function may have to handle other cases in SetCodeEntryPoint().
         _ASSERTE(IsVersionableWithVtableSlotBackpatch());
         SetMethodEntryPoint(entryPoint);
     }
-
+#endif // DACCESS_COMPILE
 public:
     void RecordAndBackpatchEntryPointSlot(LoaderAllocator *slotLoaderAllocator, TADDR slot, EntryPointSlots::SlotType slotType);
 private:

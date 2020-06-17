@@ -85,6 +85,20 @@ void MethodDescBackpatchInfoTracker::Backpatch_Locked(MethodDesc *pMethodDesc, P
         EntryPointSlots::SlotType slotType;
 
         EntryPointSlots::ConvertUINT_PTRToSlotAndTypePair(slotData, &slot, &slotType);
+/*
+        {
+            ::SString namespaceOrClassName;
+            ::SString methodName;
+            ::SString methodSignature;
+            pMethodDesc->GetMethodInfo(namespaceOrClassName, methodName, methodSignature);
+            bool print = false;
+            if (namespaceOrClassName.GetUnicode()[0] == L'P')
+                print = true;
+            
+            if (print)
+                wprintf(L"%p %s %s %s pIndirection=%p pCode=%p BACKPATCH\n", pMethodDesc, namespaceOrClassName.GetUnicode(), methodName.GetUnicode(), methodSignature.GetUnicode(), (void*)slot, (void*)entryPoint);
+        }
+*/
         EntryPointSlots::Backpatch_Locked(slot, slotType, entryPoint);
 
         return true; // Keep walking

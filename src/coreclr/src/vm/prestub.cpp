@@ -2371,7 +2371,28 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CO
     }
     else
     {
-        *(TADDR *)pIndirection = pCode;
+/*        SString namespaceOrClassName;
+        SString methodName;
+        SString methodSignature;
+        pMD->GetMethodInfo(namespaceOrClassName, methodName, methodSignature);
+        bool print = false;
+        if (namespaceOrClassName.GetUnicode()[0] == L'P')
+            print = true;
+        
+        if (print)
+            wprintf(L"%p %s %s %s pIndirection=%p pCode=%p", pMD, namespaceOrClassName.GetUnicode(), methodName.GetUnicode(), methodSignature.GetUnicode(), (void*)pIndirection, (void*)pCode);*/
+        if (pMD->MayHaveEntryPointSlotsToBackpatch())
+        {
+/*            if (print)
+                wprintf(L" RECORD_AND_BACKPATCH\n");*/
+            pMD->RecordAndBackpatchEntryPointSlot(GetAppDomain()->GetLoaderAllocator(), pIndirection, EntryPointSlots::SlotType_Normal);
+        }
+        else
+        {
+/*            if (print)
+                wprintf(L" NOBACKPATCH!!!\n");*/
+            *(TADDR *)pIndirection = pCode;
+        }
     }
 
     return pCode;
@@ -2665,13 +2686,13 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
             //
             if (!DoesSlotCallPrestub(pCode))
             {
-                if (pMD->IsVersionableWithVtableSlotBackpatch())
+/*                if (pMD->IsVersionableWithVtableSlotBackpatch())
                 {
                     // The entry point for this method needs to be versionable, so use a FuncPtrStub similarly to what is done
                     // in MethodDesc::GetMultiCallableAddrOfCode()
                     GCX_COOP();
                     pCode = pMD->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pMD);
-                }
+                }*/
 
                 pCode = PatchNonVirtualExternalMethod(pMD, pCode, pImportSection, pIndirection);
             }
