@@ -40,7 +40,7 @@ static gboolean is_qcall (MonoQCallFunc *func) { return !!((int)func->flags & fu
 static MonoQCallFunc *
 next_in_array (MonoQCallFunc *func)
 {
-    return (MonoQCallFunc *)((char *)func +sizeof(MonoQCallFunc));
+    return (MonoQCallFunc *)((char *)func +sizeof (MonoQCallFunc));
         //(HasSignature(func) ? sizeof(ECFunc) : offsetof(ECFunc, func->m_pMethodSig)));
 }
 
