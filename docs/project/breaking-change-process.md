@@ -27,13 +27,16 @@ There are people on the team that can help you work through a breaking change, i
 4. Once the PR is merged, create a [docs issue](https://github.com/dotnet/docs/issues/new?template=dotnet-breaking-change.md).
    * Clarify which .NET preview the break will be first released in.
 
+Notes:
+
+* [Guidance for when to use AppContext switched](https://github.com/dotnet/runtime/issues/8655#issuecomment-415103199)
+
 ## Examples
 
 The following are good examples of breaking change issues
 
 * https://github.com/dotnet/runtime/issues/28788
 * https://github.com/dotnet/runtime/issues/37672
-
 
 ## Resources
 
