@@ -5,7 +5,7 @@
       <argument>Test</argument>
       <argument>IL2006</argument>
     </attribute>
-    <type fullname="Mono.Linker.Tests.Cases.DataFlow.SupressWarningWithLinkAttributes">
+    <type fullname="Mono.Linker.Tests.Cases.DataFlow.SuppressWarningWithLinkAttributes">
       <field name="_typeWithDefaultConstructor">
         <attribute fullname="System.DoesNotExistattribute" assembly="Mono.Linker.Tests.Cases.Expectations">
           <argument>0</argument>
