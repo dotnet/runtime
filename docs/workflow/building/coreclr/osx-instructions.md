@@ -37,6 +37,14 @@ ICU (International Components for Unicode) is also required to build and run. It
 brew install icu4c
 ```
 
+pkg-config
+----------
+pkg-config is also required to build. It can be obtained via [Homebrew](https://brew.sh/).
+
+```sh
+brew install pkg-config
+```
+
 Build the Runtime and System.Private.CoreLib
 ============================================
 
