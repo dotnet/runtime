@@ -317,5 +317,27 @@ namespace System.Text.Json.Serialization.Converters
 
             return converted;
         }
+
+        internal override T ReadWithQuotes(ReadOnlySpan<byte> utf8Bytes)
+        {
+            string enumString = JsonReaderHelper.TranscodeHelper(utf8Bytes);
+
+            if (!Enum.TryParse(enumString, out T value)
+                && !Enum.TryParse(enumString, ignoreCase: true, out value))
+            {
+                ThrowHelper.ThrowJsonException();
+                return default;
+            }
+
+            return value;
+        }
+
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            string enumString = value.ToString();
+            writer.WritePropertyName(enumString);
+        }
+
+        internal override bool CanBeDictionaryKey => true;
     }
 }

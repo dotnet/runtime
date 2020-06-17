@@ -32,6 +32,8 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal virtual bool CanHaveIdMetadata => true;
 
+        internal abstract bool CanBeDictionaryKey { get; }
+
         internal bool CanBePolymorphic { get; set; }
 
         internal abstract JsonPropertyInfo CreateJsonPropertyInfo();
@@ -39,6 +41,8 @@ namespace System.Text.Json.Serialization
         internal abstract JsonParameterInfo CreateJsonParameterInfo();
 
         internal abstract Type? ElementType { get; }
+
+        internal abstract Type? KeyType { get; }
 
         /// <summary>
         /// Cached value of TypeToConvert.IsValueType, which is an expensive call.
@@ -70,6 +74,12 @@ namespace System.Text.Json.Serialization
         /// Loosely-typed WriteCore() that forwards to strongly-typed WriteCore().
         /// </summary>
         internal abstract bool WriteCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
+
+        /// <summary>
+        /// Loosely-typed WriteWithQuotes() that forwards to strongly-typed WriteWithQuotes().
+        /// </summary>
+        internal virtual void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
+            => throw new InvalidOperationException();
 
         // Whether a type (ClassType.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized => false;

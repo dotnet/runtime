@@ -11,5 +11,6 @@ namespace System.Text.Json.Serialization
     {
         internal sealed override ClassType ClassType => ClassType.Enumerable;
         internal override Type ElementType => typeof(TElement);
+        internal sealed override Type? KeyType => null;
     }
 }

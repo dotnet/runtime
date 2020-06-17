@@ -12,12 +12,11 @@ namespace System.Text.Json.Serialization.Converters
     /// representing the dictionary element key and value.
     /// </summary>
     internal sealed class IDictionaryConverter<TCollection>
-        : DictionaryDefaultConverter<TCollection, object?>
+        : DictionaryDefaultConverter<TCollection, string, object?>
         where TCollection : IDictionary
     {
-        protected override void Add(object? value, JsonSerializerOptions options, ref ReadStack state)
+        protected override void Add(string key, object? value, JsonSerializerOptions options, ref ReadStack state)
         {
-            string key = state.Current.JsonPropertyNameAsString!;
             ((IDictionary)state.Current.ReturnValue!)[key] = value;
         }
 
@@ -68,6 +67,12 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (IDictionaryEnumerator)state.Current.CollectionEnumerator;
             }
 
+            // Avoid using GetKeyConverter here
+            // IDictionary is a spacial case since it has polymorphic object semantics on serialization.
+            // But needs to use JsonConverter<string> on deserialization.
+            JsonClassInfo objectKeyClassInfo = options.GetOrAddClass(typeof(object));
+            JsonConverter<object> keyConverter = (JsonConverter<object>)objectKeyClassInfo.PropertyInfoForClassInfo.ConverterBase;
+
             JsonConverter<object?> converter = GetValueConverter(ref state);
             do
             {
@@ -80,16 +85,8 @@ namespace System.Text.Json.Serialization.Converters
                 if (state.Current.PropertyState < StackFramePropertyState.Name)
                 {
                     state.Current.PropertyState = StackFramePropertyState.Name;
-
-                    if (enumerator.Key is string key)
-                    {
-                        key = GetKeyName(key, ref state, options);
-                        writer.WritePropertyName(key);
-                    }
-                    else
-                    {
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.DeclaredJsonPropertyInfo!.RuntimePropertyType!);
-                    }
+                    object key = enumerator.Key;
+                    keyConverter.WriteWithQuotes(writer, key, options, ref state);
                 }
 
                 object? element = enumerator.Value;

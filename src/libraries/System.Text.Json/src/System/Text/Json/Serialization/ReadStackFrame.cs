@@ -17,6 +17,7 @@ namespace System.Text.Json
 
         // Support JSON Path on exceptions.
         public byte[]? JsonPropertyName; // This is Utf8 since we don't want to convert to string until an exception is thown.
+        public byte[]? DictionaryKeyName; // This is Utf8 since we don't want to convert to TKey until we have both key and value when parsing the dictionary elements on stream cases.
         public string? JsonPropertyNameAsString; // This is used for dictionary keys and re-entry cases that specify a property name.
 
         // Validation state.

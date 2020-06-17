@@ -56,6 +56,8 @@ namespace System.Text.Json.Serialization
         }
 
         internal override Type? ElementType => null;
+        internal override Type? KeyType => null;
+        internal override bool CanBeDictionaryKey => false;
 
         /// <summary>
         /// Indicates whether <see langword="null"/> should be passed to the converter on serialization,
@@ -338,8 +340,6 @@ namespace System.Text.Json.Serialization
 
             Debug.Assert(this is JsonDictionaryConverter<T>);
 
-            state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
-
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
                 ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
@@ -436,5 +436,14 @@ namespace System.Text.Json.Serialization
         /// <param name="value">The value to convert.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         public abstract void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options);
+
+        internal virtual T ReadWithQuotes(ReadOnlySpan<byte> utf8Bytes)
+            => throw new InvalidOperationException();
+
+        internal virtual void WriteWithQuotes(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options, ref WriteStack state)
+            => throw new InvalidOperationException();
+
+        internal sealed override void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
+            => WriteWithQuotes(writer, (T)value, options, ref state);
     }
 }

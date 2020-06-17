@@ -851,7 +851,27 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializerOptions options = new JsonSerializerOptions();
 
             // Unsupported collections will throw on serialize by default.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new ClassWithUnsupportedDictionary(), options));
+            // Only if they contain elements.
+            List<KeyValuePair<object, object>> elements = new List<KeyValuePair<object, object>>();
+            // Uri is an unsupported dictionary key.
+            elements.Add(new KeyValuePair<object, object>(new Uri("http://foo"), "bar"));
+
+            var concurrent = new ConcurrentDictionary<object, object>(elements);
+            var dictionary = new Dictionary<object, object>(elements);
+
+            var instance = new ClassWithUnsupportedDictionary()
+            {
+                MyConcurrentDict = concurrent,
+                MyIDict = dictionary
+            };
+
+            var instanceWithIgnore = new ClassWithIgnoredUnsupportedDictionary
+            {
+                MyConcurrentDict = concurrent,
+                MyIDict = dictionary
+            };
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(instance, options));
 
             // Unsupported collections will throw on deserialize by default.
             options = new JsonSerializerOptions();
@@ -859,7 +879,7 @@ namespace System.Text.Json.Serialization.Tests
 
             options = new JsonSerializerOptions();
             // Unsupported collections will throw on serialize by default.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new WrapperForClassWithUnsupportedDictionary(), options));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(instance, options));
 
             // When ignored, we can serialize and deserialize without exceptions.
             options = new JsonSerializerOptions();

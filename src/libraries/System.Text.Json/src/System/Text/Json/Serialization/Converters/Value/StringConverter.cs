@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class StringConverter : JsonConverter<string?>
@@ -15,5 +17,25 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WriteStringValue(value);
         }
+
+        internal override string ReadWithQuotes(ReadOnlySpan<byte> utf8Bytes)
+            => JsonReaderHelper.TranscodeHelper(utf8Bytes);
+
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, [DisallowNull] string? value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            if (options.DictionaryKeyPolicy != null && !state.Current.IgnoreDictionaryKeyPolicy)
+            {
+                value = options.DictionaryKeyPolicy.ConvertName(value);
+
+                if (value == null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(options.DictionaryKeyPolicy);
+                }
+            }
+
+            writer.WritePropertyName(value);
+        }
+
+        internal override bool CanBeDictionaryKey => true;
     }
 }

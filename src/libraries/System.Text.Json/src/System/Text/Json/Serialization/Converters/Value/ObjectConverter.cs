@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class ObjectConverter : JsonConverter<object>
@@ -18,5 +20,29 @@ namespace System.Text.Json.Serialization.Converters
         {
             throw new InvalidOperationException();
         }
+
+        internal override object ReadWithQuotes(ReadOnlySpan<byte> utf8Bytes)
+            => throw new NotSupportedException();
+
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            JsonConverter runtimeConverter = GetRuntimeConverter(value.GetType(), state.Current.JsonClassInfo.Type, options);
+            runtimeConverter.WriteWithQuotesAsObject(writer, value, options, ref state);
+        }
+
+        private JsonConverter GetRuntimeConverter(Type runtimeType, Type parentType, JsonSerializerOptions options)
+        {
+            JsonConverter runtimeConverter = options.GetOrAddClass(runtimeType).PropertyInfoForClassInfo.ConverterBase;
+
+            // We don't support object itself as TKey, only the other supported types when they are boxed.
+            if (runtimeConverter is JsonConverter<object> || !runtimeConverter.CanBeDictionaryKey)
+            {
+                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(parentType);
+            }
+
+            return runtimeConverter;
+        }
+
+        internal override bool CanBeDictionaryKey => true;
     }
 }
