@@ -84,22 +84,22 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
+		[ExpectBodyModified]
 		static void TestPropagation ()
 		{
 			// We don't propagate return values across method calls
 			if (PropagateProperty != 3)
-				Propagation_Reached1 ();
+				Propagation_NeverReached ();
 			else
-				Propagation_Reached2 ();
+				Propagation_Reached ();
 		}
 
-		[Kept]
-		static void Propagation_Reached1 ()
+		static void Propagation_NeverReached ()
 		{
 		}
 
 		[Kept]
-		static void Propagation_Reached2 ()
+		static void Propagation_Reached ()
 		{
 		}
 	}

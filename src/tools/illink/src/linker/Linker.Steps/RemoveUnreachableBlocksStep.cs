@@ -139,10 +139,11 @@ namespace Mono.Linker.Steps
 			// produce folded branches. When it finds them the unreachable
 			// branch is replaced with nops.
 			//
-			if (!reducer.RewriteBody ())
-				return;
+			if (reducer.RewriteBody ())
+				Context.LogMessage ($"Reduced '{reducer.InstructionsReplaced}' instructions in conditional branches for [{method.DeclaringType.Module.Assembly.Name}] method {method.FullName}");
 
-			Context.LogMessage ($"Reduced '{reducer.InstructionsReplaced}' instructions in conditional branches for [{method.DeclaringType.Module.Assembly.Name}] method {method.FullName}");
+			// Even if the rewriter doesn't find any branches to fold the inlining above may have changed the method enough
+			// such that we can now deduce its return value.
 
 			if (method.ReturnType.MetadataType == MetadataType.Void)
 				return;
