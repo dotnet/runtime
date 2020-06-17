@@ -4,7 +4,7 @@ Breaking changes make it difficult for people to adopt new versions of .NET. We 
 
 This process does not result in approval or denial of a breaking change request. It results in feedback, which might be varied or uniform. In the best case, the feedback is a call to action to you, that provides a direction on how you should proceed. The people that are responsible for reviewing your PR are expected to use the information collected by this process as part of their determination of whether your change is appropriate to merge.
 
-You should start this process as soon as possible, preferably before any code is written, in the design phase. This isn't always possible, since the change in behavior might not be discovered until you're almost done building a feature. In the case of a significant breaking change, you  should provide reviewers with a design document so that they can understand the broader scope, goals and constraints of your change.
+You should start this process as soon as possible, preferably before any code is written, in the design phase. This isn't always possible, since the change in behavior might not be discovered until you're almost done building a feature. In the case of a significant breaking change, you should provide reviewers with a design document so that they can understand the broader scope, goals and constraints of your change.
 
 There are people on the team that can help you work through a breaking change, if you want to engage with them before starting this more formal process. They are part of the [dotnet/compat team](https://github.com/orgs/dotnet/teams/compat) . Feel free to @mention them on issues to start a dialogue.
 
