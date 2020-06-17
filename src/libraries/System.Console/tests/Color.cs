@@ -35,10 +35,18 @@ public class Color
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Browser)]
-    public static void RoundtrippingColor_Browser()
+    public static void ForegroundColor_Throws_PlatformNotSupportedException()
     {
-        Assert.Throws<PlatformNotSupportedException>(() => Console.BackgroundColor = Console.BackgroundColor );
-        Assert.Throws<PlatformNotSupportedException>(() => Console.ForegroundColor = Console.ForegroundColor );
+        Assert.Throws<PlatformNotSupportedException>(() => Console.ForegroundColor);
+        Assert.Throws<PlatformNotSupportedException>(() => Console.ForegroundColor = ConsoleColor.Red);
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Browser)]
+    public static void BackgroundColor_Throws_PlatformNotSupportedException()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.BackgroundColor);
+        Assert.Throws<PlatformNotSupportedException>(() => Console.BackgroundColor = ConsoleColor.Red);
     }
 
     [Fact]

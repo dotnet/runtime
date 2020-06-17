@@ -47,7 +47,7 @@ public class ReadKey
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Browser)]
-    public void NumberLock_Browser()
+    public void NumberLock_Getter_Returns_False()
     {
         Assert.False(Console.NumberLock);
     }
@@ -61,7 +61,7 @@ public class ReadKey
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Browser)]
-    public void CapsLock_Browser()
+    public void CapsLock_Getter_Returns_False()
     {
         Assert.False(Console.CapsLock);
     }

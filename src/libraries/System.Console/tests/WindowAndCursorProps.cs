@@ -129,10 +129,16 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Browser)]
-    public static void WindowHeightAndWidth_Browser()
+    public static void WindowHeight_Getter_Throws_PlatformNotSupportedException()
     {
-        Assert.Throws<PlatformNotSupportedException>(() => Console.WindowHeight );
-        Assert.Throws<PlatformNotSupportedException>(() => Console.WindowWidth );
+        Assert.Throws<PlatformNotSupportedException>(() => Console.WindowHeight);
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Browser)]
+    public static void WindowWidth_Getter_Throws_PlatformNotSupportedException()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.WindowWidth);
     }
 
     [Fact]
@@ -327,9 +333,9 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Browser)]
-    public static void SetCursorPosition_Browser()
+    public static void SetCursorPosition_Throws_PlatformNotSupportedException()
     {
-        Assert.Throws<PlatformNotSupportedException>(() => Console.SetCursorPosition(0, 0) );
+        Assert.Throws<PlatformNotSupportedException>(() => Console.SetCursorPosition(0, 0));
     }
 
     [Fact]
@@ -424,9 +430,9 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Browser)]
-    public void CursorLeft_Browser()
+    public void CursorLeft_Setter_Throws_PlatformNotSupportedException()
     {
-        Assert.Throws<PlatformNotSupportedException>(() => Console.CursorLeft = 0 );
+        Assert.Throws<PlatformNotSupportedException>(() => Console.CursorLeft = 0);
     }
 
     [Fact]
@@ -467,7 +473,7 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Browser)]
-    public void CursorTop_Browser()
+    public void CursorTop_Setter_Throws_PlatformNotSupportedException()
     {
         Assert.Throws<PlatformNotSupportedException>(() => Console.CursorTop = 0 );
     }
@@ -509,7 +515,7 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Browser)]
-    public void CursorSize_Browser()
+    public void CursorSize_Getter_Throws_PlatformNotSupportedException()
     {
         Assert.Throws<PlatformNotSupportedException>(() => Console.CursorSize);
     }

@@ -57,8 +57,8 @@ public class TimeOut
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Browser)]
-    public static void OpenStandardInput_Browser()
+    public static void OpenStandardInput_Throws_PlatformNotSupportedException()
     {
-        Assert.Throws<PlatformNotSupportedException>(() => Console.OpenStandardInput() );
+        Assert.Throws<PlatformNotSupportedException>(() => Console.OpenStandardInput());
     }
 }
