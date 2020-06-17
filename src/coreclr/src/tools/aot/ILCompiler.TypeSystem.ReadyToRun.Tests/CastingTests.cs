@@ -93,6 +93,7 @@ namespace TypeSystemTests
         }
 
         [Fact]
+        [ActiveIssue("corert port")]
         public void TestArrayInterfaceCasting()
         {
             TypeDesc intType = _context.GetWellKnownType(WellKnownType.Int32);
@@ -169,6 +170,7 @@ namespace TypeSystemTests
         }
 
         [Fact]
+        [ActiveIssue("corert port")]
         public void TestVariantCasting()
         {
             TypeDesc stringType = _context.GetWellKnownType(WellKnownType.String);

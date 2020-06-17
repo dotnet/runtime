@@ -206,6 +206,14 @@ namespace TypeSystemTests
                 }
             }
 
+            public override string DiagnosticName
+            {
+                get
+                {
+                    return _name;
+                }
+            }
+
             public override TypeDesc OwningType
             {
                 get

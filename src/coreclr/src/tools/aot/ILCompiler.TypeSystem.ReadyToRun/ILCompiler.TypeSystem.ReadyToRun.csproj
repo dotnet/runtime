@@ -115,6 +115,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\CastingHelper.cs">
       <Link>TypeSystem\Common\CastingHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\ConstructedTypeRewritingHelpers.cs">
+      <Link>TypeSystem\Common\ConstructedTypeRewritingHelpers.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\ExplicitLayoutValidator.cs">
       <Link>TypeSystem\Common\ExplicitLayoutValidator.cs</Link>
     </Compile>
@@ -273,6 +276,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TypeHashingAlgorithms.cs">
       <Link>TypeSystem\Common\TypeHashingAlgorithms.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemConstraintsHelpers.cs">
+      <Link>TypeSystem\Common\TypeSystemConstraintsHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemContext.cs">
       <Link>TypeSystem\Common\TypeSystemContext.cs</Link>

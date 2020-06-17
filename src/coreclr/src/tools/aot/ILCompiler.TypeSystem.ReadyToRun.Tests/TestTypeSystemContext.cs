@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
+using System.Reflection;
 using System.Reflection.PortableExecutable;
 using System.IO;
 
@@ -24,7 +25,6 @@ namespace TypeSystemTests
 
         MetadataFieldLayoutAlgorithm _metadataFieldLayout = new TestMetadataFieldLayoutAlgorithm();
         MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
-        ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         VirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
         
         public CanonicalizationMode CanonMode { get; set; } = CanonicalizationMode.RuntimeDetermined;
@@ -45,7 +45,9 @@ namespace TypeSystemTests
 
         public ModuleDesc CreateModuleForSimpleName(string simpleName)
         {
-            ModuleDesc module = Internal.TypeSystem.Ecma.EcmaModule.Create(this, new PEReader(File.OpenRead(simpleName + ".dll")), containingAssembly: null);
+            string bindingDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string filePath = Path.Combine(bindingDirectory, simpleName + ".dll");
+            ModuleDesc module = Internal.TypeSystem.Ecma.EcmaModule.Create(this, new PEReader(File.OpenRead(filePath)), containingAssembly: null);
             _modules.Add(simpleName, module);
             return module;
         }
@@ -57,19 +59,7 @@ namespace TypeSystemTests
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
-            if (type == UniversalCanonType)
-                return UniversalCanonLayoutAlgorithm.Instance;
-
             return _metadataFieldLayout;
-        }
-
-        protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
-        {
-            if (_arrayOfTRuntimeInterfacesAlgorithm == null)
-            {
-                _arrayOfTRuntimeInterfacesAlgorithm = new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetType("System", "Array`1"));
-            }
-            return _arrayOfTRuntimeInterfacesAlgorithm;
         }
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForDefType(DefType type)

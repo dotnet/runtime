@@ -1,38 +1,36 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <AssemblyName>TypeSystem.Tests</AssemblyName>
-    <RootNamespace>TypeSystem.Tests</RootNamespace>
+    <AssemblyName>ILCompiler.TypeSystem.ReadyToRun.Tests</AssemblyName>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <!-- Don't warn if some dependencies were rolled forward -->
-    <NoWarn>$(NoWarn);NU1603</NoWarn>
+    <Configurations>Debug;Release;Checked</Configurations>
+    <!-- This seems to be required for supporting assemblies to be copied into the output -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
+    <!-- xunit.runner.visualstudio is restored for .NET Framework instead of Core-->
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+    <!-- By default the subdirectories containing CoreTestAssembly and ILTestAssembly would be 
+         included in compilation of this project -->
+    <EnableDefaultItems>false</EnableDefaultItems>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="xunit">
-      <Version>$(XUnitPackageVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.DotNet.XUnitExtensions">
-      <Version>$(MicrosoftDotNetXUnitExtensionsVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Reflection.Metadata">
-      <Version>$(SystemReflectionMetadataVersion)</Version>
-    </PackageReference>
+
+  <ItemGroup>    
+    <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+    <PackageReference Include="System.Reflection.Metadata" Version="1.8.1" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\src\ILCompiler.TypeSystem.csproj" />
+    <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
     <!-- Make sure the test data gets built -->
     <ProjectReference Include="CoreTestAssembly\CoreTestAssembly.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
     <ProjectReference Include="ILTestAssembly\ILTestAssembly.ilproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build</Targets>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -57,5 +55,4 @@
     <Compile Include="TestTypeSystemContext.cs" />
     <Compile Include="WellKnownTypeTests.cs" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

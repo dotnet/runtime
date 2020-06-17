@@ -110,7 +110,7 @@ namespace TypeSystemTests
         /// Testing lookup up of a method in an instantiated type.
         /// </summary>
         [Fact]
-        [ActiveIssue(-1)]
+        [ActiveIssue("")]
         public void TestMethodLookup()
         {
             MetadataType t = _testModule.GetType("GenericTypes", "GenericClass`1").MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
