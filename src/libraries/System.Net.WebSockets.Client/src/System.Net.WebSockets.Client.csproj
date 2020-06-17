@@ -5,13 +5,16 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup Condition=" '$(TargetsBrowser)' != 'true'" >
+  <PropertyGroup Condition=" '$(TargetsBrowser)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGETS_BROWSER</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup >
     <Compile Include="System\Net\WebSockets\ClientWebSocket.cs" />
-    <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" />
+    <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" Condition=" '$(TargetsBrowser)' != 'true'" />
     <Compile Include="System\Net\WebSockets\NetEventSource.WebSockets.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'" >
-    <Compile Include="System\Net\WebSockets\BrowserWebSockets\ClientWebSocket.cs" />
+    <Compile Include="System\Net\WebSockets\BrowserWebSockets\BrowserWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\BrowserWebSockets\ClientWebSocketOptions.cs" />
     <Compile Include="System\Net\WebSockets\BrowserWebSockets\ReceivePayload.cs" />
   </ItemGroup>
@@ -24,6 +27,7 @@
     <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs"
              Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Managed.cs" Condition=" '$(TargetsBrowser)' != 'true'" />
+    <Compile Include="System\Net\WebSockets\BrowserWebSockets\WebSocketHandle.Browser.cs" Condition=" '$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
              Link="Common\System\Net\HttpKnownHeaderNames.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"

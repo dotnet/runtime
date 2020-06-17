@@ -24,7 +24,7 @@ namespace System.Net.WebSockets
     /// <summary>
     /// Provides a client for connecting to WebSocket services.
     /// </summary>
-    public sealed class ClientWebSocket : WebSocket
+    internal sealed class BrowserWebSocket : WebSocket
     {
         private ActionQueue<ReceivePayload> _receiveMessageQueue = new ActionQueue<ReceivePayload>();
 
@@ -54,7 +54,7 @@ namespace System.Net.WebSockets
         /// <summary>
         /// Initializes a new instance of the <see cref="System.Net.WebSockets.ClientWebSocket"/> class.
         /// </summary>
-        public ClientWebSocket()
+        public BrowserWebSocket()
         {
             _state = _created;
             _options = new ClientWebSocketOptions();
