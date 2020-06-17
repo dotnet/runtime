@@ -538,6 +538,9 @@ namespace Mono.Linker.Steps
 					continue;
 				}
 
+				if (_context.Annotations.HasLinkerAttribute<LinkerRemovableAttribute> (ca.AttributeType.Resolve ()))
+					continue;
+
 				MarkCustomAttribute (ca, reason);
 				MarkSpecialCustomAttributeDependencies (ca, provider);
 			}
