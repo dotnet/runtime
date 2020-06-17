@@ -395,7 +395,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterIL, W("TraceInterpreterIL"), 0
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterOstack, W("TraceInterpreterOstack"), 0, "Logs operand stack after each IL instruction of interpreted methods to the console")
 CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterVerbose, W("TraceInterpreterVerbose"), 0, "Logs interpreter progress with detailed messages to the console")
 CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterJITTransition, W("TraceInterpreterJITTransition"), 0, "Logs when the interpreter determines a method should be JITted")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ForceJitOptimization, W("ForceJitOptimization"), 0, "If non-zero, force JIT optimization to be enabled") // this has no effect in Release
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_EnableJitOptimization, W("EnableJitOptimization"), 0, "If non-zero, enable JIT optimization (in Debug/Checked)") // this has no effect in Release
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ForceInterpreter, W("ForceInterpreter"), 0, "If non-zero, force the interpreter to be used")
 #endif
 // The JIT queries this ConfigDWORD but it doesn't know if FEATURE_INTERPRETER is enabled
