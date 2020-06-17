@@ -45,7 +45,7 @@ next_in_array (MonoQCallFunc *func)
 }
 
 static int 
-find_impls_index_for_class (MonoMethod* method)
+find_impls_index_for_class (MonoMethod *method)
 {
     const char *namespace = m_class_get_name_space (method->klass);
     const char *name = m_class_get_name (method->klass);
