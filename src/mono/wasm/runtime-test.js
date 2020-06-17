@@ -139,6 +139,13 @@ while (true) {
 }
 testArguments = args;
 
+function writeContentToFile(content, path)
+{
+	var stream = FS.open(path, 'w+');
+	FS.write(stream, content, 0, content.length, 0);
+	FS.close(stream);
+}
+
 if (typeof window == "undefined")
   load ("mono-config.js");
 
@@ -182,9 +189,7 @@ var Module = {
 						{
 							var fullPath = directory != '/' ? directory + '/' + files[j] : files[j];
 							var content = new Uint8Array (read ("supportFiles/" + fullPath, 'binary'));
-							var stream = FS.open(fullPath, 'w+');
-							FS.write(stream, content, 0, content.length, 0);
-							FS.close(stream);
+							writeContentToFile(content, fullPath);
 						}
 					}
 				}
@@ -244,6 +249,12 @@ var Module = {
 			},
 			function (asset)
 			{
+			  // for testing purposes add BCL assets to VFS until we special case File.Open
+			  // to identify when an assembly from the BCL is being open and resolve it correctly.
+			  var content = new Uint8Array (read (asset, 'binary'));
+			  var path = asset.substr(config.deploy_prefix.length);
+			  writeContentToFile(content, path);
+
 			  if (typeof window != 'undefined') {
 				return fetch (asset, { credentials: 'same-origin' });
 			  } else {
@@ -253,10 +264,10 @@ var Module = {
 				// Here we wrap the file read in a promise and fake a fetch response
 				// structure.
 				return new Promise((resolve, reject) => {
-					 var response = { ok: true, url: asset, 
+						var response = { ok: true, url: asset,
 							arrayBuffer: function() {
 								return new Promise((resolve2, reject2) => {
-									resolve2(new Uint8Array (read (asset, 'binary')));
+									resolve2(content);
 							}
 						)}
 					}

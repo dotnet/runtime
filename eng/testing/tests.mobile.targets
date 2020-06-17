@@ -114,6 +114,7 @@
     <ItemGroup>
       <AssemblySearchPaths Include="$(PublishDir)"/>
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
+      <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true'" />
     </ItemGroup>
 
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
