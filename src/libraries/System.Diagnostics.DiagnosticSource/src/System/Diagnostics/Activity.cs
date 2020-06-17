@@ -736,11 +736,11 @@ namespace System.Diagnostics
             {
                 if (s_defaultIdFormat == ActivityIdFormat.Unknown)
                 {
-#if NET5
+#if W3C_DEFAULT_ID_FORMAT
                     s_defaultIdFormat = LocalAppContextSwitches.DefaultActivityIdFormatIsHierarchial ? ActivityIdFormat.Hierarchical : ActivityIdFormat.W3C;
 #else
                     s_defaultIdFormat = ActivityIdFormat.Hierarchical;
-#endif // NET5
+#endif // W3C_DEFAULT_ID_FORMAT
                 }
                 return s_defaultIdFormat;
             }
