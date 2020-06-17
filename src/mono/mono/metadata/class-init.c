@@ -3689,15 +3689,6 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				/* cur_method is some kind of a declaration and it has an override cm that applies to it. */
 				if (m_class_is_valuetype (klass))
 					continue;
-				if (method_has_preserve_base_overrides_attribute (cur_method) ||
-				    method_has_preserve_base_overrides_attribute (cm) ||
-				    (klass->parent && 
-				     vtable_slot_has_preserve_base_overrides_attribute (klass->parent, i, NULL))) {
-					TRACE_INTERFACE_VTABLE (printf ("slot %d overriding method %s[%p] or some method in this slot in a parent class has the preserve base overrides attribute\n", i, mono_method_full_name (cm, 1), cm));
-					/* TODO: look for other slots with `cur_method` as the override and replace them by `cm`, too.
-					 */
-				}
-
 			}
 		}
 
