@@ -89,7 +89,7 @@ static int
 find_index_for_method (MonoMethod *method, const void **impls)
 {
     const char* method_name = method->name;
-    for (MonoQCallFunc *cur = (MonoQCallFunc *)impls; !is_end_of_array(cur); cur = next_in_array(cur))
+    for (MonoQCallFunc *cur = (MonoQCallFunc *)impls; !is_end_of_array (cur); cur = next_in_array (cur))
     {
         if (strcmp (cur->method_name, method_name) != 0)
             continue;
