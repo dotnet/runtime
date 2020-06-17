@@ -18,7 +18,7 @@ namespace System.Net.Security.Tests
             SslStream stream, bool waitForCompletion,
             string targetHost, X509CertificateCollection clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation);
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public void SslStream_AuthenticateAsClientAsync_Supported_Success(SslProtocols protocol)
         {
@@ -26,7 +26,7 @@ namespace System.Net.Security.Tests
             AuthenticateAsClient(stream, true, "host", null, protocol, false);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public void SslStream_AuthenticateAsClient_Supported_Success(SslProtocols protocol)
         {
@@ -34,21 +34,21 @@ namespace System.Net.Security.Tests
             AuthenticateAsClient(stream, true, "host", null, protocol, false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SslStream_AuthenticateAsClientAsync_AllSupported_Success()
         {
             SslStream stream = new SslStream(new NotImplementedStream());
             AuthenticateAsClient(stream, true, "host", null, SslProtocolSupport.SupportedSslProtocols, false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SslStream_AuthenticateAsClientAsync_None_Success()
         {
             SslStream stream = new SslStream(new NotImplementedStream());
             AuthenticateAsClient(stream, true, "host", null, SslProtocols.None, false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SslStream_AuthenticateAsClientAsync_Default_Success()
         {
             SslStream stream = new SslStream(new NotImplementedStream());

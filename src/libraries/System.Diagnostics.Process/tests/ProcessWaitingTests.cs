@@ -111,7 +111,7 @@ namespace System.Diagnostics.Tests
             await Task.WhenAll(Enumerable.Range(0, Tasks).Select(_ => Task.Run(work)).ToArray());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]  // poll
         [InlineData(10)] // real timeout
         public void CurrentProcess_WaitNeverCompletes(int milliseconds)
@@ -119,7 +119,7 @@ namespace System.Diagnostics.Tests
             Assert.False(Process.GetCurrentProcess().WaitForExit(milliseconds));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]  // poll
         [InlineData(10)] // real timeout
         public async Task CurrentProcess_WaitAsyncNeverCompletes(int milliseconds)

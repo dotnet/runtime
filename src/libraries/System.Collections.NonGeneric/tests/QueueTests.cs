@@ -840,7 +840,7 @@ namespace System.Collections.Tests
         private Queue _queueDaughter;
         private Queue _queueGrandDaughter;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SyncRoot()
         {
             var queueMother = new Queue();
@@ -913,7 +913,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SynchronizedEnqueue()
         {
             // Enqueue
