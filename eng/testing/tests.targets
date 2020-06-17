@@ -24,15 +24,11 @@
     <RunScriptCommands Include="set DEVPATH=%RUNTIME_PATH%" />
   </ItemGroup>
 
-    <!-- OutDir is not set early enough to set this property in .props file. -->
-    <BundleDir Condition="'$(TargetsMobile)' == 'true'">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
-
-
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and
                      ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'Browser')"
-          AfterTargets="PrepareForRun"
+          AfterTargets="Build"
           DependsOnTargets="GenerateRunScript">
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 

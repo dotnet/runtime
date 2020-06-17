@@ -16,6 +16,11 @@
     <RunScriptCommand>$HARNESS_RUNNER xharness wasm test --engine=$(JSEngine) --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- --enable-gc --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <_zipSourceDirectory>$(OutDir)</_zipSourceDirectory>
+    <_zipSourceDirectory Condition="'$(TargetOS)' == 'Browser'">$(BundleDir)</_zipSourceDirectory>
+  </PropertyGroup>
+
   <!-- Generate a self-contained app bundle for Android with tests. -->
   <UsingTask Condition="'$(TargetOS)' == 'Android'"
              TaskName="AndroidAppBuilderTask"
