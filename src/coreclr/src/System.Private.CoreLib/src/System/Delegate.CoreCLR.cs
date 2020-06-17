@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -218,6 +219,7 @@ namespace System
         public object? Target => GetTarget();
 
         // V1 API.
+        [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             if (type == null)
@@ -256,6 +258,7 @@ namespace System
         }
 
         // V1 API.
+        [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             if (type == null)
@@ -416,6 +419,7 @@ namespace System
         // internal implementation details (FCALLS and utilities)
         //
 
+        [RequiresUnreferencedCode("The target method might be removed")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool BindToMethodName(object? target, RuntimeType methodType, string method, DelegateBindingFlags flags);
 
