@@ -961,6 +961,66 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> ConvertToDoubleUpper(Vector128<float> value) => ConvertToDoubleUpper(value);
 
             /// <summary>
+            /// int64x2_t vcvtaq_s64_f64 (float64x2_t a)
+            ///   A64: FCVTAS Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> ConvertToInt64RoundAwayFromZero(Vector128<double> value) => ConvertToInt64RoundAwayFromZero(value);
+
+            /// <summary>
+            /// int64x1_t vcvta_s64_f64 (float64x1_t a)
+            ///   A64: FCVTAS Dd, Dn
+            /// </summary>
+            public static Vector64<long> ConvertToInt64RoundAwayFromZeroScalar(Vector64<double> value) => ConvertToInt64RoundAwayFromZeroScalar(value);
+
+            /// <summary>
+            /// int64x2_t vcvtnq_s64_f64 (float64x2_t a)
+            ///   A64: FCVTNS Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> ConvertToInt64RoundToEven(Vector128<double> value) => ConvertToInt64RoundToEven(value);
+
+            /// <summary>
+            /// int64x1_t vcvtn_s64_f64 (float64x1_t a)
+            ///   A64: FCVTNS Dd, Dn
+            /// </summary>
+            public static Vector64<long> ConvertToInt64RoundToEvenScalar(Vector64<double> value) => ConvertToInt64RoundToEvenScalar(value);
+
+            /// <summary>
+            /// int64x2_t vcvtmq_s64_f64 (float64x2_t a)
+            ///   A64: FCVTMS Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> ConvertToInt64RoundToNegativeInfinity(Vector128<double> value) => ConvertToInt64RoundToNegativeInfinity(value);
+
+            /// <summary>
+            /// int64x1_t vcvtm_s64_f64 (float64x1_t a)
+            ///   A64: FCVTMS Dd, Dn
+            /// </summary>
+            public static Vector64<long> ConvertToInt64RoundToNegativeInfinityScalar(Vector64<double> value) => ConvertToInt64RoundToNegativeInfinityScalar(value);
+
+            /// <summary>
+            /// int64x2_t vcvtpq_s64_f64 (float64x2_t a)
+            ///   A64: FCVTPS Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> ConvertToInt64RoundToPositiveInfinity(Vector128<double> value) => ConvertToInt64RoundToPositiveInfinity(value);
+
+            /// <summary>
+            /// int64x1_t vcvtp_s64_f64 (float64x1_t a)
+            ///   A64: FCVTPS Dd, Dn
+            /// </summary>
+            public static Vector64<long> ConvertToInt64RoundToPositiveInfinityScalar(Vector64<double> value) => ConvertToInt64RoundToPositiveInfinityScalar(value);
+
+            /// <summary>
+            /// int64x2_t vcvtq_s64_f64 (float64x2_t a)
+            ///   A64: FCVTZS Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> ConvertToInt64RoundToZero(Vector128<double> value) => ConvertToInt64RoundToZero(value);
+
+            /// <summary>
+            /// int64x1_t vcvt_s64_f64 (float64x1_t a)
+            ///   A64: FCVTZS Dd, Dn
+            /// </summary>
+            public static Vector64<long> ConvertToInt64RoundToZeroScalar(Vector64<double> value) => ConvertToInt64RoundToZeroScalar(value);
+
+            /// <summary>
             /// float32x2_t vcvt_f32_f64 (float64x2_t a)
             ///   A64: FCVTN Vd.2S, Vn.2D
             /// </summary>
