@@ -28,7 +28,7 @@ static const MonoQCallDef c_qcalls[] =
     #undef FCClassElement
 };
 
-const int c_nECClasses = sizeof(c_qcalls)/sizeof(c_qcalls[0]);
+const int c_nECClasses = sizeof (c_qcalls) / sizeof (c_qcalls[0]);
 
 static gboolean is_end_of_array (MonoQCallFunc *func) { return !!((int)func->flags & func_flag_end_of_array); }
 static gboolean has_signature (MonoQCallFunc *func) { return !!((int)func->flags & func_flag_has_signature); }
