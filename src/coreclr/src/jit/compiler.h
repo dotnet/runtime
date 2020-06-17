@@ -6414,6 +6414,7 @@ protected:
 #if FEATURE_ANYCSE
     bool     optDoCSE;             // True when we have found a duplicate CSE tree
     bool     optValnumCSE_phase;   // True when we are executing the optValnumCSE_phase
+    bool     optRationalization_phase; // True when we are executing the IR Rationalization phase
     unsigned optCSECandidateTotal; // Grand total of CSE candidates for both Lexical and ValNum
     unsigned optCSECandidateCount; // Count of CSE's candidates, reset for Lexical and ValNum CSE's
     unsigned optCSEstart;          // The first local variable number that is a CSE
