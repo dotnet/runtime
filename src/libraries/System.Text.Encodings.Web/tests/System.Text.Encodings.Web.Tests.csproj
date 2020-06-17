@@ -53,4 +53,7 @@
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <ProjectReference Include="..\ref\System.Text.Encodings.Web.csproj" />
+  </ItemGroup>
 </Project>

@@ -135,10 +135,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CheckTokenMembership.cs"
              Link="Common\Interop\Interop.CheckTokenMembership.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-  </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or
+                        $(TargetFramework.StartsWith('netcoreapp2'))">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />

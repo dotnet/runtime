@@ -34,14 +34,9 @@
              Link="Common\System\HResults.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
     <Reference Include="System.Security" />
   </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard2.0'))">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

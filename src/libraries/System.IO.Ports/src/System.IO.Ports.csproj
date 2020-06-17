@@ -134,28 +134,8 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-  </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="Microsoft.Win32.Registry" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Threading.Tasks" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true'">
-    <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Thread" />
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
+    <ProjectReference Condition="'$(TargetsWindows)' == 'true'" Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

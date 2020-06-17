@@ -10,17 +10,11 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_RegistryAccessControl</GeneratePlatformNotSupportedAssemblyMessage>
     <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
   </PropertyGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-  </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="Microsoft.Win32.Registry" />
-    <Reference Include="System.Security.AccessControl" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
-    <Reference Include="System.Resources.ResourceManager" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\Win32\RegistryAclExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
   </ItemGroup>
 </Project>

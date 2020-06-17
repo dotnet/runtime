@@ -13,12 +13,16 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;netstandard1.0;net45;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <!-- Use the contract reference path for ApiCompat. -->
+    <ContractTargetFramework Condition="'$(TargetFramework)' == 'net45'">netstandard1.0</ContractTargetFramework>
+    <ContractTargetFramework Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">netstandard2.0</ContractTargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
-    <Reference Include="System.Runtime" />
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
-    <ILResourceReference Include="$(Refpath)\$(TargetFileName)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or
+                        '$(TargetFramework)' == 'netcoreapp2.0'">
+    <Reference Include="System.Runtime" />
   </ItemGroup>
 
   <!-- Decompile the ILResourceReference to get native resources. -->

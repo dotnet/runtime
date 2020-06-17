@@ -42,19 +42,18 @@
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or
+                        '$(TargetFramework)' == 'netcoreapp3.0'">
+    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.Intrinsics" />
     <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
+                        $(TargetFramework.StartsWith('net4'))">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

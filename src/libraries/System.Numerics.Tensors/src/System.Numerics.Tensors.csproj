@@ -19,18 +19,6 @@
     <Compile Include="System\Numerics\Tensors\Tensor.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

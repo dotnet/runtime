@@ -15,9 +15,4 @@
              Link="Common\src\Extensions\Logging\NullScope.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.Core" />
-  </ItemGroup>
-
 </Project>

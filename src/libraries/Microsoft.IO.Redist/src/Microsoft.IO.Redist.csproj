@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>Microsoft.IO.Redist</AssemblyName>
     <TargetFrameworks>$(NetFrameworkCurrent)</TargetFrameworks>
     <DefineConstants>$(DefineConstants);MS_IO_REDIST</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -196,12 +195,9 @@
     <Compile Include="Microsoft\IO\StringExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <Reference Include="System.ValueTuple" />
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Memory" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Microsoft\IO\Enumeration\" />

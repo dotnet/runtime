@@ -6,8 +6,6 @@
     <DefineConstants>$(DefineConstants);RESOURCES_EXTENSIONS</DefineConstants>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
-  <PropertyGroup>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Resources\ResourceWriter.cs"
              Link="System\Resources\Extensions\ResourceWriter.cs" />
@@ -31,11 +29,7 @@
              Link="System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Memory" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
   <PropertyGroup>

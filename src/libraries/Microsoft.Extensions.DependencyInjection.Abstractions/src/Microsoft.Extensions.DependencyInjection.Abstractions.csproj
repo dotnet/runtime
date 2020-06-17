@@ -19,10 +19,4 @@
              Link="Common\src\Extensions\ActivatorUtilities\ObjectFactory.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.Core" />
-    <Reference Include="System" />
-  </ItemGroup>
-
 </Project>
