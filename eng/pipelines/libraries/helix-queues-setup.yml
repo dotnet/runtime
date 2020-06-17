@@ -39,8 +39,6 @@ jobs:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
         - (Alpine.312.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-20200602002622-e06dc59
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - (Alpine.310.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.10-helix-bfcd90a-20200123191054
-        - (Alpine.311.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.11-helix-bfcd90a-20200123191053
         - (Alpine.312.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-20200601195603-e06dc59
 
     # Linux musl arm64
