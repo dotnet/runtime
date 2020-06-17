@@ -747,6 +747,7 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport attempting to load: '%s'.", scope);
 
+#if !TARGET_WASM
 	// We allow a special name to dlopen from the running process namespace, which is not present in CoreCLR
 	if (strcmp (scope, "__Internal") == 0) {
 		if (!internal_module)
@@ -760,6 +761,7 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 
 		return module;
 	}
+#endif
 
 	/*
 	 * Try these until one of them succeeds:
@@ -1057,6 +1059,7 @@ legacy_probe_for_module (MonoImage *image, const char *new_scope)
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport attempting to load: '%s'.", new_scope);
 
+#if !defined(TARGET_WASM)
 	/* we allow a special name to dlopen from the running process namespace */
 	if (strcmp (new_scope, "__Internal") == 0) {
 		if (!internal_module)
@@ -1070,6 +1073,7 @@ legacy_probe_for_module (MonoImage *image, const char *new_scope)
 
 		return module;
 	}
+#endif
 
 	/*
 	 * Try loading the module using a variety of names
@@ -1262,7 +1266,7 @@ retry_with_libcoreclr:
 	addr = pinvoke_probe_for_symbol (module, piinfo, new_import, &error_msg);
 
 	if (!addr) {
-#if defined(ENABLE_NETCORE) && !defined(HOST_WIN32)
+#if !defined(TARGET_WASM) && defined(ENABLE_NETCORE) && !defined(HOST_WIN32)
 		if (strcmp (new_scope, "__Internal") == 0) {
 			g_free ((char *)new_scope);
 			new_scope = g_strdup (MONO_LOADER_LIBRARY_NAME);

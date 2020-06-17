@@ -322,7 +322,8 @@ mono_wasm_load_runtime (const char *managed_path, int enable_debugging)
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
 #ifdef ENABLE_NETCORE
-	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 0);
+	if (!getenv("DOTNET_ICU_DIR"))
+		monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 0);
 #endif
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
