@@ -63,3 +63,7 @@ target_precompile_header(TARGET mdruntimerw-dbi HEADER stdafx.h)
 add_library_clr(mdruntimerw_crossgen ${MDRUNTIMERW_SOURCES})
 set_target_properties(mdruntimerw_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
 target_precompile_header(TARGET mdruntimerw_crossgen HEADER stdafx.h)
+
+add_library_clr(mdruntimerw_ppdb ${MDRUNTIMERW_SOURCES})
+target_compile_definitions(mdruntimerw_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORT_PDB)
+target_precompile_header(TARGET mdruntimerw_ppdb HEADER stdafx.h)

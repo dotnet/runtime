@@ -69,3 +69,7 @@ target_precompile_header(TARGET mdcompiler-dbi HEADER stdafx.h)
 add_library_clr(mdcompiler_crossgen ${MDCOMPILER_SOURCES})
 set_target_properties(mdcompiler_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
 target_precompile_header(TARGET mdcompiler_crossgen HEADER stdafx.h)
+
+add_library_clr(mdcompiler_ppdb ${MDCOMPILER_SOURCES})
+target_compile_definitions(mdcompiler_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORT_PDB)
+target_precompile_header(TARGET mdcompiler_ppdb HEADER stdafx.h)

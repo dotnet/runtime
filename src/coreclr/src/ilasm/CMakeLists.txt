@@ -75,11 +75,11 @@ set(ILASM_LINK_LIBRARIES
   utilcodestaticnohost
   mscorpe
   ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
-  mdhotdata_full
-  mdcompiler_wks
-  mdruntime_wks
-  mdruntimerw_wks
-  mdstaticapi
+  mdhotdata_ppdb
+  mdcompiler_ppdb
+  mdruntime_ppdb
+  mdruntimerw_ppdb
+  mdstaticapi_ppdb
   ${END_LIBRARY_GROUP} # End group of libraries that have circular references
   ceefgen
   corguids
