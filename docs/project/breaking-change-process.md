@@ -1,6 +1,6 @@
 # Breaking change process
 
-Breaking changes make it difficult for people to adopt new versions of .NET. We strive to avoid making them. In the rare case when a breaking change is unavoidable or the best option when all factors are considered, you should follow the process outlined in this document. The intent of the process is to get feedback. This might result in previously unseen  opportunities to achieve your goals without breaks, clever ways to limit breaks to more niche scenarios, and (most importantly) better understand the scope of impact to .NET users.
+Breaking changes make it difficult for people to adopt new versions of .NET. We strive to avoid making them. In the rare case when a breaking change is unavoidable or the best option when all factors are considered, you should follow the process outlined in this document. The intent of the process is to get feedback. This might result in previously unseen opportunities to achieve your goals without breaks, clever ways to limit breaks to more niche scenarios, and (most importantly) better understand the scope of impact to .NET users.
 
 This process does not result in approval or denial of a breaking change request. It results in feedback, which might be varied or uniform. In the best case, the feedback is a call to action to you, that provides a direction on how you should proceed. The people that are responsible for reviewing your PR are expected to use the information collected by this process as part of their determination of whether your change is appropriate to merge.
 
