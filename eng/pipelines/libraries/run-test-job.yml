@@ -3,7 +3,7 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   archType: ''
-  framework: ''
+  framework: 'net5.0'
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
