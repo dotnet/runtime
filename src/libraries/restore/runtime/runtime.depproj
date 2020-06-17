@@ -20,13 +20,6 @@
          Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework.
          This can be removed once we have a new SDK -->
     <FileToExclude Include="apphost" />
-
-    <!-- System.Data.SqlClient is not live-built anymore -->
-    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
-    <!-- Exclude live-built dependencies -->
-    <FileToExclude Include="Microsoft.Win32.Registry" />
-    <FileToExclude Include="System.Security.AccessControl" />
-    <FileToExclude Include="System.Security.Principal.Windows" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,7 +29,6 @@
   <!-- Setup the testing shared framework host -->
   <Target Name="SetupTestingHost"
           Condition="'$(BinPlaceTestSharedFramework)' == 'true'"
-          DependsOnTargets="OverrideRuntimeMono"
           AfterTargets="AfterResolveReferences">
     <PropertyGroup>
       <HostFxrFileName Condition="'$(TargetsWindows)' == 'true'">hostfxr</HostFxrFileName>
@@ -49,13 +41,7 @@
       <UseHardlink Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">false</UseHardlink>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <HostFxFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostFxrFileName)'" />
-      <HostPolicyFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostPolicyFileName)'" />
-      <DotnetExe Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == 'dotnet'" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
+    <ItemGroup>
       <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
       <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
     </ItemGroup>
@@ -67,12 +53,6 @@
 
     <Copy SourceFiles="@(DotnetExe)"
           DestinationFolder="$(TestHostRootPath)"
-          SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="$(UseHardlink)" />
-
-    <Copy Condition="'$(RuntimeFlavor)' == 'Mono'"
-          SourceFiles="@(HostPolicyFile)"
-          DestinationFolder="$(TestHostRootPath)shared\Microsoft.NETCore.App\$(ProductVersion)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
@@ -111,12 +91,7 @@
   <Target Name="OverrideRuntimeMono"
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
-          Condition="'$(RuntimeFlavor)' == 'Mono'">
-    <ItemGroup>
-      <StoreTestHostFiles Include="@(ReferenceCopyLocalPaths)" />
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
-    </ItemGroup>
-  </Target>
+          Condition="'$(RuntimeFlavor)' == 'Mono'" />
 
   <Target Name="GetCoreCLRILFiles" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>

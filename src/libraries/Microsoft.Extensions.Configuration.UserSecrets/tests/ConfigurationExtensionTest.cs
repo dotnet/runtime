@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
             File.WriteAllText(secretsFilePath, contents.ToString(), Encoding.UTF8);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_FindsAssemblyAttribute()
         {
@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
             Assert.Equal(randValue, config[configKey]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_FindsAssemblyAttributeFromType()
         {
@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
             Assert.Empty(config.AsEnumerable());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_With_SecretsId_Passed_Explicitly()
         {

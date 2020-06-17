@@ -9,7 +9,7 @@ namespace System.Threading.Tests
 {
     public class TimerDisposeTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Dispose_NotFired_WaitHandleSignaledImmediately()
         {
             var t = new Timer(_ => { }, null, int.MaxValue, int.MaxValue);
@@ -50,7 +50,7 @@ namespace System.Threading.Tests
             Assert.True(t.DisposeAsync().IsCompletedSuccessfully);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DisposeAsync_DisposeDelayedUntilCallbacksComplete()
         {
             using (var b = new Barrier(2))
@@ -72,7 +72,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DisposeAsync_MultipleDisposesBeforeCompletionReturnSameTask()
         {
             using (var b = new Barrier(2))
@@ -97,7 +97,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DisposeAsync_AfterDisposeWorks()
         {
             using (var b = new Barrier(2))
@@ -120,7 +120,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DisposeAsync_AfterDisposeWaitHandleThrows()
         {
             using (var b = new Barrier(2))
@@ -142,7 +142,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DisposeAsync_ThenDisposeWaitHandleReturnsFalse()
         {
             using (var b = new Barrier(2))

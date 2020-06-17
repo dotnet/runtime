@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Reflection;
@@ -52,7 +53,14 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public static object GetUninitializedObject(Type type)
+        public static object GetUninitializedObject(
+            // This API doesn't call any constructors, but the type needs to be seen as constructed.
+            // A type is seen as constructed if a constructor is kept.
+            // This obviously won't cover a type with no constructor. Reference types with no
+            // constructor are an academic problem. Valuetypes with no constructors are a problem,
+            // but IL Linker currently treats them as always implicitly boxed.
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type)
         {
             if (type is null)
             {
