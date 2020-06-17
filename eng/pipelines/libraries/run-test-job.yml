@@ -92,13 +92,16 @@ jobs:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             runtimeFlavor: ${{ parameters.runtimeFlavor }}
-            osGroup: ${{ parameters.osGroup }}
-            archType: ${{ parameters.archType }}
-            buildConfig: ${{ parameters.buildConfig }}
-            helixQueues: ${{ parameters.helixQueues }}
+            targetOS: ${{ parameters.osGroup }}
+            archGroup: ${{ parameters.archType }}
+            configuration: ${{ parameters.buildConfig }}
+            helixQueues: ${{ join('+', parameters.helixQueues) }}
+            msbuildScript: $(_msbuildCommand)
+            framework: ${{ parameters.framework }}
             testScope: ${{ parameters.testScope }}
             interpreter: ${{ parameters.interpreter }}
             creator: dotnet-bot
+            helixToken: ''
             testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
             extraHelixArguments: $(_extraHelixArguments)
 

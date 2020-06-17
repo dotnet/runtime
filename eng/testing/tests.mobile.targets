@@ -1,5 +1,7 @@
 <Project>
   <PropertyGroup>
+    <!-- OutDir is not set early enough to set this property in .props file. -->
+    <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
     <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' and $(TargetArchitecture.StartsWith('arm'))">true</RunAOTCompilation>
     <JSEngine Condition="'$(TargetOS)' == 'Browser' and '$(JSEngine)' == ''">V8</JSEngine>
@@ -69,7 +71,6 @@
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <Error Condition="('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm') and '$(DevTeamProvisioning)' == ''"
            Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'UBF8T346G9' if you're part of the Microsoft team account." />
-    <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
 
@@ -112,16 +113,7 @@
     </AppleAppBuilderTask>
     <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
     <Message Importance="High" Text="App: $(AppBundlePath)"/>
-
-    <ItemGroup>
-      <_appFiles Include="$(AppBundlePath)/../**/*" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(_appFiles)"
-          DestinationFolder="$(TestArchiveTestsDir)/%(RecursiveDir)"
-          SkipUnchangedFiles="true"
-          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
-
+    <!-- This app is now can be consumed by xharness CLI to deploy on a device or simulator -->
   </Target>
 
   <UsingTask TaskName="WasmAppBuilder"

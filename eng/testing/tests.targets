@@ -24,20 +24,15 @@
     <RunScriptCommands Include="set DEVPATH=%RUNTIME_PATH%" />
   </ItemGroup>
 
-  <PropertyGroup>
     <!-- OutDir is not set early enough to set this property in .props file. -->
     <BundleDir Condition="'$(TargetsMobile)' == 'true'">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
 
-    <_zipSourceDirectory>$(OutDir)</_zipSourceDirectory>
-    <_zipSourceDirectory Condition="'$(TargetOS)' == 'Browser'">$(BundleDir)</_zipSourceDirectory>
-  </PropertyGroup>
 
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
-          Condition="'$(IsCrossTargetingBuild)' != 'true' and
-                     '$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and
                      ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'Browser')"
-          AfterTargets="Build"
+          AfterTargets="PrepareForRun"
           DependsOnTargets="GenerateRunScript">
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
@@ -93,7 +88,7 @@
       <RunTestsCommand>"$(RunScriptOutputPath)" --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TargetsMobile)' == 'true'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture)</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">"$(RunScriptOutputPath)"</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(_withoutCategories.Replace(';', ' -notrait category='))</RunTestsCommand>
     </PropertyGroup>
 
     <!-- Invoke the run script with the test host as the runtime path. -->
