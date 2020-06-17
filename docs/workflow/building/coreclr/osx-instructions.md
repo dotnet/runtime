@@ -39,7 +39,7 @@ brew install icu4c
 
 pkg-config
 ----------
-pkg-config is also required to build and run. It can be obtained via [Homebrew](https://brew.sh/).
+pkg-config is also required to build. It can be obtained via [Homebrew](https://brew.sh/).
 
 ```sh
 brew install pkg-config
