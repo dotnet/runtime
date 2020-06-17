@@ -1656,8 +1656,8 @@ namespace System
 
         private void MakeSeparatorListVectorized(ref ValueListBuilder<int> sepListBuilder, char c, char? c2 = null, char? c3 = null)
         {
-            Vector256<byte> shuffleConstant = Vector256.Create(0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                                        0xFF, 0xFF, 0xFF, 0xFF, 0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
+            ReadOnlySpan<byte> shuffleConstantData = new byte[] { 0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+            Vector256<byte> shuffleConstant = Unsafe.ReadUnaligned<Vector256<byte>>(ref MemoryMarshal.GetReference(shuffleConstantData));
 
             Vector256<ushort> v1 = Vector256.Create(c);
             Vector256<ushort>? v2 = c2 is char sep2 ? Vector256.Create(sep2) : (Vector256<ushort>?)null;
@@ -1688,7 +1688,7 @@ namespace System
                 Vector256<byte> mask = Avx2.ShiftLeftLogical(cmp.AsUInt64(), 4).AsByte();
                 mask = Avx2.Shuffle(mask, shuffleConstant);
 
-                Vector128<byte> res = Sse2.Or(Avx2.ExtractVector128(mask, 0), Avx2.ExtractVector128(mask, 1));
+                Vector128<byte> res = Sse2.Or(mask.GetLower(), mask.GetUpper());
                 ulong extractedBits = Bmi2.X64.ParallelBitExtract(0xFEDCBA9876543210, Sse2.X64.ConvertToUInt64(res.AsUInt64()));
 
                 while (true)
