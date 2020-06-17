@@ -1627,6 +1627,8 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
     } CONTRACTL_END;
 
     unsigned int MaxInterpretCount = s_InterpreterJITThreshold.val(CLRConfig::INTERNAL_InterpreterJITThreshold);
+    bool scheduleTieringBackgroundWork = false;
+    TieredCompilationManager * tieredCompilationManager = GetAppDomain()->GetTieredCompilationManager();
 
     if (force || interpMethInfo->m_invocations > MaxInterpretCount)
     {
@@ -1664,18 +1666,22 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
             // policy.
 #ifdef FEATURE_TIERED_COMPILATION
             CodeVersionManager::LockHolder _lockHolder;
-            bool scheduleTieringBackgroundWork = false;
             NativeCodeVersion activeCodeVersion = md->GetCodeVersionManager()->GetActiveILCodeVersion(md).GetActiveNativeCodeVersion(md);
             ILCodeVersion ilCodeVersion = activeCodeVersion.GetILCodeVersion();
             if (activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
                 !ilCodeVersion.HasAnyOptimizedNativeCodeVersion(activeCodeVersion))
             {
-                GetAppDomain()->GetTieredCompilationManager()->AsyncPromoteToTier1(activeCodeVersion, &scheduleTieringBackgroundWork);
+                tieredCompilationManager->AsyncPromoteToTier1(activeCodeVersion, &scheduleTieringBackgroundWork);
             }
 #else
 #error FEATURE_INTERPRETER depends on FEATURE_TIERED_COMPILATION now
 #endif
         }
+    }
+
+    if (scheduleTieringBackgroundWork)
+    {
+        tieredCompilationManager->ScheduleBackgroundWork(); // requires GC_TRIGGERS
     }
 }
 
