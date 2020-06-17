@@ -13,6 +13,11 @@ ThreadInfo::ThreadInfo(CrashInfo& crashInfo, pid_t tid, mach_port_t port) :
 
 ThreadInfo::~ThreadInfo()
 {
+    kern_return_t result = ::mach_port_deallocate(mach_task_self(), m_port);
+    if (result != KERN_SUCCESS)
+    {
+        fprintf(stderr, "~ThreadInfo: mach_port_deallocate FAILED %x %s\n", result, mach_error_string(result));
+    }
 }
 
 bool
