@@ -82,7 +82,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Reads the next CBOR data item, returning a <see cref="ReadOnlySpan{T}"/> view
+        ///   Reads the next CBOR data item, returning a <see cref="ReadOnlyMemory{T}"/> view
         ///   of the encoded value. For indefinite length encodings this includes the break byte.
         /// </summary>
         /// <param name="disableConformanceModeChecks">

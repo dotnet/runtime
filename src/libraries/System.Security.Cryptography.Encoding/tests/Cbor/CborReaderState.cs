@@ -34,12 +34,12 @@ namespace System.Formats.Cbor
         /// <summary>
         ///   Indicates that the next CBOR data item denotes the start of an indefinite-length byte string (major type 2).
         /// </summary>
-        StartByteString,
+        StartIndefiniteLengthByteString,
 
         /// <summary>
         ///   Indicates that the reader is at the end of an indefinite-length byte string (major type 2).
         /// </summary>
-        EndByteString,
+        EndIndefiniteLengthByteString,
 
         /// <summary>
         ///   Indicates that the next CBOR data item is a UTF-8 string (major type 3).
@@ -49,12 +49,12 @@ namespace System.Formats.Cbor
         /// <summary>
         ///   Indicates that the next CBOR data item denotes the start of an indefinite-length UTF-8 text string (major type 3).
         /// </summary>
-        StartTextString,
+        StartIndefiniteLengthTextString,
 
         /// <summary>
         ///   Indicates that the reader is at the end of an indefinite-length UTF-8 text string (major type 3).
         /// </summary>
-        EndTextString,
+        EndIndefiniteLengthTextString,
 
         /// <summary>
         ///   Indicates that the next CBOR data item denotes the start of an array (major type 4).

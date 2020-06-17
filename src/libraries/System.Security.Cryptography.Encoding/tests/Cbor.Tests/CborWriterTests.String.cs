@@ -141,72 +141,72 @@ namespace System.Formats.Cbor.Tests
         [Theory]
         [InlineData(nameof(CborWriter.WriteInt64))]
         [InlineData(nameof(CborWriter.WriteByteString))]
-        [InlineData(nameof(CborWriter.WriteStartTextString))]
-        [InlineData(nameof(CborWriter.WriteStartByteString))]
+        [InlineData(nameof(CborWriter.WriteStartIndefiniteLengthTextString))]
+        [InlineData(nameof(CborWriter.WriteStartIndefiniteLengthByteString))]
         [InlineData(nameof(CborWriter.WriteStartArray))]
         [InlineData(nameof(CborWriter.WriteStartMap))]
         public static void WriteTextString_IndefiniteLength_NestedWrites_ShouldThrowInvalidOperationException(string opName)
         {
             var writer = new CborWriter();
-            writer.WriteStartTextString();
+            writer.WriteStartIndefiniteLengthTextString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
 
         [Theory]
-        [InlineData(nameof(CborWriter.WriteEndByteString))]
+        [InlineData(nameof(CborWriter.WriteEndIndefiniteLengthByteString))]
         [InlineData(nameof(CborWriter.WriteEndArray))]
         [InlineData(nameof(CborWriter.WriteEndMap))]
         public static void WriteTextString_IndefiniteLength_ImbalancedWrites_ShouldThrowInvalidOperationException(string opName)
         {
             var writer = new CborWriter();
-            writer.WriteStartTextString();
+            writer.WriteStartIndefiniteLengthTextString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
 
         [Theory]
         [InlineData(nameof(CborWriter.WriteInt64))]
         [InlineData(nameof(CborWriter.WriteTextString))]
-        [InlineData(nameof(CborWriter.WriteStartTextString))]
-        [InlineData(nameof(CborWriter.WriteStartByteString))]
+        [InlineData(nameof(CborWriter.WriteStartIndefiniteLengthTextString))]
+        [InlineData(nameof(CborWriter.WriteStartIndefiniteLengthByteString))]
         [InlineData(nameof(CborWriter.WriteStartArray))]
         [InlineData(nameof(CborWriter.WriteStartMap))]
-        [InlineData(nameof(CborWriter.WriteEndTextString))]
+        [InlineData(nameof(CborWriter.WriteEndIndefiniteLengthTextString))]
         [InlineData(nameof(CborWriter.WriteEndArray))]
         [InlineData(nameof(CborWriter.WriteEndMap))]
         public static void WriteByteString_IndefiniteLength_NestedWrites_ShouldThrowInvalidOperationException(string opName)
         {
             var writer = new CborWriter();
-            writer.WriteStartByteString();
+            writer.WriteStartIndefiniteLengthByteString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
 
         [Theory]
-        [InlineData(nameof(CborWriter.WriteEndTextString))]
+        [InlineData(nameof(CborWriter.WriteEndIndefiniteLengthTextString))]
         [InlineData(nameof(CborWriter.WriteEndArray))]
         [InlineData(nameof(CborWriter.WriteEndMap))]
         public static void WriteByteString_IndefiniteLength_ImbalancedWrites_ShouldThrowInvalidOperationException(string opName)
         {
             var writer = new CborWriter();
-            writer.WriteStartByteString();
+            writer.WriteStartIndefiniteLengthByteString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
 
         [Theory]
         [InlineData(CborConformanceMode.Canonical)]
         [InlineData(CborConformanceMode.Ctap2Canonical)]
-        public static void WriteStartByteString_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceMode conformanceMode)
+        public static void WriteStartByteStringIndefiniteLength_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceMode conformanceMode)
         {
             var writer = new CborWriter(conformanceMode, convertIndefiniteLengthEncodings: false);
-            Assert.Throws<InvalidOperationException>(() => writer.WriteStartByteString());
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartIndefiniteLengthByteString());
         }
 
         [Theory]
         [InlineData(CborConformanceMode.Canonical)]
         [InlineData(CborConformanceMode.Ctap2Canonical)]
-        public static void WriteStartTextString_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceMode conformanceMode)
+        public static void WriteStartTextStringIndefiniteLength_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceMode conformanceMode)
         {
             var writer = new CborWriter(conformanceMode, convertIndefiniteLengthEncodings: false);
-            Assert.Throws<InvalidOperationException>(() => writer.WriteStartTextString());
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartIndefiniteLengthTextString());
         }
     }
 }

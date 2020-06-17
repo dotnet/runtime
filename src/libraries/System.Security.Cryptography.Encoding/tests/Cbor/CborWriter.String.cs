@@ -79,7 +79,7 @@ namespace System.Formats.Cbor
         ///   In canonical conformance modes, the writer will reject indefinite-length writes unless
         ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
         /// </remarks>
-        public void WriteStartByteString()
+        public void WriteStartIndefiniteLengthByteString()
         {
             if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
             {
@@ -105,7 +105,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   The written data is not accepted under the current conformance mode
         /// </exception>
-        public void WriteEndByteString()
+        public void WriteEndIndefiniteLengthByteString()
         {
             PopDataItem(CborMajorType.ByteString);
             AdvanceDataItemCounters();
@@ -192,7 +192,7 @@ namespace System.Formats.Cbor
         ///   In canonical conformance modes, the writer will reject indefinite-length writes unless
         ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
         /// </remarks>
-        public void WriteStartTextString()
+        public void WriteStartIndefiniteLengthTextString()
         {
             if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
             {
@@ -218,7 +218,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   The written data is not accepted under the current conformance mode
         /// </exception>
-        public void WriteEndTextString()
+        public void WriteEndIndefiniteLengthTextString()
         {
             PopDataItem(CborMajorType.TextString);
             AdvanceDataItemCounters();

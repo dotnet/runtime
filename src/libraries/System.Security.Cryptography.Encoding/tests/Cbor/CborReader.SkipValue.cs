@@ -108,25 +108,25 @@ namespace System.Formats.Cbor
                     SkipString(type: CborMajorType.TextString);
                     break;
 
-                case CborReaderState.StartByteString:
-                    ReadStartByteString();
+                case CborReaderState.StartIndefiniteLengthByteString:
+                    ReadStartIndefiniteLengthByteString();
                     depth++;
                     break;
 
-                case CborReaderState.EndByteString:
+                case CborReaderState.EndIndefiniteLengthByteString:
                     ValidatePop(state, depth);
-                    ReadEndByteString();
+                    ReadEndIndefiniteLengthByteString();
                     depth--;
                     break;
 
-                case CborReaderState.StartTextString:
-                    ReadStartTextString();
+                case CborReaderState.StartIndefiniteLengthTextString:
+                    ReadStartIndefiniteLengthTextString();
                     depth++;
                     break;
 
-                case CborReaderState.EndTextString:
+                case CborReaderState.EndIndefiniteLengthTextString:
                     ValidatePop(state, depth);
-                    ReadEndTextString();
+                    ReadEndIndefiniteLengthTextString();
                     depth--;
                     break;
 

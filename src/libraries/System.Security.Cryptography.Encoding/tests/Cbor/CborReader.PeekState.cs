@@ -79,8 +79,8 @@ namespace System.Formats.Cbor
                             Debug.Assert(AllowMultipleRootLevelValues);
                             throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedBreakByte);
 
-                        case CborMajorType.ByteString: return CborReaderState.EndByteString;
-                        case CborMajorType.TextString: return CborReaderState.EndTextString;
+                        case CborMajorType.ByteString: return CborReaderState.EndIndefiniteLengthByteString;
+                        case CborMajorType.TextString: return CborReaderState.EndIndefiniteLengthTextString;
                         case CborMajorType.Array: return CborReaderState.EndArray;
                         case CborMajorType.Map when _itemsRead % 2 == 0: return CborReaderState.EndMap;
                         case CborMajorType.Map:
@@ -118,12 +118,12 @@ namespace System.Formats.Cbor
                 case CborMajorType.NegativeInteger: return CborReaderState.NegativeInteger;
                 case CborMajorType.ByteString:
                     return (initialByte.AdditionalInfo == CborAdditionalInfo.IndefiniteLength) ?
-                            CborReaderState.StartByteString :
+                            CborReaderState.StartIndefiniteLengthByteString :
                             CborReaderState.ByteString;
 
                 case CborMajorType.TextString:
                     return (initialByte.AdditionalInfo == CborAdditionalInfo.IndefiniteLength) ?
-                            CborReaderState.StartTextString :
+                            CborReaderState.StartIndefiniteLengthTextString :
                             CborReaderState.TextString;
 
                 case CborMajorType.Array: return CborReaderState.StartArray;

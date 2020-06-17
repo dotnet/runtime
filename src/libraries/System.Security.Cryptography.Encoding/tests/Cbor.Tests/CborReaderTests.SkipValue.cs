@@ -240,7 +240,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             reader.ReadStartMap();
-            reader.ReadStartTextString();
+            reader.ReadStartIndefiniteLengthTextString();
             for (int i = 0; i < skipOffset; i++)
             {
                 reader.ReadTextString();

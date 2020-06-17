@@ -160,6 +160,6 @@ namespace System.Formats.Cbor.Tests
         /// </summary>
         /// <param name="expected"></param>
         /// <param name="actual"></param>
-        public static void HexEqual(byte[] expected, byte[] actual) => Assert.Equal(expected.ByteArrayToHex(), actual.ByteArrayToHex());
+        public static void HexEqual(ReadOnlyMemory<byte> expected, ReadOnlyMemory<byte> actual) => Assert.Equal(expected.ByteArrayToHex(), actual.ByteArrayToHex());
     }
 }

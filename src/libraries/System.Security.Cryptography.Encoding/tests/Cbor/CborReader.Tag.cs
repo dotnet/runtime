@@ -77,7 +77,7 @@ namespace System.Formats.Cbor
                 switch (PeekState())
                 {
                     case CborReaderState.TextString:
-                    case CborReaderState.StartTextString:
+                    case CborReaderState.StartIndefiniteLengthTextString:
                         break;
                     default:
                         throw new FormatException(SR.Cbor_Reader_InvalidDateTimeEncoding);
@@ -188,7 +188,7 @@ namespace System.Formats.Cbor
                 switch (PeekState())
                 {
                     case CborReaderState.ByteString:
-                    case CborReaderState.StartByteString:
+                    case CborReaderState.StartIndefiniteLengthByteString:
                         break;
                     default:
                         throw new FormatException(SR.Cbor_Reader_InvalidBigNumEncoding);
