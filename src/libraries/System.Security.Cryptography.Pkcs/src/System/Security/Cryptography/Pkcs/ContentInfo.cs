@@ -41,5 +41,10 @@ namespace System.Security.Cryptography.Pkcs
                 throw new ArgumentNullException(nameof(encodedMessage));
             return PkcsPal.Instance.GetEncodedMessageType(encodedMessage);
         }
+
+        public static Oid GetContentType(ReadOnlySpan<byte> encodedMessage)
+        {
+            return PkcsPal.Instance.GetEncodedMessageType(encodedMessage);
+        }
     }
 }
