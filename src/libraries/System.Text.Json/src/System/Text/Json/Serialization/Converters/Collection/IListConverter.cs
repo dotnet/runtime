@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, object?>
         where TCollection : IList
     {
-        protected override void Add(in  object? value, ref ReadStack state)
+        protected override void Add(in object? value, ref ReadStack state)
         {
             ((IList)state.Current.ReturnValue!).Add(value);
         }

@@ -444,7 +444,7 @@ namespace System.Text.Json
             {
                 key = MemoryMarshal.Read<ulong>(propertyName)
                     & 0x00FFFFFFFFFFFFFF
-                    // Include the length with a max of 0xFF so we force comparisons when length >=0xFF.
+                    // Include the length with a max of 0xFF.
                     | ((ulong)Math.Min(length, 0xFF)) << (7 * BitsInByte);
             }
             else if (length > 3)
@@ -501,17 +501,17 @@ namespace System.Text.Json
 
             // Verify key contains the embedded bytes as expected.
             Debug.Assert(
-                // Verify embedded characters.
-                (length < 1 || propertyName[0] == ((key & ((ulong)0xFF << 8 * 0)) >> 8 * 0)) &&
-                (length < 2 || propertyName[1] == ((key & ((ulong)0xFF << 8 * 1)) >> 8 * 1)) &&
-                (length < 3 || propertyName[2] == ((key & ((ulong)0xFF << 8 * 2)) >> 8 * 2)) &&
-                (length < 4 || propertyName[3] == ((key & ((ulong)0xFF << 8 * 3)) >> 8 * 3)) &&
-                (length < 5 || propertyName[4] == ((key & ((ulong)0xFF << 8 * 4)) >> 8 * 4)) &&
-                (length < 6 || propertyName[5] == ((key & ((ulong)0xFF << 8 * 5)) >> 8 * 5)) &&
-                (length < 7 || propertyName[6] == ((key & ((ulong)0xFF << 8 * 6)) >> 8 * 6)) &&
+                // Verify embedded property name.
+                (length < 1 || propertyName[0] == ((key & ((ulong)0xFF << BitsInByte * 0)) >> BitsInByte * 0)) &&
+                (length < 2 || propertyName[1] == ((key & ((ulong)0xFF << BitsInByte * 1)) >> BitsInByte * 1)) &&
+                (length < 3 || propertyName[2] == ((key & ((ulong)0xFF << BitsInByte * 2)) >> BitsInByte * 2)) &&
+                (length < 4 || propertyName[3] == ((key & ((ulong)0xFF << BitsInByte * 3)) >> BitsInByte * 3)) &&
+                (length < 5 || propertyName[4] == ((key & ((ulong)0xFF << BitsInByte * 4)) >> BitsInByte * 4)) &&
+                (length < 6 || propertyName[5] == ((key & ((ulong)0xFF << BitsInByte * 5)) >> BitsInByte * 5)) &&
+                (length < 7 || propertyName[6] == ((key & ((ulong)0xFF << BitsInByte * 6)) >> BitsInByte * 6)) &&
                 // Verify embedded length.
-                ((length >= 0xFF || (key & ((ulong)0xFF << 8 * 7)) >> 8 * 7 == (ulong)length)) &&
-                ((length < 0xFF || (key & ((ulong)0xFF << 8 * 7)) >> 8 * 7 == 0xFF)));
+                (length >= 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == (ulong)length) &&
+                (length < 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == 0xFF));
 
             return key;
         }
