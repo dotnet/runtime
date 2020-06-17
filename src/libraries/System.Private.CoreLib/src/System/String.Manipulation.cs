@@ -1669,8 +1669,8 @@ namespace System
 
             for (; i < cond; i += Vector256<ushort>.Count)
             {
-                ref char ri = ref Unsafe.Add(ref c0, i);
-                Vector256<ushort> charVector = Unsafe.As<char, Vector256<ushort>>(ref ri);
+                ref char ci = ref Unsafe.Add(ref c0, i);
+                Vector256<ushort> charVector = Unsafe.As<char, Vector256<ushort>>(ref ci);
                 Vector256<ushort> cmp = Avx2.CompareEqual(charVector, v1);
 
                 if (v2 is Vector256<ushort> vecSep2)
