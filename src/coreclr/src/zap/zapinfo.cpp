@@ -2966,7 +2966,7 @@ CORINFO_CLASS_HANDLE ZapInfo::getArgClass(CORINFO_SIG_INFO* sig,
     return m_pEEJitInfo->getArgClass(sig, args);
 }
 
-CorInfoType ZapInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
+CorInfoHFAElemType ZapInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 {
     return m_pEEJitInfo->getHFAType(hClass);
 }

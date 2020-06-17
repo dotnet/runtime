@@ -111,13 +111,17 @@ namespace System.Text.Json
             JsonConverter converter,
             JsonSerializerOptions options)
         {
-            return CreateProperty(
+            JsonPropertyInfo jsonPropertyInfo = CreateProperty(
                 declaredPropertyType: declaredPropertyType,
                 runtimePropertyType: runtimePropertyType,
                 propertyInfo: null, // Not a real property so this is null.
                 parentClassType: typeof(object), // a dummy value (not used)
                 converter: converter,
                 options);
+
+            Debug.Assert(jsonPropertyInfo.IsForClassInfo);
+
+            return jsonPropertyInfo;
         }
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.

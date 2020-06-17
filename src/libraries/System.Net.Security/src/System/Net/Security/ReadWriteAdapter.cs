@@ -19,29 +19,6 @@ namespace System.Net.Security
         Task FlushAsync();
 
         CancellationToken CancellationToken { get; }
-
-        public async ValueTask<int> ReadAllAsync(Memory<byte> buffer)
-        {
-            int length = buffer.Length;
-
-            do
-            {
-                int bytes = await ReadAsync(buffer).ConfigureAwait(false);
-                if (bytes == 0)
-                {
-                    if (!buffer.IsEmpty)
-                    {
-                        throw new IOException(SR.net_io_eof);
-                    }
-                    break;
-                }
-
-                buffer = buffer.Slice(bytes);
-            }
-            while (!buffer.IsEmpty);
-
-            return length;
-        }
     }
 
     internal readonly struct AsyncReadWriteAdapter : IReadWriteAdapter

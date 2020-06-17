@@ -617,6 +617,8 @@ namespace
             return coreclr_delegate_type::com_unregister;
         case hostfxr_delegate_type::hdt_load_assembly_and_get_function_pointer:
             return coreclr_delegate_type::load_assembly_and_get_function_pointer;
+        case hostfxr_delegate_type::hdt_get_function_pointer:
+            return coreclr_delegate_type::get_function_pointer;
         }
         return coreclr_delegate_type::invalid;
     }
@@ -641,6 +643,7 @@ namespace
 // If the host_context_handle was initialized using hostfxr_initialize_for_dotnet_command_line,
 // then only the following delegate types are currently supported:
 //     hdt_load_assembly_and_get_function_pointer
+//     hdt_get_function_pointer
 //
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_delegate(
     const hostfxr_handle host_context_handle,

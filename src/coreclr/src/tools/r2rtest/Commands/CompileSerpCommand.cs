@@ -22,12 +22,17 @@ namespace R2RTest
         /// Compiles Serp Core, Asp.Net, and Framework into their own composite images. Compiles Serp packages assemblies individually.
         /// </summary>
         SerpAspNetSharedFramework,
+        /// <summary>
+        /// Composite image containing Serp Core, Asp.Net, Shared Framework (the largest composite we can currently make)
+        /// </summary>
+        SingleSerpAspNetSharedFrameworkComposite,
     }
 
     class CompileSerpCommand
     {
         private static readonly string BackupFolder  = "backup";
         private static readonly string CompileFolder  = "compile";
+        private static readonly string FrameworkCompositeFilename = "framework-r2r.dll";
 
         private List<string> _packageCompileAssemblies;
         private List<string> _packageReferenceAssemblies;
@@ -182,6 +187,7 @@ namespace R2RTest
             // Composite FX, Composite ASP.NET, Composite Serp core, Individual package assemblies
             List<ProcessInfo> fileCompilations = new List<ProcessInfo>();
 
+            bool combinedComposite = false;
             bool compositeFramework = false;
             bool compositeAspNet = false;
             bool compositeSerpCore = false;
@@ -191,102 +197,135 @@ namespace R2RTest
                 compositeAspNet = true;
                 compositeSerpCore = true;
             }
-
-            // Composite FX
+            if (_options.CompositeScenario == SerpCompositeScenario.SingleSerpAspNetSharedFrameworkComposite)
             {
-                List<string> frameworkCompileAssembliesBackup = BackupAndUseOriginalAssemblies(serpRoot, _frameworkCompileAssemblies);
-                string frameworkCompositeDll = Path.Combine(_options.CoreRootDirectory.FullName, "framework-r2r.dll");
-                if (File.Exists(frameworkCompositeDll))
-                    File.Delete(frameworkCompositeDll);
+                combinedComposite = true;
+            }
 
-                // Always restore the framework from the backup if present first since we run CG2 on it
-                var backupFrameworkDir = Path.GetDirectoryName(GetBackupFile(serpRoot, frameworkCompositeDll));
-                var backedUpFiles = Directory.GetFiles(backupFrameworkDir, "*.dll", SearchOption.AllDirectories);
-                foreach (var file in backedUpFiles)
+            // Single composite image for Serp, Asp, Fx
+            {
+                if (combinedComposite)
                 {
-                    string destinationFile = GetOriginalFile(serpRoot, file);
-                    File.Copy(file, destinationFile, true);
-                }
+                    List<string> combinedCompileAssemblies = new List<string>();
+                    HashSet<string> simpleNameList = new HashSet<string>();
+                    combinedCompileAssemblies.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _coreCompileAssemblies));
+                    combinedCompileAssemblies.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _aspCompileAssemblies));
+                    combinedCompileAssemblies.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _frameworkCompileAssemblies));
 
-                if (compositeFramework)
-                {
+                    List<string> combinedCompileAssembliesBackup = BackupAndUseOriginalAssemblies(serpRoot, combinedCompileAssemblies);
+                    string frameworkCompositeDll = Path.Combine(_options.CoreRootDirectory.FullName, FrameworkCompositeFilename);
+                    if (File.Exists(frameworkCompositeDll))
+                        File.Delete(frameworkCompositeDll);
+                    
                     string frameworkCompositeDllCompile = GetCompileFile(serpRoot, frameworkCompositeDll);
-                    Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = true };
-                    var runner = new Crossgen2Runner(_options, crossgen2Options, new List<string>());
-                    var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, frameworkCompositeDllCompile, frameworkCompileAssembliesBackup));
+                    Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = true, CompositeRoot = GetBackupFile(serpRoot, SerpDir) };
+                    var runner = new Crossgen2Runner(_options, crossgen2Options, combinedCompileAssembliesBackup);
+                    var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, frameworkCompositeDllCompile, combinedCompileAssembliesBackup));
                     fileCompilations.Add(compilationProcess);
-                }
-                else
-                {
-                    Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = false };
-                    var runner = new Crossgen2Runner(_options, crossgen2Options, new List<string>());
-                    foreach (string assembly in frameworkCompileAssembliesBackup)
-                    {
-                        string dllCompile = GetCompileFile(serpRoot, assembly);
-                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, dllCompile, new string[] { assembly }));
-                        fileCompilations.Add(compilationProcess);
-                    }
                 }
             }
 
-            // Composite Asp.Net
+            if (!combinedComposite)
             {
-                List<string> aspCombinedReferencesBackup = BackupAndUseOriginalAssemblies(serpRoot, new List<string>(_frameworkReferenceAssemblies));
-                List<string> aspCompileAssembliesBackup = BackupAndUseOriginalAssemblies(serpRoot, _aspCompileAssemblies);
-                string aspCompositeDll = Path.Combine(_options.AspNetPath.FullName, "asp-r2r.dll");
-                if (File.Exists(aspCompositeDll))
-                    File.Delete(aspCompositeDll);
+                // Composite FX
+                {
+                    List<string> frameworkCompileAssembliesBackup = BackupAndUseOriginalAssemblies(serpRoot, _frameworkCompileAssemblies);
+                    string frameworkCompositeDll = Path.Combine(_options.CoreRootDirectory.FullName, FrameworkCompositeFilename);
+                    if (File.Exists(frameworkCompositeDll))
+                        File.Delete(frameworkCompositeDll);
 
-                if (compositeAspNet)
-                {
-                    string aspCompositeDllCompile = GetCompileFile(serpRoot, aspCompositeDll);
-                    Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = true, PartialComposite = true };
-                    var runner = new Crossgen2Runner(_options, crossgen2Options, aspCombinedReferencesBackup);
-                    var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, aspCompositeDllCompile, aspCompileAssembliesBackup));
-                    fileCompilations.Add(compilationProcess);
-                }
-                else
-                {
-                    Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = false };
-                    var runner = new Crossgen2Runner(_options, crossgen2Options, aspCombinedReferencesBackup);
-                    foreach (string assembly in aspCompileAssembliesBackup)
+                    // Always restore the framework from the backup if present first since we run CG2 on it
+                    var backupFrameworkDir = Path.GetDirectoryName(GetBackupFile(serpRoot, frameworkCompositeDll));
+                    var backedUpFiles = Directory.GetFiles(backupFrameworkDir, "*.dll", SearchOption.AllDirectories);
+                    foreach (var file in backedUpFiles)
                     {
-                        string dllCompile = GetCompileFile(serpRoot, assembly);
-                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, dllCompile, new string[] { assembly }));
+                        string destinationFile = GetOriginalFile(serpRoot, file);
+                        File.Copy(file, destinationFile, true);
+                    }
+
+                    if (compositeFramework)
+                    {
+                        string frameworkCompositeDllCompile = GetCompileFile(serpRoot, frameworkCompositeDll);
+                        Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = true };
+                        var runner = new Crossgen2Runner(_options, crossgen2Options, new List<string>());
+                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, frameworkCompositeDllCompile, frameworkCompileAssembliesBackup));
                         fileCompilations.Add(compilationProcess);
                     }
-                }
-            }
-
-            // Composite Serp core
-            {
-                List<string> coreCombinedReferences = new List<string>();
-                coreCombinedReferences.AddRange(_coreReferenceAssemblies);
-                coreCombinedReferences.AddRange(_aspReferenceAssemblies);
-                coreCombinedReferences.AddRange(_frameworkReferenceAssemblies);
-                List<string> coreCombinedReferencesBackup = BackupAndUseOriginalAssemblies(serpRoot, coreCombinedReferences);
-                List<string> coreCompileAssembliesBackup = BackupAndUseOriginalAssemblies(serpRoot, _coreCompileAssemblies);
-                string serpCompositeDll = Path.Combine(BinDir, "serp-r2r.dll");
-                if (File.Exists(serpCompositeDll))
-                    File.Delete(serpCompositeDll);
-
-                if (compositeSerpCore)
-                {
-                    string coreCompositeDllCompile = GetCompileFile(serpRoot, serpCompositeDll);
-                    Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = true, PartialComposite = true };
-                    var runner = new Crossgen2Runner(_options, crossgen2Options, coreCombinedReferencesBackup);
-                    var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, coreCompositeDllCompile, coreCompileAssembliesBackup));
-                    fileCompilations.Add(compilationProcess);
-                }
-                else
-                {
-                    Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = false };
-                    var runner = new Crossgen2Runner(_options, crossgen2Options, coreCombinedReferencesBackup);
-                    foreach (string assembly in coreCompileAssembliesBackup)
+                    else
                     {
-                        string dllCompile = GetCompileFile(serpRoot, assembly);
-                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, dllCompile, new string[] { assembly }));
+                        Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = false };
+                        var runner = new Crossgen2Runner(_options, crossgen2Options, new List<string>());
+                        foreach (string assembly in frameworkCompileAssembliesBackup)
+                        {
+                            string dllCompile = GetCompileFile(serpRoot, assembly);
+                            var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, dllCompile, new string[] { assembly }));
+                            fileCompilations.Add(compilationProcess);
+                        }
+                    }
+                }
+
+                // Composite Asp.Net
+                {
+                    List<string> aspCombinedReferences = new List<string>();
+                    aspCombinedReferences.AddRange(_aspReferenceAssemblies);
+                    aspCombinedReferences.AddRange(_frameworkCompileAssemblies);
+                    List<string> aspCombinedReferencesBackup = BackupAndUseOriginalAssemblies(serpRoot, aspCombinedReferences);
+                    List<string> aspCompileAssembliesBackup = BackupAndUseOriginalAssemblies(serpRoot, _aspCompileAssemblies);
+                    string aspCompositeDll = Path.Combine(_options.AspNetPath.FullName, "asp-r2r.dll");
+                    if (File.Exists(aspCompositeDll))
+                        File.Delete(aspCompositeDll);
+
+                    if (compositeAspNet)
+                    {
+                        string aspCompositeDllCompile = GetCompileFile(serpRoot, aspCompositeDll);
+                        Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = true, PartialComposite = true };
+                        var runner = new Crossgen2Runner(_options, crossgen2Options, aspCombinedReferencesBackup);
+                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, aspCompositeDllCompile, aspCompileAssembliesBackup));
                         fileCompilations.Add(compilationProcess);
+                    }
+                    else
+                    {
+                        Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = false };
+                        var runner = new Crossgen2Runner(_options, crossgen2Options, aspCombinedReferencesBackup);
+                        foreach (string assembly in aspCompileAssembliesBackup)
+                        {
+                            string dllCompile = GetCompileFile(serpRoot, assembly);
+                            var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, dllCompile, new string[] { assembly }));
+                            fileCompilations.Add(compilationProcess);
+                        }
+                    }
+                }
+
+                // Composite Serp core
+                {
+                    List<string> coreCombinedReferences = new List<string>();
+                    coreCombinedReferences.AddRange(_coreReferenceAssemblies);
+                    coreCombinedReferences.AddRange(_aspReferenceAssemblies);
+                    coreCombinedReferences.AddRange(_frameworkReferenceAssemblies);
+                    List<string> coreCombinedReferencesBackup = BackupAndUseOriginalAssemblies(serpRoot, coreCombinedReferences);
+                    List<string> coreCompileAssembliesBackup = BackupAndUseOriginalAssemblies(serpRoot, _coreCompileAssemblies);
+                    string serpCompositeDll = Path.Combine(BinDir, "serp-r2r.dll");
+                    if (File.Exists(serpCompositeDll))
+                        File.Delete(serpCompositeDll);
+
+                    if (compositeSerpCore)
+                    {
+                        string coreCompositeDllCompile = GetCompileFile(serpRoot, serpCompositeDll);
+                        Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = true, PartialComposite = true };
+                        var runner = new Crossgen2Runner(_options, crossgen2Options, coreCombinedReferencesBackup);
+                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, coreCompositeDllCompile, coreCompileAssembliesBackup));
+                        fileCompilations.Add(compilationProcess);
+                    }
+                    else
+                    {
+                        Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = false };
+                        var runner = new Crossgen2Runner(_options, crossgen2Options, coreCombinedReferencesBackup);
+                        foreach (string assembly in coreCompileAssembliesBackup)
+                        {
+                            string dllCompile = GetCompileFile(serpRoot, assembly);
+                            var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, dllCompile, new string[] { assembly }));
+                            fileCompilations.Add(compilationProcess);
+                        }
                     }
                 }
             }
@@ -326,6 +365,27 @@ namespace R2RTest
             if (!success)
                 return 1;
 
+            
+            if (combinedComposite)
+            {
+                // For combined composite, move the component assemblies we added the R2R header from the composite out folder
+                // to the correct compile tree destination folder so they get copied into the right place
+                string compositeOutputRootDir = GetCompileFile(serpRoot, _options.CoreRootDirectory.FullName);
+                string frameworkCompositeDll = Path.Combine(compositeOutputRootDir, FrameworkCompositeFilename);
+                Debug.Assert(File.Exists(frameworkCompositeDll));
+                var compiledCompositeFiles = Directory.GetFiles(compositeOutputRootDir, "*.dll", SearchOption.AllDirectories);
+                foreach (var componentAssembly in compiledCompositeFiles)
+                {
+                    if (Path.GetFileName(componentAssembly).Equals(FrameworkCompositeFilename))
+                        continue;
+
+                    string assemblyRelativePath = Path.GetRelativePath(compositeOutputRootDir, componentAssembly);
+                    string destinationFile = Path.Combine(SerpDir, assemblyRelativePath);
+                    Debug.Assert(File.Exists(GetBackupFile(serpRoot, destinationFile)));
+                    File.Move(componentAssembly, destinationFile, true);
+                }
+            }
+            
             // Move everything we compiled to the main directory structure
             var compiledFiles = Directory.GetFiles(Path.Combine(serpRoot, CompileFolder), "*.dll", SearchOption.AllDirectories);
             foreach (var file in compiledFiles)
@@ -346,13 +406,6 @@ namespace R2RTest
                     return true;
                 }
                 if (file.EndsWith(".parallax.dll", StringComparison.OrdinalIgnoreCase))
-                {
-                    return false;
-                }
-                // These assemblies regressed single assembly CG2 compilation
-                if (file.EndsWith(".FitnessRoutine.dll") ||
-                    file.EndsWith(".Intent.dll") ||
-                    file.EndsWith(".VisualSystem.dll"))
                 {
                     return false;
                 }
@@ -437,6 +490,19 @@ namespace R2RTest
                 relativePath = Path.GetRelativePath(Path.Combine(rootFolder, BackupFolder), assembly);
             }
             return relativePath;
+        }
+
+        private static IEnumerable<string> FilterAssembliesNoSimpleNameDuplicates(HashSet<string> simpleNameSet, IEnumerable<string> assemblyFileList)
+        {
+            foreach (var x in assemblyFileList)
+            {
+                string simpleName = Path.GetFileNameWithoutExtension(x);
+                if (!simpleNameSet.Contains(simpleName))
+                {
+                    simpleNameSet.Add(simpleName);
+                    yield return x;
+                }
+            }
         }
     }
 }

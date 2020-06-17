@@ -119,6 +119,23 @@ namespace ILCompiler
             if (_commandLineOptions.OutputFilePath == null)
                 throw new CommandLineException(SR.MissingOutputFile);
 
+            if (_commandLineOptions.CustomPESectionAlignment != null)
+            {
+                int alignment = _commandLineOptions.CustomPESectionAlignment.Value;
+                bool invalidArgument = false;
+                if (alignment <= 4096)
+                {
+                    invalidArgument = true;
+                }
+                if ((alignment & (alignment - 1)) != 0)
+                {
+                    invalidArgument = true; // Alignment not power of two
+                }
+
+                if (invalidArgument)
+                    throw new CommandLineException(SR.InvalidCustomPESectionAlignment);
+            }
+
             //
             // Set target Architecture and OS
             //
@@ -478,6 +495,7 @@ namespace ILCompiler
                         .FileLayoutAlgorithms(_commandLineOptions.MethodLayout, _commandLineOptions.FileLayout)
                         .UseJitPath(_commandLineOptions.JitPath)
                         .UseInstructionSetSupport(instructionSetSupport)
+                        .UseCustomPESectionAlignment(_commandLineOptions.CustomPESectionAlignment)
                         .GenerateOutputFile(_commandLineOptions.OutputFilePath.FullName)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)

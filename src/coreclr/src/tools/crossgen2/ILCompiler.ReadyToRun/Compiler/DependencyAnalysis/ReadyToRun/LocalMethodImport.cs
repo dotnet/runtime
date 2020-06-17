@@ -14,6 +14,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class LocalMethodImport : DelayLoadHelperImport, IMethodNode
     {
         private readonly MethodWithGCInfo _localMethod;
+        private readonly MethodWithToken _method;
 
         public LocalMethodImport(
             NodeFactory factory,
@@ -33,9 +34,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                       isInstantiatingStub))
         {
             _localMethod = localMethod;
+            _method = method;
         }
 
-        public MethodDesc Method => _localMethod.Method;
+        public MethodDesc Method => _method.Method;
         public MethodWithGCInfo MethodCodeNode => _localMethod;
 
         public override int ClassCode => 459923351;

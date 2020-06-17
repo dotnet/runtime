@@ -365,15 +365,16 @@ namespace Internal.Cryptography.Pal
             ChainPal? chainPal = ChainPal.BuildChain(
                 false,
                 CertificatePal.FromHandle(pCertContext.DangerousGetHandle()),
-                null, //extraStore
-                null, //applicationPolicy
-                null, //certificatePolicy
+                extraStore: null,
+                applicationPolicy: null,
+                certificatePolicy: null,
                 X509RevocationMode.NoCheck,
                 X509RevocationFlag.ExcludeRoot,
-                null,
+                customTrustStore: null,
                 X509ChainTrustMode.System,
                 DateTime.Now,
-                new TimeSpan(0, 0, 0));
+                new TimeSpan(0, 0, 0),
+                disableAia: false);
 
             if (chainPal == null)
                 return false;

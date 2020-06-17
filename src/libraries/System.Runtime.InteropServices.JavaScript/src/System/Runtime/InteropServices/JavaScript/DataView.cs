@@ -63,19 +63,23 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Initializes a new instance of the DataView class.
         /// </summary>
-        /// <param name="js_handle">Js handle.</param>
-        internal DataView(IntPtr js_handle) : base(js_handle)
+        /// <param name="jsHandle">Js handle.</param>
+        /// <param name="ownsHandle">Managed owned</param>
+        internal DataView(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
         { }
+
         /// <summary>
         /// Gets the length (in bytes) of this view from the start of its ArrayBuffer. Fixed at construction time and thus read only.
         /// </summary>
         /// <value>The length (in bytes) of this view.</value>
         public int ByteLength => (int)GetObjectProperty("byteLength");
+
         /// <summary>
         /// Gets the offset (in bytes) of this view from the start of its ArrayBuffer. Fixed at construction time and thus read only.
         /// </summary>
         /// <value>The offset (in bytes) of this view.</value>
         public int ByteOffset => (int)GetObjectProperty("byteOffset");
+
         /// <summary>
         /// Gets the ArrayBuffer referenced by this view. Fixed at construction time and thus read only.
         /// </summary>
@@ -97,6 +101,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="byteOffset">Byte offset.</param>
         /// <param name="littleEndian">Indicates whether the 64-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public double GetFloat64(int byteOffset, bool littleEndian = false) => UnBoxValue<double>(Invoke("getFloat64", byteOffset, littleEndian));
+
         /// <summary>
         /// Gets the signed 16-bit integer (short) at the specified byte offset from the start of the DataView.
         /// </summary>
@@ -104,6 +109,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="byteOffset">Byte offset.</param>
         /// <param name="littleEndian">Indicates whether the 16-bit integer (short) is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public short GetInt16(int byteOffset, bool littleEndian = false) => UnBoxValue<short>(Invoke("getInt16", byteOffset, littleEndian));
+
         /// <summary>
         /// Gets the signed 32-bit integer (int) at the specified byte offset from the start of the DataView.
         /// </summary>
@@ -111,6 +117,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="byteOffset">Byte offset.</param>
         /// <param name="littleEndian">Indicates whether the 32-bit integer (int) is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public int GetInt32(int byteOffset, bool littleEndian = false) => UnBoxValue<int>(Invoke("getInt32", byteOffset, littleEndian));
+
         /// <summary>
         /// Gets the signed 8-bit byte (sbyte) at the specified byte offset from the start of the DataView.
         /// </summary>
@@ -119,6 +126,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="littleEndian">Indicates whether the 8-bit byte is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         [CLSCompliant(false)]
         public sbyte GetInt8(int byteOffset, bool littleEndian = false) => UnBoxValue<sbyte>(Invoke("getInt8", byteOffset, littleEndian));
+
         /// <summary>
         /// Gets the unsigned 16-bit integer (short) at the specified byte offset from the start of the DataView.
         /// </summary>
@@ -127,6 +135,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="littleEndian">Indicates whether the unsigned 16-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         [CLSCompliant(false)]
         public ushort GetUint16(int byteOffset, bool littleEndian = false) => UnBoxValue<ushort>(Invoke("getUint16", byteOffset, littleEndian));
+
         /// <summary>
         /// Gets the usigned 32-bit integer (uint) at the specified byte offset from the start of the DataView.
         /// </summary>
@@ -135,6 +144,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         [CLSCompliant(false)]
         public uint GetUint32(int byteOffset, bool littleEndian = false) => UnBoxValue<uint>(Invoke("getUint32", byteOffset, littleEndian));
+
         /// <summary>
         /// Gets the unsigned 8-bit byte (byte) at the specified byte offset from the start of the DataView.
         /// </summary>
@@ -142,6 +152,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="byteOffset">Byte offset.</param>
         /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public byte GetUint8(int byteOffset, bool littleEndian = false) => UnBoxValue<byte>(Invoke("getUint8", byteOffset, littleEndian));
+
         /// <summary>
         /// Sets the signed 32-bit float (float) at the specified byte offset from the start of the DataView.
         /// </summary>
@@ -157,6 +168,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="value">double value.</param>
         /// <param name="littleEndian">Indicates whether the 64-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public void SetFloat64(int byteOffset, double value, bool littleEndian = false) => Invoke("setFloat64", byteOffset, value, littleEndian);
+
         /// <summary>
         /// Sets the signed 16-bit integer (short) at the specified byte offset from the start of the DataView.
         /// </summary>
@@ -164,6 +176,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="value">short value.</param>
         /// <param name="littleEndian">Indicates whether the 16-bit integer (short) is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public void SetInt16(int byteOffset, short value, bool littleEndian = false) => Invoke("setInt16", byteOffset, value, littleEndian);
+
         /// <summary>
         /// Sets the signed 32-bit integer (int) at the specified byte offset from the start of the DataView.
         /// </summary>
@@ -171,6 +184,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="value">int value.</param>
         /// <param name="littleEndian">Indicates whether the 32-bit integer (int) is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public void SetInt32(int byteOffset, int value, bool littleEndian = false) => Invoke("setInt32", byteOffset, value, littleEndian);
+
         /// <summary>
         /// Sets the signed 8-bit byte (sbyte) at the specified byte offset from the start of the DataView.
         /// </summary>
@@ -179,6 +193,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="littleEndian">Indicates whether the 8-bit byte is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         [CLSCompliant(false)]
         public void SetInt8(int byteOffset, sbyte value, bool littleEndian = false) => Invoke("setInt8", byteOffset, value, littleEndian);
+
         /// <summary>
         /// Sets the unsigned 16-bit integer (short) at the specified byte offset from the start of the DataView.
         /// </summary>
@@ -187,6 +202,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="littleEndian">Indicates whether the unsigned 16-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         [CLSCompliant(false)]
         public void SetUint16(int byteOffset, ushort value, bool littleEndian = false) => Invoke("setUint16", byteOffset, value, littleEndian);
+
         /// <summary>
         /// Sets the usigned 32-bit integer (uint) at the specified byte offset from the start of the DataView.
         /// </summary>
@@ -195,6 +211,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         [CLSCompliant(false)]
         public void SetUint32(int byteOffset, uint value, bool littleEndian = false) => Invoke("setUint32", byteOffset, value, littleEndian);
+
         /// <summary>
         /// Sets the unsigned 8-bit byte (sbyte) at the specified byte offset from the start of the DataView.
         /// </summary>

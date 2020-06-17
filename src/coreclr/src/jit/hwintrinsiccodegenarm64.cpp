@@ -333,6 +333,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
+            case NI_AdvSimd_ShiftLeftLogicalAndInsertScalar:
+                ins = INS_sli;
+                break;
+
+            case NI_AdvSimd_ShiftRightLogicalAndInsertScalar:
+                ins = INS_sri;
+                break;
+
             case NI_AdvSimd_SubtractWideningLower:
                 assert(varTypeIsIntegral(intrin.baseType));
                 if (intrin.op1->TypeGet() == TYP_SIMD8)
@@ -716,9 +724,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+            case NI_AdvSimd_ShiftLeftLogicalAndInsertScalar:
             case NI_AdvSimd_ShiftRightArithmeticAddScalar:
             case NI_AdvSimd_ShiftRightArithmeticRoundedAddScalar:
             case NI_AdvSimd_ShiftRightLogicalAddScalar:
+            case NI_AdvSimd_ShiftRightLogicalAndInsertScalar:
             case NI_AdvSimd_ShiftRightLogicalRoundedAddScalar:
                 opt      = INS_OPTS_NONE;
                 emitSize = emitTypeSize(intrin.baseType);
@@ -736,6 +746,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_ShiftRightLogicalRoundedAdd:
             case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingSaturateUpper:
             case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingUpper:
+            case NI_AdvSimd_ShiftLeftLogicalAndInsert:
+            case NI_AdvSimd_ShiftRightAndInsert:
             {
                 assert(isRMW);
 

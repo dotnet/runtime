@@ -5346,6 +5346,34 @@ call_newobj:
 			MINT_IN_BREAK;
 		}
 
+#define LDFLD_VT(datamem, fieldtype) do { \
+	gpointer p = sp [-1].data.p; \
+	vt_sp -= ip [2]; \
+	sp [-1].data.datamem = * (fieldtype *)((char *)p + ip [1]); \
+	ip += 3; \
+} while (0)
+
+		MINT_IN_CASE(MINT_LDFLD_VT_I1) LDFLD_VT(i, gint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_VT_U1) LDFLD_VT(i, guint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_VT_I2) LDFLD_VT(i, gint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_VT_U2) LDFLD_VT(i, guint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_VT_I4) LDFLD_VT(i, gint32); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_VT_I8) LDFLD_VT(l, gint64); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_VT_R4) LDFLD_VT(f_r4, float); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_VT_R8) LDFLD_VT(f, double); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_VT_O) LDFLD_VT(p, gpointer); MINT_IN_BREAK;
+
+		MINT_IN_CASE(MINT_LDFLD_VT_VT) {
+			gpointer p = sp [-1].data.p;
+
+			vt_sp -= ip [2];
+			sp [-1].data.p = vt_sp;
+			memmove (vt_sp, (char *)p + ip [1], ip [3]);
+			vt_sp += ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+
 #define LDFLD_UNALIGNED(datamem, fieldtype, unaligned) do { \
 	MonoObject* const o = sp [-1].data.o; \
 	NULL_CHECK (o); \

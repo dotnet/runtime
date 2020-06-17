@@ -35,9 +35,10 @@ namespace System.Net.Security
 
         private readonly byte[] _readHeader;
         private IIdentity? _remoteIdentity;
-        private byte[] _buffer;
-        private int _bufferOffset;
-        private int _bufferCount;
+        private byte[] _readBuffer;
+        private int _readBufferOffset;
+        private int _readBufferCount;
+        private byte[]? _writeBuffer;
 
         private volatile int _writeInProgress;
         private volatile int _readInProgress;
@@ -66,7 +67,7 @@ namespace System.Net.Security
         public NegotiateStream(Stream innerStream, bool leaveInnerStreamOpen) : base(innerStream, leaveInnerStreamOpen)
         {
             _readHeader = new byte[4];
-            _buffer = Array.Empty<byte>();
+            _readBuffer = Array.Empty<byte>();
         }
 
         protected override void Dispose(bool disposing)
@@ -348,21 +349,21 @@ namespace System.Net.Security
 
             try
             {
-                if (_bufferCount != 0)
+                if (_readBufferCount != 0)
                 {
-                    int copyBytes = Math.Min(_bufferCount, buffer.Length);
+                    int copyBytes = Math.Min(_readBufferCount, buffer.Length);
                     if (copyBytes != 0)
                     {
-                        _buffer.AsMemory(_bufferOffset, copyBytes).CopyTo(buffer);
-                        _bufferOffset += copyBytes;
-                        _bufferCount -= copyBytes;
+                        _readBuffer.AsMemory(_readBufferOffset, copyBytes).CopyTo(buffer);
+                        _readBufferOffset += copyBytes;
+                        _readBufferCount -= copyBytes;
                     }
                     return copyBytes;
                 }
 
                 while (true)
                 {
-                    int readBytes = await adapter.ReadAllAsync(_readHeader).ConfigureAwait(false);
+                    int readBytes = await ReadAllAsync(adapter, _readHeader).ConfigureAwait(false);
                     if (readBytes == 0)
                     {
                         return 0;
@@ -380,13 +381,13 @@ namespace System.Net.Security
 
                     // Always pass InternalBuffer for SSPI "in place" decryption.
                     // A user buffer can be shared by many threads in that case decryption/integrity check may fail cause of data corruption.
-                    _bufferCount = readBytes;
-                    _bufferOffset = 0;
-                    if (_buffer.Length < readBytes)
+                    _readBufferCount = readBytes;
+                    _readBufferOffset = 0;
+                    if (_readBuffer.Length < readBytes)
                     {
-                        _buffer = new byte[readBytes];
+                        _readBuffer = new byte[readBytes];
                     }
-                    readBytes = await adapter.ReadAllAsync(new Memory<byte>(_buffer, 0, readBytes)).ConfigureAwait(false);
+                    readBytes = await ReadAllAsync(adapter, new Memory<byte>(_readBuffer, 0, readBytes)).ConfigureAwait(false);
                     if (readBytes == 0)
                     {
                         // We already checked that the frame body is bigger than 0 bytes. Hence, this is an EOF.
@@ -395,7 +396,7 @@ namespace System.Net.Security
 
                     // Decrypt into internal buffer, change "readBytes" to count now _Decrypted Bytes_
                     // Decrypted data start from zero offset, the size can be shrunk after decryption.
-                    _bufferCount = readBytes = DecryptData(_buffer!, 0, readBytes, out _bufferOffset);
+                    _readBufferCount = readBytes = DecryptData(_readBuffer!, 0, readBytes, out _readBufferOffset);
                     if (readBytes == 0 && buffer.Length != 0)
                     {
                         // Read again.
@@ -407,9 +408,9 @@ namespace System.Net.Security
                         readBytes = buffer.Length;
                     }
 
-                    _buffer.AsMemory(_bufferOffset, readBytes).CopyTo(buffer);
-                    _bufferOffset += readBytes;
-                    _bufferCount -= readBytes;
+                    _readBuffer.AsMemory(_readBufferOffset, readBytes).CopyTo(buffer);
+                    _readBufferOffset += readBytes;
+                    _readBufferCount -= readBytes;
 
                     return readBytes;
                 }
@@ -421,6 +422,29 @@ namespace System.Net.Security
             finally
             {
                 _readInProgress = 0;
+            }
+
+            static async ValueTask<int> ReadAllAsync(TAdapter adapter, Memory<byte> buffer)
+            {
+                int length = buffer.Length;
+
+                do
+                {
+                    int bytes = await adapter.ReadAsync(buffer).ConfigureAwait(false);
+                    if (bytes == 0)
+                    {
+                        if (!buffer.IsEmpty)
+                        {
+                            throw new IOException(SR.net_io_eof);
+                        }
+                        break;
+                    }
+
+                    buffer = buffer.Slice(bytes);
+                }
+                while (!buffer.IsEmpty);
+
+                return length;
             }
         }
 
@@ -471,21 +495,20 @@ namespace System.Net.Security
 
             try
             {
-                byte[]? outBuffer = null;
                 while (!buffer.IsEmpty)
                 {
                     int chunkBytes = Math.Min(buffer.Length, MaxWriteDataSize);
                     int encryptedBytes;
                     try
                     {
-                        encryptedBytes = EncryptData(buffer.Slice(0, chunkBytes).Span, ref outBuffer);
+                        encryptedBytes = EncryptData(buffer.Slice(0, chunkBytes).Span, ref _writeBuffer);
                     }
                     catch (Exception e)
                     {
                         throw new IOException(SR.net_io_encrypt, e);
                     }
 
-                    await adapter.WriteAsync(outBuffer, 0, encryptedBytes).ConfigureAwait(false);
+                    await adapter.WriteAsync(_writeBuffer, 0, encryptedBytes).ConfigureAwait(false);
                     buffer = buffer.Slice(chunkBytes);
                 }
             }

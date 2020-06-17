@@ -100,13 +100,13 @@ namespace Microsoft.Extensions.DependencyInjection
         public Type ServiceType { get; }
 
         /// <inheritdoc />
-        public Type ImplementationType { get; }
+        public Type? ImplementationType { get; }
 
         /// <inheritdoc />
-        public object ImplementationInstance { get; }
+        public object? ImplementationInstance { get; }
 
         /// <inheritdoc />
-        public Func<IServiceProvider, object> ImplementationFactory { get; }
+        public Func<IServiceProvider, object>? ImplementationFactory { get; }
 
         /// <inheritdoc />
         public override string ToString()

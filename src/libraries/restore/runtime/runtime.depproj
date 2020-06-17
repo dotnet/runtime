@@ -80,7 +80,6 @@
   </Target>
 
   <Target Name="SetupRuntimePackNative"
-          Condition="'$(RuntimeFlavor)' == 'Mono'"
           AfterTargets="AfterResolveReferences">
     <ItemGroup>
       <BinPlaceItem Include="@(RuntimeFiles)" />
@@ -90,6 +89,7 @@
       <BinPlaceItem Include="@(MonoIncludeFiles)">
         <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
       </BinPlaceItem>
+      <BinPlaceItem Remove="@(BinPlaceItem)" Condition="'$(RuntimeFlavor)' != 'Mono' and '%(BinPlaceItem.Filename)' == 'System.Private.CoreLib'" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
       <TestHostBinPlaceItem Include="@(RuntimeFiles)" />

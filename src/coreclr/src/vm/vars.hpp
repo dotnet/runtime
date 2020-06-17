@@ -394,6 +394,8 @@ GPTR_DECL(MethodTable,      g_TypedReferenceMT);
 GPTR_DECL(MethodTable,      g_pBaseCOMObject);
 #endif
 
+GPTR_DECL(MethodTable,      g_pIDynamicInterfaceCastableInterface);
+
 #ifdef FEATURE_ICASTABLE
 GPTR_DECL(MethodTable,      g_pICastableInterface);
 #endif // FEATURE_ICASTABLE

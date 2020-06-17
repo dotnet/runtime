@@ -52,6 +52,7 @@
     <Compile Include="CertificateCreation\RSAPkcs1X509SignatureGeneratorTests.cs" />
     <Compile Include="CertificateCreation\RSAPssX509SignatureGeneratorTests.cs" />
     <Compile Include="CertificateCreation\SubjectAltNameBuilderTests.cs" />
+    <Compile Include="RevocationTests\AiaTests.cs" />
     <Compile Include="RevocationTests\CertificateAuthority.cs" />
     <Compile Include="RevocationTests\DynamicRevocationTests.cs" />
     <Compile Include="RevocationTests\RevocationResponder.cs" />

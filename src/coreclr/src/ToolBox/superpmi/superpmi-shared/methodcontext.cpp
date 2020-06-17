@@ -2680,7 +2680,7 @@ CORINFO_CLASS_HANDLE MethodContext::repGetArgClass(CORINFO_SIG_INFO*       sig,
     return (CORINFO_CLASS_HANDLE)value.result;
 }
 
-void MethodContext::recGetHFAType(CORINFO_CLASS_HANDLE clsHnd, CorInfoType result)
+void MethodContext::recGetHFAType(CORINFO_CLASS_HANDLE clsHnd, CorInfoHFAElemType result)
 {
     if (GetHFAType == nullptr)
         GetHFAType = new LightWeightMap<DWORDLONG, DWORD>();
@@ -2696,7 +2696,7 @@ void MethodContext::dmpGetHFAType(DWORDLONG key, DWORD value)
     return;
 }
 
-CorInfoType MethodContext::repGetHFAType(CORINFO_CLASS_HANDLE clsHnd)
+CorInfoHFAElemType MethodContext::repGetHFAType(CORINFO_CLASS_HANDLE clsHnd)
 {
     DWORD value;
 
@@ -2706,7 +2706,7 @@ CorInfoType MethodContext::repGetHFAType(CORINFO_CLASS_HANDLE clsHnd)
 
     value = GetHFAType->Get((DWORDLONG)clsHnd);
     DEBUG_REP(dmpGetHFAType((DWORDLONG)clsHnd, value));
-    return (CorInfoType)value;
+    return (CorInfoHFAElemType)value;
 }
 
 void MethodContext::recGetMethodInfo(CORINFO_METHOD_HANDLE ftn,
