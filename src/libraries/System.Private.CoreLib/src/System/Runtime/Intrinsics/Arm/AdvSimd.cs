@@ -5661,6 +5661,48 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<int> ConvertToInt32RoundToZeroScalar(Vector64<float> value) => ConvertToInt32RoundToZeroScalar(value);
 
         /// <summary>
+        /// float32x2_t vcvt_f32_s32 (int32x2_t a)
+        ///   A32: VCVT.F32.S32 Dd, Dm
+        ///   A64: SCVTF Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> ConvertToSingle(Vector64<int> value) => ConvertToSingle(value);
+
+        /// <summary>
+        /// float32x2_t vcvt_f32_u32 (uint32x2_t a)
+        ///   A32: VCVT.F32.U32 Dd, Dm
+        ///   A64: UCVTF Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> ConvertToSingle(Vector64<uint> value) => ConvertToSingle(value);
+
+        /// <summary>
+        /// float32x4_t vcvtq_f32_s32 (int32x4_t a)
+        ///   A32: VCVT.F32.S32 Qd, Qm
+        ///   A64: SCVTF Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> ConvertToSingle(Vector128<int> value) => ConvertToSingle(value);
+
+        /// <summary>
+        /// float32x4_t vcvtq_f32_u32 (uint32x4_t a)
+        ///   A32: VCVT.F32.U32 Qd, Qm
+        ///   A64: UCVTF Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> ConvertToSingle(Vector128<uint> value) => ConvertToSingle(value);
+
+        /// <summary>
+        /// float32_t vcvts_f32_s32 (int32_t a)
+        ///   A32: VCVT.F32.S32 Sd, Sm
+        ///   A64: SCVTF Sd, Sn
+        /// </summary>
+        public static Vector64<float> ConvertToSingleScalar(Vector64<int> value) => ConvertToSingleScalar(value);
+
+        /// <summary>
+        /// float32_t vcvts_f32_u32 (uint32_t a)
+        ///   A32: VCVT.F32.U32 Sd, Sm
+        ///   A64: UCVTF Sd, Sn
+        /// </summary>
+        public static Vector64<float> ConvertToSingleScalar(Vector64<uint> value) => ConvertToSingleScalar(value);
+
+        /// <summary>
         /// float64x1_t vdiv_f64 (float64x1_t a, float64x1_t b)
         ///   A32: VDIV.F64 Dd, Dn, Dm
         ///   A64: FDIV Dd, Dn, Dm
