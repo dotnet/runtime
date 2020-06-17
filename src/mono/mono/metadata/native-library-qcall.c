@@ -53,7 +53,7 @@ find_impls_index_for_class (MonoMethod* method)
     if (name == NULL)
         return -1;
 
-    unsigned low  = 0;
+    unsigned low = 0;
     unsigned high = c_nECClasses;
 
 #ifdef DEBUG
