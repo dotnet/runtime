@@ -38,7 +38,7 @@ static gboolean is_qcall (MonoQCallFunc *func) { return !!((int)func->flags & fu
 //int                 DynamicID(ECFunc *func)     { return (int)              ((int8)(func->m_dwFlags >> 24)); }
 
 static MonoQCallFunc *
-next_in_array(MonoQCallFunc *func)
+next_in_array (MonoQCallFunc *func)
 {
     return (MonoQCallFunc *)((char *)func +sizeof(MonoQCallFunc));
         //(HasSignature(func) ? sizeof(ECFunc) : offsetof(ECFunc, func->m_pMethodSig)));
