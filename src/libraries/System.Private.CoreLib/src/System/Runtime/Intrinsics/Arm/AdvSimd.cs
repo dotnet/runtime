@@ -931,6 +931,30 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> ConvertToDouble(Vector64<float> value) => ConvertToDouble(value);
 
             /// <summary>
+            /// float64x2_t vcvtq_f64_s64 (int64x2_t a)
+            ///   A64: SCVTF Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> ConvertToDouble(Vector128<long> value) => ConvertToDouble(value);
+
+            /// <summary>
+            /// float64x2_t vcvtq_f64_u64 (uint64x2_t a)
+            ///   A64: UCVTF Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> ConvertToDouble(Vector128<ulong> value) => ConvertToDouble(value);
+
+            /// <summary>
+            /// float64x1_t vcvt_f64_s64 (int64x1_t a)
+            ///   A64: SCVTF Dd, Dn
+            /// </summary>
+            public static Vector64<double> ConvertToDoubleScalar(Vector64<long> value) => ConvertToDoubleScalar(value);
+
+            /// <summary>
+            /// float64x1_t vcvt_f64_u64 (uint64x1_t a)
+            ///   A64: UCVTF Dd, Dn
+            /// </summary>
+            public static Vector64<double> ConvertToDoubleScalar(Vector64<ulong> value) => ConvertToDoubleScalar(value);
+
+            /// <summary>
             /// float64x2_t vcvt_high_f64_f32 (float32x4_t a)
             ///   A64: FCVTL2 Vd.2D, Vn.4S
             /// </summary>
