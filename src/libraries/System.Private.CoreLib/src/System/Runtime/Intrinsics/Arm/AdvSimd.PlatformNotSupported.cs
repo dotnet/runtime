@@ -5700,6 +5700,111 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<float> ConvertToSingleScalar(Vector64<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint32x2_t vcvta_u32_f32 (float32x2_t a)
+        ///   A32: VCVTA.U32.F32 Dd, Dm
+        ///   A64: FCVTAU Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundAwayFromZero(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vcvtaq_u32_f32 (float32x4_t a)
+        ///   A32: VCVTA.U32.F32 Qd, Qm
+        ///   A64: FCVTAU Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<uint> ConvertToUInt32RoundAwayFromZero(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t vcvtas_u32_f32 (float32_t a)
+        ///   A32: VCVTA.U32.F32 Sd, Sm
+        ///   A64: FCVTAU Sd, Sn
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundAwayFromZeroScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vcvtn_u32_f32 (float32x2_t a)
+        ///   A32: VCVTN.U32.F32 Dd, Dm
+        ///   A64: FCVTNU Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToEven(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vcvtnq_u32_f32 (float32x4_t a)
+        ///   A32: VCVTN.U32.F32 Qd, Qm
+        ///   A64: FCVTNU Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<uint> ConvertToUInt32RoundToEven(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t vcvtns_u32_f32 (float32_t a)
+        ///   A32: VCVTN.U32.F32 Sd, Sm
+        ///   A64: FCVTNU Sd, Sn
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToEvenScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vcvtm_u32_f32 (float32x2_t a)
+        ///   A32: VCVTM.U32.F32 Dd, Dm
+        ///   A64: FCVTMU Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToNegativeInfinity(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vcvtmq_u32_f32 (float32x4_t a)
+        ///   A32: VCVTM.U32.F32 Qd, Qm
+        ///   A64: FCVTMU Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<uint> ConvertToUInt32RoundToNegativeInfinity(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t vcvtms_u32_f32 (float32_t a)
+        ///   A32: VCVTM.U32.F32 Sd, Sm
+        ///   A64: FCVTMU Sd, Sn
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToNegativeInfinityScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vcvtp_u32_f32 (float32x2_t a)
+        ///   A32: VCVTP.U32.F32 Dd, Dm
+        ///   A64: FCVTPU Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToPositiveInfinity(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vcvtpq_u32_f32 (float32x4_t a)
+        ///   A32: VCVTP.U32.F32 Qd, Qm
+        ///   A64: FCVTPU Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<uint> ConvertToUInt32RoundToPositiveInfinity(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t vcvtps_u32_f32 (float32_t a)
+        ///   A32: VCVTP.U32.F32 Sd, Sm
+        ///   A64: FCVTPU Sd, Sn
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToPositiveInfinityScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vcvt_u32_f32 (float32x2_t a)
+        ///   A32: VCVT.U32.F32 Dd, Dm
+        ///   A64: FCVTZU Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToZero(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vcvtq_u32_f32 (float32x4_t a)
+        ///   A32: VCVT.U32.F32 Qd, Qm
+        ///   A64: FCVTZU Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<uint> ConvertToUInt32RoundToZero(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t vcvts_u32_f32 (float32_t a)
+        ///   A32: VCVT.U32.F32 Sd, Sm
+        ///   A64: FCVTZU Sd, Sn
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToZeroScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vdiv_f64 (float64x1_t a, float64x1_t b)
         ///   A32: VDIV.F64 Dd, Dn, Dm
         ///   A64: FDIV Dd, Dn, Dm
