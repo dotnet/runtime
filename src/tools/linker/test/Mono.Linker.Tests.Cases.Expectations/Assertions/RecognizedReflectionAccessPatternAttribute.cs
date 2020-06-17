@@ -6,7 +6,14 @@ using System;
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
-	[AttributeUsage (AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
+	[AttributeUsage (
+		AttributeTargets.Method |
+		AttributeTargets.Constructor |
+		AttributeTargets.Class |
+		AttributeTargets.Field |
+		AttributeTargets.Property,
+		AllowMultiple = true,
+		Inherited = false)]
 	public class RecognizedReflectionAccessPatternAttribute : BaseExpectedLinkedBehaviorAttribute
 	{
 		// The default .ctor has a special meaning - don't validate any specifically recognized reflection access patterns
