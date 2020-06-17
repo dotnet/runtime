@@ -12,6 +12,15 @@ namespace System.Threading
 {
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
+        internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
+            int millisecondsTimeout, bool repeating)
+        {
+        }
+
+        public bool Unregister(WaitHandle? waitObject)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 
     public static partial class ThreadPool
@@ -24,6 +33,8 @@ namespace System.Threading
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
+            if (workerThreads == 1 || completionPortThreads == 1)
+                return true;
             return false;
         }
 
@@ -35,6 +46,8 @@ namespace System.Threading
 
         public static bool SetMinThreads(int workerThreads, int completionPortThreads)
         {
+            if (workerThreads == 1 || completionPortThreads == 1)
+                return true;
             return false;
         }
 
