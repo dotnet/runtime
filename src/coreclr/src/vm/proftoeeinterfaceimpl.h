@@ -710,46 +710,6 @@ protected:
 
 #endif // PROFILING_SUPPORTED
 
-//---------------------------------------------------------------------------------------
-// This provides the implementations for FCALLs in managed code related to profiling
-
-class ProfilingFCallHelper
-{
-public:
-    // This is a high-efficiency way for managed profiler code to determine if
-    // profiling of remoting is active.
-    static FCDECL0(FC_BOOL_RET, FC_TrackRemoting);
-
-    // This is a high-efficiency way for managed profiler code to determine if
-    // profiling of remoting with RPC cookie IDs is active.
-    static FCDECL0(FC_BOOL_RET, FC_TrackRemotingCookie);
-
-    // This is a high-efficiency way for managed profiler code to determine if
-    // profiling of asynchronous remote calls is profiled
-    static FCDECL0(FC_BOOL_RET, FC_TrackRemotingAsync);
-
-    // This will let the profiler know that the client side is sending a message to
-    // the server-side.
-    static FCDECL2(void, FC_RemotingClientSendingMessage, GUID * pId, CLR_BOOL fIsAsync);
-
-    // For __cdecl calling convention both arguments end up on
-    // the stack but the order in which the jit puts them there needs to be reversed
-    // For __fastcall calling convention the reversal has no effect because the GUID doesn't
-    // fit in a register. On IA64 the macro is different.
-
-    // This will let the profiler know that the client side is receiving a reply
-    // to a message that it sent
-    static FCDECL2_VI(void, FC_RemotingClientReceivingReply, GUID id, CLR_BOOL fIsAsync);
-
-    // This will let the profiler know that the server side is receiving a message
-    // from a client
-    static FCDECL2_VI(void, FC_RemotingServerReceivingMessage, GUID id, CLR_BOOL fIsAsync);
-
-    // This will let the profiler know that the server side is sending a reply to
-    // a received message.
-    static FCDECL2(void, FC_RemotingServerSendingReply, GUID * pId, CLR_BOOL fIsAsync);
-};
-
 #endif // __PROFTOEEINTERFACEIMPL_H__
 
 

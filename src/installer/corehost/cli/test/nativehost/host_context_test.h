@@ -70,4 +70,15 @@ namespace host_context_test
         int argc,
         const pal::char_t *argv[],
         pal::stringstream_t &test_output);
+    bool component_get_function_pointer(
+        const pal::string_t &hostfxr_path,
+        const pal::char_t *config_path,
+        int argc,
+        const pal::char_t *argv[],
+        pal::stringstream_t &test_output);
+    bool app_get_function_pointer(
+        const pal::string_t &hostfxr_path,
+        int argc,
+        const pal::char_t *argv[],
+        pal::stringstream_t &test_output);
 }

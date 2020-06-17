@@ -8,6 +8,9 @@
     <CoverageReportInputPath>$(ArtifactsBinDir)\*.Tests\**\coverage.opencover.xml</CoverageReportInputPath>
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
     <EnableCoverageSupport>true</EnableCoverageSupport>
+
+    <TestAssemblies Condition="'$(TestAssemblies)' == ''">true</TestAssemblies>
+    <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
   </PropertyGroup>
   
   <!-- Projects that don't support code coverage measurement. -->
@@ -17,13 +20,18 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Transactions.Local\tests\System.Transactions.Local.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TestAssemblies)' == 'true'">
     <!-- We currently only test with C# projects. -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(BuildAllConfigurations)' != 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
                       Condition="'$(BuildAllConfigurations)' == 'true'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TestTrimming)' == 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
+                      Exclude="@(ProjectExclusions)" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"

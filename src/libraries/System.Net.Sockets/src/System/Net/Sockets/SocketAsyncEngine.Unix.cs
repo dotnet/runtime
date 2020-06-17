@@ -19,6 +19,12 @@ namespace System.Net.Sockets
             1024;
 #endif
 
+        // Socket continuations are dispatched to the ThreadPool from the event thread.
+        // This avoids continuations blocking the event handling.
+        // Setting PreferInlineCompletions allows continuations to run directly on the event thread.
+        // PreferInlineCompletions defaults to false and can be set to true using the DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS envvar.
+        internal static readonly bool InlineSocketCompletionsEnabled = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1";
+
         private static int GetEngineCount()
         {
             // The responsibility of SocketAsyncEngine is to get notifications from epoll|kqueue
@@ -36,6 +42,12 @@ namespace System.Net.Sockets
             if (uint.TryParse(Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_THREAD_COUNT"), out uint count))
             {
                 return (int)count;
+            }
+
+            // When inlining continuations, we default to ProcessorCount to make sure event threads cannot be a bottleneck.
+            if (InlineSocketCompletionsEnabled)
+            {
+                return Environment.ProcessorCount;
             }
 
             Architecture architecture = RuntimeInformation.ProcessArchitecture;
@@ -195,17 +207,25 @@ namespace System.Net.Sockets
 
                         if (handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper) && (context = contextWrapper.Context) != null)
                         {
-                            Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
-                            if (events != Interop.Sys.SocketEvents.None)
+                            if (context.PreferInlineCompletions)
                             {
-                                var ev = new SocketIOEvent(context, events);
-                                eventQueue.Enqueue(ev);
-                                enqueuedEvent = true;
+                                context.HandleEventsInline(socketEvent.Events);
+                            }
+                            else
+                            {
+                                Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
 
-                                // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
-                                // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
-                                // such code may keep the stack location live for longer than necessary
-                                ev = default;
+                                if (events != Interop.Sys.SocketEvents.None)
+                                {
+                                    var ev = new SocketIOEvent(context, events);
+                                    eventQueue.Enqueue(ev);
+                                    enqueuedEvent = true;
+
+                                    // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
+                                    // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
+                                    // such code may keep the stack location live for longer than necessary
+                                    ev = default;
+                                }
                             }
 
                             // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,

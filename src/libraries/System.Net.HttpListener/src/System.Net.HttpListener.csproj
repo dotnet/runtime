@@ -83,8 +83,6 @@
     <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs"
              Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
     <Compile Include="System\Net\Windows\CookieExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs"
-             Link="Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(ForceManagedImplementation)' != 'true'">
     <Compile Include="System\Net\Windows\HttpListener.Windows.cs" />
