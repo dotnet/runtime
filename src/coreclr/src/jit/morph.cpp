@@ -13151,7 +13151,7 @@ DONE_MORPHING_CHILDREN:
                         // if op1 is not a leaf/local we have to introduce a temp via GT_COMMA.
                         // Unfortunately, it's not optHoistLoopCode-friendly yet so let's do it later
                         // in the Rationalization phase.
-                        //if (!needsComma || optRationalization_phase)
+                        if (!needsComma || optRationalization_phase)
                         {
                             // Fold "x*2.0" to "x+x"
                             op2  = fgMakeMultiUse(&tree->AsOp()->gtOp1);
