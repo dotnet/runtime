@@ -1,0 +1,21 @@
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>ILTestAssembly</AssemblyName>
+    <SkipTestRun>true</SkipTestRun>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Main has to be the first file. Do not put anything before Main.il -->
+    <Compile Include="Main.il" />
+
+    <Compile Include="ILDisassembler.il" />
+    <Compile Include="InstanceFieldLayout.il" />
+    <Compile Include="StaticFieldLayout.il" />
+    <Compile Include="VirtualFunctionOverride.il" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

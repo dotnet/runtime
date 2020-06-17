@@ -1,0 +1,61 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>TypeSystem.Tests</AssemblyName>
+    <RootNamespace>TypeSystem.Tests</RootNamespace>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Don't warn if some dependencies were rolled forward -->
+    <NoWarn>$(NoWarn);NU1603</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit">
+      <Version>$(XUnitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions">
+      <Version>$(MicrosoftDotNetXUnitExtensionsVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="System.Reflection.Metadata">
+      <Version>$(SystemReflectionMetadataVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\ILCompiler.TypeSystem.csproj" />
+    <!-- Make sure the test data gets built -->
+    <ProjectReference Include="CoreTestAssembly\CoreTestAssembly.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
+    </ProjectReference>
+    <ProjectReference Include="ILTestAssembly\ILTestAssembly.ilproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Targets>Build</Targets>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ArchitectureSpecificFieldLayoutTests.cs" />
+    <Compile Include="CanonicalizationTests.cs" />
+    <Compile Include="ConstraintsValidationTest.cs" />
+    <Compile Include="GCPointerMapTests.cs" />
+    <Compile Include="GenericTypeAndMethodTests.cs" />
+    <Compile Include="CastingTests.cs" />
+    <Compile Include="HashcodeTests.cs" />
+    <Compile Include="ILDisassemblerTests.cs" />
+    <Compile Include="InterfacesTests.cs" />
+    <Compile Include="RuntimeDeterminedTypesTests.cs" />
+    <Compile Include="SyntheticVirtualOverrideTests.cs" />
+    <Compile Include="TestMetadataFieldLayoutAlgorithm.cs" />
+    <Compile Include="TypeNameParsingTests.cs" />
+    <Compile Include="UniversalGenericFieldLayoutTests.cs" />
+    <Compile Include="ValueTypeShapeCharacteristicsTests.cs" />
+    <Compile Include="VirtualFunctionOverrideTests.cs" />
+    <Compile Include="InstanceFieldLayoutTests.cs" />
+    <Compile Include="StaticFieldLayoutTests.cs" />
+    <Compile Include="TestTypeSystemContext.cs" />
+    <Compile Include="WellKnownTypeTests.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

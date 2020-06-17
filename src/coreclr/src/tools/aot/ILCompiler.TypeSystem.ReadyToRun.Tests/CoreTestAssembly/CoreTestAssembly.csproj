@@ -1,0 +1,27 @@
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>CoreTestAssembly</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <IsCoreAssembly>true</IsCoreAssembly>
+    <SkipTestRun>true</SkipTestRun>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Canonicalization.cs" />
+    <Compile Include="Casting.cs" />
+    <Compile Include="GCPointerMap.cs" />
+    <Compile Include="GenericConstraints.cs" />
+    <Compile Include="Hashcode.cs" />
+    <Compile Include="InterfaceArrangements.cs" />
+    <Compile Include="GenericTypes.cs" />
+    <Compile Include="Platform.cs" />
+    <Compile Include="InstanceFieldLayout.cs" />
+    <Compile Include="StaticFieldLayout.cs" />
+    <Compile Include="SyntheticVirtualOverride.cs" />
+    <Compile Include="TypeNameParsing.cs" />
+    <Compile Include="ValueTypeShapeCharacteristics.cs" />
+    <Compile Include="VirtualFunctionOverride.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
