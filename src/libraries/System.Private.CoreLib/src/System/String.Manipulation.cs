@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using Internal.Runtime.CompilerServices;
 
@@ -1522,6 +1525,13 @@ namespace System
                 // Special-case the common cases of 1, 2, and 3 separators, with manual comparisons against each separator.
                 case 1:
                     sep0 = separators[0];
+
+                    if (Avx2.IsSupported && 16 <= Length)
+                    {
+                        MakeSeparatorListVectorized(ref sepListBuilder, sep0);
+                        return;
+                    }
+
                     for (int i = 0; i < Length; i++)
                     {
                         if (this[i] == sep0)
@@ -1533,6 +1543,13 @@ namespace System
                 case 2:
                     sep0 = separators[0];
                     sep1 = separators[1];
+
+                    if (Avx2.IsSupported && 16 <= Length)
+                    {
+                        MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1);
+                        return;
+                    }
+
                     for (int i = 0; i < Length; i++)
                     {
                         char c = this[i];
@@ -1546,6 +1563,13 @@ namespace System
                     sep0 = separators[0];
                     sep1 = separators[1];
                     sep2 = separators[2];
+
+                    if (Avx2.IsSupported && 16 <= Length)
+                    {
+                        MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1, sep2);
+                        return;
+                    }
+
                     for (int i = 0; i < Length; i++)
                     {
                         char c = this[i];
@@ -1576,6 +1600,61 @@ namespace System
                         }
                     }
                     break;
+            }
+        }
+
+        private void MakeSeparatorListVectorized(ref ValueListBuilder<int> sepListBuilder, char c, char? c2 = null, char? c3 = null)
+        {
+            Vector256<byte> shuffleConstant = Vector256.Create(0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                                                        0xFF, 0xFF, 0xFF, 0xFF, 0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
+
+            Vector256<ushort> v1 = Vector256.Create(c);
+            Vector256<ushort>? v2 = c2 is char sep2 ? Vector256.Create(sep2) : (Vector256<ushort>?)null;
+            Vector256<ushort>? v3 = c3 is char sep3 ? Vector256.Create(sep3) : (Vector256<ushort>?)null;
+
+            ref char c0 = ref MemoryMarshal.GetReference(this.AsSpan());
+            int cond = Length - (Length % Vector256<ushort>.Count);
+            int i = 0;
+
+            for (; i < cond; i += Vector256<ushort>.Count)
+            {
+                ref char ri = ref Unsafe.Add(ref c0, i);
+                Vector256<ushort> charVector = Unsafe.As<char, Vector256<ushort>>(ref ri);
+                Vector256<ushort> cmp = Avx2.CompareEqual(charVector, v1);
+
+                if (v2 is Vector256<ushort> vecSep2)
+                {
+                    cmp = Avx2.Or(Avx2.CompareEqual(charVector, vecSep2), cmp);
+                }
+
+                if (v3 is Vector256<ushort> vecSep3)
+                {
+                    cmp = Avx2.Or(Avx2.CompareEqual(charVector, vecSep3), cmp);
+                }
+
+                if (Avx.TestZ(cmp, cmp)) { continue; }
+
+                Vector256<byte> mask = Avx2.ShiftLeftLogical(cmp.AsUInt64(), 4).AsByte();
+                mask = Avx2.Shuffle(mask, shuffleConstant);
+
+                Vector128<byte> res = Sse2.Or(Avx2.ExtractVector128(mask, 0), Avx2.ExtractVector128(mask, 1));
+                ulong extractedBits = Bmi2.X64.ParallelBitExtract(0xFEDCBA9876543210, Sse2.X64.ConvertToUInt64(res.AsUInt64()));
+
+                while (true)
+                {
+                    sepListBuilder.Append(((byte)(extractedBits & 0xF)) + i);
+                    extractedBits >>= 4;
+                    if (extractedBits == 0) { break; }
+                }
+            }
+
+            for (; i < Length; i++)
+            {
+                char curr = this[i];
+                if (curr == c || (c2 != null && curr == c2) || (c3 != null && curr == c3))
+                {
+                    sepListBuilder.Append(i);
+                }
             }
         }
 
