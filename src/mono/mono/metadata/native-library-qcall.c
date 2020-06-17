@@ -105,7 +105,7 @@ mono_lookup_pinvoke_qcall_internal (MonoMethod *method, MonoLookupPInvokeStatus 
     int pos_class = find_impls_index_for_class (method);
     if (pos_class < 0) {
         mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_QCALL,
-            "Couldn't find class: '%s' in namespace '%s'.", m_class_get_name(method->klass), m_class_get_name_space(method->klass));
+            "Couldn't find class: '%s' in namespace '%s'.", m_class_get_name (method->klass), m_class_get_name_space (method->klass));
         return NULL;
     }
     int pos_method = find_index_for_method (method, c_qcalls[pos_class].functions);
