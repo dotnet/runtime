@@ -279,7 +279,7 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
                 }
                 m_argDescs[k].m_typeStackNormal = m_argDescs[k].m_type;
                 m_argDescs[k].m_nativeOffset = argOffsets_[k];
-                m_argDescs[k].m_directOffset = (short) reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
                 directOffset++;
                 k++;
             }
@@ -302,18 +302,18 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
 #endif // defined(HOST_ARM)
                 )
             {
-                directRetBuffOffset = (short) reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                directRetBuffOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
 #if defined(HOST_AMD64)
             if (GetFlag<Flag_isVarArg>())
             {
-                directVarArgOffset = (short) reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                directVarArgOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
             if (GetFlag<Flag_hasGenericsContextArg>())
             {
-                directTypeParamOffset = (short) reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                directTypeParamOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
 #endif
@@ -343,11 +343,11 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
                 // When invoking the interpreter directly, large value types are always passed by reference.
                 if (it.IsLargeStruct(comp))
                 {
-                    m_argDescs[k].m_directOffset = (short) reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
                 }
                 else
                 {
-                    m_argDescs[k].m_directOffset = (short) reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, it.Size(comp)));
+                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, it.Size(comp))));
                 }
                 argPtr = comp->getArgNext(argPtr);
                 directOffset++;
