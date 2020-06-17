@@ -16,8 +16,8 @@ namespace System.Net.Security
 {
     internal static class SslStreamPal
     {
-        private static bool UseNewCryptoApi = CheckWindowsVersion();
-        private static bool CheckWindowsVersion()
+        private static readonly bool UseNewCryptoApi = Is1809OrNewer();
+        private static bool Is1809OrNewer()
         {
             // On newer Windows version we use new API to get TLS1.3.
             // API is supported since Windows 10 1809 (17763)but there is no reason to use at the moment.
@@ -168,18 +168,18 @@ namespace System.Net.Security
             Interop.SspiCli.SCH_CREDENTIALS.Flags flags;
             Interop.SspiCli.CredentialUse direction;
 
-            if (!isServer)
+            if (isServer)
+            {
+                direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
+                flags = Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
+            }
+            else
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_OUTBOUND;
                 flags =
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_MANUAL_CRED_VALIDATION |
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_DEFAULT_CREDS |
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
-            }
-            else
-            {
-                direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
-                flags = Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
             }
 
             if (policy == EncryptionPolicy.RequireEncryption)
@@ -206,8 +206,13 @@ namespace System.Net.Security
 
             if (certificate != null)
             {
-                credential.paCred = certificate.Handle;
                 credential.cCreds = 1;
+                Span<IntPtr> certificates = stackalloc IntPtr[1];
+                certificates[0] = certificate.Handle;
+                fixed (void* ptr = &certificates[0])
+                {
+                    credential.paCred = ptr;
+                }
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
