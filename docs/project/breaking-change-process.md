@@ -30,7 +30,7 @@ There are people on the team that can help you work through a breaking change, i
 
 Notes:
 
-* [Guidance for when to use AppContext switched](https://github.com/dotnet/runtime/issues/8655#issuecomment-415103199)
+* We add quirk switches to .NET Core re-actively, only once we get feedback that they are really needed for something important. We do not add them proactively like in .NET Framework just because they might be needed in theory.
 
 ## Examples
 
