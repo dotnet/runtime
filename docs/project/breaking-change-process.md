@@ -4,14 +4,14 @@ Breaking changes make it difficult for people to adopt new versions of .NET. We 
 
 This process does not result in approval or denial of a breaking change request. It results in feedback, which might be varied or uniform. In the best case, the feedback is a call to action to you, that provides a direction on how you should proceed. The people that are responsible for reviewing your PR are expected to use the information collected by this process as part of their determination of whether your change is appropriate to merge.
 
-You should start this process as soon as possible, preferably before any code is written, in the design phase. The breaking change issue should be paired with a design document that helps reviewers understand the broader scope, goals and constraints of your change. If you don't yet have a design document, you are encouraged to first write such a document, to enable people giving feedback to develop a deeper level of understanding on your approach. If you do not do this, you might stall the process.
+You should start this process as soon as possible, preferably before any code is written, in the design phase. This isn't always possible, since the change in behavior might not be discovered until you're almost done building a feature. In the case of a significant breaking change, you  should provide reviewers with a design document so that they can understand the broader scope, goals and constraints of your change.
 
 There are people on the team that can help you work through a breaking change, if you want to engage with them before starting this more formal process. They are part of the [dotnet/compat team](https://github.com/orgs/dotnet/teams/compat) . Feel free to @mention them on issues to start a dialogue.
 
 ## Process
 
-1. Create an issue that describes the breaking change
-   * Mark the issue with the [breaking-change](https://github.com/dotnet/runtime/labels/breaking-change) label
+1. Create or link to an issue that describes the breaking change, including the following information:
+   * Mark with the [breaking-change](https://github.com/dotnet/runtime/labels/breaking-change) label
    * Goals and motivation for the change
    * Pre-change behavior
    * Post-change behavior
@@ -22,7 +22,7 @@ There are people on the team that can help you work through a breaking change, i
 2. Share your issue with whomever you see as stakeholders
    * Please @mention [dotnet/compat team](https://github.com/orgs/dotnet/teams/compat) team
    * Engage with people commenting on the issue, with the goal of deriving the most feedback on your proposed breaking change
-   * This may involve a lot of explanation on your part. A well-written design doc can ease the burden here.
+   * This may involve significant explanation on your part. A well-written design doc can ease the burden here.
 3. Mark associated PRs with the [breaking-change](https://github.com/dotnet/runtime/labels/breaking-change) label, and link to your breaking change issue.
 4. Once the PR is merged, create a [docs issue](https://github.com/dotnet/docs/issues/new?template=dotnet-breaking-change.md).
    * Clarify which .NET preview the break will be first released in.
