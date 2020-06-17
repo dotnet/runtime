@@ -685,8 +685,11 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_2L: // DV_2L   ........XX...... ......nnnnnddddd      Vd Vn      (abs, neg - scalar)
-            assert(id->idOpSize() == EA_8BYTE); // only type D is supported
-            __fallthrough;
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isValidVectorElemsize(id->idOpSize()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
 
         case IF_DV_2G: // DV_2G   .........X...... ......nnnnnddddd      Vd Vn      (fmov, fcvtXX - register)
         case IF_DV_2K: // DV_2K   .........X.mmmmm ......nnnnn.....      Vn Vm      (fcmp)
