@@ -401,7 +401,6 @@ jobs:
     buildConfig: release
     platforms:
     - Linux_x64
-    - Linux_arm64
     # - Linux_musl_arm64
     - Windows_NT_x64
     # - Windows_NT_x86
@@ -425,6 +424,7 @@ jobs:
     buildConfig: release
     platforms:
     - OSX_x64
+    - Linux_arm64
     jobParameters:
       condition: >-
         or(

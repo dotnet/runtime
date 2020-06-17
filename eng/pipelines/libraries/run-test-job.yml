@@ -18,6 +18,10 @@ parameters:
   dependsOnTestArchitecture: x64
   condition: true
   variables: {}
+  # coreclrTestGroup: if empty, then a normal, default test run is created. If set, it indicates a set of
+  # stress modes that each test will be run with. This is the same usage as 'testGroup' in
+  # eng/pipelines/common/templates/runtimes/run-test-job.yml.
+  coreclrTestGroup: ''
 
 jobs:
   - template: /eng/pipelines/libraries/base-job.yml
@@ -100,3 +104,46 @@ jobs:
             helixToken: ''
             testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
             extraHelixArguments: $(_extraHelixArguments)
+
+            # coreclrTestGroup: The following mappings of 'coreclrTestGroup' to 'scenarios' is copied from
+            # eng/pipelines/common/templates/runtimes/run-test-job.yml (with 'testGroup' replaced by 'coreclrTestGroup'
+            # for clarity), and should remain in sync. This is only a subset; only the testGroups that are
+            # used to test the libraries have been added here. More could be added if we decided to test the
+            # libraries with more stress modes (e.g., GCStress). The scenario tags are interpreted by
+            # src\coreclr\tests\testenvironment.proj.
+            #
+            # The one difference here compared to eng/pipelines/common/templates/runtimes/run-test-job.yml is
+            # that 'jitstress' contains 'no_tiered_compilation'. The 'normal' (default) test mode
+            # is run in a regular CI job, so there is no need to duplicate it here. So, add 'no_tiered_compilation'
+            # to the 'jitstress' job instead of adding a new job just for 'no_tiered_compilation'.
+
+            ${{ if in(parameters.coreclrTestGroup, 'jitstress') }}:
+              scenarios:
+              - no_tiered_compilation
+              - jitminopts
+              - jitstress1
+              - jitstress1_tiered
+              - jitstress2
+              - jitstress2_tiered
+              - zapdisable
+              - tailcallstress
+            ${{ if in(parameters.coreclrTestGroup, 'jitstressregs' ) }}:
+              scenarios:
+              - jitstressregs1
+              - jitstressregs2
+              - jitstressregs3
+              - jitstressregs4
+              - jitstressregs8
+              - jitstressregs0x10
+              - jitstressregs0x80
+              - jitstressregs0x1000
+            ${{ if in(parameters.coreclrTestGroup, 'jitstress2-jitstressregs') }}:
+              scenarios:
+              - jitstress2_jitstressregs1
+              - jitstress2_jitstressregs2
+              - jitstress2_jitstressregs3
+              - jitstress2_jitstressregs4
+              - jitstress2_jitstressregs8
+              - jitstress2_jitstressregs0x10
+              - jitstress2_jitstressregs0x80
+              - jitstress2_jitstressregs0x1000

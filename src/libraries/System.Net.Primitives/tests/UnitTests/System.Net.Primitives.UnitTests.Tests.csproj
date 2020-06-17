@@ -45,8 +45,6 @@
              Link="ProductionCode\System\Net\SocketException.cs" />
     <Compile Include="..\..\src\System\Net\IPAddressParser.cs"
              Link="ProductionCode\System\Net\IPAddressParser.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs"
-             Link="Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>

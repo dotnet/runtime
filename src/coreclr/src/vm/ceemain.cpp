@@ -674,12 +674,16 @@ void EEStartupHelper()
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
         EventPipe::Initialize();
-
 #endif // FEATURE_PERFTRACING
 
 #ifdef TARGET_UNIX
         PAL_SetShutdownCallback(EESocketCleanupHelper);
 #endif // TARGET_UNIX
+
+#ifdef FEATURE_PERFTRACING
+        DiagnosticServer::Initialize();
+        DiagnosticServer::PauseForDiagnosticsMonitor();
+#endif // FEATURE_PERFTRACING
 
 #ifdef FEATURE_GDBJIT
         // Initialize gdbjit
@@ -933,12 +937,12 @@ void EEStartupHelper()
         hr = g_pGCHeap->Initialize();
         IfFailGo(hr);
 
-#ifdef FEATURE_EVENT_TRACE
+#ifdef FEATURE_PERFTRACING
         // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
         // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
         // EventPipe initialization, so this is done after the GC has been fully initialized.
         EventPipe::FinishInitialize();
-#endif
+#endif // FEATURE_PERFTRACING
 
         // This isn't done as part of InitializeGarbageCollector() above because thread
         // creation requires AppDomains to have been set up.
@@ -1007,11 +1011,6 @@ void EEStartupHelper()
 #endif // CROSSGEN_COMPILE
 
         g_fEEStarted = TRUE;
-#ifndef CROSSGEN_COMPILE
-#ifdef FEATURE_PERFTRACING
-        DiagnosticServer::Initialize();
-#endif
-#endif
         g_EEStartupStatus = S_OK;
         hr = S_OK;
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "===================EEStartup Completed===================");

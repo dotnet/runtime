@@ -1,85 +1,144 @@
-<Project InitialTargets="PrintHelixQueues;PrintBuildTargetFramework;BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
-  <PropertyGroup>
-    <!-- Set helix build to build number if available -->
-    <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
-    <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
-    <!-- For arm/arm64 we set a 30 min timeout temporarily until we split up slow test assemblies. -->
-    <TimeoutInSeconds Condition="'$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm'">1800</TimeoutInSeconds>
-    <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">900</TimeoutInSeconds>
-    <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
-    
-    <!-- We need to enable xunit reporter so that it parses test results
-         Package testing doesn't run on xunit. -->
-    <EnableXunitReporter Condition="'$(BuildAllConfigurations)' != 'true'">true</EnableXunitReporter>
-    
-    <TestArchiveRuntimeFile>$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
-    <TestArchiveRuntimeFile Condition="'$(BuildAllConfigurations)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
+<!-- This project constructs the Helix "correlation payload", the set of files needed to run a set of tests,
+     and then invokes sendtohelixhelp.proj for each test assembly and scenario combination to get Helix to
+     invoke the tests.
 
-    <!-- The helix runtime payload and the tests to run -->
-    <HelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' == ''">$(TestArchiveRuntimeFile)</HelixCorrelationPayload>
-    <WorkItemArchiveWildCard Condition="'$(WorkItemArchiveWildCard)' == ''">$(TestArchiveTestsRoot)**/*.zip</WorkItemArchiveWildCard>
+     In the simple case, no scenarios are specified and the default CoreCLR optimization configuration
+     is used to run the tests. If a set of comma-separated scenarios are specified in the `_Scenarios`
+     property, then each test is run for each of the specified CoreCLR scenarios (e.g., COMPlus_JitStress=1;
+     COMPlus_JitStressRegs=4; COMPlus_JitStress=2 + COMPlus_JitStressRegs=0x1000). The set of acceptable
+     scenario names is defined and interpreted by src\coreclr\tests\testenvironment.proj.
 
-    <HelixConfiguration>$(Configuration)</HelixConfiguration>
-    <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
+    "RunInParallelForEachScenario" is the "root" target for this Project. It first creates the
+    "correlation payload", which is the set of files used by all Helix submissions
+    (which we compress into a single file).
+-->
 
-    <!-- This property is used to show the tests results in Azure Dev Ops. By setting this property the
-    test run name will be displayed as $(BuildSettings)-$(HelixTargetQueue) -->
-    <TestRunNamePrefix>$(BuildSettings)-</TestRunNamePrefix>
-    <TestRunNamePrefix Condition="'$(TestRunNamePrefixSuffix)' != ''">$(TestRunNamePrefix)$(TestRunNamePrefixSuffix)-</TestRunNamePrefix>
+<Project DefaultTargets="RunInParallelForEachScenario">
 
-    <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
-  </PropertyGroup>
+  <!-- Helix auto-magically imports local *.props files. We're not going to import the Helix Sdk,
+       so we need to import those files manually so we can reference the properties defined there.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)/*.props" />
 
-  <PropertyGroup Condition="'$(BuildAllConfigurations)' == 'true'">
-    <!-- Use helix feature to include dotnet CLI for every workitem and add it to the path -->
-    <IncludeDotNetCli>true</IncludeDotNetCli>
-    <DotNetCliPackageType>sdk</DotNetCliPackageType>
+  <Target Name="RunInParallelForEachScenario">
 
-    <TestRunNamePrefix>packaging-</TestRunNamePrefix>
-    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
-    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
-  </PropertyGroup>
+    <PropertyGroup>
+      <!-- This specifies what properties are needed to be passed down as global properties to a child project invocation. -->
 
-  <PropertyGroup Condition="'$(HelixType)' == ''">
-    <!-- For PRs we want helixtype to be the same for all frameworks except package testing-->
-    <TestScope Condition="'$(TestScope)' == ''">innerloop</TestScope>
-    <HelixType>test/functional/cli/$(TestScope)/</HelixType>
-    <HelixType Condition="'$(BuildAllConfigurations)' == 'true'">test/functional/packaging/</HelixType>
-  </PropertyGroup>
+      <_PropertiesToPass>
+        RuntimeFlavor=$(RuntimeFlavor);
+        TargetArchitecture=$(TargetArchitecture);
+        Configuration=$(Configuration);
+        TargetOS=$(TargetOS);
+        TestRunNamePrefixSuffix=$(TestRunNamePrefixSuffix);
+        Creator=$(Creator);
+        HelixAccessToken=$(HelixAccessToken);
+        HelixTargetQueues=$(HelixTargetQueues);
+        BuildTargetFramework=$(BuildTargetFramework);
+        BuildSettings=$(BuildSettings)
+      </_PropertiesToPass>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(BuildAllConfigurations)' == 'true'">
-    <HelixPreCommands>set DOTNET_CLI_TELEMETRY_OPTOUT=1;set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1;set DOTNET_MULTILEVEL_LOOKUP=0</HelixPreCommands>
+    <Message Condition="'$(_Scenarios)' != ''" Importance="High" Text="Using _Scenarios: $(_Scenarios)" />
+    <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
+    <Message Importance="High" Text="BuildSettings: $(BuildSettings)" />
+    <Message Importance="High" Text="BuildTargetFramework: $(BuildTargetFramework)" />
+    <Message Importance="High" Text="TestArchiveTestsRoot: $(TestArchiveTestsRoot)" />
+    <Message Importance="High" Text="TestHostRootPath: $(TestHostRootPath)" />
+    <Message Importance="High" Text="TestArchiveRoot: $(TestArchiveRoot)" />
+    <Message Importance="High" Text="TestArchiveRuntimeRoot: $(TestArchiveRuntimeRoot)" />
+    <Message Importance="High" Text="TestArchiveRuntimeFile: $(TestArchiveRuntimeFile)" />
 
-    <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
-    <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:RestorePackagesPath=%HELIX_WORKITEM_PAYLOAD%\packages</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
-  </PropertyGroup>
+    <!-- Re-invoke MSBuild on this project to create the correlation payload -->
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" Properties="Scenarios=$(_Scenarios)" />
 
-  <PropertyGroup Condition="'$(HelixCommand)' == ''">
-    <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(OSGroup)' == 'Windows_NT'">set MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
-    <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(OSGroup)' != 'Windows_NT'">export MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
-    
-    <!--
-      For windows we need to use call, since the command is going to be called from a bat script created by Helix
-      and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
-      if we don't use call, then we cause the parent script to exit, and anything after will not be executed.
+    <PropertyGroup>
+      <PerScenarioProjectFile>$(MSBuildProjectDirectory)\sendtohelixhelp.proj</PerScenarioProjectFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_Scenarios Include="$(_Scenarios.Split(','))" />
+
+      <!-- MSBuild creates a new instance of the project for each %(_Scenarios.Identity) and can build them in parallel. -->
+      <_ProjectsToBuild Include="$(PerScenarioProjectFile)">
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
+      </_ProjectsToBuild>
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_BuildInParallel>false</_BuildInParallel>
+      <_BuildInParallel Condition=" '@(_ProjectsToBuild->Count())' &gt; '1' ">true</_BuildInParallel>
+    </PropertyGroup>
+
+    <!-- Invoke MSBuild once for each Scenario (because of the "batching" defined in "_ProjectsToBuild").
+         Create the Helix work items and start the jobs. This is done by invoking the "Test" Helix target.
     -->
-    <HelixCommand Condition="'$(TargetOS)' == 'Windows_NT'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
-    <HelixCommand Condition="'$(TargetOS)' != 'Windows_NT'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" />
+  </Target>
+
+  <PropertyGroup>
+    <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
+
+    <!-- The Helix correlation payload file -->
+    <TestArchiveRuntimeFile Condition="'$(BuildAllConfigurations)' != 'true'">$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
+    <TestArchiveRuntimeFile Condition="'$(BuildAllConfigurations)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Set the name of the scenario file. Note that this is only used in invocations where $(Scenario) is set
+         (which is when this project is invoked to call the "CreateOneScenarioTestEnvFile" target).
+    -->
+    <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
+  </PropertyGroup>
+
+  <Target Name="CreateOneScenarioTestEnvFile">
+    <!-- This target creates one __TestEnv file for the single $(Scenario). -->
+
+    <Error Condition="'$(Scenario)' == ''" Text="No Scenario specified" />
+
+    <PropertyGroup>
+      <TestEnvFilePath>$(TestHostRootPath)$(TestEnvFileName)</TestEnvFilePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ProjectsToBuild Include="$(RepoRoot)\src\coreclr\tests\testenvironment.proj">
+        <Properties>Scenario=$(Scenario);TestEnvFileName=$(TestEnvFilePath);TargetsWindows=$(TargetsWindows)</Properties>
+      </_ProjectsToBuild>
+    </ItemGroup>
+
+    <Message Importance="High" Text="Creating $(TestEnvFilePath) for scenario $(Scenario)" />
+
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFile" StopOnFirstFailure="true" />
+
+    <Error Condition="!Exists('$(TestEnvFilePath)')" Text="File $(TestEnvFilePath) not found!" />
+  </Target>
+
+  <Target Condition="'$(Scenarios)' != ''" Name="CreateAllScenarioTestEnvFiles">
+    <!-- This target creates one __TestEnv file for each of the scenarios in the $(Scenarios) comma-separated list. -->
+
+    <Message Importance="High" Text="Creating per-scenario TestEnv files for scenarios $(Scenarios)" />
+
+    <ItemGroup>
+      <_Scenario Include="$(Scenarios.Split(','))" />
+      <_ProjectsToBuild Include="$(MSBuildProjectFile)">
+        <AdditionalProperties>Scenario=%(_Scenario.Identity)</AdditionalProperties>
+      </_ProjectsToBuild>
+    </ItemGroup>
+
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateOneScenarioTestEnvFile" StopOnFirstFailure="true" />
+  </Target>
 
   <!--
-    We need to include all dlls in the runtime path as inputs to make it really incremental if we use the root folder,
+    We need to include all dlls in the runtime path as inputs to make it really incremental. If we use the root folder,
     if a dll is updated, the folder's timestamp is not updated, therefore skipped.
   -->
   <ItemGroup>
     <_RuntimeInputs Include="$(TestHostRootPath)**/*.dll" />
-  </ItemGroup>
 
-  <ItemGroup>
-    <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
+    <!-- Add the scenario TestEnv batch files -->
+    <_RuntimeInputs Condition=" '$(Scenarios)' != '' and '$(TargetsWindows)' == 'true' " Include="$(TestHostRootPath)**/*.cmd" />
+    <_RuntimeInputs Condition=" '$(Scenarios)' != '' and '$(TargetsWindows)' != 'true' " Include="$(TestHostRootPath)**/*.sh" />
   </ItemGroup>
 
   <Target Name="CompressRuntimeDirectory"
@@ -87,36 +146,27 @@
           Outputs="$(TestArchiveRuntimeFile)"
           Condition="'$(BuildAllConfigurations)' != 'true'">
 
+    <!-- Compress the test files, testhost, and per-scenario scripts into a single ZIP file for sending to the Helix machines. -->
+
+    <Message Importance="High" Text="Compressing runtime directory" />
+
+    <Message Importance="High" Text="Creating directory $(TestArchiveRuntimeRoot)" />
     <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
+
+    <Message Importance="High" Text="ZIP directory $(TestHostRootPath) to $(TestArchiveRuntimeFile)" />
     <ZipDirectory SourceDirectory="$(TestHostRootPath)"
                   DestinationFile="$(TestArchiveRuntimeFile)"
                   Overwrite="true" />
 
   </Target>
 
-  <Target Name="BuildHelixWorkItems"
-          DependsOnTargets="CompressRuntimeDirectory">
-
-    <ItemGroup>
-      <HelixCorrelationPayload Include="$(HelixCorrelationPayload)" />
-
-      <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
-
-      <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
-        <PayloadArchive>%(Identity)</PayloadArchive>
-        <Command>$(HelixCommand)</Command>
-        <Timeout>$(_timeoutSpan)</Timeout>
-      </HelixWorkItem>
-    </ItemGroup>
-
+  <!--
+    Collect all the tasks needed to be run once, to prepare the Helix correlation payload directory.
+    There's no actual work here; this target just causes its dependent targets to be run.
+  -->
+  <Target Name="PrepareCorrelationPayloadDirectory"
+          DependsOnTargets="CreateAllScenarioTestEnvFiles;CompressRuntimeDirectory" >
+    <Message Importance="High" Text="Correlation directory prepared" />
   </Target>
 
-  <Target Name="PrintHelixQueues">
-    <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
-  </Target>
-
-  <Target Name="PrintBuildTargetFramework">
-    <Message Condition="'$(BuildAllConfigurations)' != 'true'" Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
-    <Message Condition="'$(BuildAllConfigurations)' == 'true'" Importance="High" Text="Doing Package Testing" />
-  </Target>
 </Project>
