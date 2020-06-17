@@ -817,7 +817,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
             elemsize = optGetElemsize(id->idInsOpt());
-            assert(isValidVectorIndex(id->idOpSize(), elemsize, emitGetInsSC(id)));
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, emitGetInsSC(id)));
             break;
 
         case IF_DV_3C: // DV_3C   .Q.........mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
@@ -6247,7 +6247,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
                 assert(isValidVectorElemsizeFloat(elemsize));
-                assert(isValidVectorIndex(size, elemsize, imm));
+                assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
                 assert(opt != INS_OPTS_1D); // Reserved encoding
                 fmt = IF_DV_3BI;
             }
@@ -6277,7 +6277,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             // Only has encodings for H or S elemsize
             assert((elemsize == EA_2BYTE) || (elemsize == EA_4BYTE));
             // Only has encodings for V0..V15
-            if ((elemsize == EA_2BYTE) && (reg3 >= REG_V16))
+            if ((elemsize == EA_2BYTE) && ((genRegMask(reg3) & RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
             {
                 noway_assert(!"Invalid reg3");
             }
@@ -6368,6 +6368,11 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert((opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
             elemsize = optGetElemsize(opt);
             assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+            // Restricted to V0-V15 when element size is H
+            if ((elemsize == EA_2BYTE) && ((genRegMask(reg3) & RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
+            {
+                assert(!"Invalid reg3");
+            }
             fmt = IF_DV_3HI;
             break;
 
@@ -6384,6 +6389,11 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert((opt == INS_OPTS_8H) || (opt == INS_OPTS_4S));
             elemsize = optGetElemsize(opt);
             assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+            // Restricted to V0-V15 when element size is H
+            if ((elemsize == EA_2BYTE) && ((genRegMask(reg3) & RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
+            {
+                assert(!"Invalid reg3");
+            }
             fmt = IF_DV_3HI;
             break;
 
@@ -10966,7 +10976,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code     = emitInsCode(ins, fmt);
             imm      = emitGetInsSC(id);
             elemsize = optGetElemsize(id->idInsOpt());
-            assert(isValidVectorIndex(id->idOpSize(), elemsize, imm));
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
             code |= insEncodeVectorsize(id->idOpSize()); // Q
             code |= insEncodeFloatElemsize(elemsize);    // X
             code |= insEncodeFloatIndex(elemsize, imm);  // L H
