@@ -132,7 +132,7 @@ if ($vs) {
   }
 
   # This tells .NET Core to use the bootstrapped runtime
-  $env:DOTNET_ROOT=InitializeDotNetCli -install:$false
+  $env:DOTNET_ROOT=InitializeDotNetCli -install:$true -createSdkLocationFile:$true
 
   # This tells MSBuild to load the SDK from the directory of the bootstrapped SDK
   $env:DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=$env:DOTNET_ROOT
@@ -150,7 +150,7 @@ if ($vs) {
   }
   
   # Restore the solution to workaround https://github.com/dotnet/runtime/issues/32205
-  Invoke-Expression "& (Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath dotnet.cmd) restore $vs"
+  Invoke-Expression "& dotnet restore $vs"
 
   # Launch Visual Studio with the locally defined environment variables
   ."$vs"
