@@ -317,9 +317,9 @@ namespace System.Net.Http
                 if (_isDisposed)
                     return;
 
+                _isDisposed = true;
                 if (disposing)
                 {
-                    _isDisposed = true;
                     _abortCts.Cancel();
                     _abortCts.Dispose();
                     _abortRegistration.Dispose();
