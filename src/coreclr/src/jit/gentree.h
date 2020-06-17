@@ -1707,7 +1707,7 @@ public:
     inline GenTree* gtEffectiveVal(bool commaOnly = false);
 
     // Tunnel through any GT_RET_EXPRs
-    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags = nullptr);
+    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags);
 
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
@@ -4728,8 +4728,8 @@ private:
     ClassLayout* m_layout;
 
     union {
-        var_types      gtOtherBaseType; // For AVX2 Gather* intrinsics
-        regNumberSmall gtOtherReg;      // For intrinsics that return 2 registers
+        var_types gtAuxiliaryType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
+        regNumberSmall gtOtherReg; // For intrinsics that return 2 registers
     };
 
 public:
@@ -4766,14 +4766,14 @@ public:
         assert(gtOtherReg == reg);
     }
 
-    var_types GetOtherBaseType() const
+    var_types GetAuxiliaryType() const
     {
-        return gtOtherBaseType;
+        return gtAuxiliaryType;
     }
 
-    void SetOtherBaseType(var_types type)
+    void SetAuxiliaryType(var_types type)
     {
-        gtOtherBaseType = type;
+        gtAuxiliaryType = type;
     }
 
     GenTreeJitIntrinsic(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, var_types baseType, unsigned size)
@@ -7053,23 +7053,16 @@ inline GenTree* GenTree::gtRetExprVal(unsigned __int64* pbbFlags)
     GenTree*         retExprVal = this;
     unsigned __int64 bbFlags    = 0;
 
-    for (;;)
+    assert(pbbFlags != nullptr);
+
+    for (; retExprVal->gtOper == GT_RET_EXPR; retExprVal = retExprVal->AsRetExpr()->gtInlineCandidate)
     {
-        if (retExprVal->gtOper == GT_RET_EXPR)
-        {
-            GenTreeRetExpr* retExp = retExprVal->AsRetExpr();
-            retExprVal             = retExp->gtInlineCandidate;
-            bbFlags                = retExp->bbFlags;
-        }
-        else
-        {
-            if (pbbFlags != nullptr)
-            {
-                *pbbFlags = bbFlags;
-            }
-            return retExprVal;
-        }
+        bbFlags = retExprVal->AsRetExpr()->bbFlags;
     }
+
+    *pbbFlags = bbFlags;
+
+    return retExprVal;
 }
 
 inline GenTree* GenTree::gtSkipReloadOrCopy()

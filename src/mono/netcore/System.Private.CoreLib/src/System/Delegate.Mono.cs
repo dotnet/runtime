@@ -29,6 +29,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -150,6 +151,7 @@ namespace System
             return d;
         }
 
+        [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             if (type is null)
@@ -176,6 +178,7 @@ namespace System
             return CreateDelegate_internal(type, null, info, throwOnBindFailure);
         }
 
+        [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             if (type is null)
@@ -207,6 +210,7 @@ namespace System
             return CreateDelegate_internal(type, null, info, throwOnBindFailure);
         }
 
+        [RequiresUnreferencedCode("The target method might be removed")]
         private static MethodInfo? GetCandidateMethod(Type type, Type target, string method, BindingFlags bflags, bool ignoreCase)
         {
             MethodInfo? invoke = type.GetMethod("Invoke");

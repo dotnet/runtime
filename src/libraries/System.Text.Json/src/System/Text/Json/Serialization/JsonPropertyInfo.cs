@@ -23,9 +23,9 @@ namespace System.Text.Json
         public static JsonPropertyInfo GetPropertyPlaceholder()
         {
             JsonPropertyInfo info = new JsonPropertyInfo<object>();
-            info.IsPropertyPolicy = false;
-            info.ShouldDeserialize = false;
-            info.ShouldSerialize = false;
+            Debug.Assert(!info.IsForClassInfo);
+            Debug.Assert(!info.ShouldDeserialize);
+            Debug.Assert(!info.ShouldSerialize);
             return info;
         }
 
@@ -195,7 +195,10 @@ namespace System.Text.Json
         public bool IgnoreDefaultValuesOnRead { get; private set; }
         public bool IgnoreDefaultValuesOnWrite { get; private set; }
 
-        public bool IsPropertyPolicy { get; protected set; }
+        /// <summary>
+        /// True if the corresponding cref="JsonClassInfo.PropertyInfoForClassInfo"/> is this instance.
+        /// </summary>
+        public bool IsForClassInfo { get; protected set; }
 
         // There are 3 copies of the property name:
         // 1) NameAsString. The unescaped property name.

@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Xunit;
 
 namespace System.Data.Odbc.Tests
 {
     public class DependencyCheckTest
     {
-        [ConditionalFact(Helpers.OdbcNotAvailable)]
+        public static bool IsObdcNotAvailableAndThreadingSupported => Helpers.CheckOdbcNotAvailable() && PlatformDetection.IsThreadingSupported;
+        [ConditionalFact(nameof(IsObdcNotAvailableAndThreadingSupported))]
         public void OdbcConnection_OpenWhenOdbcNotInstalled_ThrowsException()
         {
             if (PlatformDetection.IsWindowsServerCore && !Environment.Is64BitProcess)

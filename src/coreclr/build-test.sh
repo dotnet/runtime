@@ -514,7 +514,6 @@ usage_list+=("-skiptestwrappers: Don't generate test wrappers.")
 
 usage_list+=("-buildtestwrappersonly: only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
-usage_list+=("-generatetesthostonly: only generate the test host.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
 usage_list+=("-crossgenframeworkonly: only compile the framework in CORE_ROOT with Crossgen / Crossgen2.")
 
@@ -573,10 +572,6 @@ handle_arguments_local() {
             __CompositeBuildMode=1
             __DoCrossgen2=1
             __TestBuildMode=crossgen2
-            ;;
-
-        generatetesthostonly|-generatetesthostonly)
-            __GenerateTestHostOnly=1
             ;;
 
         generatelayoutonly|-generatelayoutonly)
@@ -645,7 +640,6 @@ __DoCrossgen2=0
 __CompositeBuildMode=0
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
-__GenerateTestHostOnly=
 __IsMSBuildOnNETCoreSupported=0
 __MSBCleanBuildArgs=
 __NativeTestIntermediatesDir=
@@ -711,7 +705,7 @@ if [[ -z "$HOME" ]]; then
     echo "HOME not defined; setting it to $HOME"
 fi
 
-if [[ (-z "$__GenerateLayoutOnly") && (-z "$__GenerateTestHostOnly") && (-z "$__BuildTestWrappersOnly") ]]; then
+if [[ (-z "$__GenerateLayoutOnly") && (-z "$__BuildTestWrappersOnly") ]]; then
     build_Tests
 elif [[ ! -z "$__BuildTestWrappersOnly" ]]; then
     build_test_wrappers

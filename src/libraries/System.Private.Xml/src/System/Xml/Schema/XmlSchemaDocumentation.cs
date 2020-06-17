@@ -15,7 +15,7 @@ namespace System.Xml.Schema
         private string? _source;
         private string? _language;
         private XmlNode[]? _markup;
-        private static readonly XmlSchemaSimpleType s_languageType = DatatypeImplementation.GetSimpleTypeFromXsdType(new XmlQualifiedName("language", XmlReservedNs.NsXs));
+        private static readonly XmlSchemaSimpleType s_languageType = DatatypeImplementation.GetSimpleTypeFromXsdType(new XmlQualifiedName("language", XmlReservedNs.NsXs))!;
 
         [XmlAttribute("source", DataType = "anyURI")]
         public string? Source

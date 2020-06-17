@@ -380,6 +380,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static <#= type.name #> FusedSubtractHalving(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.name #>)((<#= type.wideUnsigned #>)((<#= type.wide #>)op1 - (<#= type.wide #>)op2) >> 1);
 
+        public static <#= type.wide #> MultiplyByScalarWideningUpper(<#= type.name #>[] op1, <#= type.name #> op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
+
+        public static <#= type.wide #> MultiplyByScalarWideningUpperAndAdd(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #> op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static <#= type.wide #> MultiplyByScalarWideningUpperAndSubtract(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #> op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3);
+
         public static <#= type.wide #> MultiplyWidening(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.wide #>)((<#= type.wide #>)op1 * (<#= type.wide #>)op2);
 
         public static <#= type.wide #> MultiplyWideningAndAdd(<#= type.wide #> op1, <#= type.name #> op2, <#= type.name #> op3) => (<#= type.wide #>)(op1 + MultiplyWidening(op2, op3));

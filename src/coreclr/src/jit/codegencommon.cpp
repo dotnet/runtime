@@ -10108,30 +10108,19 @@ unsigned Compiler::GetHfaCount(GenTree* tree)
 
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
 {
-    var_types result = TYP_UNDEF;
+#ifdef FEATURE_HFA
     if (hClass != NO_CLASS_HANDLE)
     {
-#ifdef FEATURE_HFA
-        CorInfoType corType = info.compCompHnd->getHFAType(hClass);
-#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
-        if (corType == CORINFO_TYPE_VALUECLASS)
+        CorInfoHFAElemType elemKind = info.compCompHnd->getHFAType(hClass);
+        if (elemKind != CORINFO_HFA_ELEM_NONE)
         {
-            // This is a vector type.
-            // HVAs are only supported on ARM64, and only for homogeneous aggregates of 8 or 16 byte vectors.
-            // For 8-byte vectors corType will be returned as CORINFO_TYPE_DOUBLE.
-            result = TYP_SIMD16;
             // This type may not appear elsewhere, but it will occupy a floating point register.
             compFloatingPointUsed = true;
         }
-        else
-#endif // TARGET_ARM64 && FEATURE_SIMD
-            if (corType != CORINFO_TYPE_UNDEF)
-        {
-            result = JITtype2varType(corType);
-        }
-#endif // FEATURE_HFA
+        return HfaTypeFromElemKind(elemKind);
     }
-    return result;
+#endif // FEATURE_HFA
+    return TYP_UNDEF;
 }
 
 //------------------------------------------------------------------------

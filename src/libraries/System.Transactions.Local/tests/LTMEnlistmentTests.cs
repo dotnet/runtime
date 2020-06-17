@@ -25,7 +25,7 @@ namespace System.Transactions.Tests
             Transaction.Current = null;
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, EnlistmentOptions.None, Phase1Vote.Prepared, SinglePhaseVote.Committed, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
         [InlineData(2, EnlistmentOptions.None, Phase1Vote.Prepared, SinglePhaseVote.Committed, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
         [InlineData(1, EnlistmentOptions.None, Phase1Vote.Prepared, SinglePhaseVote.Aborted, true, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
@@ -76,7 +76,7 @@ namespace System.Transactions.Tests
             Assert.Equal(expectedTxStatus, tx.TransactionInformation.Status);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         // This test needs to change once we have promotion support.
         // Right now any attempt to create a two phase durable enlistment will attempt to promote and will fail because promotion is not supported. This results in the transaction being
         // aborted.
@@ -129,7 +129,7 @@ namespace System.Transactions.Tests
             Assert.Equal(expectedTxStatus, tx.TransactionInformation.Status);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(EnlistmentOptions.EnlistDuringPrepareRequired, Phase1Vote.Prepared, true, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
         [InlineData(EnlistmentOptions.None, Phase1Vote.Prepared, false, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
         public void EnlistDuringPhase0(EnlistmentOptions enlistmentOption, Phase1Vote phase1Vote, bool expectPhase0EnlistSuccess, bool commit, EnlistmentOutcome expectedOutcome, TransactionStatus expectedTxStatus)
@@ -165,7 +165,7 @@ namespace System.Transactions.Tests
             Assert.Equal(expectedTxStatus, tx.TransactionInformation.Status);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(5, EnlistmentOptions.None, Phase1Vote.Prepared, Phase1Vote.Prepared, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
         [InlineData(5, EnlistmentOptions.None, Phase1Vote.Prepared, Phase1Vote.ForceRollback, true, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
         public void EnlistVolatile(int volatileCount, EnlistmentOptions enlistmentOption, Phase1Vote volatilePhase1Vote, Phase1Vote lastPhase1Vote, bool commit, EnlistmentOutcome expectedEnlistmentOutcome, TransactionStatus expectedTxStatus)

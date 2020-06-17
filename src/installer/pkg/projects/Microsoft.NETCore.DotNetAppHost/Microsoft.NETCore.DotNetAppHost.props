@@ -12,6 +12,7 @@
     <NativeBinary Include="$(DotNetHostBinDir)/comhost.dll" />
     <NativeBinary Include="$(DotNetHostBinDir)/ijwhost.dll" />
     <NativeBinary Include="$(DotNetHostBinDir)/ijwhost.lib" />
+    <NativeBinary Include="$(DotNetHostBinDir)/libnethost.lib" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">

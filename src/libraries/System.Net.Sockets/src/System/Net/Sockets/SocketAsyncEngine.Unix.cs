@@ -19,6 +19,12 @@ namespace System.Net.Sockets
             1024;
 #endif
 
+        // Socket continuations are dispatched to the ThreadPool from the event thread.
+        // This avoids continuations blocking the event handling.
+        // Setting PreferInlineCompletions allows continuations to run directly on the event thread.
+        // PreferInlineCompletions defaults to false and can be set to true using the DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS envvar.
+        internal static readonly bool InlineSocketCompletionsEnabled = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1";
+
         private static int GetEngineCount()
         {
             // The responsibility of SocketAsyncEngine is to get notifications from epoll|kqueue
@@ -36,6 +42,12 @@ namespace System.Net.Sockets
             if (uint.TryParse(Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_THREAD_COUNT"), out uint count))
             {
                 return (int)count;
+            }
+
+            // When inlining continuations, we default to ProcessorCount to make sure event threads cannot be a bottleneck.
+            if (InlineSocketCompletionsEnabled)
+            {
+                return Environment.ProcessorCount;
             }
 
             Architecture architecture = RuntimeInformation.ProcessArchitecture;
@@ -186,6 +198,7 @@ namespace System.Net.Sockets
                     Debug.Assert(numEvents > 0, $"Unexpected numEvents: {numEvents}");
 
                     if (handler.HandleSocketEvents(numEvents))
+                                }
                     {
                         ScheduleToProcessEvents();
                     }

@@ -45,7 +45,7 @@ namespace System.Xml
 
         // Writes out the DOCTYPE declaration with the specified name and optional attributes.
 
-        public virtual Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string subset)
+        public virtual Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
             throw new NotImplementedException();
         }

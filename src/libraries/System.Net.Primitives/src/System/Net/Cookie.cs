@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Net
@@ -80,24 +79,24 @@ namespace System.Net
         }
 #endif
 
-        // These PreserveDependency attributes are a workaround for https://github.com/dotnet/runtime/issues/19348.
+        // These DynamicDependency attributes are a workaround for https://github.com/dotnet/runtime/issues/19348.
         // HttpListener uses the non-public ToServerString, which isn't used by anything else in this assembly,
         // and which accesses other internals and can't be moved to HttpListener (at least not without incurring
         // functional differences).  However, once we do our initial System.Net.Primitives build and ToServerString
-        // survives to it, we no longer want the PreserveDependencyAttribute to remain around, so that ToServerString
+        // survives to it, we no longer want the DynamicDependencyAttribute to remain around, so that ToServerString
         // can be trimmed out if the relevant functionality from HttpListener isn't used when performing whole-app
         // analysis.  As such, when trimming System.Net.Primitives, we build the assembly with ILLinkKeepDepAttributes=false,
-        // such that when this assembly is compiled, ToServerString will remain but the PreserveDependency attributes
+        // such that when this assembly is compiled, ToServerString will remain but the DynamicDependency attributes
         // will be removed.  This hack will need to be revisited if anything else in the assembly starts using
-        // PreserveDependencyAttribute.
+        // DynamicDependencyAttribute.
         // https://github.com/mono/linker/issues/802
 
-        [PreserveDependency("ToServerString")]
+        [DynamicDependency("ToServerString")]
         public Cookie()
         {
         }
 
-        [PreserveDependency("ToServerString")] // Workaround for https://github.com/dotnet/runtime/issues/19348
+        [DynamicDependency("ToServerString")] // Workaround for https://github.com/dotnet/runtime/issues/19348
         public Cookie(string name, string? value)
         {
             Name = name;

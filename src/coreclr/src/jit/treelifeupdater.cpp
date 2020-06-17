@@ -299,8 +299,11 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                         compiler->codeGen->genUpdateVarReg(fldVarDsc, tree, i);
                     }
                     compiler->codeGen->genUpdateRegLife(fldVarDsc, isBorn, isFieldDying DEBUGARG(tree));
+                    // If this was marked for spill, genProduceReg should already have spilled it.
+                    assert(!spill);
                 }
             }
+            spill = false;
         }
         else if (varDsc->lvPromoted)
         {

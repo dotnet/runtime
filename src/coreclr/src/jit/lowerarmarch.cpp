@@ -1372,124 +1372,121 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     const HWIntrinsic intrin(node);
 
-    if (!HWIntrinsicInfo::SupportsContainment(intrin.id))
+    const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
+
+    if ((intrin.category == HW_Category_ShiftLeftByImmediate) ||
+        (intrin.category == HW_Category_ShiftRightByImmediate) ||
+        ((intrin.category == HW_Category_SIMDByIndexedElement) && hasImmediateOperand))
     {
-        // Exit early if containment isn't supported
-        return;
-    }
-
-    switch (intrin.id)
-    {
-        case NI_AdvSimd_DuplicateSelectedScalarToVector64:
-        case NI_AdvSimd_DuplicateSelectedScalarToVector128:
-        case NI_AdvSimd_Extract:
-        case NI_AdvSimd_ShiftLeftLogical:
-        case NI_AdvSimd_ShiftLeftLogicalSaturate:
-        case NI_AdvSimd_ShiftLeftLogicalSaturateScalar:
-        case NI_AdvSimd_ShiftLeftLogicalSaturateUnsigned:
-        case NI_AdvSimd_ShiftLeftLogicalSaturateUnsignedScalar:
-        case NI_AdvSimd_ShiftLeftLogicalScalar:
-        case NI_AdvSimd_ShiftLeftLogicalWideningLower:
-        case NI_AdvSimd_ShiftLeftLogicalWideningUpper:
-        case NI_AdvSimd_ShiftRightArithmetic:
-        case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateLower:
-        case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUnsignedLower:
-        case NI_AdvSimd_ShiftRightArithmeticRounded:
-        case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateLower:
-        case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower:
-        case NI_AdvSimd_ShiftRightArithmeticRoundedScalar:
-        case NI_AdvSimd_ShiftRightArithmeticScalar:
-        case NI_AdvSimd_ShiftRightLogical:
-        case NI_AdvSimd_ShiftRightLogicalNarrowingLower:
-        case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateLower:
-        case NI_AdvSimd_ShiftRightLogicalRounded:
-        case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingLower:
-        case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingSaturateLower:
-        case NI_AdvSimd_ShiftRightLogicalRoundedScalar:
-        case NI_AdvSimd_ShiftRightLogicalScalar:
-        case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
-        case NI_AdvSimd_Arm64_ShiftLeftLogicalSaturateScalar:
-        case NI_AdvSimd_Arm64_ShiftLeftLogicalSaturateUnsignedScalar:
-        case NI_AdvSimd_Arm64_ShiftRightArithmeticNarrowingSaturateScalar:
-        case NI_AdvSimd_Arm64_ShiftRightArithmeticNarrowingSaturateUnsignedScalar:
-        case NI_AdvSimd_Arm64_ShiftRightArithmeticRoundedNarrowingSaturateScalar:
-        case NI_AdvSimd_Arm64_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar:
-        case NI_AdvSimd_Arm64_ShiftRightLogicalNarrowingSaturateScalar:
-        case NI_AdvSimd_Arm64_ShiftRightLogicalRoundedNarrowingSaturateScalar:
-        case NI_Vector64_GetElement:
-        case NI_Vector128_GetElement:
-            if (intrin.op2->IsCnsIntOrI())
-            {
-                MakeSrcContained(node, intrin.op2);
-            }
-            break;
-
-        case NI_AdvSimd_ExtractVector64:
-        case NI_AdvSimd_ExtractVector128:
-        case NI_AdvSimd_ShiftLeftLogicalAndInsert:
-        case NI_AdvSimd_ShiftLeftLogicalAndInsertScalar:
-        case NI_AdvSimd_ShiftRightAndInsert:
-        case NI_AdvSimd_ShiftRightArithmeticAdd:
-        case NI_AdvSimd_ShiftRightArithmeticAddScalar:
-        case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUnsignedUpper:
-        case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUpper:
-        case NI_AdvSimd_ShiftRightArithmeticRoundedAdd:
-        case NI_AdvSimd_ShiftRightArithmeticRoundedAddScalar:
-        case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper:
-        case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUpper:
-        case NI_AdvSimd_ShiftRightLogicalAdd:
-        case NI_AdvSimd_ShiftRightLogicalAddScalar:
-        case NI_AdvSimd_ShiftRightLogicalAndInsertScalar:
-        case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateUpper:
-        case NI_AdvSimd_ShiftRightLogicalNarrowingUpper:
-        case NI_AdvSimd_ShiftRightLogicalRoundedAdd:
-        case NI_AdvSimd_ShiftRightLogicalRoundedAddScalar:
-        case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingSaturateUpper:
-        case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingUpper:
-            if (intrin.op3->IsCnsIntOrI())
-            {
-                MakeSrcContained(node, intrin.op3);
-            }
-            break;
-
-        case NI_AdvSimd_Insert:
-            if (intrin.op2->IsCnsIntOrI())
-            {
-                MakeSrcContained(node, intrin.op2);
-
-                if ((intrin.op2->AsIntCon()->gtIconVal == 0) && intrin.op3->IsCnsFltOrDbl())
+        switch (intrin.numOperands)
+        {
+            case 4:
+                assert(varTypeIsIntegral(intrin.op4));
+                if (intrin.op4->IsCnsIntOrI())
                 {
-                    assert(varTypeIsFloating(intrin.baseType));
+                    MakeSrcContained(node, intrin.op4);
+                }
+                break;
 
-                    const double dataValue = intrin.op3->AsDblCon()->gtDconVal;
+            case 3:
+                assert(varTypeIsIntegral(intrin.op3));
+                if (intrin.op3->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op3);
+                }
+                break;
 
-                    if (comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue))
+            case 2:
+                assert(varTypeIsIntegral(intrin.op2));
+                if (intrin.op2->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op2);
+                }
+                break;
+
+            default:
+                unreached();
+        }
+    }
+    else if (hasImmediateOperand || HWIntrinsicInfo::SupportsContainment(intrin.id))
+    {
+        switch (intrin.id)
+        {
+            case NI_AdvSimd_DuplicateSelectedScalarToVector64:
+            case NI_AdvSimd_DuplicateSelectedScalarToVector128:
+            case NI_AdvSimd_Extract:
+            case NI_AdvSimd_LoadAndInsertScalar:
+            case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
+            case NI_Vector64_GetElement:
+            case NI_Vector128_GetElement:
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op2));
+                if (intrin.op2->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op2);
+                }
+                break;
+
+            case NI_AdvSimd_ExtractVector64:
+            case NI_AdvSimd_ExtractVector128:
+            case NI_AdvSimd_StoreSelectedScalar:
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op3));
+                if (intrin.op3->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op3);
+                }
+                break;
+
+            case NI_AdvSimd_Insert:
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op2));
+
+                if (intrin.op2->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op2);
+
+                    if ((intrin.op2->AsIntCon()->gtIconVal == 0) && intrin.op3->IsCnsFltOrDbl())
                     {
-                        MakeSrcContained(node, intrin.op3);
+                        assert(varTypeIsFloating(intrin.baseType));
+
+                        const double dataValue = intrin.op3->AsDblCon()->gtDconVal;
+
+                        if (comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue))
+                        {
+                            MakeSrcContained(node, intrin.op3);
+                        }
                     }
                 }
-            }
-            break;
+                break;
 
-        case NI_Vector64_CreateScalarUnsafe:
-        case NI_Vector128_CreateScalarUnsafe:
-        case NI_AdvSimd_DuplicateToVector64:
-        case NI_AdvSimd_DuplicateToVector128:
-        case NI_AdvSimd_Arm64_DuplicateToVector64:
-        case NI_AdvSimd_Arm64_DuplicateToVector128:
-        {
-            if (IsValidConstForMovImm(node))
-            {
-                // Use node->gtOp1 as the above check may
-                // have removed a cast node and changed op1
+            case NI_AdvSimd_Arm64_InsertSelectedScalar:
+                assert(hasImmediateOperand);
+                assert(intrin.op2->IsCnsIntOrI());
+                assert(intrin.op4->IsCnsIntOrI());
 
-                MakeSrcContained(node, node->gtOp1);
-            }
-            break;
+                MakeSrcContained(node, intrin.op2);
+                MakeSrcContained(node, intrin.op4);
+                break;
+
+            case NI_Vector64_CreateScalarUnsafe:
+            case NI_Vector128_CreateScalarUnsafe:
+            case NI_AdvSimd_DuplicateToVector64:
+            case NI_AdvSimd_DuplicateToVector128:
+            case NI_AdvSimd_Arm64_DuplicateToVector64:
+            case NI_AdvSimd_Arm64_DuplicateToVector128:
+                if (IsValidConstForMovImm(node))
+                {
+                    // Use node->gtOp1 as the above check may
+                    // have removed a cast node and changed op1
+
+                    MakeSrcContained(node, node->gtOp1);
+                }
+                break;
+
+            default:
+                unreached();
         }
-
-        default:
-            unreached();
     }
 }
 #endif // FEATURE_HW_INTRINSICS

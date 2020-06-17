@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
@@ -180,7 +181,14 @@ namespace System.Runtime.Serialization
             // nop
         }
 
-        public static object GetUninitializedObject(Type type) => RuntimeHelpers.GetUninitializedObject(type);
+        public static object GetUninitializedObject(
+            // This API doesn't call any constructors, but the type needs to be seen as constructed.
+            // A type is seen as constructed if a constructor is kept.
+            // This obviously won't cover a type with no constructor. Reference types with no
+            // constructor are an academic problem. Valuetypes with no constructors are a problem,
+            // but IL Linker currently treats them as always implicitly boxed.
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type) => RuntimeHelpers.GetUninitializedObject(type);
 
         public static object GetSafeUninitializedObject(Type type) => RuntimeHelpers.GetUninitializedObject(type);
 

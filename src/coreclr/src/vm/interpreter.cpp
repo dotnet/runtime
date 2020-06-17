@@ -86,7 +86,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
     bool hasRetBuff = (methInfo->args.retType == CORINFO_TYPE_VALUECLASS || methInfo->args.retType == CORINFO_TYPE_REFANY);
 #if defined(FEATURE_HFA)
     // ... unless its an HFA type (and not varargs)...
-    if (hasRetBuff && CorInfoTypeIsFloatingPoint(comp->getHFAType(methInfo->args.retTypeClass)) && methInfo->args.getCallConv() != CORINFO_CALLCONV_VARARG)
+    if (hasRetBuff && (comp->getHFAType(methInfo->args.retTypeClass) != CORINFO_HFA_ELEM_NONE) && methInfo->args.getCallConv() != CORINFO_CALLCONV_VARARG)
     {
         hasRetBuff = false;
     }
@@ -291,7 +291,7 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
             // So figure out if we have an HFA return type.
             bool hasHFARetType =
                 methInfo->args.retType == CORINFO_TYPE_VALUECLASS
-                && CorInfoTypeIsFloatingPoint(comp->getHFAType(methInfo->args.retTypeClass))
+                && (comp->getHFAType(methInfo->args.retTypeClass) != CORINFO_HFA_ELEM_NONE)
                 && methInfo->args.getCallConv() != CORINFO_CALLCONV_VARARG;
 #endif // defined(HOST_ARM)
 
@@ -953,7 +953,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     unsigned cHFAVars   = 0;
 #endif
     if (info->args.retType == CORINFO_TYPE_VALUECLASS
-        && CorInfoTypeIsFloatingPoint(comp->getHFAType(info->args.retTypeClass))
+        && (comp->getHFAType(info->args.retTypeClass) != CORINFO_HFA_ELEM_NONE)
         && info->args.getCallConv() != CORINFO_CALLCONV_VARARG)
     {
         HFARetTypeSize = getClassSize(info->args.retTypeClass);
@@ -968,7 +968,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         // for instance a VT with two float fields will have the same size as a VT with 1 double field. (ARM64TODO: Verify it)
         // It works on ARM because the overlapping layout of the floating point registers
         // but it won't work on ARM64.
-        cHFAVars = (comp->getHFAType(info->args.retTypeClass) == CORINFO_TYPE_FLOAT) ? HFARetTypeSize/sizeof(float) : HFARetTypeSize/sizeof(double);
+        cHFAVars = (comp->getHFAType(info->args.retTypeClass) == CORINFO_HFA_ELEM_FLOAT) ? HFARetTypeSize/sizeof(float) : HFARetTypeSize/sizeof(double);
 #endif
     }
 
@@ -1112,12 +1112,12 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_AMD64)
                         argState.AddArg(k, static_cast<short>(szSlots));
 #elif defined(HOST_ARM) || defined(HOST_ARM64)
-                        CorInfoType hfaType = comp->getHFAType(vcTypeRet);
+                        CorInfoHFAElemType hfaType = comp->getHFAType(vcTypeRet);
                         if (CorInfoTypeIsFloatingPoint(hfaType))
                         {
                             argState.AddFPArg(k, szSlots,
 #if defined(HOST_ARM)
-                                    /*twoSlotAlign*/ (hfaType == CORINFO_TYPE_DOUBLE)
+                                    /*twoSlotAlign*/ (hfaType == CORINFO_HFA_ELEM_DOUBLE)
 #elif defined(HOST_ARM64)
                                     /*twoSlotAlign*/ false // unlike ARM32 FP args always consume 1 slot on ARM64
 #endif
@@ -2203,7 +2203,7 @@ EvalLoop:
 
                 size_t sz = retValIt.Size(&m_interpCeeInfo);
 #if defined(FEATURE_HFA)
-                CorInfoType cit = CORINFO_TYPE_UNDEF;
+                CorInfoHFAElemType cit = CORINFO_HFA_ELEM_NONE;
                 {
                     GCX_PREEMP();
                     if(m_methInfo->m_returnType == CORINFO_TYPE_VALUECLASS)
@@ -2237,7 +2237,7 @@ EvalLoop:
 #if defined(FEATURE_HFA)
                 // Is it an HFA?
                 else if (m_methInfo->m_returnType == CORINFO_TYPE_VALUECLASS
-                         && CorInfoTypeIsFloatingPoint(cit)
+                         && (cit != CORINFO_HFA_ELEM_NONE))
                     && (MetaSig(reinterpret_cast<MethodDesc*>(m_methInfo->m_method)).GetCallingConventionInfo() & CORINFO_CALLCONV_VARARG) == 0)
                 {
                     if (retValIt.IsLargeStruct(&m_interpCeeInfo))
@@ -9223,7 +9223,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         GCX_PREEMP();
 
         if (sigInfo.retType == CORINFO_TYPE_VALUECLASS
-            && CorInfoTypeIsFloatingPoint(m_interpCeeInfo.getHFAType(sigInfo.retTypeClass))
+            && (m_interpCeeInfo.getHFAType(sigInfo.retTypeClass) != CORINFO_HFA_ELEM_NONE)
             && (sigInfo.getCallConv() & CORINFO_CALLCONV_VARARG) == 0)
         {
             HFAReturnArgSlots = getClassSize(sigInfo.retTypeClass);

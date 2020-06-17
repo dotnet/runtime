@@ -121,7 +121,7 @@ namespace System.Buffers
             _startObject = array;
             _endObject = array;
             _startInteger = ReadOnlySequence.ArrayToSequenceStart(0);
-            _endInteger = ReadOnlySequence.ArrayToSequenceEnd(array!.Length); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            _endInteger = ReadOnlySequence.ArrayToSequenceEnd(array.Length);
         }
 
         /// <summary>
@@ -146,9 +146,7 @@ namespace System.Buffers
         /// </summary>
         public ReadOnlySequence(ReadOnlyMemory<T> memory)
         {
-#pragma warning disable CS8631 // TODO-NULLABLE: ILLink rewriter removing some necessary metadata (https://github.com/dotnet/corefx/pull/38983#issuecomment-506757237)
             if (MemoryMarshal.TryGetMemoryManager(memory, out MemoryManager<T>? manager, out int index, out int length))
-#pragma warning restore CS8631
             {
                 _startObject = manager;
                 _endObject = manager;

@@ -27,7 +27,7 @@ namespace System.Threading.Threads.Tests
         private const int UnexpectedTimeoutMilliseconds = ThreadTestHelpers.UnexpectedTimeoutMilliseconds;
         private const int ExpectedTimeoutMilliseconds = ThreadTestHelpers.ExpectedTimeoutMilliseconds;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ConstructorTest()
         {
             const int SmallStackSizeBytes = 64 << 10; // 64 KB, currently accepted in all supported platforms, and is the PAL minimum
@@ -326,7 +326,7 @@ namespace System.Threading.Threads.Tests
             Assert.Equal(expectedFailure, setApartmentState(t, ApartmentState.MTA));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CurrentCultureTest_DifferentThread()
         {
             CultureInfo culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
@@ -367,7 +367,7 @@ namespace System.Threading.Threads.Tests
             exceptionFromThread?.Throw();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CurrentCultureTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -409,13 +409,13 @@ namespace System.Threading.Threads.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CurrentPrincipalTest_SkipOnDesktopFramework()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() => Assert.Null(Thread.CurrentPrincipal));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CurrentPrincipalTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -432,7 +432,7 @@ namespace System.Threading.Threads.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CurrentPrincipalContextFlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(async () =>
@@ -465,7 +465,7 @@ namespace System.Threading.Threads.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CurrentPrincipalContextFlowTest_NotFlow()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(async () =>
@@ -515,7 +515,7 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CurrentThreadTest()
         {
             Thread otherThread = null;
@@ -531,14 +531,14 @@ namespace System.Threading.Threads.Tests
             Assert.NotEqual(mainThread, otherThread);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ExecutionContextTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(
                 () => Assert.Equal(ExecutionContext.Capture(), Thread.CurrentThread.ExecutionContext));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void IsAliveTest()
         {
             var isAliveWhenRunning = false;
@@ -553,7 +553,7 @@ namespace System.Threading.Threads.Tests
             Assert.False(t.IsAlive);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void IsBackgroundTest()
         {
             var t = new Thread(() => { });
@@ -574,7 +574,7 @@ namespace System.Threading.Threads.Tests
             t.Start();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void IsThreadPoolThreadTest()
         {
             var isThreadPoolThread = false;
@@ -598,7 +598,7 @@ namespace System.Threading.Threads.Tests
             Assert.True(isThreadPoolThread);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ManagedThreadIdTest()
         {
             var e = new ManualResetEvent(false);
@@ -611,7 +611,7 @@ namespace System.Threading.Threads.Tests
             waitForThread();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void NameTest()
         {
             string name = Guid.NewGuid().ToString("N");
@@ -667,7 +667,7 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void PriorityTest()
         {
             var e = new ManualResetEvent(false);
@@ -685,7 +685,7 @@ namespace System.Threading.Threads.Tests
             waitForThread();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ThreadStateTest()
         {
             var e0 = new ManualResetEvent(false);
@@ -722,7 +722,7 @@ namespace System.Threading.Threads.Tests
             Assert.Equal(ThreadState.Stopped, t.ThreadState);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void AbortSuspendTest()
         {
             var e = new ManualResetEvent(false);
@@ -842,7 +842,7 @@ namespace System.Threading.Threads.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void LocalDataSlotTest()
         {
             var slot = Thread.AllocateDataSlot();
@@ -912,7 +912,7 @@ namespace System.Threading.Threads.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void InterruptTest()
         {
             // Interrupting a thread that is not blocked does not do anything, but once the thread starts blocking, it gets
@@ -961,7 +961,7 @@ namespace System.Threading.Threads.Tests
             waitForThread();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void InterruptInFinallyBlockTest_SkipOnDesktopFramework()
         {
             // A wait in a finally block can be interrupted. The .NET Framework applies the same rules as thread abort, and
@@ -986,7 +986,7 @@ namespace System.Threading.Threads.Tests
             waitForThread();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void JoinTest()
         {
             var threadReady = new ManualResetEvent(false);
@@ -1035,7 +1035,7 @@ namespace System.Threading.Threads.Tests
             Assert.InRange((int)stopwatch.ElapsedMilliseconds, 100, int.MaxValue);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void StartTest()
         {
             var e = new AutoResetEvent(false);

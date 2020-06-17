@@ -217,12 +217,12 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 8b2226a2-ac30-4f5c-ae5c-926c792ecdb9 */
-    0x8b2226a2,
-    0xac30,
-    0x4f5c,
-    { 0xae, 0x5c, 0x92, 0x6c, 0x79, 0x2e, 0xcd, 0xb9 }
-};
+SELECTANY const GUID JITEEVersionIdentifier = { /* 2ca8d539-5db9-4831-8f1b-ade425f036bd */
+    0x2ca8d539,
+    0x5db9,
+    0x4831,
+    {0x8f, 0x1b, 0xad, 0xe4, 0x25, 0xf0, 0x36, 0xbd}
+  };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -2743,7 +2743,7 @@ public:
             ) = 0;
 
     // Returns type of HFA for valuetype
-    virtual CorInfoType getHFAType (
+    virtual CorInfoHFAElemType getHFAType (
             CORINFO_CLASS_HANDLE hClass
             ) = 0;
 

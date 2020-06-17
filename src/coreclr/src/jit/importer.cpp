@@ -18856,10 +18856,8 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 //   properties are used later by impInlineFetchArg to determine how best to
 //   pass the argument into the inlinee.
 
-void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
-                                      GenTree*      curArgVal,
-                                      unsigned      argNum,
-                                      InlineResult* inlineResult)
+void Compiler::impInlineRecordArgInfo(
+    InlineInfo* pInlineInfo, GenTree* curArgVal, unsigned argNum, unsigned __int64 bbFlags, InlineResult* inlineResult)
 {
     InlArgInfo* inlCurArgInfo = &pInlineInfo->inlArgInfo[argNum];
 
@@ -18870,6 +18868,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     }
 
     inlCurArgInfo->argNode = curArgVal;
+    inlCurArgInfo->bbFlags = bbFlags;
 
     GenTree* lclVarTree;
 
@@ -19026,9 +19025,10 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
     if (thisArg)
     {
-        inlArgInfo[0].argIsThis = true;
-        GenTree* actualThisArg  = thisArg->GetNode()->gtRetExprVal();
-        impInlineRecordArgInfo(pInlineInfo, actualThisArg, argCnt, inlineResult);
+        inlArgInfo[0].argIsThis        = true;
+        unsigned __int64 bbFlags       = 0;
+        GenTree*         actualThisArg = thisArg->GetNode()->gtRetExprVal(&bbFlags);
+        impInlineRecordArgInfo(pInlineInfo, actualThisArg, argCnt, bbFlags, inlineResult);
 
         if (inlineResult->IsFailure())
         {
@@ -19063,8 +19063,9 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             continue;
         }
 
-        GenTree* actualArg = use.GetNode()->gtRetExprVal();
-        impInlineRecordArgInfo(pInlineInfo, actualArg, argCnt, inlineResult);
+        unsigned __int64 bbFlags   = 0;
+        GenTree*         actualArg = use.GetNode()->gtRetExprVal(&bbFlags);
+        impInlineRecordArgInfo(pInlineInfo, actualArg, argCnt, bbFlags, inlineResult);
 
         if (inlineResult->IsFailure())
         {
@@ -20295,7 +20296,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     if ((objClass == nullptr) || !isExact)
     {
         // Walk back through any return expression placeholders
-        actualThisObj = thisObj->gtRetExprVal();
+        unsigned __int64 bbFlags = 0;
+        actualThisObj            = thisObj->gtRetExprVal(&bbFlags);
 
         // See if we landed on a call to a special intrinsic method
         if (actualThisObj->IsCall())

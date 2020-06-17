@@ -696,7 +696,7 @@ namespace System.Xml
                                 }
                                 if (_validate)
                                 {
-                                    attrDef.CheckXmlSpace(_readerAdapterWithValidation!.ValidationEventHandling);
+                                    attrDef.CheckXmlSpace(_readerAdapterWithValidation!.ValidationEventHandling!);
                                 }
                             }
                         }
@@ -736,7 +736,7 @@ namespace System.Xml
                             }
                             if (_validate)
                             {
-                                attrDef.CheckXmlSpace(_readerAdapterWithValidation!.ValidationEventHandling);
+                                attrDef.CheckXmlSpace(_readerAdapterWithValidation!.ValidationEventHandling!);
                             }
                         }
                     }
@@ -778,7 +778,7 @@ namespace System.Xml
                     case Token.ID:
                         if (_validate && elementDecl.IsIdDeclared)
                         {
-                            SchemaAttDef idAttrDef = elementDecl.GetAttDef(attrDef.Name);
+                            SchemaAttDef? idAttrDef = elementDecl.GetAttDef(attrDef.Name);
                             if ((idAttrDef == null || idAttrDef.Datatype.TokenizedType != XmlTokenizedType.ID) && !ignoreErrors)
                             {
                                 SendValidationEvent(XmlSeverityType.Error, SR.Sch_IdAttrDeclared, elementDecl.Name.ToString());
