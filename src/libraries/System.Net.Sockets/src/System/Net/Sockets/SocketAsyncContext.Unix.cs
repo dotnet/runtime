@@ -5,6 +5,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -1199,8 +1200,8 @@ namespace System.Net.Sockets
         public bool PreferInlineCompletions
         {
             // Socket.PreferInlineCompletions is an experimental API with internal access modifier.
-            // PreserveDependency ensures the setter is available externally using reflection.
-            [PreserveDependency("set_PreferInlineCompletions", "System.Net.Sockets.Socket")]
+            // DynamicDependency ensures the setter is available externally using reflection.
+            [DynamicDependency("set_PreferInlineCompletions", typeof(Socket))]
             get => _socket.PreferInlineCompletions;
         }
 
