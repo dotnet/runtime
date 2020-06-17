@@ -60,13 +60,7 @@ namespace System
 
         public static GCMemoryInfo GetGCMemoryInfo(GCKind kind)
         {
-            if ((kind >= GCKind.Any) && (kind <= GCKind.Background))
-            {
-                var data = new GCMemoryInfoData();
-                GetMemoryInfo(data, (int)kind);
-                return new GCMemoryInfo(data);
-            }
-            else
+            if ((kind < GCKind.Any) || (kind > GCKind.Background))
             {
                 throw new ArgumentOutOfRangeException(nameof(kind),
                                       SR.Format(
@@ -74,6 +68,10 @@ namespace System
                                           GCKind.Any,
                                           GCKind.Background));
             }
+
+            var data = new GCMemoryInfoData();
+            GetMemoryInfo(data, (int)kind);
+            return new GCMemoryInfo(data);
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
