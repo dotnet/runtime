@@ -710,7 +710,7 @@ namespace ILCompiler.PEWriter
                 sectionAlignment = fileAlignment;
             }
 
-            dllCharacteristics &= ~DllCharacteristics.AppContainer;
+            dllCharacteristics &= DllCharacteristics.AppContainer;
 
             // In Crossgen1, this is under a debug-specific condition 'if (0 == CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NoASLRForNgen))'
             dllCharacteristics |= DllCharacteristics.DynamicBase;
