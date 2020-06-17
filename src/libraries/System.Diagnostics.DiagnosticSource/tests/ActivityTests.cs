@@ -510,11 +510,11 @@ namespace System.Diagnostics.Tests
         /****** WC3 Format tests *****/
 
         [Fact]
-        public void IdFormat_W3CIsDefault()
+        public void IdFormat_W3CIsDefaultForNet5()
         {
             Activity activity = new Activity("activity1");
             activity.Start();
-            Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+            Assert.Equal(PlatformDetection.IsNetCore ? ActivityIdFormat.W3C : ActivityIdFormat.Hierarchical, activity.IdFormat);
         }
 
         [Fact]
@@ -626,9 +626,19 @@ namespace System.Diagnostics.Tests
         {
             Activity activity = new Activity("activity");
             activity.Start();
-            Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
-            Assert.NotEqual("00000000000000000000000000000000", activity.TraceId.ToHexString());
-            Assert.NotEqual("0000000000000000", activity.SpanId.ToHexString());
+
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+                Assert.NotEqual("00000000000000000000000000000000", activity.TraceId.ToHexString());
+                Assert.NotEqual("0000000000000000", activity.SpanId.ToHexString());
+            }
+            else
+            {
+                Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+                Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
+                Assert.Equal("0000000000000000", activity.SpanId.ToHexString());
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
