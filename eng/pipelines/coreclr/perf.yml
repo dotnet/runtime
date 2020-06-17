@@ -74,18 +74,19 @@ jobs:
       liveLibrariesBuildConfig: Release
       runtimeType: mono
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-    buildConfig: release
-    runtimeFlavor: mono
-    platforms:
-    - Linux_x64
-    jobParameters:
-      testGroup: perf
-      liveLibrariesBuildConfig: Release
-      runtimeType: mono
-      codeGenType: 'Interpreter'
+# Drains the pool: https://github.com/dotnet/core-eng/issues/10070
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+#     buildConfig: release
+#     runtimeFlavor: mono
+#     platforms:
+#     - Linux_x64
+#     jobParameters:
+#       testGroup: perf
+#       liveLibrariesBuildConfig: Release
+#       runtimeType: mono
+#       codeGenType: 'Interpreter'
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
