@@ -1137,12 +1137,12 @@ namespace System.Net
 
                 // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
                 // HttpRequestMessage.Content.Headers.
-                foreach (string? headerName in _webHeaderCollection) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
+                foreach (string headerName in _webHeaderCollection)
                 {
                     // The System.Net.Http APIs require HttpRequestMessage headers to be properly divided between the request headers
                     // collection and the request content headers collection for all well-known header names.  And custom headers
                     // are only allowed in the request headers collection and not in the request content headers collection.
-                    if (IsWellKnownContentHeader(headerName!))
+                    if (IsWellKnownContentHeader(headerName))
                     {
                         if (request.Content == null)
                         {
@@ -1150,11 +1150,11 @@ namespace System.Net
                             request.Content = new ByteArrayContent(Array.Empty<byte>());
                         }
 
-                        request.Content.Headers.TryAddWithoutValidation(headerName!, _webHeaderCollection[headerName!]);
+                        request.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
                     }
                     else
                     {
-                        request.Headers.TryAddWithoutValidation(headerName!, _webHeaderCollection[headerName!]);
+                        request.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
                     }
                 }
 

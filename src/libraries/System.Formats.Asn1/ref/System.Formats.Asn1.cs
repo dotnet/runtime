@@ -148,6 +148,7 @@ namespace System.Formats.Asn1
         public System.Formats.Asn1.AsnEncodingRules RuleSet { get { throw null; } }
         public void CopyTo(System.Formats.Asn1.AsnWriter destination) { }
         public byte[] Encode() { throw null; }
+        public int Encode(System.Span<byte> destination) { throw null; }
         public bool EncodedValueEquals(System.Formats.Asn1.AsnWriter other) { throw null; }
         public bool EncodedValueEquals(System.ReadOnlySpan<byte> other) { throw null; }
         public int GetEncodedLength() { throw null; }

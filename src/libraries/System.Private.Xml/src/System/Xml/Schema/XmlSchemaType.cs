@@ -30,7 +30,7 @@ namespace System.Xml.Schema
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static XmlSchemaSimpleType GetBuiltInSimpleType(XmlQualifiedName qualifiedName)
+        public static XmlSchemaSimpleType? GetBuiltInSimpleType(XmlQualifiedName qualifiedName)
         {
             if (qualifiedName == null)
             {
@@ -242,7 +242,7 @@ namespace System.Xml.Schema
             _finalResolved = value;
         }
 
-        internal void SetBaseSchemaType(XmlSchemaType value)
+        internal void SetBaseSchemaType(XmlSchemaType? value)
         {
             _baseSchemaType = value;
         }
@@ -252,7 +252,7 @@ namespace System.Xml.Schema
             _derivedBy = value;
         }
 
-        internal void SetDatatype(XmlSchemaDatatype value)
+        internal void SetDatatype(XmlSchemaDatatype? value)
         {
             _datatype = value;
         }

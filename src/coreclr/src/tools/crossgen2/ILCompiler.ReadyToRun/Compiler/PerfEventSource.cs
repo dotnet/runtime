@@ -31,6 +31,22 @@ namespace ILCompiler
                 _stopAction?.Invoke();
             }
 
+            public static void CommandLineProcessingStart()
+            {
+                if (Log.IsEnabled())
+                {
+                    Log.CommandLineProcessingStart();
+                }
+            }
+
+            public static void CommandLineProcessingStop()
+            {
+                if (Log.IsEnabled())
+                {
+                    Log.CommandLineProcessingStop();
+                }
+            }
+
             public static StartStopEvents LoadingEvents()
             {
                 if (!Log.IsEnabled())
@@ -102,5 +118,9 @@ namespace ILCompiler
         private void JitMethodStart() { WriteEvent(9); }
         [Event(10, Level = EventLevel.Informational)]
         private void JitMethodStop() { WriteEvent(10); }
+        [Event(11, Level = EventLevel.Informational)]
+        private void CommandLineProcessingStart() { WriteEvent(11); }
+        [Event(12, Level = EventLevel.Informational)]
+        private void CommandLineProcessingStop() { WriteEvent(12); }
     }
 }

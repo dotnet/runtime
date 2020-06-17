@@ -36,7 +36,7 @@ namespace System.Xml.Schema
             _schemaXmlDepth = reader.Depth;
             SchemaType rootType = _schemaNames.SchemaTypeFromRoot(reader.LocalName, reader.NamespaceURI);
 
-            string code;
+            string? code;
             if (!CheckSchemaRoot(rootType, out code))
             {
                 throw new XmlSchemaException(code, reader.BaseURI, _positionInfo.LineNumber, _positionInfo.LinePosition);

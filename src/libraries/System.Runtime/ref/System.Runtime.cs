@@ -5186,7 +5186,9 @@ namespace System.Collections
     }
     public partial interface IEnumerator
     {
-        object? Current { get; }
+#nullable disable // explicitly leaving Current as "oblivious" to avoid spurious warnings in foreach over non-generic enumerables
+        object Current { get; }
+#nullable restore
         bool MoveNext();
         void Reset();
     }
