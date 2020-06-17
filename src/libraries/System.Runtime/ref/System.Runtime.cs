@@ -2084,9 +2084,10 @@ namespace System
     }
     public enum GCKind
     {
-        Ephemeral = 0,
-        FullBlocking = 1,
-        Background =2
+        Any = 0,
+        Ephemeral = 1,
+        FullBlocking = 2,
+        Background = 3
     };
     public readonly partial struct GCGenerationInfo
     {

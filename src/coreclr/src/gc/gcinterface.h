@@ -299,9 +299,10 @@ enum end_no_gc_region_status
 
 enum gc_kind
 {
-    gc_kind_ephemeral,     // gen0 or gen1 GC
-    gc_kind_full_blocking, // blocking gen2 GC
-    gc_kind_background     // background GC (always gen2)
+    gc_kind_any = 0,           // any of the following kind
+    gc_kind_ephemeral = 1,     // gen0 or gen1 GC
+    gc_kind_full_blocking = 2, // blocking gen2 GC
+    gc_kind_background = 3     // background GC (always gen2)
 };
 
 typedef enum

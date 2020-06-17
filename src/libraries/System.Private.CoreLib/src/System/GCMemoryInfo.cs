@@ -9,6 +9,13 @@ namespace System
     // !!!!!!!!!!!!!!!!!!!!!!!
     // make sure you change the def in vm\comutilnative.h
     // if you change this!
+    //
+    /// <summary>
+    /// This represents the size and the fragmenation of a generation on entry and on exit
+    /// of the GC reported in GCMemoryInfo.
+    /// SizeBeforeBytes/SizeAfterBytes is the total size of the generation, including
+    /// fragmentation. Fragmentation is the same as FragmentedBytes, but for a generation.
+    /// </summary>
     public readonly struct GCGenerationInfo
     {
         public long SizeBeforeBytes { get; }
@@ -20,11 +27,23 @@ namespace System
     // !!!!!!!!!!!!!!!!!!!!!!!
     // make sure you change the def in gc\gcinterface.h
     // if you change this!
+    //
+    /// <summary>
+    /// A GC can be one of the 3 kinds - ephemeral, full blocking or background.
+    /// Their frequencies are very different. Ephemeral GCs happen much more often than
+    /// the other two kinds. Background GCs usually happen not very frequently and
+    /// full blocking GCs usually happen very infrequently. In order to sample the very
+    /// infrequent GCs we separate the kinds so users can ask for all 3 kinds while maintaining
+    /// a reasonable sampling rate, eg, if you are sampling once every second, without this
+    /// distinction, you may never observe a background GC. With this distinction you can
+    /// always get info of the last GC of the kind you specify.
+    /// </summary>
     public enum GCKind
     {
-        Ephemeral = 0,    // gen0 or gen1 GC
-        FullBlocking = 1, // blocking gen2 GC
-        Background = 2    // background GC (always gen2)
+        Any = 0,          // any of the following kind
+        Ephemeral = 1,    // gen0 or gen1 GC
+        FullBlocking = 2, // blocking gen2 GC
+        Background = 3    // background GC (always gen2)
     };
 
     [StructLayout(LayoutKind.Sequential)]
@@ -59,6 +78,14 @@ namespace System
         internal ReadOnlySpan<TimeSpan> PauseDurationsAsSpan => MemoryMarshal.CreateReadOnlySpan<TimeSpan>(ref _pauseDuration0, 2);
     }
 
+    /// <summary>
+    /// A GC is identified by its Index which starts from 1 and increases with each GC (see more explanation
+    /// of it in the Index prooperty).
+    /// If you are asking for a GC that does not exist, eg, you called the GC.GetGCMemoryInfo API
+    /// before a GC happened, or you are asking for a GC of GCKind.FullBlocking and no full blocking
+    /// GCs have happened, you will get all 0's in the info, including the Index. So you can use Index 0
+    /// to detect that no GCs, or no GCs of the kind you specified have happened.
+    /// </summary>
     public readonly struct GCMemoryInfo
     {
         private readonly GCMemoryInfoData _data;
@@ -69,32 +96,32 @@ namespace System
         }
 
         /// <summary>
-        /// High memory load threshold when the last GC occured
+        /// High memory load threshold when this GC occured
         /// </summary>
         public long HighMemoryLoadThresholdBytes => _data._highMemoryLoadThresholdBytes;
 
         /// <summary>
-        /// Memory load when the last GC ocurred
+        /// Memory load when this GC ocurred
         /// </summary>
         public long MemoryLoadBytes => _data._memoryLoadBytes;
 
         /// <summary>
-        /// Total available memory for the GC to use when the last GC ocurred.
+        /// Total available memory for the GC to use when this GC ocurred.
         ///
         /// If the environment variable COMPlus_GCHeapHardLimit is set,
         /// or "Server.GC.HeapHardLimit" is in runtimeconfig.json, this will come from that.
         /// If the program is run in a container, this will be an implementation-defined fraction of the container's size.
-        /// Else, this is the physical memory on the machine that was available for the GC to use when the last GC occurred.
+        /// Else, this is the physical memory on the machine that was available for the GC to use when this GC occurred.
         /// </summary>
         public long TotalAvailableMemoryBytes => _data._totalAvailableMemoryBytes;
 
         /// <summary>
-        /// The total heap size when the last GC ocurred
+        /// The total heap size when this GC ocurred
         /// </summary>
         public long HeapSizeBytes => _data._heapSizeBytes;
 
         /// <summary>
-        /// The total fragmentation when the last GC ocurred
+        /// The total fragmentation when this GC ocurred
         ///
         /// Let's take the example below:
         ///  | OBJ_A |     OBJ_B     | OBJ_C |   OBJ_D   | OBJ_E |

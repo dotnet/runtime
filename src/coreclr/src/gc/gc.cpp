@@ -37409,7 +37409,7 @@ void GCHeap::GetMemoryInfo(uint64_t* highMemLoadThresholdBytes,
 #endif //BACKGROUND_GC
     else
     {
-        assert (kind == -1);
+        assert ((gc_kind)kind == gc_kind_any);
 #ifdef BACKGROUND_GC
         if (gc_heap::is_last_recorded_bgc)
         {

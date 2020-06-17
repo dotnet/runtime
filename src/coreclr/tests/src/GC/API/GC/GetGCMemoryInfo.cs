@@ -10,7 +10,7 @@ using System.Threading;
 public class Test
 {
     // Set this to false normally so the test doesn't have so much console output.
-    static bool fPrintInfo = true;
+    static bool fPrintInfo = false;
 
     public static bool PrintGCMemoryInfo(GCKind kind)
     {
@@ -96,6 +96,18 @@ public class Test
         // We will keep executing the test in case of a failure to see if we have multiple failures.
         bool isTestSucceeded = true;
 
+        try
+        {
+            GCMemoryInfo memoryInfoInvalid = GC.GetGCMemoryInfo((GCKind)(-1));
+        }
+        catch (Exception e)
+        {
+            if (e is ArgumentOutOfRangeException)
+                Console.WriteLine("caught arg exception as expected: {0}", e);
+            else
+                isTestSucceeded = false;
+        }
+
         while (GC.CollectionCount(0) == 0)
         {
             MakeTemporarySOHAllocations();
@@ -131,15 +143,15 @@ public class Test
         GC.Collect(1);
         GC.Collect();
         GC.Collect(2, GCCollectionMode.Default, false);
-        if (!PrintGCMemoryInfo((GCKind)(-1))) isTestSucceeded = false;
+        if (!PrintGCMemoryInfo(GCKind.Any)) isTestSucceeded = false;
         long lastNGC2Index = GC.GetGCMemoryInfo(GCKind.FullBlocking).Index;
         long lastEphemeralIndex = GC.GetGCMemoryInfo(GCKind.Ephemeral).Index;
 
         GC.Collect();
-        if (!PrintGCMemoryInfo((GCKind)(-1))) isTestSucceeded = false;
+        if (!PrintGCMemoryInfo(GCKind.Any)) isTestSucceeded = false;
 
         GC.Collect(2, GCCollectionMode.Default, false);
-        if (!PrintGCMemoryInfo((GCKind)(-1))) isTestSucceeded = false;
+        if (!PrintGCMemoryInfo(GCKind.Any)) isTestSucceeded = false;
         if (!PrintGCMemoryInfo(GCKind.FullBlocking)) isTestSucceeded = false;
         if (!PrintGCMemoryInfo(GCKind.Background)) isTestSucceeded = false;
         if (!PrintGCMemoryInfo(GCKind.Ephemeral)) isTestSucceeded = false;

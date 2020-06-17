@@ -56,18 +56,24 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetMemoryInfo(GCMemoryInfoData data, int kind);
 
-        public static GCMemoryInfo GetGCMemoryInfo()
-        {
-            var data = new GCMemoryInfoData();
-            GetMemoryInfo(data, -1);
-            return new GCMemoryInfo(data);
-        }
+        public static GCMemoryInfo GetGCMemoryInfo() => GetGCMemoryInfo(GCKind.Any);
 
         public static GCMemoryInfo GetGCMemoryInfo(GCKind kind)
         {
-            var data = new GCMemoryInfoData();
-            GetMemoryInfo(data, (int)kind);
-            return new GCMemoryInfo(data);
+            if ((kind >= GCKind.Any) && (kind <= GCKind.Background))
+            {
+                var data = new GCMemoryInfoData();
+                GetMemoryInfo(data, (int)kind);
+                return new GCMemoryInfo(data);
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(kind),
+                                      SR.Format(
+                                          SR.ArgumentOutOfRange_Bounds_Lower_Upper,
+                                          GCKind.Any,
+                                          GCKind.Background));
+            }
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
