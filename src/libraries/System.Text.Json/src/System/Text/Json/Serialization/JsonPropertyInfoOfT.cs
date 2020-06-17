@@ -95,41 +95,42 @@ namespace System.Text.Json
 
         public override bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer)
         {
-            bool success;
             T value = Get!(obj);
 
             if (IgnoreDefaultValuesOnWrite && (
                 default(T) is null ? value is null : EqualityComparer<T>.Default.Equals(default, value)))
             {
-                if (default(T) is null)
+                return true;
+            }
+
+            if (value is null)
+            {
+                Debug.Assert(Converter.CanBeNull);
+
+                if (Converter.HandleNull)
                 {
-                    Debug.Assert(Converter.CanBeNull);
+                    // No object, collection, or re-entrancy converter handles null.
+                    Debug.Assert(Converter.ClassType == ClassType.Value);
 
-                    if (Converter.HandleNull)
+                    if (state.Current.PropertyState < StackFramePropertyState.Name)
                     {
-                        // No object, collection, or re-entrancy converter handles null.
-                        Debug.Assert(Converter.ClassType == ClassType.Value);
-
-                        if (state.Current.PropertyState < StackFramePropertyState.Name)
-                        {
-                            state.Current.PropertyState = StackFramePropertyState.Name;
-                            writer.WritePropertyNameSection(EscapedNameSection);
-                        }
-
-                        int originalDepth = writer.CurrentDepth;
-                        Converter.Write(writer, value, Options);
-                        if (originalDepth != writer.CurrentDepth)
-                        {
-                            ThrowHelper.ThrowJsonException_SerializationConverterWrite(Converter);
-                        }
+                        state.Current.PropertyState = StackFramePropertyState.Name;
+                        writer.WritePropertyNameSection(EscapedNameSection);
                     }
-                    else
+
+                    int originalDepth = writer.CurrentDepth;
+                    Converter.Write(writer, value, Options);
+                    if (originalDepth != writer.CurrentDepth)
                     {
-                        writer.WriteNullSection(EscapedNameSection);
+                        ThrowHelper.ThrowJsonException_SerializationConverterWrite(Converter);
                     }
                 }
+                else
+                {
+                    writer.WriteNullSection(EscapedNameSection);
+                }
 
-                success = true;
+                return true;
             }
             else
             {
@@ -139,10 +140,8 @@ namespace System.Text.Json
                     writer.WritePropertyNameSection(EscapedNameSection);
                 }
 
-                success = Converter.TryWrite(writer, value, Options, ref state);
+                return Converter.TryWrite(writer, value, Options, ref state);
             }
-
-            return success;
         }
 
         public override bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer)
