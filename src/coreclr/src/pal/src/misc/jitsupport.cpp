@@ -22,6 +22,12 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
     _ASSERTE(flags);
 
     CORJIT_FLAGS &CPUCompileFlags = *flags;
+
+    // Enable ARM64 based flags by default so we always crossgen
+    // ARM64 intrinsics for Linux
+    CPUCompileFlags.Set(InstructionSet_ArmBase);
+    CPUCompileFlags.Set(InstructionSet_AdvSimd);
+
 #if defined(HOST_ARM64)
 #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
@@ -32,7 +38,6 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 // From a single binary distribution perspective, compiling with latest kernel asm/hwcap.h should
 // include all published flags.  Given flags are merged to kernel and published before silicon is
 // available, using the latest kernel for release should be sufficient.
-    CPUCompileFlags.Set(InstructionSet_ArmBase);
 #ifdef HWCAP_AES
     if (hwCap & HWCAP_AES)
         CPUCompileFlags.Set(InstructionSet_Aes);
@@ -116,14 +121,6 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 #ifdef HWCAP_SVE
 //    if (hwCap & HWCAP_SVE)
 //        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SVE);
-#endif
-#else // !HAVE_AUXV_HWCAP_H
-    // CoreCLR SIMD and FP support is included in ARM64 baseline
-    // On exceptional basis platforms may leave out support, but CoreCLR does not
-    // yet support such platforms
-    // Set baseline flags if OS has not exposed mechanism for us to determine CPU capabilities
-    CPUCompileFlags.Set(InstructionSet_AdvSimd);
-//    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_FP);
 #endif // HAVE_AUXV_HWCAP_H
 #endif // defined(HOST_ARM64)
     CPUCompileFlags.Set64BitInstructionSetVariants();
