@@ -126,9 +126,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			if (testCaseTypeDefinition.CustomAttributes.Any (attr =>
 					attr.AttributeType.Name == nameof (VerifyAllReflectionAccessPatternsAreValidatedAttribute))
-				|| testCaseTypeDefinition.AllMethods ().Any (method => method.CustomAttributes.Any (attr =>
-					attr.AttributeType.Name == nameof (RecognizedReflectionAccessPatternAttribute) ||
-					attr.AttributeType.Name == nameof (UnrecognizedReflectionAccessPatternAttribute))))
+				|| testCaseTypeDefinition.AllMembers ().Concat (testCaseTypeDefinition.AllDefinedTypes ()).Any (m => m.CustomAttributes.Any (attr =>
+					  attr.AttributeType.Name == nameof (RecognizedReflectionAccessPatternAttribute) ||
+					  attr.AttributeType.Name == nameof (UnrecognizedReflectionAccessPatternAttribute))))
 				return true;
 
 			return false;

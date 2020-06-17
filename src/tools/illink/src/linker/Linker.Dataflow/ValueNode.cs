@@ -10,6 +10,7 @@ using System.Text;
 
 using TypeDefinition = Mono.Cecil.TypeDefinition;
 using FieldDefinition = Mono.Cecil.FieldDefinition;
+using GenericParameter = Mono.Cecil.GenericParameter;
 
 namespace Mono.Linker.Dataflow
 {
@@ -28,6 +29,9 @@ namespace Mono.Linker.Dataflow
 
 		MethodParameter,                // symbolic placeholder
 		MethodReturn,                   // symbolic placeholder
+
+		RuntimeTypeHandleForGenericParameter, // symbolic placeholder for generic parameter
+		SystemTypeForGenericParameter,        // symbolic placeholder for generic parameter
 
 		MergePoint,                     // structural, multiplexer - Values
 		GetTypeFromString,              // structural, could be known value - KnownString
@@ -370,6 +374,9 @@ namespace Mono.Linker.Dataflow
 			case ValueNodeKind.AnnotatedString:
 			case ValueNodeKind.ConstInt:
 			case ValueNodeKind.MethodParameter:
+			case ValueNodeKind.MethodReturn:
+			case ValueNodeKind.SystemTypeForGenericParameter:
+			case ValueNodeKind.RuntimeTypeHandleForGenericParameter:
 			case ValueNodeKind.LoadField:
 				break;
 
@@ -578,7 +585,7 @@ namespace Mono.Linker.Dataflow
 			TypeRepresented = typeRepresented;
 		}
 
-		public TypeDefinition TypeRepresented { get; private set; }
+		public TypeDefinition TypeRepresented { get; }
 
 		public override bool Equals (ValueNode other)
 		{
@@ -598,6 +605,77 @@ namespace Mono.Linker.Dataflow
 		protected override string NodeToString ()
 		{
 			return ValueNodeDump.ValueNodeToString (this, TypeRepresented);
+		}
+	}
+
+	/// <summary>
+	/// This is a System.Type value which reprensents generic parameter (basically result of typeof(T))
+	/// Its actual type is unknown, but it can have annotations.
+	/// </summary>
+	class SystemTypeForGenericParameterValue : LeafValueWithDynamicallyAccessedMemberNode
+	{
+		public SystemTypeForGenericParameterValue (GenericParameter genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		{
+			Kind = ValueNodeKind.SystemTypeForGenericParameter;
+			GenericParameter = genericParameter;
+			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+		}
+
+		public GenericParameter GenericParameter { get; }
+
+		public override bool Equals (ValueNode other)
+		{
+			if (other == null)
+				return false;
+			if (this.Kind != other.Kind)
+				return false;
+
+			var otherValue = (SystemTypeForGenericParameterValue) other;
+			return this.GenericParameter == otherValue.GenericParameter && this.DynamicallyAccessedMemberTypes == otherValue.DynamicallyAccessedMemberTypes;
+		}
+
+		public override int GetHashCode ()
+		{
+			return HashCode.Combine (Kind, GenericParameter, DynamicallyAccessedMemberTypes);
+		}
+
+		protected override string NodeToString ()
+		{
+			return ValueNodeDump.ValueNodeToString (this, GenericParameter, DynamicallyAccessedMemberTypes);
+		}
+	}
+
+	/// <summary>
+	/// This is the System.RuntimeTypeHandle equivalent to a <see cref="SystemTypeForGenericParameterValue"/> node.
+	/// </summary>
+	class RuntimeTypeHandleForGenericParameterValue : LeafValueNode
+	{
+		public RuntimeTypeHandleForGenericParameterValue (GenericParameter genericParameter)
+		{
+			Kind = ValueNodeKind.RuntimeTypeHandleForGenericParameter;
+			GenericParameter = genericParameter;
+		}
+
+		public GenericParameter GenericParameter { get; }
+
+		public override bool Equals (ValueNode other)
+		{
+			if (other == null)
+				return false;
+			if (this.Kind != other.Kind)
+				return false;
+
+			return Equals (this.GenericParameter, ((RuntimeTypeHandleForGenericParameterValue) other).GenericParameter);
+		}
+
+		public override int GetHashCode ()
+		{
+			return HashCode.Combine (Kind, GenericParameter);
+		}
+
+		protected override string NodeToString ()
+		{
+			return ValueNodeDump.ValueNodeToString (this, GenericParameter);
 		}
 	}
 
@@ -643,9 +721,9 @@ namespace Mono.Linker.Dataflow
 		public object SourceContext { get; set; }
 
 		/// <summary>
-		/// The bitfield of dynamically accessed member kinds the node guarantees
+		/// The bitfield of dynamically accessed member types the node guarantees
 		/// </summary>
-		public DynamicallyAccessedMemberTypes DynamicallyAccessedMemberKinds { get; protected set; }
+		public DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; protected set; }
 	}
 
 	/// <summary>
@@ -653,11 +731,11 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class MethodParameterValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public MethodParameterValue (int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberKinds)
+		public MethodParameterValue (int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
 			Kind = ValueNodeKind.MethodParameter;
 			ParameterIndex = parameterIndex;
-			DynamicallyAccessedMemberKinds = dynamicallyAccessedMemberKinds;
+			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
 
 		public int ParameterIndex { get; }
@@ -670,17 +748,17 @@ namespace Mono.Linker.Dataflow
 				return false;
 
 			var otherValue = (MethodParameterValue) other;
-			return this.ParameterIndex == otherValue.ParameterIndex && this.DynamicallyAccessedMemberKinds == otherValue.DynamicallyAccessedMemberKinds;
+			return this.ParameterIndex == otherValue.ParameterIndex && this.DynamicallyAccessedMemberTypes == otherValue.DynamicallyAccessedMemberTypes;
 		}
 
 		public override int GetHashCode ()
 		{
-			return HashCode.Combine (Kind, ParameterIndex, DynamicallyAccessedMemberKinds);
+			return HashCode.Combine (Kind, ParameterIndex, DynamicallyAccessedMemberTypes);
 		}
 
 		protected override string NodeToString ()
 		{
-			return ValueNodeDump.ValueNodeToString (this, ParameterIndex, DynamicallyAccessedMemberKinds);
+			return ValueNodeDump.ValueNodeToString (this, ParameterIndex, DynamicallyAccessedMemberTypes);
 		}
 	}
 
@@ -689,10 +767,10 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class AnnotatedStringValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public AnnotatedStringValue (DynamicallyAccessedMemberTypes dynamicallyAccessedMemberKinds)
+		public AnnotatedStringValue (DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
 			Kind = ValueNodeKind.AnnotatedString;
-			DynamicallyAccessedMemberKinds = dynamicallyAccessedMemberKinds;
+			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
 
 		public override bool Equals (ValueNode other)
@@ -703,17 +781,17 @@ namespace Mono.Linker.Dataflow
 				return false;
 
 			var otherValue = (AnnotatedStringValue) other;
-			return this.DynamicallyAccessedMemberKinds == otherValue.DynamicallyAccessedMemberKinds;
+			return this.DynamicallyAccessedMemberTypes == otherValue.DynamicallyAccessedMemberTypes;
 		}
 
 		public override int GetHashCode ()
 		{
-			return HashCode.Combine (Kind, DynamicallyAccessedMemberKinds);
+			return HashCode.Combine (Kind, DynamicallyAccessedMemberTypes);
 		}
 
 		protected override string NodeToString ()
 		{
-			return ValueNodeDump.ValueNodeToString (this, DynamicallyAccessedMemberKinds);
+			return ValueNodeDump.ValueNodeToString (this, DynamicallyAccessedMemberTypes);
 		}
 	}
 
@@ -722,10 +800,10 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class MethodReturnValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public MethodReturnValue (DynamicallyAccessedMemberTypes dynamicallyAccessedMemberKinds)
+		public MethodReturnValue (DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
 			Kind = ValueNodeKind.MethodReturn;
-			DynamicallyAccessedMemberKinds = dynamicallyAccessedMemberKinds;
+			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
 
 		public override bool Equals (ValueNode other)
@@ -736,17 +814,17 @@ namespace Mono.Linker.Dataflow
 				return false;
 
 			var otherValue = (MethodReturnValue) other;
-			return this.DynamicallyAccessedMemberKinds == otherValue.DynamicallyAccessedMemberKinds;
+			return this.DynamicallyAccessedMemberTypes == otherValue.DynamicallyAccessedMemberTypes;
 		}
 
 		public override int GetHashCode ()
 		{
-			return HashCode.Combine (Kind, DynamicallyAccessedMemberKinds);
+			return HashCode.Combine (Kind, DynamicallyAccessedMemberTypes);
 		}
 
 		protected override string NodeToString ()
 		{
-			return ValueNodeDump.ValueNodeToString (this, DynamicallyAccessedMemberKinds);
+			return ValueNodeDump.ValueNodeToString (this, DynamicallyAccessedMemberTypes);
 		}
 	}
 
@@ -962,11 +1040,11 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class LoadFieldValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public LoadFieldValue (FieldDefinition fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberKinds)
+		public LoadFieldValue (FieldDefinition fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
 			Kind = ValueNodeKind.LoadField;
 			Field = fieldToLoad;
-			DynamicallyAccessedMemberKinds = dynamicallyAccessedMemberKinds;
+			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
 
 		public FieldDefinition Field { get; private set; }
@@ -982,17 +1060,17 @@ namespace Mono.Linker.Dataflow
 			if (!Equals (this.Field, otherLfv.Field))
 				return false;
 
-			return this.DynamicallyAccessedMemberKinds == otherLfv.DynamicallyAccessedMemberKinds;
+			return this.DynamicallyAccessedMemberTypes == otherLfv.DynamicallyAccessedMemberTypes;
 		}
 
 		public override int GetHashCode ()
 		{
-			return HashCode.Combine (Kind, Field, DynamicallyAccessedMemberKinds);
+			return HashCode.Combine (Kind, Field, DynamicallyAccessedMemberTypes);
 		}
 
 		protected override string NodeToString ()
 		{
-			return ValueNodeDump.ValueNodeToString (this, Field, DynamicallyAccessedMemberKinds);
+			return ValueNodeDump.ValueNodeToString (this, Field, DynamicallyAccessedMemberTypes);
 		}
 	}
 

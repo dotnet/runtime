@@ -31,6 +31,11 @@ namespace Mono.Linker.Dataflow
 			return GetAnnotations (field.DeclaringType).TryGetAnnotation (field, out _);
 		}
 
+		public bool RequiresDataFlowAnalysis (GenericParameter genericParameter)
+		{
+			return GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None;
+		}
+
 		/// <summary>
 		/// Retrieves the annotations for the given parameter.
 		/// </summary>
@@ -59,6 +64,24 @@ namespace Mono.Linker.Dataflow
 			if (GetAnnotations (field.DeclaringType).TryGetAnnotation (field, out var annotation)) {
 				return annotation.Annotation;
 			}
+
+			return DynamicallyAccessedMemberTypes.None;
+		}
+
+		public DynamicallyAccessedMemberTypes GetGenericParameterAnnotation (GenericParameter genericParameter)
+		{
+			TypeDefinition declaringType = genericParameter.DeclaringType?.Resolve ();
+			if (declaringType != null) {
+				if (GetAnnotations (declaringType).TryGetAnnotation (genericParameter, out var annotation))
+					return annotation.Annotation;
+
+				return DynamicallyAccessedMemberTypes.None;
+			}
+
+			MethodDefinition declaringMethod = genericParameter.DeclaringMethod?.Resolve ();
+			if (declaringMethod != null && GetAnnotations (declaringMethod.DeclaringType).TryGetAnnotation (declaringMethod, out var methodTypeAnnotations) &&
+				methodTypeAnnotations.TryGetAnnotation (genericParameter, out var methodAnnotation))
+				return methodAnnotation.Annotation;
 
 			return DynamicallyAccessedMemberTypes.None;
 		}
@@ -166,8 +189,18 @@ namespace Mono.Linker.Dataflow
 
 					DynamicallyAccessedMemberTypes returnAnnotation = IsTypeInterestingForDataflow (method.ReturnType) ?
 						GetMemberTypesForDynamicallyAccessedMemberAttribute (method.MethodReturnType, method) : DynamicallyAccessedMemberTypes.None;
-					if (returnAnnotation != DynamicallyAccessedMemberTypes.None || paramAnnotations != null) {
-						annotatedMethods.Add (new MethodAnnotations (method, paramAnnotations, returnAnnotation));
+
+					var annotatedMethodGenericParameters = new ArrayBuilder<GenericParameterAnnotation> ();
+					if (method.HasGenericParameters) {
+						foreach (var genericParameter in method.GenericParameters) {
+							var annotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (genericParameter, method);
+							if (annotation != DynamicallyAccessedMemberTypes.None)
+								annotatedMethodGenericParameters.Add (new GenericParameterAnnotation (genericParameter, annotation));
+						}
+					}
+
+					if (returnAnnotation != DynamicallyAccessedMemberTypes.None || paramAnnotations != null || annotatedMethodGenericParameters.Count > 0) {
+						annotatedMethods.Add (new MethodAnnotations (method, paramAnnotations, returnAnnotation, annotatedMethodGenericParameters.ToArray ()));
 					}
 				}
 			}
@@ -220,7 +253,7 @@ namespace Mono.Linker.Dataflow
 							if (setMethod.Parameters.Count > 0) {
 								DynamicallyAccessedMemberTypes[] paramAnnotations = new DynamicallyAccessedMemberTypes[setMethod.Parameters.Count + offset];
 								paramAnnotations[offset] = annotation;
-								annotatedMethods.Add (new MethodAnnotations (setMethod, paramAnnotations, DynamicallyAccessedMemberTypes.None));
+								annotatedMethods.Add (new MethodAnnotations (setMethod, paramAnnotations, DynamicallyAccessedMemberTypes.None, null));
 							}
 						}
 					}
@@ -243,7 +276,7 @@ namespace Mono.Linker.Dataflow
 						if (annotatedMethods.Any (a => a.Method == getMethod)) {
 							_context.LogWarning ($"Trying to propagate DynamicallyAccessedMemberAttribute from property '{property.FullName}' to its getter '{getMethod}', but it already has such attribute on the return value.", 2043, getMethod);
 						} else {
-							annotatedMethods.Add (new MethodAnnotations (getMethod, null, annotation));
+							annotatedMethods.Add (new MethodAnnotations (getMethod, null, annotation, null));
 						}
 					}
 
@@ -266,7 +299,16 @@ namespace Mono.Linker.Dataflow
 				}
 			}
 
-			return new TypeAnnotations (annotatedMethods.ToArray (), annotatedFields.ToArray ());
+			var annotatedGenericParameters = new ArrayBuilder<GenericParameterAnnotation> ();
+			if (type.HasGenericParameters) {
+				foreach (var genericParameter in type.GenericParameters) {
+					var annotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (genericParameter, type);
+					if (annotation != DynamicallyAccessedMemberTypes.None)
+						annotatedGenericParameters.Add (new GenericParameterAnnotation (genericParameter, annotation));
+				}
+			}
+
+			return new TypeAnnotations (annotatedMethods.ToArray (), annotatedFields.ToArray (), annotatedGenericParameters.ToArray ());
 		}
 
 		bool ScanMethodBodyForFieldAccess (MethodBody body, bool write, out FieldDefinition found)
@@ -338,9 +380,10 @@ namespace Mono.Linker.Dataflow
 		{
 			readonly MethodAnnotations[] _annotatedMethods;
 			readonly FieldAnnotation[] _annotatedFields;
+			readonly GenericParameterAnnotation[] _annotatedGenericParameters;
 
-			public TypeAnnotations (MethodAnnotations[] annotatedMethods, FieldAnnotation[] annotatedFields)
-				=> (_annotatedMethods, _annotatedFields) = (annotatedMethods, annotatedFields);
+			public TypeAnnotations (MethodAnnotations[] annotatedMethods, FieldAnnotation[] annotatedFields, GenericParameterAnnotation[] annotatedGenericParameters)
+				=> (_annotatedMethods, _annotatedFields, _annotatedGenericParameters) = (annotatedMethods, annotatedFields, annotatedGenericParameters);
 
 			public bool TryGetAnnotation (MethodDefinition method, out MethodAnnotations annotations)
 			{
@@ -377,6 +420,23 @@ namespace Mono.Linker.Dataflow
 
 				return false;
 			}
+
+			public bool TryGetAnnotation (GenericParameter genericParameter, out GenericParameterAnnotation annotation)
+			{
+				annotation = default;
+
+				if (_annotatedGenericParameters == null)
+					return false;
+
+				foreach (var g in _annotatedGenericParameters) {
+					if (g.GenericParameter == genericParameter) {
+						annotation = g;
+						return true;
+					}
+				}
+
+				return false;
+			}
 		}
 
 		readonly struct MethodAnnotations
@@ -384,9 +444,32 @@ namespace Mono.Linker.Dataflow
 			public readonly MethodDefinition Method;
 			public readonly DynamicallyAccessedMemberTypes[] ParameterAnnotations;
 			public readonly DynamicallyAccessedMemberTypes ReturnParameterAnnotation;
+			readonly GenericParameterAnnotation[] _annotatedGenericParameters;
 
-			public MethodAnnotations (MethodDefinition method, DynamicallyAccessedMemberTypes[] paramAnnotations, DynamicallyAccessedMemberTypes returnParamAnnotations)
-				=> (Method, ParameterAnnotations, ReturnParameterAnnotation) = (method, paramAnnotations, returnParamAnnotations);
+			public MethodAnnotations (
+				MethodDefinition method,
+				DynamicallyAccessedMemberTypes[] paramAnnotations,
+				DynamicallyAccessedMemberTypes returnParamAnnotations,
+				GenericParameterAnnotation[] annotatedGenericParameters)
+				=> (Method, ParameterAnnotations, ReturnParameterAnnotation, _annotatedGenericParameters) =
+					(method, paramAnnotations, returnParamAnnotations, annotatedGenericParameters);
+
+			public bool TryGetAnnotation (GenericParameter genericParameter, out GenericParameterAnnotation annotation)
+			{
+				annotation = default;
+
+				if (_annotatedGenericParameters == null)
+					return false;
+
+				foreach (var g in _annotatedGenericParameters) {
+					if (g.GenericParameter == genericParameter) {
+						annotation = g;
+						return true;
+					}
+				}
+
+				return false;
+			}
 		}
 
 		readonly struct FieldAnnotation
@@ -396,6 +479,15 @@ namespace Mono.Linker.Dataflow
 
 			public FieldAnnotation (FieldDefinition field, DynamicallyAccessedMemberTypes annotation)
 				=> (Field, Annotation) = (field, annotation);
+		}
+
+		readonly struct GenericParameterAnnotation
+		{
+			public readonly GenericParameter GenericParameter;
+			public readonly DynamicallyAccessedMemberTypes Annotation;
+
+			public GenericParameterAnnotation (GenericParameter genericParameter, DynamicallyAccessedMemberTypes annotation)
+				=> (GenericParameter, Annotation) = (genericParameter, annotation);
 		}
 	}
 }
