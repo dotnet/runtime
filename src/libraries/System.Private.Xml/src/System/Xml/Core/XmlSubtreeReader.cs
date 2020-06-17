@@ -260,7 +260,6 @@ namespace System.Xml
             {
                 if (name == _nsAttributes![i].name)
                 {
-                    // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                     return _nsAttributes[i].value;
                 }
             }
@@ -284,7 +283,6 @@ namespace System.Xml
             {
                 if (name == _nsAttributes![i].localName && namespaceURI == _xmlnsUri)
                 {
-                    // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                     return _nsAttributes[i].value;
                 }
             }
@@ -1353,12 +1351,12 @@ namespace System.Xml
             for (int i = 0; i < _nsAttrCount; i++)
             {
                 if (Ref.Equal(prefix, _nsAttributes![i].prefix) &&
-                     Ref.Equal(localName, _nsAttributes![i].localName)) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                    Ref.Equal(localName, _nsAttributes[i].localName))
                 {
                     if (i < _nsAttrCount - 1)
                     {
                         // swap
-                        NodeData tmpNodeData = _nsAttributes![i]; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                        NodeData tmpNodeData = _nsAttributes[i];
                         _nsAttributes[i] = _nsAttributes[_nsAttrCount - 1];
                         _nsAttributes[_nsAttrCount - 1] = tmpNodeData;
                     }

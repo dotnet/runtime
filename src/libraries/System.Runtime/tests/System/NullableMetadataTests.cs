@@ -62,7 +62,7 @@ namespace System.Runtime.Tests
             {
                 // When using BindingFlags.NonPublic protected members are included and those are expected
                 // to have Nullable attributes.
-                if (internalMember.IsProtected() || internalMember is PropertyInfo) // TODO-NULLABLE: validate properties (https://github.com/dotnet/roslyn/issues/37161)
+                if (internalMember.IsProtected() || internalMember is PropertyInfo)
                     continue;
 
                 Assert.Empty(internalMember.CustomAttributes.GetNullableAttributes());
