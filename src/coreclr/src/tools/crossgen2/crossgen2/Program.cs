@@ -110,32 +110,8 @@ namespace ILCompiler
                 Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
         }
 
-        private int Run()
+        private void ConfigureTarget()
         {
-            InitializeDefaultOptions();
-
-            ProcessCommandLine();
-
-            if (_commandLineOptions.OutputFilePath == null)
-                throw new CommandLineException(SR.MissingOutputFile);
-
-            if (_commandLineOptions.CustomPESectionAlignment != null)
-            {
-                int alignment = _commandLineOptions.CustomPESectionAlignment.Value;
-                bool invalidArgument = false;
-                if (alignment <= 4096)
-                {
-                    invalidArgument = true;
-                }
-                if ((alignment & (alignment - 1)) != 0)
-                {
-                    invalidArgument = true; // Alignment not power of two
-                }
-
-                if (invalidArgument)
-                    throw new CommandLineException(SR.InvalidCustomPESectionAlignment);
-            }
-
             //
             // Set target Architecture and OS
             //
@@ -165,7 +141,10 @@ namespace ILCompiler
                 else
                     throw new CommandLineException(SR.TargetOSUnsupported);
             }
+        }
 
+        private InstructionSetSupport ConfigureInstructionSetSupport()
+        {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
 
             // Ready to run images are built with certain instruction set baselines
@@ -258,17 +237,51 @@ namespace ILCompiler
             optimisticInstructionSet.Remove(unsupportedInstructionSet);
             optimisticInstructionSet.Add(supportedInstructionSet);
 
-            var instructionSetSupport = new InstructionSetSupport(supportedInstructionSet,
+            return new InstructionSetSupport(supportedInstructionSet,
                                                                   unsupportedInstructionSet,
                                                                   optimisticInstructionSet,
                                                                   InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(_targetArchitecture),
                                                                   _targetArchitecture);
+        }
 
+        private void CheckCustomPESectionAlignment()
+        {
+            if (_commandLineOptions.CustomPESectionAlignment != null)
+            {
+                int alignment = _commandLineOptions.CustomPESectionAlignment.Value;
+                bool invalidArgument = false;
+                if (alignment < 4096)
+                {
+                    invalidArgument = true;
+                }
+                if ((alignment & (alignment - 1)) != 0)
+                {
+                    invalidArgument = true; // Alignment not power of two
+                }
+
+                if (invalidArgument)
+                    throw new CommandLineException(SR.InvalidCustomPESectionAlignment);
+            }
+        }
+
+        private int Run()
+        {
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
                 ICompilation compilation;
                 using (PerfEventSource.StartStopEvents.LoadingEvents())
                 {
+                    InitializeDefaultOptions();
+
+                    ProcessCommandLine();
+
+                    if (_commandLineOptions.OutputFilePath == null)
+                        throw new CommandLineException(SR.MissingOutputFile);
+
+                    CheckCustomPESectionAlignment();
+                    ConfigureTarget();
+                    InstructionSetSupport instructionSetSupport = ConfigureInstructionSetSupport();
+
                     //
                     // Initialize type system context
                     //
@@ -584,6 +597,7 @@ namespace ILCompiler
 
         public static async Task<int> Main(string[] args)
         {
+            PerfEventSource.StartStopEvents.CommandLineProcessingStart();
             var command = CommandLineOptions.RootCommand();
             command.Handler = CommandHandler.Create<CommandLineOptions>((CommandLineOptions options) => InnerMain(options));
             return await command.InvokeAsync(args);
@@ -591,6 +605,7 @@ namespace ILCompiler
 
         private static int InnerMain(CommandLineOptions buildOptions)
         {
+            PerfEventSource.StartStopEvents.CommandLineProcessingStop();
 #if DEBUG
             try
             {
