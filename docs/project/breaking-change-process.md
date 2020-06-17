@@ -26,6 +26,7 @@ There are people on the team that can help you work through a breaking change, i
 3. Mark associated PRs with the [breaking-change](https://github.com/dotnet/runtime/labels/breaking-change) label, and link to your breaking change issue.
 4. Once the PR is merged, create a [docs issue](https://github.com/dotnet/docs/issues/new?template=dotnet-breaking-change.md).
    * Clarify which .NET preview the break will be first released in.
+5. Breaking change issues can be closed at any time after the PR is merged. Best practice is waiting until the change has been released in a public preview.
 
 Notes:
 
