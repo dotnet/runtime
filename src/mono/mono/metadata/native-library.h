@@ -34,7 +34,7 @@ mono_lookup_pinvoke_qcall_internal (MonoMethod *method, MonoLookupPInvokeStatus 
 typedef struct MonoQCallDef
 {
     const char* class_name;
-    const char* namespace_name;
+    const char *namespace_name;
     const void **functions;
 } MonoQCallDef;
 
