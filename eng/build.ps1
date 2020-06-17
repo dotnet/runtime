@@ -148,6 +148,9 @@ if ($vs) {
     # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
   }
+  
+  # Restore the solution to workaround https://github.com/dotnet/runtime/issues/32205
+  Invoke-Expression "& (Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath dotnet.cmd) restore $vs"
 
   # Launch Visual Studio with the locally defined environment variables
   ."$vs"
