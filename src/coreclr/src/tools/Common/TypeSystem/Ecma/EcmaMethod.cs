@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Reflection;
@@ -448,10 +449,24 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public void CheckManagedCPlusPlusPInvoke()
+        {
+            Debug.Assert(IsPInvoke);
+            MethodDefinition methodDef = MetadataReader.GetMethodDefinition(_handle);
+            MethodImport import = methodDef.GetImport();
+            if (import.Module.IsNil || MetadataReader.GetModuleReference(import.Module).Name.IsNil)
+            {
+                // Managed C++ PInvoke into the same module
+                throw new NotImplementedException(ToString());
+            }
+        }
+
         public override PInvokeMetadata GetPInvokeMethodMetadata()
         {
             if (!IsPInvoke)
                 return default(PInvokeMetadata);
+
+            CheckManagedCPlusPlusPInvoke();
 
             MetadataReader metadataReader = MetadataReader;
             MethodDefinition methodDef = metadataReader.GetMethodDefinition(_handle);
@@ -459,6 +474,7 @@ namespace Internal.TypeSystem.Ecma
             string name = metadataReader.GetString(import.Name);
 
             ModuleReference moduleRef = metadataReader.GetModuleReference(import.Module);
+
             string moduleName = metadataReader.GetString(moduleRef.Name);
 
             MethodImportAttributes importAttributes = import.Attributes;
