@@ -26,6 +26,8 @@ include(../lib_static.cmake)
 add_definitions(-DFEATURE_LIBHOST=1)
 add_definitions(-DNETHOST_EXPORT)
 
+install(FILES ../coreclr_delegates.h DESTINATION corehost)
+install(FILES ../hostfxr.h DESTINATION corehost)
 install(FILES nethost.h DESTINATION corehost)
 install(TARGETS libnethost DESTINATION corehost)
 install_with_stripped_symbols(nethost TARGETS corehost)
