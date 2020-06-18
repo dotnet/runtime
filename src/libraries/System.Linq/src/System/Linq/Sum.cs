@@ -1,8 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 
 namespace System.Linq
 {
@@ -194,6 +196,48 @@ namespace System.Linq
 
             return sum;
         }
+
+        public static TimeSpan Sum(this IEnumerable<TimeSpan> source)
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            TimeSpan sum = TimeSpan.Zero;
+            checked
+            {
+                foreach (TimeSpan v in source)
+                {
+                    sum += v;
+                }
+            }
+
+            return sum;
+        }
+
+        public static TimeSpan? Sum(this IEnumerable<TimeSpan?> source)
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            TimeSpan sum = TimeSpan.Zero;
+            checked
+            {
+                foreach (TimeSpan? v in source)
+                {
+                    if (v != null)
+                    {
+                        sum += v.GetValueOrDefault();
+                    }
+                }
+            }
+
+            return sum;
+        }
+
 
         public static int Sum<TSource>(this IEnumerable<TSource> source, Func<TSource, int> selector)
         {
@@ -431,6 +475,58 @@ namespace System.Linq
                 if (v != null)
                 {
                     sum += v.GetValueOrDefault();
+                }
+            }
+
+            return sum;
+        }
+
+        public static TimeSpan Sum<TSource>(this IEnumerable<TSource> source, Func<TSource, TimeSpan> selector)
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (selector == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
+            }
+
+            TimeSpan sum = TimeSpan.Zero;
+            checked
+            {
+                foreach (TSource item in source)
+                {
+                    sum += selector(item);
+                }
+            }
+
+            return sum;
+        }
+
+        public static TimeSpan? Sum<TSource>(this IEnumerable<TSource> source, Func<TSource, TimeSpan?> selector)
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (selector == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
+            }
+
+            TimeSpan sum = TimeSpan.Zero;
+            checked
+            {
+                foreach (TSource item in source)
+                {
+                    TimeSpan? v = selector(item);
+                    if (v != null)
+                    {
+                        sum += v.GetValueOrDefault();
+                    }
                 }
             }
 
