@@ -9,10 +9,9 @@ namespace System.Diagnostics
 {
     public sealed class ActivitySource : IDisposable
     {
-        private SynchronizedList<ActivityListener>? _listeners;
-
         private static readonly SynchronizedList<ActivitySource> s_activeSources = new SynchronizedList<ActivitySource>();
         private static readonly SynchronizedList<ActivityListener> s_allListeners = new SynchronizedList<ActivityListener>();
+        private SynchronizedList<ActivityListener>? _listeners;
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
@@ -33,11 +32,16 @@ namespace System.Diagnostics
 
             if (s_allListeners.Count > 0)
             {
-                s_allListeners.EnumWithAction((listener, source) => {
-                    var shouldListenTo = listener.ShouldListenTo;
-                    if (shouldListenTo != null && shouldListenTo((ActivitySource)source))
+                s_allListeners.EnumWithAction((listener, source) =>
+                {
+                    Func<ActivitySource, bool>? shouldListenTo = listener.ShouldListenTo;
+                    if (shouldListenTo != null)
                     {
-                        ((ActivitySource)source).AddListener(listener);
+                        var activitySource = (ActivitySource)source;
+                        if (shouldListenTo(activitySource))
+                        {
+                            activitySource.AddListener(listener);
+                        }
                     }
                 }, this);
             }
@@ -115,9 +119,9 @@ namespace System.Diagnostics
 
             if (parentId != null)
             {
-                ActivityCreationOptions<string> aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links);
+                var aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links);
                 listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<string> data, ref ActivityDataRequest request) => {
-                    var getRequestedDataUsingParentId = listener.GetRequestedDataUsingParentId;
+                    GetRequestedData<string>? getRequestedDataUsingParentId = listener.GetRequestedDataUsingParentId;
                     if (getRequestedDataUsingParentId != null)
                     {
                         ActivityDataRequest dr = getRequestedDataUsingParentId(ref data);
@@ -135,9 +139,9 @@ namespace System.Diagnostics
             else
             {
                 ActivityContext initializedContext =  context == default && Activity.Current != null ? Activity.Current.Context : context;
-                ActivityCreationOptions<ActivityContext> aco = new ActivityCreationOptions<ActivityContext>(this, name, initializedContext, kind, tags, links);
+                var aco = new ActivityCreationOptions<ActivityContext>(this, name, initializedContext, kind, tags, links);
                 listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<ActivityContext> data, ref ActivityDataRequest request) => {
-                    var getRequestedDataUsingContext = listener.GetRequestedDataUsingContext;
+                    GetRequestedData<ActivityContext>? getRequestedDataUsingContext = listener.GetRequestedDataUsingContext;
                     if (getRequestedDataUsingContext != null)
                     {
                         ActivityDataRequest dr = getRequestedDataUsingContext(ref data);
