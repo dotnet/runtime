@@ -47,9 +47,9 @@ namespace System
 
         internal static TextReader GetOrCreateReader() => throw new PlatformNotSupportedException();
 
-        public static bool NumberLock => false;
+        public static bool NumberLock => throw new PlatformNotSupportedException();
 
-        public static bool CapsLock => false;
+        public static bool CapsLock => throw new PlatformNotSupportedException();
 
         public static bool KeyAvailable => false;
 
@@ -128,7 +128,7 @@ namespace System
 
         public static int WindowLeft
         {
-            get => throw new PlatformNotSupportedException();
+            get => 0;
             set => throw new PlatformNotSupportedException();
         }
 
