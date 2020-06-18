@@ -1714,7 +1714,7 @@ namespace System
 
             static Vector256<ushort> ReadVector(ref char c0, int offset)
             {
-                ref char ci = ref Unsafe.Add(ref c0, offset);
+                ref char ci = ref Unsafe.Add(ref c0, (IntPtr)(uint)offset);
                 ref byte b = ref Unsafe.As<char, byte>(ref ci);
                 return Unsafe.ReadUnaligned<Vector256<ushort>>(ref b);
             }
