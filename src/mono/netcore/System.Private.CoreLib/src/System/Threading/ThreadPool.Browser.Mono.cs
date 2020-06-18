@@ -33,7 +33,7 @@ namespace System.Threading
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
-            if (workerThreads == 1 || completionPortThreads == 1)
+            if (workerThreads == 1 && completionPortThreads == 1)
                 return true;
             return false;
         }
@@ -46,7 +46,7 @@ namespace System.Threading
 
         public static bool SetMinThreads(int workerThreads, int completionPortThreads)
         {
-            if (workerThreads == 1 || completionPortThreads == 1)
+            if (workerThreads == 1 && completionPortThreads == 1)
                 return true;
             return false;
         }
@@ -54,13 +54,13 @@ namespace System.Threading
         public static void GetMinThreads(out int workerThreads, out int completionPortThreads)
         {
             workerThreads = 1;
-            completionPortThreads = 0;
+            completionPortThreads = 1;
         }
 
         public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads)
         {
             workerThreads = 1;
-            completionPortThreads = 0;
+            completionPortThreads = 1;
         }
 
         public static int ThreadCount => 1;
