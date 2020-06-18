@@ -91,6 +91,7 @@ public:
 
     static void VerifySyncTableEntry();
     static void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLevel, int privateKeywords);
+    static bool HasInstructionSet(InstructionSet requestedInstructionSet);
 };
 
 #endif // __GCENV_EE_H__

@@ -295,4 +295,10 @@ inline void GCToEEInterface::UpdateGCEventStatus(int publicLevel, int publicKeyw
 #endif // __linux__
 }
 
+inline bool GCToEEInterface::HasInstructionSet(InstructionSet instructionSet)
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->HasInstructionSet(instructionSet);
+}
+
 #endif // __GCTOENV_EE_STANDALONE_INL__

@@ -21,6 +21,14 @@ enum EtwGCRootKind
     kEtwGCRootKindOther =               3,
 };
 
+enum InstructionSet
+{
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    kInstructionSetAVX2 =               0,
+    kInstructionSetAVX512 =             1,
+#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
+};
+
 // This interface provides functions that the GC can use to fire events.
 // Events fired on this interface are split into two categories: "known"
 // events and "dynamic" events. Known events are events that are baked-in
@@ -422,6 +430,9 @@ public:
 
     virtual
     void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLEvel, int privateKeywords) = 0;
+
+    virtual
+    bool HasInstructionSet(InstructionSet requestedInstructionSet) = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_

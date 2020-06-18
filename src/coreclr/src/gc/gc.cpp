@@ -8191,7 +8191,8 @@ void rqsort1( uint8_t* *low, uint8_t* *high)
     }
 }
 
-#ifdef USE_INTROSORT
+// vxsort uses introsort as a fallback if the AVX2 instruction set is not supported
+#if defined(USE_INTROSORT) || defined(USE_VXSORT)
 class introsort
 {
 
@@ -8367,106 +8368,112 @@ void gc_heap::sort_mark_list()
     }
 
 #ifdef USE_VXSORT
-    // is the range small enough for a 32-bit sort?
-    ptrdiff_t range = high - low;
-    ptrdiff_t scaled_range = range >> 3;
-    if ((uint32_t)scaled_range == scaled_range)
+    // runtime test if AVX2 is indeed available
+    if (GCToEEInterface::HasInstructionSet(kInstructionSetAVX2))
     {
-        dprintf(3, ("Sorting mark lists as 32-bit offsets"));
+        // is the range small enough for a 32-bit sort?
+        ptrdiff_t range = high - low;
+        ptrdiff_t scaled_range = range >> 3;
+        if ((uint32_t)scaled_range == scaled_range)
+        {
+            dprintf(3, ("Sorting mark lists as 32-bit offsets"));
 
-        ptrdiff_t item_count = mark_list_index - mark_list;
+            ptrdiff_t item_count = mark_list_index - mark_list;
 
-#define WRITE_SORT_DATA
+//#define WRITE_SORT_DATA
 
 #if defined(_DEBUG) || defined(WRITE_SORT_DATA)
-        uint8_t** mark_list_copy = &g_mark_list_copy[heap_number * mark_list_size];
-        uint8_t** mark_list_copy_index = &mark_list_copy[item_count];
+            uint8_t** mark_list_copy = &g_mark_list_copy[heap_number * mark_list_size];
+            uint8_t** mark_list_copy_index = &mark_list_copy[item_count];
 #endif
-        // first step: scale the pointers down to 32-bit offsets
-        uint8_t** mark_list = this->mark_list;
-        uint32_t* mark_list_32 = (uint32_t*)mark_list;
-        for (ptrdiff_t i = 0; i < item_count; i++)
-        {
-            uint8_t* item = mark_list[i];
-            ptrdiff_t scaled_item_offset = (item - low) >> 3;
-            assert((uint32_t)scaled_item_offset == scaled_item_offset);
-            assert((low + (scaled_item_offset << 3)) == item);
-            mark_list_32[i] = (uint32_t)scaled_item_offset;
+            // first step: scale the pointers down to 32-bit offsets
+            uint8_t** mark_list = this->mark_list;
+            uint32_t* mark_list_32 = (uint32_t*)mark_list;
+            for (ptrdiff_t i = 0; i < item_count; i++)
+            {
+                uint8_t* item = mark_list[i];
+                ptrdiff_t scaled_item_offset = (item - low) >> 3;
+                assert((uint32_t)scaled_item_offset == scaled_item_offset);
+                assert((low + (scaled_item_offset << 3)) == item);
+                mark_list_32[i] = (uint32_t)scaled_item_offset;
 #if defined(_DEBUG) || defined(WRITE_SORT_DATA)
-            mark_list_copy[i] = item;
+                mark_list_copy[i] = item;
 #endif
-        }
+            }
 
-        // sort the 32-bit offsets
-        if (item_count > 0)
-        {
-            ptrdiff_t start = get_cycle_count();
+            // sort the 32-bit offsets
+            if (item_count > 0)
+            {
+                ptrdiff_t start = get_cycle_count();
 
-            _sort(&mark_list_32[0], &mark_list_32[item_count - 1], 0);
+                _sort(&mark_list_32[0], &mark_list_32[item_count - 1], 0);
 
-            ptrdiff_t elapsed_cycles = get_cycle_count() - start;
-            int log2_item_count = index_of_highest_set_bit(item_count);
-            double elapsed_cyles_by_n_log_n = (double)elapsed_cycles / item_count / log2_item_count;
+                ptrdiff_t elapsed_cycles = get_cycle_count() - start;
+                int log2_item_count = index_of_highest_set_bit(item_count);
+                double elapsed_cyles_by_n_log_n = (double)elapsed_cycles / item_count / log2_item_count;
 
-            printf("GC#%d: first phase of sort_mark_list for heap %d took %u cycles to sort %u entries (cost/(n*log2(n) = %5.2f)\n", settings.gc_index, this->heap_number, elapsed_cycles, item_count, elapsed_cyles_by_n_log_n);
+                printf("GC#%d: first phase of sort_mark_list for heap %d took %u cycles to sort %u entries (cost/(n*log2(n) = %5.2f)\n", settings.gc_index, this->heap_number, elapsed_cycles, item_count, elapsed_cyles_by_n_log_n);
 
 #ifdef WRITE_SORT_DATA
-            char file_name[256];
-            sprintf_s(file_name, _countof(file_name), "sort_data_gc%d_heap%d", settings.gc_index, heap_number);
+                char file_name[256];
+                sprintf_s(file_name, _countof(file_name), "sort_data_gc%d_heap%d", settings.gc_index, heap_number);
 
-            FILE* f;
-            errno_t err = fopen_s(&f, file_name, "wb");
+                FILE* f;
+                errno_t err = fopen_s(&f, file_name, "wb");
 
-            if (err == 0)
-            {
-                size_t magic = 'SDAT';
-                if (fwrite(&magic, sizeof(magic), 1, f) != 1)
-                    printf("fwrite failed\n");
-                if (fwrite(&elapsed_cycles, sizeof(elapsed_cycles), 1, f) != 1)
-                    printf("fwrite failed\n");
-                if (fwrite(&low, sizeof(low), 1, f) != 1)
-                    printf("fwrite failed\n");
-                if (fwrite(&item_count, sizeof(item_count), 1, f) != 1)
-                    printf("fwrite failed\n");
-                if (fwrite(mark_list_copy, sizeof(mark_list_copy[0]), item_count, f) != item_count)
-                    printf("fwrite failed\n");
-                if (fwrite(&magic, sizeof(magic), 1, f) != 1)
-                    printf("fwrite failed\n");
-                if (fclose(f) != 0)
-                    printf("fclose failed\n");
-            }
+                if (err == 0)
+                {
+                    size_t magic = 'SDAT';
+                    if (fwrite(&magic, sizeof(magic), 1, f) != 1)
+                        printf("fwrite failed\n");
+                    if (fwrite(&elapsed_cycles, sizeof(elapsed_cycles), 1, f) != 1)
+                        printf("fwrite failed\n");
+                    if (fwrite(&low, sizeof(low), 1, f) != 1)
+                        printf("fwrite failed\n");
+                    if (fwrite(&item_count, sizeof(item_count), 1, f) != 1)
+                        printf("fwrite failed\n");
+                    if (fwrite(mark_list_copy, sizeof(mark_list_copy[0]), item_count, f) != item_count)
+                        printf("fwrite failed\n");
+                    if (fwrite(&magic, sizeof(magic), 1, f) != 1)
+                        printf("fwrite failed\n");
+                    if (fclose(f) != 0)
+                        printf("fclose failed\n");
+                }
 #endif
-        }
+            }
 
 #ifdef _DEBUG
-        // in debug, sort the copy as well, so we can check we got the right result
-        if (mark_list_copy_index > mark_list_copy)
-        {
-            _sort(mark_list_copy, mark_list_copy_index - 1, 0);
-        }
+            // in debug, sort the copy as well, so we can check we got the right result
+            if (mark_list_copy_index > mark_list_copy)
+            {
+                _sort(mark_list_copy, mark_list_copy_index - 1, 0);
+            }
 #endif
 
-        // scale the 32-bit offsets back to 64-bit pointers
-        // work backwards to avoid overwriting information that is still needed
-        for (ptrdiff_t i = item_count-1; i >= 0; i--)
+            // scale the 32-bit offsets back to 64-bit pointers
+            // work backwards to avoid overwriting information that is still needed
+            for (ptrdiff_t i = item_count - 1; i >= 0; i--)
+            {
+                ptrdiff_t scaled_item_offset = mark_list_32[i];
+                uint8_t* item = low + (scaled_item_offset << 3);
+                assert(mark_list_copy[i] == item);
+                mark_list[i] = item;
+            }
+        }
+        else
         {
-            ptrdiff_t scaled_item_offset = mark_list_32[i];
-            uint8_t* item = low + (scaled_item_offset << 3);
-            assert (mark_list_copy[i] == item);
-            mark_list[i] = item;
+            dprintf(3, ("Sorting mark lists"));
+            if (mark_list_index > mark_list)
+                _sort(mark_list, mark_list_index - 1, 0);
         }
     }
     else
+#endif //USE_VXSORT
     {
         dprintf(3, ("Sorting mark lists"));
         if (mark_list_index > mark_list)
-            _sort(mark_list, mark_list_index - 1, 0);
+            introsort::sort(mark_list, mark_list_index - 1, 0);
     }
-#else
-    dprintf (3, ("Sorting mark lists"));
-    if (mark_list_index > mark_list)
-        _sort (mark_list, mark_list_index - 1, 0);
-#endif //USE_VXSORT
 
 //    printf("first phase of sort_mark_list for heap %d took %u cycles to sort %u entries\n", this->heap_number, GetCycleCount32() - start, mark_list_index - mark_list);
 //    start = GetCycleCount32();
@@ -22221,33 +22228,39 @@ void gc_heap::plan_phase (int condemned_gen_number)
     {
 #ifndef MULTIPLE_HEAPS
 #ifdef USE_VXSORT
-        ptrdiff_t entry_count = mark_list_index - mark_list;
-        uint32_t* mark_list_32 = (uint32_t*)mark_list;
-        uint8_t* low = gc_low;
-        ptrdiff_t range = heap_segment_allocated (ephemeral_heap_segment) - low;
-        if ((uint32_t)range == range)
+        if (GCToEEInterface::HasInstructionSet(kInstructionSetAVX2))
         {
-            for (ptrdiff_t i = 0; i < entry_count; i++)
+            ptrdiff_t entry_count = mark_list_index - mark_list;
+            uint32_t* mark_list_32 = (uint32_t*)mark_list;
+            uint8_t* low = gc_low;
+            ptrdiff_t range = heap_segment_allocated(ephemeral_heap_segment) - low;
+            if ((uint32_t)range == range)
             {
-                uint8_t* item = mark_list[i];
-                size_t offset = item - low;
-                assert((uint32_t)offset == offset);
-                mark_list_32[i] = (uint32_t)offset;
+                for (ptrdiff_t i = 0; i < entry_count; i++)
+                {
+                    uint8_t* item = mark_list[i];
+                    size_t offset = item - low;
+                    assert((uint32_t)offset == offset);
+                    mark_list_32[i] = (uint32_t)offset;
+                }
+                _sort(&mark_list_32[0], &mark_list_32[entry_count - 1], 0);
+                for (ptrdiff_t i = entry_count - 1; i >= 0; i--)
+                {
+                    uint32_t offset = mark_list_32[i];
+                    mark_list[i] = low + offset;
+                }
             }
-            _sort(&mark_list_32[0], &mark_list_32[entry_count - 1], 0);
-            for (ptrdiff_t i = entry_count - 1; i >= 0; i--)
+            else
             {
-                uint32_t offset = mark_list_32[i];
-                mark_list[i] = low + offset;
+                _sort(&mark_list[0], mark_list_index - 1, 0);
             }
         }
         else
+#endif //USE_VXSORT
         {
-            _sort(&mark_list[0], mark_list_index - 1, 0);
+            introsort::sort(&mark_list[0], mark_list_index - 1, 0);
         }
-#else //USE_VXSORT
-        _sort (&mark_list[0], mark_list_index-1, 0);
-#endif
+
         //printf ("using mark list at GC #%d", dd_collection_count (dynamic_data_of (0)));
         //verify_qsort_array (&mark_list[0], mark_list_index-1);
 #endif //!MULTIPLE_HEAPS
