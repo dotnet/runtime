@@ -23,14 +23,14 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 
     CORJIT_FLAGS &CPUCompileFlags = *flags;
 
-
-#if defined(HOST_ARM64)
-
+#if defined(TARGET_ARM64)
     // Enable ARM64 based flags by default so we always crossgen
     // ARM64 intrinsics for Linux
     CPUCompileFlags.Set(InstructionSet_ArmBase);
     CPUCompileFlags.Set(InstructionSet_AdvSimd);
+#endif // defined(TARGET_ARM64)
 
+#if defined(HOST_ARM64)
 #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
 
@@ -101,8 +101,11 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 //        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA3);
 #endif
 #ifdef HWCAP_ASIMD
-    if (hwCap & HWCAP_ASIMD)
-        CPUCompileFlags.Set(InstructionSet_AdvSimd);
+    if ((hwCap & HWCAP_ASIMD) == 0)
+    {
+        fprintf(stderr, "AdvSimd is not supported on the processor.\n");
+        abort();
+    }
 #endif
 #ifdef HWCAP_ASIMDRDM
 //    if (hwCap & HWCAP_ASIMDRDM)

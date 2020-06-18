@@ -2152,12 +2152,11 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
         // answer for the CPU the code is running on.
 
         // For Arm64, AdvSimd/ArmBase is the baseline that is suported and hence we do pregenerate the method bodies
-        // of ARM4 harware intrinsic.
+        // of ARM64 harware intrinsic.
         fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic);
 #if !defined(TARGET_ARM64)
         fTreatAsRegularMethodCall |= (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
 #endif 
-
 
         if (fIsPlatformHWIntrinsic)
         {
