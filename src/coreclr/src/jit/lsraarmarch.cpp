@@ -117,7 +117,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     int srcCount = BuildIndirUses(indirTree);
     buildInternalRegisterUses();
 
-    if (indirTree->gtOper != GT_STOREIND)
+    if (!indirTree->OperIs(GT_STOREIND, GT_NULLCHECK))
     {
         BuildDef(indirTree);
     }
