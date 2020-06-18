@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <param name="fileProviders">The collection of <see cref="IFileProvider" /></param>
         public CompositeFileProvider(params IFileProvider[] fileProviders)
         {
-            _fileProviders = fileProviders ?? new IFileProvider[0];
+            _fileProviders = fileProviders ?? Array.Empty<IFileProvider>();
         }
 
         /// <summary>
