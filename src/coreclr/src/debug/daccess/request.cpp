@@ -4706,7 +4706,7 @@ HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDA
         return E_INVALIDARG;
 
     SOSDacEnter();
-    PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(methodTable));
+    PTR_MethodTable pMT = PTR_MethodTable(CLRDATA_ADDRESS_TO_TADDR(methodTable));
     PTR_Module pModule = pMT->GetModule();
 
     PTR_PEFile pPEFile = pModule->GetFile();
