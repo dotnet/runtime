@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using System.IO;
 using System.Linq;
@@ -203,6 +204,15 @@ namespace System.Net.Http.Functional.Tests
                 ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync(CreateFakeUri()));
                 Assert.Equal(HttpStatusCode.BadRequest, ex.StatusCode);
             }
+        }
+
+        [Fact]
+        [OuterLoop("Slow - Negative connection test")]
+        public async Task GetContentAsync_WhenCanNotConnect_ExceptionContainsHostInfo()
+        {
+            using var client = new HttpClient(new SocketsHttpHandler());
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync("http://localhost:4242"));
+            Assert.Contains("localhost:4242", ex.Message);
         }
 
         [Fact]
