@@ -95,29 +95,29 @@ namespace System.Formats.Cbor.Tests
                         break;
 
                     case string[] expectedChunks:
-                        Assert.Equal(CborReaderState.StartTextString, reader.PeekState());
-                        reader.ReadStartTextString();
+                        Assert.Equal(CborReaderState.StartIndefiniteLengthTextString, reader.PeekState());
+                        reader.ReadStartIndefiniteLengthTextString();
                         foreach(string expectedChunk in expectedChunks)
                         {
                             Assert.Equal(CborReaderState.TextString, reader.PeekState());
                             string chunk = reader.ReadTextString();
                             Assert.Equal(expectedChunk, chunk);
                         }
-                        Assert.Equal(CborReaderState.EndTextString, reader.PeekState());
-                        reader.ReadEndTextString();
+                        Assert.Equal(CborReaderState.EndIndefiniteLengthTextString, reader.PeekState());
+                        reader.ReadEndIndefiniteLengthTextString();
                         break;
 
                     case byte[][] expectedChunks:
-                        Assert.Equal(CborReaderState.StartByteString, reader.PeekState());
-                        reader.ReadStartByteString();
+                        Assert.Equal(CborReaderState.StartIndefiniteLengthByteString, reader.PeekState());
+                        reader.ReadStartIndefiniteLengthByteString();
                         foreach (byte[] expectedChunk in expectedChunks)
                         {
                             Assert.Equal(CborReaderState.ByteString, reader.PeekState());
                             byte[] chunk = reader.ReadByteString();
                             Assert.Equal(expectedChunk.ByteArrayToHex(), chunk.ByteArrayToHex());
                         }
-                        Assert.Equal(CborReaderState.EndByteString, reader.PeekState());
-                        reader.ReadEndByteString();
+                        Assert.Equal(CborReaderState.EndIndefiniteLengthByteString, reader.PeekState());
+                        reader.ReadEndIndefiniteLengthByteString();
                         break;
 
                     case object[] nested when CborWriterTests.Helpers.IsCborMapRepresentation(nested):

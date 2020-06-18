@@ -1270,19 +1270,30 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(count),
                     SR.ArgumentOutOfRange_NegativeCount);
 
-            if (options < StringSplitOptions.None || options > StringSplitOptions.RemoveEmptyEntries)
-                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, options));
+            CheckStringSplitOptions(options);
 
-            bool omitEmptyEntries = (options == StringSplitOptions.RemoveEmptyEntries);
-
-            if ((count == 0) || (omitEmptyEntries && Length == 0))
+        ShortCircuit:
+            if (count <= 1 || Length == 0)
             {
-                return Array.Empty<string>();
+                // Per the method's documentation, we'll short-circuit the search for separators.
+                // But we still need to post-process the results based on the caller-provided flags.
+
+                string candidate = this;
+                if (((options & StringSplitOptions.TrimEntries) != 0) && (count > 0))
+                {
+                    candidate = candidate.Trim();
+                }
+                if (((options & StringSplitOptions.RemoveEmptyEntries) != 0) && (candidate.Length == 0))
+                {
+                    count = 0;
+                }
+                return (count == 0) ? Array.Empty<string>() : new string[] { candidate };
             }
 
-            if (count == 1)
+            if (separators.IsEmpty)
             {
-                return new string[] { this };
+                // Caller is already splitting on whitespace; no need for separate trim step
+                options &= ~StringSplitOptions.TrimEntries;
             }
 
             var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
@@ -1293,12 +1304,13 @@ namespace System
             // Handle the special case of no replaces.
             if (sepList.Length == 0)
             {
-                return new string[] { this };
+                count = 1;
+                goto ShortCircuit;
             }
 
-            string[] result = omitEmptyEntries
-                ? SplitOmitEmptyEntries(sepList, default, 1, count)
-                : SplitKeepEmptyEntries(sepList, default, 1, count);
+            string[] result = (options != StringSplitOptions.None)
+                ? SplitWithPostProcessing(sepList, default, 1, count, options)
+                : SplitWithoutPostProcessing(sepList, default, 1, count);
 
             sepListBuilder.Dispose();
 
@@ -1333,33 +1345,45 @@ namespace System
                     SR.ArgumentOutOfRange_NegativeCount);
             }
 
-            if (options < StringSplitOptions.None || options > StringSplitOptions.RemoveEmptyEntries)
-            {
-                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options));
-            }
-
-            bool omitEmptyEntries = (options == StringSplitOptions.RemoveEmptyEntries);
+            CheckStringSplitOptions(options);
 
             bool singleSeparator = separator != null;
 
             if (!singleSeparator && (separators == null || separators.Length == 0))
             {
+                // split on whitespace
                 return SplitInternal(default(ReadOnlySpan<char>), count, options);
             }
 
-            if ((count == 0) || (omitEmptyEntries && Length == 0))
+        ShortCircuit:
+            if (count <= 1 || Length == 0)
             {
-                return Array.Empty<string>();
-            }
+                // Per the method's documentation, we'll short-circuit the search for separators.
+                // But we still need to post-process the results based on the caller-provided flags.
 
-            if (count == 1 || (singleSeparator && separator!.Length == 0))
-            {
-                return new string[] { this };
+                string candidate = this;
+                if (((options & StringSplitOptions.TrimEntries) != 0) && (count > 0))
+                {
+                    candidate = candidate.Trim();
+                }
+                if (((options & StringSplitOptions.RemoveEmptyEntries) != 0) && (candidate.Length == 0))
+                {
+                    count = 0;
+                }
+                return (count == 0) ? Array.Empty<string>() : new string[] { candidate };
             }
 
             if (singleSeparator)
             {
-                return SplitInternal(separator!, count, options);
+                if (separator!.Length == 0)
+                {
+                    count = 1;
+                    goto ShortCircuit;
+                }
+                else
+                {
+                    return SplitInternal(separator, count, options);
+                }
             }
 
             var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
@@ -1375,9 +1399,9 @@ namespace System
                 return new string[] { this };
             }
 
-            string[] result = omitEmptyEntries
-                ? SplitOmitEmptyEntries(sepList, lengthList, 0, count)
-                : SplitKeepEmptyEntries(sepList, lengthList, 0, count);
+            string[] result = (options != StringSplitOptions.None)
+                ? SplitWithPostProcessing(sepList, lengthList, 0, count, options)
+                : SplitWithoutPostProcessing(sepList, lengthList, 0, count);
 
             sepListBuilder.Dispose();
             lengthListBuilder.Dispose();
@@ -1394,19 +1418,27 @@ namespace System
             if (sepList.Length == 0)
             {
                 // there are no separators so sepListBuilder did not rent an array from pool and there is no need to dispose it
-                return new string[] { this };
+                string candidate = this;
+                if ((options & StringSplitOptions.TrimEntries) != 0)
+                {
+                    candidate = candidate.Trim();
+                }
+                return ((candidate.Length == 0) && ((options & StringSplitOptions.RemoveEmptyEntries) != 0))
+                    ? Array.Empty<string>()
+                    : new string[] { candidate };
             }
 
-            string[] result = options == StringSplitOptions.RemoveEmptyEntries
-                ? SplitOmitEmptyEntries(sepList, default, separator.Length, count)
-                : SplitKeepEmptyEntries(sepList, default, separator.Length, count);
+            string[] result = (options != StringSplitOptions.None)
+                ? SplitWithPostProcessing(sepList, default, separator.Length, count, options)
+                : SplitWithoutPostProcessing(sepList, default, separator.Length, count);
 
             sepListBuilder.Dispose();
 
             return result;
         }
 
-        private string[] SplitKeepEmptyEntries(ReadOnlySpan<int> sepList, ReadOnlySpan<int> lengthList, int defaultLength, int count)
+        // This function will not trim entries or special-case empty entries
+        private string[] SplitWithoutPostProcessing(ReadOnlySpan<int> sepList, ReadOnlySpan<int> lengthList, int defaultLength, int count)
         {
             Debug.Assert(count >= 2);
 
@@ -1442,8 +1474,8 @@ namespace System
         }
 
 
-        // This function will not keep the Empty string
-        private string[] SplitOmitEmptyEntries(ReadOnlySpan<int> sepList, ReadOnlySpan<int> lengthList, int defaultLength, int count)
+        // This function may trim entries or omit empty entries
+        private string[] SplitWithPostProcessing(ReadOnlySpan<int> sepList, ReadOnlySpan<int> lengthList, int defaultLength, int count, StringSplitOptions options)
         {
             Debug.Assert(count >= 2);
 
@@ -1458,19 +1490,40 @@ namespace System
             int currIndex = 0;
             int arrIndex = 0;
 
-            for (int i = 0; i < numReplaces && currIndex < Length; i++)
+            ReadOnlySpan<char> thisEntry;
+
+            for (int i = 0; i < numReplaces; i++)
             {
-                if (sepList[i] - currIndex > 0)
+                thisEntry = this.AsSpan(currIndex, sepList[i] - currIndex);
+                if ((options & StringSplitOptions.TrimEntries) != 0)
                 {
-                    splitStrings[arrIndex++] = Substring(currIndex, sepList[i] - currIndex);
+                    thisEntry = thisEntry.Trim();
+                }
+                if (!thisEntry.IsEmpty || ((options & StringSplitOptions.RemoveEmptyEntries) == 0))
+                {
+                    splitStrings[arrIndex++] = thisEntry.ToString();
                 }
                 currIndex = sepList[i] + (lengthList.IsEmpty ? defaultLength : lengthList[i]);
                 if (arrIndex == count - 1)
                 {
-                    // If all the remaining entries at the end are empty, skip them
-                    while (i < numReplaces - 1 && currIndex == sepList[++i])
+                    // The next iteration of the loop will provide the final entry into the
+                    // results array. If needed, skip over all empty entries before that
+                    // point.
+                    if ((options & StringSplitOptions.RemoveEmptyEntries) != 0)
                     {
-                        currIndex += (lengthList.IsEmpty ? defaultLength : lengthList[i]);
+                        while (++i < numReplaces)
+                        {
+                            thisEntry = this.AsSpan(currIndex, sepList[i] - currIndex);
+                            if ((options & StringSplitOptions.TrimEntries) != 0)
+                            {
+                                thisEntry = thisEntry.Trim();
+                            }
+                            if (!thisEntry.IsEmpty)
+                            {
+                                break; // there's useful data here
+                            }
+                            currIndex = sepList[i] + (lengthList.IsEmpty ? defaultLength : lengthList[i]);
+                        }
                     }
                     break;
                 }
@@ -1479,22 +1532,20 @@ namespace System
             // we must have at least one slot left to fill in the last string.
             Debug.Assert(arrIndex < maxItems);
 
-            // Handle the last string at the end of the array if there is one.
-            if (currIndex < Length)
+            // Handle the last substring at the end of the array
+            // (could be empty if separator appeared at the end of the input string)
+            thisEntry = this.AsSpan(currIndex);
+            if ((options & StringSplitOptions.TrimEntries) != 0)
             {
-                splitStrings[arrIndex++] = Substring(currIndex);
+                thisEntry = thisEntry.Trim();
+            }
+            if (!thisEntry.IsEmpty || ((options & StringSplitOptions.RemoveEmptyEntries) == 0))
+            {
+                splitStrings[arrIndex++] = thisEntry.ToString();
             }
 
-            string[] stringArray = splitStrings;
-            if (arrIndex != maxItems)
-            {
-                stringArray = new string[arrIndex];
-                for (int j = 0; j < arrIndex; j++)
-                {
-                    stringArray[j] = splitStrings[j];
-                }
-            }
-            return stringArray;
+            Array.Resize(ref splitStrings, arrIndex);
+            return splitStrings;
         }
 
         /// <summary>
@@ -1636,6 +1687,17 @@ namespace System
                         }
                     }
                 }
+            }
+        }
+
+        private static void CheckStringSplitOptions(StringSplitOptions options)
+        {
+            const StringSplitOptions AllValidFlags = StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries;
+
+            if ((options & ~AllValidFlags) != 0)
+            {
+                // at least one invalid flag was set
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidFlag, ExceptionArgument.options);
             }
         }
 

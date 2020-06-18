@@ -194,12 +194,12 @@ namespace System.Net.Mime
             builder.Append(_subType);  // Must not have unicode, already validated
 
             // Validate and encode unicode where required
-            foreach (string? key in Parameters.Keys) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
+            foreach (string key in Parameters.Keys)
             {
                 builder.Append("; ");
-                EncodeToBuffer(key!, builder, allowUnicode);
+                EncodeToBuffer(key, builder, allowUnicode);
                 builder.Append('=');
-                EncodeToBuffer(_parameters[key!]!, builder, allowUnicode);
+                EncodeToBuffer(_parameters[key]!, builder, allowUnicode);
             }
 
             return builder.ToString();

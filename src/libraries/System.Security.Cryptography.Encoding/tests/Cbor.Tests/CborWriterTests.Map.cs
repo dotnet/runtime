@@ -107,7 +107,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteMap_IndefiniteLength_WithPatching_Ctap2Sorting_HappyPath(object[] values, string expectedHexEncoding)
     {
         byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-        var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical, convertIndefiniteLengthEncodings: true);
+        var writer = new CborWriter(CborConformanceMode.Ctap2Canonical, convertIndefiniteLengthEncodings: true);
         Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
         byte[] actualEncoding = writer.Encode();
         AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -128,44 +128,44 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
-        [InlineData(CborConformanceLevel.Canonical, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3010102020303")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3010102020303")]
+        [InlineData(CborConformanceMode.Lax, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
+        [InlineData(CborConformanceMode.Strict, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
+        [InlineData(CborConformanceMode.Canonical, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3010102020303")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3010102020303")]
         // nested array payload
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5616200020061610082616360000100")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5616200020061610082616360000100")]
-        [InlineData(CborConformanceLevel.Canonical, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5010002006161006162008261636000")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5010002006161006162008261636000")]
+        [InlineData(CborConformanceMode.Lax, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5616200020061610082616360000100")]
+        [InlineData(CborConformanceMode.Strict, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5616200020061610082616360000100")]
+        [InlineData(CborConformanceMode.Canonical, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5010002006161006162008261636000")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5010002006161006162008261636000")]
         // CBOR sorting rules do not match canonical string sorting
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, "aa", 0, "z", 0 }, "a262616100617a00")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, "aa", 0, "z", 0 }, "a262616100617a00")]
-        [InlineData(CborConformanceLevel.Canonical, new object[] { Map, "aa", 0, "z", 0 }, "a2617a0062616100")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, "aa", 0, "z", 0 }, "a2617a0062616100")]
+        [InlineData(CborConformanceMode.Lax, new object[] { Map, "aa", 0, "z", 0 }, "a262616100617a00")]
+        [InlineData(CborConformanceMode.Strict, new object[] { Map, "aa", 0, "z", 0 }, "a262616100617a00")]
+        [InlineData(CborConformanceMode.Canonical, new object[] { Map, "aa", 0, "z", 0 }, "a2617a0062616100")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { Map, "aa", 0, "z", 0 }, "a2617a0062616100")]
         // Test case distinguishing between RFC7049 and CTAP2 sorting rules
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
-        [InlineData(CborConformanceLevel.Canonical, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, "", 0, 255, 0 }, "a218ff006000")]
-        public static void WriteMap_SimpleValues_ShouldSortKeysAccordingToConformanceLevel(CborConformanceLevel level, object value, string expectedHexEncoding)
+        [InlineData(CborConformanceMode.Lax, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
+        [InlineData(CborConformanceMode.Strict, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
+        [InlineData(CborConformanceMode.Canonical, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { Map, "", 0, 255, 0 }, "a218ff006000")]
+        public static void WriteMap_SimpleValues_ShouldSortKeysAccordingToConformanceMode(CborConformanceMode mode, object value, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            var writer = new CborWriter(level);
+            var writer = new CborWriter(mode);
             Helpers.WriteValue(writer, value);
             byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
         [Theory]
-        [InlineData("a52000a30303020201010061610019010000a20202010100", CborConformanceLevel.Lax)]
-        [InlineData("a52000a30303020201010061610019010000a20202010100", CborConformanceLevel.Strict)]
-        [InlineData("a5200061610019010000a20101020200a301010202030300", CborConformanceLevel.Canonical)]
-        [InlineData("a5190100002000616100a20101020200a301010202030300", CborConformanceLevel.Ctap2Canonical)]
-        public static void WriteMap_NestedValues_ShouldSortKeysAccordingToConformanceLevel(string expectedHexEncoding, CborConformanceLevel level)
+        [InlineData("a52000a30303020201010061610019010000a20202010100", CborConformanceMode.Lax)]
+        [InlineData("a52000a30303020201010061610019010000a20202010100", CborConformanceMode.Strict)]
+        [InlineData("a5200061610019010000a20101020200a301010202030300", CborConformanceMode.Canonical)]
+        [InlineData("a5190100002000616100a20101020200a301010202030300", CborConformanceMode.Ctap2Canonical)]
+        public static void WriteMap_NestedValues_ShouldSortKeysAccordingToConformanceMode(string expectedHexEncoding, CborConformanceMode mode)
         {
             object[] value = new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0, new object[] { Map, 2, 2, 1, 1 }, 0 };
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            var writer = new CborWriter(level);
+            var writer = new CborWriter(mode);
             Helpers.WriteValue(writer, value);
             byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -173,28 +173,28 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [InlineData(new object[] { Map, "a", 1, "a", 2 }, "a2616101616102")]
-        public static void WriteMap_DuplicateKeys_ShouldSucceed(object[] values, string expectedHexEncoding)
+        public static void WriteMap_DuplicateKeys_LaxConformance_ShouldSucceed(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            var writer = new CborWriter();
+            var writer = new CborWriter(CborConformanceMode.Lax);
             Helpers.WriteMap(writer, values);
             byte[] actualEncoding = writer.Encode();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Strict, 42)]
-        [InlineData(CborConformanceLevel.Canonical, 42)]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, 42)]
-        [InlineData(CborConformanceLevel.Strict, "foobar")]
-        [InlineData(CborConformanceLevel.Canonical, "foobar")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "foobar")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { new object[] { "x", "y" } })]
-        [InlineData(CborConformanceLevel.Canonical, new object[] { new object[] { "x", "y" } })]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { new object[] { "x", "y" } })]
-        public static void WriteMap_DuplicateKeys_StrictConformance_ShouldFail(CborConformanceLevel level, object dupeKey)
+        [InlineData(CborConformanceMode.Strict, 42)]
+        [InlineData(CborConformanceMode.Canonical, 42)]
+        [InlineData(CborConformanceMode.Ctap2Canonical, 42)]
+        [InlineData(CborConformanceMode.Strict, "foobar")]
+        [InlineData(CborConformanceMode.Canonical, "foobar")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "foobar")]
+        [InlineData(CborConformanceMode.Strict, new object[] { new object[] { "x", "y" } })]
+        [InlineData(CborConformanceMode.Canonical, new object[] { new object[] { "x", "y" } })]
+        [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { new object[] { "x", "y" } })]
+        public static void WriteMap_DuplicateKeys_StrictConformance_ShouldFail(CborConformanceMode mode, object dupeKey)
         {
-            var writer = new CborWriter(level);
+            var writer = new CborWriter(mode);
             writer.WriteStartMap(2);
             Helpers.WriteValue(writer, dupeKey);
             writer.WriteInt32(0);
@@ -202,16 +202,16 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Strict, 42)]
-        [InlineData(CborConformanceLevel.Canonical, 42)]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, 42)]
-        [InlineData(CborConformanceLevel.Strict, "foobar")]
-        [InlineData(CborConformanceLevel.Canonical, "foobar")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, "foobar")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { new object[] { "x", "y" } })]
-        [InlineData(CborConformanceLevel.Canonical, new object[] { new object[] { "x", "y" } })]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { new object[] { "x", "y" } })]
-        public static void WriteMap_DuplicateKeys_StrictConformance_ShouldBeRecoverableError(CborConformanceLevel level, object dupeKey)
+        [InlineData(CborConformanceMode.Strict, 42)]
+        [InlineData(CborConformanceMode.Canonical, 42)]
+        [InlineData(CborConformanceMode.Ctap2Canonical, 42)]
+        [InlineData(CborConformanceMode.Strict, "foobar")]
+        [InlineData(CborConformanceMode.Canonical, "foobar")]
+        [InlineData(CborConformanceMode.Ctap2Canonical, "foobar")]
+        [InlineData(CborConformanceMode.Strict, new object[] { new object[] { "x", "y" } })]
+        [InlineData(CborConformanceMode.Canonical, new object[] { new object[] { "x", "y" } })]
+        [InlineData(CborConformanceMode.Ctap2Canonical, new object[] { new object[] { "x", "y" } })]
+        public static void WriteMap_DuplicateKeys_StrictConformance_ShouldBeRecoverableError(CborConformanceMode mode, object dupeKey)
         {
             byte[] expected = PerformWrite(attemptDuplicateWrite: false);
             byte[] actual = PerformWrite(attemptDuplicateWrite: true);
@@ -219,7 +219,7 @@ namespace System.Formats.Cbor.Tests
 
             byte[] PerformWrite(bool attemptDuplicateWrite)
             {
-                var writer = new CborWriter(level);
+                var writer = new CborWriter(mode);
                 writer.WriteStartMap(2);
                 Helpers.WriteValue(writer, dupeKey);
                 writer.WriteInt32(0);
@@ -321,7 +321,7 @@ namespace System.Formats.Cbor.Tests
         public static void EndWriteMap_IndefiniteLength_OddItems_ShouldThrowInvalidOperationException(int length)
         {
             var writer = new CborWriter();
-            writer.WriteStartMap();
+            writer.WriteStartMap(null);
 
             for (int i = 1; i < length; i++)
             {
@@ -381,12 +381,12 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Canonical)]
-        [InlineData(CborConformanceLevel.Ctap2Canonical)]
-        public static void WriteStartMap_IndefiniteLength_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel conformanceLevel)
+        [InlineData(CborConformanceMode.Canonical)]
+        [InlineData(CborConformanceMode.Ctap2Canonical)]
+        public static void WriteStartMap_IndefiniteLength_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceMode conformanceMode)
         {
-            var writer = new CborWriter(conformanceLevel, convertIndefiniteLengthEncodings: false);
-            Assert.Throws<InvalidOperationException>(() => writer.WriteStartMap());
+            var writer = new CborWriter(conformanceMode, convertIndefiniteLengthEncodings: false);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartMap(null));
         }
     }
 }

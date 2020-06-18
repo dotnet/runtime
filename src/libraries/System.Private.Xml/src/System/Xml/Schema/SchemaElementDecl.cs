@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System;
@@ -12,7 +13,7 @@ namespace System.Xml.Schema
     internal sealed class SchemaElementDecl : SchemaDeclBase, IDtdAttributeListInfo
     {
         private readonly Dictionary<XmlQualifiedName, SchemaAttDef> _attdefs = new Dictionary<XmlQualifiedName, SchemaAttDef>();
-        private List<IDtdDefaultAttributeInfo> _defaultAttdefs;
+        private List<IDtdDefaultAttributeInfo>? _defaultAttdefs;
         private bool _isIdDeclared;
         private bool _hasNonCDataAttribute = false;
 
@@ -21,11 +22,11 @@ namespace System.Xml.Schema
         private bool _hasRequiredAttribute = false;
         private bool _isNotationDeclared;
         private readonly Dictionary<XmlQualifiedName, XmlQualifiedName> _prohibitedAttributes = new Dictionary<XmlQualifiedName, XmlQualifiedName>();
-        private ContentValidator _contentValidator;
-        private XmlSchemaAnyAttribute _anyAttribute;
+        private ContentValidator? _contentValidator;
+        private XmlSchemaAnyAttribute? _anyAttribute;
         private XmlSchemaDerivationMethod _block;
-        private CompiledIdentityConstraint[] _constraints;
-        private XmlSchemaElement _schemaElement;
+        private CompiledIdentityConstraint[]? _constraints;
+        private XmlSchemaElement? _schemaElement;
 
         internal static readonly SchemaElementDecl Empty = new SchemaElementDecl();
 
@@ -42,7 +43,7 @@ namespace System.Xml.Schema
             _contentValidator = ContentValidator.TextOnly;
         }
 
-        internal SchemaElementDecl(XmlQualifiedName name, string prefix)
+        internal SchemaElementDecl(XmlQualifiedName name, string? prefix)
         : base(name, prefix)
         {
         }
@@ -53,7 +54,7 @@ namespace System.Xml.Schema
         internal static SchemaElementDecl CreateAnyTypeElementDecl()
         {
             SchemaElementDecl anyTypeElementDecl = new SchemaElementDecl();
-            anyTypeElementDecl.Datatype = DatatypeImplementation.AnySimpleType.Datatype;
+            anyTypeElementDecl.Datatype = DatatypeImplementation.AnySimpleType.Datatype!;
             return anyTypeElementDecl;
         }
 
@@ -77,10 +78,10 @@ namespace System.Xml.Schema
             get { return _hasNonCDataAttribute; }
         }
 
-        IDtdAttributeInfo IDtdAttributeListInfo.LookupAttribute(string prefix, string localName)
+        IDtdAttributeInfo? IDtdAttributeListInfo.LookupAttribute(string? prefix, string? localName)
         {
             XmlQualifiedName qname = new XmlQualifiedName(localName, prefix);
-            SchemaAttDef attDef;
+            SchemaAttDef? attDef;
             if (_attdefs.TryGetValue(qname, out attDef))
             {
                 return attDef;
@@ -90,10 +91,10 @@ namespace System.Xml.Schema
 
         IEnumerable<IDtdDefaultAttributeInfo> IDtdAttributeListInfo.LookupDefaultAttributes()
         {
-            return _defaultAttdefs;
+            return _defaultAttdefs!;
         }
 
-        IDtdAttributeInfo IDtdAttributeListInfo.LookupIdAttribute()
+        IDtdAttributeInfo? IDtdAttributeListInfo.LookupIdAttribute()
         {
             foreach (SchemaAttDef attDef in _attdefs.Values)
             {
@@ -161,25 +162,25 @@ namespace System.Xml.Schema
             set { _hasRequiredAttribute = value; }
         }
 
-        internal ContentValidator ContentValidator
+        internal ContentValidator? ContentValidator
         {
             get { return _contentValidator; }
             set { _contentValidator = value; }
         }
 
-        internal XmlSchemaAnyAttribute AnyAttribute
+        internal XmlSchemaAnyAttribute? AnyAttribute
         {
             get { return _anyAttribute; }
             set { _anyAttribute = value; }
         }
 
-        internal CompiledIdentityConstraint[] Constraints
+        internal CompiledIdentityConstraint[]? Constraints
         {
             get { return _constraints; }
             set { _constraints = value; }
         }
 
-        internal XmlSchemaElement SchemaElement
+        internal XmlSchemaElement? SchemaElement
         {
             get { return _schemaElement; }
             set { _schemaElement = value; }
@@ -208,9 +209,9 @@ namespace System.Xml.Schema
          * @param name  The name of the attribute.
          * @return  an attribute definition object; returns null if it is not found.
          */
-        internal SchemaAttDef GetAttDef(XmlQualifiedName qname)
+        internal SchemaAttDef? GetAttDef(XmlQualifiedName qname)
         {
-            SchemaAttDef attDef;
+            SchemaAttDef? attDef;
             if (_attdefs.TryGetValue(qname, out attDef))
             {
                 return attDef;
@@ -218,7 +219,7 @@ namespace System.Xml.Schema
             return null;
         }
 
-        internal IList<IDtdDefaultAttributeInfo> DefaultAttDefs
+        internal IList<IDtdDefaultAttributeInfo>? DefaultAttDefs
         {
             get { return _defaultAttdefs; }
         }

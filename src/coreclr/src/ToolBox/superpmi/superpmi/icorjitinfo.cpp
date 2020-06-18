@@ -1088,10 +1088,10 @@ CORINFO_CLASS_HANDLE MyICJI::getArgClass(CORINFO_SIG_INFO*       sig, /* IN */
 }
 
 // Returns type of HFA for valuetype
-CorInfoType MyICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
+CorInfoHFAElemType MyICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
 {
     jitInstance->mc->cr->AddCall("getHFAType");
-    CorInfoType value = jitInstance->mc->repGetHFAType(hClass);
+    CorInfoHFAElemType value = jitInstance->mc->repGetHFAType(hClass);
     return value;
 }
 

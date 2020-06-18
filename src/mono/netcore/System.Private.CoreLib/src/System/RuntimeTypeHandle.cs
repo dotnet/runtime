@@ -254,7 +254,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool is_subclass_of(IntPtr childType, IntPtr baseType);
 
-        [PreserveDependency(".ctor()", "System.Runtime.CompilerServices.IsByRefLikeAttribute")]
+        [DynamicDependency("#ctor()", typeof(IsByRefLikeAttribute))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool IsByRefLike(RuntimeType type);
 

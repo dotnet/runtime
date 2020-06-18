@@ -114,6 +114,22 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool HasEmbeddedSignatureData
+        {
+            get
+            {
+                return _embeddedSignatureData != null;
+            }
+        }
+
+        public EmbeddedSignatureData[] GetEmbeddedSignatureData()
+        {
+            if ((_embeddedSignatureData == null) || (_embeddedSignatureData.Length == 0))
+                return null;
+
+            return (EmbeddedSignatureData[])_embeddedSignatureData.Clone();
+        }
+
         public bool Equals(MethodSignature otherSignature)
         {
             return Equals(otherSignature, allowCovariantReturn: false);

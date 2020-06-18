@@ -218,7 +218,7 @@ struct InterpFrame {
 	InterpState state;
 };
 
-#define frame_locals(frame) (((guchar*)((frame)->stack)) + (frame)->imethod->stack_size + (frame)->imethod->vt_stack_size)
+#define frame_locals(frame) ((guchar*)(frame)->stack)
 
 typedef struct {
 	/* Lets interpreter know it has to resume execution after EH */

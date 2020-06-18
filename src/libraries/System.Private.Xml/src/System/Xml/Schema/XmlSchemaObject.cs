@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Diagnostics;
@@ -11,9 +12,9 @@ namespace System.Xml.Schema
     {
         private int _lineNum = 0;
         private int _linePos = 0;
-        private string _sourceUri;
-        private XmlSerializerNamespaces _namespaces;
-        private XmlSchemaObject _parent;
+        private string? _sourceUri;
+        private XmlSerializerNamespaces? _namespaces;
+        private XmlSchemaObject? _parent;
 
         //internal
         private bool _isProcessing; //Indicates whether this object is currently being processed
@@ -33,14 +34,14 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        public string SourceUri
+        public string? SourceUri
         {
             get { return _sourceUri; }
             set { _sourceUri = value; }
         }
 
         [XmlIgnore]
-        public XmlSchemaObject Parent
+        public XmlSchemaObject? Parent
         {
             get { return _parent; }
             set { _parent = value; }
@@ -58,12 +59,12 @@ namespace System.Xml.Schema
             set { _namespaces = value; }
         }
 
-        internal virtual void OnAdd(XmlSchemaObjectCollection container, object item) { }
-        internal virtual void OnRemove(XmlSchemaObjectCollection container, object item) { }
+        internal virtual void OnAdd(XmlSchemaObjectCollection container, object? item) { }
+        internal virtual void OnRemove(XmlSchemaObjectCollection container, object? item) { }
         internal virtual void OnClear(XmlSchemaObjectCollection container) { }
 
         [XmlIgnore]
-        internal virtual string IdAttribute
+        internal virtual string? IdAttribute
         {
             get { Debug.Fail("Should not use base property"); return null; }
             set { Debug.Fail("Should not use base property"); }
@@ -73,7 +74,7 @@ namespace System.Xml.Schema
         internal virtual void AddAnnotation(XmlSchemaAnnotation annotation) { }
 
         [XmlIgnore]
-        internal virtual string NameAttribute
+        internal virtual string? NameAttribute
         {
             get { Debug.Fail("Should not use base property"); return null; }
             set { Debug.Fail("Should not use base property"); }

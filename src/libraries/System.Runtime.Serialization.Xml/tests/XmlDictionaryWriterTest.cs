@@ -15,7 +15,7 @@ using Xunit;
 
 public static class XmlDictionaryWriterTest
 {
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void XmlBaseWriter_WriteBase64Async()
     {
         string actual;
@@ -142,7 +142,7 @@ public static class XmlDictionaryWriterTest
         Assert.Equal(expect, actual);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void XmlBaseWriter_CheckAsync_ThrowInvalidOperationException()
     {
         int byteSize = 1024;

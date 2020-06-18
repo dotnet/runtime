@@ -12,17 +12,17 @@ namespace System.Xml.Schema
     internal class BaseProcessor
     {
         private readonly XmlNameTable _nameTable;
-        private SchemaNames _schemaNames;
-        private readonly ValidationEventHandler _eventHandler;
-        private readonly XmlSchemaCompilationSettings _compilationSettings;
+        private SchemaNames? _schemaNames;
+        private readonly ValidationEventHandler? _eventHandler;
+        private readonly XmlSchemaCompilationSettings? _compilationSettings;
         private int _errorCount = 0;
         private readonly string _nsXml;
 
-        public BaseProcessor(XmlNameTable nameTable, SchemaNames schemaNames, ValidationEventHandler eventHandler)
+        public BaseProcessor(XmlNameTable nameTable, SchemaNames? schemaNames, ValidationEventHandler? eventHandler)
             : this(nameTable, schemaNames, eventHandler, new XmlSchemaCompilationSettings())
         { } //Use the default for XmlSchemaCollection
 
-        public BaseProcessor(XmlNameTable nameTable, SchemaNames schemaNames, ValidationEventHandler eventHandler, XmlSchemaCompilationSettings compilationSettings)
+        public BaseProcessor(XmlNameTable nameTable, SchemaNames? schemaNames, ValidationEventHandler? eventHandler, XmlSchemaCompilationSettings? compilationSettings)
         {
             Debug.Assert(nameTable != null);
             _nameTable = nameTable;
@@ -49,12 +49,12 @@ namespace System.Xml.Schema
             }
         }
 
-        protected ValidationEventHandler EventHandler
+        protected ValidationEventHandler? EventHandler
         {
             get { return _eventHandler; }
         }
 
-        protected XmlSchemaCompilationSettings CompilationSettings
+        protected XmlSchemaCompilationSettings? CompilationSettings
         {
             get { return _compilationSettings; }
         }
@@ -70,7 +70,7 @@ namespace System.Xml.Schema
             {
                 return;
             }
-            XmlSchemaObject existingObject = (XmlSchemaObject)table[qname];
+            XmlSchemaObject? existingObject = (XmlSchemaObject?)table[qname];
 
             if (existingObject != null)
             {
@@ -85,13 +85,13 @@ namespace System.Xml.Schema
                     if (Ref.Equal(ns, _nsXml))
                     { //Check for xml namespace
                         XmlSchema schemaForXmlNS = Preprocessor.GetBuildInSchema();
-                        XmlSchemaObject builtInAttributeGroup = schemaForXmlNS.AttributeGroups[qname];
-                        if ((object)existingObject == (object)builtInAttributeGroup)
+                        XmlSchemaObject? builtInAttributeGroup = schemaForXmlNS.AttributeGroups[qname];
+                        if ((object)existingObject == (object?)builtInAttributeGroup)
                         {
                             table.Insert(qname, item);
                             return;
                         }
-                        else if ((object)item == (object)builtInAttributeGroup)
+                        else if ((object)item == (object?)builtInAttributeGroup)
                         { //trying to overwrite customer's component with built-in, ignore built-in
                             return;
                         }
@@ -108,13 +108,13 @@ namespace System.Xml.Schema
                     if (Ref.Equal(ns, _nsXml))
                     {
                         XmlSchema schemaForXmlNS = Preprocessor.GetBuildInSchema();
-                        XmlSchemaObject builtInAttribute = schemaForXmlNS.Attributes[qname];
-                        if ((object)existingObject == (object)builtInAttribute)
+                        XmlSchemaObject? builtInAttribute = schemaForXmlNS.Attributes[qname];
+                        if ((object)existingObject == (object?)builtInAttribute)
                         { //replace built-in one
                             table.Insert(qname, item);
                             return;
                         }
-                        else if ((object)item == (object)builtInAttribute)
+                        else if ((object)item == (object?)builtInAttribute)
                         { //trying to overwrite customer's component with built-in, ignore built-in
                             return;
                         }
@@ -227,24 +227,24 @@ namespace System.Xml.Schema
             SendValidationEvent(new XmlSchemaException(code, source), XmlSeverityType.Error);
         }
 
-        protected void SendValidationEvent(string code, string msg, XmlSchemaObject source)
+        protected void SendValidationEvent(string code, string? msg, XmlSchemaObject source)
         {
             SendValidationEvent(new XmlSchemaException(code, msg, source), XmlSeverityType.Error);
         }
 
-        protected void SendValidationEvent(string code, string msg1, string msg2, XmlSchemaObject source)
+        protected void SendValidationEvent(string code, string? msg1, string? msg2, XmlSchemaObject source)
         {
-            SendValidationEvent(new XmlSchemaException(code, new string[] { msg1, msg2 }, source), XmlSeverityType.Error);
+            SendValidationEvent(new XmlSchemaException(code, new string?[] { msg1, msg2 }, source), XmlSeverityType.Error);
         }
 
-        protected void SendValidationEvent(string code, string[] args, Exception innerException, XmlSchemaObject source)
+        protected void SendValidationEvent(string code, string?[]? args, Exception innerException, XmlSchemaObject source)
         {
             SendValidationEvent(new XmlSchemaException(code, args, innerException, source.SourceUri, source.LineNumber, source.LinePosition, source), XmlSeverityType.Error);
         }
 
-        protected void SendValidationEvent(string code, string msg1, string msg2, string sourceUri, int lineNumber, int linePosition)
+        protected void SendValidationEvent(string code, string? msg1, string? msg2, string? sourceUri, int lineNumber, int linePosition)
         {
-            SendValidationEvent(new XmlSchemaException(code, new string[] { msg1, msg2 }, sourceUri, lineNumber, linePosition), XmlSeverityType.Error);
+            SendValidationEvent(new XmlSchemaException(code, new string?[] { msg1, msg2 }, sourceUri, lineNumber, linePosition), XmlSeverityType.Error);
         }
 
         protected void SendValidationEvent(string code, XmlSchemaObject source, XmlSeverityType severity)
@@ -257,7 +257,7 @@ namespace System.Xml.Schema
             SendValidationEvent(e, XmlSeverityType.Error);
         }
 
-        protected void SendValidationEvent(string code, string msg, XmlSchemaObject source, XmlSeverityType severity)
+        protected void SendValidationEvent(string code, string? msg, XmlSchemaObject source, XmlSeverityType severity)
         {
             SendValidationEvent(new XmlSchemaException(code, msg, source), severity);
         }

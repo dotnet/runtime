@@ -1321,12 +1321,7 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     }
 
 #ifdef FEATURE_COMWRAPPERS
-    void* mocw;
-    if (pInteropInfo->TryGetManagedObjectComWrapper(&mocw))
-    {
-        (void)pInteropInfo->TrySetManagedObjectComWrapper(NULL, mocw);
-        ComWrappersNative::DestroyManagedObjectComWrapper(mocw);
-    }
+    pInteropInfo->ClearManagedObjectComWrappers(&ComWrappersNative::DestroyManagedObjectComWrapper);
 
     void* eoc;
     if (pInteropInfo->TryGetExternalComObjectContext(&eoc))

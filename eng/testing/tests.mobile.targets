@@ -113,15 +113,19 @@
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp">
     <ItemGroup>
       <AssemblySearchPaths Include="$(PublishDir)"/>
+      <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
+      <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true'" />
     </ItemGroup>
+
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <WasmAppBuilder
       AppDir="$(BundleDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
-      MainAssembly="$(PublishDir)\WasmTestRunner.dll"
+      MainAssembly="$(PublishDir)WasmTestRunner.dll"
       MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
-      ExtraAssemblies="$(PublishDir)\$(AssemblyName).dll"
-      AssemblySearchPaths="@(AssemblySearchPaths)"/>
+      ExtraAssemblies="$(PublishDir)$(AssemblyName).dll"
+      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
+      AssemblySearchPaths="@(AssemblySearchPaths)" />
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
@@ -131,7 +135,8 @@
       <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" />
       <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser'" />
 
-      <ResolvedFileToPublish Include="@(_runnerFilesToPublish)" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
+      <!-- Exclude xunit assemblies as those should be resolved by our own package references -->
+      <ResolvedFileToPublish Include="@(_runnerFilesToPublish)" Condition="!$([System.String]::Copy('%(Filename)').StartsWith('xunit.'))" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
     </ItemGroup>
   </Target>
 

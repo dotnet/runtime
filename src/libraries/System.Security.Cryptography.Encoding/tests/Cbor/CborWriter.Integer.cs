@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers.Binary;
 
 namespace System.Formats.Cbor
@@ -17,7 +18,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         public void WriteInt32(int value) => WriteInt64(value);
 
@@ -28,7 +29,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         public void WriteInt64(long value)
         {
@@ -52,8 +53,11 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
+#if CBOR_CLS_COMPLIANCE // remove once migrated from tests project
+        [CLSCompliant(false)]
+#endif
         public void WriteUInt32(uint value) => WriteUInt64(value);
 
         /// <summary>
@@ -63,8 +67,11 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
+#if CBOR_CLS_COMPLIANCE // remove once migrated from tests project
+        [CLSCompliant(false)]
+#endif
         public void WriteUInt64(ulong value)
         {
             WriteUnsignedInteger(CborMajorType.UnsignedInteger, value);
@@ -72,19 +79,22 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes the provided value as a negative integer encoding (major type 1).
+        ///   Writes the provided value as a CBOR negative integer representation (major type 1).
         /// </summary>
         /// <param name="value">An unsigned integer denoting -1 minus the integer.</param>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         /// <remarks>
         ///   This method supports encoding integers between -18446744073709551616 and -1.
         ///   Useful for handling values that do not fit in the <see cref="long"/> type.
         /// </remarks>
-        public void WriteCborNegativeIntegerEncoding(ulong value)
+#if CBOR_CLS_COMPLIANCE // remove once migrated from tests project
+        [CLSCompliant(false)]
+#endif
+        public void WriteCborNegativeIntegerRepresentation(ulong value)
         {
             WriteUnsignedInteger(CborMajorType.NegativeInteger, value);
             AdvanceDataItemCounters();

@@ -25,16 +25,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public async Task ClientAsyncAuthenticate_SslStreamClientServerNone_UseStrongCryptoSet()
-        {
-            SslProtocols protocol = SslProtocols.None;
-            await ClientAsyncSslHelper(protocol, protocol);
-
-            // Additional manual verification.
-            // Step into the code and verify that the 'SCH_USE_STRONG_CRYPTO' flag is being set.
-        }
-
-        [Fact]
         public async Task ClientAsyncAuthenticate_ServerRequireEncryption_ConnectWithEncryption()
         {
             await ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption);
@@ -53,7 +43,7 @@ namespace System.Net.Security.Tests
             await Assert.ThrowsAsync<AuthenticationException>(
                 () => ClientAsyncSslHelper(
                     EncryptionPolicy.NoEncryption,
-                    SslProtocolSupport.DefaultSslProtocols,  SslProtocols.Tls | SslProtocols.Tls11 |  SslProtocols.Tls12 ));
+                    SslProtocolSupport.DefaultSslProtocols, SslProtocols.Tls | SslProtocols.Tls11 |  SslProtocols.Tls12));
         }
 
         [Theory]
@@ -67,7 +57,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task ClientAsyncAuthenticate_Ssl2WithSelf_Success()
         {
-            // Test Ssl2 against itself.  This is a standalone test as even on versions where Windows supports Ssl2,
+            // Test Ssl2 against itself. This is a standalone test as even on versions where Windows supports Ssl2,
             // it appears to have rules around not using it when other protocols are mentioned.
             if (PlatformDetection.SupportsSsl2)
             {

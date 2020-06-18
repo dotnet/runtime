@@ -429,7 +429,7 @@ namespace System.Diagnostics
                 Write("LogicalOperationStack=");
                 Stack operationStack = eventCache.LogicalOperationStack;
                 bool first = true;
-                foreach (object? obj in operationStack)
+                foreach (object obj in operationStack)
                 {
                     if (!first)
                     {
@@ -440,7 +440,7 @@ namespace System.Diagnostics
                         first = false;
                     }
 
-                    Write(obj!.ToString());
+                    Write(obj.ToString());
                 }
 
                 WriteLine(string.Empty);

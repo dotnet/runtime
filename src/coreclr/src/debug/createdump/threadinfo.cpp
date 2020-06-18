@@ -141,20 +141,27 @@ ThreadInfo::GetThreadStack()
 #endif
     size = 4 * PAGE_SIZE;
 
-    MemoryRegion search(0, startAddress, startAddress + PAGE_SIZE);
-    const MemoryRegion* region = CrashInfo::SearchMemoryRegions(m_crashInfo.OtherMappings(), search);
-    if (region != nullptr) {
+    if (startAddress != 0)
+    {
+        MemoryRegion search(0, startAddress, startAddress + PAGE_SIZE);
+        const MemoryRegion* region = CrashInfo::SearchMemoryRegions(m_crashInfo.OtherMappings(), search);
+        if (region != nullptr) {
 
-        // Use the mapping found for the size of the thread's stack
-        size = region->EndAddress() - startAddress;
+            // Use the mapping found for the size of the thread's stack
+            size = region->EndAddress() - startAddress;
 
-        if (g_diagnostics)
-        {
-            TRACE("Thread %04x stack found in other mapping (size %08zx): ", m_tid, size);
-            region->Trace();
+            if (g_diagnostics)
+            {
+                TRACE("Thread %04x stack found in other mapping (size %08zx): ", m_tid, size);
+                region->Trace();
+            }
         }
+        m_crashInfo.InsertMemoryRegion(startAddress, size);
     }
-    m_crashInfo.InsertMemoryRegion(startAddress, size);
+    else
+    {
+        TRACE("Thread %04x null stack pointer\n", m_tid);
+    }
 }
 
 void

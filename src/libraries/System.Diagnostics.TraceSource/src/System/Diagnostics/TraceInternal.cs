@@ -21,9 +21,9 @@ namespace System.Diagnostics
             {
                 lock (TraceInternal.critSec)
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        listener!.IndentLevel = indentLevel;
+                        listener.IndentLevel = indentLevel;
                     }
                 }
             }
@@ -32,9 +32,9 @@ namespace System.Diagnostics
             {
                 lock (TraceInternal.critSec)
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        listener!.IndentSize = indentSize;
+                        listener.IndentSize = indentSize;
                     }
                 }
             }
@@ -164,17 +164,17 @@ namespace System.Diagnostics
                 {
                     lock (critSec)
                     {
-                        foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                        foreach (TraceListener listener in Listeners)
                         {
-                            listener!.Flush();
+                            listener.Flush();
                         }
                     }
                 }
                 else
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        if (!listener!.IsThreadSafe)
+                        if (!listener.IsThreadSafe)
                         {
                             lock (listener)
                             {
@@ -197,9 +197,9 @@ namespace System.Diagnostics
                 // Use global lock
                 lock (critSec)
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        listener!.Close();
+                        listener.Close();
                     }
                 }
             }
@@ -229,18 +229,18 @@ namespace System.Diagnostics
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        listener!.Fail(message);
+                        listener.Fail(message);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                foreach (TraceListener listener in Listeners)
                 {
-                    if (!listener!.IsThreadSafe)
+                    if (!listener.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -263,18 +263,18 @@ namespace System.Diagnostics
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        listener!.Fail(message, detailMessage);
+                        listener.Fail(message, detailMessage);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                foreach (TraceListener listener in Listeners)
                 {
-                    if (!listener!.IsThreadSafe)
+                    if (!listener.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -332,17 +332,17 @@ namespace System.Diagnostics
                 {
                     if (args == null)
                     {
-                        foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                        foreach (TraceListener listener in Listeners)
                         {
-                            listener!.TraceEvent(EventCache, AppName, eventType, id, format);
+                            listener.TraceEvent(EventCache, AppName, eventType, id, format);
                             if (AutoFlush) listener.Flush();
                         }
                     }
                     else
                     {
-                        foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                        foreach (TraceListener listener in Listeners)
                         {
-                            listener!.TraceEvent(EventCache, AppName, eventType, id, format!, args);
+                            listener.TraceEvent(EventCache, AppName, eventType, id, format!, args);
                             if (AutoFlush) listener.Flush();
                         }
                     }
@@ -352,9 +352,9 @@ namespace System.Diagnostics
             {
                 if (args == null)
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        if (!listener!.IsThreadSafe)
+                        if (!listener.IsThreadSafe)
                         {
                             lock (listener)
                             {
@@ -371,9 +371,9 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        if (!listener!.IsThreadSafe)
+                        if (!listener.IsThreadSafe)
                         {
                             lock (listener)
                             {
@@ -398,18 +398,18 @@ namespace System.Diagnostics
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        listener!.Write(message);
+                        listener.Write(message);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                foreach (TraceListener listener in Listeners)
                 {
-                    if (!listener!.IsThreadSafe)
+                    if (!listener.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -432,18 +432,18 @@ namespace System.Diagnostics
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        listener!.Write(value);
+                        listener.Write(value);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                foreach (TraceListener listener in Listeners)
                 {
-                    if (!listener!.IsThreadSafe)
+                    if (!listener.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -466,18 +466,18 @@ namespace System.Diagnostics
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        listener!.Write(message, category);
+                        listener.Write(message, category);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                foreach (TraceListener listener in Listeners)
                 {
-                    if (!listener!.IsThreadSafe)
+                    if (!listener.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -500,18 +500,18 @@ namespace System.Diagnostics
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        listener!.Write(value, category);
+                        listener.Write(value, category);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                foreach (TraceListener listener in Listeners)
                 {
-                    if (!listener!.IsThreadSafe)
+                    if (!listener.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -534,18 +534,18 @@ namespace System.Diagnostics
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        listener!.WriteLine(message);
+                        listener.WriteLine(message);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                foreach (TraceListener listener in Listeners)
                 {
-                    if (!listener!.IsThreadSafe)
+                    if (!listener.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -568,18 +568,18 @@ namespace System.Diagnostics
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        listener!.WriteLine(value);
+                        listener.WriteLine(value);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                foreach (TraceListener listener in Listeners)
                 {
-                    if (!listener!.IsThreadSafe)
+                    if (!listener.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -602,18 +602,18 @@ namespace System.Diagnostics
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        listener!.WriteLine(message, category);
+                        listener.WriteLine(message, category);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                foreach (TraceListener listener in Listeners)
                 {
-                    if (!listener!.IsThreadSafe)
+                    if (!listener.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -636,18 +636,18 @@ namespace System.Diagnostics
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                    foreach (TraceListener listener in Listeners)
                     {
-                        listener!.WriteLine(value, category);
+                        listener.WriteLine(value, category);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
+                foreach (TraceListener listener in Listeners)
                 {
-                    if (!listener!.IsThreadSafe)
+                    if (!listener.IsThreadSafe)
                     {
                         lock (listener)
                         {

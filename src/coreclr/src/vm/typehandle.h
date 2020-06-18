@@ -372,7 +372,7 @@ public:
 #endif
 
     bool IsHFA() const;
-    CorElementType GetHFAType() const;
+    CorInfoHFAElemType GetHFAType() const;
 
 #ifdef FEATURE_64BIT_ALIGNMENT
     bool RequiresAlign8() const;

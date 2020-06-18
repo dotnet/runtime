@@ -2122,7 +2122,7 @@ namespace System.Transactions.Tests
         /// <summary>
         /// PSPE Non-MSDTC Abort From Volatile.
         /// </summary>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false, EnlistmentOptions.EnlistDuringPrepareRequired)]
         [InlineData(true, EnlistmentOptions.EnlistDuringPrepareRequired)]
         [InlineData(false, EnlistmentOptions.None)]
@@ -2258,7 +2258,7 @@ namespace System.Transactions.Tests
         /// <summary>
         /// Make SetDistributedTransactionIdentifier calls at the wrong time - negative test.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void PSPENonMsdtcInCorrectSetDistributedTransactionIdentifierCalls()
         {
             // Call SetDistributedTransactionIdentifier at the wrong time.

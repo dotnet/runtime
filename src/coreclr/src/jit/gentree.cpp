@@ -679,7 +679,7 @@ bool GenTree::gtHasReg() const
 //    This does not look at the actual register assignments, if any, and so
 //    is valid after Lowering.
 //
-int GenTree::GetRegisterDstCount() const
+int GenTree::GetRegisterDstCount(Compiler* compiler) const
 {
     assert(!isContained());
     if (!IsMultiRegNode())
@@ -692,7 +692,7 @@ int GenTree::GetRegisterDstCount() const
     }
     else if (IsCopyOrReload())
     {
-        return gtGetOp1()->GetRegisterDstCount();
+        return gtGetOp1()->GetRegisterDstCount(compiler);
     }
 #if FEATURE_ARG_SPLIT
     else if (OperIsPutArgSplit())
@@ -723,6 +723,10 @@ int GenTree::GetRegisterDstCount() const
         return 2;
     }
 #endif
+    if (OperIsScalarLocal())
+    {
+        return AsLclVar()->GetFieldCount(compiler);
+    }
     assert(!"Unexpected multi-reg node");
     return 0;
 }
@@ -1457,7 +1461,7 @@ AGAIN:
                     if ((op1->AsHWIntrinsic()->gtHWIntrinsicId != op2->AsHWIntrinsic()->gtHWIntrinsicId) ||
                         (op1->AsHWIntrinsic()->gtSIMDBaseType != op2->AsHWIntrinsic()->gtSIMDBaseType) ||
                         (op1->AsHWIntrinsic()->gtSIMDSize != op2->AsHWIntrinsic()->gtSIMDSize) ||
-                        (op1->AsHWIntrinsic()->GetOtherBaseType() != op2->AsHWIntrinsic()->GetOtherBaseType()))
+                        (op1->AsHWIntrinsic()->GetAuxiliaryType() != op2->AsHWIntrinsic()->GetAuxiliaryType()))
                     {
                         return false;
                     }
@@ -2127,7 +2131,7 @@ AGAIN:
                     hash += tree->AsHWIntrinsic()->gtHWIntrinsicId;
                     hash += tree->AsHWIntrinsic()->gtSIMDBaseType;
                     hash += tree->AsHWIntrinsic()->gtSIMDSize;
-                    hash += tree->AsHWIntrinsic()->GetOtherBaseType();
+                    hash += tree->AsHWIntrinsic()->GetAuxiliaryType();
                     break;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -5569,7 +5573,7 @@ bool GenTree::OperMayThrow(Compiler* comp)
 // Notes:
 //     This must be a multireg lclVar.
 //
-unsigned int GenTreeLclVar::GetFieldCount(Compiler* compiler)
+unsigned int GenTreeLclVar::GetFieldCount(Compiler* compiler) const
 {
     assert(IsMultiReg());
     LclVarDsc* varDsc = compiler->lvaGetDesc(GetLclNum());
@@ -7474,7 +7478,7 @@ GenTree* Compiler::gtCloneExpr(
                     GenTreeHWIntrinsic(hwintrinsicOp->TypeGet(), hwintrinsicOp->gtGetOp1(),
                                        hwintrinsicOp->gtGetOp2IfPresent(), hwintrinsicOp->gtHWIntrinsicId,
                                        hwintrinsicOp->gtSIMDBaseType, hwintrinsicOp->gtSIMDSize);
-                copy->AsHWIntrinsic()->SetOtherBaseType(hwintrinsicOp->GetOtherBaseType());
+                copy->AsHWIntrinsic()->SetAuxiliaryType(hwintrinsicOp->GetAuxiliaryType());
             }
             break;
 #endif
@@ -10208,10 +10212,12 @@ void Compiler::gtDispRegVal(GenTree* tree)
     }
 
 #if FEATURE_MULTIREG_RET
-    if (tree->IsMultiRegCall())
+    if (tree->OperIs(GT_CALL))
     {
         // 0th reg is GetRegNum(), which is already printed above.
         // Print the remaining regs of a multi-reg call node.
+        // Note that, prior to the initialization of the ReturnTypeDesc we won't print
+        // any additional registers.
         const GenTreeCall* call     = tree->AsCall();
         const unsigned     regCount = call->GetReturnTypeDesc()->TryGetReturnRegCount();
         for (unsigned i = 1; i < regCount; ++i)
@@ -10226,14 +10232,11 @@ void Compiler::gtDispRegVal(GenTree* tree)
         unsigned                   regCount     = 0;
         if (op1->OperIs(GT_CALL))
         {
-            if (op1->IsMultiRegCall())
+            regCount = op1->AsCall()->GetReturnTypeDesc()->TryGetReturnRegCount();
+            // If it hasn't yet been initialized, we'd still like to see the registers printed.
+            if (regCount == 0)
             {
-                regCount = op1->AsCall()->GetReturnTypeDesc()->TryGetReturnRegCount();
-                // If it hasn't yet been initialized, we'd still like to see the registers printed.
-                if (regCount == 0)
-                {
-                    regCount = MAX_RET_REG_COUNT;
-                }
+                regCount = MAX_RET_REG_COUNT;
             }
         }
         else if (op1->IsMultiRegLclVar())
@@ -10249,7 +10252,7 @@ void Compiler::gtDispRegVal(GenTree* tree)
         for (unsigned i = 1; i < regCount; i++)
         {
             regNumber reg = tree->AsCopyOrReload()->GetRegNumByIdx(i);
-            printf(",%s", (reg == REG_NA) ? ",NA" : compRegVarName(reg));
+            printf(",%s", (reg == REG_NA) ? "NA" : compRegVarName(reg));
         }
     }
 #endif
@@ -10846,8 +10849,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                             fieldVarDsc->PrintVarReg();
                         }
 
-                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && // Includes local variable liveness
-                            ((tree->gtFlags & GTF_VAR_DEATH) != 0))
+                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->IsMultiRegLclVar() &&
+                            tree->AsLclVar()->IsLastUse(i - varDsc->lvFieldLclStart))
                         {
                             printf(" (last use)");
                         }
@@ -12454,6 +12457,7 @@ GenTree* Compiler::gtCreateHandleCompare(genTreeOps             oper,
 //    Checks for
 //        typeof(...) == obj.GetType()
 //        typeof(...) == typeof(...)
+//        obj1.GetType() == obj2.GetType()
 //
 //    And potentially optimizes away the need to obtain actual
 //    RuntimeType objects to do the comparison.
@@ -12483,32 +12487,19 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return tree;
     }
 
-    // We must have a handle on one side or the other here to optimize,
-    // otherwise we can't be sure that optimizing is sound.
-    const bool op1IsFromHandle = (op1Kind == TPK_Handle);
-    const bool op2IsFromHandle = (op2Kind == TPK_Handle);
-
-    if (!(op1IsFromHandle || op2IsFromHandle))
-    {
-        return tree;
-    }
-
     // If both types are created via handles, we can simply compare
-    // handles (or the indirection cells for handles) instead of the
-    // types that they'd create.
-    if (op1IsFromHandle && op2IsFromHandle)
+    // handles instead of the types that they'd create.
+    if ((op1Kind == TPK_Handle) && (op2Kind == TPK_Handle))
     {
         JITDUMP("Optimizing compare of types-from-handles to instead compare handles\n");
         GenTree*             op1ClassFromHandle = tree->AsOp()->gtOp1->AsCall()->gtCallArgs->GetNode();
         GenTree*             op2ClassFromHandle = tree->AsOp()->gtOp2->AsCall()->gtCallArgs->GetNode();
-        GenTree*             op1TunneledHandle  = nullptr;
-        GenTree*             op2TunneledHandle  = nullptr;
         CORINFO_CLASS_HANDLE cls1Hnd            = NO_CLASS_HANDLE;
         CORINFO_CLASS_HANDLE cls2Hnd            = NO_CLASS_HANDLE;
 
         // Try and find class handles from op1 and op2
-        cls1Hnd = gtGetHelperArgClassHandle(op1ClassFromHandle, &op1TunneledHandle);
-        cls2Hnd = gtGetHelperArgClassHandle(op2ClassFromHandle, &op2TunneledHandle);
+        cls1Hnd = gtGetHelperArgClassHandle(op1ClassFromHandle);
+        cls2Hnd = gtGetHelperArgClassHandle(op2ClassFromHandle);
 
         // If we have both class handles, try and resolve the type equality test completely.
         bool resolveFailed = false;
@@ -12561,17 +12552,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
         assert(inliningKind == CORINFO_INLINE_TYPECHECK_PASS || inliningKind == CORINFO_INLINE_TYPECHECK_USE_HELPER);
 
-        // If we successfully tunneled through both operands, compare
-        // the tunneled values, otherwise compare the original values.
-        GenTree* compare;
-        if ((op1TunneledHandle != nullptr) && (op2TunneledHandle != nullptr))
-        {
-            compare = gtCreateHandleCompare(oper, op1TunneledHandle, op2TunneledHandle, inliningKind);
-        }
-        else
-        {
-            compare = gtCreateHandleCompare(oper, op1ClassFromHandle, op2ClassFromHandle, inliningKind);
-        }
+        GenTree* compare = gtCreateHandleCompare(oper, op1ClassFromHandle, op2ClassFromHandle, inliningKind);
 
         // Drop any now-irrelvant flags
         compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
@@ -12579,20 +12560,61 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return compare;
     }
 
-    // Just one operand creates a type from a handle.
-    //
-    // If the other operand is fetching the type from an object,
+    if ((op1Kind == TPK_GetType) && (op2Kind == TPK_GetType))
+    {
+        GenTree* arg1;
+
+        if (op1->OperGet() == GT_INTRINSIC)
+        {
+            arg1 = op1->AsUnOp()->gtOp1;
+        }
+        else
+        {
+            arg1 = op1->AsCall()->gtCallThisArg->GetNode();
+        }
+
+        arg1 = gtNewOperNode(GT_IND, TYP_I_IMPL, arg1);
+        arg1->gtFlags |= GTF_EXCEPT;
+
+        GenTree* arg2;
+
+        if (op2->OperGet() == GT_INTRINSIC)
+        {
+            arg2 = op2->AsUnOp()->gtOp1;
+        }
+        else
+        {
+            arg2 = op2->AsCall()->gtCallThisArg->GetNode();
+        }
+
+        arg2 = gtNewOperNode(GT_IND, TYP_I_IMPL, arg2);
+        arg2->gtFlags |= GTF_EXCEPT;
+
+        CorInfoInlineTypeCheck inliningKind =
+            info.compCompHnd->canInlineTypeCheck(nullptr, CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE);
+        assert(inliningKind == CORINFO_INLINE_TYPECHECK_PASS || inliningKind == CORINFO_INLINE_TYPECHECK_USE_HELPER);
+
+        GenTree* compare = gtCreateHandleCompare(oper, arg1, arg2, inliningKind);
+
+        // Drop any now-irrelvant flags
+        compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
+
+        return compare;
+    }
+
+    // If one operand creates a type from a handle and the other operand is fetching the type from an object,
     // we can sometimes optimize the type compare into a simpler
     // method table comparison.
     //
     // TODO: if other operand is null...
-    if ((op1Kind != TPK_GetType) && (op2Kind != TPK_GetType))
+    if (!(((op1Kind == TPK_GetType) && (op2Kind == TPK_Handle)) ||
+          ((op1Kind == TPK_Handle) && (op2Kind == TPK_GetType))))
     {
         return tree;
     }
 
-    GenTree* const opHandle = op1IsFromHandle ? op1 : op2;
-    GenTree* const opOther  = op1IsFromHandle ? op2 : op1;
+    GenTree* const opHandle = (op1Kind == TPK_Handle) ? op1 : op2;
+    GenTree* const opOther  = (op1Kind == TPK_Handle) ? op2 : op1;
 
     // Tunnel through the handle operand to get at the class handle involved.
     GenTree* const       opHandleArgument = opHandle->AsCall()->gtCallArgs->GetNode();
@@ -12689,12 +12711,11 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 //
 // Arguments:
 //    tree - tree that passes the handle to the helper
-//    handleTree [optional, out] - set to the literal operand tree for indirect handles
 //
 // Returns:
 //    The compile time class handle if known.
 //
-CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree, GenTree** handleTree)
+CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
 {
     CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
 
@@ -12729,11 +12750,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree, GenTree*
                 // These handle constants should be class handles.
                 assert(handleTreeInternal->IsIconHandle(GTF_ICON_CLASS_HDL));
                 result = (CORINFO_CLASS_HANDLE)handleTreeInternal->AsIntCon()->gtCompileTimeHandle;
-
-                if (handleTree != nullptr)
-                {
-                    *handleTree = handleTreeInternal;
-                }
             }
         }
     }
@@ -18658,13 +18674,13 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
 // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
 {
-#ifdef TARGET_XARCH
-    // Some xarch instructions have MemoryLoad sematics
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
     if (category == HW_Category_MemoryLoad)
     {
         return true;
     }
+#ifdef TARGET_XARCH
     else if (HWIntrinsicInfo::MaybeMemoryLoad(gtHWIntrinsicId))
     {
         // Some intrinsics (without HW_Category_MemoryLoad) also have MemoryLoad semantics
@@ -18694,19 +18710,20 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
         }
     }
 #endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
     return false;
 }
 
 // Returns true for the HW Instrinsic instructions that have MemoryStore semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryStore() const
 {
-#ifdef TARGET_XARCH
-    // Some xarch instructions have MemoryStore sematics
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
     if (category == HW_Category_MemoryStore)
     {
         return true;
     }
+#ifdef TARGET_XARCH
     else if (HWIntrinsicInfo::MaybeMemoryStore(gtHWIntrinsicId) &&
              (category == HW_Category_IMM || category == HW_Category_Scalar))
     {
@@ -18729,13 +18746,14 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore() const
         }
     }
 #endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
     return false;
 }
 
 // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
 {
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     return OperIsMemoryLoad() || OperIsMemoryStore();
 #else
     return false;

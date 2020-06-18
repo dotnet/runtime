@@ -1099,10 +1099,10 @@ public:
         return ::CreateRefcountedHandle(m_handleStore, object);
     }
 
-    OBJECTHANDLE CreateNativeComWeakHandle(OBJECTREF object, IWeakReference* pComWeakReference)
+    OBJECTHANDLE CreateNativeComWeakHandle(OBJECTREF object, NativeComWeakHandleInfo* pComWeakHandleInfo)
     {
         WRAPPER_NO_CONTRACT;
-        return ::CreateNativeComWeakHandle(m_handleStore, object, pComWeakReference);
+        return ::CreateNativeComWeakHandle(m_handleStore, object, pComWeakHandleInfo);
     }
 #endif // FEATURE_COMINTEROP
 
@@ -1559,6 +1559,10 @@ public:
     OBJECTREF GetRawExposedObject() { LIMITED_METHOD_CONTRACT; return NULL; }
     OBJECTHANDLE GetRawExposedObjectHandleForDebugger() { LIMITED_METHOD_DAC_CONTRACT; return NULL; }
 
+#ifndef DACCESS_COMPILE
+    PTR_NativeImage GetNativeImage(LPCUTF8 compositeFileName);
+    PTR_NativeImage SetNativeImage(LPCUTF8 compositeFileName, PTR_NativeImage pNativeImage);
+#endif // DACCESS_COMPILE
 
     //****************************************************************************************
 
@@ -2317,6 +2321,12 @@ private:
 
     // Hash table that maps a clsid to a type
     PtrHashMap          m_clsidHash;
+
+#ifndef DACCESS_COMPILE
+    // Map of loaded composite native images indexed by base load addresses
+    CrstExplicitInit m_nativeImageLoadCrst;
+    MapSHash<LPCUTF8, PTR_NativeImage, NativeImageIndexTraits> m_nativeImageMap;
+#endif
 
 #ifdef FEATURE_COMINTEROP
     // this cache stores the RCWs in this domain

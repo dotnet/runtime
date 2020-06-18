@@ -621,7 +621,7 @@ public:
     void CopyReg(GenTree* from);
     bool gtHasReg() const;
 
-    int GetRegisterDstCount() const;
+    int GetRegisterDstCount(Compiler* compiler) const;
 
     regMaskTP gtGetRegMask() const;
 
@@ -798,7 +798,6 @@ public:
 
 #define GTF_VAR_ARR_INDEX   0x00000020 // The variable is part of (the index portion of) an array index expression.
                                        // Shares a value with GTF_REVERSE_OPS, which is meaningless for local var.
-
 
                                                // For additional flags for GT_CALL node see GTF_CALL_M_*
 
@@ -1708,7 +1707,7 @@ public:
     inline GenTree* gtEffectiveVal(bool commaOnly = false);
 
     // Tunnel through any GT_RET_EXPRs
-    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags = nullptr);
+    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags);
 
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
@@ -3305,7 +3304,7 @@ public:
         gtSpillFlags = SetMultiRegSpillFlagsByIdx(gtSpillFlags, flags, idx);
     }
 
-    unsigned int GetFieldCount(Compiler* compiler);
+    unsigned int GetFieldCount(Compiler* compiler) const;
     var_types GetFieldTypeByIndex(Compiler* compiler, unsigned idx);
 
     //-------------------------------------------------------------------
@@ -4729,8 +4728,8 @@ private:
     ClassLayout* m_layout;
 
     union {
-        var_types      gtOtherBaseType; // For AVX2 Gather* intrinsics
-        regNumberSmall gtOtherReg;      // For intrinsics that return 2 registers
+        var_types gtAuxiliaryType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
+        regNumberSmall gtOtherReg; // For intrinsics that return 2 registers
     };
 
 public:
@@ -4767,14 +4766,14 @@ public:
         assert(gtOtherReg == reg);
     }
 
-    var_types GetOtherBaseType() const
+    var_types GetAuxiliaryType() const
     {
-        return gtOtherBaseType;
+        return gtAuxiliaryType;
     }
 
-    void SetOtherBaseType(var_types type)
+    void SetAuxiliaryType(var_types type)
     {
-        gtOtherBaseType = type;
+        gtAuxiliaryType = type;
     }
 
     GenTreeJitIntrinsic(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, var_types baseType, unsigned size)
@@ -7054,23 +7053,16 @@ inline GenTree* GenTree::gtRetExprVal(unsigned __int64* pbbFlags)
     GenTree*         retExprVal = this;
     unsigned __int64 bbFlags    = 0;
 
-    for (;;)
+    assert(pbbFlags != nullptr);
+
+    for (; retExprVal->gtOper == GT_RET_EXPR; retExprVal = retExprVal->AsRetExpr()->gtInlineCandidate)
     {
-        if (retExprVal->gtOper == GT_RET_EXPR)
-        {
-            GenTreeRetExpr* retExp = retExprVal->AsRetExpr();
-            retExprVal             = retExp->gtInlineCandidate;
-            bbFlags                = retExp->bbFlags;
-        }
-        else
-        {
-            if (pbbFlags != nullptr)
-            {
-                *pbbFlags = bbFlags;
-            }
-            return retExprVal;
-        }
+        bbFlags = retExprVal->AsRetExpr()->bbFlags;
     }
+
+    *pbbFlags = bbFlags;
+
+    return retExprVal;
 }
 
 inline GenTree* GenTree::gtSkipReloadOrCopy()

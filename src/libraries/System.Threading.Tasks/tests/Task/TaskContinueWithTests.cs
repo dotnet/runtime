@@ -872,7 +872,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunUnwrapTests_CancellationTests()
         {
             Task taskRoot = null;

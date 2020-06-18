@@ -190,17 +190,7 @@ namespace BinderTracingTests
                 if (timeWaitedInMs > waitTimeoutInMs)
                 {
                     var msg = new System.Text.StringBuilder($"Timed out waiting for bind events for {assemblyName}");
-                    msg.AppendLine("Received events:");
-                    lock (eventsLock)
-                    {
-                        foreach (BindOperation op in bindOperations.Values)
-                        {
-                            msg.AppendLine($"{op.AssemblyName}");
-                            msg.AppendLine($"  Completed: {op.Completed}");
-                            msg.AppendLine($"  Nested: {op.Nested}");
-                        }
-                    }
-
+                    msg.AppendLine(GetReceivedEventsAsString());
                     throw new TimeoutException(msg.ToString());
                 }
             }
@@ -249,12 +239,15 @@ namespace BinderTracingTests
                 }
                 case "AssemblyLoadStop":
                 {
+                    bool success = (bool)GetData("Success");
+                    string resultName = GetDataString("ResultAssemblyName");
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
+                        if (!bindOperations.ContainsKey(data.ActivityId))
+                            Assert.Fail(GetMisssingAssemblyBindStartMessage(data, $"Success={success}, Name={resultName}"));
+
                         BindOperation bind = bindOperations[data.ActivityId];
-                        bind.Success = (bool)GetData("Success");
-                        string resultName = GetDataString("ResultAssemblyName");
+                        bind.Success = success;
                         if (!string.IsNullOrEmpty(resultName))
                         {
                             bind.ResultAssemblyName = new AssemblyName(resultName);
@@ -270,7 +263,9 @@ namespace BinderTracingTests
                     ResolutionAttempt attempt = ParseResolutionAttemptedEvent(GetData, GetDataString);
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
+                        if (!bindOperations.ContainsKey(data.ActivityId))
+                            Assert.Fail(GetMisssingAssemblyBindStartMessage(data, attempt.ToString()));
+
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.ResolutionAttempts.Add(attempt);
                     }
@@ -281,7 +276,9 @@ namespace BinderTracingTests
                     HandlerInvocation handlerInvocation = ParseHandlerInvokedEvent(GetDataString);
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
+                        if (!bindOperations.ContainsKey(data.ActivityId))
+                            Assert.Fail(GetMisssingAssemblyBindStartMessage(data, handlerInvocation.ToString()));
+
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.AssemblyLoadContextResolvingHandlers.Add(handlerInvocation);
                     }
@@ -292,7 +289,9 @@ namespace BinderTracingTests
                     HandlerInvocation handlerInvocation = ParseHandlerInvokedEvent(GetDataString);
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
+                        if (!bindOperations.ContainsKey(data.ActivityId))
+                            Assert.Fail(GetMisssingAssemblyBindStartMessage(data, handlerInvocation.ToString()));
+
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.AppDomainAssemblyResolveHandlers.Add(handlerInvocation);
                     }
@@ -303,7 +302,9 @@ namespace BinderTracingTests
                     LoadFromHandlerInvocation loadFrom = ParseLoadFromHandlerInvokedEvent(GetData, GetDataString);
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
+                        if (!bindOperations.ContainsKey(data.ActivityId))
+                            Assert.Fail(GetMisssingAssemblyBindStartMessage(data, loadFrom.ToString()));
+
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.AssemblyLoadFromHandler = loadFrom;
                     }
@@ -314,13 +315,42 @@ namespace BinderTracingTests
                     ProbedPath probedPath = ParseKnownPathProbedEvent(GetData, GetDataString);
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
+                        if (!bindOperations.ContainsKey(data.ActivityId))
+                            Assert.Fail(GetMisssingAssemblyBindStartMessage(data, probedPath.ToString()));
+
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.ProbedPaths.Add(probedPath);
                     }
                     break;
                 }
             }
+        }
+
+        private string GetMisssingAssemblyBindStartMessage(EventWrittenEventArgs data, string parsedEventAsString)
+        {
+            var msg = new System.Text.StringBuilder();
+            msg.AppendLine($"{data.EventName} (ActivityId: {data.ActivityId}) should have a matching AssemblyBindStart");
+            msg.AppendLine($"Parsed event: {parsedEventAsString}");
+            msg.AppendLine(GetReceivedEventsAsString());
+            return msg.ToString();
+        }
+
+        private string GetReceivedEventsAsString()
+        {
+            var msg = new System.Text.StringBuilder();
+            msg.AppendLine("Received events:");
+            lock (eventsLock)
+            {
+                foreach (BindOperation op in bindOperations.Values)
+                {
+                    msg.AppendLine(op.ToString());
+                    msg.AppendLine($" - ActivityId: {op.ActivityId}");
+                    msg.AppendLine($" - Completed: {op.Completed}");
+                    msg.AppendLine($" - Nested: {op.Nested}");
+                }
+            }
+
+            return msg.ToString();
         }
 
         private BindOperation ParseAssemblyLoadStartEvent(EventWrittenEventArgs data, Func<string, string> getDataString)

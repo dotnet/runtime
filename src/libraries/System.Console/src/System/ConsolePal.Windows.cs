@@ -580,8 +580,7 @@ namespace System
         {
             get
             {
-                Span<char> initialBuffer = stackalloc char[256];
-                ValueStringBuilder builder = new ValueStringBuilder(initialBuffer);
+                ValueStringBuilder builder = new ValueStringBuilder(stackalloc char[256]);
 
                 while (true)
                 {

@@ -16,21 +16,21 @@ namespace System.Formats.Cbor.Tests
         public static byte[] ExportECDsaPublicKey(ECDsa ecDsa, HashAlgorithmName? hashAlgName)
         {
             ECParameters ecParams = ecDsa.ExportParameters(includePrivateParameters: false);
-            var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical, convertIndefiniteLengthEncodings: true);
+            var writer = new CborWriter(CborConformanceMode.Ctap2Canonical, convertIndefiniteLengthEncodings: true);
             WriteECParametersAsCosePublicKey(writer, ecParams, hashAlgName);
             return writer.Encode();
         }
 
         public static (ECDsa ecDsa, HashAlgorithmName? hashAlgName) ParseECDsaPublicKey(byte[] coseKey)
         {
-            var reader = new CborReader(coseKey, CborConformanceLevel.Ctap2Canonical);
+            var reader = new CborReader(coseKey, CborConformanceMode.Ctap2Canonical);
             (ECParameters ecParams, HashAlgorithmName? hashAlgName) = ReadECParametersAsCosePublicKey(reader);
             return (ECDsa.Create(ecParams), hashAlgName);
         }
 
         private static void WriteECParametersAsCosePublicKey(CborWriter writer, ECParameters ecParams, HashAlgorithmName? algorithmName)
         {
-            Debug.Assert(writer.ConformanceLevel == CborConformanceLevel.Ctap2Canonical && writer.ConvertIndefiniteLengthEncodings);
+            Debug.Assert(writer.ConformanceMode == CborConformanceMode.Ctap2Canonical && writer.ConvertIndefiniteLengthEncodings);
 
             if (ecParams.Q.X is null || ecParams.Q.Y is null)
             {
@@ -42,7 +42,7 @@ namespace System.Formats.Cbor.Tests
             CoseKeyAlgorithm? alg = (algorithmName != null) ? MapHashAlgorithmNameToCoseKeyAlg(algorithmName.Value) : (CoseKeyAlgorithm?)null;
 
             // Begin writing a CBOR object
-            writer.WriteStartMap();
+            writer.WriteStartMap(definiteLength: null);
 
             // NB labels should be sorted according to CTAP2 canonical encoding rules.
             // While the CborWriter will attempt to sort the encodings on its own,
@@ -125,7 +125,7 @@ namespace System.Formats.Cbor.Tests
 
         private static (ECParameters, HashAlgorithmName?) ReadECParametersAsCosePublicKey(CborReader reader)
         {
-            Debug.Assert(reader.ConformanceLevel == CborConformanceLevel.Ctap2Canonical);
+            Debug.Assert(reader.ConformanceMode == CborConformanceMode.Ctap2Canonical);
 
             // CTAP2 conformance mode requires that fields are sorted by key encoding.
             // We take advantage of this by reading keys in that order.
@@ -167,7 +167,7 @@ namespace System.Formats.Cbor.Tests
                 }
                 else
                 {
-                    throw new FormatException("Invalid kty/crv combination in COSE key.");
+                    throw new CborContentException("Invalid kty/crv combination in COSE key.");
                 }
 
                 ReadCoseKeyLabel(CoseKeyLabel.EcX);
@@ -178,12 +178,12 @@ namespace System.Formats.Cbor.Tests
 
                 if (TryReadCoseKeyLabel(CoseKeyLabel.EcD))
                 {
-                    throw new FormatException("COSE key encodes a private key.");
+                    throw new CborContentException("COSE key encodes a private key.");
                 }
 
                 if (remainingKeys > 0)
                 {
-                    throw new FormatException("COSE_key contains unrecognized trailing data.");
+                    throw new CborContentException("COSE_key contains unrecognized trailing data.");
                 }
 
                 reader.ReadEndMap();
@@ -192,7 +192,7 @@ namespace System.Formats.Cbor.Tests
             }
             catch (InvalidOperationException e)
             {
-                throw new FormatException("Invalid COSE_key format in CBOR document", e);
+                throw new CborContentException("Invalid COSE_key format in CBOR document", e);
             }
 
             static bool IsValidKtyCrvCombination(CoseKeyType kty, CoseCrvId crv)
@@ -217,7 +217,7 @@ namespace System.Formats.Cbor.Tests
                     CoseCrvId.X448 or
                     CoseCrvId.Ed25519 or
                     CoseCrvId.Ed448 => throw new NotImplementedException("OKP type curves not implemented."),
-                    _ => throw new FormatException("Unrecognized COSE crv value."),
+                    _ => throw new CborContentException("Unrecognized COSE crv value."),
                 };
             }
 
@@ -228,7 +228,7 @@ namespace System.Formats.Cbor.Tests
                     CoseKeyAlgorithm.ES256 => HashAlgorithmName.SHA256,
                     CoseKeyAlgorithm.ES384 => HashAlgorithmName.SHA384,
                     CoseKeyAlgorithm.ES512 => HashAlgorithmName.SHA512,
-                    _ => throw new FormatException("Unrecognized COSE alg value."),
+                    _ => throw new CborContentException("Unrecognized COSE alg value."),
                 };
             }
 
@@ -265,7 +265,7 @@ namespace System.Formats.Cbor.Tests
             {
                 if (!TryReadCoseKeyLabel(expectedLabel))
                 {
-                    throw new FormatException("Unexpected COSE key label.");
+                    throw new CborContentException("Unexpected COSE key label.");
                 }
             }
         }

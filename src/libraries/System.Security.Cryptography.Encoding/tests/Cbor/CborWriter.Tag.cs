@@ -18,13 +18,13 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         public void WriteTag(CborTag tag)
         {
-            if (!CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
+            if (!CborConformanceModeHelpers.AllowsTags(ConformanceMode))
             {
-                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_TagsNotSupported, ConformanceLevel));
+                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_TagsNotSupported, ConformanceMode));
             }
 
             WriteUnsignedInteger(CborMajorType.Tag, (ulong)tag);
@@ -39,7 +39,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         public void WriteDateTimeOffset(DateTimeOffset value)
         {
@@ -60,7 +60,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         public void WriteUnixTimeSeconds(long seconds)
         {
@@ -79,7 +79,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         public void WriteUnixTimeSeconds(double seconds)
         {
@@ -100,7 +100,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   The written data is not accepted under the current conformance mode
         /// </exception>
         public void WriteBigInteger(BigInteger value)
         {
@@ -120,7 +120,7 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level.
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         public void WriteDecimal(decimal value)
         {
@@ -138,7 +138,7 @@ namespace System.Formats.Cbor
                 }
                 else
                 {
-                    WriteCborNegativeIntegerEncoding((ulong)(-1m - mantissa));
+                    WriteCborNegativeIntegerRepresentation((ulong)(-1m - mantissa));
                 }
             }
             else

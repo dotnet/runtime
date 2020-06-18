@@ -2,16 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using BundleTests.Helpers;
+using FluentAssertions;
+using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.NET.HostModel.Bundle;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
-using Microsoft.DotNet.CoreSetup.Test;
-using Microsoft.DotNet.Cli.Build.Framework;
-using Microsoft.NET.HostModel.Bundle;
-using BundleTests.Helpers;
-using FluentAssertions;
 
 namespace Microsoft.NET.HostModel.Tests
 {
@@ -81,6 +83,42 @@ namespace Microsoft.NET.HostModel.Tests
 
             Bundler bundler = new Bundler(hostName, bundleDir.FullName);
             Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs));
+        }
+
+        [Fact]
+        public void TestBaseNameComputation()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            var publishPath = BundleHelper.GetPublishPath(fixture);
+            var bundleDir = BundleHelper.GetBundleDir(fixture);
+
+            // Rename the host from "StandaloneApp" to "Stand.Alone.App" to check that baseName computation
+            // (and consequently deps.json and runtimeconfig.json name computations) in the bundler
+            // work correctly in the presence of "."s in the hostName.
+            var originalBaseName = "StandaloneApp";
+            var newBaseName = "Stand.Alone.App";
+            var exe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty;
+
+            void rename(string extension)
+            {
+                File.Move(Path.Combine(publishPath, originalBaseName + extension), Path.Combine(publishPath, newBaseName + extension));
+            }
+            rename(exe);
+            rename(".deps.json");
+            rename(".runtimeconfig.json");
+
+            var hostName = newBaseName + exe;
+            var depsJson = newBaseName + ".deps.json";
+            var runtimeconfigJson = newBaseName + ".runtimeconfig.json";
+
+            var bundler = new Bundler(hostName, bundleDir.FullName);
+            BundleHelper.GenerateBundle(bundler, publishPath, bundleDir.FullName);
+
+            string[] jsonFiles = { depsJson, runtimeconfigJson };
+
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals(depsJson)).Single().Type.Should().Be(FileType.DepsJson);
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals(runtimeconfigJson)).Single().Type.Should().Be(FileType.RuntimeConfigJson);
+            bundleDir.Should().NotHaveFiles(jsonFiles);
         }
 
         [InlineData(BundleOptions.None)]

@@ -1909,6 +1909,17 @@ typedef enum NativeTypeArrayFlags
 } NativeTypeArrayFlags;
 
 //
+// Enum used for HFA type recognition.
+// Supported across architectures, so that it can be used in altjits and cross-compilation.
+typedef enum CorInfoHFAElemType : unsigned {
+    CORINFO_HFA_ELEM_NONE,
+    CORINFO_HFA_ELEM_FLOAT,
+    CORINFO_HFA_ELEM_DOUBLE,
+    CORINFO_HFA_ELEM_VECTOR64,
+    CORINFO_HFA_ELEM_VECTOR128,
+} CorInfoHFAElemType;
+
+//
 // Opaque types for security properties and values.
 //
 typedef void  *  PSECURITY_PROPS ;

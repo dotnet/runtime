@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Text;
 
 namespace System.Formats.Cbor
 {
     /// <summary>
-    ///   Defines supported conformance levels for encoding and decoding CBOR data.
+    ///   Defines supported conformance modes for encoding and decoding CBOR data.
     /// </summary>
-    public enum CborConformanceLevel
+    public enum CborConformanceMode
     {
         /// <summary>
         ///   Ensures that the CBOR data is well-formed, as specified in RFC7049.
@@ -53,141 +54,141 @@ namespace System.Formats.Cbor
         Ctap2Canonical,
     }
 
-    internal static class CborConformanceLevelHelpers
+    internal static class CborConformanceModeHelpers
     {
         private static readonly UTF8Encoding s_utf8EncodingLax    = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
         private static readonly UTF8Encoding s_utf8EncodingStrict = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-        public static void Validate(CborConformanceLevel conformanceLevel)
+        public static void Validate(CborConformanceMode conformanceMode)
         {
-            if (conformanceLevel < CborConformanceLevel.Lax ||
-                conformanceLevel > CborConformanceLevel.Ctap2Canonical)
+            if (conformanceMode < CborConformanceMode.Lax ||
+                conformanceMode > CborConformanceMode.Ctap2Canonical)
             {
-                throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+                throw new ArgumentOutOfRangeException(nameof(conformanceMode));
             }
         }
 
-        public static bool RequiresCanonicalIntegerRepresentation(CborConformanceLevel conformanceLevel)
+        public static bool RequiresCanonicalIntegerRepresentation(CborConformanceMode conformanceMode)
         {
-            switch (conformanceLevel)
+            switch (conformanceMode)
             {
-                case CborConformanceLevel.Lax:
-                case CborConformanceLevel.Strict:
+                case CborConformanceMode.Lax:
+                case CborConformanceMode.Strict:
                     return false;
 
-                case CborConformanceLevel.Canonical:
-                case CborConformanceLevel.Ctap2Canonical:
+                case CborConformanceMode.Canonical:
+                case CborConformanceMode.Ctap2Canonical:
                     return true;
 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+                    throw new ArgumentOutOfRangeException(nameof(conformanceMode));
             };
         }
 
-        public static bool RequiresUtf8Validation(CborConformanceLevel conformanceLevel)
+        public static bool RequiresUtf8Validation(CborConformanceMode conformanceMode)
         {
-            switch (conformanceLevel)
+            switch (conformanceMode)
             {
-                case CborConformanceLevel.Lax:
+                case CborConformanceMode.Lax:
                     return false;
 
-                case CborConformanceLevel.Strict:
-                case CborConformanceLevel.Canonical:
-                case CborConformanceLevel.Ctap2Canonical:
+                case CborConformanceMode.Strict:
+                case CborConformanceMode.Canonical:
+                case CborConformanceMode.Ctap2Canonical:
                     return true;
 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+                    throw new ArgumentOutOfRangeException(nameof(conformanceMode));
             };
         }
 
-        public static Encoding GetUtf8Encoding(CborConformanceLevel conformanceLevel)
+        public static Encoding GetUtf8Encoding(CborConformanceMode conformanceMode)
         {
-            return conformanceLevel == CborConformanceLevel.Lax ? s_utf8EncodingLax : s_utf8EncodingStrict;
+            return conformanceMode == CborConformanceMode.Lax ? s_utf8EncodingLax : s_utf8EncodingStrict;
         }
 
-        public static bool RequiresDefiniteLengthItems(CborConformanceLevel conformanceLevel)
+        public static bool RequiresDefiniteLengthItems(CborConformanceMode conformanceMode)
         {
-            switch (conformanceLevel)
+            switch (conformanceMode)
             {
-                case CborConformanceLevel.Lax:
-                case CborConformanceLevel.Strict:
+                case CborConformanceMode.Lax:
+                case CborConformanceMode.Strict:
                     return false;
 
-                case CborConformanceLevel.Canonical:
-                case CborConformanceLevel.Ctap2Canonical:
+                case CborConformanceMode.Canonical:
+                case CborConformanceMode.Ctap2Canonical:
                     return true;
 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+                    throw new ArgumentOutOfRangeException(nameof(conformanceMode));
             };
         }
 
-        public static bool AllowsTags(CborConformanceLevel conformanceLevel)
+        public static bool AllowsTags(CborConformanceMode conformanceMode)
         {
-            switch (conformanceLevel)
+            switch (conformanceMode)
             {
-                case CborConformanceLevel.Lax:
-                case CborConformanceLevel.Strict:
-                case CborConformanceLevel.Canonical:
+                case CborConformanceMode.Lax:
+                case CborConformanceMode.Strict:
+                case CborConformanceMode.Canonical:
                     return true;
 
-                case CborConformanceLevel.Ctap2Canonical:
+                case CborConformanceMode.Ctap2Canonical:
                     return false;
 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+                    throw new ArgumentOutOfRangeException(nameof(conformanceMode));
             };
         }
 
-        public static bool RequiresUniqueKeys(CborConformanceLevel conformanceLevel)
+        public static bool RequiresUniqueKeys(CborConformanceMode conformanceMode)
         {
-            switch (conformanceLevel)
+            switch (conformanceMode)
             {
-                case CborConformanceLevel.Lax:
+                case CborConformanceMode.Lax:
                     return false;
 
-                case CborConformanceLevel.Strict:
-                case CborConformanceLevel.Canonical:
-                case CborConformanceLevel.Ctap2Canonical:
+                case CborConformanceMode.Strict:
+                case CborConformanceMode.Canonical:
+                case CborConformanceMode.Ctap2Canonical:
                     return true;
 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+                    throw new ArgumentOutOfRangeException(nameof(conformanceMode));
             };
         }
 
-        public static bool RequiresSortedKeys(CborConformanceLevel conformanceLevel)
+        public static bool RequiresSortedKeys(CborConformanceMode conformanceMode)
         {
-            switch (conformanceLevel)
+            switch (conformanceMode)
             {
-                case CborConformanceLevel.Strict:
-                case CborConformanceLevel.Lax:
+                case CborConformanceMode.Strict:
+                case CborConformanceMode.Lax:
                     return false;
 
-                case CborConformanceLevel.Canonical:
-                case CborConformanceLevel.Ctap2Canonical:
+                case CborConformanceMode.Canonical:
+                case CborConformanceMode.Ctap2Canonical:
                     return true;
 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+                    throw new ArgumentOutOfRangeException(nameof(conformanceMode));
             };
         }
 
-        public static bool RequireCanonicalSimpleValueEncodings(CborConformanceLevel conformanceLevel)
+        public static bool RequireCanonicalSimpleValueEncodings(CborConformanceMode conformanceMode)
         {
-            switch (conformanceLevel)
+            switch (conformanceMode)
             {
-                case CborConformanceLevel.Lax:
+                case CborConformanceMode.Lax:
                     return false;
 
-                case CborConformanceLevel.Strict:
-                case CborConformanceLevel.Canonical:
-                case CborConformanceLevel.Ctap2Canonical:
+                case CborConformanceMode.Strict:
+                case CborConformanceMode.Canonical:
+                case CborConformanceMode.Ctap2Canonical:
                     return true;
 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+                    throw new ArgumentOutOfRangeException(nameof(conformanceMode));
             }
         }
 
@@ -201,13 +202,13 @@ namespace System.Formats.Cbor
             return left.SequenceEqual(right);
         }
 
-        public static int CompareKeyEncodings(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right, CborConformanceLevel level)
+        public static int CompareKeyEncodings(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right, CborConformanceMode mode)
         {
             Debug.Assert(!left.IsEmpty && !right.IsEmpty);
 
-            switch (level)
+            switch (mode)
             {
-                case CborConformanceLevel.Canonical:
+                case CborConformanceMode.Canonical:
                     // Implements key sorting according to
                     // https://tools.ietf.org/html/rfc7049#section-3.9
 
@@ -218,7 +219,7 @@ namespace System.Formats.Cbor
 
                     return left.SequenceCompareTo(right);
 
-                case CborConformanceLevel.Ctap2Canonical:
+                case CborConformanceMode.Ctap2Canonical:
                     // Implements key sorting according to
                     // https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#message-encoding
 
@@ -238,7 +239,7 @@ namespace System.Formats.Cbor
                     return left.SequenceCompareTo(right);
 
                 default:
-                    Debug.Fail("Invalid conformance level used in encoding sort.");
+                    Debug.Fail("Invalid conformance mode used in encoding sort.");
                     throw new Exception();
             }
         }

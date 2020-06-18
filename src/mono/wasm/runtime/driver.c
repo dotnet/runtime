@@ -42,6 +42,7 @@ int32_t mini_parse_debug_option (const char *option);
 static MonoClass* datetime_class;
 static MonoClass* datetimeoffset_class;
 static MonoClass* uri_class;
+static MonoClass* safehandle_class;
 
 int mono_wasm_enable_gc;
 
@@ -312,8 +313,14 @@ mono_wasm_load_runtime (const char *managed_path, int enable_debugging)
 {
 	const char *interp_opts = "";
 
-	//monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-	//monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
+#ifdef DEBUG
+	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
+	monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
+    // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
+    // output will be sent to the console.  Right now this is the only way to emit debug logging from
+    // corlib assemblies.
+	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
+#endif
 #ifdef ENABLE_NETCORE
 	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 0);
 #endif
@@ -512,6 +519,7 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_DATE 20
 #define MARSHAL_TYPE_DATEOFFSET 21
 #define MARSHAL_TYPE_URI 22
+#define MARSHAL_TYPE_SAFEHANDLE 23
 
 // typed array marshalling
 #define MARSHAL_ARRAY_BYTE 11
@@ -537,6 +545,8 @@ mono_wasm_get_obj_type (MonoObject *obj)
 		MonoException** exc = NULL;
 		uri_class = mono_get_uri_class(exc);
 	}
+	if (!safehandle_class)
+		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
 
 	MonoClass *klass = mono_object_get_class (obj);
 	MonoType *type = mono_class_get_type (klass);
@@ -600,6 +610,9 @@ mono_wasm_get_obj_type (MonoObject *obj)
 			return MARSHAL_TYPE_DELEGATE;
 		if (class_is_task(klass))
 			return MARSHAL_TYPE_TASK;
+		if (safehandle_class && (klass == safehandle_class || mono_class_is_subclass_of(klass, safehandle_class, 0))) {
+			return MARSHAL_TYPE_SAFEHANDLE;
+		}
 
 		return MARSHAL_TYPE_OBJECT;
 	}
