@@ -234,9 +234,7 @@ var Module = {
 			var files = metadata.files;
 			for (var i = 0; i < files.length; ++i) {
 				var byteArray = zoneInfoData.subarray(files[i].start, files[i].end);
-				var stream = FS.open(files[i].filename, 'w+');
-				FS.write(stream, byteArray, 0, byteArray.length, 0);
-				FS.close(stream);
+				writeContentToFile(byteArray, files[i].filename);
 			}
 		}
 		MONO.mono_load_runtime_and_bcl (

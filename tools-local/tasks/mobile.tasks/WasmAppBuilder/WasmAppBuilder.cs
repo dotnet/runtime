@@ -83,12 +83,8 @@ public class WasmAppBuilder : Task
 
             foreach (var item in FilesToIncludeInFileSystem)
             {
-                if (item.ItemSpec.EndsWith("deps.json") || item.ItemSpec.EndsWith("runtimeconfig.json"))
-                {
-                    continue;
-                }
-
-                string targetPath = item.GetMetadata("TargetPath");
+                // We normalize paths from `\` to `/` as MSBuild items could use `\`.
+                string targetPath = item.GetMetadata("TargetPath").Replace('\\', '/');
                 if (string.IsNullOrEmpty(targetPath))
                 {
                     targetPath = Path.GetFileName(item.ItemSpec);

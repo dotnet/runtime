@@ -16,7 +16,7 @@
     <Compile Include="XslCompiledTransform.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\TestFiles\**\*"
+    <Content Include="..\TestFiles\**\*"
           Link="TestFiles\%(RecursiveDir)%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest"
           Visible="false" />
