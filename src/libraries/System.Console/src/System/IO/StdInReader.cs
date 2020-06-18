@@ -15,9 +15,10 @@ namespace System.IO
      */
     internal sealed class StdInReader : TextReader
     {
-        private static string? s_moveLeftString; // string written to move the cursor to the left
         private static string? s_clearToEol;     // string written to clear from cursor to end of line
 
+        private static int _readLineIndex; //int that keeps track of current index in string oof _readLineSB
+        private static int _linesFromTop;
         private readonly StringBuilder _readLineSB; // SB that holds readLine output.  This is a field simply to enable reuse; it's only used in ReadLine.
         private readonly Stack<ConsoleKeyInfo> _tmpKeys = new Stack<ConsoleKeyInfo>(); // temporary working stack; should be empty outside of ReadLine
         private readonly Stack<ConsoleKeyInfo> _availableKeys = new Stack<ConsoleKeyInfo>(); // a queue of already processed key infos available for reading
@@ -150,7 +151,7 @@ namespace System.IO
                     // unprocessed data, or from an actual stdin read.
                     bool previouslyProcessed;
                     ConsoleKeyInfo keyInfo = ReadKey(out previouslyProcessed);
-                    if (!consumeKeys && keyInfo.Key != ConsoleKey.Backspace) // backspace is the only character not written out in the below if/elses.
+                    if (!consumeKeys && (keyInfo.Key != ConsoleKey.Backspace || keyInfo.Key != ConsoleKey.LeftArrow || keyInfo.Key != ConsoleKey.RightArrow)) // backspace, left arrow, and right arrow are the only character not written out in the below if/elses.
                     {
                         _tmpKeys.Push(keyInfo);
                     }
@@ -178,13 +179,12 @@ namespace System.IO
                         int len = _readLineSB.Length;
                         if (len > 0)
                         {
-                            _readLineSB.Length = len - 1;
                             if (!previouslyProcessed)
                             {
                                 // The ReadLine input may wrap across terminal rows and we need to handle that.
                                 // note: ConsolePal will cache the cursor position to avoid making many slow cursor position fetch operations.
                                 if (ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true) &&
-                                    left == 0 && top > 0)
+                                    left == 0 && top > _linesFromTop)
                                 {
                                     if (s_clearToEol == null)
                                     {
@@ -192,19 +192,64 @@ namespace System.IO
                                     }
 
                                     // Move to end of previous line
-                                    ConsolePal.SetCursorPosition(ConsolePal.WindowWidth - 1, top - 1);
+                                    ConsolePal.SetCursorPosition(ConsolePal.WindowWidth, top - 1);
+                                    // Clear from cursor to end of the line
+                                    ConsolePal.WriteStdoutAnsiString(s_clearToEol, mayChangeCursorPosition: false);
+                                }
+                                else if (left > 0)
+                                {
+                                    _readLineSB.Remove(--_readLineIndex, 1);
+                                    Console.Write("\r" + _readLineSB.ToString().Substring((ConsolePal.WindowWidth * (top - _linesFromTop))) + " ");
+                                    ConsolePal.SetCursorPosition(left - 1, top);
+                                }
+                            }
+                        }
+                    }
+                    else if (keyInfo.Key == ConsoleKey.LeftArrow)
+                    {
+                        int len = _readLineSB.Length;
+                        if (len > 0)
+                        {
+                            if (!previouslyProcessed)
+                            {
+                                // The ReadLine input may wrap accross terminal rows and we need to handle that.
+                                // note: ConsolePal will cache the cursor position to avoid making many slow cursor position fetch operations.
+                                if (ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true) &&
+                                    left == 0 && top > _linesFromTop)
+                                {
+                                    // Move to end of previous line
+                                    ConsolePal.SetCursorPosition(ConsolePal.WindowWidth, top - 1);
+                                }
+                                else if (left > 0)
+                                {
+                                    ConsolePal.SetCursorPosition(left - 1, top);
+                                    _readLineIndex--;
+                                }
+                            }
+                        }
+                    }
+                    else if (keyInfo.Key == ConsoleKey.RightArrow)
+                    {
+                        int len = _readLineSB.Length;
+                        if (len > 0 && (_readLineSB.Length > _readLineIndex)) //ensure we're not stepping out of bounds
+                        {
+                            if (!previouslyProcessed)
+                            {
+                                // The ReadLine input may wrap accross terminal rows and we need to handle that.
+                                // note: ConsolePal will cache the cursor position to avoid making many slow cursor position fetch operations.
+                                if (ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true) &&
+                                    left == ConsolePal.WindowWidth && top < ConsolePal.WindowHeight)
+                                {
+                                    // Move to beginning of next line
+                                    ConsolePal.SetCursorPosition(0, top + 1);
                                     // Clear from cursor to end of the line
                                     ConsolePal.WriteStdoutAnsiString(s_clearToEol, mayChangeCursorPosition: false);
                                 }
                                 else
                                 {
-                                    if (s_moveLeftString == null)
-                                    {
-                                        string? moveLeft = ConsolePal.TerminalFormatStrings.Instance.CursorLeft;
-                                        s_moveLeftString = !string.IsNullOrEmpty(moveLeft) ? moveLeft + " " + moveLeft : string.Empty;
-                                    }
-
-                                    Console.Write(s_moveLeftString);
+                                    // Move cursor to the right and update the index
+                                    ConsolePal.SetCursorPosition(left + 1, top);
+                                    _readLineIndex++;
                                 }
                             }
                         }
@@ -232,11 +277,17 @@ namespace System.IO
                     {
                         if (consumeKeys)
                         {
-                            _readLineSB.Append(keyInfo.KeyChar);
+                            _readLineSB.Insert(_readLineIndex++, keyInfo.KeyChar);
                         }
                         if (!previouslyProcessed)
                         {
-                            Console.Write(keyInfo.KeyChar);
+                            ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true);
+                            ConsolePal.SetCursorPosition(0, top);
+                            Console.Write(_readLineSB.ToString().Substring(ConsolePal.WindowWidth * (top - _linesFromTop)));
+                            if (left < ConsolePal.WindowWidth)
+                                ConsolePal.SetCursorPosition(left + 1, top);
+                            else
+                                ConsolePal.SetCursorPosition(1, top + 1);
                         }
                     }
                 }
