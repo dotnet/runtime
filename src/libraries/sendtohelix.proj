@@ -144,7 +144,7 @@
   <Target Name="CompressRuntimeDirectory"
           Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependency)"
           Outputs="$(TestArchiveRuntimeFile)"
-          Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'Android'">
+          Condition="'$(BuildAllConfigurations)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'Browser')">
 
     <!-- Compress the test files, testhost, and per-scenario scripts into a single ZIP file for sending to the Helix machines. -->
 

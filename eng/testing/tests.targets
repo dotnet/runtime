@@ -42,12 +42,12 @@
 
     <PropertyGroup>
       <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
-      <_zipSourceDirectory>$(OutDir)</_zipSourceDirectory>
-      <_zipSourceDirectory Condition="'$(TargetOS)' == 'Browser'">$(BundleDir)</_zipSourceDirectory>
+      <_ZipSourceDirectory>$(OutDir)</_ZipSourceDirectory>
+      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser'">$(BundleDir)</_ZipSourceDirectory>
     </PropertyGroup>
 
     <MakeDir Directories="$(TestArchiveTestsDir)" />
-    <ZipDirectory SourceDirectory="$(_zipSourceDirectory)"
+    <ZipDirectory SourceDirectory="$(_ZipSourceDirectory)"
                   DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
                   Overwrite="true" />
   </Target>

@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RunScriptCommands Condition="'$(TargetOS)' != 'Browser'" Include="TARGET_ARCH=$(TargetArchitecture)" />
+    <RunScriptCommands Include="TARGET_ARCH=$(TargetArchitecture)" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">

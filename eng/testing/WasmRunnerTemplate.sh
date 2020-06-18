@@ -15,6 +15,6 @@ fi
 
 _exitCode=$?
 
-echo "Xharness artifacts: `ls -lh $XHARNESS_OUT`"
+echo "Xharness artifacts: $XHARNESS_OUT"
 
 exit $_exitCode
