@@ -481,6 +481,12 @@ void InitGSCookie()
     }
     CONTRACTL_END;
 
+#if defined(TARGET_OSX) && defined(DISABLE_GS_COOKIE_ON_OSX)
+    // OSX does not like the way we change section protection when running in a superhost bundle
+    // disabling this for now
+    return;
+#endif
+
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
 #ifdef TARGET_UNIX

@@ -16,6 +16,7 @@ target_precompile_header(TARGET cee_wks HEADER common.h)
 target_precompile_header(TARGET cee_wks_mergeable HEADER common.h)
 
 target_compile_definitions(cee_wks_mergeable PUBLIC FEATURE_MERGE_JIT_AND_ENGINE)
+target_compile_definitions(cee_wks_mergeable PUBLIC DISABLE_GS_COOKIE_ON_OSX)
 
 if (MSVC)
     # mscorlib.cpp does not compile with precompiled header file
