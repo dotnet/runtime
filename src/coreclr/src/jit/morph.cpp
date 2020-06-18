@@ -4214,6 +4214,10 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
                     {
                         structSize = argx->AsObj()->GetLayout()->GetSize();
                     }
+                    else if (varTypeIsSIMD(argx))
+                    {
+                        structSize = genTypeSize(argx);
+                    }
                     else
                     {
                         assert(argx->OperIs(GT_LCL_VAR));
@@ -17582,6 +17586,9 @@ void Compiler::fgPromoteStructs()
     //
     lvaStructPromotionInfo structPromotionInfo;
     bool                   tooManyLocalsReported = false;
+
+    // Clear the structPromotionHelper, since it is conservative about looking up SIMD info.
+    structPromotionHelper->Clear();
 
     for (unsigned lclNum = 0; lclNum < startLvaCount; lclNum++)
     {
