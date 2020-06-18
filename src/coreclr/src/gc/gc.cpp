@@ -13083,14 +13083,12 @@ bool gc_heap::should_retry_other_heap (int gen_number, size_t size)
 #ifdef MULTIPLE_HEAPS
     if (heap_hard_limit)
     {
-        size_t total_heap_committed_recorded =
-            current_total_committed - current_total_committed_bookkeeping;
         size_t min_size = dd_min_size (g_heaps[0]->dynamic_data_of (gen_number));
         size_t slack_space = max (commit_min_th, min_size);
-        bool retry_p = ((total_heap_committed_recorded + size) < (heap_hard_limit - slack_space));
+        bool retry_p = ((current_total_committed + size) < (heap_hard_limit - slack_space));
         dprintf (1, ("%Id - %Id - total committed %Id - size %Id = %Id, %s",
-            heap_hard_limit, slack_space, total_heap_committed_recorded, size,
-            (heap_hard_limit - slack_space - total_heap_committed_recorded - size),
+            heap_hard_limit, slack_space, current_total_committed, size,
+            (heap_hard_limit - slack_space - current_total_committed - size),
             (retry_p ? "retry" : "no retry")));
         return retry_p;
     }
