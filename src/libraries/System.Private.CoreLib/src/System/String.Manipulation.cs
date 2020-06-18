@@ -1558,99 +1558,58 @@ namespace System
         /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> to store indexes</param>
         private void MakeSeparatorList(ReadOnlySpan<char> separators, ref ValueListBuilder<int> sepListBuilder)
         {
-            char sep0, sep1, sep2;
-
-            switch (separators.Length)
+            if (separators.Length == 0)
             {
-                // Special-case no separators to mean any whitespace is a separator.
-                case 0:
-                    for (int i = 0; i < Length; i++)
+                for (int i = 0; i < Length; i++)
+                {
+                    if (char.IsWhiteSpace(this[i]))
                     {
-                        if (char.IsWhiteSpace(this[i]))
-                        {
-                            sepListBuilder.Append(i);
-                        }
+                        sepListBuilder.Append(i);
                     }
-                    break;
+                }
+            }
 
-                // Special-case the common cases of 1, 2, and 3 separators, with manual comparisons against each separator.
-                case 1:
-                    sep0 = separators[0];
+            else if (separators.Length <= 3)
+            {
+                char sep0, sep1, sep2;
+                sep0 = separators[0];
+                sep1 = separators.Length > 1 ? separators[1] : sep0;
+                sep2 = separators.Length > 2 ? separators[2] : sep1;
 
-                    if (Avx2.IsSupported && Length >= 16)
+                if (Length >= 16 && Avx2.IsSupported)
+                {
+                    MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1, sep2);
+                    return;
+                }
+
+                for (int i = 0; i < Length; i++)
+                {
+                    char c = this[i];
+                    if (c == sep0 || c == sep1 || c == sep2)
                     {
-                        MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep0, sep0);
-                        return;
+                        sepListBuilder.Append(i);
                     }
+                }
+            }
 
-                    for (int i = 0; i < Length; i++)
-                    {
-                        if (this[i] == sep0)
-                        {
-                            sepListBuilder.Append(i);
-                        }
-                    }
-                    break;
-                case 2:
-                    sep0 = separators[0];
-                    sep1 = separators[1];
-
-                    if (Avx2.IsSupported && Length >= 16)
-                    {
-                        MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1, sep1);
-                        return;
-                    }
-
-                    for (int i = 0; i < Length; i++)
-                    {
-                        char c = this[i];
-                        if (c == sep0 || c == sep1)
-                        {
-                            sepListBuilder.Append(i);
-                        }
-                    }
-                    break;
-                case 3:
-                    sep0 = separators[0];
-                    sep1 = separators[1];
-                    sep2 = separators[2];
-
-                    if (Avx2.IsSupported && Length >= 16)
-                    {
-                        MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1, sep2);
-                        return;
-                    }
+            else
+            {
+                unsafe
+                {
+                    ProbabilisticMap map = default;
+                    uint* charMap = (uint*)&map;
+                    InitializeProbabilisticMap(charMap, separators);
 
                     for (int i = 0; i < Length; i++)
                     {
                         char c = this[i];
-                        if (c == sep0 || c == sep1 || c == sep2)
+                        if (IsCharBitSet(charMap, (byte)c) && IsCharBitSet(charMap, (byte)(c >> 8)) &&
+                            separators.Contains(c))
                         {
                             sepListBuilder.Append(i);
                         }
                     }
-                    break;
-
-                // Handle > 3 separators with a probabilistic map, ala IndexOfAny.
-                // This optimizes for chars being unlikely to match a separator.
-                default:
-                    unsafe
-                    {
-                        ProbabilisticMap map = default;
-                        uint* charMap = (uint*)&map;
-                        InitializeProbabilisticMap(charMap, separators);
-
-                        for (int i = 0; i < Length; i++)
-                        {
-                            char c = this[i];
-                            if (IsCharBitSet(charMap, (byte)c) && IsCharBitSet(charMap, (byte)(c >> 8)) &&
-                                separators.Contains(c))
-                            {
-                                sepListBuilder.Append(i);
-                            }
-                        }
-                    }
-                    break;
+                }
             }
         }
 
