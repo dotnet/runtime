@@ -3223,6 +3223,9 @@
   <data name="RuntimeWrappedException" xml:space="preserve">
     <value>An object that does not derive from System.Exception has been wrapped in a RuntimeWrappedException.</value>
   </data>
+  <data name="StandardOleMarshalObjectGetMarshalerFailed" xml:space="preserve">
+    <value>Failed to get marshaler for IID {0}.</value>
+  </data>
   <data name="Security_CannotReadFileData" xml:space="preserve">
     <value>The time zone ID '{0}' was found on the local computer, but the application does not have permission to read the file.</value>
   </data>
