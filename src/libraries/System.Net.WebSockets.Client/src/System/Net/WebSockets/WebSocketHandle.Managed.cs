@@ -82,9 +82,9 @@ namespace System.Net.WebSockets
                 var request = new HttpRequestMessage(HttpMethod.Get, uri);
                 if (options._requestHeaders?.Count > 0) // use field to avoid lazily initializing the collection
                 {
-                    foreach (string? key in options.RequestHeaders) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
+                    foreach (string key in options.RequestHeaders)
                     {
-                        request.Headers.TryAddWithoutValidation(key!, options.RequestHeaders[key!]);
+                        request.Headers.TryAddWithoutValidation(key, options.RequestHeaders[key]);
                     }
                 }
 

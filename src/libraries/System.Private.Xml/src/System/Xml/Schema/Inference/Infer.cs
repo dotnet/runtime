@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.IO;
 using System.Xml;
 using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
-
-
-
 
 namespace System.Xml.Schema
 {
@@ -105,11 +103,11 @@ namespace System.Xml.Schema
         internal const int TF_gYearMonth = 1 << HC_ST_gYearMonth;
         internal const int TF_string = 1 << HC_ST_string;
 
-        private XmlSchema _rootSchema = null; //(XmlSchema) xsc[TargetNamespace];
-        private XmlSchemaSet _schemaSet;
-        private XmlReader _xtr;
+        private XmlSchema? _rootSchema = null; //(XmlSchema) xsc[TargetNamespace];
+        private XmlSchemaSet? _schemaSet;
+        private XmlReader? _xtr;
         private readonly NameTable _nametable;
-        private string _targetNamespace;
+        private string? _targetNamespace;
         private readonly XmlNamespaceManager _namespaceManager;
         //private Hashtable schemas;    //contains collection of schemas before they get added to the XmlSchemaSet xsc
         //private bool bRefine = false; //indicates if we are going to infer or refine schema when InferSchema is called
@@ -205,10 +203,10 @@ namespace System.Xml.Schema
                 {
                     throw new XmlSchemaInferenceException(SR.SchInf_schema, 0, 0);
                 }
-                XmlSchemaElement xse = null;
-                foreach (XmlSchemaElement elem in schemas.GlobalElements.Values)
+                XmlSchemaElement? xse = null;
+                foreach (XmlSchemaElement? elem in schemas.GlobalElements.Values)
                 {
-                    if (elem.Name == _xtr.LocalName && elem.QualifiedName.Namespace == _xtr.NamespaceURI)
+                    if (elem!.Name == _xtr.LocalName && elem.QualifiedName.Namespace == _xtr.NamespaceURI)
                     {
                         _rootSchema = elem.Parent as XmlSchema;
                         xse = elem;
@@ -224,7 +222,7 @@ namespace System.Xml.Schema
                 else
                 {
                     //bRefine = true;
-                    InferElement(xse, false, _rootSchema);
+                    InferElement(xse!, false, _rootSchema);
                 }
 
                 /*  foreach (ReplaceList listItem in schemaList)
@@ -250,14 +248,14 @@ namespace System.Xml.Schema
                           }
                       }
                   }*/
-                foreach (string prefix in _namespaceManager)
+                foreach (string? prefix in _namespaceManager)
                 {
-                    if (!prefix.Equals("xml") && !prefix.Equals("xmlns"))
+                    if (!prefix!.Equals("xml") && !prefix.Equals("xmlns"))
                     {
-                        string ns = _namespaceManager.LookupNamespace(_nametable.Get(prefix));
+                        string ns = _namespaceManager.LookupNamespace(_nametable.Get(prefix)!)!;
                         if (ns.Length != 0)
                         { //Do not add xmlns=""
-                            _rootSchema.Namespaces.Add(prefix, ns);
+                            _rootSchema!.Namespaces.Add(prefix, ns);
                         }
                     }
                 }
@@ -280,10 +278,10 @@ namespace System.Xml.Schema
                 throw new XmlSchemaInferenceException(SR.SchInf_schema, 0, 0);
             }
 
-            XmlSchemaAttribute xsa = null;
+            XmlSchemaAttribute? xsa = null;
             int AttributeType = -1;
-            XmlSchemaAttribute returnedAttribute = null;    //this value will change to attributeReference if childURI!= parentURI
-            XmlSchema xs = null;
+            XmlSchemaAttribute? returnedAttribute = null;    //this value will change to attributeReference if childURI!= parentURI
+            XmlSchema? xs = null;
             bool add = true;
 
             Debug.Assert(compiledAttributes != null); //AttributeUses is never null
@@ -292,7 +290,8 @@ namespace System.Xml.Schema
                                                       // If there are none or we don't find it there, then we must search the list of attributes
                                                       //   where we are going to add a new one (if it doesn't exist).
                                                       //   This is necessary to avoid adding duplicate attribute declarations.
-            ICollection searchCollectionPrimary, searchCollectionSecondary;
+            ICollection searchCollectionPrimary;
+            ICollection? searchCollectionSecondary;
             if (compiledAttributes.Count > 0)
             {
                 searchCollectionPrimary = compiledAttributes.Values;
@@ -305,7 +304,7 @@ namespace System.Xml.Schema
             }
             if (childURI == XmlReservedNs.NsXml)
             {
-                XmlSchemaAttribute attributeReference = null;
+                XmlSchemaAttribute? attributeReference = null;
                 //see if the reference exists
                 attributeReference = FindAttributeRef(searchCollectionPrimary, localName, childURI);
                 if (attributeReference == null && searchCollectionSecondary != null)
@@ -336,7 +335,7 @@ namespace System.Xml.Schema
                     xs = parentSchema;
                     add = false;
                 }
-                else if (childURI != null && !_schemaSet.Contains(childURI))
+                else if (childURI != null && !_schemaSet!.Contains(childURI))
                 {
                     /*if (parentSchema.AttributeFormDefault = XmlSchemaForm.Unqualified && childURI.Length == 0)
                 {
@@ -356,20 +355,21 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    ArrayList col = _schemaSet.Schemas(childURI) as ArrayList;
+                    ArrayList? col = _schemaSet!.Schemas(childURI) as ArrayList;
                     if (col != null && col.Count > 0)
                     {
                         xs = col[0] as XmlSchema;
                     }
                 }
-                if (childURI.Length != 0) //BUGBUG It need not be an attribute reference if there is a namespace, it can be attribute with attributeFormDefault = qualified
+
+                if (childURI!.Length != 0) //BUGBUG It need not be an attribute reference if there is a namespace, it can be attribute with attributeFormDefault = qualified
                 {
-                    XmlSchemaAttribute attributeReference = null;
+                    XmlSchemaAttribute? attributeReference = null;
                     //see if the reference exists
                     attributeReference = FindAttributeRef(searchCollectionPrimary, localName, childURI);
                     if (attributeReference == null & searchCollectionSecondary != null)
                     {
-                        attributeReference = FindAttributeRef(searchCollectionSecondary, localName, childURI);
+                        attributeReference = FindAttributeRef(searchCollectionSecondary!, localName, childURI);
                     }
                     if (attributeReference == null)
                     {
@@ -389,7 +389,7 @@ namespace System.Xml.Schema
                     returnedAttribute = attributeReference;
 
                     //see if the attribute exists on the global level
-                    xsa = FindAttribute(xs.Items, localName);
+                    xsa = FindAttribute(xs!.Items, localName);
                     if (xsa == null)
                     {
                         xsa = new XmlSchemaAttribute();
@@ -431,7 +431,7 @@ namespace System.Xml.Schema
                         else
                             xsa.Use = XmlSchemaUse.Optional;
                         addLocation.Add(xsa);
-                        if (xs.AttributeFormDefault != XmlSchemaForm.Unqualified)
+                        if (xs!.AttributeFormDefault != XmlSchemaForm.Unqualified)
                         {
                             xsa.Form = XmlSchemaForm.Unqualified;
                         }
@@ -453,21 +453,23 @@ namespace System.Xml.Schema
                     returnedAttribute = xsa;
                 }
             }
-            string nullString = null;
+            string? nullString = null;
             if (add && childURI != parentSchema.TargetNamespace)
             {
                 for (int i = 0; i < parentSchema.Includes.Count; ++i)
                 {
-                    XmlSchemaImport import = parentSchema.Includes[i] as XmlSchemaImport;
+                    XmlSchemaImport? import = parentSchema.Includes[i] as XmlSchemaImport;
                     if (import == null)
                     {
                         continue;
                     }
+
                     if (import.Namespace == childURI)
                     {
                         add = false;
                     }
                 }
+
                 if (add)
                 {
                     XmlSchemaImport import = new XmlSchemaImport();
@@ -492,25 +494,26 @@ namespace System.Xml.Schema
             xs.AttributeFormDefault = XmlSchemaForm.Unqualified;
             xs.ElementFormDefault = XmlSchemaForm.Qualified;
             xs.TargetNamespace = targetNS;
-            _schemaSet.Add(xs);
+            _schemaSet!.Add(xs);
             return xs;
         }
 
-        private XmlSchemaElement AddElement(string localName, string prefix, string childURI, XmlSchema parentSchema, XmlSchemaObjectCollection addLocation, int positionWithinCollection)
+        private XmlSchemaElement AddElement(string localName, string prefix, string? childURI, XmlSchema? parentSchema, XmlSchemaObjectCollection? addLocation, int positionWithinCollection)
         {
             if (childURI == XmlSchema.Namespace)
             {
                 throw new XmlSchemaInferenceException(SR.SchInf_schema, 0, 0);
             }
 
-            XmlSchemaElement xse = null;
-            XmlSchemaElement returnedElement = xse; //this value will change to elementReference if childURI!= parentURI
-            XmlSchema xs = null;
+            XmlSchemaElement? xse = null;
+            XmlSchemaElement? returnedElement = xse; //this value will change to elementReference if childURI!= parentURI
+            XmlSchema? xs = null;
             bool bCreatingNewType = true;
             if (childURI == string.Empty)
             {
                 childURI = null;
             }
+
             // The new element belongs to the same ns as parent and addlocation is not null
             if (parentSchema != null && childURI == parentSchema.TargetNamespace)
             {
@@ -522,28 +525,28 @@ namespace System.Xml.Schema
                     xse.Form = XmlSchemaForm.Qualified;
                 }
             }
-            else if (_schemaSet.Contains(childURI))
+            else if (_schemaSet!.Contains(childURI))
             {
                 xse = this.FindGlobalElement(childURI, localName, out xs);
                 if (xse == null)
                 {
-                    ArrayList col = _schemaSet.Schemas(childURI) as ArrayList;
+                    ArrayList? col = _schemaSet.Schemas(childURI) as ArrayList;
                     if (col != null && col.Count > 0)
                     {
                         xs = col[0] as XmlSchema;
                     }
                     xse = new XmlSchemaElement();
                     xse.Name = localName;
-                    xs.Items.Add(xse);
+                    xs!.Items.Add(xse);
                 }
                 else
                     bCreatingNewType = false;
             }
             else
             {
-                xs = CreateXmlSchema(childURI);
+                xs = CreateXmlSchema(childURI!);
                 if (prefix.Length != 0)
-                    _namespaceManager.AddNamespace(prefix, childURI);
+                    _namespaceManager.AddNamespace(prefix, childURI!);
                 xse = new XmlSchemaElement();
                 xse.Name = localName;
                 xs.Items.Add(xse);  //add global element declaration only when creating new schema
@@ -554,13 +557,13 @@ namespace System.Xml.Schema
                 _rootSchema = parentSchema;
             }
 
-            if (childURI != parentSchema.TargetNamespace)
+            if (childURI != parentSchema!.TargetNamespace)
             {
                 bool add = true;
 
                 for (int i = 0; i < parentSchema.Includes.Count; ++i)
                 {
-                    XmlSchemaImport import = parentSchema.Includes[i] as XmlSchemaImport;
+                    XmlSchemaImport? import = parentSchema.Includes[i] as XmlSchemaImport;
                     if (import == null)
                     {
                         continue;
@@ -623,7 +626,7 @@ namespace System.Xml.Schema
             }
 
 
-            InferElement(xse, bCreatingNewType, xs);
+            InferElement(xse, bCreatingNewType, xs!);
 
             return returnedElement;
         }
@@ -637,12 +640,12 @@ namespace System.Xml.Schema
         /// <param name="parentSchema">namespaceURI of the parent element. Used to distinguish if ref= should be used when parent is in different ns than child.</param>
         internal void InferElement(XmlSchemaElement xse, bool bCreatingNewType, XmlSchema parentSchema)
         {
-            bool bEmptyElement = _xtr.IsEmptyElement;
+            bool bEmptyElement = _xtr!.IsEmptyElement;
             int lastUsedSeqItem = -1;
 
             Hashtable table = new Hashtable();
-            XmlSchemaType schemaType = GetEffectiveSchemaType(xse, bCreatingNewType);
-            XmlSchemaComplexType ct = schemaType as XmlSchemaComplexType;
+            XmlSchemaType? schemaType = GetEffectiveSchemaType(xse, bCreatingNewType);
+            XmlSchemaComplexType? ct = schemaType as XmlSchemaComplexType;
 
             //infer type based on content of the current element
             if (_xtr.MoveToFirstAttribute())
@@ -973,7 +976,7 @@ namespace System.Xml.Schema
             if (lastUsedSeqItem != -1)
             {
                 //Verify if all elements in a sequence exist, if not set MinOccurs=0
-                while (++lastUsedSeqItem < ((XmlSchemaSequence)ct.Particle).Items.Count)
+                while (++lastUsedSeqItem < ((XmlSchemaSequence)ct!.Particle!).Items.Count)
                 {
                     if (((XmlSchemaSequence)ct.Particle).Items[lastUsedSeqItem].GetType() != typeof(XmlSchemaElement))
                         throw new XmlSchemaInferenceException(SR.SchInf_seq, 0, 0);
@@ -985,12 +988,12 @@ namespace System.Xml.Schema
 
         private XmlSchemaSimpleContentExtension CheckSimpleContentExtension(XmlSchemaComplexType ct)
         {
-            XmlSchemaSimpleContent sc = ct.ContentModel as XmlSchemaSimpleContent;
+            XmlSchemaSimpleContent? sc = ct.ContentModel as XmlSchemaSimpleContent;
             if (sc == null)
             {
                 throw new XmlSchemaInferenceException(SR.SchInf_simplecontent, 0, 0);
             }
-            XmlSchemaSimpleContentExtension sce = sc.Content as XmlSchemaSimpleContentExtension;
+            XmlSchemaSimpleContentExtension? sce = sc.Content as XmlSchemaSimpleContentExtension;
             if (sce == null)
             {
                 throw new XmlSchemaInferenceException(SR.SchInf_extension, 0, 0);
@@ -998,9 +1001,9 @@ namespace System.Xml.Schema
             return sce;
         }
 
-        private XmlSchemaType GetEffectiveSchemaType(XmlSchemaElement elem, bool bCreatingNewType)
+        private XmlSchemaType? GetEffectiveSchemaType(XmlSchemaElement elem, bool bCreatingNewType)
         {
-            XmlSchemaType effectiveSchemaType = null;
+            XmlSchemaType? effectiveSchemaType = null;
             if (!bCreatingNewType && elem.ElementSchemaType != null)
             {
                 effectiveSchemaType = elem.ElementSchemaType;
@@ -1014,7 +1017,7 @@ namespace System.Xml.Schema
                 }
                 else if (elem.SchemaTypeName != XmlQualifiedName.Empty)
                 {
-                    effectiveSchemaType = _schemaSet.GlobalTypes[elem.SchemaTypeName] as XmlSchemaType;
+                    effectiveSchemaType = _schemaSet!.GlobalTypes[elem.SchemaTypeName] as XmlSchemaType;
                     if (effectiveSchemaType == null)
                     {
                         effectiveSchemaType = XmlSchemaType.GetBuiltInSimpleType(elem.SchemaTypeName);
@@ -1037,7 +1040,7 @@ namespace System.Xml.Schema
         /// <param name="ct">complex type with Sequence or Choice Particle</param>
         /// <param name="lastUsedSeqItem">ordinal number in the sequence to indicate current sequence position</param>
         /// <param name="bParticleChanged">This indicates to the caller if Sequence was changed to Choice</param>
-        internal XmlSchemaElement FindMatchingElement(bool bCreatingNewType, XmlReader xtr, XmlSchemaComplexType ct, ref int lastUsedSeqItem, ref bool bParticleChanged, XmlSchema parentSchema, bool setMaxoccurs)
+        internal XmlSchemaElement FindMatchingElement(bool bCreatingNewType, XmlReader xtr, XmlSchemaComplexType ct, ref int lastUsedSeqItem, ref bool bParticleChanged, XmlSchema? parentSchema, bool setMaxoccurs)
         {
             if (xtr.NamespaceURI == XmlSchema.Namespace)
             {
@@ -1046,13 +1049,14 @@ namespace System.Xml.Schema
 
             bool bItemNotUsedYet = ((lastUsedSeqItem == -1) ? true : false);
             XmlSchemaObjectCollection minOccursCandidates = new XmlSchemaObjectCollection(); //elements that are skipped in the sequence and need minOccurs modified.
-            if (ct.Particle.GetType() == typeof(XmlSchemaSequence))
+            if (ct.Particle!.GetType() == typeof(XmlSchemaSequence))
             {
-                string childURI = xtr.NamespaceURI;
+                string? childURI = xtr.NamespaceURI;
                 if (childURI.Length == 0)
                 {
                     childURI = null;
                 }
+
                 XmlSchemaSequence xss = (XmlSchemaSequence)ct.Particle;
                 if (xss.Items.Count < 1 && !bCreatingNewType)
                 {
@@ -1066,12 +1070,12 @@ namespace System.Xml.Schema
                     XmlSchemaChoice xsch = (XmlSchemaChoice)xss.Items[0];
                     for (int i = 0; i < xsch.Items.Count; ++i)
                     {
-                        XmlSchemaElement el = xsch.Items[i] as XmlSchemaElement;
+                        XmlSchemaElement? el = xsch.Items[i] as XmlSchemaElement;
                         if (el == null)
                         {
                             throw new XmlSchemaInferenceException(SR.SchInf_UnknownParticle, 0, 0);
                         }
-                        if ((el.Name == xtr.LocalName) && (parentSchema.TargetNamespace == childURI))
+                        if ((el.Name == xtr.LocalName) && (parentSchema!.TargetNamespace == childURI))
                         {   // element is in the same namespace
                             InferElement(el, false, parentSchema);
                             SetMinMaxOccurs(el, setMaxoccurs);
@@ -1079,8 +1083,8 @@ namespace System.Xml.Schema
                         }
                         else if ((el.RefName.Name == xtr.LocalName) && (el.RefName.Namespace == xtr.NamespaceURI))
                         {
-                            XmlSchemaElement referencedElement = FindGlobalElement(childURI, xtr.LocalName, out parentSchema);
-                            InferElement(referencedElement, false, parentSchema);
+                            XmlSchemaElement referencedElement = FindGlobalElement(childURI, xtr.LocalName, out parentSchema)!;
+                            InferElement(referencedElement, false, parentSchema!);
                             SetMinMaxOccurs(el, setMaxoccurs);
                             return referencedElement;
                         }
@@ -1093,13 +1097,13 @@ namespace System.Xml.Schema
                     int iSeqItem = 0;   //iterator through schema sequence items
                     if (lastUsedSeqItem >= 0)
                         iSeqItem = lastUsedSeqItem;
-                    XmlSchemaParticle particle = xss.Items[iSeqItem] as XmlSchemaParticle;
-                    XmlSchemaElement el = particle as XmlSchemaElement;
+                    XmlSchemaParticle? particle = xss.Items[iSeqItem] as XmlSchemaParticle;
+                    XmlSchemaElement? el = particle as XmlSchemaElement;
                     if (el == null)
                     {
                         throw new XmlSchemaInferenceException(SR.SchInf_UnknownParticle, 0, 0);
                     }
-                    if (el.Name == xtr.LocalName && parentSchema.TargetNamespace == childURI)
+                    if (el.Name == xtr.LocalName && parentSchema!.TargetNamespace == childURI)
                     {
                         if (!bItemNotUsedYet)   //read: if item was already used one or more times
                             el.MaxOccurs = decimal.MaxValue;    //set it to unbounded
@@ -1113,8 +1117,8 @@ namespace System.Xml.Schema
                         if (!bItemNotUsedYet)   //read: if item was already used one or more times
                             el.MaxOccurs = decimal.MaxValue;    //set it to unbounded
                         lastUsedSeqItem = iSeqItem;
-                        XmlSchemaElement referencedElement = FindGlobalElement(childURI, xtr.LocalName, out parentSchema);
-                        InferElement(referencedElement, false, parentSchema);
+                        XmlSchemaElement referencedElement = FindGlobalElement(childURI, xtr.LocalName, out parentSchema)!;
+                        InferElement(referencedElement, false, parentSchema!);
                         SetMinMaxOccurs(el, false);
                         return el;
                     }
@@ -1129,7 +1133,7 @@ namespace System.Xml.Schema
                         {
                             throw new XmlSchemaInferenceException(SR.SchInf_UnknownParticle, 0, 0);
                         }
-                        if (el.Name == xtr.LocalName && parentSchema.TargetNamespace == childURI)
+                        if (el.Name == xtr.LocalName && parentSchema!.TargetNamespace == childURI)
                         {
                             lastUsedSeqItem = iSeqItem;
                             for (int i = 0; i < minOccursCandidates.Count; ++i)
@@ -1147,8 +1151,8 @@ namespace System.Xml.Schema
                             {
                                 ((XmlSchemaElement)minOccursCandidates[i]).MinOccurs = decimal.Zero;
                             }
-                            XmlSchemaElement referencedElement = FindGlobalElement(childURI, xtr.LocalName, out parentSchema);
-                            InferElement(referencedElement, false, parentSchema);
+                            XmlSchemaElement referencedElement = FindGlobalElement(childURI, xtr.LocalName, out parentSchema)!;
+                            InferElement(referencedElement!, false, parentSchema!);
                             SetMinMaxOccurs(el, setMaxoccurs);
                             return referencedElement;
                         }
@@ -1159,11 +1163,11 @@ namespace System.Xml.Schema
                     }
 
                     //element not found in the sequence order, if it is found out of order change Sequence of elements to Sequence of Choices otherwise insert into sequence as optional
-                    XmlSchemaElement subElement = null;
-                    XmlSchemaElement actualElement = null;
+                    XmlSchemaElement? subElement = null;
+                    XmlSchemaElement? actualElement = null;
                     //BUGBUG - is this logic correct - if there is a sequence of elements should they be int he parent's namespace.
 
-                    if (parentSchema.TargetNamespace == childURI)
+                    if (parentSchema!.TargetNamespace == childURI)
                     {
                         subElement = FindElement(xss.Items, xtr.LocalName);
                         actualElement = subElement;
@@ -1181,7 +1185,7 @@ namespace System.Xml.Schema
                         XmlSchemaChoice xsc = new XmlSchemaChoice();
                         xsc.MaxOccurs = decimal.MaxValue;
                         SetMinMaxOccurs(subElement, setMaxoccurs);
-                        InferElement(actualElement, false, parentSchema);
+                        InferElement(actualElement!, false, parentSchema!);
                         for (int i = 0; i < xss.Items.Count; ++i)
                         {
                             xsc.Items.Add(CreateNewElementforChoice((XmlSchemaElement)xss.Items[i]));
@@ -1204,12 +1208,12 @@ namespace System.Xml.Schema
                 throw new XmlSchemaInferenceException(SR.SchInf_noseq, 0, 0);
             }
         }
-        internal void ProcessAttributes(ref XmlSchemaElement xse, XmlSchemaType effectiveSchemaType, bool bCreatingNewType, XmlSchema parentSchema)
+        internal void ProcessAttributes(ref XmlSchemaElement xse, XmlSchemaType? effectiveSchemaType, bool bCreatingNewType, XmlSchema parentSchema)
         {
             XmlSchemaObjectCollection attributesSeen = new XmlSchemaObjectCollection();
-            XmlSchemaComplexType ct = effectiveSchemaType as XmlSchemaComplexType;
+            XmlSchemaComplexType? ct = effectiveSchemaType as XmlSchemaComplexType;
 
-            Debug.Assert(_xtr.NodeType == XmlNodeType.Attribute);
+            Debug.Assert(_xtr!.NodeType == XmlNodeType.Attribute);
             do
             {
                 if (_xtr.NamespaceURI == XmlSchema.Namespace)
@@ -1242,7 +1246,7 @@ namespace System.Xml.Schema
                         xse.SchemaType = ct;
                     }
 
-                    XmlSchemaAttribute xsa = null;
+                    XmlSchemaAttribute? xsa = null;
                     //The earlier assumption of checking just schemaTypeName !Empty is not correct for schemas that are not generated by us, schemaTypeName can point to any complex type as well
                     //Check that it is a simple type by checking typeCode
                     //Switch to complex type simple content extension
@@ -1311,18 +1315,19 @@ namespace System.Xml.Schema
                 sourceCollection = ct.Attributes;
             }
 
-            foreach (XmlSchemaAttribute attr in sourceCollection)
+            foreach (XmlSchemaAttribute? attr in sourceCollection)
             {
-                simpleContentExtension.Attributes.Add(attr);
+                simpleContentExtension.Attributes.Add(attr!);
             }
+
             ct.Attributes.Clear(); //Clear from pre-compiled property, post compiled will be cleared on Re-process and Compile()
         }
 
-        internal XmlSchemaAttribute FindAttribute(ICollection attributes, string attrName)
+        internal XmlSchemaAttribute? FindAttribute(ICollection attributes, string attrName)
         {
-            foreach (XmlSchemaObject xsa in attributes)
+            foreach (XmlSchemaObject? xsa in attributes)
             {
-                XmlSchemaAttribute schemaAttribute = xsa as XmlSchemaAttribute;
+                XmlSchemaAttribute? schemaAttribute = xsa as XmlSchemaAttribute;
                 if (schemaAttribute != null)
                 {
                     if (schemaAttribute.Name == attrName)
@@ -1334,14 +1339,14 @@ namespace System.Xml.Schema
             return null;
         }
 
-        internal XmlSchemaElement FindGlobalElement(string namespaceURI, string localName, out XmlSchema parentSchema)
+        internal XmlSchemaElement? FindGlobalElement(string? namespaceURI, string localName, out XmlSchema? parentSchema)
         {
-            ICollection col = _schemaSet.Schemas(namespaceURI);
-            XmlSchemaElement xse = null;
+            ICollection col = _schemaSet!.Schemas(namespaceURI);
+            XmlSchemaElement? xse = null;
             parentSchema = null;
-            foreach (XmlSchema schema in col)
+            foreach (XmlSchema? schema in col)
             {
-                xse = FindElement(schema.Items, localName);
+                xse = FindElement(schema!.Items, localName);
                 if (xse != null)
                 {
                     parentSchema = schema;
@@ -1352,11 +1357,11 @@ namespace System.Xml.Schema
         }
 
 
-        internal XmlSchemaElement FindElement(XmlSchemaObjectCollection elements, string elementName)
+        internal XmlSchemaElement? FindElement(XmlSchemaObjectCollection elements, string elementName)
         {
             for (int i = 0; i < elements.Count; ++i)
             {
-                XmlSchemaElement xse = elements[i] as XmlSchemaElement;
+                XmlSchemaElement? xse = elements[i] as XmlSchemaElement;
                 if (xse != null && xse.RefName != null)
                 {
                     if (xse.Name == elementName)
@@ -1365,14 +1370,15 @@ namespace System.Xml.Schema
                     }
                 }
             }
+
             return null;
         }
 
-        internal XmlSchemaAttribute FindAttributeRef(ICollection attributes, string attributeName, string nsURI)
+        internal XmlSchemaAttribute? FindAttributeRef(ICollection attributes, string attributeName, string nsURI)
         {
-            foreach (XmlSchemaObject xsa in attributes)
+            foreach (XmlSchemaObject? xsa in attributes)
             {
-                XmlSchemaAttribute schemaAttribute = xsa as XmlSchemaAttribute;
+                XmlSchemaAttribute? schemaAttribute = xsa as XmlSchemaAttribute;
                 if (schemaAttribute != null)
                 {
                     if (schemaAttribute.RefName.Name == attributeName && schemaAttribute.RefName.Namespace == nsURI)
@@ -1381,14 +1387,15 @@ namespace System.Xml.Schema
                     }
                 }
             }
+
             return null;
         }
 
-        internal XmlSchemaElement FindElementRef(XmlSchemaObjectCollection elements, string elementName, string nsURI)
+        internal XmlSchemaElement? FindElementRef(XmlSchemaObjectCollection elements, string elementName, string nsURI)
         {
             for (int i = 0; i < elements.Count; ++i)
             {
-                XmlSchemaElement xse = elements[i] as XmlSchemaElement;
+                XmlSchemaElement? xse = elements[i] as XmlSchemaElement;
                 if (xse != null && xse.RefName != null)
                 {
                     if (xse.RefName.Name == elementName && xse.RefName.Namespace == nsURI)
@@ -1397,10 +1404,11 @@ namespace System.Xml.Schema
                     }
                 }
             }
+
             return null;
         }
 
-        internal void MakeExistingAttributesOptional(XmlSchemaComplexType ct, XmlSchemaObjectCollection attributesInInstance)
+        internal void MakeExistingAttributesOptional(XmlSchemaComplexType ct, XmlSchemaObjectCollection? attributesInInstance)
         {
             if (ct == null)
             {
@@ -1417,18 +1425,18 @@ namespace System.Xml.Schema
             }
         }
 
-        private void SwitchUseToOptional(XmlSchemaObjectCollection attributes, XmlSchemaObjectCollection attributesInInstance)
+        private void SwitchUseToOptional(XmlSchemaObjectCollection attributes, XmlSchemaObjectCollection? attributesInInstance)
         {
             for (int i = 0; i < attributes.Count; ++i)
             {
-                XmlSchemaAttribute attr = attributes[i] as XmlSchemaAttribute;
+                XmlSchemaAttribute? attr = attributes[i] as XmlSchemaAttribute;
                 if (attr != null)
                 {
                     if (attributesInInstance != null)
                     {
                         if (attr.RefName.Name.Length == 0)
                         { //If the attribute is not present in this instance, make it optional
-                            if (null == FindAttribute(attributesInInstance, attr.Name))
+                            if (null == FindAttribute(attributesInInstance, attr.Name!))
                             {
                                 attr.Use = XmlSchemaUse.Optional;
                             }

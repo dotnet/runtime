@@ -216,23 +216,23 @@
   <data name="Cbor_NotAtEndOfIndefiniteLengthDataItem" xml:space="preserve">
     <value>Not at end of the indefinite-length data item.</value>
   </data>
-  <data name="Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported" xml:space="preserve">
-    <value>CBOR Conformance level '{0}' does not support indefinite-length data items.</value>
+  <data name="Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported" xml:space="preserve">
+    <value>CBOR Conformance mode '{0}' does not support indefinite-length data items.</value>
   </data>
-  <data name="Cbor_ConformanceLevel_NonCanonicalIntegerRepresentation" xml:space="preserve">
-    <value>CBOR Conformance level '{0}' does not support non-canonical integer representations.</value>
+  <data name="Cbor_ConformanceMode_NonCanonicalIntegerRepresentation" xml:space="preserve">
+    <value>CBOR Conformance mode '{0}' does not support non-canonical integer representations.</value>
   </data>
-  <data name="Cbor_ConformanceLevel_RequiresDefiniteLengthItems" xml:space="preserve">
-    <value>CBOR Conformance level '{0}' does not support indefinite-length items.</value>
+  <data name="Cbor_ConformanceMode_RequiresDefiniteLengthItems" xml:space="preserve">
+    <value>CBOR Conformance mode '{0}' does not support indefinite-length items.</value>
   </data>
-  <data name="Cbor_ConformanceLevel_ContainsDuplicateKeys" xml:space="preserve">
-    <value>CBOR Conformance level '{0}' does not support duplicate keys.</value>
+  <data name="Cbor_ConformanceMode_ContainsDuplicateKeys" xml:space="preserve">
+    <value>CBOR Conformance mode '{0}' does not support duplicate keys.</value>
   </data>
-  <data name="Cbor_ConformanceLevel_KeysNotInSortedOrder" xml:space="preserve">
-    <value>CBOR keys not sorted in accordance with conformance level '{0}'.</value>
+  <data name="Cbor_ConformanceMode_KeysNotInSortedOrder" xml:space="preserve">
+    <value>CBOR keys not sorted in accordance with conformance mode '{0}'.</value>
   </data>
-  <data name="Cbor_ConformanceLevel_TagsNotSupported" xml:space="preserve">
-    <value>CBOR Conformance level '{0}' does not support tagged values.</value>
+  <data name="Cbor_ConformanceMode_TagsNotSupported" xml:space="preserve">
+    <value>CBOR Conformance mode '{0}' does not support tagged values.</value>
   </data>
   <data name="Cbor_Reader_DefiniteLengthExceedsBufferSize" xml:space="preserve">
     <value>Declared definite length of CBOR data item exceeds available buffer size.</value>
@@ -276,8 +276,8 @@
   <data name="Cbor_Reader_NotANullEncoding" xml:space="preserve">
     <value>CBOR simple value does not encode null.</value>
   </data>
-  <data name="Cbor_ConformanceLevel_InvalidSimpleValueEncoding" xml:space="preserve">
-    <value>CBOR Conformance level '{0}' does not support simple values in the range 24-31 and must be encoded as small as possible.</value>
+  <data name="Cbor_ConformanceMode_InvalidSimpleValueEncoding" xml:space="preserve">
+    <value>CBOR Conformance mode '{0}' does not support simple values in the range 24-31 and must be encoded as small as possible.</value>
   </data>
   <data name="Cbor_Reader_InvalidCbor_UnexpectedBreakByte" xml:space="preserve">
     <value>CBOR definite-length data items contains unexpected break byte.</value>
@@ -329,5 +329,8 @@
   </data>
   <data name="Cbor_Writer_DecimalOverflow" xml:space="preserve">
     <value>Value was either too large or too small for a Decimal.</value>
+  </data>
+  <data name="CborContentException_DefaultMessage" xml:space="preserve">
+    <value>The CBOR encoding is invalid.</value>
   </data>
 </root>

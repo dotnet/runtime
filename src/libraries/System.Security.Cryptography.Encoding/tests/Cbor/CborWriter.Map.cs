@@ -17,75 +17,53 @@ namespace System.Formats.Cbor
         private Stack<List<KeyValuePairEncodingRange>>? _pooledKeyValuePairEncodingRangeLists;
 
         /// <summary>
-        ///   Writes the start of a definite-length map (major type 5).
+        ///   Writes the start of a map (major type 5).
         /// </summary>
-        /// <param name="definiteLength">The definite length of the map.</param>
+        /// <param name="definiteLength">
+        ///   Writes a definite-length map if inhabited,
+        ///   or an indefinite-length map if <see langword="null" />.
+        /// </param>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   The <paramref name="definiteLength"/> parameter cannot be negative.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
-        ///   The major type of the encoded value is not permitted in the parent data item
-        /// </exception>
-        /// <remarks>
-        ///   Map contents are written as if arrays twice the length of the map's declared size.
-        ///   For instance, a map of size <c>1</c> containing a key of type int with a value of type string
-        ///   must be written by successive calls to <see cref="WriteInt32(int)"/> and <see cref="WriteTextString(ReadOnlySpan{char})"/>.
-        ///   It is up to the caller to keep track of whether the next call is a key or a value.
-        ///
-        ///   Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of any type,
-        ///   for instance a map can contain keys that are maps themselves.
-        /// </remarks>
-        public void WriteStartMap(int definiteLength)
-        {
-            if (definiteLength < 0 || definiteLength > int.MaxValue / 2)
-            {
-                throw new ArgumentOutOfRangeException(nameof(definiteLength));
-            }
-
-            WriteUnsignedInteger(CborMajorType.Map, (ulong)definiteLength);
-            PushDataItem(CborMajorType.Map, definiteLength: 2 * definiteLength);
-            _currentKeyOffset = _offset;
-        }
-
-        /// <summary>
-        ///   Writes the start of an indefinite-length map (major type 5).
-        /// </summary>
-        /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
         /// <remarks>
-        ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
-        ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
-        ///
-        ///   Map contents are written as if arrays twice the length of the map's declared size.
-        ///   For instance, a map of size <c>1</c> containing a key of type int with a value of type string
-        ///   must be written by successive calls to <see cref="WriteInt32(int)"/> and <see cref="WriteTextString(ReadOnlySpan{char})"/>.
-        ///   It is up to the caller to keep track of whether the next call is a key or a value.
-        ///
-        ///   Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of any type,
-        ///   for instance a map can contain keys that are maps themselves.
+        ///   <para>
+        ///     In canonical conformance modes, the writer will reject indefinite-length writes unless
+        ///     the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
+        ///   </para>
+        ///   <para>
+        ///     Map contents are written as if arrays twice the length of the map's declared size.
+        ///     For instance, a map of size <c>1</c> containing a key of type int with a value of type string
+        ///     must be written by successive calls to <see cref="WriteInt32(int)"/> and <see cref="WriteTextString(ReadOnlySpan{char})"/>.
+        ///     It is up to the caller to keep track of whether the next call is a key or a value.
+        ///   </para>
+        ///   <para>
+        ///     Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of any type,
+        ///     for instance a map can contain keys that are maps themselves.
+        ///   </para>
         /// </remarks>
-        public void WriteStartMap()
+        public void WriteStartMap(int? definiteLength)
         {
-            if (!ConvertIndefiniteLengthEncodings && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            if (definiteLength is null)
             {
-                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+                WriteStartMapIndefiniteLength();
             }
-
-            EnsureWriteCapacity(1);
-            WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
-            PushDataItem(CborMajorType.Map, definiteLength: null);
-            _currentKeyOffset = _offset;
+            else
+            {
+                WriteStartMapDefiniteLength(definiteLength.Value);
+            }
         }
 
         /// <summary>
         ///   Writes the end of a map (major type 5).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   The written data is not accepted under the current conformance level. -or-
+        ///   The written data is not accepted under the current conformance mode. -or-
         ///   The definite-length map anticipates more data items. -or-
         ///   The latest key/value pair is lacking a value.
         /// </exception>
@@ -100,6 +78,31 @@ namespace System.Formats.Cbor
             AdvanceDataItemCounters();
         }
 
+        private void WriteStartMapDefiniteLength(int definiteLength)
+        {
+            if (definiteLength < 0 || definiteLength > int.MaxValue / 2)
+            {
+                throw new ArgumentOutOfRangeException(nameof(definiteLength));
+            }
+
+            WriteUnsignedInteger(CborMajorType.Map, (ulong)definiteLength);
+            PushDataItem(CborMajorType.Map, definiteLength: 2 * definiteLength);
+            _currentKeyOffset = _offset;
+        }
+
+        private void WriteStartMapIndefiniteLength()
+        {
+            if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
+            {
+                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
+            }
+
+            EnsureWriteCapacity(1);
+            WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
+            PushDataItem(CborMajorType.Map, definiteLength: null);
+            _currentKeyOffset = _offset;
+        }
+
         //
         // Map encoding conformance
         //
@@ -108,7 +111,7 @@ namespace System.Formats.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset == null);
 
-            if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
+            if (CborConformanceModeHelpers.RequiresUniqueKeys(ConformanceMode))
             {
                 HashSet<(int Offset, int Length)> keyEncodingRanges = GetKeyEncodingRanges();
 
@@ -120,7 +123,7 @@ namespace System.Formats.Cbor
                     _buffer.AsSpan(currentKey.Offset, _offset).Fill(0);
                     _offset = currentKey.Offset;
 
-                    throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
+                    throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_ContainsDuplicateKeys, ConformanceMode));
                 }
             }
 
@@ -132,7 +135,7 @@ namespace System.Formats.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset != null);
 
-            if (CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel))
+            if (CborConformanceModeHelpers.RequiresSortedKeys(ConformanceMode))
             {
                 List<KeyValuePairEncodingRange> keyValuePairEncodingRanges = GetKeyValueEncodingRanges();
 
@@ -293,17 +296,17 @@ namespace System.Formats.Cbor
 
             public int GetHashCode((int Offset, int Length) range)
             {
-                return CborConformanceLevelHelpers.GetKeyEncodingHashCode(GetKeyEncoding(range));
+                return CborConformanceModeHelpers.GetKeyEncodingHashCode(GetKeyEncoding(range));
             }
 
             public bool Equals((int Offset, int Length) x, (int Offset, int Length) y)
             {
-                return CborConformanceLevelHelpers.AreEqualKeyEncodings(GetKeyEncoding(x), GetKeyEncoding(y));
+                return CborConformanceModeHelpers.AreEqualKeyEncodings(GetKeyEncoding(x), GetKeyEncoding(y));
             }
 
             public int Compare(KeyValuePairEncodingRange x, KeyValuePairEncodingRange y)
             {
-                return CborConformanceLevelHelpers.CompareKeyEncodings(GetKeyEncoding(in x), GetKeyEncoding(in y), _writer.ConformanceLevel);
+                return CborConformanceModeHelpers.CompareKeyEncodings(GetKeyEncoding(in x), GetKeyEncoding(in y), _writer.ConformanceMode);
             }
         }
     }

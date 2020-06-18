@@ -14,7 +14,7 @@ namespace System.Formats.Cbor
         /// <summary>
         ///   Indicates the undefined state.
         /// </summary>
-        None = 0,
+        Undefined = 0,
 
         /// <summary>
         ///   Indicates that the next CBOR data item is an unsigned integer (major type 0).
@@ -34,12 +34,12 @@ namespace System.Formats.Cbor
         /// <summary>
         ///   Indicates that the next CBOR data item denotes the start of an indefinite-length byte string (major type 2).
         /// </summary>
-        StartByteString,
+        StartIndefiniteLengthByteString,
 
         /// <summary>
         ///   Indicates that the reader is at the end of an indefinite-length byte string (major type 2).
         /// </summary>
-        EndByteString,
+        EndIndefiniteLengthByteString,
 
         /// <summary>
         ///   Indicates that the next CBOR data item is a UTF-8 string (major type 3).
@@ -49,12 +49,12 @@ namespace System.Formats.Cbor
         /// <summary>
         ///   Indicates that the next CBOR data item denotes the start of an indefinite-length UTF-8 text string (major type 3).
         /// </summary>
-        StartTextString,
+        StartIndefiniteLengthTextString,
 
         /// <summary>
         ///   Indicates that the reader is at the end of an indefinite-length UTF-8 text string (major type 3).
         /// </summary>
-        EndTextString,
+        EndIndefiniteLengthTextString,
 
         /// <summary>
         ///   Indicates that the next CBOR data item denotes the start of an array (major type 4).
@@ -115,19 +115,9 @@ namespace System.Formats.Cbor
         ///   Indicates that the reader has completed reading a full CBOR document.
         /// </summary>
         /// <remarks>
-        ///   If <see cref="CborReader.AllowMultipleRootLevelValues"/> is set to <see langword="true" />,
+        ///   If <see cref="CborReader.AllowMultipleRootLevelValues"/> is set to <see langword="false" />,
         ///   the reader will report this value even if the buffer contains trailing bytes.
         /// </remarks>
         Finished,
-
-        /// <summary>
-        ///   Indicates that the reader has encountered an incomplete CBOR document.
-        /// </summary>
-        EndOfData,
-
-        /// <summary>
-        ///   Indicates that the reader has encountered an error in the CBOR format encoding.
-        /// </summary>
-        FormatError,
     }
 }

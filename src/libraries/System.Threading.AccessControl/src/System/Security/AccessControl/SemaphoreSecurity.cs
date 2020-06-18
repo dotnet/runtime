@@ -115,9 +115,9 @@ namespace System.Security.AccessControl
             // Let the underlying ACL API's demand unmanaged code permission.
         }
 
-        private static Exception HandleErrorCode(int errorCode, string name, SafeHandle handle, object context)
+        private static Exception? HandleErrorCode(int errorCode, string? name, SafeHandle? handle, object? context)
         {
-            System.Exception exception = null;
+            System.Exception? exception = null;
 
             switch (errorCode)
             {

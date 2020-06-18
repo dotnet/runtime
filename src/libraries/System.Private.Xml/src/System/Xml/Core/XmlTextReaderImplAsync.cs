@@ -794,7 +794,7 @@ namespace System.Xml
             return this.ReadDataAsync();
         }
 
-        internal async Task<int> DtdParserProxy_ParseNumericCharRefAsync(StringBuilder internalSubsetBuilder)
+        internal async Task<int> DtdParserProxy_ParseNumericCharRefAsync(StringBuilder? internalSubsetBuilder)
         {
             CheckAsyncCall();
 
@@ -802,13 +802,13 @@ namespace System.Xml
             return tuple_1.Item2;
         }
 
-        internal Task<int> DtdParserProxy_ParseNamedCharRefAsync(bool expand, StringBuilder internalSubsetBuilder)
+        internal Task<int> DtdParserProxy_ParseNamedCharRefAsync(bool expand, StringBuilder? internalSubsetBuilder)
         {
             CheckAsyncCall();
             return this.ParseNamedCharRefAsync(expand, internalSubsetBuilder);
         }
 
-        internal async Task DtdParserProxy_ParsePIAsync(StringBuilder sb)
+        internal async Task DtdParserProxy_ParsePIAsync(StringBuilder? sb)
         {
             CheckAsyncCall();
             if (sb == null)
@@ -824,7 +824,7 @@ namespace System.Xml
             }
         }
 
-        internal async Task DtdParserProxy_ParseCommentAsync(StringBuilder sb)
+        internal async Task DtdParserProxy_ParseCommentAsync(StringBuilder? sb)
         {
             CheckAsyncCall();
             Debug.Assert(_parsingMode == ParsingMode.Full);
@@ -890,7 +890,7 @@ namespace System.Xml
 
         // SxS: The caller did not provide any SxS sensitive name or resource. No resource is being exposed either.
         // It is OK to suppress SxS warning.
-        internal async Task<bool> DtdParserProxy_PushExternalSubsetAsync(string systemId, string publicId)
+        internal async Task<bool> DtdParserProxy_PushExternalSubsetAsync(string? systemId, string? publicId)
         {
             CheckAsyncCall();
             Debug.Assert(_parsingStatesStackTop == -1);

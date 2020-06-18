@@ -3297,12 +3297,6 @@ g_warning_d (const char *format, int d)
 	g_warning (format, d);
 }
 
-static void
-g_warning_ds (const char *format, int d, const char *s)
-{
-	g_warning (format, d, s);
-}
-
 #if !USE_COMPUTED_GOTO
 static void
 g_error_xsx (const char *format, int x1, const char *s, int x2)
@@ -3359,16 +3353,16 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 	sp = frame->state.sp; \
 	vt_sp = frame->state.vt_sp; \
 	finally_ips = frame->state.finally_ips; \
-	locals = (unsigned char *)frame->stack + frame->imethod->stack_size + frame->imethod->vt_stack_size; \
+	locals = (unsigned char *)frame->stack; \
 	frame->state.ip = NULL; \
 	} while (0)
 
 /* Initialize interpreter state for executing FRAME */
 #define INIT_INTERP_STATE(frame, _clause_args) do {	 \
 	ip = _clause_args ? ((FrameClauseArgs *)_clause_args)->start_with_ip : (frame)->imethod->code; \
-	sp = (frame)->stack; \
-	vt_sp = (unsigned char *) sp + (frame)->imethod->stack_size; \
-	locals = (unsigned char *) vt_sp + (frame)->imethod->vt_stack_size; \
+	locals = (unsigned char *)(frame)->stack; \
+	vt_sp = (unsigned char *) locals + (frame)->imethod->total_locals_size; \
+	sp = (stackval*)(vt_sp + (frame)->imethod->vt_stack_size); \
 	finally_ips = NULL; \
 	} while (0)
 
@@ -3443,9 +3437,14 @@ main_loop:
 	while (1) {
 		MintOpcode opcode;
 #ifdef ENABLE_CHECKED_BUILD
-		g_assert (sp >= frame->stack);
-		g_assert (vt_sp >= sp);
-		g_assert (locals >= vt_sp);
+		guchar *vt_start = (guchar*)frame->stack + frame->imethod->total_locals_size;
+		guchar *sp_start = vt_start + frame->imethod->vt_stack_size;
+		guchar *sp_end = sp_start + frame->imethod->stack_size;
+		g_assert (locals == (guchar*)frame->stack);
+		g_assert (vt_sp >= vt_start);
+		g_assert (vt_sp <= sp_start);
+		g_assert ((guchar*)sp >= sp_start);
+		g_assert ((guchar*)sp <= sp_end);
 #endif
 		DUMP_INSTR();
 		MINT_IN_SWITCH (*ip) {
@@ -3594,7 +3593,7 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_JMP) {
-			g_assert (sp == frame->stack);
+			g_assert_checked (sp == (stackval*)(locals + frame->imethod->total_locals_size + frame->imethod->vt_stack_size));
 			InterpMethod *new_method = (InterpMethod*)frame->imethod->data_items [ip [1]];
 
 			if (frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL)
@@ -3619,13 +3618,13 @@ main_loop:
 			if (realloc_frame) {
 				alloc_stack_data (context, frame, frame->imethod->alloca_size);
 				memset (frame->stack, 0, frame->imethod->alloca_size);
-				sp = frame->stack;
+				locals = (guchar*)frame->stack;
 			}
-			vt_sp = (unsigned char *) sp + frame->imethod->stack_size;
+			vt_sp = locals + frame->imethod->total_locals_size;
 #if DEBUG_INTERP
 			vtalloc = vt_sp;
 #endif
-			locals = vt_sp + frame->imethod->vt_stack_size;
+			sp = (stackval*)(vt_sp + frame->imethod->vt_stack_size);
 			ip = frame->imethod->code;
 			MINT_IN_BREAK;
 		}
@@ -4021,18 +4020,10 @@ call:
 				// FIXME This can only happen in a few wrappers. Add separate opcode for it
 				*frame->retval = *sp;
 			}
-#ifdef ENABLE_CHECKED_BUILD
-			/* FIXME Fix these warnings and replace with assertions */
-			if (sp > frame->stack)
-				g_warning_d ("ret: more values on stack: %d", sp - frame->stack);
-#endif
+			g_assert_checked (sp == (stackval*)(locals + frame->imethod->total_locals_size + frame->imethod->vt_stack_size));
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_VOID)
-#ifdef ENABLE_CHECKED_BUILD
-			/* FIXME Fix these warnings and replace with assertions */
-			if (sp > frame->stack)
-				g_warning_ds ("ret.void: more values on stack: %d %s", sp - frame->stack, mono_method_full_name (frame->imethod->method, TRUE));
-#endif
+			g_assert_checked (sp == (stackval*)(locals + frame->imethod->total_locals_size + frame->imethod->vt_stack_size));
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_VT) {
 			gpointer dest_vt;
@@ -4048,11 +4039,7 @@ call:
 				dest_vt = frame->retval->data.p;
 			}
 			memcpy (dest_vt, sp->data.p, i32);
-#ifdef ENABLE_CHECKED_BUILD
-			/* FIXME Fix these warnings and replace with assertions */
-			if (sp > frame->stack)
-				g_warning_d ("ret.vt: more values on stack: %d", sp - frame->stack);
-#endif
+			g_assert_checked (sp == (stackval*)(locals + frame->imethod->total_locals_size + frame->imethod->vt_stack_size));
 			goto exit_frame;
 		}
 
@@ -6386,10 +6373,9 @@ call_newobj:
 			if (clause_args && clause_args->exec_frame == frame && clause_index == clause_args->exit_clause)
 				goto exit_clause;
 
-#if DEBUG_INTERP // This assert causes Linux/amd64/clang to use more stack.
-			g_assert (sp >= frame->stack);
-#endif
-			sp = frame->stack;
+			// endfinally empties the stack
+			vt_sp = (guchar*)frame->stack + frame->imethod->total_locals_size;
+			sp = (stackval*)(vt_sp + frame->imethod->vt_stack_size);
 
 			if (finally_ips) {
 				ip = (const guint16*)finally_ips->data;
@@ -6410,8 +6396,9 @@ call_newobj:
 		MINT_IN_CASE(MINT_LEAVE_CHECK)
 		MINT_IN_CASE(MINT_LEAVE_S_CHECK) {
 			guint32 ip_offset = ip - frame->imethod->code;
-			g_assert (sp >= frame->stack);
-			sp = frame->stack; /* spec says stack should be empty at endfinally so it should be at the start too */
+			// leave empties the stack
+			vt_sp = (guchar*)frame->stack + frame->imethod->total_locals_size;
+			sp = (stackval*)(vt_sp + frame->imethod->vt_stack_size);
 
 			int opcode = *ip;
 			gboolean const check = opcode == MINT_LEAVE_CHECK || opcode == MINT_LEAVE_S_CHECK;
@@ -6456,8 +6443,6 @@ call_newobj:
 			if (old_list != finally_ips && finally_ips) {
 				ip = (const guint16*)finally_ips->data;
 				finally_ips = g_slist_remove (finally_ips, ip);
-				// we set vt_sp later here so we relieve stack pressure
-				vt_sp = (unsigned char*)sp + frame->imethod->stack_size;
 				// goto main_loop instead of MINT_IN_DISPATCH helps the compiler and therefore conserves stack.
 				// This is a slow/rare path and conserving stack is preferred over its performance otherwise.
 				goto main_loop;
@@ -6976,11 +6961,11 @@ call_newobj:
 		}
 
 		MINT_IN_CASE(MINT_LOCALLOC) {
-			if (sp != frame->stack + 1) /*FIX?*/
+			stackval *sp_start = (stackval*)(locals + frame->imethod->total_locals_size + frame->imethod->vt_stack_size);
+			if (sp != sp_start + 1) /*FIX?*/
 				goto abort_label;
 
 			int len = sp [-1].data.i;
-			//sp [-1].data.p = alloca (len);
 			sp [-1].data.p = alloc_extra_stack_data (context, ALIGN_TO (len, 8));
 
 			if (frame->imethod->init_locals)
@@ -7256,8 +7241,9 @@ resume:
 			/* Set the current execution state to the resume state in context */
 			ip = context->handler_ip;
 			/* spec says stack should be empty at endfinally so it should be at the start too */
-			sp = frame->stack;
-			vt_sp = (guchar*)sp + frame->imethod->stack_size;
+			locals = (guchar*)frame->stack;
+			vt_sp = locals + frame->imethod->total_locals_size;
+			sp = (stackval*)(vt_sp + frame->imethod->vt_stack_size);
 			g_assert (context->exc_gchandle);
 			sp->data.p = mono_gchandle_get_target_internal (context->exc_gchandle);
 			++sp;
@@ -7298,7 +7284,7 @@ exit_clause:
 		if (clause_args->base_frame) {
 			// We finished executing a filter. The execution stack of the base frame
 			// should remain unmodified, but we need to update the local space.
-			char *locals_base = (char*)clause_args->base_frame->stack + frame->imethod->stack_size + frame->imethod->vt_stack_size;
+			char *locals_base = (char*)clause_args->base_frame->stack;
 
 			memcpy (locals_base, locals, frame->imethod->locals_size);
 			pop_frame (context, frame);

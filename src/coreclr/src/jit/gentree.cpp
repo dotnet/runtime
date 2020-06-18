@@ -1461,7 +1461,7 @@ AGAIN:
                     if ((op1->AsHWIntrinsic()->gtHWIntrinsicId != op2->AsHWIntrinsic()->gtHWIntrinsicId) ||
                         (op1->AsHWIntrinsic()->gtSIMDBaseType != op2->AsHWIntrinsic()->gtSIMDBaseType) ||
                         (op1->AsHWIntrinsic()->gtSIMDSize != op2->AsHWIntrinsic()->gtSIMDSize) ||
-                        (op1->AsHWIntrinsic()->GetOtherBaseType() != op2->AsHWIntrinsic()->GetOtherBaseType()))
+                        (op1->AsHWIntrinsic()->GetAuxiliaryType() != op2->AsHWIntrinsic()->GetAuxiliaryType()))
                     {
                         return false;
                     }
@@ -2131,7 +2131,7 @@ AGAIN:
                     hash += tree->AsHWIntrinsic()->gtHWIntrinsicId;
                     hash += tree->AsHWIntrinsic()->gtSIMDBaseType;
                     hash += tree->AsHWIntrinsic()->gtSIMDSize;
-                    hash += tree->AsHWIntrinsic()->GetOtherBaseType();
+                    hash += tree->AsHWIntrinsic()->GetAuxiliaryType();
                     break;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -7478,7 +7478,7 @@ GenTree* Compiler::gtCloneExpr(
                     GenTreeHWIntrinsic(hwintrinsicOp->TypeGet(), hwintrinsicOp->gtGetOp1(),
                                        hwintrinsicOp->gtGetOp2IfPresent(), hwintrinsicOp->gtHWIntrinsicId,
                                        hwintrinsicOp->gtSIMDBaseType, hwintrinsicOp->gtSIMDSize);
-                copy->AsHWIntrinsic()->SetOtherBaseType(hwintrinsicOp->GetOtherBaseType());
+                copy->AsHWIntrinsic()->SetAuxiliaryType(hwintrinsicOp->GetAuxiliaryType());
             }
             break;
 #endif
@@ -18674,13 +18674,13 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
 // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
 {
-#ifdef TARGET_XARCH
-    // Some xarch instructions have MemoryLoad sematics
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
     if (category == HW_Category_MemoryLoad)
     {
         return true;
     }
+#ifdef TARGET_XARCH
     else if (HWIntrinsicInfo::MaybeMemoryLoad(gtHWIntrinsicId))
     {
         // Some intrinsics (without HW_Category_MemoryLoad) also have MemoryLoad semantics
@@ -18710,19 +18710,20 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
         }
     }
 #endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
     return false;
 }
 
 // Returns true for the HW Instrinsic instructions that have MemoryStore semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryStore() const
 {
-#ifdef TARGET_XARCH
-    // Some xarch instructions have MemoryStore sematics
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
     if (category == HW_Category_MemoryStore)
     {
         return true;
     }
+#ifdef TARGET_XARCH
     else if (HWIntrinsicInfo::MaybeMemoryStore(gtHWIntrinsicId) &&
              (category == HW_Category_IMM || category == HW_Category_Scalar))
     {
@@ -18745,13 +18746,14 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore() const
         }
     }
 #endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
     return false;
 }
 
 // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
 {
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     return OperIsMemoryLoad() || OperIsMemoryStore();
 #else
     return false;
