@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
 
         public bool Match(string value)
         {
-            var wildcard = this;
+            WildcardPathSegment wildcard = this;
 
             if (value.Length < wildcard.BeginsWith.Length + wildcard.EndsWith.Length)
             {
@@ -51,12 +51,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
                 return false;
             }
 
-            var beginRemaining = wildcard.BeginsWith.Length;
-            var endRemaining = value.Length - wildcard.EndsWith.Length;
-            for (var containsIndex = 0; containsIndex != wildcard.Contains.Count; ++containsIndex)
+            int beginRemaining = wildcard.BeginsWith.Length;
+            int endRemaining = value.Length - wildcard.EndsWith.Length;
+            for (int containsIndex = 0; containsIndex != wildcard.Contains.Count; ++containsIndex)
             {
-                var containsValue = wildcard.Contains[containsIndex];
-                var indexOf = value.IndexOf(
+                string containsValue = wildcard.Contains[containsIndex];
+                int indexOf = value.IndexOf(
                     value: containsValue,
                     startIndex: beginRemaining,
                     count: endRemaining - beginRemaining,

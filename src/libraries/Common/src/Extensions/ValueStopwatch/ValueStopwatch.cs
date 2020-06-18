@@ -31,9 +31,9 @@ namespace Microsoft.Extensions.Internal
                 throw new InvalidOperationException("An uninitialized, or 'default', ValueStopwatch cannot be used to get elapsed time.");
             }
 
-            var end = Stopwatch.GetTimestamp();
-            var timestampDelta = end - _startTimestamp;
-            var ticks = (long)(TimestampToTicks * timestampDelta);
+            long end = Stopwatch.GetTimestamp();
+            long timestampDelta = end - _startTimestamp;
+            long ticks = (long)(TimestampToTicks * timestampDelta);
             return new TimeSpan(ticks);
         }
     }

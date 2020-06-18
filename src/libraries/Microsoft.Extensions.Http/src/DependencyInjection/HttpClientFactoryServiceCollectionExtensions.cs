@@ -209,7 +209,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.AddTypedClientCore<TClient>(validateSingleType: true);
             return builder;
@@ -252,7 +252,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.AddTypedClientCore<TClient, TImplementation>(validateSingleType: true);
             return builder;
@@ -392,7 +392,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
             builder.AddTypedClientCore<TClient>(validateSingleType: true);
@@ -437,7 +437,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
             builder.AddTypedClientCore<TClient>(validateSingleType: true);
@@ -487,7 +487,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
             builder.AddTypedClientCore<TClient, TImplementation>(validateSingleType: true);
@@ -537,7 +537,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
             builder.AddTypedClientCore<TClient, TImplementation>(validateSingleType: true);
@@ -801,7 +801,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(factory));
             }
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             return AddHttpClient<TClient, TImplementation>(services, name, factory);
         }
 
@@ -898,7 +898,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(factory));
             }
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             return AddHttpClient<TClient, TImplementation>(services, name, factory);
         }
 

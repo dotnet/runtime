@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The started <see cref="IHost"/>.</returns>
         public static async Task<IHost> StartAsync(this IHostBuilder hostBuilder, CancellationToken cancellationToken = default)
         {
-            var host = hostBuilder.Build();
+            IHost host = hostBuilder.Build();
             await host.StartAsync(cancellationToken);
             return host;
         }

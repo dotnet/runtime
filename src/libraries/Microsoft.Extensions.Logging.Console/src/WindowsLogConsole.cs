@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         public void Write(string message, ConsoleColor? background, ConsoleColor? foreground)
         {
-            var colorChanged = SetColor(background, foreground);
+            bool colorChanged = SetColor(background, foreground);
             _textWriter.Write(message);
             if (colorChanged)
             {
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         public void WriteLine(string message, ConsoleColor? background, ConsoleColor? foreground)
         {
-            var colorChanged = SetColor(background, foreground);
+            bool colorChanged = SetColor(background, foreground);
             _textWriter.WriteLine(message);
             if (colorChanged)
             {

@@ -111,7 +111,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <inheritdoc />
         public override string ToString()
         {
-            var lifetime = $"{nameof(ServiceType)}: {ServiceType} {nameof(Lifetime)}: {Lifetime} ";
+            string? lifetime = $"{nameof(ServiceType)}: {ServiceType} {nameof(Lifetime)}: {Lifetime} ";
 
             if (ImplementationType != null)
             {
@@ -138,7 +138,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
             else if (ImplementationFactory != null)
             {
-                var typeArguments = ImplementationFactory.GetType().GenericTypeArguments;
+                Type[]? typeArguments = ImplementationFactory.GetType().GenericTypeArguments;
 
                 Debug.Assert(typeArguments.Length == 2);
 

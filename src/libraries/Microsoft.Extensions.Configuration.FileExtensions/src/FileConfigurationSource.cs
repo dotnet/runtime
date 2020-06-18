@@ -71,8 +71,8 @@ namespace Microsoft.Extensions.Configuration
                 !string.IsNullOrEmpty(Path) &&
                 System.IO.Path.IsPathRooted(Path))
             {
-                var directory = System.IO.Path.GetDirectoryName(Path);
-                var pathToFile = System.IO.Path.GetFileName(Path);
+                string directory = System.IO.Path.GetDirectoryName(Path);
+                string pathToFile = System.IO.Path.GetFileName(Path);
                 while (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 {
                     pathToFile = System.IO.Path.Combine(System.IO.Path.GetFileName(directory), pathToFile);

@@ -37,16 +37,16 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         internal static string[] GetDefaultProbeDirectories(IEnvironment environment)
         {
-            var probeDirectories = environment.GetAppContextData("PROBING_DIRECTORIES");
+            object probeDirectories = environment.GetAppContextData("PROBING_DIRECTORIES");
 
-            var listOfDirectories = probeDirectories as string;
+            string listOfDirectories = probeDirectories as string;
 
             if (!string.IsNullOrEmpty(listOfDirectories))
             {
                 return listOfDirectories.Split(new char[] { Path.PathSeparator }, StringSplitOptions.RemoveEmptyEntries);
             }
 
-            var packageDirectory = environment.GetEnvironmentVariable("NUGET_PACKAGES");
+            string packageDirectory = environment.GetEnvironmentVariable("NUGET_PACKAGES");
 
             if (!string.IsNullOrEmpty(packageDirectory))
             {
@@ -79,7 +79,14 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 return false;
             }
 
+
+/* Unmerged change from project 'Microsoft.Extensions.DependencyModel (net461)'
+Before:
             foreach (var directory in _nugetPackageDirectories)
+After:
+            foreach (System.String directory in _nugetPackageDirectories)
+*/
+            foreach (string directory in _nugetPackageDirectories)
             {
                 string packagePath;
 
@@ -100,7 +107,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
         {
             var paths = new List<string>();
 
-            foreach (var assembly in library.Assemblies)
+            foreach (string assembly in library.Assemblies)
             {
                 string fullName;
                 if (!ResolverUtils.TryResolveAssemblyFile(fileSystem, basePath, assembly, out fullName))

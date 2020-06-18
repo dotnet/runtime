@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             {
                 return false;
             }
-            foreach (var assembly in library.Assemblies)
+            foreach (string assembly in library.Assemblies)
             {
                 string fullName;
                 if (!TryResolveReferenceAssembly(assembly, out fullName))
@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
             if (_defaultReferenceAssembliesPath != null)
             {
-                var relativeToReferenceAssemblies = Path.Combine(_defaultReferenceAssembliesPath, path);
+                string relativeToReferenceAssemblies = Path.Combine(_defaultReferenceAssembliesPath, path);
                 if (_fileSystem.File.Exists(relativeToReferenceAssemblies))
                 {
                     fullPath = relativeToReferenceAssemblies;
@@ -70,10 +70,17 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 }
             }
 
-            var name = Path.GetFileName(path);
+            string name = Path.GetFileName(path);
+
+/* Unmerged change from project 'Microsoft.Extensions.DependencyModel (net461)'
+Before:
             foreach (var fallbackPath in _fallbackSearchPaths)
+After:
+            foreach (System.String fallbackPath in _fallbackSearchPaths)
+*/
+            foreach (string fallbackPath in _fallbackSearchPaths)
             {
-                var fallbackFile = Path.Combine(fallbackPath, name);
+                string fallbackFile = Path.Combine(fallbackPath, name);
                 if (_fileSystem.File.Exists(fallbackFile))
                 {
                     fullPath = fallbackFile;
@@ -91,7 +98,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 return new string[0];
             }
 
-            var net20Dir = Path.Combine(environment.GetEnvironmentVariable("WINDIR"), "Microsoft.NET", "Framework", "v2.0.50727");
+            string net20Dir = Path.Combine(environment.GetEnvironmentVariable("WINDIR"), "Microsoft.NET", "Framework", "v2.0.50727");
 
             if (!fileSystem.Directory.Exists(net20Dir))
             {
@@ -103,7 +110,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
         internal static string GetDefaultReferenceAssembliesPath(IFileSystem fileSystem, IEnvironment environment)
         {
             // Allow setting the reference assemblies path via an environment variable
-            var referenceAssembliesPath = DotNetReferenceAssembliesPathResolver.Resolve(environment, fileSystem); 
+            string referenceAssembliesPath = DotNetReferenceAssembliesPathResolver.Resolve(environment, fileSystem); 
             if (!string.IsNullOrEmpty(referenceAssembliesPath))
             {
                 return referenceAssembliesPath;
@@ -118,7 +125,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
             // References assemblies are in %ProgramFiles(x86)% on
             // 64 bit machines
-            var programFiles = environment.GetEnvironmentVariable("ProgramFiles(x86)");
+            string programFiles = environment.GetEnvironmentVariable("ProgramFiles(x86)");
 
             if (string.IsNullOrEmpty(programFiles))
             {

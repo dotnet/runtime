@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Options
                 }
 
                 var errors = new List<string>();
-                foreach (var r in validationResults)
+                foreach (ValidationResult r in validationResults)
                 {
                     errors.Add($"DataAnnotation validation failed for members: '{String.Join(",", r.MemberNames)}' with the error: '{r.ErrorMessage}'.");
                 }

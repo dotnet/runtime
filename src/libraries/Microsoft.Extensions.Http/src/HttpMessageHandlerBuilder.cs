@@ -77,15 +77,15 @@ namespace Microsoft.Extensions.Http
                 throw new ArgumentNullException(nameof(additionalHandlers));
             }
 
-            var additionalHandlersList = additionalHandlers as IReadOnlyList<DelegatingHandler> ?? additionalHandlers.ToArray();
+            IReadOnlyList<DelegatingHandler> additionalHandlersList = additionalHandlers as IReadOnlyList<DelegatingHandler> ?? additionalHandlers.ToArray();
 
-            var next = primaryHandler;
-            for (var i = additionalHandlersList.Count - 1; i >= 0; i--)
+            HttpMessageHandler next = primaryHandler;
+            for (int i = additionalHandlersList.Count - 1; i >= 0; i--)
             {
-                var handler = additionalHandlersList[i];
+                DelegatingHandler handler = additionalHandlersList[i];
                 if (handler == null)
                 {
-                    var message = SR.Format(SR.HttpMessageHandlerBuilder_AdditionalHandlerIsNull, nameof(additionalHandlers));
+                    string message = SR.Format(SR.HttpMessageHandlerBuilder_AdditionalHandlerIsNull, nameof(additionalHandlers));
                     throw new InvalidOperationException(message);
                 }
 
@@ -93,7 +93,7 @@ namespace Microsoft.Extensions.Http
                 // work the way you want and it can be tricky for callers to figure out.
                 if (handler.InnerHandler != null)
                 {
-                    var message = SR.Format(SR.HttpMessageHandlerBuilder_AdditionHandlerIsInvalid,
+                    string message = SR.Format(SR.HttpMessageHandlerBuilder_AdditionHandlerIsInvalid,
                         nameof(DelegatingHandler.InnerHandler),
                         nameof(DelegatingHandler),
                         nameof(HttpMessageHandlerBuilder),

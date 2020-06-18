@@ -92,7 +92,7 @@ namespace Microsoft.Extensions.Primitives
             get
             {
                 // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
-                var value = _values;
+                object value = _values;
                 if (value is string)
                 {
                     return 1;
@@ -137,7 +137,7 @@ namespace Microsoft.Extensions.Primitives
             get
             {
                 // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
-                var value = _values;
+                object value = _values;
                 if (value is string str)
                 {
                     if (index == 0)
@@ -173,7 +173,7 @@ namespace Microsoft.Extensions.Primitives
         private string GetStringValue()
         {
             // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
-            var value = _values;
+            object value = _values;
             if (value is string s)
             {
                 return s;
@@ -192,7 +192,7 @@ namespace Microsoft.Extensions.Primitives
 
                 Debug.Assert(value is string[]);
                 // value is not null or string, array, can only be string[]
-                var values = Unsafe.As<string[]>(value);
+                string[] values = Unsafe.As<string[]>(value);
                 switch (values.Length)
                 {
                     case 0: return null;
@@ -204,10 +204,10 @@ namespace Microsoft.Extensions.Primitives
             static string GetJoinedStringValueFromArray(string[] values)
             {
                 // Calculate final length
-                var length = 0;
-                for (var i = 0; i < values.Length; i++)
+                int length = 0;
+                for (int i = 0; i < values.Length; i++)
                 {
-                    var value = values[i];
+                    string value = values[i];
                     // Skip null and empty values
                     if (value != null && value.Length > 0)
                     {
@@ -223,11 +223,11 @@ namespace Microsoft.Extensions.Primitives
 #if NETCOREAPP || NETSTANDARD2_1
                 // Create the new string
                 return string.Create(length, values, (span, strings) => {
-                    var offset = 0;
+                    int offset = 0;
                     // Skip null and empty values
-                    for (var i = 0; i < strings.Length; i++)
+                    for (int i = 0; i < strings.Length; i++)
                     {
-                        var value = strings[i];
+                        string value = strings[i];
                         if (value != null && value.Length > 0)
                         {
                             if (offset > 0)
@@ -246,11 +246,11 @@ namespace Microsoft.Extensions.Primitives
 #pragma warning disable CS0618
                 var sb = new InplaceStringBuilder(length);
 #pragma warning restore CS0618
-                var hasAdded = false;
+                bool hasAdded = false;
                 // Skip null and empty values
-                for (var i = 0; i < values.Length; i++)
+                for (int i = 0; i < values.Length; i++)
                 {
-                    var value = values[i];
+                    string value = values[i];
                     if (value != null && value.Length > 0)
                     {
                         if (hasAdded)
@@ -285,7 +285,7 @@ namespace Microsoft.Extensions.Primitives
         private string[] GetArrayValue()
         {
             // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
-            var value = _values;
+            object value = _values;
             if (value is string[] values)
             {
                 return values;
@@ -314,7 +314,7 @@ namespace Microsoft.Extensions.Primitives
         private int IndexOf(string item)
         {
             // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
-            var value = _values;
+            object value = _values;
             if (value is string[] values)
             {
                 for (int i = 0; i < values.Length; i++)
@@ -360,7 +360,7 @@ namespace Microsoft.Extensions.Primitives
         private void CopyTo(string[] array, int arrayIndex)
         {
             // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
-            var value = _values;
+            object value = _values;
             if (value is string[] values)
             {
                 Array.Copy(values, 0, array, arrayIndex, values.Length);
@@ -424,7 +424,7 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>true if <paramref name="value">value</paramref> contains a single null string or empty array; otherwise, false.</returns>
         public static bool IsNullOrEmpty(StringValues value)
         {
-            var data = value._values;
+            object data = value._values;
             if (data is null)
             {
                 return true;
@@ -453,8 +453,8 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>The concatenation of <paramref name="values1"/> and <paramref name="values2"/>.</returns>
         public static StringValues Concat(StringValues values1, StringValues values2)
         {
-            var count1 = values1.Count;
-            var count2 = values2.Count;
+            int count1 = values1.Count;
+            int count2 = values2.Count;
 
             if (count1 == 0)
             {
@@ -466,7 +466,14 @@ namespace Microsoft.Extensions.Primitives
                 return values1;
             }
 
+
+/* Unmerged change from project 'Microsoft.Extensions.Primitives (netcoreapp3.0)'
+Before:
             var combined = new string[count1 + count2];
+After:
+            System.String[] combined = new string[count1 + count2];
+*/
+            string[] combined = new string[count1 + count2];
             values1.CopyTo(combined, 0);
             values2.CopyTo(combined, count1);
             return new StringValues(combined);
@@ -485,13 +492,20 @@ namespace Microsoft.Extensions.Primitives
                 return values;
             }
 
-            var count = values.Count;
+            int count = values.Count;
             if (count == 0)
             {
                 return new StringValues(value);
             }
 
+
+/* Unmerged change from project 'Microsoft.Extensions.Primitives (netcoreapp3.0)'
+Before:
             var combined = new string[count + 1];
+After:
+            System.String[] combined = new string[count + 1];
+*/
+            string[] combined = new string[count + 1];
             values.CopyTo(combined, 0);
             combined[count] = value;
             return new StringValues(combined);
@@ -510,13 +524,20 @@ namespace Microsoft.Extensions.Primitives
                 return values;
             }
 
-            var count = values.Count;
+            int count = values.Count;
             if (count == 0)
             {
                 return new StringValues(value);
             }
 
+
+/* Unmerged change from project 'Microsoft.Extensions.Primitives (netcoreapp3.0)'
+Before:
             var combined = new string[count + 1];
+After:
+            System.String[] combined = new string[count + 1];
+*/
+            string[] combined = new string[count + 1];
             combined[0] = value;
             values.CopyTo(combined, 1);
             return new StringValues(combined);
@@ -530,14 +551,14 @@ namespace Microsoft.Extensions.Primitives
         /// <returns><c>true</c> if the value of <paramref name="left"/> is the same as the value of <paramref name="right"/>; otherwise, <c>false</c>.</returns>
         public static bool Equals(StringValues left, StringValues right)
         {
-            var count = left.Count;
+            int count = left.Count;
 
             if (count != right.Count)
             {
                 return false;
             }
 
-            for (var i = 0; i < count; i++)
+            for (int i = 0; i < count; i++)
             {
                 if (left[i] != right[i])
                 {
@@ -735,7 +756,7 @@ namespace Microsoft.Extensions.Primitives
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            var value = _values;
+            object value = _values;
             if (value is string[] values)
             {
                 if (Count == 1)
@@ -743,7 +764,7 @@ namespace Microsoft.Extensions.Primitives
                     return Unsafe.As<string>(this[0])?.GetHashCode() ?? Count.GetHashCode();
                 }
                 var hcc = new HashCodeCombiner();
-                for (var i = 0; i < values.Length; i++)
+                for (int i = 0; i < values.Length; i++)
                 {
                     hcc.Add(values[i]);
                 }
@@ -784,13 +805,20 @@ namespace Microsoft.Extensions.Primitives
 
             public bool MoveNext()
             {
-                var index = _index;
+                int index = _index;
                 if (index < 0)
                 {
                     return false;
                 }
 
+
+/* Unmerged change from project 'Microsoft.Extensions.Primitives (netcoreapp3.0)'
+Before:
                 var values = _values;
+After:
+                System.String[] values = _values;
+*/
+                string[] values = _values;
                 if (values != null)
                 {
                     if ((uint)index < (uint)values.Length)

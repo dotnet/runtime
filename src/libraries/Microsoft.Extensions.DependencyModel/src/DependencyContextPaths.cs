@@ -33,18 +33,18 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static DependencyContextPaths GetCurrent()
         {
-            var deps = AppDomain.CurrentDomain.GetData(DepsFilesProperty);
-            var fxDeps = AppDomain.CurrentDomain.GetData(FxDepsFileProperty);
+            object deps = AppDomain.CurrentDomain.GetData(DepsFilesProperty);
+            object fxDeps = AppDomain.CurrentDomain.GetData(FxDepsFileProperty);
 
             return Create(deps as string, fxDeps as string);
         }
 
         internal static DependencyContextPaths Create(string depsFiles, string sharedRuntime)
         {
-            var files = depsFiles?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-            var application = files != null && files.Length > 0 ? files[0] : null;
+            string[] files = depsFiles?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            string application = files != null && files.Length > 0 ? files[0] : null;
 
-            var nonApplicationPaths = files?
+            string[] nonApplicationPaths = files?
                 .Skip(1) // the application path
                 .ToArray();
 

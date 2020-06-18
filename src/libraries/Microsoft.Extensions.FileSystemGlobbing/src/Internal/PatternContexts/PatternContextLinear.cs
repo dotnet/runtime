@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         public override void PushDirectory(DirectoryInfoBase directory)
         {
             // copy the current frame
-            var frame = Frame;
+            FrameData frame = Frame;
 
             if (IsStackEmpty() || Frame.IsNotApplicable)
             {
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
             else
             {
                 // Determine this frame's contribution to the stem (if any)
-                var segment = Pattern.Segments[Frame.SegmentIndex];
+                IPathSegment segment = Pattern.Segments[Frame.SegmentIndex];
                 if (frame.InStem || segment.CanProduceStem)
                 {
                     frame.InStem = true;

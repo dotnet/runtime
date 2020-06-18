@@ -65,11 +65,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public void Dispose()
         {
-            var toDispose = BeginDispose();
+            List<object> toDispose = BeginDispose();
 
             if (toDispose != null)
             {
-                for (var i = toDispose.Count - 1; i >= 0; i--)
+                for (int i = toDispose.Count - 1; i >= 0; i--)
                 {
                     if (toDispose[i] is IDisposable disposable)
                     {
@@ -85,18 +85,18 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public ValueTask DisposeAsync()
         {
-            var toDispose = BeginDispose();
+            List<object> toDispose = BeginDispose();
 
             if (toDispose != null)
             {
                 try
                 {
-                    for (var i = toDispose.Count - 1; i >= 0; i--)
+                    for (int i = toDispose.Count - 1; i >= 0; i--)
                     {
-                        var disposable = toDispose[i];
+                        object disposable = toDispose[i];
                         if (disposable is IAsyncDisposable asyncDisposable)
                         {
-                            var vt = asyncDisposable.DisposeAsync();
+                            ValueTask vt = asyncDisposable.DisposeAsync();
                             if (!vt.IsCompletedSuccessfully)
                             {
                                 return Await(i, vt, toDispose);
@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                 for (; i >= 0; i--)
                 {
-                    var disposable = toDispose[i];
+                    object disposable = toDispose[i];
                     if (disposable is IAsyncDisposable asyncDisposable)
                     {
                         await asyncDisposable.DisposeAsync();
