@@ -277,7 +277,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void DetachTokens()
         {
-            lock(_lock)
+            lock (_lock)
             {
                 IList<IDisposable> registrations = _expirationTokenRegistrations;
                 if (registrations != null)

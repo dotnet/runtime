@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
                 throw new InvalidOperationException("Can't test file before entering a directory.");
             }
 
-            if(!Frame.IsNotApplicable && IsLastSegment() && TestMatchingSegment(file.Name))
+            if (!Frame.IsNotApplicable && IsLastSegment() && TestMatchingSegment(file.Name))
             {
                 return PatternTestResult.Success(CalculateStem(file));
             }
