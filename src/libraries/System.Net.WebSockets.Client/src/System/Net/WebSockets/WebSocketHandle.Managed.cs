@@ -84,7 +84,6 @@ namespace System.Net.WebSockets
             try
             {
                 _webSocket = new BrowserWebSocket();
-                Debug.WriteLine("Hic Sunt Dracones!!!! in WebSocketHandle.Managed.cs");
                 await ((BrowserWebSocket)_webSocket).ConnectAsyncJavaScript(uri, cancellationToken, options.RequestedSubProtocols).ConfigureAwait(continueOnCapturedContext: true);
             }
             catch (Exception exc)
