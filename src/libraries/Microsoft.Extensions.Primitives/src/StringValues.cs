@@ -689,36 +689,36 @@ After:
         public static bool operator !=(string[] left, StringValues right) => !Equals(new StringValues(left), right);
 
         /// <summary>
-        /// Determines whether the specified <see cref="StringValues"/> and <see cref="System.Object"/>, which must be a 
+        /// Determines whether the specified <see cref="StringValues"/> and <see cref="object"/>, which must be a 
         /// <see cref="StringValues"/>, <see cref="string"/>, or array of <see cref="string"/>, have the same value.
         /// </summary>
         /// <param name="left">The <see cref="StringValues"/> to compare.</param>
-        /// <param name="right">The <see cref="System.Object"/> to compare.</param>
+        /// <param name="right">The <see cref="object"/> to compare.</param>
         /// <returns><c>true</c> if the <paramref name="left"/> object is equal to the <paramref name="right"/>; otherwise, <c>false</c>.</returns>
         public static bool operator ==(StringValues left, object right) => left.Equals(right);
 
         /// <summary>
-        /// Determines whether the specified <see cref="StringValues"/> and <see cref="System.Object"/>, which must be a 
+        /// Determines whether the specified <see cref="StringValues"/> and <see cref="object"/>, which must be a 
         /// <see cref="StringValues"/>, <see cref="string"/>, or array of <see cref="string"/>, have different values.
         /// </summary>
         /// <param name="left">The <see cref="StringValues"/> to compare.</param>
-        /// <param name="right">The <see cref="System.Object"/> to compare.</param>
+        /// <param name="right">The <see cref="object"/> to compare.</param>
         /// <returns><c>true</c> if the <paramref name="left"/> object is equal to the <paramref name="right"/>; otherwise, <c>false</c>.</returns>
         public static bool operator !=(StringValues left, object right) => !left.Equals(right);
 
         /// <summary>
-        /// Determines whether the specified <see cref="System.Object"/>, which must be a 
+        /// Determines whether the specified <see cref="object"/>, which must be a 
         /// <see cref="StringValues"/>, <see cref="string"/>, or array of <see cref="string"/>, and specified <see cref="StringValues"/>,  have the same value.
         /// </summary>
         /// <param name="left">The <see cref="StringValues"/> to compare.</param>
-        /// <param name="right">The <see cref="System.Object"/> to compare.</param>
+        /// <param name="right">The <see cref="object"/> to compare.</param>
         /// <returns><c>true</c> if the <paramref name="left"/> object is equal to the <paramref name="right"/>; otherwise, <c>false</c>.</returns>
         public static bool operator ==(object left, StringValues right) => right.Equals(left);
 
         /// <summary>
-        /// Determines whether the specified <see cref="System.Object"/> and <see cref="StringValues"/> object have the same values.
+        /// Determines whether the specified <see cref="object"/> and <see cref="StringValues"/> object have the same values.
         /// </summary>
-        /// <param name="left">The <see cref="System.Object"/> to compare.</param>
+        /// <param name="left">The <see cref="object"/> to compare.</param>
         /// <param name="right">The <see cref="StringValues"/> to compare.</param>
         /// <returns><c>true</c> if the <paramref name="left"/> object is equal to the <paramref name="right"/>; otherwise, <c>false</c>.</returns>
         public static bool operator !=(object left, StringValues right) => !right.Equals(left);

@@ -657,9 +657,9 @@ namespace Microsoft.Extensions.Primitives
         }
 
         /// <summary>
-        /// Returns the <see cref="string"/> represented by this <see cref="StringSegment"/> or <see cref="String.Empty" /> if the <see cref="StringSegment"/> does not contain a value.
+        /// Returns the <see cref="string"/> represented by this <see cref="StringSegment"/> or <see cref="string.Empty" /> if the <see cref="StringSegment"/> does not contain a value.
         /// </summary>
-        /// <returns>The <see cref="string"/> represented by this <see cref="StringSegment"/> or <see cref="String.Empty" /> if the <see cref="StringSegment"/> does not contain a value.</returns>
+        /// <returns>The <see cref="string"/> represented by this <see cref="StringSegment"/> or <see cref="string.Empty" /> if the <see cref="StringSegment"/> does not contain a value.</returns>
         public override string ToString()
         {
             return Value ?? string.Empty;
