@@ -63,9 +63,9 @@ PEFile::PEFile(PEImage *identity) :
     m_pMetadataLock(::new SimpleRWLock(PREEMPTIVE, LOCK_TYPE_DEFAULT)),
     m_refCount(1),
     m_flags(0),
+    m_pAssemblyLoadContext(nullptr),
     m_pHostAssembly(nullptr),
-    m_pFallbackLoadContextBinder(nullptr),
-    m_pAssemblyLoadContext(nullptr)
+    m_pFallbackLoadContextBinder(nullptr)
 {
     CONTRACTL
     {
