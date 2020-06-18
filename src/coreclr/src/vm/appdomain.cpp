@@ -4582,9 +4582,9 @@ IUnknown *AppDomain::CreateBinderContext()
         IfFailThrow(CCoreCLRBinderHelper::DefaultBinderSetupContext(DefaultADID, &m_pTPABinderContext));
 
         // Since the PEAssembly for the System.Private.CoreLib.dll is created before the binder (the AssemblyLoadContext),
-        // we need to set the AssemblyLoadContext pointer in that PEAssembly now. For other assemblies, it is
+        // we need to update the AssemblyLoadContext pointer in that PEAssembly now. For other assemblies, it is
         // set in the PEFile constructor.
-        SystemDomain::SystemFile()->SetAssemblyLoadContext(m_pTPABinderContext);
+        SystemDomain::SystemFile()->SetupAssemblyLoadContext();
     }
 
     RETURN m_pTPABinderContext;

@@ -1923,8 +1923,7 @@ PEAssembly::PEAssembly(
     m_pDebugName = m_debugName;
 #endif
 
-    AssemblyLoadContext* pAssemblyLoadContext = LookupAssemblyLoadContext();
-    SetAssemblyLoadContext(pAssemblyLoadContext);
+    SetupAssemblyLoadContext();
 }
 #endif // !DACCESS_COMPILE
 
@@ -2335,7 +2334,7 @@ void PEFile::EnsureImageOpened()
         GetILimage()->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED)->Release();
 }
 
-AssemblyLoadContext* PEFile::LookupAssemblyLoadContext()
+void PEFile::SetupAssemblyLoadContext()
 {
     PTR_ICLRPrivBinder pBindingContext = GetBindingContext();
     ICLRPrivBinder* pOpaqueBinder = NULL;
@@ -2348,7 +2347,7 @@ AssemblyLoadContext* PEFile::LookupAssemblyLoadContext()
         pOpaqueBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
     }
 
-    return (pOpaqueBinder != NULL) ?
+    m_pAssemblyLoadContext = (pOpaqueBinder != NULL) ?
         (AssemblyLoadContext*)pOpaqueBinder :
         AppDomain::GetCurrentDomain()->GetTPABinderContext();
 }

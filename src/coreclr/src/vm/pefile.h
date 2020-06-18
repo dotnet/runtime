@@ -148,9 +148,6 @@ private:
 
 protected:
     IMDInternalImportHolder GetMDImport();
-#ifndef DACCESS_COMPILE
-    AssemblyLoadContext* LookupAssemblyLoadContext();
-#endif // !DACCESS_COMPILE
 
 public:
     // ------------------------------------------------------------
@@ -573,16 +570,13 @@ public:
     PTR_ICLRPrivBinder GetBindingContext();
 
 #ifndef DACCESS_COMPILE
-    void SetAssemblyLoadContext(AssemblyLoadContext* pAssemblyLoadContext)
-    {
-        m_pAssemblyLoadContext = pAssemblyLoadContext;
-    }
+    void SetupAssemblyLoadContext();
 
     void SetFallbackLoadContextBinder(PTR_ICLRPrivBinder pFallbackLoadContextBinder)
     {
         LIMITED_METHOD_CONTRACT;
         m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
-        SetAssemblyLoadContext(LookupAssemblyLoadContext());
+        SetupAssemblyLoadContext();
     }
 
 #endif //!DACCESS_COMPILE
@@ -591,6 +585,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
+        _ASSERTE(m_pAssemblyLoadContext != NULL);
         return m_pAssemblyLoadContext;
     }
 
