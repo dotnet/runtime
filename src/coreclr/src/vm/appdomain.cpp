@@ -6032,11 +6032,6 @@ void AppDomain::UnPublishHostedAssembly(
             }
         }
     }
-    else
-    {
-        // In AppX processes, all PEAssemblies that are reach this stage should have host binders.
-        _ASSERTE(!AppX::IsAppXProcess());
-    }
 }
 
 #endif //!DACCESS_COMPILE
