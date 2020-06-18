@@ -292,7 +292,7 @@ namespace System.Net.Sockets
         // To avoid this, the event handling logic is delegated to a non-inlined processing method.
         // See discussion: https://github.com/dotnet/runtime/issues/37064
         // SocketEventHandler holds an on-stack cache of SocketAsyncEngine members needed by the handler method.
-        private struct SocketEventHandler
+        private readonly struct SocketEventHandler
         {
             public Interop.Sys.SocketEvent* Buffer { get; }
 
@@ -312,9 +312,7 @@ namespace System.Net.Sockets
                 bool enqueuedEvent = false;
                 foreach (var socketEvent in new ReadOnlySpan<Interop.Sys.SocketEvent>(Buffer, numEvents))
                 {
-                    IntPtr handle = socketEvent.Data;
-
-                    if (_handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper))
+                    if (_handleToContextMap.TryGetValue(socketEvent.Data, out SocketAsyncContextWrapper contextWrapper))
                     {
                         SocketAsyncContext context = contextWrapper.Context;
 
@@ -325,11 +323,10 @@ namespace System.Net.Sockets
                         else
                         {
                             Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
-                            
+
                             if (events != Interop.Sys.SocketEvents.None)
                             {
-                                var ev = new SocketIOEvent(context, events);
-                                _eventQueue.Enqueue(ev);
+                                _eventQueue.Enqueue(new SocketIOEvent(context, events));
                                 enqueuedEvent = true;
                             }
                         }
