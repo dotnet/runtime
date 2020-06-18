@@ -1,12 +1,10 @@
 parameters:
   runtimeFlavor: ''
-  archGroup: ''
-  configuration: ''
+  archType: ''
+  buildConfig: ''
   creator: ''
-  framework: ''
   helixQueues: ''
-  msbuildScript: ''
-  targetOS: ''
+  osGroup: ''
   testRunNamePrefixSuffix: ''
   testScope: 'innerloop' # innerloop | outerloop | all
   interpreter: ''
@@ -15,12 +13,12 @@ parameters:
   scenarios: ''
 
 steps:
-  - script: ${{ parameters.msbuildScript }}
+  - script: $(_msbuildCommand)
             $(Build.SourcesDirectory)/src/libraries/sendtohelix.proj
             /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
-            /p:TargetArchitecture=${{ parameters.archGroup }}
-            /p:Configuration=${{ parameters.configuration }}
-            /p:TargetOS=${{ parameters.targetOS }}
+            /p:TargetArchitecture=${{ parameters.archType }}
+            /p:Configuration=${{ parameters.buildConfig }}
+            /p:TargetOS=${{ parameters.osGroup }}
             /p:MonoEnableInterpreter=${{ parameters.interpreter }}
             /p:TestScope=${{ parameters.testScope }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
