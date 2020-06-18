@@ -1558,6 +1558,7 @@ namespace System
         /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> to store indexes</param>
         private void MakeSeparatorList(ReadOnlySpan<char> separators, ref ValueListBuilder<int> sepListBuilder)
         {
+            // Special-case no separators to mean any whitespace is a separator.
             if (separators.Length == 0)
             {
                 for (int i = 0; i < Length; i++)
@@ -1569,6 +1570,7 @@ namespace System
                 }
             }
 
+            // Special-case the common cases of 1, 2, and 3 separators, with manual comparisons against each separator.
             else if (separators.Length <= 3)
             {
                 char sep0, sep1, sep2;
@@ -1592,6 +1594,8 @@ namespace System
                 }
             }
 
+            // Handle > 3 separators with a probabilistic map, ala IndexOfAny.
+            // This optimizes for chars being unlikely to match a separator.
             else
             {
                 unsafe
