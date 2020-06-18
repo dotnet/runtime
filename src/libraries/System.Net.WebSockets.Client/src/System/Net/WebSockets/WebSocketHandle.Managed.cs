@@ -21,9 +21,10 @@ namespace System.Net.WebSockets
         /// <summary>GUID appended by the server as part of the security key response.  Defined in the RFC.</summary>
         private const string WSServerGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
+#if !TARGETS_BROWSER
         /// <summary>Shared, lazily-initialized handler for when using default options.</summary>
         private static SocketsHttpHandler? s_defaultHandler;
-
+#endif
         private readonly CancellationTokenSource _abortSource = new CancellationTokenSource();
         private WebSocketState _state = WebSocketState.Connecting;
         private WebSocket? _webSocket;
@@ -72,6 +73,41 @@ namespace System.Net.WebSockets
         public Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken) =>
             _webSocket!.CloseOutputAsync(closeStatus, statusDescription, cancellationToken);
 
+#if TARGETS_BROWSER
+        public async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
+        {
+            CancellationTokenRegistration? registration = cancellationToken.Register(s =>
+            {
+                if (s is WebSocketHandle wsh)
+                    wsh.Abort();
+            }, this);
+            try
+            {
+                _webSocket = new BrowserWebSocket();
+                Debug.WriteLine("Hic Sunt Dracones!!!! in WebSocketHandle.Managed.cs");
+                await ((BrowserWebSocket)_webSocket).ConnectAsyncJavaScript(uri, cancellationToken, options.RequestedSubProtocols).ConfigureAwait(continueOnCapturedContext: true);
+            }
+            catch (Exception exc)
+            {
+                if (_state < WebSocketState.Closed)
+                {
+                    _state = WebSocketState.Closed;
+                }
+
+                Abort();
+
+                if (exc is WebSocketException)
+                {
+                    throw;
+                }
+                throw new WebSocketException(SR.net_webstatus_ConnectFailure, exc);
+            }
+            finally
+            {
+                registration?.Dispose();
+            }
+        }
+#else
         public async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
             HttpResponseMessage? response = null;
@@ -246,6 +282,7 @@ namespace System.Net.WebSockets
                 }
             }
         }
+#endif
 
         /// <param name="secKey">The generated security key to send in the Sec-WebSocket-Key header.</param>
         private static void AddWebSocketHeaders(HttpRequestMessage request, string secKey, ClientWebSocketOptions options)

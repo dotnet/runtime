@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -41,7 +42,6 @@ namespace System.Net.WebSockets
 
         private MemoryStream? _writeBuffer;
         private ReceivePayload? _bufferedPayload;
-        private readonly ClientWebSocketOptions _options;
         private readonly CancellationTokenSource _cts;
 
         // Stages of this class.
@@ -57,13 +57,10 @@ namespace System.Net.WebSockets
         public BrowserWebSocket()
         {
             _state = _created;
-            _options = new ClientWebSocketOptions();
             _cts = new CancellationTokenSource();
         }
 
         #region Properties
-
-        public ClientWebSocketOptions Options => _options;
 
         /// <summary>
         /// Gets the WebSocket state of the <see cref="System.Net.WebSockets.ClientWebSocket"/> instance.
@@ -106,31 +103,7 @@ namespace System.Net.WebSockets
 
         #endregion Properties
 
-        /// <summary>
-        /// Connect to a WebSocket server as an asynchronous operation.
-        /// </summary>
-        /// <returns>The async.</returns>
-        /// <param name="uri">URI.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        public Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
-        {
-            // Check that we have not started already
-            int priorState = Interlocked.CompareExchange(ref _state, _connecting, _created);
-            if (priorState == _disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
-            else if (priorState != _created)
-            {
-                throw new InvalidOperationException("WebSocket already started");
-            }
-
-            _options.SetToReadOnly();
-
-            return ConnectAsyncJavaScript(uri, cancellationToken);
-        }
-
-        private async Task ConnectAsyncJavaScript(Uri uri, CancellationToken cancellationToken)
+        internal async Task ConnectAsyncJavaScript(Uri uri, CancellationToken cancellationToken, List<string>? requestedSubProtocols)
         {
             var tcsConnect = new TaskCompletionSource<bool>();
 
@@ -145,12 +118,11 @@ namespace System.Net.WebSockets
             {
                 try
                 {
-
                     JavaScript.Array? subProtocols = null;
-                    if (Options.RequestedSubProtocols.Count > 0)
+                    if (requestedSubProtocols?.Count > 0)
                     {
                         subProtocols = new JavaScript.Array();
-                        foreach (var item in Options.RequestedSubProtocols)
+                        foreach (var item in requestedSubProtocols)
                         {
                             subProtocols.Push(item);
                         }
@@ -278,7 +250,6 @@ namespace System.Net.WebSockets
                     _innerWebSocket.SetObjectProperty("onmessage", _onMessage);
 
                     await tcsConnect.Task.ConfigureAwait(continueOnCapturedContext: true);
-
                 }
                 catch (Exception wse)
                 {
@@ -286,17 +257,13 @@ namespace System.Net.WebSockets
                     WebSocketException wex = new WebSocketException("WebSocket connection failure.", wse);
                     throw wex;
                 }
-
             }
-
         }
 
         private void ConnectExceptionCleanup()
         {
             Dispose();
-
         }
-
 
         public override void Dispose()
         {
@@ -441,7 +408,6 @@ namespace System.Net.WebSockets
             // Otherwise any timeout/cancellation would apply to the full session.
             using (cancellationToken.Register(() => tcsReceive.TrySetCanceled()))
             {
-
                 if (_bufferedPayload == null)
                     _bufferedPayload = await _receiveMessageQueue.DequeuePayloadAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
 

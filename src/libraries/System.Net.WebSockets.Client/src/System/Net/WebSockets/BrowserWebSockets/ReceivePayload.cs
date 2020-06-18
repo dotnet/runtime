@@ -8,43 +8,43 @@ namespace System.Net.WebSockets
 {
     internal sealed class ReceivePayload
     {
-        private readonly byte[] dataMessageReceived;
-        private WebSocketMessageType messageType;
-        private int unconsumedDataOffset;
+        private readonly byte[] _dataMessageReceived;
+        private WebSocketMessageType _messageType;
+        private int _unconsumedDataOffset;
 
         public ReceivePayload(byte[] array, WebSocketMessageType messageType = WebSocketMessageType.Binary)
         {
-            dataMessageReceived = array;
-            this.messageType = messageType;
+            _dataMessageReceived = array;
+            _messageType = messageType;
         }
 
         public ReceivePayload(ArrayBuffer arrayBuffer, WebSocketMessageType messageType = WebSocketMessageType.Binary)
         {
             using (var bin = new Uint8Array(arrayBuffer))
             {
-                dataMessageReceived = bin.ToArray();
-                this.messageType = messageType;
+                _dataMessageReceived = bin.ToArray();
+                _messageType = messageType;
             }
         }
 
         public ReceivePayload(ArraySegment<byte> payload, WebSocketMessageType messageType = WebSocketMessageType.Binary)
         {
-            dataMessageReceived = payload.Array ?? Array.Empty<byte>();
-            this.messageType = messageType;
+            _dataMessageReceived = payload.Array ?? Array.Empty<byte>();
+            _messageType = messageType;
         }
 
         public bool BufferPayload(ArraySegment<byte> arraySegment, out WebSocketReceiveResult receiveResult)
         {
-            var bytesTransferred = Math.Min(dataMessageReceived.Length - unconsumedDataOffset, arraySegment.Count);
-            var endOfMessage = (dataMessageReceived.Length - unconsumedDataOffset) <= arraySegment.Count;
+            var bytesTransferred = Math.Min(_dataMessageReceived.Length - _unconsumedDataOffset, arraySegment.Count);
+            var endOfMessage = (_dataMessageReceived.Length - _unconsumedDataOffset) <= arraySegment.Count;
 
             if (arraySegment.Array != null)
-                Buffer.BlockCopy(dataMessageReceived, unconsumedDataOffset, arraySegment.Array, arraySegment.Offset, bytesTransferred);
+                Buffer.BlockCopy(_dataMessageReceived, _unconsumedDataOffset, arraySegment.Array, arraySegment.Offset, bytesTransferred);
 
             if (!endOfMessage)
-                unconsumedDataOffset += arraySegment.Count;
+                _unconsumedDataOffset += arraySegment.Count;
 
-            receiveResult = new WebSocketReceiveResult(bytesTransferred, messageType, endOfMessage);
+            receiveResult = new WebSocketReceiveResult(bytesTransferred, _messageType, endOfMessage);
 
             return endOfMessage;
         }

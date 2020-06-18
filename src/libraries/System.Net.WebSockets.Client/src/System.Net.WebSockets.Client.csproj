@@ -26,8 +26,7 @@
              Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs"
              Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
-    <Compile Include="System\Net\WebSockets\WebSocketHandle.Managed.cs" Condition=" '$(TargetsBrowser)' != 'true'" />
-    <Compile Include="System\Net\WebSockets\BrowserWebSockets\WebSocketHandle.Browser.cs" Condition=" '$(TargetsBrowser)' == 'true'" />
+    <Compile Include="System\Net\WebSockets\WebSocketHandle.Managed.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
              Link="Common\System\Net\HttpKnownHeaderNames.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
