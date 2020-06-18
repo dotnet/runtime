@@ -321,16 +321,9 @@ else()
   if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
     # This is required to force using our own PAL, not one that we are loaded with.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
-
-    if(CLR_CMAKE_TARGET_SUNOS)
-        set(JIT_EXPORTS_LINKER_OPTION -Wl,-M,${JIT_EXPORTS_FILE})
-    else(CLR_CMAKE_TARGET_SUNOS)
-        set(JIT_EXPORTS_LINKER_OPTION -Wl,--version-script=${JIT_EXPORTS_FILE})
-    endif(CLR_CMAKE_TARGET_SUNOS)
-  elseif(CLR_CMAKE_TARGET_OSX)
-    set(JIT_EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${JIT_EXPORTS_FILE})
   endif()
 
+  set_exports_linker_option(${JIT_EXPORTS_FILE})
   set(SHARED_LIB_SOURCES ${SOURCES})
 endif()
 
