@@ -4500,3 +4500,202 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
 
     return hr;
 }
+
+HRESULT ClrDataAccess::GetNumberGenerations(unsigned int *pGenerations)
+{
+    if (pGenerations == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    *pGenerations = (unsigned int)(g_gcDacGlobals->total_generation_count);
+
+    SOSDacLeave();
+    return S_OK;
+}
+
+HRESULT ClrDataAccess::GetGenerationTable(unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded)
+{
+    if (cGenerations > 0 && pGenerationData == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    HRESULT hr = S_OK;
+    unsigned int numGenerationTableEntries = (unsigned int)(g_gcDacGlobals->total_generation_count);
+    if (pNeeded != NULL)
+    {
+        *pNeeded = numGenerationTableEntries;
+    }
+
+    if (cGenerations < numGenerationTableEntries)
+    {
+        hr = S_FALSE;
+    }
+    else
+    {
+        if (g_gcDacGlobals->generation_table.IsValid())
+        {
+            for (unsigned int i = 0; i < numGenerationTableEntries; i++)
+            {
+                DPTR(dac_generation) generation = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
+                pGenerationData[i].start_segment = (CLRDATA_ADDRESS) dac_cast<TADDR>(generation->start_segment);
+
+                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS) generation->allocation_start;
+
+                DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
+                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)alloc_context->alloc_ptr;
+                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)alloc_context->alloc_limit;
+            }
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetFinalizationFillPointers(unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded)
+{
+    if (cFillPointers > 0 && pFinalizationFillPointers == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    HRESULT hr = S_OK;
+    unsigned int numFillPointers = (unsigned int)(g_gcDacGlobals->total_generation_count + dac_finalize_queue::ExtraSegCount);
+    if (pNeeded != NULL)
+    {
+        *pNeeded = numFillPointers;
+    }
+
+    if (cFillPointers < numFillPointers)
+    {
+        hr = S_FALSE;
+    }
+    else
+    {
+        if (g_gcDacGlobals->finalize_queue.IsValid())
+        {
+            DPTR(dac_finalize_queue) fq = Dereference(g_gcDacGlobals->finalize_queue);
+            DPTR(uint8_t*) fillPointersTable = dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
+            for (unsigned int i = 0; i < numFillPointers; i++)
+            {
+                pFinalizationFillPointers[i] = (CLRDATA_ADDRESS)*TableIndex(fillPointersTable, i, sizeof(uint8_t*));
+            }
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded)
+{
+    if (heapAddr == NULL || (cGenerations > 0 && pGenerationData == NULL))
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    HRESULT hr = S_OK;
+#ifdef FEATURE_SVR_GC
+    unsigned int numGenerationTableEntries = (unsigned int)(g_gcDacGlobals->total_generation_count);
+    if (pNeeded != NULL)
+    {
+        *pNeeded = numGenerationTableEntries;
+    }
+
+    if (cGenerations < numGenerationTableEntries)
+    {
+        hr = S_FALSE;
+    }
+    else
+    {
+        DPTR(dac_gc_heap) pHeap = __DPtr<dac_gc_heap>(TO_TADDR(heapAddr));
+
+        if (pHeap.IsValid())
+        {
+            for (unsigned int i = 0; i < numGenerationTableEntries; ++i)
+            {
+                DPTR(dac_generation) generation = ServerGenerationTableIndex(pHeap, i);
+                pGenerationData[i].start_segment = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation->start_segment);
+                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS)(ULONG_PTR)generation->allocation_start;
+                DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
+                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_ptr;
+                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_limit;
+            }
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
+    }
+#else
+        hr = E_NOTIMPL;
+#endif
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded)
+{
+    if (heapAddr == NULL || (cFillPointers > 0 && pFinalizationFillPointers == NULL))
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    HRESULT hr = S_OK;
+#ifdef FEATURE_SVR_GC
+    unsigned int numFillPointers = (unsigned int)(g_gcDacGlobals->total_generation_count + dac_finalize_queue::ExtraSegCount);
+    if (pNeeded != NULL)
+    {
+        *pNeeded = numFillPointers;
+    }
+
+    if (cFillPointers < numFillPointers)
+    {
+        hr = S_FALSE;
+    }
+    else
+    {
+        DPTR(dac_gc_heap) pHeap = __DPtr<dac_gc_heap>(TO_TADDR(heapAddr));
+
+        if (pHeap.IsValid())
+        {
+            DPTR(dac_finalize_queue) fq = pHeap->finalize_queue;
+            DPTR(uint8_t*) pFillPointerArray= dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
+            for (unsigned int i = 0; i < numFillPointers; ++i)
+            {
+                pFinalizationFillPointers[i] = (CLRDATA_ADDRESS) pFillPointerArray[i];
+            }
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
+    }
+#else
+        hr = E_NOTIMPL;
+#endif
+
+    SOSDacLeave();
+    return hr;
+}

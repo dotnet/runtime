@@ -1559,6 +1559,10 @@ public:
     OBJECTREF GetRawExposedObject() { LIMITED_METHOD_CONTRACT; return NULL; }
     OBJECTHANDLE GetRawExposedObjectHandleForDebugger() { LIMITED_METHOD_DAC_CONTRACT; return NULL; }
 
+#ifndef DACCESS_COMPILE
+    PTR_NativeImage GetNativeImage(LPCUTF8 compositeFileName);
+    PTR_NativeImage SetNativeImage(LPCUTF8 compositeFileName, PTR_NativeImage pNativeImage);
+#endif // DACCESS_COMPILE
 
     //****************************************************************************************
 
@@ -2317,6 +2321,12 @@ private:
 
     // Hash table that maps a clsid to a type
     PtrHashMap          m_clsidHash;
+
+#ifndef DACCESS_COMPILE
+    // Map of loaded composite native images indexed by base load addresses
+    CrstExplicitInit m_nativeImageLoadCrst;
+    MapSHash<LPCUTF8, PTR_NativeImage, NativeImageIndexTraits> m_nativeImageMap;
+#endif
 
 #ifdef FEATURE_COMINTEROP
     // this cache stores the RCWs in this domain

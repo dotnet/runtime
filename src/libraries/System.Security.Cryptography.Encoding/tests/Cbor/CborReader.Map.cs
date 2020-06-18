@@ -22,10 +22,10 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         /// <remarks>
         ///   Map contents are consumed as if they were arrays twice the length of the map's declared size.
@@ -43,9 +43,9 @@ namespace System.Formats.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
-                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                if (_isConformanceModeCheckEnabled && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
                 {
-                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_RequiresDefiniteLengthItems, ConformanceLevel));
+                    throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_RequiresDefiniteLengthItems, ConformanceMode));
                 }
 
                 AdvanceBuffer(1);
@@ -60,7 +60,7 @@ namespace System.Formats.Cbor
 
                 if (2 * (ulong)mapSize > (ulong)(buffer.Length - bytesRead))
                 {
-                    throw new FormatException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
+                    throw new CborContentException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
                 }
 
                 AdvanceBuffer(bytesRead);
@@ -80,10 +80,10 @@ namespace System.Formats.Cbor
         ///   the current context is not a map. -or-
         ///   the reader is not at the end of the map
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public void ReadEndMap()
         {
@@ -91,9 +91,9 @@ namespace System.Formats.Cbor
             {
                 ValidateNextByteIsBreakByte();
 
-                if (_itemsWritten % 2 != 0)
+                if (_itemsRead % 2 != 0)
                 {
-                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_KeyMissingValue);
+                    throw new CborContentException(SR.Cbor_Reader_InvalidCbor_KeyMissingValue);
                 }
 
                 PopDataItem(expectedType: CborMajorType.Map);
@@ -114,19 +114,19 @@ namespace System.Formats.Cbor
         // conformance book-keeping after a key data item has been read
         private void HandleMapKeyRead()
         {
-            Debug.Assert(_currentKeyOffset != null && _itemsWritten % 2 == 0);
+            Debug.Assert(_currentKeyOffset != null && _itemsRead % 2 == 0);
 
             (int Offset, int Length) currentKeyRange = (_currentKeyOffset.Value, _offset - _currentKeyOffset.Value);
 
-            if (_isConformanceLevelCheckEnabled)
+            if (_isConformanceModeCheckEnabled)
             {
-                if (CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel))
+                if (CborConformanceModeHelpers.RequiresSortedKeys(ConformanceMode))
                 {
                     ValidateSortedKeyEncoding(currentKeyRange);
                 }
-                else if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
+                else if (CborConformanceModeHelpers.RequiresUniqueKeys(ConformanceMode))
                 {
-                    // NB uniquess is validated separately in conformance levels requiring sorted keys
+                    // NB uniquess is validated separately in conformance modes requiring sorted keys
                     ValidateKeyUniqueness(currentKeyRange);
                 }
             }
@@ -135,7 +135,7 @@ namespace System.Formats.Cbor
         // conformance book-keeping after a value data item has been read
         private void HandleMapValueRead()
         {
-            Debug.Assert(_currentKeyOffset != null && _itemsWritten % 2 != 0);
+            Debug.Assert(_currentKeyOffset != null && _itemsRead % 2 != 0);
 
             _currentKeyOffset = _offset;
         }
@@ -152,16 +152,16 @@ namespace System.Formats.Cbor
                 ReadOnlySpan<byte> previousKeyEncoding = buffer.Slice(previousKeyEncodingRange.Offset, previousKeyEncodingRange.Length);
                 ReadOnlySpan<byte> currentKeyEncoding = buffer.Slice(currentKeyEncodingRange.Offset, currentKeyEncodingRange.Length);
 
-                int cmp = CborConformanceLevelHelpers.CompareKeyEncodings(previousKeyEncoding, currentKeyEncoding, ConformanceLevel);
+                int cmp = CborConformanceModeHelpers.CompareKeyEncodings(previousKeyEncoding, currentKeyEncoding, ConformanceMode);
                 if (cmp > 0)
                 {
                     ResetBuffer(currentKeyEncodingRange.Offset);
-                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_KeysNotInSortedOrder, ConformanceLevel));
+                    throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_KeysNotInSortedOrder, ConformanceMode));
                 }
-                else if (cmp == 0 && CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
+                else if (cmp == 0 && CborConformanceModeHelpers.RequiresUniqueKeys(ConformanceMode))
                 {
                     ResetBuffer(currentKeyEncodingRange.Offset);
-                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
+                    throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_ContainsDuplicateKeys, ConformanceMode));
                 }
             }
 
@@ -177,7 +177,7 @@ namespace System.Formats.Cbor
             if (!keyEncodingRanges.Add(currentKeyEncodingRange))
             {
                 ResetBuffer(currentKeyEncodingRange.Offset);
-                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
+                throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_ContainsDuplicateKeys, ConformanceMode));
             }
         }
 
@@ -225,12 +225,12 @@ namespace System.Formats.Cbor
 
             public int GetHashCode((int Offset, int Length) value)
             {
-                return CborConformanceLevelHelpers.GetKeyEncodingHashCode(GetKeyEncoding(value));
+                return CborConformanceModeHelpers.GetKeyEncodingHashCode(GetKeyEncoding(value));
             }
 
             public bool Equals((int Offset, int Length) x, (int Offset, int Length) y)
             {
-                return CborConformanceLevelHelpers.AreEqualKeyEncodings(GetKeyEncoding(x), GetKeyEncoding(y));
+                return CborConformanceModeHelpers.AreEqualKeyEncodings(GetKeyEncoding(x), GetKeyEncoding(y));
             }
         }
     }

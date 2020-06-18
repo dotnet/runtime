@@ -753,70 +753,9 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
-		<!-- From src/coreclr/src/System.Private.CoreLib/ILLinkTrim.xml -->
-		<!-- Properties and methods used by a debugger. -->
-		<type fullname="System.Threading.Tasks.Task">
-			<property name="ParentForDebugger" />
-			<property name="StateFlagsForDebugger" />
-			<method name="GetDelegateContinuationsForDebugger" />
-			<method name="SetNotificationForWaitCompletion" />
-		</type>
-		<type fullname="System.Threading.ThreadPool">
-			<method name="GetQueuedWorkItemsForDebugger" />
-			<method name="GetGloballyQueuedWorkItemsForDebugger" />
-			<method name="GetLocallyQueuedWorkItemsForDebugger" />
-		</type>
-		<type fullname="System.Threading.Tasks.TaskScheduler">
-			<method name="GetScheduledTasksForDebugger" />
-			<method name="GetTaskSchedulersForDebugger" />
-		</type>
-		<type fullname="System.Runtime.CompilerServices.AsyncMethodBuilderCore">
-			<method name="TryGetStateMachineForDebugger" />
-		</type>
-		<type fullname="System.Runtime.CompilerServices.AsyncIteratorMethodBuilder">
-			<property name="ObjectIdForDebugger" />
-		</type>
-		<type fullname="System.Runtime.CompilerServices.AsyncVoidMethodBuilder">
-			<property name="ObjectIdForDebugger" />
-		</type>
-		<type fullname="System.Runtime.CompilerServices.AsyncTaskMethodBuilder*">
-			<property name="ObjectIdForDebugger" />
-			<method name="SetNotificationForWaitCompletion" />
-		</type>
-		<type fullname="System.Threading.Tasks.Task">
-			<!-- Methods is used by VS Tasks Window. -->
-			<method name="GetActiveTaskFromId" />
-		</type>
-		<!-- Accessed via private reflection by tracing controller. -->
-		<type fullname="System.Diagnostics.Tracing.EventPipe*" />
-		<!-- Accessed via private reflection and by native code. -->
-		<type fullname="System.Diagnostics.Tracing.RuntimeEventSource" />
-		<type fullname="System.Diagnostics.Tracing.NativeRuntimeEventSource" />
-		<type fullname="System.Diagnostics.Tracing.PropertyValue/ReferenceTypeHelper`1">
-			<!-- Instantiated via reflection -->
-			<method name=".ctor" />
-		</type>
-		<!-- Accessed via native code. -->
-		<type fullname="System.Runtime.InteropServices.ComTypes.IEnumerable" />
-		<type fullname="System.Runtime.InteropServices.CustomMarshalers.*" />
-		<!-- Workaround for https://github.com/mono/linker/issues/378 -->
-		<type fullname="System.Runtime.InteropServices.IDispatch" />
-		<type fullname="Internal.Runtime.InteropServices.IClassFactory2" />
-		<type fullname="System.Threading.ThreadPoolBoundHandle">
-			<!-- Workaround to keep .interfaceimpl even though this type
-				is not instantiated on unix:
-				https://github.com/mono/linker/pull/649 -->
-			<method name=".ctor" />
-		</type>
-		<!-- end of src/coreclr/src/System.Private.CoreLib/ILLinkTrim.xml -->
-
 		<!-- Used by binary formatter tests -->
 		<type fullname="System.Threading.ThreadStartException">
 			<method name=".ctor" />
-		</type>
-		<!-- Internal API used by System.Globalization tests -->
-		<type fullname="Interop/Globalization">
-			<method name="GetICUVersion" />
 		</type>
 		<type fullname="System.Runtime.InteropServices.Marshal">
 			<!-- marshal-ilgen.c: emit_marshal_custom_get_instance -->

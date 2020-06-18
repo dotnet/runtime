@@ -32577,7 +32577,7 @@ void reset_memory (uint8_t* o, size_t sizeo)
         size_t size = align_lower_page ((size_t)o + sizeo - size_to_skip - plug_skew) - page_start;
         // Note we need to compensate for an OS bug here. This bug would cause the MEM_RESET to fail
         // on write watched memory.
-        if (reset_mm_p)
+        if (reset_mm_p && gc_heap::g_low_memory_status)
         {
 #ifdef MULTIPLE_HEAPS
             bool unlock_p = true;
@@ -38637,6 +38637,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->build_variant = &g_build_variant;
     gcDacVars->gc_structures_invalid_cnt = const_cast<int32_t*>(&GCScan::m_GcStructuresInvalidCnt);
     gcDacVars->generation_size = sizeof(generation);
+    gcDacVars->total_generation_count = total_generation_count;
     gcDacVars->max_gen = &g_max_generation;
 #ifndef MULTIPLE_HEAPS
     gcDacVars->mark_array = &gc_heap::mark_array;

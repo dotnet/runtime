@@ -702,3 +702,6 @@ End
 
 Crst NativeImageEagerFixups
 End
+
+Crst NativeImageLoad
+End
