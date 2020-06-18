@@ -12,11 +12,13 @@ namespace System.Runtime.InteropServices
 
         int IMarshal.GetUnmarshalClass(ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags, out Guid pCid)
         {
+            pCid = Guid.Empty;
             return HResults.E_NOTIMPL;
         }
 
         unsafe int IMarshal.GetMarshalSizeMax(ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags, out int pSize)
         {
+            pSize = -1;
             return HResults.E_NOTIMPL;
         }
 
@@ -27,6 +29,7 @@ namespace System.Runtime.InteropServices
 
         int IMarshal.UnmarshalInterface(IntPtr pStm, ref Guid riid, out IntPtr ppv)
         {
+            ppv = IntPtr.Zero;
             return HResults.E_NOTIMPL;
         }
 
