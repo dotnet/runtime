@@ -1663,8 +1663,8 @@ namespace System
                                                                0xFF, 0xFF, 0xFF, 0xFF, 0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
 
             Vector256<ushort> v1 = Vector256.Create(c);
-            Vector256<ushort>? v2 = c2 is char sep2 ? Vector256.Create(sep2) : (Vector256<ushort>?)null;
-            Vector256<ushort>? v3 = c3 is char sep3 ? Vector256.Create(sep3) : (Vector256<ushort>?)null;
+            Vector256<ushort> v2 = c2 is char sep2 ? Vector256.Create(sep2) : v1;
+            Vector256<ushort> v3 = c3 is char sep3 ? Vector256.Create(sep3) : v2;
 
             ref char c0 = ref MemoryMarshal.GetReference(this.AsSpan());
             int cond = Length - (Length % Vector256<ushort>.Count);
@@ -1675,15 +1675,8 @@ namespace System
                 Vector256<ushort> charVector = ReadVector(ref c0, i);
                 Vector256<ushort> cmp = Avx2.CompareEqual(charVector, v1);
 
-                if (v2 is Vector256<ushort> vecSep2)
-                {
-                    cmp = Avx2.Or(Avx2.CompareEqual(charVector, vecSep2), cmp);
-                }
-
-                if (v3 is Vector256<ushort> vecSep3)
-                {
-                    cmp = Avx2.Or(Avx2.CompareEqual(charVector, vecSep3), cmp);
-                }
+                cmp = Avx2.Or(Avx2.CompareEqual(charVector, v2), cmp);
+                cmp = Avx2.Or(Avx2.CompareEqual(charVector, v3), cmp);
 
                 if (Avx.TestZ(cmp, cmp)) { continue; }
 
