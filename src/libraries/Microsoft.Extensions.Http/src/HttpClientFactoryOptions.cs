@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Http
         // Establishing a minimum lifetime helps us avoid some possible destructive cases.
         //
         // IMPORTANT: This is used in a resource string. Update the resource if this changes.
-        internal readonly static TimeSpan MinimumHandlerLifetime = TimeSpan.FromSeconds(1);
+        internal static readonly TimeSpan MinimumHandlerLifetime = TimeSpan.FromSeconds(1);
 
         private TimeSpan _handlerLifetime = TimeSpan.FromMinutes(2);
 
