@@ -525,7 +525,6 @@ BEGIN
     IDS_EE_INVALIDCOMDEFITF                 "Type '%1' has an invalid default COM interface: '%2'."
     IDS_EE_COMDEFITFNOTSUPPORTED            "Type '%1' does not support the specified default COM interface: '%2'"
 
-    IDS_EE_GUID_REPRESENTS_NON_VC           "Type '%1' that has the requested GUID is not a value class."
     IDS_EE_CANNOT_MAP_TO_MANAGED_VC         "The specified record cannot be mapped to a managed value class."
 
     IDS_EE_SAFEHANDLECLOSED                 "Safe handle has been closed"
