@@ -1118,7 +1118,7 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
     NamedIntrinsic multiply = (baseType == TYP_DOUBLE) ? NI_AdvSimd_Arm64_Multiply : NI_AdvSimd_Multiply;
     assert(!varTypeIsLong(baseType));
-    
+
     tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, op1, op2, multiply, baseType, simdSize);
     BlockRange().InsertBefore(node, tmp1);
     LowerNode(tmp1);
