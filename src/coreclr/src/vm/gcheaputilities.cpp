@@ -309,13 +309,11 @@ HRESULT GCHeapUtilities::LoadAndInitialize()
 
     LPWSTR standaloneGcLocation = nullptr;
     CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCName, &standaloneGcLocation);
-    if (!standaloneGcLocation)
-    {
-        return InitializeDefaultGC();
-    }
-    else
-    {
+    if (standaloneGcLocation && ::wcsstr(standaloneGcLocation, L"/") == NULL && ::wcsstr(standaloneGcLocation, L"\\") == NULL) {
         return LoadAndInitializeGC(standaloneGcLocation);
+    }
+    else {
+        return InitializeDefaultGC();
     }
 }
 
