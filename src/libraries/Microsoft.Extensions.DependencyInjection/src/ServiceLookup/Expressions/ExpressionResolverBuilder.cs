@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 return Expression.Lambda<Func<ServiceProviderEngineScope, object>>(
                     Expression.Block(
-                        new [] { ResolvedServices },
+                        new[] { ResolvedServices },
                         ResolvedServicesVariableAssignment,
                         BuildScopedExpression(callSite)),
                     ScopeParameter);
