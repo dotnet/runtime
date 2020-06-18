@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
         {
             if (pattern == null)
             {
-                throw new ArgumentNullException("pattern");
+                throw new ArgumentNullException(nameof(pattern));
             }
 
             pattern = pattern.TrimStart(_slashes);
