@@ -26,15 +26,12 @@ namespace System.Net.Sockets
         private static int GetNativeErrorForSocketError(SocketError error)
         {
             int nativeErr = (int)error;
-            if (error != SocketError.SocketError)
-            {
-                Interop.Error interopErr;
 
-                // If an interop error was not found, then don't invoke Info().RawErrno as that will fail with assert.
-                if (SocketErrorPal.TryGetNativeErrorForSocketError(error, out interopErr))
-                {
-                    nativeErr = interopErr.Info().RawErrno;
-                }
+            Interop.Error interopErr;
+            // If an interop error was not found, then don't invoke Info().RawErrno as that will fail with assert.
+            if (SocketErrorPal.TryGetNativeErrorForSocketError(error, out interopErr))
+            {
+                nativeErr = interopErr.Info().RawErrno;
             }
 
             return nativeErr;
