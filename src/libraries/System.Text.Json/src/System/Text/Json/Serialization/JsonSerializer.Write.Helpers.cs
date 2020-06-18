@@ -18,7 +18,7 @@ namespace System.Text.Json
             Debug.Assert(writer != null);
 
             //  We treat typeof(object) special and allow polymorphic behavior.
-            if (value != null && inputType == typeof(object))
+            if (value != null && inputType == JsonClassInfo.ObjectType)
             {
                 inputType = value!.GetType();
             }

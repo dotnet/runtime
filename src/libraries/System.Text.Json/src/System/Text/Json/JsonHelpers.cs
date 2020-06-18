@@ -91,7 +91,7 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="bytes">The utf8 bytes to convert.</param>
         /// <returns></returns>
-        internal static string Utf8GetString(ReadOnlySpan<byte> bytes)
+        public static string Utf8GetString(ReadOnlySpan<byte> bytes)
         {
             return Encoding.UTF8.GetString(bytes
 #if NETSTANDARD2_0 || NETFRAMEWORK
@@ -103,7 +103,7 @@ namespace System.Text.Json
         /// <summary>
         /// Emulates Dictionary.TryAdd on netstandard.
         /// </summary>
-        internal static bool TryAdd<TKey, TValue>(Dictionary<TKey, TValue> dictionary, in TKey key, in TValue value) where TKey : notnull
+        public static bool TryAdd<TKey, TValue>(Dictionary<TKey, TValue> dictionary, in TKey key, in TValue value) where TKey : notnull
         {
 #if NETSTANDARD2_0 || NETFRAMEWORK
             if (!dictionary.ContainsKey(key))
@@ -118,7 +118,7 @@ namespace System.Text.Json
 #endif
         }
 
-        internal static bool IsFinite(double value)
+        public static bool IsFinite(double value)
         {
 #if BUILDING_INBOX_LIBRARY
             return double.IsFinite(value);
@@ -127,7 +127,7 @@ namespace System.Text.Json
 #endif
         }
 
-        internal static bool IsFinite(float value)
+        public static bool IsFinite(float value)
         {
 #if BUILDING_INBOX_LIBRARY
             return float.IsFinite(value);

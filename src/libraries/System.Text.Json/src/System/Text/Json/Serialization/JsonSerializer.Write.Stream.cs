@@ -108,7 +108,7 @@ namespace System.Text.Json
             using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
             {
                 //  We treat typeof(object) special and allow polymorphic behavior.
-                if (inputType == typeof(object) && value != null)
+                if (inputType == JsonClassInfo.ObjectType && value != null)
                 {
                     inputType = value!.GetType();
                 }

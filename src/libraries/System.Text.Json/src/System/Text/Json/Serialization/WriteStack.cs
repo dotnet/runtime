@@ -68,13 +68,7 @@ namespace System.Text.Json
         /// </summary>
         public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonClassInfo? jsonClassInfo = options.LastClass;
-            if (jsonClassInfo?.Type != type)
-            {
-                jsonClassInfo = options.GetOrAddClass(type);
-                options.LastClass = jsonClassInfo;
-            }
-
+            JsonClassInfo jsonClassInfo = options.GetOrAddClassForRootType(type);
             Current.JsonClassInfo = jsonClassInfo;
 
             if ((jsonClassInfo.ClassType & (ClassType.Enumerable | ClassType.Dictionary)) == 0)

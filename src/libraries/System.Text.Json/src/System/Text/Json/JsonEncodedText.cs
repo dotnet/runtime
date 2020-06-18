@@ -117,7 +117,7 @@ namespace System.Text.Json
 
             if (idx != -1)
             {
-                return new JsonEncodedText(JsonHelpers.GetEscapedString(utf8Value, idx, encoder));
+                return new JsonEncodedText(JsonHelpers.EscapeValue(utf8Value, idx, encoder));
             }
             else
             {

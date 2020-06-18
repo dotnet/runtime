@@ -12,7 +12,7 @@ namespace System.Text.Json
     internal static partial class JsonHelpers
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static byte[] GetEscapedPropertyNameSection(ReadOnlySpan<byte> utf8Value, JavaScriptEncoder? encoder)
+        public static byte[] GetEscapedPropertyNameSection(ReadOnlySpan<byte> utf8Value, JavaScriptEncoder? encoder)
         {
             int idx = JsonWriterHelper.NeedsEscaping(utf8Value, encoder);
 
@@ -26,7 +26,7 @@ namespace System.Text.Json
             }
         }
 
-        internal static byte[] GetEscapedString(
+        public static byte[] EscapeValue(
             ReadOnlySpan<byte> utf8Value,
             int firstEscapeIndexVal,
             JavaScriptEncoder? encoder)

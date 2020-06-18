@@ -14,6 +14,11 @@ namespace System.Text.Json
     [DebuggerDisplay("ClassType.{ClassType}, {Type.Name}")]
     internal sealed partial class JsonClassInfo
     {
+        /// <summary>
+        /// Cached typeof(object). It is faster to cache this than to call typeof(object) multiple times.
+        /// </summary>
+        public static readonly Type ObjectType = typeof(object);
+
         // The length of the property name embedded in the key (in bytes).
         // The key is a ulong (8 bytes) containing the first 7 bytes of the property name
         // followed by a byte representing the length.
@@ -115,7 +120,7 @@ namespace System.Text.Json
                 declaredPropertyType: declaredPropertyType,
                 runtimePropertyType: runtimePropertyType,
                 propertyInfo: null, // Not a real property so this is null.
-                parentClassType: typeof(object), // a dummy value (not used)
+                parentClassType: JsonClassInfo.ObjectType, // a dummy value (not used)
                 converter: converter,
                 options);
 

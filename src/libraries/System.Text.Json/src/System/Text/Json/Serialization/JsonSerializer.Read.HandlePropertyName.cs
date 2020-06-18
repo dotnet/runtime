@@ -108,7 +108,7 @@ namespace System.Text.Json
                 Debug.Assert(genericArgs.Length == 2);
                 Debug.Assert(genericArgs[0].UnderlyingSystemType == typeof(string));
                 Debug.Assert(
-                    genericArgs[1].UnderlyingSystemType == typeof(object) ||
+                    genericArgs[1].UnderlyingSystemType == JsonClassInfo.ObjectType ||
                     genericArgs[1].UnderlyingSystemType == typeof(JsonElement));
 #endif
                 if (jsonPropertyInfo.RuntimeClassInfo.CreateObject == null)

@@ -243,7 +243,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    JsonConverter<object> converter = (JsonConverter<object>)Options.GetConverter(typeof(object));
+                    JsonConverter<object> converter = (JsonConverter<object>)Options.GetConverter(JsonClassInfo.ObjectType);
 
                     if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out object? value))
                     {
@@ -281,7 +281,7 @@ namespace System.Text.Json
         {
             Debug.Assert(this == state.Current.JsonClassInfo.DataExtensionProperty);
 
-            if (RuntimeClassInfo.ElementType == typeof(object) && reader.TokenType == JsonTokenType.Null)
+            if (RuntimeClassInfo.ElementType == JsonClassInfo.ObjectType && reader.TokenType == JsonTokenType.Null)
             {
                 value = null;
                 return true;
