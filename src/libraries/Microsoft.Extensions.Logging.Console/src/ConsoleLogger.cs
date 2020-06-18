@@ -11,8 +11,8 @@ namespace Microsoft.Extensions.Logging.Console
     internal class ConsoleLogger : ILogger
     {
         private static readonly string _loglevelPadding = ": ";
-        private static readonly string _messagePadding;
-        private static readonly string _newLineWithMessagePadding;
+        private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + _loglevelPadding.Length);
+        private static readonly string _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
 
         // ConsoleColor does not have a value to specify the 'Default' color
         private readonly ConsoleColor? DefaultConsoleColor = null;
@@ -22,13 +22,6 @@ namespace Microsoft.Extensions.Logging.Console
 
         [ThreadStatic]
         private static StringBuilder _logBuilder;
-
-        static ConsoleLogger()
-        {
-            string logLevelString = GetLogLevelString(LogLevel.Information);
-            _messagePadding = new string(' ', logLevelString.Length + _loglevelPadding.Length);
-            _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
-        }
 
         internal ConsoleLogger(string name, ConsoleLoggerProcessor loggerProcessor)
         {
