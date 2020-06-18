@@ -21,7 +21,6 @@ namespace Microsoft.Extensions.Logging.EventSource
         private EventSourceLogger _loggers; // Linked list of loggers that I have created
         private readonly LoggingEventSource _eventSource;
 
-        /// <inheritdoc />
         public EventSourceLoggerProvider(LoggingEventSource eventSource)
         {
             if (eventSource == null)

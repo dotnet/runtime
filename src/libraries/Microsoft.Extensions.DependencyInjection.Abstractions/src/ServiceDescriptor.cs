@@ -93,19 +93,14 @@ namespace Microsoft.Extensions.DependencyInjection
             ServiceType = serviceType;
         }
 
-        /// <inheritdoc />
         public ServiceLifetime Lifetime { get; }
 
-        /// <inheritdoc />
         public Type ServiceType { get; }
 
-        /// <inheritdoc />
         public Type? ImplementationType { get; }
 
-        /// <inheritdoc />
         public object? ImplementationInstance { get; }
 
-        /// <inheritdoc />
         public Func<IServiceProvider, object>? ImplementationFactory { get; }
 
         /// <inheritdoc />
