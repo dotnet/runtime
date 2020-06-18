@@ -763,7 +763,7 @@ After:
                 {
                     return Unsafe.As<string>(this[0])?.GetHashCode() ?? Count.GetHashCode();
                 }
-                var hcc = new HashCodeCombiner();
+                var hcc = default(HashCodeCombiner);
                 for (int i = 0; i < values.Length; i++)
                 {
                     hcc.Add(values[i]);

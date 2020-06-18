@@ -468,7 +468,7 @@ After:
 
             public ServiceDescriptorCacheItem Add(ServiceDescriptor descriptor)
             {
-                var newCacheItem = new ServiceDescriptorCacheItem();
+                var newCacheItem = default(ServiceDescriptorCacheItem);
                 if (_item == null)
                 {
                     Debug.Assert(_items == null);
