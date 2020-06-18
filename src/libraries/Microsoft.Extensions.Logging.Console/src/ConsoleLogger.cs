@@ -10,8 +10,8 @@ namespace Microsoft.Extensions.Logging.Console
 {
     internal class ConsoleLogger : ILogger
     {
-        private static readonly string _loglevelPadding = ": ";
-        private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + _loglevelPadding.Length);
+        private const string LoglevelPadding = ": ";
+        private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + LoglevelPadding.Length);
         private static readonly string _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
 
         // ConsoleColor does not have a value to specify the 'Default' color
@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Logging.Console
             ConsoleColors logLevelColors = GetLogLevelConsoleColors(logLevel);
             string logLevelString = GetLogLevelString(logLevel);
             // category and event id
-            logBuilder.Append(_loglevelPadding);
+            logBuilder.Append(LoglevelPadding);
             logBuilder.Append(logName);
             logBuilder.Append('[');
             logBuilder.Append(eventId);

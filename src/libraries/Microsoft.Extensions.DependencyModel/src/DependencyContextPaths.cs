@@ -10,8 +10,8 @@ namespace Microsoft.Extensions.DependencyModel
 {
     internal class DependencyContextPaths
     {
-        private static readonly string DepsFilesProperty = "APP_CONTEXT_DEPS_FILES";
-        private static readonly string FxDepsFileProperty = "FX_DEPS_FILE";
+        private const string DepsFilesProperty = "APP_CONTEXT_DEPS_FILES";
+        private const string FxDepsFileProperty = "FX_DEPS_FILE";
 
         public static DependencyContextPaths Current { get; } = GetCurrent();
 
