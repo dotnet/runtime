@@ -7,11 +7,8 @@
   <ItemGroup>
     <Compile Include="System.Threading.Channels.cs" />
   </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard'))">
-    <Compile Include="System.Threading.Channels.netcoreapp.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard')) OR '$(TargetFramework)' == 'netstandard2.1'">
-    <Compile Include="System.Threading.Channels.ChannelReader.ReadAllAsync.cs" />
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.3' AND '$(TargetFramework)' != 'netstandard2.0'">
+    <Compile Include="System.Threading.Channels.netstandard21.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
     <Reference Include="System.Threading.Tasks.Extensions" />
