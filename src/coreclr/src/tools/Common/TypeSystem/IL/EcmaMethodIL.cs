@@ -28,10 +28,6 @@ namespace Internal.IL
 
         public static EcmaMethodIL Create(EcmaMethod method, bool clearInitLocals = false)
         {
-            if (method.IsPInvoke)
-            {
-                method.CheckManagedCPlusPlusPInvoke();
-            }
             var rva = method.MetadataReader.GetMethodDefinition(method.Handle).RelativeVirtualAddress;
             if (rva == 0)
                 return null;

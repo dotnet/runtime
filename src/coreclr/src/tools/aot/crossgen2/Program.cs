@@ -17,6 +17,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.CommandLine;
 using System.Linq;
 using System.IO;
+using System.Reflection.Metadata;
 
 namespace ILCompiler
 {
@@ -344,6 +345,27 @@ namespace ILCompiler
                         catch (TypeSystemException.BadImageFormatException)
                         {
                             // Keep calm and carry on.
+                        }
+                    }
+
+                    foreach (string inputFilePath in allInputFilePaths.Values)
+                    {
+                        EcmaModule module = typeSystemContext.GetModuleFromPath(inputFilePath);
+                        foreach (MetadataType type in module.GetAllTypes())
+                        {
+                            foreach (EcmaMethod method in type.GetAllMethods())
+                            {
+                                if (method.IsPInvoke)
+                                {
+                                    MethodDefinition methodDef = method.MetadataReader.GetMethodDefinition(method.Handle);
+                                    MethodImport import = methodDef.GetImport();
+                                    if (import.Module.IsNil || method.MetadataReader.GetModuleReference(import.Module).Name.IsNil)
+                                    {
+                                        // Managed C++ PInvoke into the same module
+                                        throw new CommandLineException(string.Format(SR.ManagedCppNotSupported, inputFilePath, method.ToString()));
+                                    }
+                                }
+                            }
                         }
                     }
 

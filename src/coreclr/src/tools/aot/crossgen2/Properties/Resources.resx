@@ -276,4 +276,7 @@
   <data name="CompositeRootPath" xml:space="preserve">
     <value>Logical root folder for composite builds; defaults to directory of 1st input file.</value>
   </data>
+  <data name="ManagedCppNotSupported" xml:space="preserve">
+    <value>Error: managed C++ is not supported: '{0}', method '{1}'</value>
+  </data>
 </root>
