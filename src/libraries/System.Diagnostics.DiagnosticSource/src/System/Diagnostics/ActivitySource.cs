@@ -39,7 +39,6 @@ namespace System.Diagnostics
                     {
                         ((ActivitySource)source).AddListener(listener);
                     }
-
                 }, this);
             }
         }
