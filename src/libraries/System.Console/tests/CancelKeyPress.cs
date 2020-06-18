@@ -14,6 +14,7 @@ public partial class CancelKeyPressTests
     private const int WaitFailTestTimeoutSeconds = 30;
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void CanAddAndRemoveHandler()
     {
         ConsoleCancelEventHandler handler = (sender, e) =>
