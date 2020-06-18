@@ -13,13 +13,6 @@ namespace System.Diagnostics
 
         private static readonly SynchronizedList<ActivitySource> s_activeSources = new SynchronizedList<ActivitySource>();
         private static readonly SynchronizedList<ActivityListener> s_allListeners = new SynchronizedList<ActivityListener>();
-        private static Action<ActivityListener, object> ListenerShouldListenToSource = CallListenerShouldListenToSource;
-        private static Action<ActivitySource, object> SourceShouldBeListenedToByListener = CallSourceShouldBeListenedToByListener;
-        private static Action<ActivityListener, object> ActivityStartedInvoke = CallActivityStarted;
-        private static Action<ActivityListener, object> ActivityStoppedInvoke = CallActivityStopped;
-        private static Action<ActivitySource, object> RemoveListenerFromSource = CallRemoveListenerFromSource;
-        private static Function<ActivityListener, string> NotifyListenerByParentId = new Function<ActivityListener, string>(NotifyByParentId);
-        private static Function<ActivityListener, ActivityContext> NotifyListenerByContext = new Function<ActivityListener, ActivityContext>(NotifyByContext);
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
@@ -40,7 +33,14 @@ namespace System.Diagnostics
 
             if (s_allListeners.Count > 0)
             {
-                s_allListeners.EnumWithAction(ListenerShouldListenToSource, this);
+                s_allListeners.EnumWithAction((listener, source) => {
+                    var shouldListenTo = listener.ShouldListenTo;
+                    if (shouldListenTo != null && shouldListenTo((ActivitySource)source))
+                    {
+                        ((ActivitySource)source).AddListener(listener);
+                    }
+
+                }, this);
             }
         }
 
@@ -117,19 +117,47 @@ namespace System.Diagnostics
             if (parentId != null)
             {
                 ActivityCreationOptions<string> aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links);
-                listeners.EnumWithFunc(NotifyListenerByParentId, ref aco, ref dataRequest);
+                listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<string> data, ref ActivityDataRequest request) => {
+                    var getRequestedDataUsingParentId = listener.GetRequestedDataUsingParentId;
+                    if (getRequestedDataUsingParentId != null)
+                    {
+                        ActivityDataRequest dr = getRequestedDataUsingParentId(ref data);
+                        if (dr > request)
+                        {
+                            request = dr;
+                        }
+
+                        // Stop the enumeration if we get the max value RecordingAndSampling.
+                        return request != ActivityDataRequest.AllDataAndRecorded;
+                    }
+                    return true;
+                }, ref aco, ref dataRequest);
             }
             else
             {
                 ActivityContext initializedContext =  context == default && Activity.Current != null ? Activity.Current.Context : context;
                 ActivityCreationOptions<ActivityContext> aco = new ActivityCreationOptions<ActivityContext>(this, name, initializedContext, kind, tags, links);
-                listeners.EnumWithFunc(NotifyListenerByContext, ref aco, ref dataRequest);
+                listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<ActivityContext> data, ref ActivityDataRequest request) => {
+                    var getRequestedDataUsingContext = listener.GetRequestedDataUsingContext;
+                    if (getRequestedDataUsingContext != null)
+                    {
+                        ActivityDataRequest dr = getRequestedDataUsingContext(ref data);
+                        if (dr > request)
+                        {
+                            request = dr;
+                        }
+
+                        // Stop the enumeration if we get the max value RecordingAndSampling.
+                        return request != ActivityDataRequest.AllDataAndRecorded;
+                    }
+                    return true;
+                }, ref aco, ref dataRequest);
             }
 
             if (dataRequest != ActivityDataRequest.None)
             {
                 activity = Activity.CreateAndStart(this, name, kind, parentId, context, tags, links, startTime, dataRequest);
-                listeners.EnumWithAction(ActivityStartedInvoke, activity);
+                listeners.EnumWithAction((listener, obj) => listener.ActivityStarted?.Invoke((Activity) obj), activity);
             }
 
             return activity;
@@ -157,63 +185,17 @@ namespace System.Diagnostics
 
             if (s_allListeners.AddIfNotExist(listener))
             {
-                s_activeSources.EnumWithAction(SourceShouldBeListenedToByListener, listener);
+                s_activeSources.EnumWithAction((source, obj) => {
+                    var shouldListenTo = ((ActivityListener)obj).ShouldListenTo;
+                    if (shouldListenTo != null && shouldListenTo(source))
+                    {
+                        source.AddListener((ActivityListener)obj);
+                    }
+                }, listener);
             }
         }
 
         internal delegate bool Function<T, TParent>(T item, ref ActivityCreationOptions<TParent> data, ref ActivityDataRequest dataRequest);
-
-        private static void CallSourceShouldBeListenedToByListener(ActivitySource source, object listener) => CallListenerShouldListenToSource((ActivityListener) listener, source);
-
-        private static void CallActivityStarted(ActivityListener listener, object obj) => listener.ActivityStarted?.Invoke((Activity) obj);
-
-        private static void CallActivityStopped(ActivityListener listener, object obj) => listener.ActivityStopped?.Invoke((Activity) obj);
-
-        private static void CallRemoveListenerFromSource(ActivitySource source, object listener) => source._listeners?.Remove((ActivityListener) listener);
-
-        private static void CallListenerShouldListenToSource(ActivityListener listener, object obj)
-        {
-            ActivitySource source = (ActivitySource) obj;
-            var shouldListenTo = listener.ShouldListenTo;
-            if (shouldListenTo != null && shouldListenTo(source))
-            {
-                source.AddListener(listener);
-            }
-        }
-
-        private static bool NotifyByParentId(ActivityListener listener, ref ActivityCreationOptions<string> data, ref ActivityDataRequest request)
-        {
-            var getRequestedDataUsingParentId = listener.GetRequestedDataUsingParentId;
-            if (getRequestedDataUsingParentId != null)
-            {
-                ActivityDataRequest dr = getRequestedDataUsingParentId(ref data);
-                if (dr > request)
-                {
-                    request = dr;
-                }
-
-                // Stop the enumeration if we get the max value RecordingAndSampling.
-                return request != ActivityDataRequest.AllDataAndRecorded;
-            }
-            return true;
-        }
-
-        private static bool NotifyByContext(ActivityListener listener, ref ActivityCreationOptions<ActivityContext> data, ref ActivityDataRequest request)
-        {
-            var getRequestedDataUsingContext = listener.GetRequestedDataUsingContext;
-            if (getRequestedDataUsingContext != null)
-            {
-                ActivityDataRequest dr = getRequestedDataUsingContext(ref data);
-                if (dr > request)
-                {
-                    request = dr;
-                }
-
-                // Stop the enumeration if we get the max value RecordingAndSampling.
-                return request != ActivityDataRequest.AllDataAndRecorded;
-            }
-            return true;
-        }
 
         internal void AddListener(ActivityListener listener)
         {
@@ -228,7 +210,7 @@ namespace System.Diagnostics
         internal static void DetachListener(ActivityListener listener)
         {
             s_allListeners.Remove(listener);
-            s_activeSources.EnumWithAction(RemoveListenerFromSource, listener);
+            s_activeSources.EnumWithAction((source, obj) => source._listeners?.Remove((ActivityListener) obj), listener);
         }
 
         internal void NotifyActivityStart(Activity activity)
@@ -239,7 +221,7 @@ namespace System.Diagnostics
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners != null &&  listeners.Count > 0)
             {
-                listeners.EnumWithAction(ActivityStartedInvoke, activity);
+                listeners.EnumWithAction((listener, obj) => listener.ActivityStarted?.Invoke((Activity) obj), activity);
             }
         }
 
@@ -251,7 +233,7 @@ namespace System.Diagnostics
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners != null &&  listeners.Count > 0)
             {
-                listeners.EnumWithAction(ActivityStoppedInvoke, activity);
+                listeners.EnumWithAction((listener, obj) => listener.ActivityStopped?.Invoke((Activity) obj), activity);
             }
         }
     }
