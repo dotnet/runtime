@@ -28,7 +28,7 @@
   <Target Name="ArchiveTests"
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and
                      ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'Browser')"
-          AfterTargets="Build"
+          AfterTargets="PrepareForRun"
           DependsOnTargets="GenerateRunScript">
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
