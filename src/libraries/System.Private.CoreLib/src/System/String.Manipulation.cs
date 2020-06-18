@@ -1577,7 +1577,7 @@ namespace System
                 case 1:
                     sep0 = separators[0];
 
-                    if (Avx2.IsSupported && 16 <= Length)
+                    if (Avx2.IsSupported && Length >= 16)
                     {
                         MakeSeparatorListVectorized(ref sepListBuilder, sep0);
                         return;
@@ -1595,7 +1595,7 @@ namespace System
                     sep0 = separators[0];
                     sep1 = separators[1];
 
-                    if (Avx2.IsSupported && 16 <= Length)
+                    if (Avx2.IsSupported && Length >= 16)
                     {
                         MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1);
                         return;
@@ -1615,7 +1615,7 @@ namespace System
                     sep1 = separators[1];
                     sep2 = separators[2];
 
-                    if (Avx2.IsSupported && 16 <= Length)
+                    if (Avx2.IsSupported && Length >= 16)
                     {
                         MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1, sep2);
                         return;
@@ -1658,11 +1658,9 @@ namespace System
         {
             // Constant that defines indices of characters within an AVX-Register
             const ulong indicesConstant = 0xFEDCBA9876543210;
-            ReadOnlySpan<byte> shuffleConstantData = new byte[] {
-                0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                0xFF, 0xFF, 0xFF, 0xFF, 0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
-            };
-            Vector256<byte> shuffleConstant = Unsafe.ReadUnaligned<Vector256<byte>>(ref MemoryMarshal.GetReference(shuffleConstantData));
+            // Constant that allows for the truncation of 16-bit (FFFF/0000) values within a register to 4-bit (F/0)
+            Vector256<byte> shuffleConstant = Vector256.Create(0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                                                               0xFF, 0xFF, 0xFF, 0xFF, 0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
 
             Vector256<ushort> v1 = Vector256.Create(c);
             Vector256<ushort>? v2 = c2 is char sep2 ? Vector256.Create(sep2) : (Vector256<ushort>?)null;
