@@ -12,7 +12,7 @@ using System.Text;
 namespace Microsoft.Extensions.Logging
 {
     /// <summary>
-    /// Formatter to convert the named format items like {NamedformatItem} to <see cref="M:string.Format"/> format.
+    /// Formatter to convert the named format items like {NamedformatItem} to <see cref="string.Format(IFormatProvider, string, object)"/> format.
     /// </summary>
     internal class LogValuesFormatter
     {
