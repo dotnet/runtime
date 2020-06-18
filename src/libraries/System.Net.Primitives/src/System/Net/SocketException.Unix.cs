@@ -27,9 +27,8 @@ namespace System.Net.Sockets
         {
             int nativeErr = (int)error;
 
-            Interop.Error interopErr;
             // If an interop error was not found, then don't invoke Info().RawErrno as that will fail with assert.
-            if (SocketErrorPal.TryGetNativeErrorForSocketError(error, out interopErr))
+            if (SocketErrorPal.TryGetNativeErrorForSocketError(error, out Interop.Error interopErr))
             {
                 nativeErr = interopErr.Info().RawErrno;
             }
