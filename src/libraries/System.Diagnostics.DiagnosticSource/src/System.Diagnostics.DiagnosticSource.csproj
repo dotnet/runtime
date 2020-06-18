@@ -4,7 +4,7 @@
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>$(NoWarn);SA1205</NoWarn>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.1;netstandard1.3;net45;net46;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.1;netstandard1.3;net45;net46;netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -18,6 +18,7 @@
     <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1'">$(DefineConstants);EVENTSOURCE_ACTIVITY_SUPPORT</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);EVENTSOURCE_ENUMERATE_SUPPORT</DefineConstants>
     <DefineConstants Condition="$(TargetFramework.StartsWith('net4'))">$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS;ENABLE_HTTP_HANDLER</DefineConstants>
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0'">true</ExcludeFromPackage>
     <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(DefineConstants);W3C_DEFAULT_ID_FORMAT</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
