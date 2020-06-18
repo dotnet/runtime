@@ -248,7 +248,15 @@ namespace System
 
         public static GCMemoryInfo GetGCMemoryInfo()
         {
-            throw new PlatformNotSupportedException();
+            var data = new GCMemoryInfoData();
+
+            _GetGCMemoryInfo(out data._highMemoryLoadThresholdBytes,
+                             out data._memoryLoadBytes,
+                             out data._totalAvailableMemoryBytes,
+                             out data._heapSizeBytes,
+                             out data._fragmentedBytes);
+
+            return new GCMemoryInfo(data);
         }
 
         public static GCMemoryInfo GetGCMemoryInfo(GCKind kind)
