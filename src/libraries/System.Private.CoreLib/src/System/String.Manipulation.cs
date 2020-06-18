@@ -1667,7 +1667,7 @@ namespace System
             Vector256<ushort> v3 = c3 is char sep3 ? Vector256.Create(sep3) : v2;
 
             ref char c0 = ref MemoryMarshal.GetReference(this.AsSpan());
-            int cond = Length - (Length % Vector256<ushort>.Count);
+            int cond = Length & -Vector256<ushort>.Count;
             int i = 0;
 
             for (; i < cond; i += Vector256<ushort>.Count)
