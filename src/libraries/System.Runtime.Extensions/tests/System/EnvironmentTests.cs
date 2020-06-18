@@ -61,7 +61,7 @@ namespace System.Tests
             Assert.Equal(Environment.CurrentManagedThreadId, Environment.CurrentManagedThreadId);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void CurrentManagedThreadId_DifferentForActiveThreads()
         {
             var ids = new HashSet<int>();

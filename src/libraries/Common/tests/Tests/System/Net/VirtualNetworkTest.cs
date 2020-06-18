@@ -38,7 +38,7 @@ namespace System.Net.Test.Common
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void VirtualNetwork_MultiThreadIntegrityTest_Ok()
         {
             var rnd = new Random();

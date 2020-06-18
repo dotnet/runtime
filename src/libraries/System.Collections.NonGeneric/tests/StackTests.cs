@@ -545,7 +545,7 @@ namespace System.Collections.Tests
 
         private const int NumberOfElements = 100;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void GetSyncRootBasic()
         {
             // Testing SyncRoot is not as simple as its implementation looks like. This is the working

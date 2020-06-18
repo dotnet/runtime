@@ -12,7 +12,7 @@ namespace System.Globalization.Tests
 {
     public class CultureInfoAsync
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void TestCurrentCulturesAsync()
         {
             var newCurrentCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "en-US" : "ja-JP");
@@ -30,7 +30,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void TestCurrentCulturesWithAwait()
         {
             var newCurrentCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "en-US" : "ja-JP");

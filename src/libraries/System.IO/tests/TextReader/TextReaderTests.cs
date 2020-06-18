@@ -44,7 +44,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadToEndAsync()
         {
             using (CharArrayTextReader tr = new CharArrayTextReader(TestDataProvider.LargeData))

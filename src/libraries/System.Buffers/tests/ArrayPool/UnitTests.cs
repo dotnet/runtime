@@ -513,7 +513,7 @@ namespace System.Buffers.ArrayPool.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [MemberData(nameof(BytePoolInstances))]
         public static void UsePoolInParallel(ArrayPool<byte> pool)
         {

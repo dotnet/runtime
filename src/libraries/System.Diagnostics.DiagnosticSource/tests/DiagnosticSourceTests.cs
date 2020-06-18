@@ -340,7 +340,7 @@ namespace System.Diagnostics.Tests
         /// Stresses the Subscription routine by having many threads subscribe and
         /// unsubscribe concurrently
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void MultiSubscriberStress()
         {
             using (DiagnosticListener listener = new DiagnosticListener("MultiSubscriberStressTest"))

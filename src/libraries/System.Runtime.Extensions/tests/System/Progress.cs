@@ -18,7 +18,7 @@ namespace System.Tests
             Assert.Throws<ArgumentNullException>(() => new Progress<int>(null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NoWorkQueuedIfNoHandlers()
         {
             RunWithoutSyncCtx(() =>
@@ -33,7 +33,7 @@ namespace System.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void TargetsCurrentSynchronizationContext()
         {
             RunWithoutSyncCtx(() =>
@@ -48,7 +48,7 @@ namespace System.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void EventRaisedWithActionHandler()
         {
             RunWithoutSyncCtx(() =>
@@ -67,7 +67,7 @@ namespace System.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void EventRaisedWithEventHandler()
         {
             RunWithoutSyncCtx(() =>

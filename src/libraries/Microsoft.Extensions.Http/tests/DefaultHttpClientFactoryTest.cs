@@ -342,7 +342,7 @@ namespace Microsoft.Extensions.Http
             Assert.NotSame(activeEntry1.Handler, activeEntry2.Handler);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task Factory_CleanupCycle_DisposesEligibleHandler()
         {
             // Arrange

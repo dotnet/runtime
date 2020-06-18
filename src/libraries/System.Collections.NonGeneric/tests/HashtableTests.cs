@@ -1173,7 +1173,7 @@ namespace System.Collections.Tests
         private Hashtable _hashGrandDaughter;
         private const int NumberOfElements = 100;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void SyncRoot()
         {
             // Different hashtables have different SyncRoots

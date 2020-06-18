@@ -119,7 +119,7 @@ namespace System.Reflection.Internal.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34493", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FileStreamUnix()
         {
@@ -134,7 +134,7 @@ namespace System.Reflection.Internal.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34493", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FileStream()
         {
@@ -211,7 +211,7 @@ namespace System.Reflection.Internal.Tests
             public void Dispose() => Assert.Equal(1, Interlocked.Increment(ref _i));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public unsafe void DisposeThreadSafety()
         {
             var nativeBlocks = new NativeHeapMemoryBlock[20];

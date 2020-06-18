@@ -2879,7 +2879,7 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(handle.RowId, assemblyRef.RowId);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void CanReadFromSameMemoryMappedPEReaderInParallel()
         {
             // See http://roslyn.codeplex.com/workitem/299

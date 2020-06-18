@@ -731,7 +731,7 @@ namespace System.PrivateUri.Tests
             Assert.Same(uri.DnsSafeHost, uri.DnsSafeHost);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public static void Uri_DoesNotLockOnString()
         {
             // Don't intern the string we lock on

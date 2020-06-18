@@ -40,7 +40,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task CancelConnectToNonExistentServer_Throws_OperationCanceledException()
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", "notthere"))
@@ -548,7 +548,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks MaxLength for PipeName on Unix
         public void NameTooLong_MaxLengthPerPlatform()
         {

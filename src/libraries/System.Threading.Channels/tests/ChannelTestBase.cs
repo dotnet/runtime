@@ -168,7 +168,7 @@ namespace System.Threading.Channels.Tests
                 }));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void SingleProducerConsumer_PingPong_Success()
         {
             Channel<int> c1 = CreateChannel();
@@ -194,7 +194,7 @@ namespace System.Threading.Channels.Tests
                 }));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(1, 1)]
         [InlineData(1, 10)]
         [InlineData(10, 1)]

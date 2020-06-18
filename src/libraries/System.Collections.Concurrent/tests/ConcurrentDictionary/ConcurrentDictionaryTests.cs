@@ -14,7 +14,7 @@ namespace System.Collections.Concurrent.Tests
 {
     public class ConcurrentDictionaryTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public static void TestBasicScenarios()
         {
             ConcurrentDictionary<int, int> cd = new ConcurrentDictionary<int, int>();
@@ -124,7 +124,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentException>(action);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(1, 1, 1, 10000)]
         [InlineData(5, 1, 1, 10000)]
         [InlineData(1, 1, 2, 5000)]
@@ -189,7 +189,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(expectedCount, dictConcurrent.ToArray().Length);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(1, 1, 10000)]
         [InlineData(5, 1, 10000)]
         [InlineData(1, 2, 5000)]
@@ -253,7 +253,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(1, 1, 10000)]
         [InlineData(5, 1, 10000)]
         [InlineData(1, 2, 5000)]
@@ -297,7 +297,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(1, 1, 10000)]
         [InlineData(5, 1, 1000)]
         [InlineData(1, 5, 2001)]
@@ -365,7 +365,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(expectKeys.Count, dict.ToArray().Length);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(5000)]
@@ -483,7 +483,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(dict.TryRemove(KeyValuePair.Create("KEY", "value")));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public static void TestGetOrAdd()
         {
             TestGetOrAddOrUpdate(1, 1, 1, 10000, true);
@@ -496,7 +496,7 @@ namespace System.Collections.Concurrent.Tests
             TestGetOrAddOrUpdate(5, 5, 5, 25000, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public static void TestAddOrUpdate()
         {
             TestGetOrAddOrUpdate(1, 1, 1, 10000, false);
@@ -951,7 +951,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(dictionary.IsEmpty, "TestClear: FAILED.  IsEmpty returned false after Clear");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public static void TestTryUpdate()
         {
             var dictionary = new ConcurrentDictionary<string, int>();
