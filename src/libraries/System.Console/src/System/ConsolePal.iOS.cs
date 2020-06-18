@@ -139,7 +139,7 @@ namespace System
 
         public static int WindowTop
         {
-            get => throw new PlatformNotSupportedException();
+            get => 0;
             set => throw new PlatformNotSupportedException();
         }
 
