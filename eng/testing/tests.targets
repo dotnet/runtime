@@ -32,6 +32,12 @@
           DependsOnTargets="GenerateRunScript">
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
+    <PropertyGroup>
+      <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
+      <_zipSourceDirectory>$(OutDir)</_zipSourceDirectory>
+      <_zipSourceDirectory Condition="'$(TargetOS)' == 'Browser'">$(BundleDir)</_zipSourceDirectory>
+    </PropertyGroup>
+
     <MakeDir Directories="$(TestArchiveTestsDir)" />
     <ZipDirectory SourceDirectory="$(_zipSourceDirectory)"
                   DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
