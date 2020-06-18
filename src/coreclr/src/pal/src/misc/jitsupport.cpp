@@ -23,12 +23,14 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 
     CORJIT_FLAGS &CPUCompileFlags = *flags;
 
+
+#if defined(HOST_ARM64)
+
     // Enable ARM64 based flags by default so we always crossgen
     // ARM64 intrinsics for Linux
     CPUCompileFlags.Set(InstructionSet_ArmBase);
     CPUCompileFlags.Set(InstructionSet_AdvSimd);
 
-#if defined(HOST_ARM64)
 #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
 
