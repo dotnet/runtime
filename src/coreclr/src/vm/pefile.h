@@ -479,7 +479,10 @@ protected:
     IMetaDataEmit           *m_pEmitter;
     SimpleRWLock            *m_pMetadataLock;
     Volatile<LONG>           m_refCount;
-    int                     m_flags;
+    int                      m_flags;
+
+    // AssemblyLoadContext that this PEFile is associated with
+    PTR_AssemblyLoadContext  m_pAssemblyLoadContext;
 
 #ifdef DEBUGGING_SUPPORTED
 #ifdef FEATURE_PREJIT
@@ -566,7 +569,19 @@ public:
     // Returns the ICLRPrivBinder* instance associated with the PEFile
     PTR_ICLRPrivBinder GetBindingContext();
 
-    AssemblyLoadContext* GetAssemblyLoadContext();
+#ifndef DACCESS_COMPILE
+    void SetAssemblyLoadContext(AssemblyLoadContext* pAssemblyLoadContext)
+    {
+        m_pAssemblyLoadContext = pAssemblyLoadContext;
+    }
+#endif //!DACCESS_COMPILE
+
+    PTR_AssemblyLoadContext GetAssemblyLoadContext()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_pAssemblyLoadContext;
+    }
 
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }

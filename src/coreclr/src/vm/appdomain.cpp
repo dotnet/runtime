@@ -4580,6 +4580,8 @@ IUnknown *AppDomain::CreateBinderContext()
 
         // Initialize the assembly binder for the default context loads for CoreCLR.
         IfFailThrow(CCoreCLRBinderHelper::DefaultBinderSetupContext(DefaultADID, &m_pTPABinderContext));
+
+        SystemDomain::SystemFile()->SetAssemblyLoadContext(m_pTPABinderContext);
     }
 
     RETURN m_pTPABinderContext;

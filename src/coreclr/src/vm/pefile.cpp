@@ -64,7 +64,8 @@ PEFile::PEFile(PEImage *identity) :
     m_refCount(1),
     m_flags(0),
     m_pHostAssembly(nullptr),
-    m_pFallbackLoadContextBinder(nullptr)
+    m_pFallbackLoadContextBinder(nullptr),
+    m_pAssemblyLoadContext(nullptr)
 {
     CONTRACTL
     {
@@ -1831,7 +1832,7 @@ void PEAssembly::Attach()
     STANDARD_VM_CONTRACT;
 }
 
-
+#ifndef DACCESS_COMPILE
 PEAssembly::PEAssembly(
                 CoreBindResult* pBindResultInfo,
                 IMetaDataEmit* pEmit,
@@ -1921,8 +1922,25 @@ PEAssembly::PEAssembly(
     m_debugName.Normalize();
     m_pDebugName = m_debugName;
 #endif
-}
 
+#ifndef DACCESS_COMPILE
+    PTR_ICLRPrivBinder pBindingContext = GetBindingContext();
+    ICLRPrivBinder* pOpaqueBinder = NULL;
+
+    if (pBindingContext != NULL)
+    {
+        UINT_PTR assemblyBinderID = 0;
+        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
+
+        pOpaqueBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
+    }
+
+    SetAssemblyLoadContext((pOpaqueBinder != NULL) ?
+        (AssemblyLoadContext*)pOpaqueBinder :
+        AppDomain::GetCurrentDomain()->GetTPABinderContext());
+#endif // !DACCESS_COMPILE
+}
+#endif // !DACCESS_COMPILE
 
 
 PEAssembly *PEAssembly::Open(
@@ -2462,23 +2480,3 @@ PTR_ICLRPrivBinder PEFile::GetBindingContext()
 
     return pBindingContext;
 }
-
-#ifndef DACCESS_COMPILE
-AssemblyLoadContext* PEFile::GetAssemblyLoadContext()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PTR_ICLRPrivBinder pBindingContext = GetBindingContext();
-    ICLRPrivBinder* pOpaqueBinder = NULL;
-
-    if (pBindingContext != NULL)
-    {
-        UINT_PTR assemblyBinderID = 0;
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        pOpaqueBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
-    }
-
-    return (pOpaqueBinder != NULL) ? (AssemblyLoadContext*)pOpaqueBinder : AppDomain::GetCurrentDomain()->GetTPABinderContext();
-}
-#endif
