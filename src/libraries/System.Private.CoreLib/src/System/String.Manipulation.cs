@@ -1579,7 +1579,7 @@ namespace System
 
                     if (Avx2.IsSupported && Length >= 16)
                     {
-                        MakeSeparatorListVectorized(ref sepListBuilder, sep0);
+                        MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep0, sep0);
                         return;
                     }
 
@@ -1597,7 +1597,7 @@ namespace System
 
                     if (Avx2.IsSupported && Length >= 16)
                     {
-                        MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1);
+                        MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1, sep1);
                         return;
                     }
 
@@ -1654,10 +1654,8 @@ namespace System
             }
         }
 
-        private void MakeSeparatorListVectorized(ref ValueListBuilder<int> sepListBuilder, char c, char? c2 = null, char? c3 = null)
+        private void MakeSeparatorListVectorized(ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
         {
-            // Constant that defines indices of characters within an AVX-Register
-            const ulong indicesConstant = 0xFEDCBA9876543210;
             // Constant that allows for the truncation of 16-bit (FFFF/0000) values within a register to 4-bit (F/0)
             Vector256<byte> shuffleConstant = Vector256.Create(0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
                                                                0xFF, 0xFF, 0xFF, 0xFF, 0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
@@ -1684,6 +1682,9 @@ namespace System
                 mask = Avx2.Shuffle(mask, shuffleConstant);
 
                 Vector128<byte> res = Sse2.Or(mask.GetLower(), mask.GetUpper());
+
+                // Constant that defines indices of characters within an AVX-Register
+                const ulong indicesConstant = 0xFEDCBA9876543210;
                 ulong extractedBits = Bmi2.X64.ParallelBitExtract(indicesConstant, Sse2.X64.ConvertToUInt64(res.AsUInt64()));
 
                 while (true)
@@ -1696,8 +1697,8 @@ namespace System
 
             for (; i < Length; i++)
             {
-                char curr = this[i];
-                if (curr == c || (c2 != null && curr == c2) || (c3 != null && curr == c3))
+                char curr = Unsafe.Add(ref c0, (IntPtr)(uint)i);
+                if (curr == c || curr == c2 || curr == c3)
                 {
                     sepListBuilder.Append(i);
                 }
