@@ -24,9 +24,9 @@ namespace Microsoft.Extensions.Configuration.Xml
         public XmlStreamConfigurationProvider(XmlStreamConfigurationSource source) : base(source) { }
 
         /// <summary>
-        /// Read a stream of INI values into a key/value dictionary.
+        /// Read a stream of XML values into a key/value dictionary.
         /// </summary>
-        /// <param name="stream">The stream of INI data.</param>
+        /// <param name="stream">The stream of XML data.</param>
         /// <param name="decryptor">The <see cref="XmlDocumentDecryptor"/> to use to decrypt.</param>
         /// <returns>The <see cref="IDictionary{String, String}"/> which was read from the stream.</returns>
         public static IDictionary<string, string> Read(Stream stream, XmlDocumentDecryptor decryptor)
