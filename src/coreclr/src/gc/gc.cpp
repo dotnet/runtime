@@ -212,21 +212,21 @@ gc_oh_num gen_to_oh(int gen)
 }
 
 #ifndef DACCESS_COMPILE
-int64_t qpf;
-size_t start_time;
+uint64_t qpf;
+double qpf_ms;
+double qpf_us;
 
-size_t GetHighPrecisionTimeStamp()
+uint64_t GetHighPrecisionTimeStamp()
 {
     int64_t ts = GCToOSInterface::QueryPerformanceCounter();
 
-    return (size_t)(ts / (qpf / 1000));
+    return (uint64_t)((double)ts * qpf_us);
 }
 
 uint64_t RawGetHighPrecisionTimeStamp()
 {
     return (uint64_t)GCToOSInterface::QueryPerformanceCounter();
 }
-
 #endif
 
 #ifdef BGC_SERVO_TUNING
@@ -358,7 +358,6 @@ uint32_t bgc_alloc_spin_count = 140;
 uint32_t bgc_alloc_spin_count_loh = 16;
 uint32_t bgc_alloc_spin = 2;
 
-
 inline
 void c_write (uint32_t& place, uint32_t value)
 {
@@ -382,12 +381,12 @@ gc_heap::gc_history gc_heap::gchist_per_heap[max_history_count];
 
 void gc_heap::add_to_history_per_heap()
 {
-#ifdef GC_HISTORY
+#if defined(GC_HISTORY) && defined(BACKGROUND_GC)
     gc_history* current_hist = &gchist_per_heap[gchist_index_per_heap];
     current_hist->gc_index = settings.gc_index;
     current_hist->current_bgc_state = current_bgc_state;
     size_t elapsed = dd_gc_elapsed_time (dynamic_data_of (0));
-    current_hist->gc_time_ms = (uint32_t)elapsed;
+    current_hist->gc_time_ms = (uint32_t)(elapsed / 1000);
     current_hist->gc_efficiency = (elapsed ? (total_promoted_bytes / elapsed) : total_promoted_bytes);
     current_hist->eph_low = generation_allocation_start (generation_of (max_generation-1));
     current_hist->gen0_start = generation_allocation_start (generation_of (0));
@@ -406,12 +405,12 @@ void gc_heap::add_to_history_per_heap()
     {
         gchist_index_per_heap = 0;
     }
-#endif //GC_HISTORY
+#endif //GC_HISTORY && BACKGROUND_GC
 }
 
 void gc_heap::add_to_history()
 {
-#ifdef GC_HISTORY
+#if defined(GC_HISTORY) && defined(BACKGROUND_GC)
     gc_mechanisms_store* current_settings = &gchist[gchist_index];
     current_settings->store (&settings);
 
@@ -420,7 +419,7 @@ void gc_heap::add_to_history()
     {
         gchist_index = 0;
     }
-#endif //GC_HISTORY
+#endif //GC_HISTORY && BACKGROUND_GC
 }
 
 #endif //DACCESS_COMPILE
@@ -2026,11 +2025,11 @@ static static_data static_data_table[latency_level_last - latency_level_first + 
     // latency_level_memory_footprint
     {
         // gen0
-        {0, 0, 40000, 0.5f, 9.0f, 20.0f, 1000, 1},
+        {0, 0, 40000, 0.5f, 9.0f, 20.0f, (1000 * 1000), 1},
         // gen1
-        {160*1024, 0, 80000, 0.5f, 2.0f, 7.0f, 10000, 10},
+        {160*1024, 0, 80000, 0.5f, 2.0f, 7.0f, (10 * 1000 * 1000), 10},
         // gen2
-        {256*1024, SSIZE_T_MAX, 200000, 0.25f, 1.2f, 1.8f, 100000, 100},
+        {256*1024, SSIZE_T_MAX, 200000, 0.25f, 1.2f, 1.8f, (100 * 1000 * 1000), 100},
         // loh
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0},
         // poh
@@ -2046,11 +2045,11 @@ static static_data static_data_table[latency_level_last - latency_level_first + 
 #else
             9.0f, 20.0f,
 #endif //MULTIPLE_HEAPS
-            1000, 1},
+            (1000 * 1000), 1},
         // gen1
-        {256*1024, 0, 80000, 0.5f, 2.0f, 7.0f, 10000, 10},
+        {256*1024, 0, 80000, 0.5f, 2.0f, 7.0f, (10 * 1000 * 1000), 10},
         // gen2
-        {256*1024, SSIZE_T_MAX, 200000, 0.25f, 1.2f, 1.8f, 100000, 100},
+        {256*1024, SSIZE_T_MAX, 200000, 0.25f, 1.2f, 1.8f, (100 * 1000 * 1000), 100},
         // loh
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0},
         // poh
@@ -2163,7 +2162,7 @@ gc_mechanisms  gc_heap::settings;
 
 gc_history_global gc_heap::gc_data_global;
 
-size_t      gc_heap::gc_last_ephemeral_decommit_time = 0;
+uint64_t    gc_heap::gc_last_ephemeral_decommit_time = 0;
 
 CLRCriticalSection gc_heap::check_commit_cs;
 
@@ -2177,6 +2176,19 @@ size_t      gc_heap::current_total_committed_bookkeeping = 0;
 double       gc_heap::short_plugs_pad_ratio = 0;
 #endif //SHORT_PLUGS
 
+uint64_t    gc_heap::suspended_start_time = 0;
+uint64_t    gc_heap::end_gc_time = 0;
+uint64_t    gc_heap::total_suspended_time = 0;
+uint64_t    gc_heap::process_start_time = 0;
+last_recorded_gc_info gc_heap::last_ephemeral_gc_info;
+last_recorded_gc_info gc_heap::last_full_blocking_gc_info;
+
+#ifdef BACKGROUND_GC
+last_recorded_gc_info gc_heap::last_bgc_info[2];
+VOLATILE(bool)        gc_heap::is_last_recorded_bgc = false;
+VOLATILE(int)         gc_heap::last_bgc_info_index = 0;
+#endif //BACKGROUND_GC
+
 #if defined(HOST_64BIT)
 #define MAX_ALLOWED_MEM_LOAD 85
 
@@ -2187,12 +2199,6 @@ double       gc_heap::short_plugs_pad_ratio = 0;
 
 size_t      gc_heap::youngest_gen_desired_th;
 #endif //HOST_64BIT
-
-uint32_t    gc_heap::last_gc_memory_load = 0;
-
-size_t      gc_heap::last_gc_heap_size = 0;
-
-size_t      gc_heap::last_gc_fragmentation = 0;
 
 uint64_t    gc_heap::mem_one_percent = 0;
 
@@ -2343,7 +2349,7 @@ BOOL        gc_heap::blocking_collection = FALSE;
 
 heap_segment* gc_heap::freeable_uoh_segment = 0;
 
-size_t      gc_heap::time_bgc_last = 0;
+uint64_t    gc_heap::time_bgc_last = 0;
 
 size_t      gc_heap::mark_stack_tos = 0;
 
@@ -2359,9 +2365,7 @@ BOOL        gc_heap::verify_pinned_queue_p = FALSE;
 
 uint8_t*    gc_heap::oldest_pinned_plug = 0;
 
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
 size_t      gc_heap::num_pinned_objects = 0;
-#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
 #ifdef FEATURE_LOH_COMPACTION
 size_t      gc_heap::loh_pinned_queue_tos = 0;
@@ -2532,7 +2536,7 @@ size_t gc_heap::eph_gen_starts_size = 0;
 heap_segment* gc_heap::segment_standby_list;
 bool          gc_heap::use_large_pages_p = 0;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
-size_t        gc_heap::last_gc_end_time_ms = 0;
+size_t        gc_heap::last_gc_end_time_us = 0;
 #endif //HEAP_BALANCE_INSTRUMENTATION
 size_t        gc_heap::min_segment_size = 0;
 size_t        gc_heap::min_segment_size_shr = 0;
@@ -2541,8 +2545,6 @@ size_t        gc_heap::min_uoh_segment_size = 0;
 size_t        gc_heap::segment_info_size = 0;
 
 #ifdef GC_CONFIG_DRIVEN
-size_t gc_heap::time_init = 0;
-size_t gc_heap::time_since_init = 0;
 size_t gc_heap::compact_or_sweep_gcs[2];
 #endif //GC_CONFIG_DRIVEN
 
@@ -5174,7 +5176,7 @@ void add_to_hb_numa (
 
     dprintf (HEAP_BALANCE_TEMP_LOG, ("TEMP[p%3d->%3d(i:%3d), N%d] #%4d: %I64d, tid %d, ah: %d, m: %d, p: %d, i: %d",
         saved_proc_no, proc_no, ideal_proc_no, numa_no, index,
-        (timestamp - start_raw_ts), tid, alloc_heap, (int)multiple_procs_p, (int)(!alloc_count_p), (int)set_ideal_p));
+        (timestamp - start_raw_ts) / 1000, tid, alloc_heap, (int)multiple_procs_p, (int)(!alloc_count_p), (int)set_ideal_p));
 
     if (multiple_procs_p)
     {
@@ -5220,8 +5222,8 @@ void gc_heap::hb_log_balance_activities()
 #ifdef HEAP_BALANCE_INSTRUMENTATION
     char* log_buffer = hb_log_buffer;
 
-    size_t now = GetHighPrecisionTimeStamp ();
-    size_t time_since_last_gc_ms = now - last_gc_end_time_ms;
+    uint64_t now = GetHighPrecisionTimeStamp();
+    size_t time_since_last_gc_ms = (size_t)((now - last_gc_end_time_us) / 1000);
     dprintf (HEAP_BALANCE_TEMP_LOG, ("TEMP%Id - %Id = %Id", now, last_gc_end_time_ms, time_since_last_gc_ms));
 
     // We want to get the min and the max timestamp for all procs because it helps with our post processing
@@ -5266,8 +5268,10 @@ void gc_heap::hb_log_balance_activities()
             int total_entries_on_proc = hb_info_proc->index;
             if (total_entries_on_proc > 0)
             {
-                int total_exec_time_ms = (int)((hb_info_proc->hb_info[total_entries_on_proc - 1].timestamp - hb_info_proc->hb_info[0].timestamp) / (qpf / 1000));
-                dprintf (HEAP_BALANCE_LOG, ("[p%d]-%d-%dms", (proc_index + numa_node_index * procs_per_numa_node), total_entries_on_proc, total_exec_time_ms));
+                int total_exec_time_ms =
+                    (int)((double)(hb_info_proc->hb_info[total_entries_on_proc - 1].timestamp - hb_info_proc->hb_info[0].timestamp) * qpf_ms);
+                dprintf (HEAP_BALANCE_LOG, ("[p%d]-%d-%dms",
+                    (proc_index + numa_node_index * procs_per_numa_node), total_entries_on_proc, total_exec_time_ms));
             }
 
             for (int i = 0; i < hb_info_proc->index; i++)
@@ -5467,6 +5471,7 @@ void gc_heap::gc_thread_function ()
                 continue;
             }
 
+            suspended_start_time = GetHighPrecisionTimeStamp();
             BEGIN_TIMING(suspend_ee_during_log);
             GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
             END_TIMING(suspend_ee_during_log);
@@ -5525,6 +5530,9 @@ void gc_heap::gc_thread_function ()
 
             gc_heap::gc_started = FALSE;
 
+#ifdef BACKGROUND_GC
+            gc_heap::add_bgc_pause_duration_0();
+#endif //BACKGROUND_GC
             BEGIN_TIMING(restart_ee_during_log);
             GCToEEInterface::RestartEE(TRUE);
             END_TIMING(restart_ee_during_log);
@@ -10177,6 +10185,12 @@ gc_heap::init_semi_shared()
     full_gc_approach_event_set = false;
 
     memset (full_gc_counts, 0, sizeof (full_gc_counts));
+
+    memset (&last_ephemeral_gc_info, 0, sizeof (last_ephemeral_gc_info));
+    memset (&last_full_blocking_gc_info, 0, sizeof (last_full_blocking_gc_info));
+#ifdef BACKGROUND_GC
+    memset (&last_bgc_info, 0, sizeof (last_bgc_info));
+#endif //BACKGROUND_GC
 
     should_expand_in_full_gc = FALSE;
 
@@ -15181,6 +15195,27 @@ size_t gc_heap::get_total_allocated()
     return total_current_allocated;
 }
 
+size_t gc_heap::get_total_promoted()
+{
+    size_t total_promoted_size = 0;
+    int highest_gen = ((settings.condemned_generation == max_generation) ?
+                       (total_generation_count - 1) : settings.condemned_generation);
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < gc_heap::n_heaps; i++)
+    {
+        gc_heap* hp = gc_heap::g_heaps[i];
+#else //MULTIPLE_HEAPS
+    {
+        gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+        for (int gen_number = 0; gen_number <= highest_gen; gen_number++)
+        {
+            total_promoted_size += dd_promoted_size (hp->dynamic_data_of (gen_number));
+        }
+    }
+    return total_promoted_size;
+}
+
 #ifdef BGC_SERVO_TUNING
 size_t gc_heap::get_total_generation_size (int gen_number)
 {
@@ -15473,7 +15508,7 @@ int gc_heap::generation_to_condemn (int n_initial,
         (local_settings->pause_mode == pause_sustained_low_latency))
     {
         dynamic_data* dd0 = dynamic_data_of (0);
-        size_t now = GetHighPrecisionTimeStamp();
+        uint64_t now = GetHighPrecisionTimeStamp();
         temp_gen = n;
         for (i = (temp_gen+1); i <= n_time_max; i++)
         {
@@ -15966,11 +16001,11 @@ void fire_overflow_event (uint8_t* overflow_min,
 void gc_heap::concurrent_print_time_delta (const char* msg)
 {
 #ifdef TRACE_GC
-    size_t current_time = GetHighPrecisionTimeStamp();
-    size_t elapsed_time = current_time - time_bgc_last;
+    uint64_t current_time = GetHighPrecisionTimeStamp();
+    size_t elapsed_time_ms = (size_t)((current_time - time_bgc_last) / 1000);
     time_bgc_last = current_time;
 
-    dprintf (2, ("h%d: %s T %Id ms", heap_number, msg, elapsed_time));
+    dprintf (2, ("h%d: %s T %Id ms", heap_number, msg, elapsed_time_ms));
 #else
     UNREFERENCED_PARAMETER(msg);
 #endif //TRACE_GC
@@ -16034,6 +16069,26 @@ BOOL gc_heap::should_proceed_with_gc()
     }
 
     return TRUE;
+}
+
+void gc_heap::update_end_gc_time_per_heap()
+{
+    for (int gen_number = 0; gen_number <= settings.condemned_generation; gen_number++)
+    {
+        dynamic_data* dd = dynamic_data_of (gen_number);
+        dd_gc_elapsed_time (dd) = (size_t)(end_gc_time - dd_time_clock (dd));
+    }
+}
+
+void gc_heap::update_end_ngc_time()
+{
+    end_gc_time = GetHighPrecisionTimeStamp();
+#ifdef HEAP_BALANCE_INSTRUMENTATION
+    last_gc_end_time_us = end_gc_time;
+    dprintf (HEAP_BALANCE_LOG, ("[GC#%Id-%Id-%Id]", settings.gc_index,
+        (last_gc_end_time_us - dd_time_clock (dynamic_data_of (0))),
+        dd_time_clock (dynamic_data_of (0))));
+#endif //HEAP_BALANCE_INSTRUMENTATION
 }
 
 //internal part of gc used by the serial and concurrent version
@@ -16114,9 +16169,6 @@ void gc_heap::gc1()
         }
     }
 
-    size_t end_gc_time = GetHighPrecisionTimeStamp();
-//    printf ("generation: %d, elapsed time: %Id\n", n,  end_gc_time - dd_time_clock (dynamic_data_of (0)));
-
     //adjust the allocation size from the pinned quantities.
     for (int gen_number = 0; gen_number <= min (max_generation,n+1); gen_number++)
     {
@@ -16139,12 +16191,13 @@ void gc_heap::gc1()
     if (settings.concurrent)
     {
         dynamic_data* dd = dynamic_data_of (n);
-        dd_gc_elapsed_time (dd) = end_gc_time - dd_time_clock (dd);
+        end_gc_time = GetHighPrecisionTimeStamp();
+        dd_gc_elapsed_time (dd) = (size_t)(end_gc_time - dd_time_clock (dd));
 
 #ifdef HEAP_BALANCE_INSTRUMENTATION
         if (heap_number == 0)
         {
-            last_gc_end_time_ms = end_gc_time;
+            last_gc_end_time_us = end_gc_time;
             dprintf (HEAP_BALANCE_LOG, ("[GC#%Id-%Id-BGC]", settings.gc_index, dd_gc_elapsed_time (dd)));
         }
 #endif //HEAP_BALANCE_INSTRUMENTATION
@@ -16168,17 +16221,12 @@ void gc_heap::gc1()
         free_list_info (max_generation, "end");
         for (int gen_number = 0; gen_number <= n; gen_number++)
         {
-            dynamic_data* dd = dynamic_data_of (gen_number);
-            dd_gc_elapsed_time (dd) = end_gc_time - dd_time_clock (dd);
             compute_new_dynamic_data (gen_number);
         }
 
         if (n != max_generation)
         {
-            // for gen < max_generation - 1, update data for gen + 1
-            // for gen == max_generation - 1, update data for max_generation, loh, etc
-            int highest_update_gen = (n < max_generation - 1) ? n + 1 : total_generation_count - 1;
-            for (int gen_number = (n + 1); gen_number <= highest_update_gen; gen_number++)
+            for (int gen_number = (n + 1); gen_number < total_generation_count; gen_number++)
             {
                 get_gc_data_per_heap()->gen_data[gen_number].size_after = generation_size (gen_number);
                 get_gc_data_per_heap()->gen_data[gen_number].free_list_space_after = generation_free_list_space (generation_of (gen_number));
@@ -16189,26 +16237,6 @@ void gc_heap::gc1()
         get_gc_data_per_heap()->maxgen_size_info.running_free_list_efficiency = (uint32_t)(generation_allocator_efficiency (generation_of (max_generation)) * 100);
 
         free_list_info (max_generation, "after computing new dynamic data");
-
-        if (heap_number == 0)
-        {
-            size_t gc_elapsed_time = dd_gc_elapsed_time (dynamic_data_of (0));
-#ifdef HEAP_BALANCE_INSTRUMENTATION
-            last_gc_end_time_ms = end_gc_time;
-            dprintf (HEAP_BALANCE_LOG, ("[GC#%Id-%Id-%Id]", settings.gc_index, gc_elapsed_time, dd_time_clock (dynamic_data_of (0))));
-#endif //HEAP_BALANCE_INSTRUMENTATION
-
-            dprintf (GTC_LOG, ("GC#%d(gen%d) took %Idms",
-                dd_collection_count (dynamic_data_of (0)),
-                settings.condemned_generation,
-                gc_elapsed_time));
-        }
-
-        for (int gen_number = 0; gen_number < total_generation_count; gen_number++)
-        {
-            dprintf (2, ("end of FGC/NGC: gen%d new_alloc: %Id",
-                         gen_number, dd_desired_allocation (dynamic_data_of (gen_number))));
-        }
     }
 
     if (n < max_generation)
@@ -16294,14 +16322,6 @@ void gc_heap::gc1()
     descr_generations (FALSE);
 
     verify_soh_segment_list();
-
-#ifdef BACKGROUND_GC
-    add_to_history_per_heap();
-    if (heap_number == 0)
-    {
-        add_to_history();
-    }
-#endif // BACKGROUND_GC
 
 #ifdef BACKGROUND_GC
     assert (settings.concurrent == (uint32_t)(bgc_thread_id.IsCurrentThread()));
@@ -16543,14 +16563,17 @@ void gc_heap::gc1()
             }
 
             fire_pevents();
+            update_end_ngc_time();
             pm_full_gc_init_or_clear();
 
             gc_t_join.restart();
         }
+
+        update_end_gc_time_per_heap();
+        add_to_history_per_heap();
         alloc_context_count = 0;
         heap_select::mark_heap (heap_number);
     }
-
 #else //MULTIPLE_HEAPS
     gc_data_global.final_youngest_desired =
         dd_desired_allocation (dynamic_data_of (0));
@@ -16563,6 +16586,9 @@ void gc_heap::gc1()
     if (!(settings.concurrent))
     {
         rearrange_uoh_segments();
+        update_end_ngc_time();
+        update_end_gc_time_per_heap();
+        add_to_history_per_heap();
         do_post_gc();
     }
 
@@ -17025,7 +17051,7 @@ void gc_heap::update_collection_counts ()
     dynamic_data* dd0 = dynamic_data_of (0);
     dd_gc_clock (dd0) += 1;
 
-    size_t now = GetHighPrecisionTimeStamp();
+    uint64_t now = GetHighPrecisionTimeStamp();
 
     for (int i = 0; i <= settings.condemned_generation;i++)
     {
@@ -17383,9 +17409,7 @@ void gc_heap::garbage_collect (int n)
     init_records();
 
     settings.reason = gc_trigger_reason;
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
     num_pinned_objects = 0;
-#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
 #ifdef STRESS_HEAP
     if (settings.reason == reason_gcstress)
@@ -17733,7 +17757,6 @@ void gc_heap::garbage_collect (int n)
 done:
     if (settings.pause_mode == pause_no_gc)
         allocate_for_no_gc_after_gc();
-
 }
 
 #define mark_stack_empty_p() (mark_stack_base == mark_stack_tos)
@@ -20590,12 +20613,9 @@ void gc_heap::pin_object (uint8_t* o, uint8_t** ppObject)
     }
 #endif // FEATURE_EVENT_TRACE
 
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
     num_pinned_objects++;
-#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 }
 
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
 size_t gc_heap::get_total_pinned_objects()
 {
 #ifdef MULTIPLE_HEAPS
@@ -20610,7 +20630,6 @@ size_t gc_heap::get_total_pinned_objects()
     return num_pinned_objects;
 #endif //MULTIPLE_HEAPS
 }
-#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
 void gc_heap::reset_mark_stack ()
 {
@@ -26458,6 +26477,7 @@ void gc_heap::background_mark_phase ()
         {
             enter_spin_lock (&gc_lock);
 
+            suspended_start_time = GetHighPrecisionTimeStamp();
             bgc_suspend_EE ();
             //suspend_EE ();
             bgc_threads_sync_event.Set();
@@ -27831,7 +27851,7 @@ void gc_heap::bgc_tuning::record_bgc_start()
     if (!bgc_tuning::enable_fl_tuning)
         return;
 
-    size_t elapsed_time_so_far = GetHighPrecisionTimeStamp() - start_time;
+    uint64_t elapsed_time_so_far = GetHighPrecisionTimeStamp() - process_start_time;
 
     // Note that younger gen's collection count is always updated with older gen's collections.
     // So to calcuate the actual # of gen1 occurred we really should take the # of gen2s into
@@ -27840,7 +27860,7 @@ void gc_heap::bgc_tuning::record_bgc_start()
 
     dprintf (BGC_TUNING_LOG, ("BTL: g2t[st][g1 %Id]: %0.3f minutes",
         current_gen1_index,
-        (double)elapsed_time_so_far / (double)1000 / (double)60));
+        (double)elapsed_time_so_far / (double)1000000 / (double)60));
 
     actual_num_gen1s_to_trigger = current_gen1_index - gen1_index_last_bgc_end;
     gen1_index_last_bgc_start = current_gen1_index;
@@ -27942,10 +27962,10 @@ void gc_heap::bgc_tuning::record_bgc_sweep_start()
     size_t num_gen1s_since_start = current_gen1_index - gen1_index_last_bgc_start;
     gen1_index_last_bgc_sweep = current_gen1_index;
 
-    size_t elapsed_time_so_far = GetHighPrecisionTimeStamp() - start_time;
+    uint64_t elapsed_time_so_far = GetHighPrecisionTimeStamp() - process_start_time;
     dprintf (BGC_TUNING_LOG, ("BTL: g2t[sw][g1 %Id]: %0.3f minutes",
         current_gen1_index,
-        (double)elapsed_time_so_far / (double)1000 / (double)60));
+        (double)elapsed_time_so_far / (double)1000000 / (double)60));
 
     update_bgc_sweep_start (max_generation, num_gen1s_since_start);
     update_bgc_sweep_start (loh_generation, num_gen1s_since_start);
@@ -28610,11 +28630,11 @@ void gc_heap::bgc_tuning::record_and_adjust_bgc_end()
     if (!bgc_tuning::enable_fl_tuning)
         return;
 
-    size_t elapsed_time_so_far = GetHighPrecisionTimeStamp() - start_time;
+    uint64_t elapsed_time_so_far = GetHighPrecisionTimeStamp() - process_start_time;
     size_t current_gen1_index = get_current_gc_index (max_generation - 1);
     dprintf (BGC_TUNING_LOG, ("BTL: g2t[en][g1 %Id]: %0.3f minutes",
         current_gen1_index,
-        (double)elapsed_time_so_far / (double)1000 / (double)60));
+        (double)elapsed_time_so_far / (double)1000000 / (double)60));
 
     if (fl_tuning_triggered)
     {
@@ -31298,15 +31318,16 @@ bool gc_heap::init_dynamic_data()
 #ifdef HEAP_BALANCE_INSTRUMENTATION
     start_raw_ts = now_raw_ts;
 #endif //HEAP_BALANCE_INSTRUMENTATION
-    uint32_t now = (uint32_t)(now_raw_ts / (qpf / 1000));
+    uint64_t now = (uint64_t)((double)now_raw_ts * qpf_us);
 
     set_static_data();
 
     if (heap_number == 0)
     {
+        process_start_time = now;
         smoothed_desired_per_heap = dynamic_data_of (0)->min_size;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
-        last_gc_end_time_ms = now;
+        last_gc_end_time_us = now;
         dprintf (HEAP_BALANCE_LOG, ("qpf=%I64d, start: %I64d(%d)", qpf, start_raw_ts, now));
 #endif //HEAP_BALANCE_INSTRUMENTATION
     }
@@ -31324,11 +31345,6 @@ bool gc_heap::init_dynamic_data()
         dd->desired_allocation = dd->new_allocation;
         dd->fragmentation = 0;
     }
-
-#ifdef GC_CONFIG_DRIVEN
-    if (heap_number == 0)
-        time_init = now;
-#endif //GC_CONFIG_DRIVEN
 
     return true;
 }
@@ -31843,7 +31859,6 @@ void gc_heap::compute_new_dynamic_data (int gen_number)
 
             if (i == poh_generation)
                 end_poh_size = total_gen_size;
-
 #endif //BACKGROUND_GC
             dd_promoted_size (dd) = out;
         }
@@ -31921,7 +31936,7 @@ void gc_heap::decommit_ephemeral_segment_pages()
 #ifndef MULTIPLE_HEAPS
     // we want to limit the amount of decommit we do per time to indirectly
     // limit the amount of time spent in recommit and page faults
-    size_t ephemeral_elapsed = dd_time_clock (dd0) - gc_last_ephemeral_decommit_time;
+    size_t ephemeral_elapsed = (size_t)((dd_time_clock (dd0) - gc_last_ephemeral_decommit_time) / 1000);
     gc_last_ephemeral_decommit_time = dd_time_clock (dd0);
 
     // this is the amount we were planning to decommit
@@ -33146,7 +33161,6 @@ void gc_heap::background_sweep()
         }
     }
 
-
 #ifdef MULTIPLE_HEAPS
     bgc_t_join.join(this, gc_join_restart_ee);
     if (bgc_t_join.joined())
@@ -33161,6 +33175,9 @@ void gc_heap::background_sweep()
 #ifdef BGC_SERVO_TUNING
         get_and_reset_loh_alloc_info();
 #endif //BGC_SERVO_TUNING
+        uint64_t suspended_end_ts = GetHighPrecisionTimeStamp();
+        last_bgc_info[last_bgc_info_index].pause_durations[1] = (size_t)(suspended_end_ts - suspended_start_time);
+        total_suspended_time += last_bgc_info[last_bgc_info_index].pause_durations[1];
         restart_EE ();
     }
 
@@ -35133,8 +35150,9 @@ HRESULT GCHeap::Initialize()
 {
     HRESULT hr = S_OK;
 
-    qpf = GCToOSInterface::QueryPerformanceFrequency();
-    start_time = GetHighPrecisionTimeStamp();
+    qpf = (uint64_t)GCToOSInterface::QueryPerformanceFrequency();
+    qpf_ms = 1000.0 / (double)qpf;
+    qpf_us = 1000.0 * 1000.0 / (double)qpf;
 
     g_gc_pFreeObjectMethodTable = GCToEEInterface::GetFreeObjectMethodTable();
     g_num_processors = GCToOSInterface::GetTotalProcessorCount();
@@ -36397,6 +36415,32 @@ GCHeap::GarbageCollectTry (int generation, BOOL low_memory_p, int mode)
     return GarbageCollectGeneration (gen, reason);
 }
 
+#ifdef BACKGROUND_GC
+void gc_heap::add_bgc_pause_duration_0()
+{
+    if (settings.concurrent)
+    {
+        uint64_t suspended_end_ts = GetHighPrecisionTimeStamp();
+        size_t pause_duration = (size_t)(suspended_end_ts - suspended_start_time);
+        last_recorded_gc_info* last_gc_info = &(last_bgc_info[last_bgc_info_index]);
+        last_gc_info->pause_durations[0] = pause_duration;
+        if (last_gc_info->index < last_ephemeral_gc_info.index)
+        {
+            last_gc_info->pause_durations[0] -= last_ephemeral_gc_info.pause_durations[0];
+        }
+
+        total_suspended_time += last_gc_info->pause_durations[0];
+    }
+}
+
+last_recorded_gc_info* gc_heap::get_completed_bgc_info()
+{
+    int completed_bgc_index = gc_heap::background_running_p() ?
+        (int)(!(gc_heap::last_bgc_info_index)) : (int)gc_heap::last_bgc_info_index;
+    return &gc_heap::last_bgc_info[completed_bgc_index];
+}
+#endif //BACKGROUND_GC
+
 void gc_heap::do_pre_gc()
 {
     STRESS_LOG_GC_STACK;
@@ -36415,6 +36459,11 @@ void gc_heap::do_pre_gc()
 
 #ifdef BACKGROUND_GC
     settings.b_state = hp->current_bgc_state;
+    if (settings.concurrent)
+    {
+        last_bgc_info_index = !last_bgc_info_index;
+        last_bgc_info[last_bgc_info_index].index = settings.gc_index;
+    }
 #endif //BACKGROUND_GC
 
 #ifdef TRACE_GC
@@ -36754,6 +36803,30 @@ bool gc_heap::is_pm_ratio_exceeded()
     return maxgen_highfrag_p;
 }
 
+void gc_heap::update_recorded_gen_data (last_recorded_gc_info* gc_info)
+{
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < gc_heap::n_heaps; i++)
+    {
+        gc_heap* hp = gc_heap::g_heaps[i];
+#else //MULTIPLE_HEAPS
+    {
+        gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+
+        gc_history_per_heap* current_gc_data_per_heap = hp->get_gc_data_per_heap();
+        for (int gen_number = 0; gen_number < total_generation_count; gen_number++)
+        {
+            recorded_generation_info* recorded_info = &(gc_info->gen_info[gen_number]);
+            gc_generation_data* data = &(current_gc_data_per_heap->gen_data[gen_number]);
+            recorded_info->size_before += data->size_before;
+            recorded_info->fragmentation_before += data->free_list_space_before + data->free_obj_space_before;
+            recorded_info->size_after += data->size_after;
+            recorded_info->fragmentation_after += data->free_list_space_after + data->free_obj_space_after;
+        }
+    }
+}
+
 void gc_heap::do_post_gc()
 {
     if (!settings.concurrent)
@@ -36773,6 +36846,8 @@ void gc_heap::do_post_gc()
                          (uint32_t)settings.condemned_generation,
                          (uint32_t)settings.reason,
                          !!settings.concurrent);
+
+    add_to_history();
 
     uint32_t current_memory_load = 0;
 
@@ -36819,7 +36894,7 @@ void gc_heap::do_post_gc()
     dprintf (1, ("*EGC* %Id(gen0:%Id)(%Id)(%d)(%s)(%s)(%s)(ml: %d->%d)",
         VolatileLoad(&settings.gc_index),
         dd_collection_count(hp->dynamic_data_of(0)),
-        GetHighPrecisionTimeStamp(),
+        (size_t)(GetHighPrecisionTimeStamp() / 1000),
         settings.condemned_generation,
         (settings.concurrent ? "BGC" : (gc_heap::background_running_p() ? "FGC" : "NGC")),
         (settings.compaction ? "C" : "S"),
@@ -36828,23 +36903,70 @@ void gc_heap::do_post_gc()
         current_memory_load));
 #endif //SIMPLE_DPRINTF
 
-    if (settings.exit_memory_load != 0)
-        last_gc_memory_load = settings.exit_memory_load;
-    else if (settings.entry_memory_load != 0)
-        last_gc_memory_load = settings.entry_memory_load;
+    // Now record the gc info.
+    last_recorded_gc_info* last_gc_info = 0;
+    if (settings.concurrent)
+    {
+        last_gc_info = &last_bgc_info[last_bgc_info_index];
+        assert (last_gc_info->index == settings.gc_index);
+    }
+    else
+    {
+        last_gc_info = ((settings.condemned_generation == max_generation) ?
+                        &last_full_blocking_gc_info : &last_ephemeral_gc_info);
+        last_gc_info->index = settings.gc_index;
+    }
+    size_t total_heap_committed = get_total_committed_size();
+    last_gc_info->total_committed = total_heap_committed;
+    last_gc_info->promoted = get_total_promoted();
+    last_gc_info->pinned_objects = get_total_pinned_objects();
+    last_gc_info->finalize_promoted_objects = GCHeap::GetFinalizablePromotedCount();
 
-    last_gc_heap_size = get_total_heap_size();
-    last_gc_fragmentation = get_total_fragmentation();
+    if (!settings.concurrent)
+    {
+        // If it's a normal blocking GC with its own SuspendEE, we simply get the elapsed time recoreded
+        // and add the time between SuspendEE start and GC start.
+        dynamic_data* dd = hp->dynamic_data_of (settings.condemned_generation);
+        uint64_t gc_start_ts = dd_time_clock (dd);
+        size_t pause_duration = (size_t)(end_gc_time - dd_time_clock (dd));
+
+        if ((hp->current_bgc_state != bgc_initialized) && (settings.reason != reason_pm_full_gc))
+        {
+            pause_duration += (size_t)(gc_start_ts - suspended_start_time);
+        }
+
+        last_gc_info->pause_durations[0] = pause_duration;
+        total_suspended_time += pause_duration;
+        last_gc_info->pause_durations[1] = 0;
+    }
+
+    uint64_t total_process_time = end_gc_time - process_start_time;
+    last_gc_info->pause_percentage = (float)(total_process_time ?
+        ((double)total_suspended_time / (double)total_process_time * 100.0) : 0);
+
+    update_recorded_gen_data (last_gc_info);
+    last_gc_info->heap_size = get_total_heap_size();
+    last_gc_info->fragmentation = get_total_fragmentation();
+    if (settings.exit_memory_load != 0)
+        last_gc_info->memory_load = settings.exit_memory_load;
+    else if (settings.entry_memory_load != 0)
+        last_gc_info->memory_load = settings.entry_memory_load;
+    last_gc_info->condemned_generation = settings.condemned_generation;
+    last_gc_info->compaction = settings.compaction;
+    last_gc_info->concurrent = settings.concurrent;
+
+#ifdef BACKGROUND_GC
+    is_last_recorded_bgc = settings.concurrent;
+#endif //BACKGROUND_GC
 
 #ifdef TRACE_GC
     if (heap_hard_limit)
     {
-        size_t total_heap_committed = get_total_committed_size();
         size_t total_heap_committed_recorded = current_total_committed - current_total_committed_bookkeeping;
         dprintf (1, ("(%d)GC commit END #%Id: %Id (recorded: %Id), heap %Id, frag: %Id",
             settings.condemned_generation,
             (size_t)settings.gc_index, total_heap_committed, total_heap_committed_recorded,
-            last_gc_heap_size, last_gc_fragmentation));
+            last_gc_info->heap_size, last_gc_info->fragmentation));
     }
 #endif //TRACE_GC
 
@@ -36993,6 +37115,7 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
         cooperative_mode = gc_heap::enable_preemptive ();
 
         dprintf (2, ("Suspending EE"));
+        gc_heap::suspended_start_time = GetHighPrecisionTimeStamp();
         BEGIN_TIMING(suspend_ee_during_log);
         GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
         END_TIMING(suspend_ee_during_log);
@@ -37053,14 +37176,15 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 #ifndef MULTIPLE_HEAPS
 #ifdef BACKGROUND_GC
     if (!gc_heap::dont_restart_ee_p)
+#endif //BACKGROUND_GC
     {
+#ifdef BACKGROUND_GC
+        gc_heap::add_bgc_pause_duration_0();
 #endif //BACKGROUND_GC
         BEGIN_TIMING(restart_ee_during_log);
         GCToEEInterface::RestartEE(TRUE);
         END_TIMING(restart_ee_during_log);
-#ifdef BACKGROUND_GC
     }
-#endif //BACKGROUND_GC
 #endif //!MULTIPLE_HEAPS
 
 #ifndef MULTIPLE_HEAPS
@@ -37252,16 +37376,110 @@ unsigned int GCHeap::GetCondemnedGeneration()
 void GCHeap::GetMemoryInfo(uint64_t* highMemLoadThresholdBytes,
                            uint64_t* totalAvailableMemoryBytes,
                            uint64_t* lastRecordedMemLoadBytes,
-                           uint32_t* lastRecordedMemLoadPct,
-                           size_t* lastRecordedHeapSizeBytes,
-                           size_t* lastRecordedFragmentationBytes)
+                           uint64_t* lastRecordedHeapSizeBytes,
+                           uint64_t* lastRecordedFragmentationBytes,
+                           uint64_t* totalCommittedBytes,
+                           uint64_t* promotedBytes,
+                           uint64_t* pinnedObjectCount,
+                           uint64_t* finalizationPendingCount,
+                           uint64_t* index,
+                           uint32_t* generation,
+                           uint32_t* pauseTimePct,
+                           bool* isCompaction,
+                           bool* isConcurrent,
+                           uint64_t* genInfoRaw,
+                           uint64_t* pauseInfoRaw,
+                           int kind)
 {
-    *highMemLoadThresholdBytes = (uint64_t) (((double)gc_heap::high_memory_load_th) / 100 * gc_heap::total_physical_mem);
+    last_recorded_gc_info* last_gc_info = 0;
+
+    if ((gc_kind)kind == gc_kind_ephemeral)
+    {
+        last_gc_info = &gc_heap::last_ephemeral_gc_info;
+    }
+    else if ((gc_kind)kind == gc_kind_full_blocking)
+    {
+        last_gc_info = &gc_heap::last_full_blocking_gc_info;
+    }
+#ifdef BACKGROUND_GC
+    else if ((gc_kind)kind == gc_kind_background)
+    {
+        last_gc_info = gc_heap::get_completed_bgc_info();
+    }
+#endif //BACKGROUND_GC
+    else
+    {
+        assert ((gc_kind)kind == gc_kind_any);
+#ifdef BACKGROUND_GC
+        if (gc_heap::is_last_recorded_bgc)
+        {
+            last_gc_info = gc_heap::get_completed_bgc_info();
+        }
+        else
+#endif //BACKGROUND_GC
+        {
+            last_gc_info = ((gc_heap::last_ephemeral_gc_info.index > gc_heap::last_full_blocking_gc_info.index) ?
+                &gc_heap::last_ephemeral_gc_info : &gc_heap::last_full_blocking_gc_info);
+        }
+    }
+
+    *highMemLoadThresholdBytes = (uint64_t) (((double)(gc_heap::high_memory_load_th)) / 100 * gc_heap::total_physical_mem);
     *totalAvailableMemoryBytes = gc_heap::heap_hard_limit != 0 ? gc_heap::heap_hard_limit : gc_heap::total_physical_mem;
-    *lastRecordedMemLoadBytes = (uint64_t) (((double)gc_heap::last_gc_memory_load) / 100 * gc_heap::total_physical_mem);
-    *lastRecordedMemLoadPct = gc_heap::last_gc_memory_load;
-    *lastRecordedHeapSizeBytes = gc_heap::last_gc_heap_size;
-    *lastRecordedFragmentationBytes = gc_heap::last_gc_fragmentation;
+    *lastRecordedMemLoadBytes = (uint64_t) (((double)(last_gc_info->memory_load)) / 100 * gc_heap::total_physical_mem);
+    *lastRecordedHeapSizeBytes = last_gc_info->heap_size;
+    *lastRecordedFragmentationBytes = last_gc_info->fragmentation;
+    *totalCommittedBytes = last_gc_info->total_committed;
+    *promotedBytes = last_gc_info->promoted;
+    *pinnedObjectCount = last_gc_info->pinned_objects;
+    *finalizationPendingCount = last_gc_info->finalize_promoted_objects;
+    *index = last_gc_info->index;
+    *generation = last_gc_info->condemned_generation;
+    *pauseTimePct = (int)(last_gc_info->pause_percentage * 100);
+    *isCompaction = last_gc_info->compaction;
+    *isConcurrent = last_gc_info->concurrent;
+    int genInfoIndex = 0;
+    for (int i = 0; i < total_generation_count; i++)
+    {
+        genInfoRaw[genInfoIndex++] = last_gc_info->gen_info[i].size_before;
+        genInfoRaw[genInfoIndex++] = last_gc_info->gen_info[i].fragmentation_before;
+        genInfoRaw[genInfoIndex++] = last_gc_info->gen_info[i].size_after;
+        genInfoRaw[genInfoIndex++] = last_gc_info->gen_info[i].fragmentation_after;
+    }
+    for (int i = 0; i < 2; i++)
+    {
+        // convert it to 100-ns units that TimeSpan needs.
+        pauseInfoRaw[i] = (uint64_t)(last_gc_info->pause_durations[i]) * 10;
+    }
+
+#ifdef _DEBUG
+    if ((gc_kind)kind == gc_kind_ephemeral)
+    {
+        assert (last_gc_info->condemned_generation < max_generation);
+    }
+    else if ((gc_kind)kind == gc_kind_full_blocking)
+    {
+        assert (last_gc_info->condemned_generation == max_generation);
+        assert (last_gc_info->concurrent == false);
+    }
+#ifdef BACKGROUND_GC
+    else if ((gc_kind)kind == gc_kind_background)
+    {
+        assert (last_gc_info->condemned_generation == max_generation);
+        assert (last_gc_info->concurrent == true);
+    }
+#endif //BACKGROUND_GC
+#endif //_DEBUG
+}
+
+uint32_t GCHeap::GetMemoryLoad()
+{
+    uint32_t memory_load = 0;
+    if (gc_heap::settings.exit_memory_load != 0)
+        memory_load = gc_heap::settings.exit_memory_load;
+    else if (gc_heap::settings.entry_memory_load != 0)
+        memory_load = gc_heap::settings.entry_memory_load;
+
+    return memory_load;
 }
 
 int GCHeap::GetGcLatencyMode()
