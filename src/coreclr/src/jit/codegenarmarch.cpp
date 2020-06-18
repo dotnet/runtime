@@ -1503,7 +1503,7 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
 #ifdef TARGET_ARM
-    assert("GT_NULLCHECK isn't supported for Arm32; use GT_IND.");
+    assert(!"GT_NULLCHECK isn't supported for Arm32; use GT_IND.");
 #else
     assert(tree->OperIs(GT_NULLCHECK));
     GenTree* op1 = tree->gtOp1;
