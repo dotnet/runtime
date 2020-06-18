@@ -18,9 +18,10 @@ public static class BasicTest
         // Let multi-core JIT start jitting
         Thread.Sleep(100);
 
-        PromoteToTier1(Foo, () => FooWithLoop(2));
+        PromoteToTier1(Foo, () => FooWithLoop(2), () => FooWithGeneric<int>(2));
         Foo();
         FooWithLoop(2);
+        FooWithGeneric<int>(2);
 
         ProfileOptimization.StartProfile(null);
         return Pass;
@@ -36,6 +37,7 @@ public static class BasicTest
     {
     }
 
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int FooWithLoop(int n)
     {
@@ -45,6 +47,16 @@ public static class BasicTest
             sum += i;
         }
         return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void FooWithGeneric<T>(T n)
+    {
+        FooWithGeneric2();
+    }
+
+    private static void FooWithGeneric2()
+    {
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

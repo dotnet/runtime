@@ -13,6 +13,7 @@
 #define __MULTICORE_JIT_H__
 
 class MulticoreJitRecorder;
+class MulticoreJitProfilePlayer;
 
 
 class MulticoreJitCounter
@@ -300,7 +301,16 @@ public:
 
     static bool ModuleHasNoCode(Module * pModule);
 
+    static DWORD EncodeModuleHelper(void * pModuleContext,
+                                    Module * pReferencedModule);
 
+    static void TokenDefinitionHelper(void* pModuleContext,
+                                      Module *pReferencedModule,
+                                      DWORD index,
+                                      mdToken* pToken);
+
+    static Module * DecodeModuleFromIndex(void * pModuleContext,
+                                          DWORD  ix);
 };
 
 
