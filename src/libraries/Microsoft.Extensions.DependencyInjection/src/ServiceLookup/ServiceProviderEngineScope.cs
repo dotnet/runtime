@@ -122,14 +122,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             static async ValueTask Await(int i, ValueTask vt, List<object> toDispose)
             {
-                await vt;
+                await vt.ConfigureAwait(false);
 
                 for (; i >= 0; i--)
                 {
                     object disposable = toDispose[i];
                     if (disposable is IAsyncDisposable asyncDisposable)
                     {
-                        await asyncDisposable.DisposeAsync();
+                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
                     }
                     else
                     {

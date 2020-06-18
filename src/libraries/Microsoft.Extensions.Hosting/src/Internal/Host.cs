@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             using var combinedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _applicationLifetime.ApplicationStopping);
             CancellationToken combinedCancellationToken = combinedCancellationTokenSource.Token;
 
-            await _hostLifetime.WaitForStartAsync(combinedCancellationToken);
+            await _hostLifetime.WaitForStartAsync(combinedCancellationToken).ConfigureAwait(false);
 
             combinedCancellationToken.ThrowIfCancellationRequested();
             _hostedServices = Services.GetService<IEnumerable<IHostedService>>();
@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 }
 
                 token.ThrowIfCancellationRequested();
-                await _hostLifetime.StopAsync(token);
+                await _hostLifetime.StopAsync(token).ConfigureAwait(false);
 
                 // Fire IHostApplicationLifetime.Stopped
                 _applicationLifetime.NotifyStopped();
@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             switch (Services)
             {
                 case IAsyncDisposable asyncDisposable:
-                    await asyncDisposable.DisposeAsync();
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
                     break;
                 case IDisposable disposable:
                     disposable.Dispose();
