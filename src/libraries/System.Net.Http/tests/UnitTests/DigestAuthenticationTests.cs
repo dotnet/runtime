@@ -50,6 +50,7 @@ namespace System.Net.Http.Tests
         [InlineData("realm=\"NetCore\", qop=\"auth\", stale=false", false)]
         public async Task DigestResponse_AuthToken_Handling(string response, bool expectedResult)
         {
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             NetworkCredential credential = new NetworkCredential("foo", "bar");
             AuthenticationHelper.DigestResponse digestResponse = new AuthenticationHelper.DigestResponse(response);
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com/");
@@ -66,6 +67,7 @@ namespace System.Net.Http.Tests
         [InlineData("\uD834\uDD1E", "username*=utf-8''%F0%9D%84%9E")]
         public async Task DigestResponse_UserName_Encoding(string username, string encodedUserName)
         {
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             NetworkCredential credential = new NetworkCredential(username, "bar");
             AuthenticationHelper.DigestResponse digestResponse = new AuthenticationHelper.DigestResponse("realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\"");
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com/");
@@ -89,6 +91,7 @@ namespace System.Net.Http.Tests
         [MemberData(nameof(DigestResponse_ShouldSendQop_TestData))]
         public async Task DigestResponse_ShouldSendQop(string response, string match, string doesNotMatch, int fieldCount)
         {
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]            
             NetworkCredential credential = new NetworkCredential("foo", "bar");
             AuthenticationHelper.DigestResponse digestResponse = new AuthenticationHelper.DigestResponse(response);
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com/");

@@ -8,6 +8,7 @@ namespace System.PrivateUri.Tests
 {
     public class UriBuilderRefreshTest
     {
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
         private static readonly Uri s_starterUri = new Uri("http://user:psw@host:9090/path/file.txt?query#fragment");
 
         [Fact]

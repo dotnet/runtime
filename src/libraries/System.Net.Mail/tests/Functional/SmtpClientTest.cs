@@ -293,6 +293,7 @@ namespace System.Net.Mail.Tests
         {
             using var server = new LoopbackSmtpServer();
             using SmtpClient client = server.CreateClient();
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             client.Credentials = new NetworkCredential("Foo", "Bar");
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
@@ -505,6 +506,7 @@ namespace System.Net.Mail.Tests
 
             using (SmtpClient client = server.CreateClient())
             {
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
                 client.Credentials = new NetworkCredential("Foo", "Bar");
                 MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
                 if (asyncSend)

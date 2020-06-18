@@ -23,7 +23,9 @@ namespace System.Net.Http.Functional.Tests
     public abstract class PostScenarioTest : HttpClientHandlerTestBase
     {
         private const string ExpectedContent = "Test contest";
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
         private const string UserName = "user1";
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
         private const string Password = "password1";
 
         public PostScenarioTest(ITestOutputHelper output) : base(output) { }

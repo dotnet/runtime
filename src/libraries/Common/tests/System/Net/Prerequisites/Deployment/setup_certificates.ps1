@@ -11,9 +11,11 @@ $script:testData = "runtime-assets"
 $script:certificatePath = "$($script:testData)\runtime-assets-master\System.Net.TestData"
 
 $script:clientPrivateKeyPath = Join-Path $script:certificatePath "testclient1_at_contoso.com.pfx"
+#[SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Dummy certificate password for testing.")]
 $script:clientPrivateKeyPassword = "testcertificate"
 
 $script:serverPrivateKeyPath = Join-Path $script:certificatePath "contoso.com.pfx"
+#[SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Dummy certificate password for testing.")]
 $script:serverPrivateKeyPassword = "testcertificate"
 
 Function GetFullPath($relativePath)
