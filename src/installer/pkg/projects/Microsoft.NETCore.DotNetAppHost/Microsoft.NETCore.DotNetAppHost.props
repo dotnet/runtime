@@ -6,6 +6,8 @@
     <NativeBinary Include="$(DotNetHostBinDir)/singlefilehost$(ApplicationFileExtension)" />
     <NativeBinary Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)nethost$(LibraryFileExtension)" />
     <NativeBinary Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)nethost$(StaticLibraryFileExtension)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
+    <NativeBinary Include="$(DotNetHostBinDir)/hostfxr.h" />
     <NativeBinary Include="$(DotNetHostBinDir)/nethost.h" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Windows_NT'">
