@@ -95,14 +95,14 @@ After:
         {
             if (!environment.IsWindows())
             {
-                return new string[0];
+                return Array.Empty<string>();
             }
 
             string net20Dir = Path.Combine(environment.GetEnvironmentVariable("WINDIR"), "Microsoft.NET", "Framework", "v2.0.50727");
 
             if (!fileSystem.Directory.Exists(net20Dir))
             {
-                return new string[0];
+                return Array.Empty<string>();
             }
             return new[] { net20Dir };
         }

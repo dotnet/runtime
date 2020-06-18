@@ -17,7 +17,6 @@ namespace Microsoft.Extensions.Logging
     internal class LogValuesFormatter
     {
         private const string NullValue = "(null)";
-        private static readonly object[] EmptyArray = new object[0];
         private static readonly char[] FormatDelimiters = {',', ':'};
         private readonly string _format;
         private readonly List<string> _valueNames = new List<string>();
@@ -124,7 +123,7 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
-            return string.Format(CultureInfo.InvariantCulture, _format, values ?? EmptyArray);
+            return string.Format(CultureInfo.InvariantCulture, _format, values ?? Array.Empty<object>());
         }
 
         internal string Format()

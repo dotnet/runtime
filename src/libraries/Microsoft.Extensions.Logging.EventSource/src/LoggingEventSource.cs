@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         // It's important to have _filterSpec initialization here rather than in ctor
         // base ctor might call OnEventCommand and set filter spec
         // having assignment in ctor would overwrite the value
-        private LoggerFilterRule[] _filterSpec = new LoggerFilterRule[0];
+        private LoggerFilterRule[] _filterSpec = Array.Empty<LoggerFilterRule>();
         private CancellationTokenSource _cancellationTokenSource;
 
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
