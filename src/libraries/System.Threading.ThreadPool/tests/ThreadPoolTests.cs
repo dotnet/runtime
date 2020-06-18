@@ -33,7 +33,7 @@ namespace System.Threading.ThreadPools.Tests
             select new object[] { b1, b2 };
 
         // Tests concurrent calls to ThreadPool.SetMinThreads
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ConcurrentInitializeTest()
         {
             int processorCount = Environment.ProcessorCount;

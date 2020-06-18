@@ -247,7 +247,7 @@ namespace System.Collections.Concurrent.Tests
             GC.KeepAlive(queue);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ManySegments_ConcurrentDequeues_RemainsConsistent()
         {
             var cq = new ConcurrentQueue<int>();
@@ -277,7 +277,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(Iters, dequeues);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ManySegments_ConcurrentEnqueues_RemainsConsistent()
         {
             var cq = new ConcurrentQueue<int>();
@@ -358,7 +358,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, 10)]
         [InlineData(3, 100)]
         [InlineData(8, 1000)]

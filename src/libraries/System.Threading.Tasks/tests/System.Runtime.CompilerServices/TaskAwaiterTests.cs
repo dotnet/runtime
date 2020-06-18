@@ -365,7 +365,7 @@ namespace System.Threading.Tasks.Tests
             Assert.NotEqual(task.ConfigureAwait(true).GetAwaiter(), task.ConfigureAwait(false).GetAwaiter());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void BaseSynchronizationContext_SameAsNoSynchronizationContext()
         {
             var quwi = new QUWITaskScheduler();
@@ -402,7 +402,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(CanceledTasksAndExpectedCancellationExceptions))]
         public static void OperationCanceledException_PropagatesThroughCanceledTask(int lineNumber, Task task, OperationCanceledException expected)
         {

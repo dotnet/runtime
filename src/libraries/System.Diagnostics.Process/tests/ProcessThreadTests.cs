@@ -47,7 +47,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TestThreadCount()
         {
             int numOfThreads = 10;

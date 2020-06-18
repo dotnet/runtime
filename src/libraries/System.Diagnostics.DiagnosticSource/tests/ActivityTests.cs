@@ -228,7 +228,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests Id generation
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void IdGenerationInternalParent()
         {
             var parent = new Activity("parent");

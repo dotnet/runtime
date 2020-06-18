@@ -337,7 +337,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(0, item);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void AddTakeWithAtLeastOneElementInCollection_IsEmpty_AlwaysFalse()
         {
             int items = 1000;
@@ -638,7 +638,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<NotSupportedException>(() => c.SyncRoot);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ToArray_ParallelInvocations_Succeed()
         {
             IProducerConsumerCollection<int> c = CreateProducerConsumerCollection();
@@ -680,7 +680,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void GetEnumerator_ParallelInvocations_Succeed()
         {
             IProducerConsumerCollection<int> c = CreateProducerConsumerCollection();

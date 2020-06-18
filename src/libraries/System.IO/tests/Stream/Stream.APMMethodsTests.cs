@@ -28,7 +28,7 @@ namespace System.IO.Tests
             stream.EndRead(result);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void BeginEndWriteTest()
         {
             Stream stream = CreateStream();
