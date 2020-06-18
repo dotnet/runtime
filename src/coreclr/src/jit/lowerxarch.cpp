@@ -1400,6 +1400,11 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     unsigned       simdSize    = node->gtSIMDSize;
     VectorConstant vecCns      = {};
 
+    if ((simdSize == 8) && (simdType == TYP_DOUBLE))
+    {
+        simdType = TYP_SIMD8;
+    }
+
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(baseType));
     assert(simdSize != 0);
