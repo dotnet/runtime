@@ -121,6 +121,7 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 #ifdef HWCAP_SVE
 //    if (hwCap & HWCAP_SVE)
 //        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SVE);
+#endif
 #endif // HAVE_AUXV_HWCAP_H
 #endif // defined(HOST_ARM64)
     CPUCompileFlags.Set64BitInstructionSetVariants();
