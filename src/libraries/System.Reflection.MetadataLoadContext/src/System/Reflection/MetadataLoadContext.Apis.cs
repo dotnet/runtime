@@ -100,6 +100,7 @@ namespace System.Reflection
         /// <summary>
         /// Create a new MetadataLoadContext object.
         /// </summary>
+        /// <param name="resolver">A <see cref="MetadataAssemblyResolver"/> instance.</param>
         /// <param name="coreAssemblyName">
         /// The name of the assembly that contains the core types such as System.Object. Typically, this would be "mscorlib".
         /// </param>
