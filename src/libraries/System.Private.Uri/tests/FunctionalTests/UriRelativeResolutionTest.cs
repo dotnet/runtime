@@ -28,7 +28,7 @@ namespace System.PrivateUri.Tests
 
         [Fact]
         public void Uri_Relative_BaseVsAbsolute_ReturnsFullAbsolute()
-        {            
+        {
             string absolute = "http://username:password@hostname:8080/p1/p2/p3/p4/file1?AQuery#TheFragment";
             Uri resolved = new Uri(_fullBaseUri, absolute);
 

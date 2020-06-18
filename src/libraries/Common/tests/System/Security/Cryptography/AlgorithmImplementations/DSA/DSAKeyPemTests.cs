@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         public static void ImportFromPem_Pkcs8UnEncrypted_Simple()
         {
             using (DSA dsa = DSAFactory.Create())
-            {                
+            {
                 string pem = @"
 -----BEGIN PRIVATE KEY-----
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
