@@ -90,7 +90,7 @@ if(CLR_CMAKE_TARGET_WIN32)
   add_subdirectory(src/gc/sample)
 endif()
 
-add_subdirectory(src/tools/crossgen2/jitinterface)
+add_subdirectory(src/tools/aot/jitinterface)
 
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake
