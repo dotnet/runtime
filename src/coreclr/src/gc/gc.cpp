@@ -32577,7 +32577,7 @@ void reset_memory (uint8_t* o, size_t sizeo)
         size_t size = align_lower_page ((size_t)o + sizeo - size_to_skip - plug_skew) - page_start;
         // Note we need to compensate for an OS bug here. This bug would cause the MEM_RESET to fail
         // on write watched memory.
-        if (reset_mm_p)
+        if (reset_mm_p && gc_heap::g_low_memory_status)
         {
 #ifdef MULTIPLE_HEAPS
             bool unlock_p = true;
