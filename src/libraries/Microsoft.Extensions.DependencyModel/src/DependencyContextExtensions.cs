@@ -179,8 +179,8 @@ namespace Microsoft.Extensions.DependencyModel
         }
 
         private static IEnumerable<string> ResolveAssets(
-            DependencyContext context, 
-            string runtimeIdentifier, 
+            DependencyContext context,
+            string runtimeIdentifier,
             IEnumerable<RuntimeAssetGroup> assets)
         {
             RuntimeFallbacks fallbacks = context.RuntimeGraph.FirstOrDefault(f => f.Runtime == runtimeIdentifier);

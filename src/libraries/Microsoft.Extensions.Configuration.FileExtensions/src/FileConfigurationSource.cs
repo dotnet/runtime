@@ -62,12 +62,12 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// If no file provider has been set, for absolute Path, this will creates a physical file provider 
+        /// If no file provider has been set, for absolute Path, this will creates a physical file provider
         /// for the nearest existing directory.
         /// </summary>
         public void ResolveFileProvider()
         {
-            if (FileProvider == null && 
+            if (FileProvider == null &&
                 !string.IsNullOrEmpty(Path) &&
                 System.IO.Path.IsPathRooted(Path))
             {

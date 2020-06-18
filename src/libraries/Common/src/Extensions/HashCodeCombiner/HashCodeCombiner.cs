@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Internal
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _combinedHash64.GetHashCode(); }
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private HashCodeCombiner(long seed)
         {

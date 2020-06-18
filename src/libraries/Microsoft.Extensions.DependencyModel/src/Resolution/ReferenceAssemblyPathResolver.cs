@@ -110,7 +110,7 @@ After:
         internal static string GetDefaultReferenceAssembliesPath(IFileSystem fileSystem, IEnvironment environment)
         {
             // Allow setting the reference assemblies path via an environment variable
-            string referenceAssembliesPath = DotNetReferenceAssembliesPathResolver.Resolve(environment, fileSystem); 
+            string referenceAssembliesPath = DotNetReferenceAssembliesPathResolver.Resolve(environment, fileSystem);
             if (!string.IsNullOrEmpty(referenceAssembliesPath))
             {
                 return referenceAssembliesPath;

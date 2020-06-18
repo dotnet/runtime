@@ -148,7 +148,7 @@ namespace Microsoft.Extensions.DependencyInjection
         private static IEnumerable<Type> FindIConfigureOptions(Type type)
         {
             IEnumerable<Type> serviceTypes = type.GetTypeInfo().ImplementedInterfaces
-                .Where(t => t.GetTypeInfo().IsGenericType && 
+                .Where(t => t.GetTypeInfo().IsGenericType &&
                 (t.GetGenericTypeDefinition() == typeof(IConfigureOptions<>)
                 || t.GetGenericTypeDefinition() == typeof(IPostConfigureOptions<>)));
             if (!serviceTypes.Any())

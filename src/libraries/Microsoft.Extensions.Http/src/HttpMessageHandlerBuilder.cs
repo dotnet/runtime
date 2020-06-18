@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Http
         /// from the dependency injection container.
         /// </summary>
         /// <remarks>
-        /// This property is sensitive to the value of 
+        /// This property is sensitive to the value of
         /// <see cref="HttpClientFactoryOptions.SuppressHandlerScope"/>. If <c>true</c> this
         /// property will be a reference to the application's root service provider. If <c>false</c>
         /// (default) this will be a reference to a scoped service provider that has the same

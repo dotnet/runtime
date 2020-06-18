@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.Http
                 string message = SR.Format(SR.HttpMessageHandlerBuilder_PrimaryHandlerIsNull, nameof(PrimaryHandler));
                 throw new InvalidOperationException(message);
             }
-            
+
             return CreateHandlerPipeline(PrimaryHandler, AdditionalHandlers);
         }
     }

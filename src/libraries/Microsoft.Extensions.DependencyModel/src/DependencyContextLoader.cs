@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             if (!depsJsonFileExists)
             {
-                // in some cases (like .NET Framework shadow copy) the Assembly Location 
+                // in some cases (like .NET Framework shadow copy) the Assembly Location
                 // and CodeBase will be different, so also try the CodeBase
                 string assemblyCodeBase = GetNormalizedCodeBasePath(assembly);
                 if (!string.IsNullOrEmpty(assemblyCodeBase) &&

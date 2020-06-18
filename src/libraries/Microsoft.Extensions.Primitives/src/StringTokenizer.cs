@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
-            
+
             if (separators == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.separators);

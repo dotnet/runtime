@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                         pattern[beginSegment + 2] == '.')
                     {
                         // recognize **.
-                        // swallow the first *, add the recursive path segment and 
+                        // swallow the first *, add the recursive path segment and
                         // the remaining part will be treat as wild card in next loop.
                         segment = new RecursiveWildcardSegment();
                         endSegment = beginSegment;
