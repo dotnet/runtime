@@ -144,6 +144,7 @@ typedef struct
 	gboolean prof_coverage;
 	MonoProfilerCoverageInfo *coverage_info;
 	GList *dont_inline;
+	int has_localloc : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0
