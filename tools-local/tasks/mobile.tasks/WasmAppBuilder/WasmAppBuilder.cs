@@ -83,12 +83,14 @@ public class WasmAppBuilder : Task
 
             foreach (var item in FilesToIncludeInFileSystem)
             {
-                // We normalize paths from `\` to `/` as MSBuild items could use `\`.
-                string targetPath = item.GetMetadata("TargetPath").Replace('\\', '/');
+                string? targetPath = item.GetMetadata("TargetPath");
                 if (string.IsNullOrEmpty(targetPath))
                 {
                     targetPath = Path.GetFileName(item.ItemSpec);
                 }
+
+                // We normalize paths from `\` to `/` as MSBuild items could use `\`.
+                targetPath = targetPath.Replace('\\', '/');
 
                 string? directory = Path.GetDirectoryName(targetPath);
 
