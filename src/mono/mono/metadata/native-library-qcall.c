@@ -21,6 +21,10 @@ enum {
     func_flag_qcall = 0x08, // QCall - mscorlib.dll to mscorwks.dll transition implemented as PInvoke
 };
 
+#if defined(NO_GLOBALIZATION_SHIM) || !defined(ENABLE_NETCORE)
+const void* gPalGlobalizationNative[] = { (void*)func_flag_end_of_array };
+#endif
+
 static const MonoQCallDef c_qcalls[] =
 {
     #define FCClassElement(name,namespace,funcs) {name, namespace, funcs},
