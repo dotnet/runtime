@@ -12,7 +12,6 @@ trigger:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - eng/Version.Details.xml
     - .github/*
@@ -34,7 +33,6 @@ pr:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - eng/Version.Details.xml
     - .github/*
