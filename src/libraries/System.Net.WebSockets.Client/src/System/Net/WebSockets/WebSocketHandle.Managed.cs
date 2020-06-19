@@ -247,7 +247,10 @@ namespace System.Net.WebSockets
             }
         }
 
+        /// <summary>Adds the necessary headers for the web socket request.</summary>
+        /// <param name="request">The request to which the headers should be added.</param>
         /// <param name="secKey">The generated security key to send in the Sec-WebSocket-Key header.</param>
+        /// <param name="options">The options controlling the request.</param>
         private static void AddWebSocketHeaders(HttpRequestMessage request, string secKey, ClientWebSocketOptions options)
         {
             request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);

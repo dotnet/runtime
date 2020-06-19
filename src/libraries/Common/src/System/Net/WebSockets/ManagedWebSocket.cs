@@ -789,6 +789,7 @@ namespace System.Net.WebSockets
 
         /// <summary>Processes a received close message.</summary>
         /// <param name="header">The message header.</param>
+        /// <param name="cancellationToken">The CancellationToken used to cancel the websocket operation.</param>
         /// <returns>The received result message.</returns>
         private async ValueTask HandleReceivedCloseAsync(MessageHeader header, CancellationToken cancellationToken)
         {
@@ -884,6 +885,7 @@ namespace System.Net.WebSockets
 
         /// <summary>Processes a received ping or pong message.</summary>
         /// <param name="header">The message header.</param>
+        /// <param name="cancellationToken">The CancellationToken used to cancel the websocket operation.</param>
         private async ValueTask HandleReceivedPingPongAsync(MessageHeader header, CancellationToken cancellationToken)
         {
             // Consume any (optional) payload associated with the ping/pong.
