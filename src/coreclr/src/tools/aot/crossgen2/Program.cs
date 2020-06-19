@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
@@ -32,6 +33,7 @@ namespace ILCompiler
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _unrootedInputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private CompilerTypeSystemContext _typeSystemContext;
 
         private Program(CommandLineOptions commandLineOptions)
         {
@@ -290,7 +292,7 @@ namespace ILCompiler
                     SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
                     var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
-                    CompilerTypeSystemContext typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode);
+                    _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode);
 
                     string compositeRootPath = _commandLineOptions.CompositeRootPath?.FullName;
 
@@ -310,7 +312,7 @@ namespace ILCompiler
                     {
                         try
                         {
-                            var module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+                            var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
                             allInputFilePaths.Add(inputFile.Key, inputFile.Value);
                             inputFilePaths.Add(inputFile.Key, inputFile.Value);
                             referenceableModules.Add(module);
@@ -330,7 +332,7 @@ namespace ILCompiler
                     {
                         try
                         {
-                            var module = typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
+                            var module = _typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
                             if (!allInputFilePaths.ContainsKey(unrootedInputFile.Key))
                             {
                                 allInputFilePaths.Add(unrootedInputFile.Key, unrootedInputFile.Value);
@@ -348,29 +350,10 @@ namespace ILCompiler
                         }
                     }
 
-                    foreach (string inputFilePath in allInputFilePaths.Values)
-                    {
-                        EcmaModule module = typeSystemContext.GetModuleFromPath(inputFilePath);
-                        foreach (MetadataType type in module.GetAllTypes())
-                        {
-                            foreach (EcmaMethod method in type.GetAllMethods())
-                            {
-                                if (method.IsPInvoke)
-                                {
-                                    MethodDefinition methodDef = method.MetadataReader.GetMethodDefinition(method.Handle);
-                                    MethodImport import = methodDef.GetImport();
-                                    if (import.Module.IsNil || method.MetadataReader.GetModuleReference(import.Module).Name.IsNil)
-                                    {
-                                        // Managed C++ PInvoke into the same module
-                                        throw new CommandLineException(string.Format(SR.ManagedCppNotSupported, inputFilePath, method.ToString()));
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    CheckManagedCppInputFiles(allInputFilePaths.Values);
 
-                    typeSystemContext.InputFilePaths = allInputFilePaths;
-                    typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
+                    _typeSystemContext.InputFilePaths = allInputFilePaths;
+                    _typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
                     List<EcmaModule> inputModules = new List<EcmaModule>();
                     List<EcmaModule> rootingModules = new List<EcmaModule>();
@@ -378,7 +361,7 @@ namespace ILCompiler
 
                     foreach (var inputFile in inputFilePaths)
                     {
-                        EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+                        EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
                         inputModules.Add(module);
                         rootingModules.Add(module);
                         versionBubbleModulesHash.Add(module);
@@ -391,15 +374,15 @@ namespace ILCompiler
 
                     foreach (var unrootedInputFile in unrootedInputFilePaths)
                     {
-                        EcmaModule module = typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
+                        EcmaModule module = _typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
                         inputModules.Add(module);
                         versionBubbleModulesHash.Add(module);
                     }
 
                     string systemModuleName = _commandLineOptions.SystemModule ?? DefaultSystemModule;
-                    typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
+                    _typeSystemContext.SetSystemModule((EcmaModule)_typeSystemContext.GetModuleForSimpleName(systemModuleName));
 
-                    if (typeSystemContext.InputFilePaths.Count == 0)
+                    if (_typeSystemContext.InputFilePaths.Count == 0)
                         throw new CommandLineException(SR.NoInputFiles);
 
                     //
@@ -407,7 +390,7 @@ namespace ILCompiler
                     //
 
                     // Single method mode?
-                    MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
+                    MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(_typeSystemContext);
 
                     var logger = new Logger(Console.Out, _commandLineOptions.Verbose);
 
@@ -424,7 +407,7 @@ namespace ILCompiler
                     {
                         try
                         {
-                            EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile);
+                            EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile);
                             if (versionBubbleModulesHash.Contains(module))
                             {
                                 // Ignore reference assemblies that have also been passed as inputs
@@ -453,7 +436,7 @@ namespace ILCompiler
                     {
                         // Compiling just a single method
                         compilationGroup = new SingleMethodCompilationModuleGroup(
-                            typeSystemContext,
+                            _typeSystemContext,
                             _commandLineOptions.Composite,
                             _commandLineOptions.InputBubble,
                             inputModules,
@@ -465,7 +448,7 @@ namespace ILCompiler
                     else if (_commandLineOptions.CompileNoMethods)
                     {
                         compilationGroup = new NoMethodsCompilationModuleGroup(
-                            typeSystemContext,
+                            _typeSystemContext,
                             _commandLineOptions.Composite,
                             _commandLineOptions.InputBubble,
                             inputModules,
@@ -476,7 +459,7 @@ namespace ILCompiler
                     {
                         // Single assembly compilation.
                         compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
-                            typeSystemContext,
+                            _typeSystemContext,
                             _commandLineOptions.Composite,
                             _commandLineOptions.InputBubble,
                             inputModules,
@@ -492,7 +475,7 @@ namespace ILCompiler
                         versionBubbleModules,
                         _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null,
                         mibcFiles,
-                        typeSystemContext,
+                        _typeSystemContext,
                         compilationGroup);
 
                     if (_commandLineOptions.Partial)
@@ -522,7 +505,7 @@ namespace ILCompiler
                     //
 
                     ReadyToRunCodegenCompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(
-                        typeSystemContext, compilationGroup, allInputFilePaths.Values, compositeRootPath);
+                        _typeSystemContext, compilationGroup, allInputFilePaths.Values, compositeRootPath);
                     string compilationUnitPrefix = "";
                     builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
@@ -559,6 +542,18 @@ namespace ILCompiler
             }
 
             return 0;
+        }
+
+        private void CheckManagedCppInputFiles(IEnumerable<string> inputPaths)
+        {
+            foreach (string inputFilePath in inputPaths)
+            {
+                EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFilePath);
+                if ((module.PEReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == (CorFlags)0)
+                {
+                    throw new CommandLineException(string.Format(SR.ManagedCppNotSupported, inputFilePath));
+                }
+            }
         }
 
         private TypeDesc FindType(CompilerTypeSystemContext context, string typeName)
