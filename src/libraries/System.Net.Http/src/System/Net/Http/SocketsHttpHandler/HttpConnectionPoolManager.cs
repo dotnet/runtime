@@ -359,11 +359,20 @@ namespace System.Net.Http
             {
                 return await SendAsyncHelper(request, doRequestAuth, cancellationToken).ConfigureAwait(false);
             }
-            catch
+            catch (Exception e) when (LogException(e))
+            {
+                // This code should never run.
+                throw;
+            }
+
+            bool LogException(Exception e)
             {
                 HttpTelemetry.Log.RequestAborted();
                 HttpTelemetry.Log.RequestStop();
-                throw;
+
+                // Returning false means the catch handler isn't run.
+                // So the exception isn't considered to be caught so it will now propagate up the stack.
+                return false;
             }
         }
 
