@@ -77,6 +77,55 @@ namespace Internal.Runtime.InteropServices
             return 0;
         }
 
+        /// <summary>
+        /// Native hosting entry point for creating a native delegate
+        /// </summary>
+        /// <param name="typeNameNative">Assembly qualified type name</param>
+        /// <param name="methodNameNative">Public static method name compatible with delegateType</param>
+        /// <param name="delegateTypeNative">Assembly qualified delegate type name</param>
+        /// <param name="loadContext">Extensibility parameter (currently unused)</param>
+        /// <param name="reserved">Extensibility parameter (currently unused)</param>
+        /// <param name="functionHandle">Pointer where to store the function pointer result</param>
+        [UnmanagedCallersOnly]
+        public static unsafe int GetFunctionPointer(IntPtr typeNameNative,
+                                                    IntPtr methodNameNative,
+                                                    IntPtr delegateTypeNative,
+                                                    IntPtr loadContext,
+                                                    IntPtr reserved,
+                                                    IntPtr functionHandle)
+        {
+            try
+            {
+                // Validate all parameters first.
+                string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
+                string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
+
+                if (loadContext != IntPtr.Zero)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(loadContext));
+                }
+
+                if (reserved != IntPtr.Zero)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(reserved));
+                }
+
+                if (functionHandle == IntPtr.Zero)
+                {
+                    throw new ArgumentNullException(nameof(functionHandle));
+                }
+
+                // Create the function pointer.
+                *(IntPtr*)functionHandle = InternalGetFunctionPointer(AssemblyLoadContext.Default, typeName, methodName, delegateTypeNative);
+            }
+            catch (Exception e)
+            {
+                return e.HResult;
+            }
+
+            return 0;
+        }
+
         private static IsolatedComponentLoadContext GetIsolatedComponentLoadContext(string assemblyPath)
         {
             IsolatedComponentLoadContext? alc;

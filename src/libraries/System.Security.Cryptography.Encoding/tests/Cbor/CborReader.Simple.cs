@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers.Binary;
 
 namespace System.Formats.Cbor
@@ -19,10 +20,10 @@ namespace System.Formats.Cbor
         ///   the next simple value is not a floating-point number encoding. -or-
         ///   the encoded value is a double-precision float
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public float ReadSingle()
         {
@@ -63,10 +64,10 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type. -or-
         ///   the next simple value is not a floating-point number encoding
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public double ReadDouble()
         {
@@ -110,10 +111,10 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type. -or-
         ///   the next simple value is not a boolean encoding
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public bool ReadBoolean()
         {
@@ -138,10 +139,10 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type. -or-
         ///   the next simple value is not a null value encoding
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public void ReadNull()
         {
@@ -166,10 +167,10 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type. -or-
         ///   the next simple value is not a simple value encoding
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
         public CborSimpleValue ReadSimpleValue()
         {
@@ -186,10 +187,10 @@ namespace System.Formats.Cbor
                     byte value = _data.Span[_offset + 1];
 
                     if (value <= (byte)CborAdditionalInfo.IndefiniteLength &&
-                        _isConformanceLevelCheckEnabled &&
-                        CborConformanceLevelHelpers.RequireCanonicalSimpleValueEncodings(ConformanceLevel))
+                        _isConformanceModeCheckEnabled &&
+                        CborConformanceModeHelpers.RequireCanonicalSimpleValueEncodings(ConformanceMode))
                     {
-                        throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_InvalidSimpleValueEncoding, ConformanceLevel));
+                        throw new CborContentException(SR.Format(SR.Cbor_ConformanceMode_InvalidSimpleValueEncoding, ConformanceMode));
                     }
 
                     AdvanceBuffer(2);

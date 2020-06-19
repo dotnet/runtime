@@ -186,7 +186,7 @@ namespace System.Xml
         }
 
         // Override in order to handle Xml simple typed values and to pass resolver for QName values
-        public override void WriteValue(object? value)
+        public override void WriteValue(object value)
         {
             if (value == null)
             {
@@ -271,7 +271,7 @@ namespace System.Xml
             WriteEndElement(prefix, localName, ns);
         }
 
-        internal virtual void WriteQualifiedName(string prefix, string localName, string ns)
+        internal virtual void WriteQualifiedName(string prefix, string localName, string? ns)
         {
             if (prefix.Length != 0)
             {

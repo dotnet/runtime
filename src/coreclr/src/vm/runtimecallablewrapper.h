@@ -993,28 +993,6 @@ private:
 };
 
 //--------------------------------------------------------------
-// Special ComClassFactory for AppX scenarios only
-// Call CoCreateInstanceFromApp to ensure compatibility
-class AppXComClassFactory : public ComClassFactory
-{
-protected :
-    friend ComClassFactoryCreator;
-
-    AppXComClassFactory(REFCLSID rclsid)
-        :ComClassFactory(rclsid)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-protected :
-#ifndef CROSSGEN_COMPILE
-    //-------------------------------------------------------------
-    // Create instance using CoCreateInstanceFromApp
-    virtual IUnknown *CreateInstanceInternal(IUnknown *pOuter, BOOL *pfDidContainment);
-#endif
-};
-
-//--------------------------------------------------------------
 // Creates the right ComClassFactory for you
 class ComClassFactoryCreator
 {
@@ -1029,12 +1007,7 @@ public :
         }
         CONTRACT_END;
 
-#ifdef FEATURE_APPX
-        if (AppX::IsAppXProcess())
-            RETURN new AppXComClassFactory(rclsid);
-        else
-#endif
-            RETURN new ComClassFactory(rclsid);
+        RETURN new ComClassFactory(rclsid);
     }
 };
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION

@@ -641,7 +641,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Sends_ReuseInstance_Hostname()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();

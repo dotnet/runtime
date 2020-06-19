@@ -73,7 +73,7 @@ namespace System.Formats.Cbor.Tests
         {
             var writer = new CborWriter();
 
-            writer.WriteStartArray();
+            writer.WriteStartArray(null);
             writer.WriteTag(CborTag.Uri);
             Assert.Throws<InvalidOperationException>(() => writer.WriteEndArray());
         }
@@ -179,28 +179,28 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [MemberData(nameof(UnsupportedConformanceTaggedValues))]
-        public static void WriteTaggedValue_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel level, object value)
+        public static void WriteTaggedValue_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceMode mode, object value)
         {
-            var writer = new CborWriter(level);
+            var writer = new CborWriter(mode);
             Assert.Throws<InvalidOperationException>(() => Helpers.WriteValue(writer, value));
             Assert.Equal(0, writer.BytesWritten);
         }
 
         public static IEnumerable<object[]> UnsupportedConformanceTaggedValues =>
-            from l in new[] { CborConformanceLevel.Ctap2Canonical }
+            from l in new[] { CborConformanceMode.Ctap2Canonical }
             from v in TaggedValues
             select new object[] { l, v };
 
         [Theory]
         [MemberData(nameof(SupportedConformanceTaggedValues))]
-        public static void WriteTaggedValue_SupportedConformance_ShouldSucceed(CborConformanceLevel level, object value)
+        public static void WriteTaggedValue_SupportedConformance_ShouldSucceed(CborConformanceMode mode, object value)
         {
-            var writer = new CborWriter(level);
+            var writer = new CborWriter(mode);
             Helpers.WriteValue(writer, value);
         }
 
         public static IEnumerable<object[]> SupportedConformanceTaggedValues =>
-            from l in new[] { CborConformanceLevel.Lax, CborConformanceLevel.Strict, CborConformanceLevel.Canonical }
+            from l in new[] { CborConformanceMode.Lax, CborConformanceMode.Strict, CborConformanceMode.Canonical }
             from v in TaggedValues
             select new object[] { l, v };
 

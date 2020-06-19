@@ -1,6 +1,5 @@
-﻿<#@ template debug="false" hostspecific="false" language="C#" #>
-<#@ import namespace="System" #>
-<#@ include file="RawTextWriter.ttinclude" #>// Licensed to the .NET Foundation under one or more agreements.
+<#@ import namespace="System"
+#><#@ include file="RawTextWriter.ttinclude" #>// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -33,15 +32,15 @@ namespace System.Xml
         protected static TernaryTreeReadOnly _attributePropertySearch;
 
         private const int StackIncrement = 10;
-<# if (WriterType == RawTextWriterType.Encoded) { #>
 
-        public <#= ClassName #>(TextWriter writer, XmlWriterSettings settings) : base(writer, settings)
+<# if (WriterType == RawTextWriterType.Encoded) {
+#>        public <#= ClassName #>(TextWriter writer, XmlWriterSettings settings) : base(writer, settings)
         {
             Init(settings);
         }
-<# } #>
 
-        public <#= ClassName #>(Stream stream, XmlWriterSettings settings) : base(stream, settings)
+<# }
+#>        public <#= ClassName #>(Stream stream, XmlWriterSettings settings) : base(stream, settings)
         {
             Init(settings);
         }
@@ -80,27 +79,27 @@ namespace System.Xml
                     RawText("\" \"");
                     RawText(sysid);
                 }
-                <#= BufferName #>[bufPos++] = (<#= BufferType #>)'"';
+                <#= BufferName #>[_bufPos++] = (<#= BufferType #>)'"';
             }
             else if (sysid != null)
             {
                 RawText(" SYSTEM \"");
                 RawText(sysid);
-                <#= BufferName #>[bufPos++] = (<#= BufferType #>)'"';
+                <#= BufferName #>[_bufPos++] = (<#= BufferType #>)'"';
             }
             else
             {
-                <#= BufferName #>[bufPos++] = (<#= BufferType #>)' ';
+                <#= BufferName #>[_bufPos++] = (<#= BufferType #>)' ';
             }
 
             if (subset != null)
             {
-                <#= BufferName #>[bufPos++] = (<#= BufferType #>)'[';
+                <#= BufferName #>[_bufPos++] = (<#= BufferType #>)'[';
                 RawText(subset);
-                <#= BufferName #>[bufPos++] = (<#= BufferType #>)']';
+                <#= BufferName #>[_bufPos++] = (<#= BufferType #>)']';
             }
 
-            <#= BufferName #>[bufPos++] = (<#= BufferType #>)'>';
+            <#= BufferName #>[_bufPos++] = (<#= BufferType #>)'>';
         }
 
         // For the HTML element, it should call this method with ns and prefix as String.Empty
@@ -117,9 +116,9 @@ namespace System.Xml
 #><#= SetTextContentMark(4, false) #>
 
                 _currentElementProperties = (ElementProperties)_elementPropertySearch.FindCaseInsensitiveString(localName);
-                base.<#= BufferName #>[bufPos++] = (<#= BufferType #>)'<';
+                base.<#= BufferName #>[_bufPos++] = (<#= BufferType #>)'<';
                 base.RawText(localName);
-                base.attrEndPos = bufPos;
+                base._attrEndPos = _bufPos;
             }
             else
             {
@@ -133,10 +132,10 @@ namespace System.Xml
         // Output >. For HTML needs to output META info
         internal override void StartElementContent()
         {
-            base.<#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'>';
+            base.<#= BufferName #>[base._bufPos++] = (<#= BufferType #>)'>';
 
             // Detect whether content is output
-            contentPos = bufPos;
+            _contentPos = _bufPos;
 
             if ((_currentElementProperties & ElementProperties.HEAD) != 0)
             {
@@ -158,10 +157,10 @@ namespace System.Xml
 
                 if ((_currentElementProperties & ElementProperties.EMPTY) == 0)
                 {
-                    <#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'<';
-                    <#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'/';
+                    <#= BufferName #>[base._bufPos++] = (<#= BufferType #>)'<';
+                    <#= BufferName #>[base._bufPos++] = (<#= BufferType #>)'/';
                     base.RawText(localName);
-                    <#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'>';
+                    <#= BufferName #>[base._bufPos++] = (<#= BufferType #>)'>';
                 }
             }
             else
@@ -183,10 +182,10 @@ namespace System.Xml
 
                 if ((_currentElementProperties & ElementProperties.EMPTY) == 0)
                 {
-                    <#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'<';
-                    <#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'/';
+                    <#= BufferName #>[base._bufPos++] = (<#= BufferType #>)'<';
+                    <#= BufferName #>[base._bufPos++] = (<#= BufferType #>)'/';
                     base.RawText(localName);
-                    <#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'>';
+                    <#= BufferName #>[base._bufPos++] = (<#= BufferType #>)'>';
                 }
             }
             else
@@ -305,9 +304,9 @@ namespace System.Xml
 
 #><#= SetTextContentMark(4, false) #>
 
-                if (base.attrEndPos == bufPos)
+                if (base._attrEndPos == _bufPos)
                 {
-                    base.<#= BufferName #>[bufPos++] = (<#= BufferType #>)' ';
+                    base.<#= BufferName #>[_bufPos++] = (<#= BufferType #>)' ';
                 }
                 base.RawText(localName);
 
@@ -318,7 +317,7 @@ namespace System.Xml
 
                     if ((_currentAttributeProperties & AttributeProperties.BOOLEAN) != 0)
                     {
-                        base.inAttributeValue = true;
+                        base._inAttributeValue = true;
                         return;
                     }
                 }
@@ -327,8 +326,8 @@ namespace System.Xml
                     _currentAttributeProperties = AttributeProperties.DEFAULT;
                 }
 
-                base.<#= BufferName #>[bufPos++] = (<#= BufferType #>)'=';
-                base.<#= BufferName #>[bufPos++] = (<#= BufferType #>)'"';
+                base.<#= BufferName #>[_bufPos++] = (<#= BufferType #>)'=';
+                base.<#= BufferName #>[_bufPos++] = (<#= BufferType #>)'"';
             }
             else
             {
@@ -336,7 +335,7 @@ namespace System.Xml
                 _currentAttributeProperties = AttributeProperties.DEFAULT;
             }
 
-            base.inAttributeValue = true;
+            base._inAttributeValue = true;
         }
 
         // Output the amp; at end of EndAttribute
@@ -344,7 +343,7 @@ namespace System.Xml
         {
             if ((_currentAttributeProperties & AttributeProperties.BOOLEAN) != 0)
             {
-                base.attrEndPos = bufPos;
+                base._attrEndPos = _bufPos;
             }
             else
             {
@@ -356,10 +355,10 @@ namespace System.Xml
 
 #><#= SetTextContentMark(4, false) #>
 
-                base.<#= BufferName #>[bufPos++] = (<#= BufferType #>)'"';
+                base.<#= BufferName #>[_bufPos++] = (<#= BufferType #>)'"';
             }
-            base.inAttributeValue = false;
-            base.attrEndPos = bufPos;
+            base._inAttributeValue = false;
+            base._attrEndPos = _bufPos;
         }
 
         // HTML PI's use ">" to terminate rather than "?>".
@@ -369,16 +368,16 @@ namespace System.Xml
 
 #><#= SetTextContentMark(3, false) #>
 
-            <#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'<';
-            <#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'?';
+            <#= BufferName #>[base._bufPos++] = (<#= BufferType #>)'<';
+            <#= BufferName #>[base._bufPos++] = (<#= BufferType #>)'?';
             base.RawText(target);
-            <#= BufferName #>[base.bufPos++] = (<#= BufferType #>)' ';
+            <#= BufferName #>[base._bufPos++] = (<#= BufferType #>)' ';
 
             base.WriteCommentOrPi(text, '?');
 
-            base.<#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'>';
+            base.<#= BufferName #>[base._bufPos++] = (<#= BufferType #>)'>';
 
-            if (base.bufPos > base.bufLen)
+            if (base._bufPos > base._bufLen)
             {
                 FlushBuffer();
             }
@@ -394,7 +393,7 @@ namespace System.Xml
             fixed (char* pSrc = text)
             {
                 char* pSrcEnd = pSrc + text.Length;
-                if (base.inAttributeValue)
+                if (base._inAttributeValue)
                 {
                     WriteHtmlAttributeTextBlock(pSrc, pSrcEnd);
                 }
@@ -430,7 +429,7 @@ namespace System.Xml
 
             fixed (char* pSrcBegin = &buffer[index])
             {
-                if (inAttributeValue)
+                if (_inAttributeValue)
                 {
                     WriteAttributeTextBlock(pSrcBegin, pSrcBegin + count);
                 }
@@ -453,7 +452,7 @@ namespace System.Xml
 
             if (_elementPropertySearch == null)
             {
-                //_elementPropertySearch should be init last for the mutli thread safe situation.
+                // _elementPropertySearch should be init last for the mutli thread safe situation.
                 _attributePropertySearch = new TernaryTreeReadOnly(HtmlTernaryTree.htmlAttributes);
                 _elementPropertySearch = new TernaryTreeReadOnly(HtmlTernaryTree.htmlElements);
             }
@@ -478,7 +477,7 @@ namespace System.Xml
             base.RawText(" content=\"");
             base.RawText(_mediaType);
             base.RawText("; charset=");
-            base.RawText(base.encoding.WebName);
+            base.RawText(base._encoding.WebName);
             base.RawText("\">");
         }
 
@@ -565,23 +564,22 @@ namespace System.Xml
 
             fixed (<#= BufferType #>* pDstBegin = <#= BufferName #>)
             {
-                <#= BufferType #>* pDst = pDstBegin + bufPos;
+                <#= BufferType #>* pDst = pDstBegin + _bufPos;
 
                 char ch = (char)0;
-                for (;;)
+                while (true)
                 {
                     <#= BufferType #>* pDstEnd = pDst + (pSrcEnd - pSrc);
-                    if (pDstEnd > pDstBegin + bufLen)
+                    if (pDstEnd > pDstBegin + _bufLen)
                     {
-                        pDstEnd = pDstBegin + bufLen;
+                        pDstEnd = pDstBegin + _bufLen;
                     }
-
-<# if (WriterType == RawTextWriterType.Utf8) { #>
-                    while (pDst < pDstEnd && (xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
+<# if (WriterType == RawTextWriterType.Utf8) {#>
+                    while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
 <# } else { #>
-                    while (pDst < pDstEnd && xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
-<# } #>
-                    {
+                    while (pDst < pDstEnd && _xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
+<# }
+#>                    {
                         *pDst++ = (<#= BufferType #>)ch;
                         pSrc++;
                     }
@@ -596,7 +594,7 @@ namespace System.Xml
                     // end of buffer
                     if (pDst >= pDstEnd)
                     {
-                        bufPos = (int)(pDst - pDstBegin);
+                        _bufPos = (int)(pDst - pDstBegin);
                         FlushBuffer();
                         pDst = pDstBegin + 1;
                         continue;
@@ -640,7 +638,7 @@ namespace System.Xml
                     }
                     pSrc++;
                 }
-                bufPos = (int)(pDst - pDstBegin);
+                _bufPos = (int)(pDst - pDstBegin);
             }
         }
 
@@ -657,18 +655,18 @@ namespace System.Xml
 
             fixed (<#= BufferType #>* pDstBegin = <#= BufferName #>)
             {
-                <#= BufferType #>* pDst = pDstBegin + bufPos;
+                <#= BufferType #>* pDst = pDstBegin + _bufPos;
 
                 char ch = (char)0;
-                for (;;)
+                while (true)
                 {
                     <#= BufferType #>* pDstEnd = pDst + (pSrcEnd - pSrc);
-                    if (pDstEnd > pDstBegin + bufLen)
+                    if (pDstEnd > pDstBegin + _bufLen)
                     {
-                        pDstEnd = pDstBegin + bufLen;
+                        pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch < 0x80))
+                    while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch < 0x80))
                     {
                         *pDst++ = (<#= BufferType #>)ch;
                         pSrc++;
@@ -684,7 +682,7 @@ namespace System.Xml
                     // end of buffer
                     if (pDst >= pDstEnd)
                     {
-                        bufPos = (int)(pDst - pDstBegin);
+                        _bufPos = (int)(pDst - pDstBegin);
                         FlushBuffer();
                         pDst = pDstBegin + 1;
                         continue;
@@ -743,17 +741,17 @@ namespace System.Xml
                     }
                     pSrc++;
                 }
-                bufPos = (int)(pDst - pDstBegin);
+                _bufPos = (int)(pDst - pDstBegin);
             }
         }
 
         // For handling &{ in Html text field. If & is not followed by {, it still needs to be escaped.
         private void OutputRestAmps()
         {
-            base.<#= BufferName #>[bufPos++] = (<#= BufferType #>)'a';
-            base.<#= BufferName #>[bufPos++] = (<#= BufferType #>)'m';
-            base.<#= BufferName #>[bufPos++] = (<#= BufferType #>)'p';
-            base.<#= BufferName #>[bufPos++] = (<#= BufferType #>)';';
+            base.<#= BufferName #>[_bufPos++] = (<#= BufferType #>)'a';
+            base.<#= BufferName #>[_bufPos++] = (<#= BufferType #>)'m';
+            base.<#= BufferName #>[_bufPos++] = (<#= BufferType #>)'p';
+            base.<#= BufferName #>[_bufPos++] = (<#= BufferType #>)';';
         }
     }
 
@@ -812,13 +810,12 @@ namespace System.Xml
         // Constructors
         //
 <# if (WriterType == RawTextWriterType.Encoded) { #>
-
         public <#= ClassNameIndent #>(TextWriter writer, XmlWriterSettings settings) : base(writer, settings)
         {
             Init(settings);
         }
-<# } #>
-
+<# }
+#>
         public <#= ClassNameIndent #>(Stream stream, XmlWriterSettings settings) : base(stream, settings)
         {
             Init(settings);
@@ -835,7 +832,7 @@ namespace System.Xml
             base.WriteDocType(name, pubid, sysid, subset);
 
             // Allow indentation after DocTypeDecl
-            _endBlockPos = base.bufPos;
+            _endBlockPos = base._bufPos;
         }
 
         public override void WriteStartElement(string prefix, string localName, string ns)
@@ -852,52 +849,52 @@ namespace System.Xml
 
                 base._currentElementProperties = (ElementProperties)_elementPropertySearch.FindCaseInsensitiveString(localName);
 
-                if (_endBlockPos == base.bufPos && (base._currentElementProperties & ElementProperties.BLOCK_WS) != 0)
+                if (_endBlockPos == base._bufPos && (base._currentElementProperties & ElementProperties.BLOCK_WS) != 0)
                 {
                     WriteIndent();
                 }
                 _indentLevel++;
 
-                base.<#= BufferName #>[bufPos++] = (<#= BufferType #>)'<';
+                base.<#= BufferName #>[_bufPos++] = (<#= BufferType #>)'<';
             }
             else
             {
                 base._currentElementProperties = ElementProperties.HAS_NS | ElementProperties.BLOCK_WS;
 
-                if (_endBlockPos == base.bufPos)
+                if (_endBlockPos == base._bufPos)
                 {
                     WriteIndent();
                 }
                 _indentLevel++;
 
-                base.<#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'<';
+                base.<#= BufferName #>[base._bufPos++] = (<#= BufferType #>)'<';
                 if (prefix.Length != 0)
                 {
                     base.RawText(prefix);
-                    base.<#= BufferName #>[base.bufPos++] = (<#= BufferType #>)':';
+                    base.<#= BufferName #>[base._bufPos++] = (<#= BufferType #>)':';
                 }
             }
             base.RawText(localName);
-            base.attrEndPos = bufPos;
+            base._attrEndPos = _bufPos;
         }
 
         internal override void StartElementContent()
         {
-            base.<#= BufferName #>[base.bufPos++] = (<#= BufferType #>)'>';
+            base.<#= BufferName #>[base._bufPos++] = (<#= BufferType #>)'>';
 
             // Detect whether content is output
-            base.contentPos = base.bufPos;
+            base._contentPos = base._bufPos;
 
             if ((_currentElementProperties & ElementProperties.HEAD) != 0)
             {
                 WriteIndent();
                 WriteMetaElement();
-                _endBlockPos = base.bufPos;
+                _endBlockPos = base._bufPos;
             }
             else if ((base._currentElementProperties & ElementProperties.BLOCK_WS) != 0)
             {
                 // store the element block position
-                _endBlockPos = base.bufPos;
+                _endBlockPos = base._bufPos;
             }
         }
 
@@ -914,7 +911,7 @@ namespace System.Xml
             {
                 // And if the last node to be output had block whitespace properties,
                 // And if content was output within this element,
-                if (_endBlockPos == base.bufPos && base.contentPos != base.bufPos)
+                if (_endBlockPos == base._bufPos && base._contentPos != base._bufPos)
                 {
                     // Then indent
                     WriteIndent();
@@ -924,12 +921,12 @@ namespace System.Xml
             base.WriteEndElement(prefix, localName, ns);
 
             // Reset contentPos in case of empty elements
-            base.contentPos = 0;
+            base._contentPos = 0;
 
             // Mark end of element in buffer for element's with block whitespace properties
             if (isBlockWs)
             {
-                _endBlockPos = base.bufPos;
+                _endBlockPos = base._bufPos;
             }
         }
 
@@ -937,7 +934,7 @@ namespace System.Xml
         {
             if (_newLineOnAttributes)
             {
-                RawText(base.newLineChars);
+                RawText(base._newLineChars);
                 _indentLevel++;
                 WriteIndent();
                 _indentLevel--;
@@ -948,7 +945,7 @@ namespace System.Xml
         protected override void FlushBuffer()
         {
             // Make sure the buffer will reset the block position
-            _endBlockPos = (_endBlockPos == base.bufPos) ? 1 : 0;
+            _endBlockPos = (_endBlockPos == base._bufPos) ? 1 : 0;
             base.FlushBuffer();
         }
 
@@ -976,7 +973,7 @@ namespace System.Xml
             // <inline><?PI?>   -- suppress ws betw <inline> and PI
             // <inline><!-- --> -- suppress ws betw <inline> and comment
 
-            RawText(base.newLineChars);
+            RawText(base._newLineChars);
             for (int i = _indentLevel; i > 0; i--)
             {
                 RawText(_indentChars);

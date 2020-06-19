@@ -155,7 +155,7 @@ namespace System.IO.Compression
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ReadAsync_DuringReadAsync()
         {
             byte[] buffer = new byte[32];
@@ -1227,7 +1227,7 @@ namespace System.IO.Compression
                 baseStream.Read(bytes, 0, size);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Parallel_CompressDecompressMultipleStreamsConcurrently()
         {
             const int ParallelOperations = 20;

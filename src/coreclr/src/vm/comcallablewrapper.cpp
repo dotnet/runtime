@@ -835,7 +835,7 @@ VOID SimpleComCallWrapper::Cleanup()
 }
 
 
-VOID SimpleComCallWrapper::Neuter(bool fSkipHandleCleanup)
+VOID SimpleComCallWrapper::Neuter()
 {
     CONTRACTL
     {
@@ -844,8 +844,6 @@ VOID SimpleComCallWrapper::Neuter(bool fSkipHandleCleanup)
         MODE_ANY;
         PRECONDITION(CheckPointer(m_pSyncBlock));
         PRECONDITION(!IsNeutered());
-        // fSkipHandleCleanup only safe under AppX process because there are no appDomains
-        PRECONDITION(!(fSkipHandleCleanup && !AppX::IsAppXProcess()));
     }
     CONTRACTL_END;
 
@@ -862,14 +860,11 @@ VOID SimpleComCallWrapper::Neuter(bool fSkipHandleCleanup)
     // NULL the syncblock entry - we can't hang onto this anymore as the syncblock will be killed asynchronously to us.
     ResetSyncBlock();
 
-    if (!fSkipHandleCleanup)
-    {
-        // Disconnect the CCW from the object
-        //  Calls made on this CCW will no longer succeed.
-        //  The CCW has been neutered.
-        //   do this for each of the CCWs
-        m_pWrap->Neuter();
-    }
+    // Disconnect the CCW from the object
+    //  Calls made on this CCW will no longer succeed.
+    //  The CCW has been neutered.
+    //   do this for each of the CCWs
+    m_pWrap->Neuter();
 
     StackSString ssMessage;
     ComCallWrapper *pWrap = m_pWrap;
@@ -1392,11 +1387,6 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(Enum_StdInterfaces index)
     }
     else if (index == enum_IDispatchEx)
     {
-        if (AppX::IsAppXProcess())
-        {
-            RETURN NULL;
-        }
-
         if (SupportsIReflect(m_pMT))
         {
             // Initialize the DispatchExInfo before we return the interface.
@@ -2944,14 +2934,6 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
         RETURN pWrap->GetBasicIP();
     }
 
-    if (IsIErrorInfo(riid) && AppX::IsAppXProcess())
-    {
-        // Don't let the user override the default IErrorInfo implementation in AppX because
-        // the AppX app model uses it for WER. See code:GetExceptionDescription for details.
-        SimpleComCallWrapper* pSimpleWrap = pWrap->GetSimpleWrapper();
-        RETURN pSimpleWrap->QIStandardInterface(enum_IErrorInfo);
-    }
-
     if (!(flags & GetComIPFromCCW::SuppressCustomizedQueryInterface)
         && pTemplate->SupportsICustomQueryInterface())
     {
@@ -2964,11 +2946,6 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
 
     if (IsIDispatch(riid))
     {
-        if (AppX::IsAppXProcess())
-        {
-            RETURN NULL;
-        }
-
         // We don't do visibility checks on IUnknown.
         RETURN pWrap->GetIDispatchIP();
     }

@@ -291,7 +291,7 @@ namespace System.Text.Json.Tests
                     new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, bytes)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(ReducedTestCases))]
         public static void ParseJson_UnseekableStream_Async(bool compactData, TestCaseType type, string jsonString)
         {

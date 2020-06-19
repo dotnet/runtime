@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
@@ -30,6 +31,7 @@ namespace System.Reflection
         public virtual object[] GetCustomAttributes(bool inherit) { throw NotImplemented.ByDesign; }
         public virtual object[] GetCustomAttributes(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
 
+        [RequiresUnreferencedCode("Methods might be removed")]
         public MethodInfo? GetMethod(string name)
         {
             if (name == null)
@@ -38,7 +40,9 @@ namespace System.Reflection
             return GetMethodImpl(name, Module.DefaultLookup, null, CallingConventions.Any, null, null);
         }
 
+        [RequiresUnreferencedCode("Methods might be removed")]
         public MethodInfo? GetMethod(string name, Type[] types) => GetMethod(name, Module.DefaultLookup, null, CallingConventions.Any, types, null);
+        [RequiresUnreferencedCode("Methods might be removed")]
         public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
             if (name == null)
@@ -53,23 +57,35 @@ namespace System.Reflection
             return GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
+        [RequiresUnreferencedCode("Methods might be removed")]
         protected virtual MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) { throw NotImplemented.ByDesign; }
 
+        [RequiresUnreferencedCode("Methods might be removed")]
         public MethodInfo[] GetMethods() => GetMethods(Module.DefaultLookup);
+        [RequiresUnreferencedCode("Methods might be removed")]
         public virtual MethodInfo[] GetMethods(BindingFlags bindingFlags) { throw NotImplemented.ByDesign; }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public FieldInfo? GetField(string name) => GetField(name, Module.DefaultLookup);
+        [RequiresUnreferencedCode("Fields might be removed")]
         public virtual FieldInfo? GetField(string name, BindingFlags bindingAttr) { throw NotImplemented.ByDesign; }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public FieldInfo[] GetFields() => GetFields(Module.DefaultLookup);
+        [RequiresUnreferencedCode("Fields might be removed")]
         public virtual FieldInfo[] GetFields(BindingFlags bindingFlags) { throw NotImplemented.ByDesign; }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type[] GetTypes() { throw NotImplemented.ByDesign; }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type? GetType(string className) => GetType(className, throwOnError: false, ignoreCase: false);
+        [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type? GetType(string className, bool ignoreCase) => GetType(className, throwOnError: false, ignoreCase: ignoreCase);
+        [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type? GetType(string className, bool throwOnError, bool ignoreCase) { throw NotImplemented.ByDesign; }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type[] FindTypes(TypeFilter? filter, object? filterCriteria)
         {
             Type[] c = GetTypes();
@@ -96,19 +112,29 @@ namespace System.Reflection
 
         public virtual int MetadataToken => throw NotImplemented.ByDesign;
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public FieldInfo? ResolveField(int metadataToken) => ResolveField(metadataToken, null, null);
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public virtual FieldInfo? ResolveField(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments) { throw NotImplemented.ByDesign; }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public MemberInfo? ResolveMember(int metadataToken) => ResolveMember(metadataToken, null, null);
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public virtual MemberInfo? ResolveMember(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments) { throw NotImplemented.ByDesign; }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public MethodBase? ResolveMethod(int metadataToken) => ResolveMethod(metadataToken, null, null);
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public virtual MethodBase? ResolveMethod(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments) { throw NotImplemented.ByDesign; }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public virtual byte[] ResolveSignature(int metadataToken) { throw NotImplemented.ByDesign; }
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public virtual string ResolveString(int metadataToken) { throw NotImplemented.ByDesign; }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public Type ResolveType(int metadataToken) => ResolveType(metadataToken, null, null);
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public virtual Type ResolveType(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments) { throw NotImplemented.ByDesign; }
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) { throw NotImplemented.ByDesign; }

@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <PublishTrimmed>true</PublishTrimmed>
+    <_TrimmerDefaultAction>link</_TrimmerDefaultAction>
+    <SelfContained>true</SelfContained>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <PlatformManifestFile />
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+  </PropertyGroup>
+</Project>

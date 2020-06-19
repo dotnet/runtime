@@ -24,7 +24,7 @@ namespace System.Transactions.Tests
         #region Vol1_Dur0
 
         /* Single volatile resource, SPC happens */
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol1_Dur0()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -38,7 +38,7 @@ namespace System.Transactions.Tests
             irm.CheckSPC("irm");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol1_Dur0_2PC()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -53,7 +53,7 @@ namespace System.Transactions.Tests
         }
 
         /* Single volatile resource, SPC happens */
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol1_Dur0_Fail1()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -69,7 +69,7 @@ namespace System.Transactions.Tests
             irm.Check(0, 0, 0, 1, 0, 0, 0, "irm");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol1_Dur0_Fail2()
         {
             Assert.Throws<TransactionAbortedException>(() =>
@@ -87,7 +87,7 @@ namespace System.Transactions.Tests
            });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol1_Dur0_Fail3()
         {
             Assert.Throws<TransactionAbortedException>(() =>
@@ -110,7 +110,7 @@ namespace System.Transactions.Tests
         #region Vol2_Dur0
 
         /* >1 volatile, 2PC */
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol2_Dur0_SPC()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -133,7 +133,7 @@ namespace System.Transactions.Tests
 
         #region Vol0_Dur1
         /* 1 durable */
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol0_Dur1()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -172,7 +172,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol0_Dur1_Fail()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -198,7 +198,7 @@ namespace System.Transactions.Tests
 
         #region Vol2_Dur1
         /* >1vol + 1 durable */
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol2_Dur1()
         {
             IntResourceManager[] irm = new IntResourceManager[4];
@@ -231,7 +231,7 @@ namespace System.Transactions.Tests
         /* >1vol + 1 durable
          * Durable fails SPC
          */
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol2_Dur1_Fail1()
         {
             IntResourceManager[] irm = new IntResourceManager[4];
@@ -269,7 +269,7 @@ namespace System.Transactions.Tests
         /* >1vol + 1 durable
          * Volatile fails Prepare
          */
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol2_Dur1_Fail3()
         {
             IntResourceManager[] irm = new IntResourceManager[4];
@@ -309,7 +309,7 @@ namespace System.Transactions.Tests
             irm[3].Check(0, 0, 0, 1, 0, 0, 0, "irm [3]");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol2_Dur1_Fail4()
         {
             IntResourceManager[] irm = new IntResourceManager[2];
@@ -341,7 +341,7 @@ namespace System.Transactions.Tests
             irm[1].Check(0, 1, 0, 1, 0, 0, 0, "irm [1]");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol2_Dur1_Fail5()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -383,7 +383,7 @@ namespace System.Transactions.Tests
         #endregion
 
         #region Promotable Single Phase Enlistment
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol0_Dur0_Pspe1()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -397,7 +397,7 @@ namespace System.Transactions.Tests
             irm.Check(1, 0, 0, 0, 0, 1, 0, "irm");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol1_Dur0_Pspe1()
         {
             IntResourceManager irm0 = new IntResourceManager(1);
@@ -413,7 +413,7 @@ namespace System.Transactions.Tests
             irm1.Check(1, 0, 0, 0, 0, 1, 0, "irm1");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol0_Dur1_Pspe1()
         {
             IntResourceManager irm0 = new IntResourceManager(1);
@@ -433,7 +433,7 @@ namespace System.Transactions.Tests
             // an enlistment failure. An exception is not thrown, but the PSPE still "failed"
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol0_Dur0_Pspe2()
         {
             IntResourceManager irm0 = new IntResourceManager(1);
@@ -481,7 +481,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TransactionDispose()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -492,7 +492,7 @@ namespace System.Transactions.Tests
             irm.Check(0, 0, 0, 0, "Dispose transaction");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TransactionDispose2()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -514,7 +514,7 @@ namespace System.Transactions.Tests
             Assert.Equal(1, irm.Value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TransactionDispose3()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -538,7 +538,7 @@ namespace System.Transactions.Tests
         #endregion
 
         #region TransactionCompleted
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TransactionCompleted_Committed()
         {
             bool called = false;
@@ -552,7 +552,7 @@ namespace System.Transactions.Tests
             Assert.True(called, "TransactionCompleted event handler not called!");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TransactionCompleted_Rollback()
         {
             bool called = false;
@@ -569,7 +569,7 @@ namespace System.Transactions.Tests
 
         #region Success/Failure behavior tests
         #region Success/Failure behavior Vol1_Dur0 Cases
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol1SPC_Committed()
         {
             bool called = false;
@@ -593,7 +593,7 @@ namespace System.Transactions.Tests
             Assert.Equal(TransactionStatus.Committed, status);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol1_Committed()
         {
             bool called = false;
@@ -616,7 +616,7 @@ namespace System.Transactions.Tests
             Assert.Equal(TransactionStatus.Committed, status);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol1_Rollback()
         {
             bool called = false;
@@ -791,7 +791,7 @@ namespace System.Transactions.Tests
         #endregion
 
         #region Success/Failure behavior Vol2_Dur0 Cases
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol2SPC_Committed()
         {
             TransactionStatus status = TransactionStatus.Active;
@@ -825,7 +825,7 @@ namespace System.Transactions.Tests
             Assert.Equal(TransactionStatus.Committed, status);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol2_Committed()
         {
             TransactionStatus status = TransactionStatus.Active;
@@ -854,7 +854,7 @@ namespace System.Transactions.Tests
             Assert.Equal(TransactionStatus.Committed, status);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Vol2_Rollback()
         {
             TransactionStatus status = TransactionStatus.Active;

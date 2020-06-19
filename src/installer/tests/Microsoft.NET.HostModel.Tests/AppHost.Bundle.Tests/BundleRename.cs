@@ -23,6 +23,7 @@ namespace AppHost.Bundle.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38013")]
         [InlineData(true)]  // Test renaming the single-exe when contents are extracted
         [InlineData(false)] // Test renaming the single-exe when contents are not extracted 
         private void Bundle_can_be_renamed_while_running(bool testExtraction)

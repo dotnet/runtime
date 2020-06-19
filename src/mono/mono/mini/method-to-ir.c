@@ -8839,7 +8839,13 @@ calli_end:
 					MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, alloc->dreg);
 
 				/* Now call the actual ctor */
-				handle_ctor_call (cfg, cmethod, fsig, context_used, sp, ip, &inline_costs);
+				int ctor_inline_costs = 0;
+				handle_ctor_call (cfg, cmethod, fsig, context_used, sp, ip, &ctor_inline_costs);
+
+				// don't contribute to inline_const if ctor has [MethodImpl(MethodImplOptions.AggressiveInlining)]
+				if (!COMPILE_LLVM(cfg) || !(cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
+					inline_costs += ctor_inline_costs;
+
 				CHECK_CFG_EXCEPTION;
 			}
 

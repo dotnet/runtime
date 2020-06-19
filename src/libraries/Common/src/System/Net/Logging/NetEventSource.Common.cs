@@ -299,6 +299,36 @@ namespace System.Net
             WriteEvent(CriticalFailureEventId, thisOrContextObject, memberName ?? MissingMember, message);
         #endregion
 
+        #region Verbose
+        /// <summary>Logs an info message at verbose mode.</summary>
+        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
+        /// <param name="formattableString">The message to be logged.</param>
+        /// <param name="memberName">The calling member.</param>
+        [NonEvent]
+        public static void Verbose(object? thisOrContextObject, FormattableString formattableString, [CallerMemberName] string? memberName = null)
+        {
+            DebugValidateArg(thisOrContextObject);
+            DebugValidateArg(formattableString);
+            if (IsEnabled) Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(formattableString));
+        }
+
+        /// <summary>Logs an info at verbose mode.</summary>
+        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
+        /// <param name="message">The message to be logged.</param>
+        /// <param name="memberName">The calling member.</param>
+        [NonEvent]
+        public static void Verbose(object? thisOrContextObject, object message, [CallerMemberName] string? memberName = null)
+        {
+            DebugValidateArg(thisOrContextObject);
+            DebugValidateArg(message);
+            if (IsEnabled) Log.VerboseMessage(IdOf(thisOrContextObject), memberName, Format(message).ToString());
+        }
+
+        [Event(ErrorEventId, Level = EventLevel.Verbose, Keywords = Keywords.Default)]
+        private void VerboseMessage(string thisOrContextObject, string? memberName, string? message) =>
+            WriteEvent(ErrorEventId, thisOrContextObject, memberName ?? MissingMember, message);
+        #endregion
+
         #region DumpBuffer
         /// <summary>Logs the contents of a buffer.</summary>
         /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>

@@ -484,6 +484,8 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_PartialNGen, W("PartialNGen"), (DWORD)-1, "Gen
 
 CONFIG_DWORD_INFO(INTERNAL_NoASLRForNgen, W("NoASLRForNgen"), 0, "Turn off IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE bit in generated ngen images. Makes nidump output repeatable from run to run.")
 
+RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_NativeImageSearchPaths, W("NativeImageSearchPaths"), "Extra search paths for native composite R2R images", CLRConfig::EEConfig_default)
+
 #ifdef CROSSGEN_COMPILE
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_CrossGenAssumeInputSigned, W("CrossGenAssumeInputSigned"), 1, "CrossGen should assume that its input assemblies will be signed before deployment")
 #endif
@@ -710,6 +712,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"
 // Diagnostics Server
 //
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_DiagnosticsMonitorAddress, W("DOTNET_DiagnosticsMonitorAddress"), "NamedPipe path without '\\\\.\\pipe\\' on Windows; Full path of Unix Domain Socket on Linux/Unix.  Used for Diagnostics Monitoring Agents.", CLRConfig::DontPrependCOMPlus_);
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_DOTNET_DiagnosticsMonitorPauseOnStart, W("DOTNET_DiagnosticsMonitorPauseOnStart"), 1, "If DOTNET_DiagnosticsMonitorAddress is set, this will cause the runtime to pause during startup.  Resume using the Diagnostics IPC ResumeStartup command.", CLRConfig::DontPrependCOMPlus_);
 
 //
 // LTTng

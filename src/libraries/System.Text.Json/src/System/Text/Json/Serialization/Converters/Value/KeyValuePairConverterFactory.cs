@@ -4,8 +4,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization.Converters
             return (generic == typeof(KeyValuePair<,>));
         }
 
-        [PreserveDependency(".ctor()", "System.Text.Json.Serialization.Converters.KeyValuePairConverter`2")]
+        [DynamicDependency("#ctor()", typeof(KeyValuePairConverter<,>))]
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
         {
             Debug.Assert(CanConvert(type));

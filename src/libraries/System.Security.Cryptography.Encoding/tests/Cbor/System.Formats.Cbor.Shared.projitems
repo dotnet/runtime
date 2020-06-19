@@ -2,6 +2,7 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Marvin.cs" Link="Common\System\Marvin.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CborReaderState.cs" Link="Common\System\Formats\Cbor\Reader\CborReaderState.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborReader.PeekState.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.PeekState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CborReader.SkipValue.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.SkipValue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CborReader.Simple.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.Simple.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CborReader.Tag.cs" Link="Common\System\Formats\Cbor\Reader\CborReader.Tag.cs" />
@@ -20,5 +21,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)CborConformanceLevel.cs" Link="Common\System\Formats\Cbor\CborConformanceLevel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CborInitialByte.cs" Link="Common\System\Formats\Cbor\CborInitialByte.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CborTag.cs" Link="Common\System\Formats\Cbor\CborTag.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CborContentException.cs" Link="Common\System\Formats\Cbor\CborContentException.cs" />
   </ItemGroup>
 </Project>

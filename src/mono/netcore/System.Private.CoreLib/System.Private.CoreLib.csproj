@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <!-- Generate Mono corelib version file -->
   <Import Project="GenerateMonoCoreLibVersionFile.targets" />
 
@@ -144,10 +144,12 @@
   <PropertyGroup>
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
     <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
-    <ILLinkTrimXml>$(ILLinkDirectory)System.Private.CoreLib.xml</ILLinkTrimXml>
   </PropertyGroup>
 
   <ItemGroup>
+    <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)System.Private.CoreLib.xml" />
+    <ILLinkDescriptorsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
+    
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml"
                              Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
   </ItemGroup>

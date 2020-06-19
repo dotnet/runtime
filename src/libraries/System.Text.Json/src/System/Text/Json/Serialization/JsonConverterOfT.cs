@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization
         {
             // Today only typeof(object) can have polymorphic writes.
             // In the future, this will be check for !IsSealed (and excluding value types).
-            CanBePolymorphic = TypeToConvert == typeof(object);
+            CanBePolymorphic = TypeToConvert == JsonClassInfo.ObjectType;
             IsValueType = TypeToConvert.IsValueType;
             HandleNull = IsValueType;
             CanBeNull = !IsValueType || Nullable.GetUnderlyingType(TypeToConvert) != null;
@@ -239,7 +239,7 @@ namespace System.Text.Json.Serialization
             return success;
         }
 
-        internal bool TryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        internal bool TryWrite(Utf8JsonWriter writer, in T value, JsonSerializerOptions options, ref WriteStack state)
         {
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
@@ -268,7 +268,7 @@ namespace System.Text.Json.Serialization
                 }
 
                 Type type = value.GetType();
-                if (type == typeof(object))
+                if (type == JsonClassInfo.ObjectType)
                 {
                     writer.WriteStartObject();
                     writer.WriteEndObject();

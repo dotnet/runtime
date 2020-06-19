@@ -50,7 +50,7 @@ namespace System.Threading.Tests
             AssertExtensions.Throws<ArgumentNullException>("callback", () => new Timer(null, new object(), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Timer_AllConstructorsCanBeUsedSuccessfully()
         {
             const int Timeout = 10_000;

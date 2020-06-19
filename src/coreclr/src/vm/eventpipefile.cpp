@@ -149,6 +149,7 @@ void EventPipeFile::InitializeFile()
     }
     if (fSuccess)
     {
+        m_isInitialized = fSuccess;
         // Create the file stream and write the FastSerialization header.
         m_pSerializer = new FastSerializer(m_pStreamWriter);
 
@@ -174,6 +175,9 @@ EventPipeFile::~EventPipeFile()
     {
         delete *pCur;
     }
+
+    if (!m_isInitialized)
+        delete m_pStreamWriter;
 
     delete m_pBlock;
     delete m_pMetadataBlock;

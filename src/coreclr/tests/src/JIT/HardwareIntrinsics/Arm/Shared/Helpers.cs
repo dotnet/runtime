@@ -1482,6 +1482,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte FusedSubtractHalving(sbyte op1, sbyte op2) => (sbyte)((ushort)((short)op1 - (short)op2) >> 1);
 
+        public static short MultiplyByScalarWideningUpper(sbyte[] op1, sbyte op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
+
+        public static short MultiplyByScalarWideningUpperAndAdd(short[] op1, sbyte[] op2, sbyte op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static short MultiplyByScalarWideningUpperAndSubtract(short[] op1, sbyte[] op2, sbyte op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3);
+
         public static short MultiplyWidening(sbyte op1, sbyte op2) => (short)((short)op1 * (short)op2);
 
         public static short MultiplyWideningAndAdd(short op1, sbyte op2, sbyte op3) => (short)(op1 + MultiplyWidening(op2, op3));
@@ -1561,6 +1567,12 @@ namespace JIT.HardwareIntrinsics.Arm
         public static short FusedAddRoundedHalving(short op1, short op2) => (short)((uint)((int)op1 + (int)op2 + 1) >> 1);
 
         public static short FusedSubtractHalving(short op1, short op2) => (short)((uint)((int)op1 - (int)op2) >> 1);
+
+        public static int MultiplyByScalarWideningUpper(short[] op1, short op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
+
+        public static int MultiplyByScalarWideningUpperAndAdd(int[] op1, short[] op2, short op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static int MultiplyByScalarWideningUpperAndSubtract(int[] op1, short[] op2, short op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3);
 
         public static int MultiplyWidening(short op1, short op2) => (int)((int)op1 * (int)op2);
 
@@ -1642,6 +1654,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int FusedSubtractHalving(int op1, int op2) => (int)((ulong)((long)op1 - (long)op2) >> 1);
 
+        public static long MultiplyByScalarWideningUpper(int[] op1, int op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
+
+        public static long MultiplyByScalarWideningUpperAndAdd(long[] op1, int[] op2, int op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static long MultiplyByScalarWideningUpperAndSubtract(long[] op1, int[] op2, int op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3);
+
         public static long MultiplyWidening(int op1, int op2) => (long)((long)op1 * (long)op2);
 
         public static long MultiplyWideningAndAdd(long op1, int op2, int op3) => (long)(op1 + MultiplyWidening(op2, op3));
@@ -1721,6 +1739,12 @@ namespace JIT.HardwareIntrinsics.Arm
         public static byte FusedAddRoundedHalving(byte op1, byte op2) => (byte)((ushort)((ushort)op1 + (ushort)op2 + 1) >> 1);
 
         public static byte FusedSubtractHalving(byte op1, byte op2) => (byte)((ushort)((ushort)op1 - (ushort)op2) >> 1);
+
+        public static ushort MultiplyByScalarWideningUpper(byte[] op1, byte op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
+
+        public static ushort MultiplyByScalarWideningUpperAndAdd(ushort[] op1, byte[] op2, byte op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static ushort MultiplyByScalarWideningUpperAndSubtract(ushort[] op1, byte[] op2, byte op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3);
 
         public static ushort MultiplyWidening(byte op1, byte op2) => (ushort)((ushort)op1 * (ushort)op2);
 
@@ -1802,6 +1826,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort FusedSubtractHalving(ushort op1, ushort op2) => (ushort)((uint)((uint)op1 - (uint)op2) >> 1);
 
+        public static uint MultiplyByScalarWideningUpper(ushort[] op1, ushort op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
+
+        public static uint MultiplyByScalarWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static uint MultiplyByScalarWideningUpperAndSubtract(uint[] op1, ushort[] op2, ushort op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3);
+
         public static uint MultiplyWidening(ushort op1, ushort op2) => (uint)((uint)op1 * (uint)op2);
 
         public static uint MultiplyWideningAndAdd(uint op1, ushort op2, ushort op3) => (uint)(op1 + MultiplyWidening(op2, op3));
@@ -1881,6 +1911,12 @@ namespace JIT.HardwareIntrinsics.Arm
         public static uint FusedAddRoundedHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 + (ulong)op2 + 1) >> 1);
 
         public static uint FusedSubtractHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 - (ulong)op2) >> 1);
+
+        public static ulong MultiplyByScalarWideningUpper(uint[] op1, uint op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
+
+        public static ulong MultiplyByScalarWideningUpperAndAdd(ulong[] op1, uint[] op2, uint op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static ulong MultiplyByScalarWideningUpperAndSubtract(ulong[] op1, uint[] op2, uint op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3);
 
         public static ulong MultiplyWidening(uint op1, uint op2) => (ulong)((ulong)op1 * (ulong)op2);
 

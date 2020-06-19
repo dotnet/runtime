@@ -25,7 +25,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TestConnectionSchemaOnNonOpenConnection()
         {
             using (OdbcConnection connection = new OdbcConnection(string.Empty))
