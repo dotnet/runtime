@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <PrepareResourcesDependsOn>
-      _EmbedILLinkSubstitutionsXmls;
+      _EmbedILLinkXmls;
       $(PrepareResourcesDependsOn)
     </PrepareResourcesDependsOn>
   </PropertyGroup>
@@ -38,18 +38,14 @@
     <ILLinkTrimXml Condition="'$(ILLinkTrimXml)' == '' and Exists('$(MSBuildProjectDirectory)/ILLinkTrim.xml')">$(MSBuildProjectDirectory)/ILLinkTrim.xml</ILLinkTrimXml>
     <!-- ILLinkTrim_LibraryBuild.xml files are only used during building the library, not an app. They shouldn't be embedded into the assembly. -->
     <ILLinkTrimXmlLibraryBuild Condition="'$(ILLinkTrimXmlLibraryBuild)' == '' and Exists('$(MSBuildProjectDirectory)/ILLinkTrim_LibraryBuild.xml')">$(MSBuildProjectDirectory)/ILLinkTrim_LibraryBuild.xml</ILLinkTrimXmlLibraryBuild>
+    <ILLinkDescriptorsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Descriptors.xml</ILLinkDescriptorsXmlIntermediatePath>
+
     <ILLinkSubstitutionsXml Condition="'$(ILLinkSubstitutionsXml)' == '' and Exists('$(MSBuildProjectDirectory)/ILLink.Substitutions.xml')">$(MSBuildProjectDirectory)/ILLink.Substitutions.xml</ILLinkSubstitutionsXml>
     <ILLinkSubstitutionsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Substitutions.xml</ILLinkSubstitutionsXmlIntermediatePath>
 
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(ILLinkTrimXml)' != ''">
-    <EmbeddedResource Include="$(ILLinkTrimXml)">
-      <LogicalName>$(AssemblyName).xml</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="$(ILLinkTrimXmlLibraryBuild)" Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''" />
@@ -75,9 +71,14 @@
     </BinPlaceTargetFramework>
   </ItemGroup>
 
-  <Target Name="_EmbedILLinkSubstitutionsXmls"
-          Condition="'$(ILLinkTrimAssembly)' == 'true'"
-          DependsOnTargets="_CombineILLinkSubstitutionsXmls">
+  <Target Name="_EmbedILLinkXmls"
+          DependsOnTargets="_CombineILLinkDescriptorsXmls;_CombineILLinkSubstitutionsXmls">
+
+    <ItemGroup Condition="'$(ILLinkTrimXml)' != ''">
+      <EmbeddedResource Include="$(ILLinkTrimXml)">
+        <LogicalName>$(AssemblyName).xml</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
 
     <ItemGroup Condition="'$(ILLinkSubstitutionsXml)' != ''">
       <EmbeddedResource Include="$(ILLinkSubstitutionsXml)">
@@ -88,6 +89,22 @@
   </Target>
 
   <UsingTask TaskName="CombineLinkerXmlFiles" AssemblyFile="$(ILLinkTasksPath)" />
+  <Target Name="_CombineILLinkDescriptorsXmls"
+          Condition="'$(ILLinkTrimXml)' == '' and '@(ILLinkDescriptorsXmls)' != ''"
+          Inputs="@(ILLinkDescriptorsXmls)"
+          Outputs="$(ILLinkDescriptorsXmlIntermediatePath)">
+    <PropertyGroup>
+      <ILLinkTrimXml>$(ILLinkDescriptorsXmlIntermediatePath)</ILLinkTrimXml>
+    </PropertyGroup>
+
+    <CombineLinkerXmlFiles LinkerXmlFiles="@(ILLinkDescriptorsXmls)"
+                           CombinedLinkerXmlFile="$(ILLinkTrimXml)" />
+
+    <ItemGroup>
+      <FileWrites Include="$(ILLinkTrimXml)" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="_CombineILLinkSubstitutionsXmls"
           Condition="'$(ILLinkSubstitutionsXml)' == '' and '@(ILLinkSubstitutionsXmls)' != ''"
           Inputs="@(ILLinkSubstitutionsXmls)"
@@ -103,7 +120,7 @@
       <FileWrites Include="$(ILLinkSubstitutionsXml)" />
     </ItemGroup>
   </Target>
-  
+
   <Target Name="_SetILLinkTrimAssembly" 
           Condition="'$(ILLinkTrimAssembly)' == ''"
           DependsOnTargets="GetBinPlaceTargetFramework">

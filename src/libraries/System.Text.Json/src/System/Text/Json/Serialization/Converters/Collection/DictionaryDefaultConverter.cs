@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization.Converters
         /// <summary>
         /// When overridden, adds the value to the collection.
         /// </summary>
-        protected abstract void Add(TKey key, TValue value, JsonSerializerOptions options, ref ReadStack state);
+        protected abstract void Add(in TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state);
 
         /// <summary>
         /// When overridden, converts the temporary collection held in state.Current.ReturnValue to the final collection.

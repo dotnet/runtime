@@ -272,7 +272,6 @@
 #define IDS_EE_INVALIDCOMDEFITF                 0x1a32
 #define IDS_EE_COMDEFITFNOTSUPPORTED            0x1a33
 
-#define IDS_EE_GUID_REPRESENTS_NON_VC           0x1a35
 #define IDS_EE_CANNOT_MAP_TO_MANAGED_VC         0x1a36
 
 #define IDS_EE_MARSHAL_UNMAPPABLE_CHAR          0x1a37

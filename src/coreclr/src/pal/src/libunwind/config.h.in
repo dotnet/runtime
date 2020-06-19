@@ -1,3 +1,5 @@
+// This is a custom file written for .NET Core's build system
+
 #ifndef __LIBUNWIND_CONFIG_H__
 #define __LIBUNWIND_CONFIG_H__
 

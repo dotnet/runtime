@@ -2001,37 +2001,10 @@ public:
 
     void SetupSharedStatics();
 
-    //****************************************************************************************
-    //
-    // Create a quick lookup for classes loaded into this domain based on their GUID.
-    //
-    void InsertClassForCLSID(MethodTable* pMT, BOOL fForceInsert = FALSE);
-
 #ifdef FEATURE_COMINTEROP
 public:
-    MethodTable *LoadCOMClass(GUID clsid, BOOL bLoadRecord = FALSE, BOOL* pfAssemblyInReg = NULL);
     OBJECTREF GetMissingObject();    // DispatchInfo will call function to retrieve the Missing.Value object.
 #endif // FEATURE_COMINTEROP
-
-#ifndef DACCESS_COMPILE
-    MethodTable* LookupClass(REFIID iid)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        MethodTable *pMT = (MethodTable*) m_clsidHash.LookupValue((UPTR) GetKeyFromGUID(&iid), (LPVOID)&iid);
-        return (pMT == (MethodTable*) INVALIDENTRY
-            ? NULL
-            : pMT);
-    }
-#endif // DACCESS_COMPILE
-
-    //<TODO>@todo get a better key</TODO>
-    ULONG GetKeyFromGUID(const GUID *pguid)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return *(ULONG *) pguid;
-    }
 
 #ifdef FEATURE_COMINTEROP
     RCWCache *GetRCWCache()
@@ -2318,9 +2291,6 @@ private:
     // When an application domain is created the ref count is artifically incremented
     // by one. For it to hit zero an explicit close must have happened.
     LONG        m_cRef;                    // Ref count.
-
-    // Hash table that maps a clsid to a type
-    PtrHashMap          m_clsidHash;
 
 #ifndef DACCESS_COMPILE
     // Map of loaded composite native images indexed by base load addresses

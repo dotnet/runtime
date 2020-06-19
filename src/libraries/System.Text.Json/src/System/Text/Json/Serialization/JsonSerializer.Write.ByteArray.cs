@@ -53,7 +53,7 @@ namespace System.Text.Json
             return WriteCoreBytes<object>(value!, inputType, options);
         }
 
-        private static byte[] WriteCoreBytes<TValue>(TValue value, Type inputType, JsonSerializerOptions? options)
+        private static byte[] WriteCoreBytes<TValue>(in TValue value, Type inputType, JsonSerializerOptions? options)
         {
             if (options == null)
             {

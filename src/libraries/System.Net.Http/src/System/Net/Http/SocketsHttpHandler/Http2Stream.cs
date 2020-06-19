@@ -89,7 +89,7 @@ namespace System.Net.Http
             // See comment on ConnectionWindowThreshold.
             private const int StreamWindowThreshold = StreamWindowSize / 8;
 
-            public Http2Stream(HttpRequestMessage request, Http2Connection connection, int initialWindowSize)
+            public Http2Stream(HttpRequestMessage request, Http2Connection connection)
             {
                 _request = request;
                 _connection = connection;
@@ -102,8 +102,6 @@ namespace System.Net.Http
                 _responseBuffer = new ArrayBuffer(InitialStreamBufferSize, usePool: true);
 
                 _pendingWindowUpdate = 0;
-                _availableCredit = initialWindowSize;
-
                 _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
 
                 if (_request.Content == null)
@@ -135,13 +133,18 @@ namespace System.Net.Http
                     RequestMessage = _request,
                     Content = new HttpConnectionResponseContent()
                 };
-
-                if (NetEventSource.IsEnabled) Trace($"{request}, {nameof(initialWindowSize)}={initialWindowSize}");
             }
 
             private object SyncObject => this; // this isn't handed out to code that may lock on it
 
-            public int StreamId { get; set; }
+            public void Initialize(int streamId, int initialWindowSize)
+            {
+                StreamId = streamId;
+                _availableCredit = initialWindowSize;
+                if (NetEventSource.IsEnabled) Trace($"{_request}, {nameof(initialWindowSize)}={initialWindowSize}");
+            }
+
+            public int StreamId { get; private set; }
 
             public HttpResponseMessage GetAndClearResponse()
             {

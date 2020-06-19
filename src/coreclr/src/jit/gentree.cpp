@@ -16568,12 +16568,12 @@ bool GenTree::isContained() const
 // return true if node is contained and an indir
 bool GenTree::isContainedIndir() const
 {
-    return isIndir() && isContained();
+    return OperIsIndir() && isContained();
 }
 
 bool GenTree::isIndirAddrMode()
 {
-    return isIndir() && AsIndir()->Addr()->OperIsAddrMode() && AsIndir()->Addr()->isContained();
+    return OperIsIndir() && AsIndir()->Addr()->OperIsAddrMode() && AsIndir()->Addr()->isContained();
 }
 
 bool GenTree::isIndir() const

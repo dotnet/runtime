@@ -12,17 +12,50 @@ namespace System.Formats.Cbor
         // Implements major type 4 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
         /// <summary>
-        ///   Writes the start of a definite-length array (major type 4).
+        ///   Writes the start of an array (major type 4).
         /// </summary>
-        /// <param name="definiteLength">The definite length of the array.</param>
+        /// <param name="definiteLength">
+        ///   Writes a definite-length array if inhabited,
+        ///   or an indefinite-length array if <see langword="null" />.
+        /// </param>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   The <paramref name="definiteLength"/> parameter cannot be negative.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item. -or-
-        ///   The major type of the encoded value is not permitted in the parent data item
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance mode.
         /// </exception>
-        public void WriteStartArray(int definiteLength)
+        /// <remarks>
+        ///   In canonical conformance modes, the writer will reject indefinite-length writes unless
+        ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
+        /// </remarks>
+        public void WriteStartArray(int? definiteLength)
+        {
+            if (definiteLength is null)
+            {
+                WriteStartArrayIndefiniteLength();
+            }
+            else
+            {
+                WriteStartArrayDefiniteLength(definiteLength.Value);
+            }
+        }
+
+        /// <summary>
+        ///   Writes the end of an array (major type 4).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   The written data is not accepted under the current conformance mode. -or-
+        ///   The definite-length array anticipates more data items.
+        /// </exception>
+        public void WriteEndArray()
+        {
+            PopDataItem(CborMajorType.Array);
+            AdvanceDataItemCounters();
+        }
+
+        private void WriteStartArrayDefiniteLength(int definiteLength)
         {
             if (definiteLength < 0)
             {
@@ -33,41 +66,16 @@ namespace System.Formats.Cbor
             PushDataItem(CborMajorType.Array, definiteLength);
         }
 
-        /// <summary>
-        ///   Writes the start of an indefinite-length array (major type 4).
-        /// </summary>
-        /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item. -or-
-        ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance level
-        /// </exception>
-        /// <remarks>
-        ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
-        ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
-        /// </remarks>
-        public void WriteStartArray()
+        private void WriteStartArrayIndefiniteLength()
         {
-            if (!ConvertIndefiniteLengthEncodings && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
             {
-                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
 
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Array, CborAdditionalInfo.IndefiniteLength));
             PushDataItem(CborMajorType.Array, definiteLength: null);
-        }
-
-        /// <summary>
-        ///   Writes the end of an array (major type 4).
-        /// </summary>
-        /// <exception cref="InvalidOperationException">
-        ///   The written data is not accepted under the current conformance level. -or-
-        ///   The definite-length array anticipates more data items.
-        /// </exception>
-        public void WriteEndArray()
-        {
-            PopDataItem(CborMajorType.Array);
-            AdvanceDataItemCounters();
         }
 
         // perform an in-place conversion of an indefinite-length encoding into an equivalent definite-length

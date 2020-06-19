@@ -2674,7 +2674,7 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
     {
         if (m_ms == MARSHAL_SCENARIO_FIELD)
         {
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
             m_type = MARSHAL_TYPE_SAFEARRAY;
 #else
             m_resID = IDS_EE_BADMARSHALFIELD_ARRAY;
@@ -3652,7 +3652,7 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
             pDispParamMarshaler = new DispParamRecordMarshaler(m_pMT);
             break;
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
         case MARSHAL_TYPE_SAFEARRAY:
             pDispParamMarshaler = new DispParamArrayMarshaler(m_arrayElementType, m_hndArrayElemType.GetMethodTable());
             break;

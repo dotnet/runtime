@@ -183,6 +183,12 @@ else(CLR_CMAKE_HOST_WIN32)
     )
 endif(CLR_CMAKE_HOST_WIN32)
 
+if(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
+    list(APPEND COREDAC_LIBRARIES
+        libunwind_xdac
+    )
+endif(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
+
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
 # Create the DAC module index header file containing the DAC build id
