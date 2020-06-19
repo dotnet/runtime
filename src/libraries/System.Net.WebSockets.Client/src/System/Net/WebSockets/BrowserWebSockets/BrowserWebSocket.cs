@@ -471,7 +471,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
 
         private void ThrowIfNotConnected()
         {
