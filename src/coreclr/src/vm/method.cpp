@@ -4865,14 +4865,6 @@ bool MethodDesc::IsJitOptimizationDisabled()
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef FEATURE_INTERPRETER
-    static ConfigDWORD s_EnableJitOptimization;
-    if (s_EnableJitOptimization.val(CLRConfig::INTERNAL_EnableJitOptimization) != 0)
-    {
-        return false;
-    }
-#endif
-
     return
         g_pConfig->JitMinOpts() ||
 #ifdef _DEBUG
