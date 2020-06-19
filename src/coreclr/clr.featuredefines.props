@@ -29,7 +29,6 @@
         <FeatureStubsAsIL Condition="'$(Platform)' == 'arm64'">true</FeatureStubsAsIL>
         <FeatureComWrappers>true</FeatureComWrappers>
         <FeatureCominterop>true</FeatureCominterop>
-        <FeatureClassicCominterop>true</FeatureClassicCominterop>
         <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
         <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
         <FeatureAppX>true</FeatureAppX>
@@ -51,7 +50,6 @@
         <DefineConstants Condition="'$(FeatureMulticastStubAsIL)' == 'true'">$(DefineConstants);FEATURE_MULTICASTSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureInstantiatingStubAsIL)' == 'true'">$(DefineConstants);FEATURE_INSTANTIATINGSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureStubsAsIL)' == 'true'">$(DefineConstants);FEATURE_STUBS_AS_IL</DefineConstants>
-        <DefineConstants Condition="'$(FeatureClassicCominterop)' == 'true'">$(DefineConstants);FEATURE_CLASSIC_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCollectibleALC)' == 'true'">$(DefineConstants);FEATURE_COLLECTIBLE_ALC</DefineConstants>
         <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">$(DefineConstants);FEATURE_COMWRAPPERS</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
