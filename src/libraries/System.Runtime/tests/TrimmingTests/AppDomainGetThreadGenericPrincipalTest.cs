@@ -7,7 +7,7 @@ class Program
 {
     static int Main(string[] args)
     {
-    	// Thread.CurrentPrincipal calls AppDomain.CurrentDomain.GetThreadPrincipal() which
+        // Thread.CurrentPrincipal calls AppDomain.CurrentDomain.GetThreadPrincipal() which
         // contains annotation attributes and will require GenericPrincipal.GetDefaultInstance
         // after setting UnauthenticatedPrincipal as the PrincipalPolicy
         AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.UnauthenticatedPrincipal);

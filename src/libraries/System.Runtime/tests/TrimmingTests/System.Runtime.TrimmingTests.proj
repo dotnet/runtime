@@ -11,7 +11,8 @@
       <!-- There is a bug with the linker where it is corrupting the pdbs while trimming
       causing the framework to not be able to get source line info any longer. This
       specific test depends on being able to do that, so we use DebugType as Embedded
-      as a workaround while the linker bug is fixed. -->
+      as a workaround while the linker bug is fixed. This bug has been logged in the
+      linker repo here: https://github.com/mono/linker/issues/1285 -->
       <AdditionalArgs>/p:DebugType=Embedded</AdditionalArgs>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
