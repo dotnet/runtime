@@ -37,7 +37,6 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        [ActiveIssue("corert port")]
         public void TestSingleDimensionalArrays()
         {
             DefType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);

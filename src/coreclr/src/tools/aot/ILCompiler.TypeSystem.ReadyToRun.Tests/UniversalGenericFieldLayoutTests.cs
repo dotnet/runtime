@@ -226,7 +226,6 @@ namespace TypeSystemTests
             Assert.Equal(LayoutInt.Zero, context.UniversalCanonType.ThreadGcStaticFieldSize);
         }
         [Fact]
-        [ActiveIssue("corert port")]
         public void TestLayoutOfUniversalCanonType()
         {
             // Assert all of the various layout information about the universal canon type itself, do this for all architectures
@@ -236,7 +235,6 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        [ActiveIssue("corert port")]
         public void TestAllFieldsStructUniversalGeneric()
         {
             // Given a struct with all field universal, what is the layout?
@@ -325,7 +323,6 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        [ActiveIssue("corert port")]
         public void TestIndeterminateNestedStructField()
         {
             InstantiatedType genOfIntNestedInt;
@@ -377,7 +374,6 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        [ActiveIssue("corert port")]
         public void TestClassLayout()
         {
             // Tests class layout behavior with universal generics

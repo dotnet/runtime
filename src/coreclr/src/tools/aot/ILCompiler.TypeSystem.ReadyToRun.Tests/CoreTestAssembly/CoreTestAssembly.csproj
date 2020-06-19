@@ -10,7 +10,6 @@
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <!-- CSC needs explicit metadata version when it has no core library to reference -->
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
-    <!-- <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies> -->
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
 </Project>
