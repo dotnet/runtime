@@ -66,7 +66,10 @@ namespace System.Net.WebSockets
 
         public void AddSubProtocol(string subProtocol)
         {
-            ThrowIfReadOnly();
+            if (_isReadOnly)
+            {
+                throw new InvalidOperationException(SR.net_WebSockets_AlreadyStarted);
+            }
             WebSocketValidate.ValidateSubprotocol(subProtocol);
 
             // Duplicates not allowed.
@@ -107,14 +110,6 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(!_isReadOnly, "Already set");
             _isReadOnly = true;
-        }
-
-        private void ThrowIfReadOnly()
-        {
-            if (_isReadOnly)
-            {
-                throw new InvalidOperationException(SR.net_WebSockets_AlreadyStarted);
-            }
         }
 
         #endregion Helpers
