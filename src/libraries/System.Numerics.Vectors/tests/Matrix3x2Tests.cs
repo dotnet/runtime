@@ -187,7 +187,6 @@ namespace System.Numerics.Tests
 
         // A test for CreateRotation (float, Vector2f)
         [Fact]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/36587", RuntimeTestModes.JitStress)]
         public void Matrix3x2CreateRotationCenterTest()
         {
             float radians = MathHelper.ToRadians(30.0f);
