@@ -184,7 +184,6 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
         termios.c_lflag &= (uint32_t)(~(ECHO | ICANON | IEXTEN));
     }
 
-
     termios.c_cc[VMIN] = minChars;
     termios.c_cc[VTIME] = decisecondsTimeout;
 
@@ -373,7 +372,7 @@ void SystemNative_GetControlCharacters(
 
 int32_t SystemNative_StdinReady()
 {
-    SystemNative_InitializeConsoleBeforeRead(false, 1);
+    SystemNative_InitializeConsoleBeforeRead(1, 0);
     struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
     int rv = poll(&fd, 1, 0) > 0 ? 1 : 0;
     SystemNative_UninitializeConsoleAfterRead();
