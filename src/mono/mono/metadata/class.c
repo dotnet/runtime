@@ -3628,13 +3628,16 @@ mono_type_get_underlying_type_ignore_byref (MonoType *type)
  * mono_type_byref_is_assignable_from:
  * \param type The type assignee
  * \param ctype The type being assigned
+ * \param signature_assignment whether this is a signature assginment check according to ECMA rules, or reflection
  *
  * Given two byref types, returns \c TRUE if values of the second type are assignable to locations of the first type.
  *
- *
+ * The \p signature_assignment parameter affects comparing T& and U& where T and U are both reference types.  Reflection
+ * does an IsAssignableFrom check for T and U here, but ECMA I.8.7.2 says that the verification types of T and U must be
+ * identical. If \p signature_assignment is \c TRUE we do an ECMA check, otherwise, reflection.
  */
 gboolean
-mono_type_byref_is_assignable_from (MonoType *type, MonoType *ctype)
+mono_type_byref_is_assignable_from (MonoType *type, MonoType *ctype, gboolean signature_assignment)
 {
 	g_assert (type->byref);
 	g_assert (ctype->byref);
@@ -3654,7 +3657,18 @@ mono_type_byref_is_assignable_from (MonoType *type, MonoType *ctype)
 		if (ot->type == MONO_TYPE_VAR || ot->type == MONO_TYPE_MVAR)
 			return FALSE;
 
-		return klass == klassc;
+		if (m_class_is_valuetype (klass))
+			return klass == klassc;
+		if (m_class_is_valuetype (klassc))
+			return FALSE;
+		/* 
+		 * assignment compatability for location types, ECMA I.8.7.2 - two managed pointer types T& and U& are
+		 * assignment compatible if the verification types of T and U are identical. 
+		 */
+		if (signature_assignment)
+			return klass == klassc;
+		/* the reflection IsAssignableFrom does a subtype comparison here for reference types only */
+		return mono_class_is_assignable_from_internal (klass, klassc);
 	}
 }
 
