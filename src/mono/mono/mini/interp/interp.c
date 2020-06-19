@@ -5762,42 +5762,54 @@ call_newobj:
 				goto overflow_label;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_U8_R4)
-			if (sp [-1].data.f_r4 < 0 || sp [-1].data.f_r4 > G_MAXUINT64 || isnan (sp [-1].data.f_r4))
+		MINT_IN_CASE(MINT_CONV_OVF_U8_R4) {
+			guint64 res = (guint64)sp [-1].data.f_r4;
+			if (mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
 				goto overflow_label;
-			sp [-1].data.l = (guint64)sp [-1].data.f_r4;
+			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_U8_R8)
-			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXUINT64 || isnan (sp [-1].data.f))
+		}
+		MINT_IN_CASE(MINT_CONV_OVF_U8_R8) {
+			guint64 res = (guint64)sp [-1].data.f;
+			if (mono_isnan (sp [-1].data.f) || mono_trunc (sp [-1].data.f) != res)
 				goto overflow_label;
-			sp [-1].data.l = (guint64)sp [-1].data.f;
+			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R8)
-			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXINT64 || isnan (sp [-1].data.f))
+		}
+		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R8) {
+			gint64 res = (gint64)sp [-1].data.f;
+			if (res < 0 || mono_isnan (sp [-1].data.f) || mono_trunc (sp [-1].data.f) != res)
 				goto overflow_label;
-			sp [-1].data.l = (gint64)sp [-1].data.f;
+			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R4)
-			if (sp [-1].data.f_r4 < 0 || sp [-1].data.f_r4 > G_MAXINT64 || isnan (sp [-1].data.f_r4))
+		}
+		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R4) {
+			gint64 res = (gint64)sp [-1].data.f_r4;
+			if (res < 0 || mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
 				goto overflow_label;
-			sp [-1].data.l = (gint64)sp [-1].data.f_r4;
+			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_I8_R4)
-			if (sp [-1].data.f_r4 < G_MININT64 || sp [-1].data.f_r4 > G_MAXINT64 || isnan (sp [-1].data.f_r4))
+		}
+		MINT_IN_CASE(MINT_CONV_OVF_I8_R4) {
+			gint64 res = (gint64)sp [-1].data.f_r4;
+			if (mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
 				goto overflow_label;
-			sp [-1].data.l = (gint64)sp [-1].data.f_r4;
+			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_I8_R8)
-			if (sp [-1].data.f < G_MININT64 || sp [-1].data.f > G_MAXINT64 || isnan (sp [-1].data.f))
+		}
+		MINT_IN_CASE(MINT_CONV_OVF_I8_R8) {
+			gint64 res = (gint64)sp [-1].data.f;
+			if (mono_isnan (sp [-1].data.f) || mono_trunc (sp [-1].data.f) != res)
 				goto overflow_label;
-			sp [-1].data.l = (gint64)sp [-1].data.f;
+			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_BOX) {
 			mono_interp_box (frame, ip, sp);
 			ip += 3;
@@ -6068,12 +6080,14 @@ call_newobj:
 			sp [-1].data.i = (gint32) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_I4_R4)
-			if (sp [-1].data.f_r4 < G_MININT32 || sp [-1].data.f_r4 > G_MAXINT32 || isnan (sp [-1].data.f_r4))
+		MINT_IN_CASE(MINT_CONV_OVF_I4_R4) {
+			gint32 res = (gint32)sp [-1].data.f_r4;
+			if (mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
 				goto overflow_label;
-			sp [-1].data.i = (gint32) sp [-1].data.f_r4;
+			sp [-1].data.i = res;
 			++ip;
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_R8)
 			if (sp [-1].data.f < G_MININT32 || sp [-1].data.f > G_MAXINT32 || isnan (sp [-1].data.f))
 				goto overflow_label;
@@ -6091,12 +6105,14 @@ call_newobj:
 			sp [-1].data.i = (guint32) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_U4_R4)
-			if (sp [-1].data.f_r4 < 0 || sp [-1].data.f_r4 > G_MAXUINT32 || isnan (sp [-1].data.f_r4))
+		MINT_IN_CASE(MINT_CONV_OVF_U4_R4) {
+			guint32 res = (guint32)sp [-1].data.f_r4;
+			if (mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
 				goto overflow_label;
-			sp [-1].data.i = (guint32) sp [-1].data.f_r4;
+			sp [-1].data.i = res;
 			++ip;
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_CONV_OVF_U4_R8)
 			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXUINT32 || isnan (sp [-1].data.f))
 				goto overflow_label;
