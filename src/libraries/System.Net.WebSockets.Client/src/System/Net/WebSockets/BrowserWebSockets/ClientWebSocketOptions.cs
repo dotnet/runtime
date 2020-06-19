@@ -94,7 +94,7 @@ namespace System.Net.WebSockets
 
         public void SetBuffer(int receiveBufferSize, int sendBufferSize)
         {
-            throw new NotImplementedException();
+            throw new PlatformNotSupportedException();
         }
 
         public void SetBuffer(int receiveBufferSize, int sendBufferSize, ArraySegment<byte> buffer)
