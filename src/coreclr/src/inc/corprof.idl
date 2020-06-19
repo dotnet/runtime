@@ -4122,7 +4122,6 @@ interface ICorProfilerInfo12 : ICorProfilerInfo11
         [in, size_is(cProviderConfigs)]
               COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[],
         [in]  BOOL                              requestRundown,
-        [in]  BOOL                              requestCPUSamples,
         [out] EVENTPIPE_SESSION*                pSession);
 
     HRESULT EventPipeAddProviderToSession(

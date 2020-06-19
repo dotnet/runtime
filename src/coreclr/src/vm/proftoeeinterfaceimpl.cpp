@@ -7034,7 +7034,6 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
     UINT32 cProviderConfigs,
     COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[],
     BOOL requestRundown,
-    BOOL requestCPUSamples,
     EVENTPIPE_SESSION* pSession)
 {
     CONTRACTL
@@ -7079,7 +7078,6 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
                                              EventPipeSerializationFormat::NetTraceV4,
                                              requestRundown,
                                              NULL,
-                                             requestCPUSamples,
                                              &ProfToEEInterfaceImpl::EventPipeCallbackHelper);
         EventPipe::StartStreaming(sessionID);
 

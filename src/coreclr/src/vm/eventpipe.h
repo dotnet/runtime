@@ -65,7 +65,6 @@ public:
         EventPipeSerializationFormat format,
         const bool rundownRequested,
         IpcStream *const pStream,
-        const bool enableSampleProfiler = true,
         EventPipeSessionSynchronousCallback callback = nullptr);
 
     // Disable tracing via the event pipe.
@@ -184,8 +183,7 @@ private:
     // Enable the specified EventPipe session.
     static bool EnableInternal(
         EventPipeSession *const pSession,
-        EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue,
-        const bool enableSampleProfiler = true);
+        EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue);
 
     // Callback function for the stack walker.  For each frame walked, this callback is invoked.
     static StackWalkAction StackWalkCallback(CrawlFrame *pCf, StackContents *pData);

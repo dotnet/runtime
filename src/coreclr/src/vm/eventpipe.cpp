@@ -39,7 +39,6 @@ Volatile<uint64_t> EventPipe::s_allowWrite = 0;
 unsigned int * EventPipe::s_pProcGroupOffsets = nullptr;
 #endif
 Volatile<uint32_t> EventPipe::s_numberOfSessions(0);
-bool EventPipe::s_enableSampleProfilerAtStartup = false;
 CQuickArrayList<EventPipeSessionID> EventPipe::s_rgDeferredEventPipeSessionIds = CQuickArrayList<EventPipeSessionID>();
 bool EventPipe::s_CanStartThreads = false;
 
@@ -125,10 +124,7 @@ void EventPipe::FinishInitialize()
         }
     }
 
-    if (s_enableSampleProfilerAtStartup)
-    {
-        SampleProfiler::Enable();
-    }
+    SampleProfiler::CanStartSampling();
 }
 
 //
@@ -168,7 +164,6 @@ void EventPipe::EnableViaEnvironmentVariables()
             pProviders[0] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntime"), 0x4c14fccbd, 5, nullptr);
             pProviders[1] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntimePrivate"), 0x4002000b, 5, nullptr);
             pProviders[2] = EventPipeProviderConfiguration(W("Microsoft-DotNETCore-SampleProfiler"), 0x0, 5, nullptr);
-            s_enableSampleProfilerAtStartup = true;
         }
         else
         {
@@ -198,11 +193,6 @@ void EventPipe::EnableViaEnvironmentVariables()
                     return;
                 }
 
-                if (wcscmp(W("Microsoft-DotNETCore-SampleProfiler"), configuration.GetProviderName()) == 0)
-                {
-                    s_enableSampleProfilerAtStartup = true;
-                }
-
                 pProviders[i++] = EventPipeProviderConfiguration(
                     configuration.GetProviderName(),
                     configuration.GetEnabledKeywordsMask(),
@@ -226,8 +216,7 @@ void EventPipe::EnableViaEnvironmentVariables()
             EventPipeSessionType::File,
             EventPipeSerializationFormat::NetTraceV4,
             true,
-            nullptr,
-            false
+            nullptr
         );
         EventPipe::StartStreaming(sessionID);
     }
@@ -299,7 +288,6 @@ EventPipeSessionID EventPipe::Enable(
     EventPipeSerializationFormat format,
     const bool rundownRequested,
     IpcStream *const pStream,
-    const bool enableSampleProfiler,
     EventPipeSessionSynchronousCallback callback)
 {
     CONTRACTL
@@ -340,7 +328,7 @@ EventPipeSessionID EventPipe::Enable(
             numProviders,
             callback);
 
-        const bool fSuccess = EnableInternal(pSession, pEventPipeProviderCallbackDataQueue, enableSampleProfiler);
+        const bool fSuccess = EnableInternal(pSession, pEventPipeProviderCallbackDataQueue);
         if (fSuccess)
             sessionId = reinterpret_cast<EventPipeSessionID>(pSession);
         else
@@ -352,8 +340,7 @@ EventPipeSessionID EventPipe::Enable(
 
 bool EventPipe::EnableInternal(
     EventPipeSession *const pSession,
-    EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue,
-    const bool enableSampleProfiler)
+    EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
 {
     CONTRACTL
     {
@@ -401,14 +388,16 @@ bool EventPipe::EnableInternal(
     // Enable tracing.
     s_config.Enable(*pSession, pEventPipeProviderCallbackDataQueue);
 
-    // Enable the sample profiler or defer until we can create threads
-    if (enableSampleProfiler && s_CanStartThreads)
+    // Find out if the session requested samples
+    bool enableSampleProfiler = false;
+    EventPipeSessionProviderIterator providerList = pSession->GetProviders();
+    EventPipeSessionProvider *pProvider = nullptr;
+    while (providerList.Next(&pProvider))
     {
-        SampleProfiler::Enable();
-    }
-    else if (enableSampleProfiler && !s_CanStartThreads)
-    {
-        s_enableSampleProfilerAtStartup = true;
+        if (wcscmp(pProvider->GetProviderName(), W("Microsoft-DotNETCore-SampleProfiler")) == 0)
+        {
+            SampleProfiler::Enable();
+        }
     }
 
     return true;

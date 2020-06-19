@@ -9,12 +9,11 @@
 
 #include "common.h"
 #include "threadsuspend.h"
+#include "eventpipesessionprovider.h"
 
 class EventPipeBufferManager;
 class EventPipeEventInstance;
 class EventPipeFile;
-class EventPipeSessionProvider;
-class EventPipeSessionProviderList;
 class EventPipeThread;
 
 // TODO: Revisit the need of this enum and its usage.
@@ -185,6 +184,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_pIpcStreamingThread;
+    }
+
+    EventPipeSessionProviderIterator GetProviders()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pProviderList->GetProviders();
     }
 
     // Add a new provider to the session.

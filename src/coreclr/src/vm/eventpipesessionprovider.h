@@ -6,6 +6,18 @@
 enum class EventPipeEventLevel;
 class EventPipeProvider;
 
+class EventPipeSessionProviderIterator
+{
+private:
+    SList<SListElem<EventPipeSessionProvider *>> *m_pList;
+    SList<SListElem<EventPipeSessionProvider *>>::Iterator m_iterator;
+
+public:
+    EventPipeSessionProviderIterator(SList<SListElem<EventPipeSessionProvider *>> *pList);
+
+    bool Next(EventPipeSessionProvider **ppProvider);
+};
+
 class EventPipeSessionProvider
 {
 public:
@@ -59,6 +71,8 @@ public:
     // Return NULL if one doesn't exist.
     EventPipeSessionProvider* GetSessionProvider(const EventPipeProvider *pProvider) const;
 
+    EventPipeSessionProviderIterator GetProviders();
+
     // Returns true if the list is empty.
     bool IsEmpty() const;
 
@@ -72,7 +86,7 @@ public:
     EventPipeSessionProviderList &&operator=(EventPipeSessionProviderList &&rhs) = delete;
 
 private:
-    SList<SListElem<EventPipeSessionProvider*>> *m_pProviders = nullptr;
+    SList<SListElem<EventPipeSessionProvider *>> *m_pProviders = nullptr;
 
     // A catch-all provider used when tracing is enabled for all events.
     EventPipeSessionProvider *m_pCatchAllProvider = nullptr;

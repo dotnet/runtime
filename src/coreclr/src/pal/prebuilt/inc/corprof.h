@@ -662,7 +662,7 @@ enum __MIDL___MIDL_itf_corprof_0000_0000_0014
         COR_PRF_EVENTPIPE_VERBOSE   = 5
     }   COR_PRF_EVENTPIPE_LEVEL;
 
-typedef /* [public][public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0015
+typedef /* [public][public][public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0015
     {
     const WCHAR *providerName;
     UINT64 keywords;
@@ -7548,11 +7548,16 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
             /* [in] */ DWORD eventVersion,
             /* [in] */ ULONG cbMetadataBlob,
             /* [size_is][in] */ LPCBYTE metadataBlob,
-            /* [in] */ DWORD eventThreadId,
             /* [in] */ ULONG cbEventData,
             /* [size_is][in] */ LPCBYTE eventData,
+            /* [in] */ LPCGUID pActivityId,
+            /* [in] */ LPCGUID pRelatedActivityId,
+            /* [in] */ ThreadID eventThread,
             /* [in] */ ULONG numStackFrames,
             /* [length_is][in] */ UINT_PTR stackFrames[  ]) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE EventPipeProviderCreated( 
+            /* [in] */ EVENTPIPE_PROVIDER provider) = 0;
         
     };
     
@@ -8009,11 +8014,17 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
             /* [in] */ DWORD eventVersion,
             /* [in] */ ULONG cbMetadataBlob,
             /* [size_is][in] */ LPCBYTE metadataBlob,
-            /* [in] */ DWORD eventThreadId,
             /* [in] */ ULONG cbEventData,
             /* [size_is][in] */ LPCBYTE eventData,
+            /* [in] */ LPCGUID pActivityId,
+            /* [in] */ LPCGUID pRelatedActivityId,
+            /* [in] */ ThreadID eventThread,
             /* [in] */ ULONG numStackFrames,
             /* [length_is][in] */ UINT_PTR stackFrames[  ]);
+        
+        HRESULT ( STDMETHODCALLTYPE *EventPipeProviderCreated )( 
+            ICorProfilerCallback10 * This,
+            /* [in] */ EVENTPIPE_PROVIDER provider);
         
         END_INTERFACE
     } ICorProfilerCallback10Vtbl;
@@ -8323,8 +8334,11 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
     ( (This)->lpVtbl -> DynamicMethodUnloaded(This,functionId) ) 
 
 
-#define ICorProfilerCallback10_EventPipeEventDelivered(This,provider,eventId,eventVersion,cbMetadataBlob,metadataBlob,eventThreadId,cbEventData,eventData,numStackFrames,stackFrames)   \
-    ( (This)->lpVtbl -> EventPipeEventDelivered(This,provider,eventId,eventVersion,cbMetadataBlob,metadataBlob,eventThreadId,cbEventData,eventData,numStackFrames,stackFrames) ) 
+#define ICorProfilerCallback10_EventPipeEventDelivered(This,provider,eventId,eventVersion,cbMetadataBlob,metadataBlob,cbEventData,eventData,pActivityId,pRelatedActivityId,eventThread,numStackFrames,stackFrames)  \
+    ( (This)->lpVtbl -> EventPipeEventDelivered(This,provider,eventId,eventVersion,cbMetadataBlob,metadataBlob,cbEventData,eventData,pActivityId,pRelatedActivityId,eventThread,numStackFrames,stackFrames) ) 
+
+#define ICorProfilerCallback10_EventPipeProviderCreated(This,provider)  \
+    ( (This)->lpVtbl -> EventPipeProviderCreated(This,provider) ) 
 
 #endif /* COBJMACROS */
 
@@ -18058,18 +18072,20 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
     {
     public:
         virtual HRESULT STDMETHODCALLTYPE EventPipeStartSession( 
-            /* [in] */ const WCHAR *szProviderName,
             /* [in] */ UINT32 cProviderConfigs,
             /* [size_is][in] */ COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[  ],
             /* [in] */ BOOL requestRundown,
-            /* [in] */ BOOL requestSamples,
             /* [out] */ EVENTPIPE_SESSION *pSession) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE EventPipeAddProviderToSession( 
+            /* [in] */ EVENTPIPE_SESSION session,
+            /* [in] */ COR_PRF_EVENTPIPE_PROVIDER_CONFIG providerConfig) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE EventPipeStopSession( 
             /* [in] */ EVENTPIPE_SESSION session) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE EventPipeCreateProvider( 
-            /* [string][in] */ const WCHAR *szName,
+            /* [string][in] */ const WCHAR *providerName,
             /* [out] */ EVENTPIPE_PROVIDER *pProvider) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE EventPipeGetProviderInfo( 
@@ -18077,11 +18093,11 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [in] */ ULONG cchName,
             /* [out] */ ULONG *pcchName,
             /* [annotation][out] */ 
-            _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ]) = 0;
+            _Out_writes_to_(cchName, *pcchName)  WCHAR providerName[  ]) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE EventPipeDefineEvent( 
             /* [in] */ EVENTPIPE_PROVIDER provider,
-            /* [string][in] */ const WCHAR *szName,
+            /* [string][in] */ const WCHAR *eventName,
             /* [in] */ UINT32 eventID,
             /* [in] */ UINT64 keywords,
             /* [in] */ UINT32 eventVersion,
@@ -18727,12 +18743,15 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
         
         HRESULT ( STDMETHODCALLTYPE *EventPipeStartSession )( 
             ICorProfilerInfo12 * This,
-            /* [in] */ const WCHAR *szProviderName,
             /* [in] */ UINT32 cProviderConfigs,
             /* [size_is][in] */ COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[  ],
             /* [in] */ BOOL requestRundown,
-            /* [in] */ BOOL requestSamples,
             /* [out] */ EVENTPIPE_SESSION *pSession);
+        
+        HRESULT ( STDMETHODCALLTYPE *EventPipeAddProviderToSession )( 
+            ICorProfilerInfo12 * This,
+            /* [in] */ EVENTPIPE_SESSION session,
+            /* [in] */ COR_PRF_EVENTPIPE_PROVIDER_CONFIG providerConfig);
         
         HRESULT ( STDMETHODCALLTYPE *EventPipeStopSession )( 
             ICorProfilerInfo12 * This,
@@ -18740,7 +18759,7 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
         
         HRESULT ( STDMETHODCALLTYPE *EventPipeCreateProvider )( 
             ICorProfilerInfo12 * This,
-            /* [string][in] */ const WCHAR *szName,
+            /* [string][in] */ const WCHAR *providerName,
             /* [out] */ EVENTPIPE_PROVIDER *pProvider);
         
         HRESULT ( STDMETHODCALLTYPE *EventPipeGetProviderInfo )( 
@@ -18749,12 +18768,12 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [in] */ ULONG cchName,
             /* [out] */ ULONG *pcchName,
             /* [annotation][out] */ 
-            _Out_writes_to_(cchName, *pcchName)  WCHAR szName[  ]);
+            _Out_writes_to_(cchName, *pcchName)  WCHAR providerName[  ]);
         
         HRESULT ( STDMETHODCALLTYPE *EventPipeDefineEvent )( 
             ICorProfilerInfo12 * This,
             /* [in] */ EVENTPIPE_PROVIDER provider,
-            /* [string][in] */ const WCHAR *szName,
+            /* [string][in] */ const WCHAR *eventName,
             /* [in] */ UINT32 eventID,
             /* [in] */ UINT64 keywords,
             /* [in] */ UINT32 eventVersion,
@@ -19101,20 +19120,23 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
     ( (This)->lpVtbl -> SetEnvironmentVariable(This,szName,szValue) ) 
 
 
-#define ICorProfilerInfo12_EventPipeStartSession(This,szProviderName,cProviderConfigs,pProviderConfigs,requestRundown,requestSamples,pSession)  \
-    ( (This)->lpVtbl -> EventPipeStartSession(This,szProviderName,cProviderConfigs,pProviderConfigs,requestRundown,requestSamples,pSession) ) 
+#define ICorProfilerInfo12_EventPipeStartSession(This,cProviderConfigs,pProviderConfigs,requestRundown,pSession)    \
+    ( (This)->lpVtbl -> EventPipeStartSession(This,cProviderConfigs,pProviderConfigs,requestRundown,pSession) ) 
+
+#define ICorProfilerInfo12_EventPipeAddProviderToSession(This,session,providerConfig)   \
+    ( (This)->lpVtbl -> EventPipeAddProviderToSession(This,session,providerConfig) ) 
 
 #define ICorProfilerInfo12_EventPipeStopSession(This,session)   \
     ( (This)->lpVtbl -> EventPipeStopSession(This,session) ) 
 
-#define ICorProfilerInfo12_EventPipeCreateProvider(This,szName,pProvider)   \
-    ( (This)->lpVtbl -> EventPipeCreateProvider(This,szName,pProvider) ) 
+#define ICorProfilerInfo12_EventPipeCreateProvider(This,providerName,pProvider) \
+    ( (This)->lpVtbl -> EventPipeCreateProvider(This,providerName,pProvider) ) 
 
-#define ICorProfilerInfo12_EventPipeGetProviderInfo(This,provider,cchName,pcchName,szName)  \
-    ( (This)->lpVtbl -> EventPipeGetProviderInfo(This,provider,cchName,pcchName,szName) ) 
+#define ICorProfilerInfo12_EventPipeGetProviderInfo(This,provider,cchName,pcchName,providerName)    \
+    ( (This)->lpVtbl -> EventPipeGetProviderInfo(This,provider,cchName,pcchName,providerName) ) 
 
-#define ICorProfilerInfo12_EventPipeDefineEvent(This,provider,szName,eventID,keywords,eventVersion,level,opcode,needStack,cParamDescs,pParamDescs,pEvent)   \
-    ( (This)->lpVtbl -> EventPipeDefineEvent(This,provider,szName,eventID,keywords,eventVersion,level,opcode,needStack,cParamDescs,pParamDescs,pEvent) ) 
+#define ICorProfilerInfo12_EventPipeDefineEvent(This,provider,eventName,eventID,keywords,eventVersion,level,opcode,needStack,cParamDescs,pParamDescs,pEvent)    \
+    ( (This)->lpVtbl -> EventPipeDefineEvent(This,provider,eventName,eventID,keywords,eventVersion,level,opcode,needStack,cParamDescs,pParamDescs,pEvent) ) 
 
 #define ICorProfilerInfo12_EventPipeWriteEvent(This,event,cData,data,pActivityId,pRelatedActivityId)    \
     ( (This)->lpVtbl -> EventPipeWriteEvent(This,event,cData,data,pActivityId,pRelatedActivityId) ) 

@@ -8,6 +8,29 @@
 
 #ifdef FEATURE_PERFTRACING
 
+EventPipeSessionProviderIterator::EventPipeSessionProviderIterator(SList<SListElem<EventPipeSessionProvider *>> *pList) :
+    m_pList(pList),
+    m_iterator(pList->begin())
+{
+    _ASSERTE(m_pList != nullptr);
+}
+
+bool EventPipeSessionProviderIterator::Next(EventPipeSessionProvider **ppProvider)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(ppProvider != nullptr);
+    }
+    CONTRACTL_END;
+
+    *ppProvider = *m_iterator;
+    ++m_iterator;
+    return m_iterator != m_pList->end();
+}   
+
 EventPipeSessionProvider::EventPipeSessionProvider(
     LPCWSTR providerName,
     UINT64 keywords,
@@ -175,6 +198,12 @@ EventPipeSessionProvider *EventPipeSessionProviderList::GetSessionProvider(const
     }
 
     return pSessionProvider;
+}
+
+EventPipeSessionProviderIterator EventPipeSessionProviderList::GetProviders()
+{
+    LIMITED_METHOD_CONTRACT;
+    return EventPipeSessionProviderIterator(m_pProviders);
 }
 
 bool EventPipeSessionProviderList::IsEmpty() const

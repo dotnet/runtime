@@ -648,7 +648,6 @@ public:
         UINT32 cProviderConfigs,
         COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[],
         BOOL requestRundown,
-        BOOL requestCPUSamples,
         EVENTPIPE_SESSION* pSession);
 
     COM_METHOD EventPipeAddProviderToSession(

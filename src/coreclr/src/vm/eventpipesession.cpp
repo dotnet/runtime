@@ -536,14 +536,15 @@ void EventPipeSession::SuspendWriteEvent()
     }
     CONTRACTL_END;
 
-    if (m_pBufferManager == nullptr)
-    {
-        return;
-    }
+    // TODO: disable has already been called, keep a list of all EventPipe threads
+    // and then iterate waiting until no thread is writing to this session before continuing
 
-    // Force all in-progress writes to either finish or cancel
-    // This is required to ensure we can safely flush and delete the buffers
-    m_pBufferManager->SuspendWriteEvent(GetIndex());
+    if (m_pBufferManager != nullptr)
+    {
+        // Force all in-progress writes to either finish or cancel
+        // This is required to ensure we can safely flush and delete the buffers
+        m_pBufferManager->SuspendWriteEvent(GetIndex());
+    }
 }
 
 void EventPipeSession::ExecuteRundown()
