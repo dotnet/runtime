@@ -12,6 +12,10 @@ class Program
         // after setting UnauthenticatedPrincipal as the PrincipalPolicy
         AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.UnauthenticatedPrincipal);
         IPrincipal genericPrincipal = Thread.CurrentPrincipal;
+        if (genericPrincipal.GetType().Name != "GenericPrincipal")
+        {
+            return -1;
+        }
 
         return 100;
     }

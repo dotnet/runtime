@@ -12,6 +12,10 @@ class Program
         // after setting that as the PrincipalPolicy
         AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
         IPrincipal principal = Thread.CurrentPrincipal;
+        if (principal.GetType().Name != "WindowsPrincipal")
+        {
+            return -1;
+        }
 
         return 100;
     }
