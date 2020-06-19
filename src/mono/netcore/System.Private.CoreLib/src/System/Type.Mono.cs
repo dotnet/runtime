@@ -14,6 +14,11 @@ namespace System
         internal RuntimeTypeHandle _impl;
         #endregion
 
+        internal IntPtr GetUnderlyingNativeHandle()
+        {
+            return _impl.Value;
+        }
+
         internal bool IsRuntimeImplemented() => this.UnderlyingSystemType is RuntimeType;
 
         internal virtual bool IsTypeBuilder() => false;
