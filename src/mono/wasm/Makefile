@@ -50,7 +50,10 @@ MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
 MONO_INCLUDE_DIR=$(MONO_BIN_DIR)/include/mono-2.0
 BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm
 MONO_LIBS = \
-	$(MONO_BIN_DIR)/{libmono-ee-interp.a,libmonosgen-2.0.a,libmono-ilgen.a,libmono-icall-table.a} \
+	$(MONO_BIN_DIR)/libmono-ee-interp.a \
+	$(MONO_BIN_DIR)/libmonosgen-2.0.a \
+	$(MONO_BIN_DIR)/libmono-ilgen.a \
+	$(MONO_BIN_DIR)/libmono-icall-table.a \
 	${SYS_NATIVE_DIR}/libSystem.Native.a
 
 EMCC_FLAGS=--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -s WASM_OBJECT_FILES=0 -s FORCE_FILESYSTEM=1 -s USE_ZLIB=1
@@ -71,7 +74,7 @@ $(BUILDS_BIN_DIR):
 $(BUILDS_OBJ_DIR):
 	mkdir -p $$@
 
-$(BUILDS_BIN_DIR)/dotnet.js: $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js | $(BUILDS_BIN_DIR)/ emsdk_env.sh
+$(BUILDS_BIN_DIR)/dotnet.js: $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(2) | $(BUILDS_BIN_DIR)/ emsdk_env.sh
 	$(EMCC) $(EMCC_FLAGS) $(1) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o $(2) -o $(BUILDS_BIN_DIR)/dotnet.js
 
 $(BUILDS_OBJ_DIR)/pinvoke-table.h: $(PINVOKE_TABLE) | $(BUILDS_OBJ_DIR)
