@@ -4,6 +4,7 @@
 
 using ILCompiler.Reflection.ReadyToRun;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
@@ -610,11 +611,7 @@ namespace R2RDump
             int outputOffset = target;
             if (_options.Naked)
             {
-                bool targetIsLocal = (rtf.StartAddress <= target) && (target < rtf.StartAddress + rtf.Size);
-                if (targetIsLocal)
-                {
-                    outputOffset = outputOffset - rtf.StartAddress + rtf.CodeOffset;
-                }
+                outputOffset = outputOffset - rtf.StartAddress + rtf.CodeOffset;
             }
             ReplaceRelativeOffset(ref instruction, string.Format("0x{0:x4}", outputOffset), rtf);
         }
@@ -733,14 +730,21 @@ namespace R2RDump
         {
             const int InstructionSize = 4;
 
+            // The list of PC-relative instructions: ADR, ADRP, B.cond, B, BL, CBNZ, CBZ, TBNZ, TBZ.
+
+            // Handle an ADR instruction
+            if (IsArm64AdrInstruction(imageOffset + rtfOffset, out int adrOffset))
+            {
+                ReplaceRelativeOffset(ref instruction, rtf.StartAddress + rtfOffset + adrOffset, rtf);
+            }
             // Handle the ADRP instruction of an ADRP+ADD pair
-            if (IsArm64AdrpInstruction(imageOffset + rtfOffset, out uint adrpRegister, out long pageOffset))
+            else if (IsArm64AdrpInstruction(imageOffset + rtfOffset, out uint adrpRegister, out long pageOffset))
             {
                 int pc = rtf.StartAddress + rtfOffset;
                 long targetPage = (pc & ~0xfff) + pageOffset;
 
                 if ((0 <= targetPage) && (targetPage <= int.MaxValue) &&
-                    IsArm64AddImmediateInstruction(imageOffset + rtfOffset + InstructionSize, out uint addSrcRegister, out uint offset) &&
+                    IsArm64AddImmediate64NoShiftInstruction(imageOffset + rtfOffset + InstructionSize, out uint addSrcRegister, out uint offset) &&
                     (addSrcRegister == adrpRegister))
                 {
                     int target = (int)targetPage + (int)offset;
@@ -793,15 +797,13 @@ namespace R2RDump
 
                 instruction = translated.ToString();
             }
-            // Handle a B.cond instruction
-            else if (IsArm64BCondInstruction(imageOffset + rtfOffset, out int bcondOffset))
+            // Handle a B.cond, B, CBZ, CBNZ, TBZ, TBNZ instruction
+            else if (IsArm64BCondInstruction(imageOffset + rtfOffset, out int branchOffset) ||
+                IsArm64BInstruction(imageOffset + rtfOffset, out branchOffset) ||
+                IsArm64CbzOrCbnzInstruction(imageOffset + rtfOffset, out branchOffset) ||
+                IsArm64TbzOrTbnzInstruction(imageOffset + rtfOffset, out branchOffset))
             {
-                ReplaceRelativeOffset(ref instruction, rtf.StartAddress + rtfOffset + bcondOffset, rtf);
-            }
-            // Handle a B instruction
-            else if (IsArm64BInstruction(imageOffset + rtfOffset, out int bOffset))
-            {
-                ReplaceRelativeOffset(ref instruction, rtf.StartAddress + rtfOffset + bOffset, rtf);
+                ReplaceRelativeOffset(ref instruction, rtf.StartAddress + rtfOffset + branchOffset, rtf);
             }
             // Handle a BL instruction
             else if (IsArm64BLInstruction(imageOffset + rtfOffset, out int blOffset))
@@ -820,12 +822,12 @@ namespace R2RDump
                 //      f940018c  ldr     x12, [x12]
                 //      d61f0180  br      x12
 
-                if (IsArm64LdrLiteralInstruction(blTargetImageOffset, out uint ldr1Register, out int ldr1Offset) &&
-                    IsArm64LdrImmediateZeroOffsetInstruction(blTargetImageOffset + InstructionSize, out uint ldr2DestRegister, out uint ldr2SrcRegister))
+                if (IsArm64LdrLiteral64Instruction(blTargetImageOffset, out uint ldr1Register, out int ldr1Offset) &&
+                    IsArm64LdrImmediate64ZeroOffsetInstruction(blTargetImageOffset + InstructionSize, out uint ldr2DestRegister, out uint ldr2SrcRegister))
                 {
                     int ldr1ImageOffset = blTargetImageOffset;
-                    if (IsArm64LdrLiteralInstruction(ldr1ImageOffset + InstructionSize * 2, out uint ldr3Register, out int ldr3Offset) &&
-                        IsArm64LdrImmediateZeroOffsetInstruction(ldr1ImageOffset + InstructionSize * 3, out uint ldr4DestRegister, out uint ldr4SrcRegister))
+                    if (IsArm64LdrLiteral64Instruction(ldr1ImageOffset + InstructionSize * 2, out uint ldr3Register, out int ldr3Offset) &&
+                        IsArm64LdrImmediate64ZeroOffsetInstruction(ldr1ImageOffset + InstructionSize * 3, out uint ldr4DestRegister, out uint ldr4SrcRegister))
                     {
                         ldr1ImageOffset += InstructionSize * 2;
                         ldr1Register = ldr3Register;
@@ -891,6 +893,25 @@ namespace R2RDump
         }
 
         /// <summary>
+        /// Determine whether a given instruction is an ADR.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array.</param>
+        private bool IsArm64AdrInstruction(int imageOffset, out int immediate)
+        {
+            byte highByte = _reader.Image[imageOffset + 3];
+            if ((highByte & 0x9f) != 0x10)
+            {
+                immediate = 0;
+                return false;
+            }
+
+            uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
+            // imm = SignExtend(immhi:immlo, 64)
+            immediate = (((int)instruction & ~0x1f) | ((int)instruction >> 26) & 0x18) << 8 >> 11;
+            return true;
+        }
+
+        /// <summary>
         /// Determine whether a given instruction is an ADRP.
         /// </summary>
         /// <param name="imageOffset">Offset within the PE image byte array.</param>
@@ -906,16 +927,16 @@ namespace R2RDump
 
             uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
             register = instruction & 0x1f;
-            // imm = SignExtend(immhi: immlo:Zeros(12), 64)
+            // imm = SignExtend(immhi:immlo:Zeros(12), 64)
             immediate = (long)unchecked((int)(((instruction ^ register) | (instruction >> 26) & 0x18) << 8)) << 1;
             return true;
         }
 
         /// <summary>
-        /// Determine whether a given instruction is an ADD immediate.
+        /// Determine whether a given instruction is an ADD immediate 64-bit with no shift.
         /// </summary>
         /// <param name="imageOffset">Offset within the PE image byte array.</param>
-        private bool IsArm64AddImmediateInstruction(int imageOffset, out uint sourceRegister, out uint immediate)
+        private bool IsArm64AddImmediate64NoShiftInstruction(int imageOffset, out uint sourceRegister, out uint immediate)
         {
             uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
             if ((instruction & 0xffc0_0000) != 0x9100_0000)
@@ -976,6 +997,44 @@ namespace R2RDump
         }
 
         /// <summary>
+        /// Determine whether a given instruction is a CBZ or a CBNZ.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array.</param>
+        private bool IsArm64CbzOrCbnzInstruction(int imageOffset, out int offset)
+        {
+            byte highByte = _reader.Image[imageOffset + 3];
+            if ((highByte & 0x7e) != 0x34)
+            {
+                offset = 0;
+                return false;
+            }
+
+            uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
+            // offset = SignExtend(imm19:'00', 64)
+            offset = ((int)instruction & ~0x1f) << 8 >> 11;
+            return true;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is a TBZ or a TBNZ.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array.</param>
+        private bool IsArm64TbzOrTbnzInstruction(int imageOffset, out int offset)
+        {
+            byte highByte = _reader.Image[imageOffset + 3];
+            if ((highByte & 0x7e) != 0x36)
+            {
+                offset = 0;
+                return false;
+            }
+
+            uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
+            // offset = SignExtend(imm14:'00', 64)
+            offset = ((int)instruction & ~0x1f) << 13 >> 16;
+            return true;
+        }
+
+        /// <summary>
         /// Determine whether a given instruction is a BL.
         /// </summary>
         /// <param name="imageOffset">Offset within the PE image byte array.</param>
@@ -995,10 +1054,10 @@ namespace R2RDump
         }
 
         /// <summary>
-        /// Determine whether a given instruction is an LDR literal.
+        /// Determine whether a given instruction is an LDR literal 64-bit.
         /// </summary>
         /// <param name="imageOffset">Offset within the PE image byte array.</param>
-        private bool IsArm64LdrLiteralInstruction(int imageOffset, out uint register, out int offset)
+        private bool IsArm64LdrLiteral64Instruction(int imageOffset, out uint register, out int offset)
         {
             byte highByte = _reader.Image[imageOffset + 3];
             if (highByte != 0x58)
@@ -1016,10 +1075,10 @@ namespace R2RDump
         }
 
         /// <summary>
-        /// Determine whether a given instruction is an LDR immediate with the zero offset, e.g., <c>ldr x12, [x12]</c>.
+        /// Determine whether a given instruction is an LDR immediate 64-bit with the zero offset, e.g., <c>ldr x12, [x12]</c>.
         /// </summary>
         /// <param name="imageOffset">Offset within the PE image byte array.</param>
-        private bool IsArm64LdrImmediateZeroOffsetInstruction(int imageOffset, out uint destRegister, out uint sourceRegister)
+        private bool IsArm64LdrImmediate64ZeroOffsetInstruction(int imageOffset, out uint destRegister, out uint sourceRegister)
         {
             uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
             if ((instruction & 0xffff_fc00) != 0xf940_0000)
