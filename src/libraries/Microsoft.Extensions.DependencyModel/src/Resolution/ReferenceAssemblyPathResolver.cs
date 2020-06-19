@@ -72,12 +72,6 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
             string name = Path.GetFileName(path);
 
-/* Unmerged change from project 'Microsoft.Extensions.DependencyModel (net461)'
-Before:
-            foreach (var fallbackPath in _fallbackSearchPaths)
-After:
-            foreach (System.String fallbackPath in _fallbackSearchPaths)
-*/
             foreach (string fallbackPath in _fallbackSearchPaths)
             {
                 string fallbackFile = Path.Combine(fallbackPath, name);

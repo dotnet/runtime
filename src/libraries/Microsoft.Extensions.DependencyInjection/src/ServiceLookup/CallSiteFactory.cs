@@ -359,13 +359,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 Type parameterType = parameters[index].ParameterType;
                 ServiceCallSite callSite = GetCallSite(parameterType, callSiteChain);
 
-
-/* Unmerged change from project 'Microsoft.Extensions.DependencyInjection (net461)'
-Before:
-                if (callSite == null && ParameterDefaultValue.TryGetDefaultValue(parameters[index], out var defaultValue))
-After:
-                if (callSite == null && ParameterDefaultValue.TryGetDefaultValue(parameters[index], out System.Object defaultValue))
-*/
                 if (callSite == null && ParameterDefaultValue.TryGetDefaultValue(parameters[index], out object defaultValue))
                 {
                     callSite = new ConstantCallSite(parameterType, defaultValue);

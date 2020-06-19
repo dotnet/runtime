@@ -466,14 +466,7 @@ namespace Microsoft.Extensions.Primitives
                 return values1;
             }
 
-
-/* Unmerged change from project 'Microsoft.Extensions.Primitives (netcoreapp3.0)'
-Before:
             var combined = new string[count1 + count2];
-After:
-            System.String[] combined = new string[count1 + count2];
-*/
-            string[] combined = new string[count1 + count2];
             values1.CopyTo(combined, 0);
             values2.CopyTo(combined, count1);
             return new StringValues(combined);
@@ -498,14 +491,7 @@ After:
                 return new StringValues(value);
             }
 
-
-/* Unmerged change from project 'Microsoft.Extensions.Primitives (netcoreapp3.0)'
-Before:
             var combined = new string[count + 1];
-After:
-            System.String[] combined = new string[count + 1];
-*/
-            string[] combined = new string[count + 1];
             values.CopyTo(combined, 0);
             combined[count] = value;
             return new StringValues(combined);
@@ -530,14 +516,7 @@ After:
                 return new StringValues(value);
             }
 
-
-/* Unmerged change from project 'Microsoft.Extensions.Primitives (netcoreapp3.0)'
-Before:
             var combined = new string[count + 1];
-After:
-            System.String[] combined = new string[count + 1];
-*/
-            string[] combined = new string[count + 1];
             combined[0] = value;
             values.CopyTo(combined, 1);
             return new StringValues(combined);
@@ -811,13 +790,6 @@ After:
                     return false;
                 }
 
-
-/* Unmerged change from project 'Microsoft.Extensions.Primitives (netcoreapp3.0)'
-Before:
-                var values = _values;
-After:
-                System.String[] values = _values;
-*/
                 string[] values = _values;
                 if (values != null)
                 {

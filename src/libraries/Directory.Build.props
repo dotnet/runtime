@@ -6,7 +6,6 @@
 
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
-    <NoWarn Condition="!$(MSBuildProjectName.Contains('ref'))">$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -79,13 +79,6 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 return false;
             }
 
-
-/* Unmerged change from project 'Microsoft.Extensions.DependencyModel (net461)'
-Before:
-            foreach (var directory in _nugetPackageDirectories)
-After:
-            foreach (System.String directory in _nugetPackageDirectories)
-*/
             foreach (string directory in _nugetPackageDirectories)
             {
                 string packagePath;
