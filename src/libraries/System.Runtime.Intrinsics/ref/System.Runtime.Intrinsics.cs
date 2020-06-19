@@ -273,8 +273,10 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt64> Create(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Byte> CreateScalar(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<System.Double> CreateScalar(double value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int16> CreateScalar(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int32> CreateScalar(int value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<System.Int64> CreateScalar(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.SByte> CreateScalar(sbyte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Single> CreateScalar(float value) { throw null; }
@@ -282,6 +284,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<System.UInt16> CreateScalar(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt32> CreateScalar(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<System.UInt64> CreateScalar(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Byte> CreateScalarUnsafe(byte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int16> CreateScalarUnsafe(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int32> CreateScalarUnsafe(int value) { throw null; }
