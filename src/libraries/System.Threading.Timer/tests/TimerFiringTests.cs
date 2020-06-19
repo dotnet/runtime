@@ -17,7 +17,7 @@ namespace System.Threading.Tests
     {
         internal const int MaxPositiveTimeoutInMs = 30000;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Timer_Fires_After_DueTime_Ellapses()
         {
             AutoResetEvent are = new AutoResetEvent(false);
@@ -31,7 +31,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Timer_Fires_AndPassesStateThroughCallback()
         {
             AutoResetEvent are = new AutoResetEvent(false);
@@ -47,7 +47,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Timer_Fires_AndPassesNullStateThroughCallback()
         {
             AutoResetEvent are = new AutoResetEvent(false);
@@ -88,7 +88,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Timer_FiresOnlyOnce_OnDueTime_With_InfinitePeriod()
         {
             int count = 0;
@@ -122,7 +122,7 @@ namespace System.Threading.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Timer_CanDisposeSelfInCallback()
         {
             Timer t = null;
@@ -138,7 +138,7 @@ namespace System.Threading.Tests
             GC.KeepAlive(t);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Timer_CanBeDisposedMultipleTimes()
         {
             // There's nothing to validate besides that we don't throw an exception, so rely on xunit
@@ -149,7 +149,7 @@ namespace System.Threading.Tests
                 t.Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NonRepeatingTimer_ThatHasAlreadyFired_CanChangeAndFireAgain()
         {
             AutoResetEvent are = new AutoResetEvent(false);
@@ -163,7 +163,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void MultpleTimers_PeriodicTimerIsntBlockedByBlockedCallback()
         {
             int callbacks = 2;
@@ -183,7 +183,7 @@ namespace System.Threading.Tests
             GC.KeepAlive(t);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ManyTimers_EachTimerDoesFire()
         {
             int maxTimers = 10000;
@@ -200,7 +200,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Timer_Constructor_CallbackOnly_Change()
         {
             var e = new ManualResetEvent(false);
@@ -217,7 +217,7 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentNullException>(() => new Timer(s => { }).Dispose(null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Timer_Dispose_WaitHandle()
         {
             int tickCount = 0;
