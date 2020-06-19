@@ -115,7 +115,7 @@ namespace System.Collections.Immutable.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Update_HighConcurrency()
         {
             UpdateHelper<ImmutableList<int>>(func =>
@@ -148,7 +148,7 @@ namespace System.Collections.Immutable.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void UpdateArray_HighConcurrency()
         {
             UpdateArrayHelper<int>(func =>

@@ -269,7 +269,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void AddFromMultipleThreads_ItemsRemainAfterThreadsGoAway()
         {
             IProducerConsumerCollection<int> c = CreateProducerConsumerCollection();
@@ -481,7 +481,7 @@ namespace System.Collections.Concurrent.Tests
             AssertExtensions.Throws<ArgumentException>(CopyToNoLengthParamName, "", () => c.CopyTo(dest, dest.Length - 2));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(100, 1, 10)]
         [InlineData(4, 100000, 10)]
         public void BlockingCollection_WrappingCollection_ExpectedElementsTransferred(int numThreadsPerConsumerProducer, int numItemsPerThread, int producerSpin)
@@ -767,7 +767,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Empty(c);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(ConcurrencyTestSeconds)]
         public void ManyConcurrentAddsTakesPeeks_ForceContentionWithOtherThreadsTaking(double seconds)
         {
@@ -879,7 +879,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(0, c.Count);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(ConcurrencyTestSeconds)]
         public void ManyConcurrentAddsTakes_ForceContentionWithToArray(double seconds)
         {

@@ -28,7 +28,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                 }).GetAwaiter().GetResult();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ThrowAfterAsyncComplete()
         {
             Task.Run(() =>

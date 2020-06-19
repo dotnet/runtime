@@ -166,7 +166,7 @@ namespace System.Threading.Tasks.Tests
         /// Partitioner is used in ParallelForEach
         /// Exception is expected and the enumerators are disposed
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ExceptionOnMoveNext()
         {
             static void exceptionOnMoveNext(int length, int indexToThrow, bool isOrderable)

@@ -885,7 +885,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Throws<InvalidOperationException>(() => Parallel.ForEach(mop, delegate (int item, ParallelLoopState state, long index) { }));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestParallelScheduler()
         {
             ParallelOptions parallelOptions = new ParallelOptions();
@@ -992,7 +992,7 @@ namespace System.Threading.Tasks.Tests
             t1.Wait();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestInvokeDOPAndCancel()
         {
             ParallelOptions parallelOptions = null;

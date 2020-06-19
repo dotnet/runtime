@@ -255,7 +255,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task NonEmptyWriteAsync_CustomMemoryManager_WritesExpectedData()
         {
             using (var mem = new NativeMemoryManager(TestBuffer.Length))

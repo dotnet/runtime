@@ -778,7 +778,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
     public sealed class TaskContinueWithAllAnyTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest0()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
