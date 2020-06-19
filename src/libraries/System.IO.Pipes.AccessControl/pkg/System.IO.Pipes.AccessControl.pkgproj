@@ -1,0 +1,10 @@
+<Project DefaultTargets="Build">
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.IO.Pipes.AccessControl.csproj" />
+    <HarvestIncludePaths Include="lib/net46;runtimes/win/lib/net46" />
+    <HarvestIncludePaths Include="lib/net461;runtimes/win/lib/net461" />
+    <HarvestIncludePaths Include="lib/netstandard1.3;runtimes/win/lib/netstandard1.3" />
+    <HarvestIncludePaths Include="lib/netstandard2.0;runtimes/win/lib/netstandard2.0" />
+    <HarvestIncludePaths Include="lib/netcoreapp2.1" />
+  </ItemGroup>
+</Project>
