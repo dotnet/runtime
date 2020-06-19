@@ -113,7 +113,7 @@
     <NewtonsoftJsonVersion>12.0.3</NewtonsoftJsonVersion>
     <MoqVersion>4.12.0</MoqVersion>
     <!-- Docs -->
-    <MicrosoftPrivateIntellisenseVersion>3.1.0-preview-20200129.1</MicrosoftPrivateIntellisenseVersion>
+    <MicrosoftPrivateIntellisenseVersion>3.0.0-preview-20200602.3</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>5.0.0-preview.3.20317.2</MicrosoftNETILLinkTasksVersion>
     <!-- Mono LLVM -->
@@ -138,6 +138,11 @@
     <MicrosoftDotNetBuildTasksFeedPackage>Microsoft.DotNet.Build.Tasks.Feed</MicrosoftDotNetBuildTasksFeedPackage>
     <MicrosoftNETCoreTargetsPackage>Microsoft.NETCore.Targets</MicrosoftNETCoreTargetsPackage>
     <MicrosoftNETCoreRuntimeCoreCLRPackage>Microsoft.NETCore.Runtime.CoreCLR</MicrosoftNETCoreRuntimeCoreCLRPackage>
+    <!-- XmlDocFileRoot needs to be defined here since we use it in packaging.props and docs.targets.
+    It also uses Arcade defined property NuGetPackageRoot, this is the only codepath shared in between
+    packaging.props and docs.targets with arcade properties defined. 
+    -->
+    <XmlDocFileRoot>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', '$(MicrosoftPrivateIntellisensePackage)', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles', 'net'))</XmlDocFileRoot>
   </PropertyGroup>
   <!-- Override isolated build dependency versions with versions from Repo API. -->
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition="'$(DotNetPackageVersionPropsPath)' != ''" />
