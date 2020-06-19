@@ -1023,7 +1023,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
         GenTree* dest = gtNewBlockVal(copyBlkDst, simdSize);
 
-        dest->gtType  = simdType;
+        dest->gtType = simdType;
         dest->gtFlags |= GTF_GLOB_REF;
 
         GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc, /* isVolatile */ false, /* isCopyBlock */ true);
