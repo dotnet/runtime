@@ -65,11 +65,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixSourcePrefix)'' == 'pr'">
-    <WorkItemTimeout>15</WorkItemTimeout>
+    <WorkItemTimeout>0:15</WorkItemTimeout>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixSourcePrefix)'' == 'official'">
-    <WorkItemTimeout>45</WorkItemTimeout>
+    <WorkItemTimeout>0:45</WorkItemTimeout>
   </PropertyGroup>
 
   <ItemGroup>
