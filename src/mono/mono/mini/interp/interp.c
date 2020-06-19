@@ -5333,12 +5333,17 @@ call_newobj:
 			MINT_IN_BREAK;
 		}
 
-#define LDFLD_VT(datamem, fieldtype) do { \
+#define LDFLD_VT_UNALIGNED(datamem, fieldtype, unaligned) do { \
 	gpointer p = sp [-1].data.p; \
 	vt_sp -= ip [2]; \
-	sp [-1].data.datamem = * (fieldtype *)((char *)p + ip [1]); \
+	if (unaligned) \
+		memcpy (&sp[-1].data.datamem, (char *)p + ip [1], sizeof (fieldtype)); \
+	else \
+		sp [-1].data.datamem = * (fieldtype *)((char *)p + ip [1]); \
 	ip += 3; \
 } while (0)
+
+#define LDFLD_VT(datamem, fieldtype) LDFLD_VT_UNALIGNED(datamem, fieldtype, FALSE)
 
 		MINT_IN_CASE(MINT_LDFLD_VT_I1) LDFLD_VT(i, gint8); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_VT_U1) LDFLD_VT(i, guint8); MINT_IN_BREAK;
@@ -5349,6 +5354,8 @@ call_newobj:
 		MINT_IN_CASE(MINT_LDFLD_VT_R4) LDFLD_VT(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_VT_R8) LDFLD_VT(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_VT_O) LDFLD_VT(p, gpointer); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_VT_I8_UNALIGNED) LDFLD_VT_UNALIGNED(l, gint64, TRUE); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_VT_R8_UNALIGNED) LDFLD_VT_UNALIGNED(f, double, TRUE); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDFLD_VT_VT) {
 			gpointer p = sp [-1].data.p;

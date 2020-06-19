@@ -4907,8 +4907,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					goto_if_nok (error, exit);
 				} else if (td->sp [-1].type == STACK_TYPE_VT) {
 					/* First we pop the vt object from the stack. Then we push the field */
-					/* FIXME unaligned field load ? */
 					int opcode = MINT_LDFLD_VT_I1 + mt - MINT_TYPE_I1;
+#ifdef NO_UNALIGNED_ACCESS
+					if (field->offset % SIZEOF_VOID_P != 0) {
+						if (mt == MINT_TYPE_I8)
+							opcode = MINT_LDFLD_VT_I8_UNALIGNED;
+						else if (mt == MINT_TYPE_R8)
+							opcode = MINT_LDFLD_VT_R8_UNALIGNED;
+					}
+#endif
 					interp_add_ins (td, opcode);
 					g_assert (m_class_is_valuetype (klass));
 					td->last_ins->data [0] = field->offset - MONO_ABI_SIZEOF (MonoObject);
