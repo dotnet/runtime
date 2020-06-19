@@ -38,4 +38,10 @@ install(FILES ../coreclr_delegates.h DESTINATION corehost)
 install(FILES ../hostfxr.h DESTINATION corehost)
 install(FILES nethost.h DESTINATION corehost)
 install_with_stripped_symbols(nethost TARGETS corehost)
-install_with_stripped_symbols(libnethost TARGETS corehost)
+
+# Only Windows creates a symbols file for static libs.
+if (WIN32)
+    install_with_stripped_symbols(libnethost TARGETS corehost)
+else()
+    install(TARGETS libnethost DESTINATION corehost)
+endif(WIN32)
