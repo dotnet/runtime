@@ -7,7 +7,7 @@
 #define TARGET_H_
 
  // Native Varargs are not supported on Unix (all architectures) and Windows ARM
-#if (TARGET_WINDOWS && !TARGET_ARM)
+#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
 #define FEATURE_VARARG 1
 #else
 #define FEATURE_VARARG 0
