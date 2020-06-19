@@ -320,6 +320,8 @@ namespace Tracing.Tests.ReverseValidation
             }
 
             bool fSuccess = true;
+            if (!IpcTraceTest.EnsureCleanEnvironment())
+                return -1;
             IEnumerable<MethodInfo> tests = typeof(ReverseValidation).GetMethods().Where(mi => mi.Name.StartsWith("TEST_"));
             foreach (var test in tests)
             {

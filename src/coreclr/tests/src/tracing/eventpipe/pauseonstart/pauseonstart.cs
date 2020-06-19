@@ -317,6 +317,8 @@ namespace Tracing.Tests.PauseOnStartValidation
             }
 
             bool fSuccess = true;
+            if (!IpcTraceTest.EnsureCleanEnvironment())
+                return -1;
             IEnumerable<MethodInfo> tests = typeof(PauseOnStartValidation).GetMethods().Where(mi => mi.Name.StartsWith("TEST_"));
             foreach (var test in tests)
             {
