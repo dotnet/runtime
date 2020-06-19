@@ -3745,21 +3745,14 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	if (override_map) {
 		MonoMethod *cm;
 
-		for (i = 0; i < max_vtsize; ++i) {
-			MonoMethod *cur_method = vtable [i];
-			if (cur_method) {
+		for (i = 0; i < max_vtsize; ++i)
+			if (vtable [i]) {
 				TRACE_INTERFACE_VTABLE (printf ("checking slot %d method %s[%p] for overrides\n", i, mono_method_full_name (vtable [i], 1), vtable [i]));
 
-				cm = (MonoMethod *)g_hash_table_lookup (override_map, cur_method);
+				cm = (MonoMethod *)g_hash_table_lookup (override_map, vtable [i]);
 				if (cm)
 					vtable [i] = cm;
-				else
-					continue;
-				/* cur_method is some kind of a declaration and it has an override cm that applies to it. */
-				if (m_class_is_valuetype (klass))
-					continue;
 			}
-		}
 
 		g_hash_table_destroy (override_map);
 		override_map = NULL;
