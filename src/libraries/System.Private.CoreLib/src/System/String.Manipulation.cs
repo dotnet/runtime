@@ -1624,8 +1624,8 @@ namespace System
                                                                0xFF, 0xFF, 0xFF, 0xFF, 0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
 
             Vector256<ushort> v1 = Vector256.Create(c);
-            Vector256<ushort> v2 = c2 is char sep2 ? Vector256.Create(sep2) : v1;
-            Vector256<ushort> v3 = c3 is char sep3 ? Vector256.Create(sep3) : v2;
+            Vector256<ushort> v2 = Vector256.Create(c2);
+            Vector256<ushort> v3 = Vector256.Create(c3);
 
             ref char c0 = ref MemoryMarshal.GetReference(this.AsSpan());
             int cond = Length & -Vector256<ushort>.Count;
@@ -1645,16 +1645,15 @@ namespace System
                 mask = Avx2.Shuffle(mask, shuffleConstant);
 
                 Vector128<byte> res = Sse2.Or(mask.GetLower(), mask.GetUpper());
+                ulong extractedBits = Sse2.X64.ConvertToUInt64(res.AsUInt64());
 
-                // Constant that defines indices of characters within an AVX-Register
-                const ulong indicesConstant = 0xFEDCBA9876543210;
-                ulong extractedBits = Bmi2.X64.ParallelBitExtract(indicesConstant, Sse2.X64.ConvertToUInt64(res.AsUInt64()));
-
-                while (true)
+                for (int idx = i; idx < Vector<ushort>.Count; idx++)
                 {
-                    sepListBuilder.Append(((byte)(extractedBits & 0xF)) + i);
+                    if ((extractedBits & 0xF) != 0)
+                    {
+                        sepListBuilder.Append(idx);
+                    }
                     extractedBits >>= 4;
-                    if (extractedBits == 0) { break; }
                 }
             }
 
