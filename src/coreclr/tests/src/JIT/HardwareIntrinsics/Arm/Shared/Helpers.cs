@@ -1442,6 +1442,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short AbsoluteDifferenceWideningUpperAndAdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
+        public static short AddAcrossWidening(sbyte[] op1) => Reduce(AddWidening, op1);
+
         public static short AddPairwiseWidening(sbyte[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
         public static short AddPairwiseWideningAndAdd(short[] op1, sbyte[] op2, int i) => (short)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
@@ -1520,6 +1522,18 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short ZeroExtendWideningUpper(sbyte[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
 
+        private static short Reduce(Func<short, sbyte, short> reduceOp, sbyte[] op1)
+        {
+            short acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
         public static uint AbsoluteDifferenceWidening(short op1, short op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
 
         public static uint AbsoluteDifferenceWideningUpper(short[] op1, short[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
@@ -1527,6 +1541,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int AbsoluteDifferenceWideningAndAdd(int op1, short op2, short op3) => (int)(op1 + (int)AbsoluteDifferenceWidening(op2, op3));
 
         public static int AbsoluteDifferenceWideningUpperAndAdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static int AddAcrossWidening(short[] op1) => Reduce(AddWidening, op1);
 
         public static int AddPairwiseWidening(short[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
@@ -1606,6 +1622,18 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int ZeroExtendWideningUpper(short[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
 
+        private static int Reduce(Func<int, short, int> reduceOp, short[] op1)
+        {
+            int acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
         public static ulong AbsoluteDifferenceWidening(int op1, int op2) => op1 < op2 ? (ulong)(op2 - op1) : (ulong)(op1 - op2);
 
         public static ulong AbsoluteDifferenceWideningUpper(int[] op1, int[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
@@ -1613,6 +1641,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long AbsoluteDifferenceWideningAndAdd(long op1, int op2, int op3) => (long)(op1 + (long)AbsoluteDifferenceWidening(op2, op3));
 
         public static long AbsoluteDifferenceWideningUpperAndAdd(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static long AddAcrossWidening(int[] op1) => Reduce(AddWidening, op1);
 
         public static long AddPairwiseWidening(int[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
@@ -1692,6 +1722,18 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long ZeroExtendWideningUpper(int[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
 
+        private static long Reduce(Func<long, int, long> reduceOp, int[] op1)
+        {
+            long acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
         public static ushort AbsoluteDifferenceWidening(byte op1, byte op2) => op1 < op2 ? (ushort)(op2 - op1) : (ushort)(op1 - op2);
 
         public static ushort AbsoluteDifferenceWideningUpper(byte[] op1, byte[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
@@ -1699,6 +1741,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ushort AbsoluteDifferenceWideningAndAdd(ushort op1, byte op2, byte op3) => (ushort)(op1 + (ushort)AbsoluteDifferenceWidening(op2, op3));
 
         public static ushort AbsoluteDifferenceWideningUpperAndAdd(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static ushort AddAcrossWidening(byte[] op1) => Reduce(AddWidening, op1);
 
         public static ushort AddPairwiseWidening(byte[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
@@ -1778,6 +1822,18 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort ZeroExtendWideningUpper(byte[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
 
+        private static ushort Reduce(Func<ushort, byte, ushort> reduceOp, byte[] op1)
+        {
+            ushort acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
         public static uint AbsoluteDifferenceWidening(ushort op1, ushort op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
 
         public static uint AbsoluteDifferenceWideningUpper(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
@@ -1785,6 +1841,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static uint AbsoluteDifferenceWideningAndAdd(uint op1, ushort op2, ushort op3) => (uint)(op1 + (uint)AbsoluteDifferenceWidening(op2, op3));
 
         public static uint AbsoluteDifferenceWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static uint AddAcrossWidening(ushort[] op1) => Reduce(AddWidening, op1);
 
         public static uint AddPairwiseWidening(ushort[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
@@ -1864,6 +1922,18 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint ZeroExtendWideningUpper(ushort[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
 
+        private static uint Reduce(Func<uint, ushort, uint> reduceOp, ushort[] op1)
+        {
+            uint acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
         public static ulong AbsoluteDifferenceWidening(uint op1, uint op2) => op1 < op2 ? (ulong)(op2 - op1) : (ulong)(op1 - op2);
 
         public static ulong AbsoluteDifferenceWideningUpper(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
@@ -1871,6 +1941,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ulong AbsoluteDifferenceWideningAndAdd(ulong op1, uint op2, uint op3) => (ulong)(op1 + (ulong)AbsoluteDifferenceWidening(op2, op3));
 
         public static ulong AbsoluteDifferenceWideningUpperAndAdd(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static ulong AddAcrossWidening(uint[] op1) => Reduce(AddWidening, op1);
 
         public static ulong AddPairwiseWidening(uint[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
@@ -1949,6 +2021,18 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ulong ZeroExtendWidening(uint op1) => (ulong)(ulong)op1;
 
         public static ulong ZeroExtendWideningUpper(uint[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
+
+        private static ulong Reduce(Func<ulong, uint, ulong> reduceOp, uint[] op1)
+        {
+            ulong acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
 
         private static bool SignedSatQ(short val, out sbyte result)
         {
@@ -2691,6 +2775,33 @@ namespace JIT.HardwareIntrinsics.Arm
             return (result, ovf);
         }
 
+        private static (sbyte val, bool ovf) AddOvf(sbyte op1, byte op2)
+        {
+            sbyte result = (sbyte)(op1 + (sbyte)op2);
+
+            bool ovf = (result < op1);
+
+            return (result, ovf);
+        }
+
+        private static (byte val, bool ovf) AddOvf(byte op1, sbyte op2)
+        {
+            byte result = (byte)(op1 + (byte)op2);
+
+            bool ovf;
+
+            if (op2 < 0)
+            {
+                ovf = (result > op1);
+            }
+            else
+            {
+                ovf = (result < op1);
+            }
+
+            return (result, ovf);
+        }
+
         private static (byte val, bool ovf) AddOvf(byte op1, byte op2)
         {
             byte result = (byte)(op1 + op2);
@@ -2704,15 +2815,15 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             sbyte result = (sbyte)(op1 - op2);
 
-            bool ovf = false;
+            bool ovf;
 
-            if ((op1 > 0) && (op2 < 0))
+            if (op2 < 0)
             {
-                ovf = (result < 0);
+                ovf = (result < op1);
             }
-            else if ((op1 < 0) && (op2 > 0))
+            else
             {
-                ovf = (result > 0);
+                ovf = (result > op1);
             }
 
             return (result, ovf);
@@ -2727,10 +2838,24 @@ namespace JIT.HardwareIntrinsics.Arm
             return (result, ovf);
         }
 
+        public static sbyte AbsSaturate(sbyte op1) => op1 < 0 ? NegateSaturate(op1) : op1;
+
         public static sbyte AddSaturate(sbyte op1, sbyte op2)
         {
             var (result, ovf) = AddOvf(op1, op2);
             return ovf ? (result > 0 ? sbyte.MinValue : sbyte.MaxValue) : result;
+        }
+
+        public static sbyte AddSaturate(sbyte op1, byte op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? sbyte.MaxValue : result;
+        }
+
+        public static byte AddSaturate(byte op1, sbyte op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? (result < op1 ? byte.MaxValue : byte.MinValue) : result;
         }
 
         public static byte AddSaturate(byte op1, byte op2)
@@ -2738,6 +2863,8 @@ namespace JIT.HardwareIntrinsics.Arm
             var (result, ovf) = AddOvf(op1, op2);
             return ovf ? byte.MaxValue : result;
         }
+
+        public static sbyte NegateSaturate(sbyte op1) => SubtractSaturate((sbyte)0, op1);
 
         public static sbyte SubtractSaturate(sbyte op1, sbyte op2)
         {
@@ -2916,6 +3043,33 @@ namespace JIT.HardwareIntrinsics.Arm
             return (result, ovf);
         }
 
+        private static (short val, bool ovf) AddOvf(short op1, ushort op2)
+        {
+            short result = (short)(op1 + (short)op2);
+
+            bool ovf = (result < op1);
+
+            return (result, ovf);
+        }
+
+        private static (ushort val, bool ovf) AddOvf(ushort op1, short op2)
+        {
+            ushort result = (ushort)(op1 + (ushort)op2);
+
+            bool ovf;
+
+            if (op2 < 0)
+            {
+                ovf = (result > op1);
+            }
+            else
+            {
+                ovf = (result < op1);
+            }
+
+            return (result, ovf);
+        }
+
         private static (ushort val, bool ovf) AddOvf(ushort op1, ushort op2)
         {
             ushort result = (ushort)(op1 + op2);
@@ -2929,15 +3083,15 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             short result = (short)(op1 - op2);
 
-            bool ovf = false;
+            bool ovf;
 
-            if ((op1 > 0) && (op2 < 0))
+            if (op2 < 0)
             {
-                ovf = (result < 0);
+                ovf = (result < op1);
             }
-            else if ((op1 < 0) && (op2 > 0))
+            else
             {
-                ovf = (result > 0);
+                ovf = (result > op1);
             }
 
             return (result, ovf);
@@ -2952,10 +3106,24 @@ namespace JIT.HardwareIntrinsics.Arm
             return (result, ovf);
         }
 
+        public static short AbsSaturate(short op1) => op1 < 0 ? NegateSaturate(op1) : op1;
+
         public static short AddSaturate(short op1, short op2)
         {
             var (result, ovf) = AddOvf(op1, op2);
             return ovf ? (result > 0 ? short.MinValue : short.MaxValue) : result;
+        }
+
+        public static short AddSaturate(short op1, ushort op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? short.MaxValue : result;
+        }
+
+        public static ushort AddSaturate(ushort op1, short op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? (result < op1 ? ushort.MaxValue : ushort.MinValue) : result;
         }
 
         public static ushort AddSaturate(ushort op1, ushort op2)
@@ -2963,6 +3131,8 @@ namespace JIT.HardwareIntrinsics.Arm
             var (result, ovf) = AddOvf(op1, op2);
             return ovf ? ushort.MaxValue : result;
         }
+
+        public static short NegateSaturate(short op1) => SubtractSaturate((short)0, op1);
 
         public static short SubtractSaturate(short op1, short op2)
         {
@@ -3141,6 +3311,33 @@ namespace JIT.HardwareIntrinsics.Arm
             return (result, ovf);
         }
 
+        private static (int val, bool ovf) AddOvf(int op1, uint op2)
+        {
+            int result = (int)(op1 + (int)op2);
+
+            bool ovf = (result < op1);
+
+            return (result, ovf);
+        }
+
+        private static (uint val, bool ovf) AddOvf(uint op1, int op2)
+        {
+            uint result = (uint)(op1 + (uint)op2);
+
+            bool ovf;
+
+            if (op2 < 0)
+            {
+                ovf = (result > op1);
+            }
+            else
+            {
+                ovf = (result < op1);
+            }
+
+            return (result, ovf);
+        }
+
         private static (uint val, bool ovf) AddOvf(uint op1, uint op2)
         {
             uint result = (uint)(op1 + op2);
@@ -3154,15 +3351,15 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             int result = (int)(op1 - op2);
 
-            bool ovf = false;
+            bool ovf;
 
-            if ((op1 > 0) && (op2 < 0))
+            if (op2 < 0)
             {
-                ovf = (result < 0);
+                ovf = (result < op1);
             }
-            else if ((op1 < 0) && (op2 > 0))
+            else
             {
-                ovf = (result > 0);
+                ovf = (result > op1);
             }
 
             return (result, ovf);
@@ -3177,10 +3374,24 @@ namespace JIT.HardwareIntrinsics.Arm
             return (result, ovf);
         }
 
+        public static int AbsSaturate(int op1) => op1 < 0 ? NegateSaturate(op1) : op1;
+
         public static int AddSaturate(int op1, int op2)
         {
             var (result, ovf) = AddOvf(op1, op2);
             return ovf ? (result > 0 ? int.MinValue : int.MaxValue) : result;
+        }
+
+        public static int AddSaturate(int op1, uint op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? int.MaxValue : result;
+        }
+
+        public static uint AddSaturate(uint op1, int op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? (result < op1 ? uint.MaxValue : uint.MinValue) : result;
         }
 
         public static uint AddSaturate(uint op1, uint op2)
@@ -3188,6 +3399,8 @@ namespace JIT.HardwareIntrinsics.Arm
             var (result, ovf) = AddOvf(op1, op2);
             return ovf ? uint.MaxValue : result;
         }
+
+        public static int NegateSaturate(int op1) => SubtractSaturate((int)0, op1);
 
         public static int SubtractSaturate(int op1, int op2)
         {
@@ -3366,6 +3579,33 @@ namespace JIT.HardwareIntrinsics.Arm
             return (result, ovf);
         }
 
+        private static (long val, bool ovf) AddOvf(long op1, ulong op2)
+        {
+            long result = (long)(op1 + (long)op2);
+
+            bool ovf = (result < op1);
+
+            return (result, ovf);
+        }
+
+        private static (ulong val, bool ovf) AddOvf(ulong op1, long op2)
+        {
+            ulong result = (ulong)(op1 + (ulong)op2);
+
+            bool ovf;
+
+            if (op2 < 0)
+            {
+                ovf = (result > op1);
+            }
+            else
+            {
+                ovf = (result < op1);
+            }
+
+            return (result, ovf);
+        }
+
         private static (ulong val, bool ovf) AddOvf(ulong op1, ulong op2)
         {
             ulong result = (ulong)(op1 + op2);
@@ -3379,15 +3619,15 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             long result = (long)(op1 - op2);
 
-            bool ovf = false;
+            bool ovf;
 
-            if ((op1 > 0) && (op2 < 0))
+            if (op2 < 0)
             {
-                ovf = (result < 0);
+                ovf = (result < op1);
             }
-            else if ((op1 < 0) && (op2 > 0))
+            else
             {
-                ovf = (result > 0);
+                ovf = (result > op1);
             }
 
             return (result, ovf);
@@ -3402,10 +3642,24 @@ namespace JIT.HardwareIntrinsics.Arm
             return (result, ovf);
         }
 
+        public static long AbsSaturate(long op1) => op1 < 0 ? NegateSaturate(op1) : op1;
+
         public static long AddSaturate(long op1, long op2)
         {
             var (result, ovf) = AddOvf(op1, op2);
             return ovf ? (result > 0 ? long.MinValue : long.MaxValue) : result;
+        }
+
+        public static long AddSaturate(long op1, ulong op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? long.MaxValue : result;
+        }
+
+        public static ulong AddSaturate(ulong op1, long op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? (result < op1 ? ulong.MaxValue : ulong.MinValue) : result;
         }
 
         public static ulong AddSaturate(ulong op1, ulong op2)
@@ -3413,6 +3667,8 @@ namespace JIT.HardwareIntrinsics.Arm
             var (result, ovf) = AddOvf(op1, op2);
             return ovf ? ulong.MaxValue : result;
         }
+
+        public static long NegateSaturate(long op1) => SubtractSaturate((long)0, op1);
 
         public static long SubtractSaturate(long op1, long op2)
         {
@@ -3455,7 +3711,6 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
 
-
         private static (byte val, bool ovf) ShiftOvf(byte value, int shift)
         {
             byte result = value;
@@ -3482,7 +3737,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (result, ovf);
         }
-
 
 
         private static (short val, bool ovf) ShiftOvf(short value, int shift)
@@ -3513,7 +3767,6 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
 
-
         private static (ushort val, bool ovf) ShiftOvf(ushort value, int shift)
         {
             ushort result = value;
@@ -3540,7 +3793,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (result, ovf);
         }
-
 
 
         private static (int val, bool ovf) ShiftOvf(int value, int shift)
@@ -3571,7 +3823,6 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
 
-
         private static (uint val, bool ovf) ShiftOvf(uint value, int shift)
         {
             uint result = value;
@@ -3598,7 +3849,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (result, ovf);
         }
-
 
 
         private static (long val, bool ovf) ShiftOvf(long value, int shift)
@@ -3629,7 +3879,6 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
 
-
         private static (ulong val, bool ovf) ShiftOvf(ulong value, int shift)
         {
             ulong result = value;
@@ -3656,7 +3905,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (result, ovf);
         }
-
 
         public static float AbsoluteDifference(float op1, float op2) => MathF.Abs(op1 - op2);
 
@@ -4674,12 +4922,6 @@ namespace JIT.HardwareIntrinsics.Arm
             return TableVectorExtension(i, zeros, indices, table);
         }
 
-        public static byte Clamp(int i, sbyte value, bool inclusive)
-        {
-            sbyte max = (sbyte)((i * 8) - (inclusive ? 0 : 1));
-            sbyte min = ( sbyte)(inclusive ? 1 : 0);
-            return (byte)Math.Max (min, Math.Min(value % max, max));
-        }
         public static byte TableVectorExtension(int i, byte[] defaultValues, byte[] indices, params byte[][] table)
         {
             byte[] fullTable = table.SelectMany(x => x).ToArray();
@@ -4699,12 +4941,6 @@ namespace JIT.HardwareIntrinsics.Arm
             return TableVectorExtension(i, zeros, indices, table);
         }
 
-        public static byte Clamp(int i, byte value, bool inclusive)
-        {
-            byte max = (byte)((i * 8) - (inclusive ? 0 : 1));
-            byte min = ( byte)(inclusive ? 1 : 0);
-            return (byte)Math.Max (min, Math.Min(value % max, max));
-        }
         public static byte ShiftRightAndInsert(byte left, byte right, byte shift)
         {
             byte mask = (byte)~(byte.MaxValue >> shift);
@@ -4825,6 +5061,97 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong newval = (ulong)(((ulong)left & mask) | value);
             return newval;
         }
+        public static double Ceiling(double op1) => Math.Ceiling(op1);
+
+        public static double Floor(double op1) => Math.Floor(op1);
+
+        public static double RoundAwayFromZero(double op1) => Math.Round(op1, MidpointRounding.AwayFromZero);
+
+        public static double RoundToNearest(double op1) => Math.Round(op1, MidpointRounding.ToEven);
+
+        public static double RoundToNegativeInfinity(double op1) => Math.Round(op1, MidpointRounding.ToNegativeInfinity);
+
+        public static double RoundToPositiveInfinity(double op1) => Math.Round(op1, MidpointRounding.ToPositiveInfinity);
+
+        public static double RoundToZero(double op1) => Math.Round(op1, MidpointRounding.ToZero);
+
+        public static float Ceiling(float op1) => MathF.Ceiling(op1);
+
+        public static float Floor(float op1) => MathF.Floor(op1);
+
+        public static float RoundAwayFromZero(float op1) => MathF.Round(op1, MidpointRounding.AwayFromZero);
+
+        public static float RoundToNearest(float op1) => MathF.Round(op1, MidpointRounding.ToEven);
+
+        public static float RoundToNegativeInfinity(float op1) => MathF.Round(op1, MidpointRounding.ToNegativeInfinity);
+
+        public static float RoundToPositiveInfinity(float op1) => MathF.Round(op1, MidpointRounding.ToPositiveInfinity);
+
+        public static float RoundToZero(float op1) => MathF.Round(op1, MidpointRounding.ToZero);
+
+        private static int ConvertToInt32(float op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
+
+        private static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
+
+        private static uint ConvertToUInt32(float op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
+
+        private static ulong ConvertToUInt64(double op1) => (ulong)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+
+        public static Int32 ConvertToInt32RoundAwayFromZero(float op1) => ConvertToInt32(RoundAwayFromZero(op1));
+
+        public static Int32 ConvertToInt32RoundToEven(float op1) => ConvertToInt32(RoundToNearest(op1));
+
+        public static Int32 ConvertToInt32RoundToNegativeInfinity(float op1) => ConvertToInt32(RoundToNegativeInfinity(op1));
+
+        public static Int32 ConvertToInt32RoundToPositiveInfinity(float op1) => ConvertToInt32(RoundToPositiveInfinity(op1));
+
+        public static Int32 ConvertToInt32RoundToZero(float op1) => ConvertToInt32(RoundToZero(op1));
+
+        public static Int64 ConvertToInt64RoundAwayFromZero(double op1) => ConvertToInt64(RoundAwayFromZero(op1));
+
+        public static Int64 ConvertToInt64RoundToEven(double op1) => ConvertToInt64(RoundToNearest(op1));
+
+        public static Int64 ConvertToInt64RoundToNegativeInfinity(double op1) => ConvertToInt64(RoundToNegativeInfinity(op1));
+
+        public static Int64 ConvertToInt64RoundToPositiveInfinity(double op1) => ConvertToInt64(RoundToPositiveInfinity(op1));
+
+        public static Int64 ConvertToInt64RoundToZero(double op1) => ConvertToInt64(RoundToZero(op1));
+
+        public static UInt32 ConvertToUInt32RoundAwayFromZero(float op1) => ConvertToUInt32(RoundAwayFromZero(op1));
+
+        public static UInt32 ConvertToUInt32RoundToEven(float op1) => ConvertToUInt32(RoundToNearest(op1));
+
+        public static UInt32 ConvertToUInt32RoundToNegativeInfinity(float op1) => ConvertToUInt32(RoundToNegativeInfinity(op1));
+
+        public static UInt32 ConvertToUInt32RoundToPositiveInfinity(float op1) => ConvertToUInt32(RoundToPositiveInfinity(op1));
+
+        public static UInt32 ConvertToUInt32RoundToZero(float op1) => ConvertToUInt32(RoundToZero(op1));
+
+        public static UInt64 ConvertToUInt64RoundAwayFromZero(double op1) => ConvertToUInt64(RoundAwayFromZero(op1));
+
+        public static UInt64 ConvertToUInt64RoundToEven(double op1) => ConvertToUInt64(RoundToNearest(op1));
+
+        public static UInt64 ConvertToUInt64RoundToNegativeInfinity(double op1) => ConvertToUInt64(RoundToNegativeInfinity(op1));
+
+        public static UInt64 ConvertToUInt64RoundToPositiveInfinity(double op1) => ConvertToUInt64(RoundToPositiveInfinity(op1));
+
+        public static UInt64 ConvertToUInt64RoundToZero(double op1) => ConvertToUInt64(RoundToZero(op1));
+
+        public static float ConvertToSingle(int op1) => op1;
+
+        public static float ConvertToSingle(uint op1) => op1;
+
+        public static float ConvertToSingle(double op1) => (float)op1;
+
+        public static float ConvertToSingleUpper(float[] op1, double[] op2, int i) => i < op1.Length ? op1[i] : ConvertToSingle(op2[i - op1.Length]);
+
+        public static double ConvertToDouble(float op1) => op1;
+
+        public static double ConvertToDoubleUpper(float[] op1, int i) => ConvertToDouble(op1[i + op1.Length / 2]);
+
+        public static double ConvertToDouble(long op1) => op1;
+
+        public static double ConvertToDouble(ulong op1) => op1;
 
     }
 }
