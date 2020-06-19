@@ -142,7 +142,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Expected behavior specific to Unix
+    [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
     public static void WindowLeft_GetUnix_ReturnsZero()
     {
         Assert.Equal(0, Console.WindowLeft);
@@ -156,7 +156,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Expected behavior specific to Unix
+    [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
     public static void WindowTop_GetUnix_ReturnsZero()
     {
         Assert.Equal(0, Console.WindowTop);

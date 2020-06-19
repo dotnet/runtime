@@ -1260,7 +1260,7 @@ public:
     VOID Cleanup();
 
     // Used to neuter a CCW if its AD is being unloaded underneath it.
-    VOID Neuter(bool fSkipHandleCleanup = false);
+    VOID Neuter();
 
     ~SimpleComCallWrapper();
 

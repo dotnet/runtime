@@ -39,31 +39,17 @@ public class ReadKey
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]
     public void NumberLock_GetUnix_ThrowsPlatformNotSupportedException()
     {
         Assert.Throws<PlatformNotSupportedException>(() => Console.NumberLock);
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.Browser)]
-    public void NumberLock_Getter_Returns_False()
-    {
-        Assert.False(Console.NumberLock);
-    }
-
-    [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]
     public void CapsLock_GetUnix_ThrowsPlatformNotSupportedException()
     {
         Assert.Throws<PlatformNotSupportedException>(() => Console.CapsLock);
-    }
-
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Browser)]
-    public void CapsLock_Getter_Returns_False()
-    {
-        Assert.False(Console.CapsLock);
     }
 
     private static void RunRemote(Func<int> func, ProcessStartInfo psi = null)

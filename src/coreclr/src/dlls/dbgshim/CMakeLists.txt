@@ -24,25 +24,16 @@ else(CLR_CMAKE_TARGET_WIN32)
     set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/dbgshim_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/dbgshim.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
+
+    if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+        # This option is necessary to ensure that the overloaded delete operator defined inside
+        # of the utilcode will be used instead of the standard library delete operator.
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
+    endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+
+    set_exports_linker_option(${EXPORTS_FILE})
+
 endif(CLR_CMAKE_TARGET_WIN32)
-
-if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
-    # This option is necessary to ensure that the overloaded delete operator defined inside
-    # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
-
-    # Add linker exports file option
-    if(CLR_CMAKE_HOST_SUNOS)
-        set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
-    else(CLR_CMAKE_HOST_SUNOS)
-        set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
-    endif(CLR_CMAKE_HOST_SUNOS)
-endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
-
-if(CLR_CMAKE_HOST_OSX)
-    # Add linker exports file option
-    set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_OSX)
 
 add_library_clr(dbgshim SHARED ${DBGSHIM_SOURCES})
 

@@ -1543,7 +1543,7 @@ BOOL ExtendsComImport(MethodTable* pMT)
     return pMT != NULL;
 }
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
 //--------------------------------------------------------------------------------
 // Gets the CLSID from the specified Prog ID.
 
@@ -1559,13 +1559,9 @@ HRESULT GetCLSIDFromProgID(__in_z WCHAR *strProgId, GUID *pGuid)
 
     HRESULT     hr = S_OK;
 
-#ifdef FEATURE_CORESYSTEM
     return CLSIDFromProgID(strProgId, pGuid);
-#else
-    return CLSIDFromProgIDEx(strProgId, pGuid);
-#endif
 }
-#endif // FEATURE_CLASSIC_COMINTEROP
+#endif // FEATURE_COMINTEROP
 
 #include <optsmallperfcritical.h>
 //--------------------------------------------------------------------------------
@@ -1881,11 +1877,11 @@ OBJECTREF AllocateComObject_ForManaged(MethodTable* pMT)
 }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
 
 //---------------------------------------------------------------------------
 //  get/load type for a given clsid
-MethodTable* GetTypeForCLSID(REFCLSID rclsid, BOOL* pfAssemblyInReg)
+MethodTable* GetTypeForCLSID(REFCLSID rclsid)
 {
     CONTRACT (MethodTable*)
     {
@@ -1896,18 +1892,8 @@ MethodTable* GetTypeForCLSID(REFCLSID rclsid, BOOL* pfAssemblyInReg)
     }
     CONTRACT_END;
 
-    AppDomain* pDomain = GetAppDomain();
-    _ASSERTE(pDomain);
-
-    // check to see if we have this class cached
-    MethodTable *pMT= pDomain->LookupClass(rclsid);
-    if (pMT == NULL)
-    {
-        pMT = pDomain->LoadCOMClass(rclsid, FALSE, pfAssemblyInReg);
-        if (pMT != NULL)
-            pDomain->InsertClassForCLSID(pMT, TRUE);
-    }
-    RETURN pMT;
+    // Not supported in .NET Core - requires typelib registration/generation
+    RETURN NULL;
 }
 
 
@@ -1924,35 +1910,13 @@ MethodTable* GetValueTypeForGUID(REFCLSID guid)
     }
     CONTRACT_END;
 
-    AppDomain* pDomain = GetAppDomain();
-    _ASSERTE(pDomain);
-
-    // Check to see if we have this value class cached
-    MethodTable *pMT = pDomain->LookupClass(guid);
-    if (pMT == NULL)
-        pMT = pDomain->LoadCOMClass(guid, TRUE, NULL);
-
-    if (pMT)
-    {
-        // Make sure the class is a value class.
-        if (!pMT->IsValueType())
-        {
-            DefineFullyQualifiedNameForClassW();
-            COMPlusThrow(kArgumentException, IDS_EE_GUID_REPRESENTS_NON_VC,
-                         GetFullyQualifiedNameForClassNestedAwareW(pMT));
-        }
-
-        // Insert the type in our map from CLSID to method table.
-        pDomain->InsertClassForCLSID(pMT, TRUE);
-    }
-
-    RETURN pMT;
+    // Not supported in .NET Core - requires typelib registration/generation
+    RETURN NULL;
 }
 
-#endif // FEATURE_CLASSIC_COMINTEROP
+#endif // FEATURE_COMINTEROP
 
 #endif //#ifndef CROSSGEN_COMPILE
-
 
 //---------------------------------------------------------------------------
 // This method returns the default interface for the class.
@@ -3807,7 +3771,7 @@ void IUInvokeDispMethod(
     }
 }
 
-#if defined(FEATURE_COMINTEROP_UNMANAGED_ACTIVATION) && defined(FEATURE_CLASSIC_COMINTEROP)
+#if defined(FEATURE_COMINTEROP_UNMANAGED_ACTIVATION) && defined(FEATURE_COMINTEROP)
 
 void GetComClassHelper(
     _Out_ OBJECTREF *pRef,
@@ -3901,7 +3865,6 @@ void GetComClassFromProgID(STRINGREF srefProgID, STRINGREF srefServer, OBJECTREF
     HRESULT                 hr          = S_OK;
     MethodTable*            pMT         = NULL;
     CLSID                   clsid       = {0};
-    BOOL                    bServerIsLocal = (srefServer == NULL);
 
     //
     // Allocate strings for the ProgID and the server.
@@ -3942,51 +3905,23 @@ void GetComClassFromProgID(STRINGREF srefProgID, STRINGREF srefServer, OBJECTREF
         COMPlusThrowHR(hr);
 
     //
-    // If no server name has been specified, see if we can find the well known
-    // managed class for this CLSID.
+    // See if we can find the well known managed class for this CLSID.
     //
 
-    if (bServerIsLocal)
-    {
-        BOOL fAssemblyInReg = FALSE;
-        // @TODO(DM): Do we really need to be this forgiving ? We should
-        //            look into letting the type load exceptions percolate
-        //            up to the user instead of swallowing them and using __ComObject.
-        EX_TRY
-        {
-            pMT = GetTypeForCLSID(clsid, &fAssemblyInReg);
-        }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(RethrowTerminalExceptions)
-    }
+    // Check if we have in the hash.
+    OBJECTHANDLE hRef;
+    ClassFactoryInfo ClassFactInfo;
+    ClassFactInfo.m_clsid = clsid;
+    ClassFactInfo.m_strServerName = wszServer;
+    EEClassFactoryInfoHashTable *pClassFactHash = GetAppDomain()->GetClassFactHash();
 
-    if (pMT != NULL)
+    if (pClassFactHash->GetValue(&ClassFactInfo, (HashDatum *)&hRef))
     {
-        //
-        // There is a managed class for this ProgID.
-        //
-
-        *pRef = pMT->GetManagedClassObject();
+        *pRef = ObjectFromHandle(hRef);
     }
     else
     {
-        // Check if we have in the hash.
-        OBJECTHANDLE hRef;
-        ClassFactoryInfo ClassFactInfo;
-        ClassFactInfo.m_clsid = clsid;
-        ClassFactInfo.m_strServerName = wszServer;
-        EEClassFactoryInfoHashTable *pClassFactHash = GetAppDomain()->GetClassFactHash();
-
-        if (pClassFactHash->GetValue(&ClassFactInfo, (HashDatum *)&hRef))
-        {
-            *pRef = ObjectFromHandle(hRef);
-        }
-        else
-        {
-            GetComClassHelper(pRef, pClassFactHash, &ClassFactInfo, wszProgID);
-        }
+        GetComClassHelper(pRef, pClassFactHash, &ClassFactInfo, wszProgID);
     }
 
     // If we made it this far *pRef better be set.
@@ -4010,7 +3945,6 @@ void GetComClassFromCLSID(REFCLSID clsid, STRINGREF srefServer, OBJECTREF *pRef)
     NewArrayHolder<WCHAR>   wszServer;
     HRESULT                 hr              = S_OK;
     MethodTable*            pMT             = NULL;
-    BOOL                    bServerIsLocal  = (srefServer == NULL);
 
     //
     // Allocate strings for the server.
@@ -4030,57 +3964,30 @@ void GetComClassFromCLSID(REFCLSID clsid, STRINGREF srefServer, OBJECTREF *pRef)
 
 
     //
-    // If no server name has been specified, see if we can find the well known
-    // managed class for this CLSID.
+    // See if we can find the well known managed class for this CLSID.
     //
 
-    if (bServerIsLocal)
-    {
-        // @TODO(DM): Do we really need to be this forgiving ? We should
-        //            look into letting the type load exceptions percolate
-        //            up to the user instead of swallowing them and using __ComObject.
-        EX_TRY
-        {
-            pMT = GetTypeForCLSID(clsid);
-        }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(RethrowTerminalExceptions)
-    }
+    // Check if we have in the hash.
+    OBJECTHANDLE hRef;
+    ClassFactoryInfo ClassFactInfo;
+    ClassFactInfo.m_clsid = clsid;
+    ClassFactInfo.m_strServerName = wszServer;
+    EEClassFactoryInfoHashTable *pClassFactHash = GetAppDomain()->GetClassFactHash();
 
-    if (pMT != NULL)
+    if (pClassFactHash->GetValue(&ClassFactInfo, (HashDatum*) &hRef))
     {
-        //
-        // There is a managed class for this CLSID.
-        //
-
-        *pRef = pMT->GetManagedClassObject();
+        *pRef = ObjectFromHandle(hRef);
     }
     else
     {
-        // Check if we have in the hash.
-        OBJECTHANDLE hRef;
-        ClassFactoryInfo ClassFactInfo;
-        ClassFactInfo.m_clsid = clsid;
-        ClassFactInfo.m_strServerName = wszServer;
-        EEClassFactoryInfoHashTable *pClassFactHash = GetAppDomain()->GetClassFactHash();
-
-        if (pClassFactHash->GetValue(&ClassFactInfo, (HashDatum*) &hRef))
-        {
-            *pRef = ObjectFromHandle(hRef);
-        }
-        else
-        {
-            GetComClassHelper(pRef, pClassFactHash, &ClassFactInfo, NULL);
-        }
+        GetComClassHelper(pRef, pClassFactHash, &ClassFactInfo, NULL);
     }
 
     // If we made it this far *pRef better be set.
     _ASSERTE(*pRef != NULL);
 }
 
-#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION && FEATURE_CLASSIC_COMINTEROP
+#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION && FEATURE_COMINTEROP
 
 #endif //#ifndef CROSSGEN_COMPILE
 
@@ -4553,7 +4460,7 @@ void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, 
     }
 }
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
 
 //--------------------------------------------------------------------------------
 //  Check if the pUnk implements IProvideClassInfo and try to figure
@@ -4611,7 +4518,7 @@ MethodTable* GetClassFromIProvideClassInfo(IUnknown* pUnk)
     RETURN pClassMT;
 }
 
-#endif // FEATURE_CLASSIC_COMINTEROP
+#endif // FEATURE_COMINTEROP
 
 static void DECLSPEC_NORETURN ThrowTypeLoadExceptionWithInner(MethodTable *pClassMT, LPCWSTR pwzName, HRESULT hr, unsigned resID)
 {
