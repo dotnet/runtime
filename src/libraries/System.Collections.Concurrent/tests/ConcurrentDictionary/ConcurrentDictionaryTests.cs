@@ -124,7 +124,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentException>(action);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, 1, 1, 10000)]
         [InlineData(5, 1, 1, 10000)]
         [InlineData(1, 1, 2, 5000)]
@@ -189,7 +189,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(expectedCount, dictConcurrent.ToArray().Length);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, 1, 10000)]
         [InlineData(5, 1, 10000)]
         [InlineData(1, 2, 5000)]
@@ -253,7 +253,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, 1, 10000)]
         [InlineData(5, 1, 10000)]
         [InlineData(1, 2, 5000)]
@@ -297,7 +297,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, 1, 10000)]
         [InlineData(5, 1, 1000)]
         [InlineData(1, 5, 2001)]
@@ -365,7 +365,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(expectKeys.Count, dict.ToArray().Length);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(5000)]
@@ -496,7 +496,7 @@ namespace System.Collections.Concurrent.Tests
             TestGetOrAddOrUpdate(5, 5, 5, 25000, true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestAddOrUpdate()
         {
             TestGetOrAddOrUpdate(1, 1, 1, 10000, false);

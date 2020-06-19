@@ -98,7 +98,7 @@ namespace System.Collections.Concurrent.Tests
             AssertSetsEqual(expected, actual);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Add_TakeFromAnotherThread_ExpectedItemsTaken()
         {
             IProducerConsumerCollection<int> c = CreateProducerConsumerCollection();
@@ -565,7 +565,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0, true)]
         [InlineData(1, true)]
         [InlineData(1, false)]
@@ -916,7 +916,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(0, c.Count);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0, ConcurrencyTestSeconds / 2)]
         [InlineData(1, ConcurrencyTestSeconds / 2)]
         public void ManyConcurrentAddsTakes_ForceContentionWithGetEnumerator(int initialCount, double seconds)
