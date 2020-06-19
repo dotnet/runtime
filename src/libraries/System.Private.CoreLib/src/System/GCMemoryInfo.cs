@@ -22,7 +22,7 @@ namespace System
         public long FragmentationBeforeBytes { get; }
         /// <summary>Size in bytes on exit from the reported collection.</summary>
         public long SizeAfterBytes { get; }
-        /// <summary>Fragmentation on exit from the reported collection.</summary>
+        /// <summary>Fragmentation in bytes on exit from the reported collection.</summary>
         public long FragmentationAfterBytes { get; }
     }
 
