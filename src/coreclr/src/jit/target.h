@@ -6,7 +6,7 @@
 #ifndef TARGET_H_
 #define TARGET_H_
 
-#if defined(TARGET_UNIX)
+#if defined(TARGET_UNIX) || defined(TARGET_ARM)
 #define FEATURE_VARARG 0
 #else
 #define FEATURE_VARARG 1
