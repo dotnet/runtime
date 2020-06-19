@@ -704,9 +704,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_CreateBroadcast:
                 case NI_VectorT256_CreateBroadcast:
                 {
+                    assert(retType == TYP_VOID);
+
                     copyBlkDst = op1;
                     copyBlkSrc =
-                        gtNewSimdCreateBroadcastNode(retType, op2, baseType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                        gtNewSimdCreateBroadcastNode(simdType, op2, baseType, simdSize, /* isSimdAsHWIntrinsic */ true);
                     break;
                 }
 
@@ -916,9 +918,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector4_CreateBroadcast:
                 case NI_VectorT128_CreateBroadcast:
                 {
+                    assert(retType == TYP_VOID);
+
                     copyBlkDst = op1;
                     copyBlkSrc =
-                        gtNewSimdCreateBroadcastNode(retType, op2, baseType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                        gtNewSimdCreateBroadcastNode(simdType, op2, baseType, simdSize, /* isSimdAsHWIntrinsic */ true);
                     break;
                 }
 
@@ -1018,6 +1022,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         // block ops.
 
         GenTree* dest = gtNewBlockVal(copyBlkDst, simdSize);
+
+        dest->gtType  = simdType;
         dest->gtFlags |= GTF_GLOB_REF;
 
         GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc, /* isVolatile */ false, /* isCopyBlock */ true);
