@@ -67,12 +67,6 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (IDictionaryEnumerator)state.Current.CollectionEnumerator;
             }
 
-            // Avoid using GetKeyConverter here
-            // IDictionary is a spacial case since it has polymorphic object semantics on serialization.
-            // But needs to use JsonConverter<string> on deserialization.
-            JsonClassInfo objectKeyClassInfo = options.GetOrAddClass(typeof(object));
-            JsonConverter<object> keyConverter = (JsonConverter<object>)objectKeyClassInfo.PropertyInfoForClassInfo.ConverterBase;
-
             JsonConverter<object?> converter = GetValueConverter(ref state);
             do
             {
@@ -86,7 +80,20 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     state.Current.PropertyState = StackFramePropertyState.Name;
                     object key = enumerator.Key;
-                    keyConverter.WriteWithQuotes(writer, key, options, ref state);
+                    // Optimize for string since that's the hot path.
+                    if (key is string keyString)
+                    {
+                        JsonConverter<string> stringKeyConverter = GetKeyConverter(state.Current.JsonClassInfo);
+                        stringKeyConverter.WriteWithQuotes(writer, keyString, options, ref state);
+                    }
+                    else
+                    {
+                        // IDictionary is a spacial case since it has polymorphic object semantics on serialization
+                        // but needs to use JsonConverter<string> on deserialization.
+                        JsonClassInfo classInfo = options.GetOrAddClass(typeof(object));
+                        JsonConverter<object> objectKeyConverter = (JsonConverter<object>)classInfo.PropertyInfoForClassInfo.ConverterBase;
+                        objectKeyConverter.WriteWithQuotes(writer, key, options, ref state);
+                    }
                 }
 
                 object? element = enumerator.Value;

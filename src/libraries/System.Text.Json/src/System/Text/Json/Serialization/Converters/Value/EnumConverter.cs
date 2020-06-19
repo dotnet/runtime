@@ -318,9 +318,9 @@ namespace System.Text.Json.Serialization.Converters
             return converted;
         }
 
-        internal override T ReadWithQuotes(ReadOnlySpan<byte> utf8Bytes)
+        internal override T ReadWithQuotes(ReadOnlySpan<byte> unescapedPropertyName, string? unescapedPropertyNameAsString)
         {
-            string enumString = JsonReaderHelper.TranscodeHelper(utf8Bytes);
+            string enumString = JsonReaderHelper.TranscodeHelper(unescapedPropertyName);
 
             if (!Enum.TryParse(enumString, out T value)
                 && !Enum.TryParse(enumString, ignoreCase: true, out value))

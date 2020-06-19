@@ -19,10 +19,10 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteNumberValue(value);
         }
 
-        internal override int ReadWithQuotes(ReadOnlySpan<byte> span)
+        internal override int ReadWithQuotes(ReadOnlySpan<byte> unescapedPropertyName, string? unescapedPropertyNameAsString)
         {
-            if (Utf8Parser.TryParse(span, out int value, out int bytesConsumed)
-                && span.Length == bytesConsumed)
+            if (Utf8Parser.TryParse(unescapedPropertyName, out int value, out int bytesConsumed)
+                && unescapedPropertyName.Length == bytesConsumed)
             {
                 return value;
             }

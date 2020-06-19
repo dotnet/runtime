@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization.Converters
             throw new InvalidOperationException();
         }
 
-        internal override object ReadWithQuotes(ReadOnlySpan<byte> utf8Bytes)
+        internal override object ReadWithQuotes(ReadOnlySpan<byte> unescapedPropertyName, string? unescapedPropertyNameAsString)
             => throw new NotSupportedException();
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
@@ -34,8 +34,8 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonConverter runtimeConverter = options.GetOrAddClass(runtimeType).PropertyInfoForClassInfo.ConverterBase;
 
-            // We don't support object itself as TKey, only the other supported types when they are boxed.
-            if (runtimeConverter is JsonConverter<object> || !runtimeConverter.CanBeDictionaryKey)
+            // We don't support object itself as key type.
+            if (runtimeConverter == this || !runtimeConverter.CanBeDictionaryKey)
             {
                 ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(parentType);
             }

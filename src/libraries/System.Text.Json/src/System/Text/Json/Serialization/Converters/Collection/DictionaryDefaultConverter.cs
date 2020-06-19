@@ -95,12 +95,14 @@ namespace System.Text.Json.Serialization.Converters
                         // Read method would have thrown if otherwise.
                         Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
-                        ReadOnlySpan<byte> propertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+                        string unescapedPropertyNameAsString = JsonReaderHelper.TranscodeHelper(unescapedPropertyName);
+
                         // Copy key name to JsonPropertyName for JSON Path support in case of error.
-                        state.Current.JsonPropertyName = propertyName.ToArray();
+                        state.Current.JsonPropertyNameAsString = unescapedPropertyNameAsString;
 
                         JsonConverter<TKey> keyConverter = GetKeyConverter(state.Current.JsonClassInfo);
-                        TKey key = keyConverter.ReadWithQuotes(propertyName);
+                        TKey key = keyConverter.ReadWithQuotes(unescapedPropertyName, unescapedPropertyNameAsString);
 
                         // Read the value and add.
                         reader.ReadWithVerify();
@@ -124,12 +126,14 @@ namespace System.Text.Json.Serialization.Converters
                         // Read method would have thrown if otherwise.
                         Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
-                        ReadOnlySpan<byte> propertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+                        string unescapedPropertyNameAsString = JsonReaderHelper.TranscodeHelper(unescapedPropertyName);
+
                         // Copy key name to JsonPropertyName for JSON Path support in case of error.
-                        state.Current.JsonPropertyName = propertyName.ToArray();
+                        state.Current.JsonPropertyNameAsString = unescapedPropertyNameAsString;
 
                         JsonConverter<TKey> keyConverter = GetKeyConverter(state.Current.JsonClassInfo);
-                        TKey key = keyConverter.ReadWithQuotes(propertyName);
+                        TKey key = keyConverter.ReadWithQuotes(unescapedPropertyName, unescapedPropertyNameAsString);
 
                         reader.ReadWithVerify();
 
@@ -220,10 +224,18 @@ namespace System.Text.Json.Serialization.Converters
 
                         state.Current.PropertyState = StackFramePropertyState.Name;
 
-                        ReadOnlySpan<byte> propertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
-                        state.Current.DictionaryKeyName = propertyName.ToArray();
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+
                         // Copy key name to JsonPropertyName for JSON Path support in case of error.
-                        state.Current.JsonPropertyName = state.Current.DictionaryKeyName;
+                        if (typeof(TKey) == typeof(string))
+                        {
+                            // We use this property for string keys in order to avoid the allocation of JsonPropertyName in the hot path.
+                            state.Current.JsonPropertyNameAsString = JsonReaderHelper.TranscodeHelper(unescapedPropertyName);
+                        }
+                        else
+                        {
+                            state.Current.JsonPropertyName = unescapedPropertyName.ToArray();
+                        }
                     }
 
                     if (state.Current.PropertyState < StackFramePropertyState.ReadValue)
@@ -240,7 +252,7 @@ namespace System.Text.Json.Serialization.Converters
                     if (state.Current.PropertyState < StackFramePropertyState.TryRead)
                     {
                         JsonConverter<TKey> keyConverter = GetKeyConverter(state.Current.JsonClassInfo);
-                        TKey key = keyConverter.ReadWithQuotes(state.Current.DictionaryKeyName);
+                        TKey key = keyConverter.ReadWithQuotes(state.Current.JsonPropertyName, state.Current.JsonPropertyNameAsString);
                         // Get the value from the converter and add it.
                         bool success = elementConverter.TryRead(ref reader, typeof(TValue), options, ref state, out TValue element);
                         if (!success)

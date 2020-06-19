@@ -19,10 +19,10 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteStringValue(value);
         }
 
-        internal override Guid ReadWithQuotes(ReadOnlySpan<byte> span)
+        internal override Guid ReadWithQuotes(ReadOnlySpan<byte> unescapedPropertyName, string? unescapedPropertyNameAsString)
         {
-            if (Utf8Parser.TryParse(span, out Guid value, out int bytesConsumed)
-                && span.Length == bytesConsumed)
+            if (Utf8Parser.TryParse(unescapedPropertyName, out Guid value, out int bytesConsumed)
+                && unescapedPropertyName.Length == bytesConsumed)
             {
                 return value;
             }

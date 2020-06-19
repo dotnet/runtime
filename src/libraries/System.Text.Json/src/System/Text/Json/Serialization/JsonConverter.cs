@@ -78,8 +78,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Loosely-typed WriteWithQuotes() that forwards to strongly-typed WriteWithQuotes().
         /// </summary>
-        internal virtual void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
-            => throw new InvalidOperationException();
+        internal abstract void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state);
 
         // Whether a type (ClassType.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized => false;

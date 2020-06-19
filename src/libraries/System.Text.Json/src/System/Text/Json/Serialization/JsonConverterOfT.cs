@@ -437,7 +437,10 @@ namespace System.Text.Json.Serialization
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         public abstract void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options);
 
-        internal virtual T ReadWithQuotes(ReadOnlySpan<byte> utf8Bytes)
+        // When overriden in a derived class
+        // Always use unescapedPropertyNameAsString for typeof(T) == typeof(string).
+        // Always use unescapedPropertyName for typeof(T) != typeof(string).
+        internal virtual T ReadWithQuotes(ReadOnlySpan<byte> unescpaedPropertyName, string? unescapedPropertyNameAsString)
             => throw new InvalidOperationException();
 
         internal virtual void WriteWithQuotes(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options, ref WriteStack state)

@@ -15,10 +15,11 @@ namespace System.Text.Json
         public StackFramePropertyState PropertyState;
         public bool UseExtensionProperty;
 
-        // Support JSON Path on exceptions.
-        public byte[]? JsonPropertyName; // This is Utf8 since we don't want to convert to string until an exception is thown.
-        public byte[]? DictionaryKeyName; // This is Utf8 since we don't want to convert to TKey until we have both key and value when parsing the dictionary elements on stream cases.
-        public string? JsonPropertyNameAsString; // This is used for dictionary keys and re-entry cases that specify a property name.
+        // Support JSON Path on exceptions and non-string Dictionary keys.
+        // This is Utf8 since we don't want to convert to string until an exception is thown.
+        // For dictionary keys we don't want to convert to TKey until we have both key and value when parsing the dictionary elements on stream cases.
+        public byte[]? JsonPropertyName;
+        public string? JsonPropertyNameAsString; // This is used for string dictionary keys and re-entry cases that specify a property name.
 
         // Validation state.
         public int OriginalDepth;
