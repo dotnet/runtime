@@ -2008,7 +2008,7 @@ Retire:
     while (true)
     {
 RetryRetire:
-        if (RetiredWorkerSemaphore->Wait(AppX::IsAppXProcess() ? WorkerTimeoutAppX : WorkerTimeout))
+        if (RetiredWorkerSemaphore->Wait(WorkerTimeout))
         {
             foundWork = true;
 
@@ -2085,7 +2085,7 @@ WaitForWork:
         FireEtwThreadPoolWorkerThreadWait(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
 RetryWaitForWork:
-    if (WorkerSemaphore->Wait(AppX::IsAppXProcess() ? WorkerTimeoutAppX : WorkerTimeout, WorkerThreadSpinLimit, NumberOfProcessors))
+    if (WorkerSemaphore->Wait(WorkerTimeout, WorkerThreadSpinLimit, NumberOfProcessors))
     {
         foundWork = true;
         goto Work;
@@ -3221,7 +3221,7 @@ DWORD WINAPI ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
     PIOCompletionContext context;
     BOOL fIsCompletionContext;
 
-    const DWORD CP_THREAD_WAIT = AppX::IsAppXProcess() ? 5000 : 15000; /* milliseconds */
+    const DWORD CP_THREAD_WAIT = 15000; /* milliseconds */
 
     _ASSERTE(GlobalCompletionPort != NULL);
 

@@ -72,7 +72,6 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 # Features - please keep them alphabetically sorted
 if(CLR_CMAKE_TARGET_WIN32)
-  add_definitions(-DFEATURE_APPX)
   if(NOT CLR_CMAKE_TARGET_ARCH_I386)
     add_definitions(-DFEATURE_ARRAYSTUB_AS_IL)
     add_definitions(-DFEATURE_MULTICASTSTUB_AS_IL)

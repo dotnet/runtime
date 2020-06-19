@@ -292,12 +292,6 @@ HRESULT EnsureEEStarted()
     {
         BEGIN_ENTRYPOINT_NOTHROW;
 
-#if defined(FEATURE_APPX) && !defined(CROSSGEN_COMPILE)
-        STARTUP_FLAGS startupFlags = CorHost2::GetStartupFlags();
-        // On CoreCLR, the host is in charge of determining whether the process is AppX or not.
-        AppX::SetIsAppXProcess(!!(startupFlags & STARTUP_APPX_APP_MODEL));
-#endif
-
 #ifndef TARGET_UNIX
         // The sooner we do this, the sooner we avoid probing registry entries.
         // (Perf Optimization for VSWhidbey:113373.)
@@ -1675,10 +1669,7 @@ void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading)
         }
 
 #ifdef FEATURE_MULTICOREJIT
-        if (!AppX::IsAppXProcess()) // When running as Appx, make the delayed timer driven writing be the only option
-        {
-            MulticoreJitManager::StopProfileAll();
-        }
+        MulticoreJitManager::StopProfileAll();
 #endif
     }
 

@@ -34,8 +34,6 @@
 #include "multicorejit.h"
 #endif
 
-#include "appxutil.h"
-
 #include "tieredcompilation.h"
 
 #include "codeversion.h"
