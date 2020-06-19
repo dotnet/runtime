@@ -217,6 +217,16 @@ private:
         return &s_configCrst;
     }
 
+    static void NotifyProfilerProviderCreated(EventPipeProvider *pProvider)
+    {
+#ifndef DACCESS_COMPILE
+        // Let the profiler know the provider has been created so it can register if it wants to
+        BEGIN_PIN_PROFILER(CORProfilerIsMonitoringEventPipe());
+        g_profControlBlock.pProfInterface->EventPipeProviderCreated(pProvider);
+        END_PIN_PROFILER();
+#endif // DACCESS_COMPILE
+    }
+
     static CrstStatic s_configCrst;
     static Volatile<EventPipeState> s_state;
     static EventPipeConfiguration s_config;
@@ -235,7 +245,6 @@ private:
     static unsigned int * s_pProcGroupOffsets;
 #endif
     static Volatile<uint32_t> s_numberOfSessions;
-    static bool s_enableSampleProfilerAtStartup;
 };
 
 static_assert(EventPipe::MaxNumberOfSessions == 64, "Maximum number of EventPipe sessions is not 64.");

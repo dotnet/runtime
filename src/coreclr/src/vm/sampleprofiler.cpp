@@ -75,6 +75,12 @@ void SampleProfiler::Enable()
     }
     CONTRACTL_END;
 
+    // Check to see if the sample profiler event is enabled.  If it is not, do not spin up the sampling thread.
+    if (!s_pThreadTimeEvent->IsEnabled())
+    {
+        return;
+    }
+
     if (s_canStartSampling)
     {
         EnableInternal();
@@ -390,10 +396,6 @@ void SampleProfiler::EnableInternal()
 #else
     _ASSERTE(!fSuccess);
 #endif
-
-    // Check to see if the sample profiler event is enabled.  If it is not, do not spin up the sampling thread.
-    if (!s_pThreadTimeEvent->IsEnabled())
-        return;
 
     if (!s_profilingEnabled)
     {
