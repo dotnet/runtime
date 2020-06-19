@@ -18,10 +18,10 @@ namespace System.Net.WebSockets
 {
     internal sealed class WebSocketHandle
     {
+#if !TARGETS_BROWSER
         /// <summary>GUID appended by the server as part of the security key response.  Defined in the RFC.</summary>
         private const string WSServerGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-#if !TARGETS_BROWSER
         /// <summary>Shared, lazily-initialized handler for when using default options.</summary>
         private static SocketsHttpHandler? s_defaultHandler;
 #endif
@@ -73,14 +73,10 @@ namespace System.Net.WebSockets
         public Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken) =>
             _webSocket!.CloseOutputAsync(closeStatus, statusDescription, cancellationToken);
 
-#if TARGETS_BROWSER
         public async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
-            CancellationTokenRegistration? registration = cancellationToken.Register(s =>
-            {
-                if (s is WebSocketHandle wsh)
-                    wsh.Abort();
-            }, this);
+#if TARGETS_BROWSER
+            CancellationTokenRegistration registration = cancellationToken.Register(s => ((WebSocketHandle)s!).Abort(), this);
             try
             {
                 _webSocket = new BrowserWebSocket();
@@ -103,12 +99,9 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                registration?.Dispose();
+                registration.Dispose();
             }
-        }
 #else
-        public async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
-        {
             HttpResponseMessage? response = null;
             SocketsHttpHandler? handler = null;
             bool disposeHandler = true;
@@ -280,9 +273,10 @@ namespace System.Net.WebSockets
                     handler?.Dispose();
                 }
             }
-        }
 #endif
+        }
 
+#if !TARGETS_BROWSER
         /// <param name="secKey">The generated security key to send in the Sec-WebSocket-Key header.</param>
         private static void AddWebSocketHeaders(HttpRequestMessage request, string secKey, ClientWebSocketOptions options)
         {
@@ -327,5 +321,6 @@ namespace System.Net.WebSockets
                 throw new WebSocketException(WebSocketError.HeaderError, SR.Format(SR.net_WebSockets_InvalidResponseHeader, name, string.Join(", ", array)));
             }
         }
+#endif
     }
 }

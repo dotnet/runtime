@@ -11,7 +11,7 @@ namespace System.Net.WebSockets
     public sealed class ClientWebSocketOptions
     {
         private bool _isReadOnly; // After ConnectAsync is called the options cannot be modified.
-        internal List<string>? _requestedSubProtocols;
+        private List<string>? _requestedSubProtocols;
 
         internal ClientWebSocketOptions()
         { }
