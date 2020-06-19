@@ -4,7 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup>>
+  <PropertyGroup>
     <IsInterpreting>false</IsInterpreting>
     <DefineConstants> $(DefineConstants);FEATURE_DLG_INVOKE;FEATURE_FAST_CREATE</DefineConstants>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
