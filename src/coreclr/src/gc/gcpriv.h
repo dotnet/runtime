@@ -2895,6 +2895,11 @@ protected:
 #endif
 #endif //MULTIPLE_HEAPS
 
+#ifdef MARK_LIST
+    PER_HEAP_ISOLATED
+    void grow_mark_list();
+#endif //MARK_LIST
+
 #ifdef BACKGROUND_GC
 
     PER_HEAP
@@ -3759,13 +3764,11 @@ protected:
     PER_HEAP_ISOLATED
     size_t mark_list_size;
 
+    PER_HEAP_ISOLATED
+    bool mark_list_overflow;
+
     PER_HEAP
     uint8_t** mark_list_end;
-
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && defined(MULTIPLE_HEAPS)
-    PER_HEAP
-    uint32_t* mark_list_index_32;
-#endif //defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && defined(MULTIPLE_HEAPS)
 
     PER_HEAP
     uint8_t** mark_list_index;

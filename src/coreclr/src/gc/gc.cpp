@@ -2166,6 +2166,7 @@ uint8_t**   gc_heap::g_mark_list_copy;
 #endif //PARALLEL_MARK_LIST_SORT
 
 size_t      gc_heap::mark_list_size;
+bool        gc_heap::mark_list_overflow;
 #endif //MARK_LIST
 
 seg_mapping* seg_mapping_table;
@@ -8327,6 +8328,7 @@ void gc_heap::sort_mark_list()
     if (mark_list_index > mark_list_end)
     {
 //        printf("sort_mark_list: overflow on heap %d\n", heap_number);
+        mark_list_overflow = true;
         return;
     }
 
@@ -8363,7 +8365,8 @@ void gc_heap::sort_mark_list()
     if (settings.condemned_generation > 1 || total_mark_list_size > total_ephemeral_size/256)
     {
         mark_list_index = mark_list_end + 1;
-        //            printf("sort_mark_list: overflow on heap %d\n", i);
+        // let's not count this as a mark list overflow
+        mark_list_overflow = false;
         return;
     }
 
@@ -8373,6 +8376,7 @@ void gc_heap::sort_mark_list()
     {
         // is the range small enough for a 32-bit sort?
         ptrdiff_t range = high - low;
+        assert(sizeof(uint8_t*) == (1<<3));
         ptrdiff_t scaled_range = range >> 3;
         if ((uint32_t)scaled_range == scaled_range)
         {
@@ -8412,7 +8416,7 @@ void gc_heap::sort_mark_list()
                 int log2_item_count = index_of_highest_set_bit(item_count);
                 double elapsed_cyles_by_n_log_n = (double)elapsed_cycles / item_count / log2_item_count;
 
-                printf("GC#%d: first phase of sort_mark_list for heap %d took %u cycles to sort %u entries (cost/(n*log2(n) = %5.2f)\n", settings.gc_index, this->heap_number, elapsed_cycles, item_count, elapsed_cyles_by_n_log_n);
+//                printf("GC#%d: first phase of sort_mark_list for heap %d took %u cycles to sort %u entries (cost/(n*log2(n) = %5.2f)\n", settings.gc_index, this->heap_number, elapsed_cycles, item_count, elapsed_cyles_by_n_log_n);
 
 #ifdef WRITE_SORT_DATA
                 char file_name[256];
@@ -8804,6 +8808,55 @@ void gc_heap::combine_mark_lists()
 }
 #endif // PARALLEL_MARK_LIST_SORT
 #endif //MULTIPLE_HEAPS
+
+void gc_heap::grow_mark_list()
+{
+    size_t new_mark_list_size = min(mark_list_size * 2, 1000 * 1024);
+    if (new_mark_list_size == mark_list_size)
+        return;
+
+#ifdef MULTIPLE_HEAPS
+    uint8_t** new_mark_list = make_mark_list(new_mark_list_size * n_heaps);
+
+#ifdef PARALLEL_MARK_LIST_SORT
+    uint8_t** new_mark_list_copy = make_mark_list(new_mark_list_size * n_heaps);
+#ifdef BIT_MAP_SORT
+    memset(new_mark_list_copy, 0, new_mark_list_size * n_heaps * sizeof(new_mark_list_copy[0]));
+#endif //BIT_MAP_SORT
+#endif //PARALLEL_MARK_LIST_SORT
+
+    if (new_mark_list != nullptr
+#ifdef PARALLEL_MARK_LIST_SORT
+        && new_mark_list_copy != nullptr
+#endif //PARALLEL_MARK_LIST_SORT
+        )
+    {
+        delete[] g_mark_list;
+        g_mark_list = new_mark_list;
+#ifdef PARALLEL_MARK_LIST_SORT
+        delete[] g_mark_list_copy;
+        g_mark_list_copy = new_mark_list_copy;
+#endif //PARALLEL_MARK_LIST_SORT
+        mark_list_size = new_mark_list_size;
+    }
+    else
+    {
+        delete[] new_mark_list;
+#ifdef PARALLEL_MARK_LIST_SORT
+        delete[] new_mark_list_copy;
+#endif //PARALLEL_MARK_LIST_SORT
+    }
+
+#else //MULTIPLE_HEAPS
+    uint8_t** new_mark_list = make_mark_list(new_mark_list_size);
+    if (new_mark_list != nullptr)
+    {
+        delete[] mark_list;
+        g_mark_list = new_mark_list;
+        mark_list_size = new_mark_list_size;
+    }
+#endif //MULTIPLE_HEAPS
+}
 #endif //MARK_LIST
 
 class seg_free_spaces
@@ -10315,7 +10368,7 @@ gc_heap::init_semi_shared()
 
 #ifdef MARK_LIST
 #ifdef MULTIPLE_HEAPS
-    mark_list_size = min (300*1024, max (8192, soh_segment_size/(2*10*32)));
+    mark_list_size = min (100*1024, max (8192, soh_segment_size/(2*10*32)));
     g_mark_list = make_mark_list (mark_list_size*n_heaps);
 
     min_balance_threshold = alloc_quantum_balance_units * CLR_SIZE * 2;
@@ -22213,7 +22266,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
                  (mark_list_index - &mark_list[0]), ((mark_list_end - &mark_list[0]))));
 
     if (mark_list_index >= (mark_list_end + 1))
+    {
         mark_list_index = mark_list_end + 1;
+        mark_list_overflow = true;
+    }
 #else
     dprintf (3, ("mark_list length: %Id",
                  (mark_list_index - &mark_list[0])));
@@ -37151,6 +37207,12 @@ void gc_heap::do_post_gc()
 #else
     record_interesting_info_per_heap();
 #endif //MULTIPLE_HEAPS
+    if (mark_list_overflow)
+    {
+        grow_mark_list();
+        mark_list_overflow = false;
+    }
+
     record_global_mechanisms();
 #endif //GC_CONFIG_DRIVEN
 }
