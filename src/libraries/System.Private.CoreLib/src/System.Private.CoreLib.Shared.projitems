@@ -746,7 +746,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomMarshaler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomQueryInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\IDynamicInterfaceCastable.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\IMarshal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InterfaceTypeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InvalidComObjectException.cs" />
