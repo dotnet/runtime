@@ -893,13 +893,8 @@ var BindingSupportLib = {
 					obj.__mono_jshandle__ = handle;
 					// Obtain the JS -> C# type mapping.
 					var wasm_type = this.get_wasm_type(obj);
-					var ownsHandle = true;
-
-					// If this is the global object we do not want to release it.
-					if (typeof ___mono_wasm_global___ !== "undefined" && ___mono_wasm_global___ === obj)
-						ownsHandle = false;
-
-					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, ownsHandle, typeof wasm_type === "undefined" ? -1 : wasm_type);
+					obj.__owns_handle__ = true;
+					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, obj.__owns_handle__, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					this.mono_wasm_object_registry[handle] = obj;
 						
 				}
