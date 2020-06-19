@@ -64,11 +64,11 @@
     <WorkItemCommand>$(WorkItemCommand) $(CliArguments)</WorkItemCommand>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(HelixSourcePrefix) == 'pr'">
+  <PropertyGroup Condition="'$(HelixSourcePrefix)'' == 'pr'">
     <WorkItemTimeout>15</WorkItemTimeout>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(HelixSourcePrefix) == 'official'">
+  <PropertyGroup Condition="'$(HelixSourcePrefix)'' == 'official'">
     <WorkItemTimeout>45</WorkItemTimeout>
   </PropertyGroup>
 
