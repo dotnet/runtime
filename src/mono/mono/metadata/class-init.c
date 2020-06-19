@@ -3688,8 +3688,10 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 			if (has_preserve_base_overrides) {
 				g_assert (impl_class != NULL);
 				g_assert (impl_class == klass || decl->slot < impl_class->vtable_size);
-				MonoMethod *impl_with_attr = impl_class == klass ? impl : impl_class->vtable [decl->slot];
-				TRACE_INTERFACE_VTABLE (printf ("override decl [slot %d] %s in class %s has method %s in this slot and it has the preserve base overrides attribute.  overridden by %s\n", decl->slot, mono_method_full_name (decl, 1), mono_type_full_name (m_class_get_byval_arg (impl_class)), mono_method_full_name (impl_with_attr, 1), mono_method_full_name (impl, 1)));
+				TRACE_INTERFACE_VTABLE (do {
+						MonoMethod *impl_with_attr = impl_class == klass ? impl : impl_class->vtable [decl->slot];
+						printf ("override decl [slot %d] %s in class %s has method %s in this slot and it has the preserve base overrides attribute.  overridden by %s\n", decl->slot, mono_method_full_name (decl, 1), mono_type_full_name (m_class_get_byval_arg (impl_class)), mono_method_full_name (impl_with_attr, 1), mono_method_full_name (impl, 1));
+							} while (0));
 			}
 
 			/* Historically, mono didn't do a signature equivalence check for explicit overrides, but we need one for covariant returns */
