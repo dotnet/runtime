@@ -13,6 +13,11 @@ namespace System
     {
         // Returns value of given switch using provided cache.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool GetSwitchValue(string switchName, ref bool switchValue) =>
+            AppContext.TryGetSwitch(switchName, out switchValue);
+
+        // Returns value of given switch using provided cache.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool GetCachedSwitchValue(string switchName, ref int cachedSwitchValue)
         {
             // The cached switch value has 3 states: 0 - unknown, 1 - true, -1 - false
@@ -24,7 +29,6 @@ namespace System
 
         private static bool GetCachedSwitchValueInternal(string switchName, ref int cachedSwitchValue)
         {
-
             bool hasSwitch = AppContext.TryGetSwitch(switchName, out bool isSwitchEnabled);
             if (!hasSwitch)
             {

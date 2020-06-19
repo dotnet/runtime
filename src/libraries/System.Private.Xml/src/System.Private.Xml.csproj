@@ -791,7 +791,7 @@
     <Compile Include="System\Xml\Xsl\Xslt\XsltLoader.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XsltQilFactory.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XslVisitor.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\LocalAppContextSwitches.Common.cs"
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
              Link="System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />
     <Compile Include="$(CommonPath)System\CSharpHelpers.cs" />
