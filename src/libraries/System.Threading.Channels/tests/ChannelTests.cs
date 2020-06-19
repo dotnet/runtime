@@ -131,7 +131,7 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAsync<FieldAccessException>(() => t);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task TestBaseClassReadAsync()
         {
             WrapperChannel<int> channel = new WrapperChannel<int>(10);

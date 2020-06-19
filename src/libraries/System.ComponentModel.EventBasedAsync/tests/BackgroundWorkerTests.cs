@@ -16,7 +16,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         private const int TimeoutShort = 300;
         private const int TimeoutLong = 30000;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TestBackgroundWorkerBasic()
         {
             var orignal = SynchronizationContext.Current;

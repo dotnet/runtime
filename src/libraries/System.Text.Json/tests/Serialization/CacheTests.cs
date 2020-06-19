@@ -84,7 +84,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void MultipleThreads_DifferentTypes()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.

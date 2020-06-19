@@ -183,7 +183,7 @@ namespace System.Net.Tests
 
         protected virtual bool EnableConcurrentReadWriteTests => true;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task RequestAfterResponse_throws()
         {
             string path = Path.GetTempFileName();

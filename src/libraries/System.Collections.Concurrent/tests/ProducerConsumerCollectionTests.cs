@@ -187,7 +187,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(oracle.Count, c.Count);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(100, 1, 100, true)]
         [InlineData(100, 4, 10, false)]
         [InlineData(1000, 11, 100, true)]
@@ -698,7 +698,7 @@ namespace System.Collections.Concurrent.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, ConcurrencyTestSeconds / 2)]
         [InlineData(4, ConcurrencyTestSeconds / 2)]
         public void ManyConcurrentAddsTakes_EnsureTrackedCountsMatchResultingCollection(int threadsPerProc, double seconds)
@@ -826,7 +826,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(remaining, c.Count);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(ConcurrencyTestSeconds)]
         public void ManyConcurrentAddsTakesPeeks_ForceContentionWithOtherThreadsPeeking(double seconds)
         {

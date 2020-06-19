@@ -14,7 +14,7 @@ namespace System.Collections.Concurrent.Tests
 {
     public class ConcurrentDictionaryTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestBasicScenarios()
         {
             ConcurrentDictionary<int, int> cd = new ConcurrentDictionary<int, int>();
@@ -483,7 +483,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(dict.TryRemove(KeyValuePair.Create("KEY", "value")));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestGetOrAdd()
         {
             TestGetOrAddOrUpdate(1, 1, 1, 10000, true);
@@ -951,7 +951,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(dictionary.IsEmpty, "TestClear: FAILED.  IsEmpty returned false after Clear");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestTryUpdate()
         {
             var dictionary = new ConcurrentDictionary<string, int>();

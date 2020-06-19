@@ -147,7 +147,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         public async Task SendPingAsyncWithIPAddress(AddressFamily addressFamily)
