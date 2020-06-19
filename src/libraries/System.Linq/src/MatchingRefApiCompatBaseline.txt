@@ -1,3 +1,6 @@
 # Exposed publicly in the implementation to enable reflection for data-binding scenarios.
 TypesMustExist : Type 'System.Linq.Grouping<TKey, TElement>' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'public System.Nullable<System.TimeSpan> System.Linq.Enumerable.Sum(System.Collections.Generic.IEnumerable<System.Nullable<System.TimeSpan>>)' does not exist in the reference but it does exist in the implementation
+MembersMustExist : Member 'public System.Nullable<System.TimeSpan> System.Linq.Enumerable.Sum(System.Collections.Generic.IEnumerable<System.Nullable<System.TimeSpan>>)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.TimeSpan System.Linq.Enumerable.Sum(System.Collections.Generic.IEnumerable<System.TimeSpan>)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Nullable<System.TimeSpan> System.Linq.Enumerable.Sum<TSource>(System.Collections.Generic.IEnumerable<TSource>, System.Func<TSource, System.Nullable<System.TimeSpan>>)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.TimeSpan System.Linq.Enumerable.Sum<TSource>(System.Collections.Generic.IEnumerable<TSource>, System.Func<TSource, System.TimeSpan>)' does not exist in the reference but it does exist in the implementation.
