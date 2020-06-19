@@ -278,6 +278,8 @@ internal static partial class Interop
         /// Gets information about process or thread(s)
         /// </summary>
         /// <param name="pid">The PID of the process. If PID is 0, this will return all processes</param>
+        /// <param name="threads">Whether to include thread information.</param>
+        /// <param name="count">The number of kinfo_proc entries returned.</param>
         public static unsafe kinfo_proc* GetProcInfo(int pid, bool threads, out int count)
         {
             Span<int> sysctlName = stackalloc int[4];
