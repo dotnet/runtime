@@ -1628,7 +1628,7 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
 
     unsigned int MaxInterpretCount = s_InterpreterJITThreshold.val(CLRConfig::INTERNAL_InterpreterJITThreshold);
     bool scheduleTieringBackgroundWork = false;
-    TieredCompilationManager * tieredCompilationManager = GetAppDomain()->GetTieredCompilationManager();
+    TieredCompilationManager *tieredCompilationManager = GetAppDomain()->GetTieredCompilationManager();
 
     if (force || interpMethInfo->m_invocations > MaxInterpretCount)
     {
