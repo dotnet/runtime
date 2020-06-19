@@ -4025,6 +4025,11 @@ void emitter::emitIns_R_R(
                 }
             }
 
+            if (IsOppositeOfPrevMov(ins, reg1, reg2))
+            {
+                return;
+            }
+
             // Check for the 'mov' aliases for the vector registers
             if (isVectorRegister(reg1))
             {
@@ -14882,4 +14887,35 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
+//----------------------------------------------------------------------------------------
+// IsOppositeOfPrevMov:
+//    Check if previous instruction was a mov where dst was current src and src was current dst.
+//
+// Arguments:
+//    ins - The current instruction
+//    dst - The current destination
+//    src - The current source
+//
+// Return Value:
+//    true if previous instruction moved from current dst to src.
+
+bool emitter::IsOppositeOfPrevMov(instruction ins, regNumber dst, regNumber src)
+{
+    assert(ins == INS_mov);
+
+    if (emitLastIns != nullptr && emitLastIns->idIns() == INS_mov)
+    {
+        // Check if we did same move in prev instruction except dst/src were switched.
+        regNumber prevDst = emitLastIns->idReg1();
+        regNumber prevSrc = emitLastIns->idReg2();
+
+        if ((prevDst == src) && (prevSrc == dst))
+        {
+            JITDUMP("\n -- suppressing mov as previous instruction did opposite mov.\n", dst, src,
+                    this->emitComp->info.compMethodName, prevDst, prevSrc);
+            return true;
+        }
+    }
+    return false;
+}
 #endif // defined(TARGET_ARM64)

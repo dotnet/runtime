@@ -48,6 +48,8 @@ void emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, bool isScaled, emitAttr size);
 
+bool IsOppositeOfPrevMov(instruction ins, regNumber dst, regNumber src);
+
 void emitDispIns(instrDesc* id,
                  bool       isNew,
                  bool       doffs,
