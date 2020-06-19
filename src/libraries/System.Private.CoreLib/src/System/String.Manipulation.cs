@@ -1647,7 +1647,7 @@ namespace System
                 Vector128<byte> res = Sse2.Or(mask.GetLower(), mask.GetUpper());
                 ulong extractedBits = Sse2.X64.ConvertToUInt64(res.AsUInt64());
 
-                for (int idx = i; idx < Vector<ushort>.Count; idx++)
+                for (int idx = i; idx < Vector256<ushort>.Count; idx++)
                 {
                     if ((extractedBits & 0xF) != 0)
                     {
