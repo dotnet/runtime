@@ -9,5 +9,13 @@
     <type fullname="System.Diagnostics.Tracing.EventPipe*" />
     <!-- The private Event methods are accessed by private reflection in the base EventSource class. -->
     <type fullname="System.Diagnostics.Tracing.NativeRuntimeEventSource" />
+    <!-- Accessed via native code. -->
+    <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerable" />
+    <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerator" />
+    <type fullname="System.Runtime.InteropServices.CustomMarshalers.*" />
+    <!-- Workaround for https://github.com/mono/linker/issues/378 -->
+    <type fullname="System.Runtime.InteropServices.IDispatch" />
+    <type fullname="System.Runtime.InteropServices.IMarshal" />
+    <type fullname="Internal.Runtime.InteropServices.IClassFactory2" />
   </assembly>
 </linker>
