@@ -42,21 +42,15 @@ else(CLR_CMAKE_HOST_WIN32)
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
         set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
-
-        if(CLR_CMAKE_TARGET_SUNOS)
-            set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
-        elseif(CLR_CMAKE_TARGET_SUNOS)
-            set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
-        endif(CLR_CMAKE_TARGET_SUNOS)
     endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
 
     if(CLR_CMAKE_TARGET_OSX)
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -force_load)
         set(END_WHOLE_ARCHIVE )
-
-        set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
     endif(CLR_CMAKE_TARGET_OSX)
+
+    set_exports_linker_option(${EXPORTS_FILE})
 
     if(CLR_CMAKE_TARGET_ANDROID AND CLR_CMAKE_HOST_ARCH_ARM)
         set(EXPORTS_LINKER_OPTION "${EXPORTS_LINKER_OPTION} -Wl,--no-warn-shared-textrel")
