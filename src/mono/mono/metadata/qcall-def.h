@@ -12,6 +12,6 @@
  * have to end with a func_flag_end_of_array (0x01) entry.
  **/
 
-#ifndef NO_GLOBALIZATION_SHIM
+#if !defined(NO_GLOBALIZATION_SHIM) && defined(ENABLE_NETCORE)
 FCClassElement("Globalization", "", gPalGlobalizationNative)
 #endif

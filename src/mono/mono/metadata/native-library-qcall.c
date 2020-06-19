@@ -47,7 +47,7 @@ next_in_array (MonoQCallFunc *func)
 static int 
 find_impls_index_for_class (MonoMethod *method)
 {
-    const char *namespace = m_class_get_name_space (method->klass);
+    const char *namespace_name = m_class_get_name_space (method->klass);
     const char *name = m_class_get_name (method->klass);
 
     if (name == NULL)
@@ -72,7 +72,7 @@ find_impls_index_for_class (MonoMethod *method)
         unsigned mid  = (high + low) / 2;
         int cmp = strcmp (name, c_qcalls[mid].class_name);
         if (cmp == 0)
-            cmp = strcmp (namespace, c_qcalls[mid].namespace_name);
+            cmp = strcmp (namespace_name, c_qcalls[mid].namespace_name);
 
         if (cmp == 0) {
             return mid;
