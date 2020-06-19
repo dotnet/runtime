@@ -95,7 +95,7 @@ namespace System.IO.Compression.Tests
         /// when an attempt is made to extract them.
         /// </summary>
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/25099")]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/25099")]
         [InlineData("WindowsInvalid_FromUnix", null)]
         [InlineData("WindowsInvalid_FromWindows", null)]
         [InlineData("NullCharFileName_FromWindows", "path")]

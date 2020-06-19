@@ -130,7 +130,7 @@ namespace System.Drawing.Text.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/17328")]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/17328")]
         public void AddFontFile_LongFilePath_ThrowsException()
         {
             using (var fontCollection = new PrivateFontCollection())
