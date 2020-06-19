@@ -1210,7 +1210,7 @@ namespace System.Net.Http
                 // Construct and initialize the new Http2Stream instance.  It's stream ID must be set below
                 // before the instance is used and stored into the dictionary.  However, we construct it here
                 // so as to avoid the allocation and initialization expense while holding multiple locks.
-                var http2Stream = new Http2Stream(request, this, _initialWindowSize);
+                var http2Stream = new Http2Stream(request, this);
 
                 // Start the write.  This serializes access to write to the connection, and ensures that HEADERS
                 // and CONTINUATION frames stay together, as they must do. We use the lock as well to ensure new
@@ -1233,8 +1233,13 @@ namespace System.Net.Http
                                 s.thisRef.ThrowShutdownException();
                             }
 
+                            // Now that we're holding the lock, configure the stream.  The lock must be held while
+                            // assigning the stream ID to ensure only one stream gets an ID, and it must be held
+                            // across setting the initial window size (available credit) and storing the stream into
+                            // collection such that window size updates are able to atomically affect all known streams.
+                            s.http2Stream.Initialize(s.thisRef._nextStream, _initialWindowSize);
+
                             // Client-initiated streams are always odd-numbered, so increase by 2.
-                            s.http2Stream.StreamId = s.thisRef._nextStream;
                             s.thisRef._nextStream += 2;
 
                             // We're about to flush the HEADERS frame, so add the stream to the dictionary now.

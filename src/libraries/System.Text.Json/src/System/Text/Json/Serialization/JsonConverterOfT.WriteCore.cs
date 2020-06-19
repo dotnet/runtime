@@ -24,7 +24,7 @@ namespace System.Text.Json.Serialization
 
         internal bool WriteCore(
             Utf8JsonWriter writer,
-            T value,
+            in T value,
             JsonSerializerOptions options,
             ref WriteStack state)
         {

@@ -90,14 +90,15 @@ namespace System.Runtime.CompilerServices
         {
             _ptr = Unsafe.AsPointer(ref type);
             if (type != null)
-                _handle = type.m_handle;
+                _handle = type.GetUnderlyingNativeHandle();
             else
                 _handle = IntPtr.Zero;
         }
 
         internal QCallTypeHandle(ref System.RuntimeTypeHandle rth)
-            : this(ref rth.m_type)
         {
+            _ptr = Unsafe.AsPointer(ref rth);
+            _handle = rth.Value;
         }
     }
 }

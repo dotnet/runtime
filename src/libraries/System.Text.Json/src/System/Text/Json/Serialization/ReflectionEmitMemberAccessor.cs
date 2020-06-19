@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization
 
             var dynamicMethod = new DynamicMethod(
                 ConstructorInfo.ConstructorName,
-                typeof(object),
+                JsonClassInfo.ObjectType,
                 Type.EmptyTypes,
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
@@ -158,7 +158,7 @@ namespace System.Text.Json.Serialization
             var dynamicMethod = new DynamicMethod(
                 realMethod.Name,
                 typeof(void),
-                new[] { collectionType, typeof(object) },
+                new[] { collectionType, JsonClassInfo.ObjectType },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
@@ -226,7 +226,7 @@ namespace System.Text.Json.Serialization
         private static DynamicMethod CreatePropertyGetter(PropertyInfo propertyInfo, Type classType, Type propertyType)
         {
             MethodInfo? realMethod = propertyInfo.GetMethod;
-            Type objectType = typeof(object);
+            Type objectType = JsonClassInfo.ObjectType;
 
             Debug.Assert(realMethod != null);
             var dynamicMethod = new DynamicMethod(
@@ -262,7 +262,7 @@ namespace System.Text.Json.Serialization
         private static DynamicMethod CreatePropertySetter(PropertyInfo propertyInfo, Type classType, Type propertyType)
         {
             MethodInfo? realMethod = propertyInfo.SetMethod;
-            Type objectType = typeof(object);
+            Type objectType = JsonClassInfo.ObjectType;
 
             Debug.Assert(realMethod != null);
             var dynamicMethod = new DynamicMethod(

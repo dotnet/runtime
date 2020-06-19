@@ -12,6 +12,9 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
+        // The special dll name to be used for DllImport of QCalls
+        internal const string QCall = "QCall";
+
         public delegate void TryCode(object? userData);
 
         public delegate void CleanupCode(object? userData, bool exceptionThrown);

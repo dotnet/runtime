@@ -547,6 +547,12 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\native-library.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\native-library-qcall.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\native-library.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>    
   </ItemGroup>
   <ItemGroup Label="config_sources">
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-config-dirs.h">

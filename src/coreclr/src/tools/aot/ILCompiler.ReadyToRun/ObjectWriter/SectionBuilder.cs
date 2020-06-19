@@ -674,7 +674,10 @@ namespace ILCompiler.PEWriter
                 FlushRelocationBlock(builder, baseRVA, offsetsAndTypes);
             }
 
-            _relocationDirectoryEntry = new DirectoryEntry(sectionLocation.RelativeVirtualAddress, builder.Count);
+            if (builder.Count != 0)
+            {
+                _relocationDirectoryEntry = new DirectoryEntry(sectionLocation.RelativeVirtualAddress, builder.Count);
+            }
 
             return builder;
         }

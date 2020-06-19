@@ -162,6 +162,20 @@ function(preprocess_compile_asm)
   set(${COMPILE_ASM_OUTPUT_OBJECTS} ${ASSEMBLED_OBJECTS} PARENT_SCOPE)
 endfunction()
 
+function(set_exports_linker_option exports_filename)
+    if(LD_GNU OR LD_SOLARIS)
+        # Add linker exports file option
+        if(LD_SOLARIS)
+            set(EXPORTS_LINKER_OPTION -Wl,-M,${exports_filename} PARENT_SCOPE)
+        else()
+            set(EXPORTS_LINKER_OPTION -Wl,--version-script=${exports_filename} PARENT_SCOPE)
+        endif()
+    elseif(LD_OSX)
+        # Add linker exports file option
+        set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${exports_filename} PARENT_SCOPE)
+    endif()
+endfunction()
+
 function(generate_exports_file)
   set(INPUT_LIST ${ARGN})
   list(GET INPUT_LIST -1 outputFilename)
