@@ -5,7 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573;649;169;414</NoWarn>
     <DefineConstants>$(DefineConstants);FEATURE_COMPILED_XSL</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
@@ -796,7 +796,7 @@
     <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />
     <Compile Include="$(CommonPath)System\CSharpHelpers.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+  <ItemGroup Condition="'$(TargetsWindows)'=='true' or '$(TargetsAnyOS)' == 'true'">
     <Compile Include="System\Xml\Xsl\Runtime\XmlCollation.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
