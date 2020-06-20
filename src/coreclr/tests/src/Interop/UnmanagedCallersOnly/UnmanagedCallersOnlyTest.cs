@@ -16,7 +16,13 @@ public class Program
     public static class UnmanagedCallersOnlyDll
     {
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
+        public static extern int DoubleImplNative(int n);
+
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
         public static extern int CallManagedProc(IntPtr callbackProc, int n);
+
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
+        public static extern int CallManagedProcMultipleTimes(int m, IntPtr callbackProc, int n);
 
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
         public static extern int CallManagedProcOnNewThread(IntPtr callbackProc, int n);
@@ -36,6 +42,8 @@ public class Program
             TestUnmanagedCallersOnlyValid();
             TestUnmanagedCallersOnlyValid_OnNewNativeThread();
             TestUnmanagedCallersOnlyValid_PrepareMethod();
+            // Fails due to https://github.com/dotnet/runtime/issues/38192
+            //TestUnmanagedCallersOnlyMultipleTimesValid();
             NegativeTest_NonStaticMethod();
             NegativeTest_ViaDelegate();
             NegativeTest_NonBlittable();
@@ -205,6 +213,64 @@ public class Program
         {
             testNativeMethod();
         }
+    }
+
+    [UnmanagedCallersOnly]
+    public static int ManagedDoubleInNativeCallback(int n)
+    {
+        // This callback is designed to test if the JIT handles
+        // cases where a P/Invoke is inlined into a function
+        // marked with UnmanagedCallersOnly.
+        return UnmanagedCallersOnlyDll.DoubleImplNative(n);
+    }
+
+    public static void TestUnmanagedCallersOnlyMultipleTimesValid()
+    {
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyMultipleTimesValid)}...");
+
+        /*
+           void UnmanagedCallersOnly()
+           {
+                .locals init ([0] native int ptr)
+                nop
+
+                ldftn      int32 ManagedDoubleInNativeCallback(int32)
+                stloc.0
+
+                ldc.i4     <m> call count
+                ldloc.0
+                ldc.i4     <n> local
+                call       bool UnmanagedCallersOnlyDll::CallManagedProcMultipleTimes(int, native int, int)
+
+                ret
+             }
+        */
+        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("UnmanagedCallersOnly", typeof(int), null, typeof(Program).Module);
+        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
+        il.DeclareLocal(typeof(IntPtr));
+        il.Emit(OpCodes.Nop);
+
+        // Get native function pointer of the callback
+        il.Emit(OpCodes.Ldftn, typeof(Program).GetMethod(nameof(ManagedDoubleInNativeCallback)));
+        il.Emit(OpCodes.Stloc_0);
+
+        int callCount = 7;
+        il.Emit(OpCodes.Ldc_I4, callCount);
+
+        il.Emit(OpCodes.Ldloc_0);
+
+        int n = 12345;
+        il.Emit(OpCodes.Ldc_I4, n);
+        il.Emit(OpCodes.Call, typeof(UnmanagedCallersOnlyDll).GetMethod("CallManagedProcMultipleTimes"));
+        il.Emit(OpCodes.Ret);
+        var testNativeMethod = (IntNativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(IntNativeMethodInvoker));
+
+        int expected = 0;
+        for (int i = 0; i < callCount; ++i)
+        {
+            expected += DoubleImpl(n);
+        }
+        Assert.AreEqual(expected, testNativeMethod());
     }
 
     private const int CallbackThrowsErrorCode = 27;
