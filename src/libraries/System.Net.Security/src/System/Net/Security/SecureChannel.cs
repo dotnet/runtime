@@ -1195,7 +1195,6 @@ namespace System.Net.Security
                 return TlsAlertMessage.CertificateUnknown;
             }
 
-            Debug.Fail("GetAlertMessageFromChain was called but none of the chain elements had errors.");
             return TlsAlertMessage.BadCertificate;
         }
 
