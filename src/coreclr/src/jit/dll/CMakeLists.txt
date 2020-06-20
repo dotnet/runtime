@@ -6,7 +6,6 @@ add_library_clr(clrjit_static
     STATIC
     ${SHARED_LIB_SOURCES}
     ${JIT_ARCH_SOURCES}
-    ${JIT_DEF_FILE}
 )
 
 add_library_clr(clrjit_mergeable

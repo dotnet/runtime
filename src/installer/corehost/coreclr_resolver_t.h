@@ -46,6 +46,7 @@ using coreclr_create_delegate_fn = pal::hresult_t(STDMETHODCALLTYPE*)(
 
 struct coreclr_resolver_contract_t
 {
+    pal::dll_t coreclr;
     coreclr_shutdown_fn coreclr_shutdown;
     coreclr_initialize_fn coreclr_initialize;
     coreclr_execute_assembly_fn coreclr_execute_assembly;
