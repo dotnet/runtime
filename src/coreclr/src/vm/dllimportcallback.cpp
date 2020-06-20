@@ -624,8 +624,10 @@ namespace
         WRAPPER_NO_CONTRACT;
 
         ULONG s2Len = (ULONG)S2LEN - 1; // Remove null
-        ULONG minLen = s1Len < s2Len ? s1Len : s2Len;
-        return (0 == strncmp(s1, s2, minLen));
+        if (s1Len < s2Len)
+            return false;
+
+        return (0 == strncmp(s1, s2, s2Len));
     }
 }
 
