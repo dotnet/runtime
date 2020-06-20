@@ -712,10 +712,6 @@ VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
             {
                 callConvLocal = CorPinvokeMap::pmCallConvThiscall;
             }
-            else
-            {
-                COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
-            }
         }
     }
 
