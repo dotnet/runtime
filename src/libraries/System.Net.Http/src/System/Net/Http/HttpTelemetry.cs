@@ -90,7 +90,9 @@ namespace System.Net.Http
                 };
 
                 // The current number of active HTTP requests that have started but not yet completed or aborted.
-                _currentRequestsCounter ??= new PollingCounter("current-requests", this, () => Interlocked.Read(ref _startedRequests) - Interlocked.Read(ref _stoppedRequests))
+                // Use (-_stoppedRequests + _startedRequests) to avoid returning a negative value if _stoppedRequests is
+                // incremented after reading _startedRequests due to race conditions with completing the HTTP request.
+                _currentRequestsCounter ??= new PollingCounter("current-requests", this, () => -Interlocked.Read(ref _stoppedRequests) + Interlocked.Read(ref _startedRequests))
                 {
                     DisplayName = "Current Requests"
                 };
