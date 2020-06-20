@@ -892,9 +892,6 @@ namespace System.Diagnostics
                     /// <summary>
                     /// Create a property fetcher for a propertyName
                     /// </summary>
-                    [DynamicDependency("#ctor(System.Type)", typeof(EnumeratePropertyFetch<>))]
-                    [DynamicDependency("#ctor(System.Type,System.Reflection.PropertyInfo)", typeof(RefTypedFetchProperty<,>))]
-                    [DynamicDependency("#ctor(System.Type,System.Reflection.PropertyInfo)", typeof(ValueTypedFetchProperty<,>))]
                     public static PropertyFetch FetcherForProperty(Type? type, string propertyName)
                     {
                         if (propertyName == null)
@@ -949,6 +946,12 @@ namespace System.Diagnostics
                                 Logger.Message($"Property {propertyName} not found on {type}");
                                 return new PropertyFetch(type);
                             }
+                            // Delegate creation below is incompatible with static properties.
+                            else if (propertyInfo.GetMethod?.IsStatic == true || propertyInfo.SetMethod?.IsStatic == true)
+                            {
+                                Logger.Message($"Property {propertyName} is static.");
+                                return new PropertyFetch(type);
+                            }
                             Type typedPropertyFetcher = typeInfo.IsValueType ?
                                 typeof(ValueTypedFetchProperty<,>) : typeof(RefTypedFetchProperty<,>);
                             Type instantiatedTypedPropertyFetcher = typedPropertyFetcher.GetTypeInfo().MakeGenericType(
@@ -966,6 +969,8 @@ namespace System.Diagnostics
 
                     private sealed class RefTypedFetchProperty<TObject, TProperty> : PropertyFetch
                     {
+                        [DynamicDependency("get_TraceStateString", typeof(Activity))]
+                        [DynamicDependency("get_IsAllDataRequested", typeof(Activity))]
                         public RefTypedFetchProperty(Type type, PropertyInfo property) : base(type)
                         {
                             Debug.Assert(typeof(TObject).GetTypeInfo().IsAssignableFrom(type.GetTypeInfo()));
