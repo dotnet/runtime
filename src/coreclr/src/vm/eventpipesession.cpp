@@ -267,6 +267,36 @@ bool EventPipeSession::IsValid() const
     return !m_pProviderList->IsEmpty();
 }
 
+bool EventPipeSession::HasOnlyRundownProviders() const
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
+    }
+    CONTRACTL_END;
+
+    if (m_pProviderList->IsEmpty())
+    {
+        return true;
+    }
+
+    EventPipeSessionProviderIterator providers = m_pProviderList->GetProviders();
+    EventPipeSessionProvider *pProvider;
+    while (providers.Next(&pProvider))
+    {
+        if (wcscmp(pProvider->GetProviderName(), W("Microsoft-Windows-DotNETRuntime")) != 0
+            && wcscmp(pProvider->GetProviderName(), W("Microsoft-Windows-DotNETRuntimePrivate")) != 0)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void EventPipeSession::AddSessionProvider(EventPipeSessionProvider *pProvider)
 {
     CONTRACTL
@@ -533,11 +563,25 @@ void EventPipeSession::SuspendWriteEvent()
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
+        // Need to disable the session before calling this method
+        PRECONDITION(HasOnlyRundownProviders());
     }
     CONTRACTL_END;
 
-    // TODO: disable has already been called, keep a list of all EventPipe threads
-    // and then iterate waiting until no thread is writing to this session before continuing
+    {
+        CrstHolder crst(EventPipeThread::GetGlobalThreadLock());
+
+        EventPipeThreadIterator eventPipeThreads = EventPipeThread::GetThreads();
+        EventPipeThread *pThread = nullptr;
+        while (eventPipeThreads.Next(&pThread))
+        {
+            // Wait for the thread to finish any writes to this session
+            YIELD_WHILE(pThread->GetSessionWriteInProgress() == GetIndex());
+
+            // Since we've already disabled the session, the thread won't call back in to this
+            // session once its done with the current write
+        }
+    }
 
     if (m_pBufferManager != nullptr)
     {

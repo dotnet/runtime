@@ -132,9 +132,6 @@ void SampleProfiler::CanStartSampling()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(s_pEventPipeProvider != nullptr);
-        PRECONDITION(s_pThreadTimeEvent != nullptr);
-        // Synchronization of multiple callers occurs in EventPipe::Enable.
         PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;

@@ -58,9 +58,11 @@ void EventPipe::Initialize()
         return;
     }
 
-    const bool tracingInitialized = s_configCrst.InitNoThrow(
+    bool tracingInitialized = s_configCrst.InitNoThrow(
         CrstEventPipe,
         (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN | CRST_HOST_BREAKABLE));
+
+    tracingInitialized &= EventPipeThread::Initialize();
 
     // Initialize the session container to nullptr.
     for (VolatilePtr<EventPipeSession> &session : s_pSessions)

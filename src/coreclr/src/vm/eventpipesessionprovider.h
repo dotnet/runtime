@@ -6,17 +6,7 @@
 enum class EventPipeEventLevel;
 class EventPipeProvider;
 
-class EventPipeSessionProviderIterator
-{
-private:
-    SList<SListElem<EventPipeSessionProvider *>> *m_pList;
-    SList<SListElem<EventPipeSessionProvider *>>::Iterator m_iterator;
-
-public:
-    EventPipeSessionProviderIterator(SList<SListElem<EventPipeSessionProvider *>> *pList);
-
-    bool Next(EventPipeSessionProvider **ppProvider);
-};
+typedef EventPipeIterator<EventPipeSessionProvider *> EventPipeSessionProviderIterator;
 
 class EventPipeSessionProvider
 {

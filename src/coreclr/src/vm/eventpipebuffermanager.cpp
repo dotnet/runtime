@@ -1045,8 +1045,9 @@ void EventPipeBufferManager::SuspendWriteEvent(uint32_t sessionIndex)
         }
     }
 
-    // Wait for any straggler WriteEvent threads that may have already allocated a buffer but
-    // hadn't yet relinquished it.
+#ifdef _DEBUG
+    // Sanity check that we don't have any straggler threads. They should have been taken care of in 
+    // EventPipeSession::SuspendWriteEvent already.
     {
         SpinLockHolder _slh(&m_lock);
         SListElem<EventPipeThreadSessionState *> *pElem = m_pThreadSessionStateList->GetHead();
@@ -1059,20 +1060,13 @@ void EventPipeBufferManager::SuspendWriteEvent(uint32_t sessionIndex)
                 EventPipeThread *const pEventPipeThread = pBufferList->GetThread();
                 if (pEventPipeThread != nullptr)
                 {
-                    YIELD_WHILE(pEventPipeThread->GetSessionWriteInProgress() == sessionIndex);
-                    // It still guarantees that the thread has returned its buffer, but it also now guarantees that
-                    // that the thread has returned from Session::WriteEvent() and has relinquished the session pointer
-                    // This yield is guaranteed to eventually finish because threads will eventually exit WriteEvent()
-                    // setting the flag back to -1. If the thread could quickly re-enter WriteEvent and set the flag
-                    // back to this_session_id we could theoretically get unlucky and never observe the gap, but
-                    // setting s_pSessions[this_session_id] = NULL above guaranteed that can't happen indefinately.
-                    // Sooner or later the thread is going to see the NULL value and once it does it won't store
-                    // this_session_id into the flag again.
+                    _ASSERTE(pEventPipeThread->GetSessionWriteInProgress() != sessionIndex);
                 }
             }
             pElem = m_pThreadSessionStateList->GetNext(pElem);
         }
     }
+#endif // _DEBUG
 }
 
 void EventPipeBufferManager::DeAllocateBuffers()

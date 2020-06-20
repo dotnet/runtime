@@ -241,6 +241,8 @@ public:
     // Determine if the session is valid or not.  Invalid sessions can be detected before they are enabled.
     bool IsValid() const;
 
+    bool HasOnlyRundownProviders() const;
+
     bool HasIpcStreamingStarted() /* This is not const because CrtsHolder does not take a const* */;
 };
 
