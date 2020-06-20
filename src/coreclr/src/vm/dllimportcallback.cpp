@@ -615,6 +615,20 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     pcpusl->X86EmitNearJump(pEnableRejoin);
 }
 
+namespace
+{
+    // Templated function to compute if a char string begins with a constant string.
+    template<size_t S2LEN>
+    bool BeginsWith(ULONG s1Len, const char* s1, const char (&s2)[S2LEN])
+    {
+        WRAPPER_NO_CONTRACT;
+
+        ULONG s2Len = (ULONG)S2LEN - 1; // Remove null
+        ULONG minLen = s1Len < s2Len ? s1Len : s2Len;
+        return (0 == strncmp(s1, s2, minLen));
+    }
+}
+
 VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
 {
     STANDARD_VM_CONTRACT;
@@ -695,20 +709,23 @@ VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
         {
             CaValue& typeNameValue = arrayOfTypes->arr[i];
 
-            StackSString typeFQName(SString::Utf8, typeNameValue.str.pStr, typeNameValue.str.cbStr);
-            if (typeFQName.BeginsWith(W("System.Runtime.CompilerServices.CallConvCdecl")))
+            // According to ECMA-335, type name strings are UTF-8. Since we are
+            // looking for type names that are equivalent in ASCII and UTF-8,
+            // using a const char constant is acceptable. Type name strings are
+            // in Fully Qualified form, so we include the ',' delimiter.
+            if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvCdecl,"))
             {
                 callConvLocal = CorPinvokeMap::pmCallConvCdecl;
             }
-            else if (typeFQName.BeginsWith(W("System.Runtime.CompilerServices.CallConvStdcall")))
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvStdcall,"))
             {
                 callConvLocal = CorPinvokeMap::pmCallConvStdcall;
             }
-            else if (typeFQName.BeginsWith(W("System.Runtime.CompilerServices.CallConvFastcall")))
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvFastcall,"))
             {
                 callConvLocal = CorPinvokeMap::pmCallConvFastcall;
             }
-            else if (typeFQName.BeginsWith(W("System.Runtime.CompilerServices.CallConvThiscall")))
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvThiscall,"))
             {
                 callConvLocal = CorPinvokeMap::pmCallConvThiscall;
             }
