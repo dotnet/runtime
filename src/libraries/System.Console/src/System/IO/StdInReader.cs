@@ -151,7 +151,7 @@ namespace System.IO
                     // unprocessed data, or from an actual stdin read.
                     bool previouslyProcessed;
                     ConsoleKeyInfo keyInfo = ReadKey(out previouslyProcessed);
-                    if (!consumeKeys && (keyInfo.Key != ConsoleKey.Backspace || keyInfo.Key != ConsoleKey.LeftArrow || keyInfo.Key != ConsoleKey.RightArrow)) // backspace, left arrow, and right arrow are the only character not written out in the below if/elses.
+                    if (!consumeKeys && (keyInfo.Key != ConsoleKey.Backspace || keyInfo.Key != ConsoleKey.LeftArrow || keyInfo.Key != ConsoleKey.RightArrow || keyInfo.Key != ConsoleKey.Home || keyInfo.Key != ConsoleKey.End)) // backspace, left arrow, and right arrow are the only character not written out in the below if/elses.
                     {
                         _tmpKeys.Push(keyInfo);
                     }
@@ -205,6 +205,26 @@ namespace System.IO
                             }
                         }
                     }
+                    else if (keyInfo.Key == ConsoleKey.Delete)
+                    {
+                        int len = _readLineSB.Length;
+                        if (len > 0)
+                        {
+                            if (!previouslyProcessed)
+                            {
+                                // The ReadLine input may wrap accross terminal rows and we need to handle that.
+                                // note: ConsolePal will cache the cursor position to avoid making many slow cursor position fetch operations.
+                                ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true);
+                                //Debug.WriteLine("(" + len % top + ") < " + left);
+                                if ((len % ConsolePal.WindowWidth) > (left + 1))
+                                {
+                                    _readLineSB.Remove(_readLineIndex + 1, 1);
+                                    Console.Write("\r" + _readLineSB.ToString().Substring((ConsolePal.WindowWidth * (top - _linesFromTop))) + " ");
+                                    ConsolePal.SetCursorPosition(left, top);
+                                }
+                            }
+                        }
+                    }
                     else if (keyInfo.Key == ConsoleKey.LeftArrow)
                     {
                         int len = _readLineSB.Length;
@@ -253,6 +273,18 @@ namespace System.IO
                                 }
                             }
                         }
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Home)
+                    {
+                        _readLineIndex = 0;
+                        ConsolePal.SetCursorPosition(0, 0);
+                    }
+                    else if (keyInfo.Key == ConsoleKey.End)
+                    {
+                        _readLineIndex = _readLineSB.Length - 1;
+                        int lines = _readLineSB.Length / ConsolePal.WindowWidth;
+                        int leftover = _readLineSB.Length % ConsolePal.WindowWidth;
+                        ConsolePal.SetCursorPosition(leftover, lines);
                     }
                     else if (keyInfo.Key == ConsoleKey.Tab)
                     {
