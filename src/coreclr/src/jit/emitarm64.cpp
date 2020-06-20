@@ -4025,7 +4025,7 @@ void emitter::emitIns_R_R(
                 }
             }
 
-            if (IsOppositeOfPrevMov(ins, reg1, reg2))
+            if (IsMovRedundantToPrevMov(ins, reg1, reg2))
             {
                 return;
             }
@@ -14888,8 +14888,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
 //----------------------------------------------------------------------------------------
-// IsOppositeOfPrevMov:
-//    Check if previous instruction was a mov where dst was current src and src was current dst.
+// IsMovRedundantToPrevMov:
+//    Check if previous instruction was a 'mov' where dst was current src and src was current dst.
+//    Or if previous `mov` moved between same src/dst.
 //
 // Arguments:
 //    ins - The current instruction
@@ -14899,7 +14900,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 // Return Value:
 //    true if previous instruction moved from current dst to src.
 
-bool emitter::IsOppositeOfPrevMov(instruction ins, regNumber dst, regNumber src)
+bool emitter::IsMovRedundantToPrevMov(instruction ins, regNumber dst, regNumber src)
 {
     assert(ins == INS_mov);
 
@@ -14909,10 +14910,10 @@ bool emitter::IsOppositeOfPrevMov(instruction ins, regNumber dst, regNumber src)
         regNumber prevDst = emitLastIns->idReg1();
         regNumber prevSrc = emitLastIns->idReg2();
 
-        if ((prevDst == src) && (prevSrc == dst))
+        if (((prevDst == src) && (prevSrc == dst)) || // opposite movs
+            (prevDst == dst) && (prevSrc == src))     // similar movs
         {
-            JITDUMP("\n -- suppressing mov as previous instruction did opposite mov.\n", dst, src,
-                    this->emitComp->info.compMethodName, prevDst, prevSrc);
+            JITDUMP("\n -- suppressing mov as previous mov instruction was sufficient.\n");
             return true;
         }
     }

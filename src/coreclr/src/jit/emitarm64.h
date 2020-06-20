@@ -48,8 +48,6 @@ void emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, bool isScaled, emitAttr size);
 
-bool IsOppositeOfPrevMov(instruction ins, regNumber dst, regNumber src);
-
 void emitDispIns(instrDesc* id,
                  bool       isNew,
                  bool       doffs,
@@ -114,6 +112,10 @@ static UINT64 NOT_helper(UINT64 value, unsigned width);
 
 // A helper method to perform a bit Replicate operation
 static UINT64 Replicate_helper(UINT64 value, unsigned width, emitAttr size);
+
+// Method to do peephole optimization by checking if mov is redundant to
+// immediately preceding mov and if yes, omit current mov.
+bool IsMovRedundantToPrevMov(instruction ins, regNumber dst, regNumber src);
 
 /************************************************************************
 *
