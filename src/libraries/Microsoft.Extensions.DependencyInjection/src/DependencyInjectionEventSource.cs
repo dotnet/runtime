@@ -69,8 +69,8 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
             {
-                var format = CallSiteJsonFormatter.Instance.Format(callSite);
-                var chunkCount = format.Length / MaxChunkSize + (format.Length % MaxChunkSize > 0 ? 1 : 0);
+                string format = CallSiteJsonFormatter.Instance.Format(callSite);
+                int chunkCount = format.Length / MaxChunkSize + (format.Length % MaxChunkSize > 0 ? 1 : 0);
 
                 for (int i = 0; i < chunkCount; i++)
                 {

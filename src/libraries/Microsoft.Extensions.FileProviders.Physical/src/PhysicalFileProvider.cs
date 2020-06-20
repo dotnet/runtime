@@ -57,7 +57,7 @@ namespace Microsoft.Extensions.FileProviders
                 throw new ArgumentException("The path must be absolute.", nameof(root));
             }
 
-            var fullRoot = Path.GetFullPath(root);
+            string fullRoot = Path.GetFullPath(root);
             // When we do matches in GetFullPath, we want to only match full directory names.
             Root = PathUtils.EnsureTrailingSlash(fullRoot);
             if (!Directory.Exists(Root))
@@ -158,7 +158,7 @@ namespace Microsoft.Extensions.FileProviders
 
         internal PhysicalFilesWatcher CreateFileWatcher()
         {
-            var root = PathUtils.EnsureTrailingSlash(Path.GetFullPath(Root));
+            string root = PathUtils.EnsureTrailingSlash(Path.GetFullPath(Root));
             return new PhysicalFilesWatcher(root, new FileSystemWatcher(root), UsePollingFileWatcher, _filters)
             {
                 UseActivePolling = UseActivePolling,
@@ -167,8 +167,8 @@ namespace Microsoft.Extensions.FileProviders
 
         private void ReadPollingEnvironmentVariables()
         {
-            var environmentValue = Environment.GetEnvironmentVariable(PollingEnvironmentKey);
-            var pollForChanges = string.Equals(environmentValue, "1", StringComparison.Ordinal) ||
+            string environmentValue = Environment.GetEnvironmentVariable(PollingEnvironmentKey);
+            bool pollForChanges = string.Equals(environmentValue, "1", StringComparison.Ordinal) ||
                 string.Equals(environmentValue, "true", StringComparison.OrdinalIgnoreCase);
 
             _usePollingFileWatcher = pollForChanges;
@@ -250,7 +250,7 @@ namespace Microsoft.Extensions.FileProviders
                 return new NotFoundFileInfo(subpath);
             }
 
-            var fullPath = GetFullPath(subpath);
+            string fullPath = GetFullPath(subpath);
             if (fullPath == null)
             {
                 return new NotFoundFileInfo(subpath);
@@ -292,7 +292,7 @@ namespace Microsoft.Extensions.FileProviders
                     return NotFoundDirectoryContents.Singleton;
                 }
 
-                var fullPath = GetFullPath(subpath);
+                string fullPath = GetFullPath(subpath);
                 if (fullPath == null || !Directory.Exists(fullPath))
                 {
                     return NotFoundDirectoryContents.Singleton;

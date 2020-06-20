@@ -44,21 +44,21 @@ namespace Microsoft.Extensions.Internal
         public static object CreateInstance(IServiceProvider provider, Type instanceType, params object[] parameters)
         {
             int bestLength = -1;
-            var seenPreferred = false;
+            bool seenPreferred = false;
 
             ConstructorMatcher bestMatcher = default;
 
             if (!instanceType.GetTypeInfo().IsAbstract)
             {
-                foreach (var constructor in instanceType
+                foreach (ConstructorInfo? constructor in instanceType
                     .GetTypeInfo()
                     .DeclaredConstructors)
                 {
                     if (!constructor.IsStatic && constructor.IsPublic)
                     {
                         var matcher = new ConstructorMatcher(constructor);
-                        var isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
-                        var length = matcher.Match(parameters);
+                        bool isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
+                        int length = matcher.Match(parameters);
 
                         if (isPreferred)
                         {
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Internal
 
             if (bestLength == -1)
             {
-                var message = $"A suitable constructor for type '{instanceType}' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor.";
+                string? message = $"A suitable constructor for type '{instanceType}' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor.";
                 throw new InvalidOperationException(message);
             }
 
@@ -109,14 +109,14 @@ namespace Microsoft.Extensions.Internal
         {
             FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo? constructor, out int?[]? parameterMap);
 
-            var provider = Expression.Parameter(typeof(IServiceProvider), "provider");
-            var argumentArray = Expression.Parameter(typeof(object[]), "argumentArray");
-            var factoryExpressionBody = BuildFactoryExpression(constructor, parameterMap, provider, argumentArray);
+            ParameterExpression? provider = Expression.Parameter(typeof(IServiceProvider), "provider");
+            ParameterExpression? argumentArray = Expression.Parameter(typeof(object[]), "argumentArray");
+            Expression? factoryExpressionBody = BuildFactoryExpression(constructor, parameterMap, provider, argumentArray);
 
             var factoryLambda = Expression.Lambda<Func<IServiceProvider, object[], object>>(
                 factoryExpressionBody, provider, argumentArray);
 
-            var result = factoryLambda.Compile();
+            Func<IServiceProvider, object[], object>? result = factoryLambda.Compile();
             return result.Invoke;
         }
 
@@ -163,10 +163,10 @@ namespace Microsoft.Extensions.Internal
 
         private static object? GetService(IServiceProvider sp, Type type, Type requiredBy, bool isDefaultParameterRequired)
         {
-            var service = sp.GetService(type);
+            object? service = sp.GetService(type);
             if (service == null && !isDefaultParameterRequired)
             {
-                var message = $"Unable to resolve service for type '{type}' while attempting to activate '{requiredBy}'.";
+                string? message = $"Unable to resolve service for type '{type}' while attempting to activate '{requiredBy}'.";
                 throw new InvalidOperationException(message);
             }
             return service;
@@ -178,14 +178,14 @@ namespace Microsoft.Extensions.Internal
             Expression serviceProvider,
             Expression factoryArgumentArray)
         {
-            var constructorParameters = constructor.GetParameters();
+            ParameterInfo[]? constructorParameters = constructor.GetParameters();
             var constructorArguments = new Expression[constructorParameters.Length];
 
-            for (var i = 0; i < constructorParameters.Length; i++)
+            for (int i = 0; i < constructorParameters.Length; i++)
             {
-                var constructorParameter = constructorParameters[i];
-                var parameterType = constructorParameter.ParameterType;
-                var hasDefaultValue = ParameterDefaultValue.TryGetDefaultValue(constructorParameter, out var defaultValue);
+                ParameterInfo? constructorParameter = constructorParameters[i];
+                Type? parameterType = constructorParameter.ParameterType;
+                bool hasDefaultValue = ParameterDefaultValue.TryGetDefaultValue(constructorParameter, out object? defaultValue);
 
                 if (parameterMap[i] != null)
                 {
@@ -204,7 +204,7 @@ namespace Microsoft.Extensions.Internal
                 // when the argument would otherwise be null.
                 if (hasDefaultValue)
                 {
-                    var defaultValueExpression = Expression.Constant(defaultValue);
+                    ConstantExpression? defaultValueExpression = Expression.Constant(defaultValue);
                     constructorArguments[i] = Expression.Coalesce(constructorArguments[i], defaultValueExpression);
                 }
 
@@ -226,7 +226,7 @@ namespace Microsoft.Extensions.Internal
             if (!TryFindPreferredConstructor(instanceType, argumentTypes, ref constructorInfo, ref parameterMap) &&
                 !TryFindMatchingConstructor(instanceType, argumentTypes, ref constructorInfo, ref parameterMap))
             {
-                var message = $"A suitable constructor for type '{instanceType}' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor.";
+                string? message = $"A suitable constructor for type '{instanceType}' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor.";
                 throw new InvalidOperationException(message);
             }
 
@@ -241,7 +241,7 @@ namespace Microsoft.Extensions.Internal
             [NotNullWhen(true)] ref ConstructorInfo? matchingConstructor,
             [NotNullWhen(true)] ref int?[]? parameterMap)
         {
-            foreach (var constructor in instanceType.GetTypeInfo().DeclaredConstructors)
+            foreach (ConstructorInfo? constructor in instanceType.GetTypeInfo().DeclaredConstructors)
             {
                 if (constructor.IsStatic || !constructor.IsPublic)
                 {
@@ -276,8 +276,8 @@ namespace Microsoft.Extensions.Internal
             [NotNullWhen(true)] ref ConstructorInfo? matchingConstructor,
             [NotNullWhen(true)] ref int?[]? parameterMap)
         {
-            var seenPreferred = false;
-            foreach (var constructor in instanceType.GetTypeInfo().DeclaredConstructors)
+            bool seenPreferred = false;
+            foreach (ConstructorInfo? constructor in instanceType.GetTypeInfo().DeclaredConstructors)
             {
                 if (constructor.IsStatic || !constructor.IsPublic)
                 {
@@ -317,12 +317,12 @@ namespace Microsoft.Extensions.Internal
         {
             parameterMap = new int?[constructorParameters.Length];
 
-            for (var i = 0; i < argumentTypes.Length; i++)
+            for (int i = 0; i < argumentTypes.Length; i++)
             {
-                var foundMatch = false;
-                var givenParameter = argumentTypes[i].GetTypeInfo();
+                bool foundMatch = false;
+                TypeInfo? givenParameter = argumentTypes[i].GetTypeInfo();
 
-                for (var j = 0; j < constructorParameters.Length; j++)
+                for (int j = 0; j < constructorParameters.Length; j++)
                 {
                     if (parameterMap[j] != null)
                     {
@@ -362,14 +362,14 @@ namespace Microsoft.Extensions.Internal
 
             public int Match(object[] givenParameters)
             {
-                var applyIndexStart = 0;
-                var applyExactLength = 0;
-                for (var givenIndex = 0; givenIndex != givenParameters.Length; givenIndex++)
+                int applyIndexStart = 0;
+                int applyExactLength = 0;
+                for (int givenIndex = 0; givenIndex != givenParameters.Length; givenIndex++)
                 {
-                    var givenType = givenParameters[givenIndex]?.GetType().GetTypeInfo();
-                    var givenMatched = false;
+                    TypeInfo? givenType = givenParameters[givenIndex]?.GetType().GetTypeInfo();
+                    bool givenMatched = false;
 
-                    for (var applyIndex = applyIndexStart; givenMatched == false && applyIndex != _parameters.Length; ++applyIndex)
+                    for (int applyIndex = applyIndexStart; givenMatched == false && applyIndex != _parameters.Length; ++applyIndex)
                     {
                         if (_parameterValues[applyIndex] == null &&
                             _parameters[applyIndex].ParameterType.GetTypeInfo().IsAssignableFrom(givenType))
@@ -397,14 +397,14 @@ namespace Microsoft.Extensions.Internal
 
             public object CreateInstance(IServiceProvider provider)
             {
-                for (var index = 0; index != _parameters.Length; index++)
+                for (int index = 0; index != _parameters.Length; index++)
                 {
                     if (_parameterValues[index] == null)
                     {
-                        var value = provider.GetService(_parameters[index].ParameterType);
+                        object? value = provider.GetService(_parameters[index].ParameterType);
                         if (value == null)
                         {
-                            if (!ParameterDefaultValue.TryGetDefaultValue(_parameters[index], out var defaultValue))
+                            if (!ParameterDefaultValue.TryGetDefaultValue(_parameters[index], out object? defaultValue))
                             {
                                 throw new InvalidOperationException($"Unable to resolve service for type '{_parameters[index].ParameterType}' while attempting to activate '{_constructor.DeclaringType}'.");
                             }
