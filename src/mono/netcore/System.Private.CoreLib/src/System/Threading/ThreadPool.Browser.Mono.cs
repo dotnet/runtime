@@ -82,12 +82,11 @@ namespace System.Threading
 
         internal static void NotifyWorkItemProgress()
         {
-            throw new PlatformNotSupportedException();
         }
 
         internal static bool NotifyWorkItemComplete()
         {
-            return false;
+            return true;
         }
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
