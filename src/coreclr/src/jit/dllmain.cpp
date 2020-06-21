@@ -40,4 +40,3 @@ HINSTANCE GetModuleInst()
 {
     return (g_hInst);
 }
-

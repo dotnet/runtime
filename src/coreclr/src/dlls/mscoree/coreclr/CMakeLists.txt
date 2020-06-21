@@ -5,7 +5,8 @@ if (CLR_CMAKE_TARGET_WIN32)
 endif (CLR_CMAKE_TARGET_WIN32)
 
 if (CLR_CMAKE_HOST_WIN32)
-    preprocess_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
+    set (DEF_FILE  ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
+    preprocess_file(${DEF_SOURCES} ${DEF_FILE})
 
     list(APPEND CLR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
@@ -70,11 +71,13 @@ add_library_clr(coreclr_static
     ${CLR_SOURCES}
 )
 
-# make coreclr_static dependent on coreclr to not compete for def files.
-add_dependencies(coreclr_static coreclr)
-
 add_custom_target(coreclr_exports DEPENDS ${EXPORTS_FILE})
+add_custom_target(coreclr_def DEPENDS ${DEF_FILE})
+
+add_dependencies(coreclr coreclr_def)
 add_dependencies(coreclr coreclr_exports)
+add_dependencies(coreclr_static coreclr_def)
+add_dependencies(coreclr_static coreclr_exports)
 
 set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
 set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
