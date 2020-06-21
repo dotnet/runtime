@@ -401,8 +401,8 @@ if (FEATURE_MERGE_JIT_AND_ENGINE)
   add_subdirectory(crossgen)
 endif (FEATURE_MERGE_JIT_AND_ENGINE)
 
-# Despite the directory being named "dll", it creates a static library "clrjit_static" to link into the VM.
-add_subdirectory(dll)
+# Creates a static library "clrjit_static" to link into the VM.
+add_subdirectory(static)
 
 add_subdirectory(standalone)
 
