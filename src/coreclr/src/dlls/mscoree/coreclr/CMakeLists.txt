@@ -166,7 +166,7 @@ if(FEATURE_MERGE_JIT_AND_ENGINE)
 endif(FEATURE_MERGE_JIT_AND_ENGINE)
 
 target_link_libraries(coreclr ${CORECLR_LIBRARIES}  cee_wks ${CLRJIT_STATIC})
-target_link_libraries(coreclr_static ${CORECLR_LIBRARIES} cee_wks_mergeable clrjit_mergeable)
+target_link_libraries(coreclr_static ${CORECLR_LIBRARIES} cee_wks_mergeable clrjit_static)
 
 # Create the runtime module index header file containing the coreclr build id
 # for xplat and the timestamp/size on Windows.
