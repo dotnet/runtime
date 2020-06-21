@@ -11982,9 +11982,39 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
                 return tree;
             }
-            if (!compDoOldStructRetyping() && !tree->TypeIs(TYP_VOID) && op1->OperIs(GT_OBJ, GT_BLK, GT_IND))
+            if (!compDoOldStructRetyping() && !tree->TypeIs(TYP_VOID))
             {
-                op1 = fgMorphRetInd(tree->AsUnOp());
+                if (op1->OperIs(GT_OBJ, GT_BLK, GT_IND))
+                {
+                    op1 = fgMorphRetInd(tree->AsUnOp());
+                }
+                if (op1->OperIs(GT_LCL_VAR) && (genReturnBB == nullptr))
+                {
+                    // With a `genReturnBB` it will be done via field by field asignment.
+                    GenTreeLclVar* lclVar = op1->AsLclVar();
+                    LclVarDsc*     varDsc = lvaGetDesc(lclVar);
+                    if (varDsc->CanBeReplacedWithItsField(this))
+                    {
+                        // We can replace the struct with its only field and allow copy propogation to replace
+                        // return value that was written as a field.
+                        unsigned   fieldLclNum = varDsc->lvFieldLclStart;
+                        LclVarDsc* fieldDsc    = lvaGetDesc(fieldLclNum);
+
+                        if (!varTypeIsSmallInt(fieldDsc->lvType))
+                        {
+                            // TODO: support that substitution for small types without creating `CAST` node.
+                            // When a small struct is returned in a register higher bits could be left in undefined
+                            // state.
+                            JITDUMP(
+                                "Replacing an independently promoted local var V%02u with its only field  V%02u for "
+                                "the return [%06u]\n",
+                                lclVar->GetLclNum(), fieldLclNum, dspTreeID(tree));
+                            lclVar->SetLclNum(fieldLclNum);
+                            var_types fieldType = fieldDsc->lvType;
+                            lclVar->ChangeType(fieldDsc->lvType);
+                        }
+                    }
+                }
             }
             break;
 
@@ -14280,13 +14310,12 @@ GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
                 // and enregister it.
                 DEBUG_DESTROY_NODE(ind);
                 DEBUG_DESTROY_NODE(addr);
-
                 ret->gtOp1 = lclVar;
                 return ret->gtGetOp1();
             }
             else if (!varDsc->lvDoNotEnregister)
             {
-                lvaSetVarDoNotEnregister(lclVar->GetLclNum() DEBUGARG(Compiler::DNER_VMNeedsStackAddr));
+                lvaSetVarDoNotEnregister(lclVar->GetLclNum() DEBUGARG(Compiler::DNER_BlockOp));
             }
         }
     }

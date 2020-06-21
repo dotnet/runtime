@@ -3057,12 +3057,12 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             assert(varDsc->lvFieldCnt == 1);
             unsigned   fldNum = varDsc->lvFieldLclStart;
             LclVarDsc* fldDsc = comp->lvaGetDesc(fldNum);
-            lclStore->SetLclNum(fldNum);
-            lclStore->ChangeType(fldDsc->TypeGet());
 
             JITDUMP("Replacing an independently promoted local var V%02u with its only field V%02u for the store "
                     "from a call [%06u]\n",
                     lclStore->GetLclNum(), fldNum, comp->dspTreeID(lclStore));
+            lclStore->SetLclNum(fldNum);
+            lclStore->ChangeType(fldDsc->TypeGet());
             varDsc = fldDsc;
         }
     }
@@ -3238,10 +3238,13 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             break;
 
         case GT_CNS_INT:
-            assert(retVal->TypeIs(TYP_INT));
-            assert(retVal->AsIntCon()->IconValue() == 0);
+            // When we promote LCL_VAR single fields into return
+            // we could have all type of constans here.
             if (varTypeUsesFloatReg(nativeReturnType))
             {
+                // Do not expect `initblock` for SIMD* types,
+                // only 'initobj'.
+                assert(retVal->AsIntCon()->IconValue() == 0);
                 retVal->ChangeOperConst(GT_CNS_DBL);
                 retVal->ChangeType(TYP_FLOAT);
                 retVal->AsDblCon()->gtDconVal = 0;
@@ -3292,8 +3295,24 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         }
         break;
 
-        default:
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
+        case GT_CNS_DBL:
+            // Currently we are not promoting structs with a single float field.
+            // TODO: can improve `GT_CNS_DBL` handling for supported platforms, but
+            // because it is only x86 nowadays it is not worth it.
             unreached();
+#endif
+
+        default:
+            assert(varTypeIsEnregisterable(retVal));
+            if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(retVal))
+            {
+                GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
+                ret->gtOp1       = bitcast;
+                BlockRange().InsertBefore(ret, bitcast);
+                ContainCheckBitCast(bitcast);
+            }
+            break;
     }
 }
 
