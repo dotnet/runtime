@@ -21,7 +21,7 @@ namespace System.Net.Security
             EncryptionPolicy = sslClientAuthenticationOptions.EncryptionPolicy;
             IsServer = false;
             RemoteCertRequired = true;
-            TargetHost = sslClientAuthenticationOptions.TargetHost;
+            TargetHost = sslClientAuthenticationOptions.TargetHost!;
 
             // Client specific options.
             CertSelectionDelegate = localCallback;
@@ -68,7 +68,7 @@ namespace System.Net.Security
         }
 
         internal bool AllowRenegotiation { get; set; }
-        internal string? TargetHost { get; set; }
+        internal string TargetHost { get; set; }
         internal X509CertificateCollection? ClientCertificates { get; set; }
         internal List<SslApplicationProtocol>? ApplicationProtocols { get; }
         internal bool IsServer { get; set; }
