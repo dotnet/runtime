@@ -10,7 +10,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Text;
 using System.Reflection;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.SqlTypes
 {
@@ -128,7 +128,7 @@ namespace System.Data.SqlTypes
 
         private static MethodInfo CreateSqlReaderMethodInfo
         {
-            [PreserveDependency("CreateSqlReader", "System.Xml.XmlReader", "System.Private.Xml")]
+            [DynamicDependency("CreateSqlReader", typeof(System.Xml.XmlReader))]
             get
             {
                 if (s_createSqlReaderMethodInfo == null)

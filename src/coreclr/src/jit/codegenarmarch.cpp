@@ -457,7 +457,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_NULLCHECK:
-            genCodeForNullCheck(treeNode->AsOp());
+            genCodeForNullCheck(treeNode->AsIndir());
             break;
 
         case GT_CATCH_ARG:
@@ -1500,19 +1500,19 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 // Return value:
 //    None
 //
-void CodeGen::genCodeForNullCheck(GenTreeOp* tree)
+void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
-    assert(tree->OperIs(GT_NULLCHECK));
-    assert(!tree->gtOp1->isContained());
-    regNumber addrReg = genConsumeReg(tree->gtOp1);
-
-#ifdef TARGET_ARM64
-    regNumber targetReg = REG_ZR;
+#ifdef TARGET_ARM
+    assert(!"GT_NULLCHECK isn't supported for Arm32; use GT_IND.");
 #else
-    regNumber targetReg = tree->GetSingleTempReg();
-#endif
+    assert(tree->OperIs(GT_NULLCHECK));
+    GenTree* op1 = tree->gtOp1;
 
-    GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, targetReg, addrReg, 0);
+    genConsumeRegs(op1);
+    regNumber targetReg = REG_ZR;
+
+    GetEmitter()->emitInsLoadStoreOp(INS_ldr, EA_4BYTE, targetReg, tree);
+#endif
 }
 
 //------------------------------------------------------------------------

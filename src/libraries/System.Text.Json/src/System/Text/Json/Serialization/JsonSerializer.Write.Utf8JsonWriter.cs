@@ -59,7 +59,7 @@ namespace System.Text.Json
             Serialize<object?>(writer, value, inputType, options);
         }
 
-        private static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, Type type, JsonSerializerOptions? options)
+        private static void Serialize<TValue>(Utf8JsonWriter writer, in TValue value, Type type, JsonSerializerOptions? options)
         {
             if (options == null)
             {

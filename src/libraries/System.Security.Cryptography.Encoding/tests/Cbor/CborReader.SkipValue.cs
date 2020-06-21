@@ -12,21 +12,21 @@ namespace System.Formats.Cbor
         /// <summary>
         ///   Reads the contents of the next value, discarding the result and advancing the reader.
         /// </summary>
-        /// <param name="disableConformanceLevelChecks">
-        ///   Disable conformance level validation for the skipped value,
-        ///   equivalent to using <see cref="CborConformanceLevel.Lax"/>.
+        /// <param name="disableConformanceModeChecks">
+        ///   Disable conformance mode validation for the skipped value,
+        ///   equivalent to using <see cref="CborConformanceMode.Lax"/>.
         /// </param>
         /// <exception cref="InvalidOperationException">
         ///   the reader is not at the start of new value.
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
-        public void SkipValue(bool disableConformanceLevelChecks = false)
+        public void SkipValue(bool disableConformanceModeChecks = false)
         {
-            SkipToAncestor(0, disableConformanceLevelChecks);
+            SkipToAncestor(0, disableConformanceModeChecks);
         }
 
         /// <summary>
@@ -34,33 +34,33 @@ namespace System.Formats.Cbor
         ///   discarding results and advancing the reader to the next value
         ///   in the parent context.
         /// </summary>
-        /// <param name="disableConformanceLevelChecks">
-        ///   Disable conformance level validation for the skipped values,
-        ///   equivalent to using <see cref="CborConformanceLevel.Lax"/>.
+        /// <param name="disableConformanceModeChecks">
+        ///   Disable conformance mode validation for the skipped values,
+        ///   equivalent to using <see cref="CborConformanceMode.Lax"/>.
         /// </param>
         /// <exception cref="InvalidOperationException">
         ///   the reader is at the root context
         /// </exception>
-        /// <exception cref="FormatException">
+        /// <exception cref="CborContentException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
-        public void SkipToParent(bool disableConformanceLevelChecks = false)
+        public void SkipToParent(bool disableConformanceModeChecks = false)
         {
             if (_currentMajorType is null)
             {
                 throw new InvalidOperationException(SR.Cbor_Reader_IsAtRootContext);
             }
 
-            SkipToAncestor(1, disableConformanceLevelChecks);
+            SkipToAncestor(1, disableConformanceModeChecks);
         }
 
-        private void SkipToAncestor(int depth, bool disableConformanceLevelChecks)
+        private void SkipToAncestor(int depth, bool disableConformanceModeChecks)
         {
             Debug.Assert(0 <= depth && depth <= CurrentDepth);
             Checkpoint checkpoint = CreateCheckpoint();
-            _isConformanceLevelCheckEnabled = !disableConformanceLevelChecks;
+            _isConformanceModeCheckEnabled = !disableConformanceModeChecks;
 
             try
             {
@@ -76,7 +76,7 @@ namespace System.Formats.Cbor
             }
             finally
             {
-                _isConformanceLevelCheckEnabled = true;
+                _isConformanceModeCheckEnabled = true;
             }
         }
 
@@ -85,7 +85,7 @@ namespace System.Formats.Cbor
             CborReaderState state;
 
             // peek, skipping any tags we might encounter
-            while ((state = PeekStateCore(throwOnFormatErrors: true)) == CborReaderState.Tag)
+            while ((state = PeekStateCore()) == CborReaderState.Tag)
             {
                 ReadTag();
             }
@@ -97,7 +97,7 @@ namespace System.Formats.Cbor
                     break;
 
                 case CborReaderState.NegativeInteger:
-                    ReadCborNegativeIntegerEncoding();
+                    ReadCborNegativeIntegerRepresentation();
                     break;
 
                 case CborReaderState.ByteString:
@@ -108,25 +108,25 @@ namespace System.Formats.Cbor
                     SkipString(type: CborMajorType.TextString);
                     break;
 
-                case CborReaderState.StartByteString:
-                    ReadStartByteString();
+                case CborReaderState.StartIndefiniteLengthByteString:
+                    ReadStartIndefiniteLengthByteString();
                     depth++;
                     break;
 
-                case CborReaderState.EndByteString:
+                case CborReaderState.EndIndefiniteLengthByteString:
                     ValidatePop(state, depth);
-                    ReadEndByteString();
+                    ReadEndIndefiniteLengthByteString();
                     depth--;
                     break;
 
-                case CborReaderState.StartTextString:
-                    ReadStartTextString();
+                case CborReaderState.StartIndefiniteLengthTextString:
+                    ReadStartIndefiniteLengthTextString();
                     depth++;
                     break;
 
-                case CborReaderState.EndTextString:
+                case CborReaderState.EndIndefiniteLengthTextString:
                     ValidatePop(state, depth);
-                    ReadEndTextString();
+                    ReadEndIndefiniteLengthTextString();
                     depth--;
                     break;
 
@@ -163,12 +163,6 @@ namespace System.Formats.Cbor
                 case CborReaderState.SimpleValue:
                     ReadSimpleValue();
                     break;
-
-                case CborReaderState.EndOfData:
-                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
-                case CborReaderState.FormatError:
-                    Debug.Fail("Peek format errors should be surfaced as FormatExceptions.");
-                    throw new FormatException();
 
                 default:
                     throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_Skip_InvalidState, state));

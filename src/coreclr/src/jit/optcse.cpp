@@ -3376,12 +3376,22 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
             switch (category)
             {
+#ifdef TARGET_XARCH
                 case HW_Category_SimpleSIMD:
                 case HW_Category_IMM:
                 case HW_Category_Scalar:
                 case HW_Category_SIMDScalar:
                 case HW_Category_Helper:
                     break;
+#elif defined(TARGET_ARM64)
+                case HW_Category_SIMD:
+                case HW_Category_SIMDByIndexedElement:
+                case HW_Category_ShiftLeftByImmediate:
+                case HW_Category_ShiftRightByImmediate:
+                case HW_Category_Scalar:
+                case HW_Category_Helper:
+                    break;
+#endif
 
                 case HW_Category_MemoryLoad:
                 case HW_Category_MemoryStore:

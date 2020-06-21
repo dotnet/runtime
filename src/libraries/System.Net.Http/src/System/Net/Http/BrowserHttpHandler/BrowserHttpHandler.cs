@@ -281,6 +281,7 @@ namespace System.Net.Http
             private readonly JSObject _abortController;
             private readonly CancellationTokenSource _abortCts;
             private readonly CancellationTokenRegistration _abortRegistration;
+            private bool _isDisposed;
 
             public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenSource abortCts, CancellationTokenRegistration abortRegistration)
             {
@@ -313,17 +314,17 @@ namespace System.Net.Http
             // Protected implementation of Dispose pattern.
             protected virtual void Dispose(bool disposing)
             {
+                if (_isDisposed)
+                    return;
+
+                _isDisposed = true;
                 if (disposing)
                 {
-                    // Free any other managed objects here.
-                    //
                     _abortCts.Cancel();
                     _abortCts.Dispose();
                     _abortRegistration.Dispose();
                 }
 
-                // Free any unmanaged objects here.
-                //
                 _fetchResponse?.Dispose();
                 _abortController?.Dispose();
             }

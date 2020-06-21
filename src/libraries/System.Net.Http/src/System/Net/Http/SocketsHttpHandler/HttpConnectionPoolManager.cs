@@ -385,8 +385,11 @@ namespace System.Net.Http
         /// <summary>
         /// Iterates a request over a set of proxies until one works, or all proxies have failed.
         /// </summary>
+        /// <param name="request">The request message.</param>
+        /// <param name="doRequestAuth">Whether to perform request authentication.</param>
         /// <param name="multiProxy">The set of proxies to use.</param>
         /// <param name="firstProxy">The first proxy try.</param>
+        /// <param name="cancellationToken">The cancellation token to use for the operation.</param>
         private async Task<HttpResponseMessage> SendAsyncMultiProxy(HttpRequestMessage request, bool doRequestAuth, MultiProxy multiProxy, Uri? firstProxy, CancellationToken cancellationToken)
         {
             HttpRequestException rethrowException;

@@ -2915,7 +2915,7 @@ public:
     // Get the element handle for an array of ref type.
     CORINFO_CLASS_HANDLE gtGetArrayElementClassHandle(GenTree* array);
     // Get a class handle from a helper call argument
-    CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array, GenTree** handleTree = nullptr);
+    CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array);
     // Get the class handle for a field
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
     // Check if this tree is a gc static base helper call
@@ -3782,7 +3782,7 @@ protected:
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr = false);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
     GenTree* addRangeCheckIfNeeded(
-        NamedIntrinsic intrinsic, GenTree* lastOp, bool mustExpand, int immLowerBound, int immUpperBound);
+        NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
 
 #ifdef TARGET_XARCH
     GenTree* impBaseIntrinsic(NamedIntrinsic        intrinsic,
@@ -9321,7 +9321,11 @@ public:
     static void compStartup();  // One-time initialization
     static void compShutdown(); // One-time finalization
 
-    void compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo);
+    void compInit(ArenaAllocator*       pAlloc,
+                  CORINFO_METHOD_HANDLE methodHnd,
+                  COMP_HANDLE           compHnd,
+                  CORINFO_METHOD_INFO*  methodInfo,
+                  InlineInfo*           inlineInfo);
     void compDone();
 
     static void compDisplayStaticSizes(FILE* fout);
@@ -9344,10 +9348,7 @@ public:
     void compDoComponentUnitTestsOnce();
 #endif // DEBUG
 
-    int compCompile(CORINFO_METHOD_HANDLE methodHnd,
-                    CORINFO_MODULE_HANDLE classPtr,
-                    COMP_HANDLE           compHnd,
-                    CORINFO_METHOD_INFO*  methodInfo,
+    int compCompile(CORINFO_MODULE_HANDLE classPtr,
                     void**                methodCodePtr,
                     ULONG*                methodCodeSize,
                     JitFlags*             compileFlags);

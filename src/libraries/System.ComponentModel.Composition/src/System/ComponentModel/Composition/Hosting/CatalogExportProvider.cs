@@ -290,6 +290,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// Returns all exports that match the conditions of the specified import.
         /// </summary>
         /// <param name="definition">The <see cref="ImportDefinition"/> that defines the conditions of the
+        /// <param name="atomicComposition">The transactional container for the composition.</param>
         /// <see cref="Export"/> to get.</param>
         /// <returns></returns>
         /// <result>

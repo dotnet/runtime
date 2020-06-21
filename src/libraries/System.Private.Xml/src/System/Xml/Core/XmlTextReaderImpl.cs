@@ -2189,7 +2189,7 @@ namespace System.Xml
         }
 
         // Specifies XmlResolver used for opening the XML document and other external references
-        internal XmlResolver XmlResolver
+        internal XmlResolver? XmlResolver
         {
             set
             {
@@ -4631,7 +4631,7 @@ namespace System.Xml
                 {
                     NodeData attr = _nodes[i];
 
-                    IDtdAttributeInfo attributeInfo = attlistInfo.LookupAttribute(attr.prefix, attr.localName);
+                    IDtdAttributeInfo? attributeInfo = attlistInfo.LookupAttribute(attr.prefix, attr.localName);
                     if (attributeInfo != null && attributeInfo.IsNonCDataType)
                     {
                         if (DtdValidation && _standalone && attributeInfo.IsDeclaredInExternal)

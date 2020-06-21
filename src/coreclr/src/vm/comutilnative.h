@@ -76,6 +76,62 @@ public:
 
 const UINT MEM_PRESSURE_COUNT = 4;
 
+struct GCGenerationInfo
+{
+    UINT64 sizeBefore;
+    UINT64 fragmentationBefore;
+    UINT64 sizeAfter;
+    UINT64 fragmentationAfter;
+};
+
+#if defined(TARGET_X86) && !defined(TARGET_UNIX)
+#include "pshpack4.h"
+#ifdef _MSC_VER 
+#pragma warning(push)
+#pragma warning(disable:4121) // alignment of a member was sensitive to packing
+#endif
+#endif
+class GCMemoryInfoData : public Object
+{
+public:
+    UINT64 highMemLoadThresholdBytes;
+    UINT64 totalAvailableMemoryBytes;
+    UINT64 lastRecordedMemLoadBytes;
+    UINT64 lastRecordedHeapSizeBytes;
+    UINT64 lastRecordedFragmentationBytes;
+    UINT64 totalCommittedBytes;
+    UINT64 promotedBytes;
+    UINT64 pinnedObjectCount;
+    UINT64 finalizationPendingCount;
+    UINT64 index;
+    UINT32 generation;
+    UINT32 pauseTimePercent;
+    UINT8 isCompaction;
+    UINT8 isConcurrent;
+    GCGenerationInfo generationInfo0;
+    GCGenerationInfo generationInfo1;
+    GCGenerationInfo generationInfo2;
+    GCGenerationInfo generationInfo3;
+    GCGenerationInfo generationInfo4;
+    UINT64 pauseDuration0;
+    UINT64 pauseDuration1;
+};
+#if defined(TARGET_X86) && !defined(TARGET_UNIX)
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+#include "poppack.h"
+#endif
+
+#ifdef USE_CHECKED_OBJECTREFS
+typedef REF<GCMemoryInfoData> GCMEMORYINFODATA;
+typedef REF<GCMemoryInfoData> GCMEMORYINFODATAREF;
+#else // USE_CHECKED_OBJECTREFS
+typedef GCMemoryInfoData * GCMEMORYINFODATA;
+typedef GCMemoryInfoData * GCMEMORYINFODATAREF;
+#endif // USE_CHECKED_OBJECTREFS
+
+
 class GCInterface {
 private:
     static INT32    m_gc_counts[3];
@@ -88,7 +144,8 @@ public:
     static FORCEINLINE UINT64 InterlockedAdd(UINT64 *pAugend, UINT64 addend);
     static FORCEINLINE UINT64 InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend);
 
-    static FCDECL6(void,    GetMemoryInfo, UINT64* highMemLoadThresholdBytes, UINT64* totalAvailableMemoryBytes, UINT64* lastRecordedMemLoadBytes, UINT32* lastRecordedMemLoadPct, size_t* lastRecordedHeapSizBytes, size_t* lastRecordedFragmentationBytes);
+    static FCDECL2(void,    GetMemoryInfo, Object* objUNSAFE, int kind);
+    static FCDECL0(UINT32,  GetMemoryLoad);
     static FCDECL0(int,     GetGcLatencyMode);
     static FCDECL1(int,     SetGcLatencyMode, int newLatencyMode);
     static FCDECL0(int,     GetLOHCompactionMode);

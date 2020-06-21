@@ -222,6 +222,10 @@ private:
     static Volatile<uint64_t> s_allowWrite;
     static EventPipeEventSource *s_pEventSource;
 
+    static bool s_CanStartThreads;
+
+    static CQuickArrayList<EventPipeSessionID> s_rgDeferredEventPipeSessionIds;
+
     //! Bitmask tracking EventPipe active sessions.
     // in all groups preceding it. For example if there are three groups with sizes:
     // 1, 7, 6 the table would be 0, 1, 8

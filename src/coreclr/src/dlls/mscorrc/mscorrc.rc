@@ -525,7 +525,6 @@ BEGIN
     IDS_EE_INVALIDCOMDEFITF                 "Type '%1' has an invalid default COM interface: '%2'."
     IDS_EE_COMDEFITFNOTSUPPORTED            "Type '%1' does not support the specified default COM interface: '%2'"
 
-    IDS_EE_GUID_REPRESENTS_NON_VC           "Type '%1' that has the requested GUID is not a value class."
     IDS_EE_CANNOT_MAP_TO_MANAGED_VC         "The specified record cannot be mapped to a managed value class."
 
     IDS_EE_SAFEHANDLECLOSED                 "Safe handle has been closed"
@@ -753,13 +752,6 @@ BEGIN
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    IDS_EE_BADMARSHAL_TYPE_ANSIBSTR                   "Marshalling as AnsiBStr is not supported"
-    IDS_EE_BADMARSHAL_TYPE_VBBYVALSTR                 "Marshalling as VBByRefString is not supported"
-    IDS_EE_BADMARSHAL_TYPE_REFERENCECUSTOMMARSHALER   "Custom marshalers are not supported"
-    IDS_EE_BADMARSHAL_TYPE_VARIANTASOBJECT            "Marshalling between VARIANT and System.Object is not supported"
-    IDS_EE_BADMARSHAL_TYPE_ASANYA                     "Marshalling arbitrary types is not supported"
-    IDS_EE_BADMARSHAL_TYPE_IDISPATCH                  "Marshalling as IDispatch is not supported"
-    IDS_EE_ERROR_IDISPATCH                            "IDispatch and IDispatchEx are not supported"
     IDS_EE_ERROR_COM                                  "COM is not supported"
 END
 

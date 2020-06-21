@@ -1054,7 +1054,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void FileSystemWatcher_ModifyFiltersConcurrentWithEvents()
         {
             DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());

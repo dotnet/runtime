@@ -180,6 +180,7 @@ jobs:
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
 
+    - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, '')) }}:
       # Publish test native components for consumption by test execution.
       - ${{ if ne(parameters.isOfficialBuild, true) }}:
         - template: /eng/pipelines/common/upload-artifact-step.yml

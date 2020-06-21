@@ -145,6 +145,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     the exports used to satisfy this import. If no specific <see cref="CreationPolicy"/> is needed
         ///     pass the default <see cref="CreationPolicy.Any"/>.
         /// </param>
+        /// <param name="metadata">The metadata associated with this import.</param>
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="contractName"/> is <see langword="null"/>.
         /// </exception>

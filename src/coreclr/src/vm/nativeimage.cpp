@@ -20,7 +20,7 @@ BOOL AssemblyNameIndexHashTraits::Equals(LPCUTF8 a, LPCUTF8 b)
 {
     WRAPPER_NO_CONTRACT;
 
-    return SString(SString::Utf8Literal, a).Compare(SString(SString::Utf8Literal, b)) == 0;
+    return SString(SString::Utf8Literal, a).CompareCaseInsensitive(SString(SString::Utf8Literal, b)) == 0;
 }
 
 AssemblyNameIndexHashTraits::count_t AssemblyNameIndexHashTraits::Hash(LPCUTF8 s)
@@ -30,7 +30,21 @@ AssemblyNameIndexHashTraits::count_t AssemblyNameIndexHashTraits::Hash(LPCUTF8 s
     return SString(SString::Utf8Literal, s).HashCaseInsensitive();
 }
 
-NativeImage::NativeImage(PEImageLayout *pImageLayout, LPCUTF8 imageFileName)
+BOOL NativeImageIndexTraits::Equals(LPCUTF8 a, LPCUTF8 b)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return SString(SString::Utf8Literal, a).CompareCaseInsensitive(SString(SString::Utf8Literal, b)) == 0;
+}
+
+NativeImageIndexTraits::count_t NativeImageIndexTraits::Hash(LPCUTF8 a)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return SString(SString::Utf8Literal, a).HashCaseInsensitive();
+}
+
+NativeImage::NativeImage(AssemblyLoadContext *pAssemblyLoadContext, PEImageLayout *pImageLayout, LPCUTF8 imageFileName)
     : m_eagerFixupsLock(CrstNativeImageEagerFixups)
 {
     CONTRACTL
@@ -42,6 +56,7 @@ NativeImage::NativeImage(PEImageLayout *pImageLayout, LPCUTF8 imageFileName)
     }
     CONTRACTL_END;
 
+    m_pAssemblyLoadContext = pAssemblyLoadContext;
     m_pImageLayout = pImageLayout;
     m_fileName = imageFileName;
     m_eagerFixupsHaveRun = false;
@@ -96,14 +111,90 @@ NativeImage::~NativeImage()
 
 #ifndef DACCESS_COMPILE
 NativeImage *NativeImage::Open(
-    LPCWSTR fullPath,
+    Module *componentModule,
     LPCUTF8 nativeImageFileName,
-    LoaderAllocator *pLoaderAllocator,
-    AllocMemTracker *pamTracker)
+    AssemblyLoadContext *pAssemblyLoadContext,
+    LoaderAllocator *pLoaderAllocator)
 {
     STANDARD_VM_CONTRACT;
 
-    NewHolder<PEImageLayout> peLoadedImage = PEImageLayout::LoadNative(fullPath);
+    NativeImage *pExistingImage = AppDomain::GetCurrentDomain()->GetNativeImage(nativeImageFileName);
+    if (pExistingImage != nullptr)
+    {
+        return pExistingImage->GetAssemblyLoadContext() == pAssemblyLoadContext ? pExistingImage : nullptr;
+    }
+
+    SString path = componentModule->GetPath();
+    SString::Iterator lastPathSeparatorIter = path.End();
+    size_t pathDirLength = 0;
+    if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
+    {
+        pathDirLength = (lastPathSeparatorIter - path.Begin()) + 1;
+    }
+
+    SString compositeImageFileName(SString::Utf8, nativeImageFileName);
+    SString fullPath;
+    fullPath.Set(path, path.Begin(), (COUNT_T)pathDirLength);
+    fullPath += compositeImageFileName;
+    LPWSTR searchPathsConfig;
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NativeImageSearchPaths, &searchPathsConfig));
+
+    NewHolder<PEImageLayout> peLoadedImage;
+
+    EX_TRY
+    {
+        peLoadedImage = PEImageLayout::LoadNative(fullPath);
+    }
+    EX_CATCH
+    {
+        SString searchPaths(searchPathsConfig);
+        SString::CIterator start = searchPaths.Begin();
+        while (start != searchPaths.End())
+        {
+            SString::CIterator end = start;
+            if (!searchPaths.Find(end, PATH_SEPARATOR_CHAR_W))
+            {
+                end = searchPaths.End();
+            }
+            fullPath.Set(searchPaths, start, (COUNT_T)(end - start));
+
+            if (end != searchPaths.End())
+            {
+                // Skip path separator character
+                ++end;
+            }
+            start = end;
+
+            if (fullPath.GetCount() == 0)
+            {
+                continue;
+            }
+
+            fullPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
+            fullPath += compositeImageFileName;
+            
+            EX_TRY
+            {
+                peLoadedImage = PEImageLayout::LoadNative(fullPath);
+                break;
+            }
+            EX_CATCH
+            {
+            }
+            EX_END_CATCH(SwallowAllExceptions)
+        }
+    }
+    EX_END_CATCH(SwallowAllExceptions)
+
+    if (peLoadedImage.IsNull())
+    {
+        // Failed to locate the native composite R2R image
+        LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load native image '%s' for component assembly '%S' using search paths: '%S'\n",
+            nativeImageFileName,
+            path.GetUnicode(),
+            searchPathsConfig != nullptr ? searchPathsConfig : W("<use COMPlus_NativeImageSearchPaths to set>")));
+        RaiseFailFastException(nullptr, nullptr, 0);
+    }
 
     READYTORUN_HEADER *pHeader = (READYTORUN_HEADER *)peLoadedImage->GetExport("RTR_HEADER");
     if (pHeader == NULL)
@@ -118,9 +209,18 @@ NativeImage *NativeImage::Open(
     {
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
-    NewHolder<NativeImage> image = new NativeImage(peLoadedImage.Extract(), nativeImageFileName);
-    image->Initialize(pHeader, pLoaderAllocator, pamTracker);
-    return image.Extract();
+    NewHolder<NativeImage> image = new NativeImage(pAssemblyLoadContext, peLoadedImage.Extract(), nativeImageFileName);
+    AllocMemTracker amTracker;
+    image->Initialize(pHeader, pLoaderAllocator, &amTracker);
+    pExistingImage = AppDomain::GetCurrentDomain()->SetNativeImage(nativeImageFileName, image);
+    if (pExistingImage == nullptr)
+    {
+        // No pre-existing image, new image has been stored in the map
+        amTracker.SuppressRelease();
+        return image.Extract();
+    }
+    // Return pre-existing image if it was loaded into the same ALC, null otherwise
+    return (pExistingImage->GetAssemblyLoadContext() == pAssemblyLoadContext ? pExistingImage : nullptr);
 }
 #endif
 

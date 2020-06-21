@@ -259,6 +259,7 @@ public class ReadAndWrite
     }
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static unsafe void OutputEncodingPreamble()
     {
         Encoding curEncoding = Console.OutputEncoding;
@@ -281,6 +282,7 @@ public class ReadAndWrite
     }
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static unsafe void OutputEncoding()
     {
         Encoding curEncoding = Console.OutputEncoding;
@@ -303,6 +305,28 @@ public class ReadAndWrite
         {
             Console.OutputEncoding = curEncoding;
         }
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Browser)]
+    public static void OutputEncoding_Getter_Returns_Unicode()
+    {
+        Encoding curEncoding = Console.OutputEncoding;
+        Assert.Equal(Encoding.Unicode, curEncoding);
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Browser)]
+    public static void OutputEncoding_Setter_Throws_PlatformNotSupportedException()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.OutputEncoding = Encoding.Unicode);
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Browser)]
+    public static void InputEncoding_Getter_Throws_PlatformNotSupportedException()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.InputEncoding);
     }
 
     static readonly string[] s_testLines = new string[] {
@@ -333,6 +357,7 @@ public class ReadAndWrite
     };
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void ReadAndReadLine()
     {
         TextWriter savedStandardOutput = Console.Out;

@@ -636,7 +636,7 @@ namespace System.Xml
                 int depth = _coreReader.Depth;
                 _coreReader = GetCachingReader();
                 Debug.Assert(_cachingReader != null);
-                _cachingReader.RecordTextNode(_xmlSchemaInfo.XmlType.ValueConverter.ToString(_atomicValue), _originalAtomicValueString, depth + 1, 0, 0);
+                _cachingReader.RecordTextNode(_xmlSchemaInfo.XmlType!.ValueConverter.ToString(_atomicValue), _originalAtomicValueString, depth + 1, 0, 0);
                 _cachingReader.RecordEndElementNode();
                 await _cachingReader.SetToReplayModeAsync().ConfigureAwait(false);
                 _replayCache = true;
@@ -666,7 +666,7 @@ namespace System.Xml
                 if (!_inlineSchemaParser.ParseReaderNode())
                 {
                     _inlineSchemaParser.FinishParsing();
-                    XmlSchema schema = _inlineSchemaParser.XmlSchema;
+                    XmlSchema schema = _inlineSchemaParser.XmlSchema!;
                     _validator.AddSchema(schema);
                     _inlineSchemaParser = null;
                     _validationState = ValidatingReaderState.Read;
@@ -698,11 +698,11 @@ namespace System.Xml
                 {
                     if (_validationState == ValidatingReaderState.OnDefaultAttribute)
                     {
-                        XmlSchemaAttribute schemaAttr = _attributePSVI.attributeSchemaInfo.SchemaAttribute;
+                        XmlSchemaAttribute schemaAttr = _attributePSVI.attributeSchemaInfo.SchemaAttribute!;
                         originalStringValue = (schemaAttr.DefaultValue != null) ? schemaAttr.DefaultValue : schemaAttr.FixedValue!;
                     }
 
-                    tuple = new Tuple<string, object>(originalStringValue, ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType, unwrapTypedValue)!);
+                    tuple = new Tuple<string, object>(originalStringValue, ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType!, unwrapTypedValue));
                     return tuple;
                 }
                 else
@@ -736,7 +736,7 @@ namespace System.Xml
                 if (_validator.CurrentContentType == XmlSchemaContentType.TextOnly)
                 {
                     // if current element is of simple type
-                    object? value = ReturnBoxedValue(await ReadTillEndElementAsync().ConfigureAwait(false), _xmlSchemaInfo.XmlType, unwrapTypedValue)!;
+                    object? value = ReturnBoxedValue(await ReadTillEndElementAsync().ConfigureAwait(false), _xmlSchemaInfo.XmlType!, unwrapTypedValue);
                     Debug.Assert(value != null);
 
                     Debug.Assert(_originalAtomicValueString != null);
@@ -787,7 +787,7 @@ namespace System.Xml
             {
                 if (_xmlSchemaInfo.ContentType == XmlSchemaContentType.TextOnly)
                 {
-                    typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType, unwrapTypedValue)!;
+                    typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType!, unwrapTypedValue);
                 }
                 else
                 {
@@ -799,7 +799,7 @@ namespace System.Xml
                 xmlType = ElementXmlType; // Set this for default values
                 await this.ReadAsync().ConfigureAwait(false);
 
-                return new Tuple<XmlSchemaType, string, object>(xmlType, originalString, typedValue);
+                return new Tuple<XmlSchemaType, string, object>(xmlType!, originalString, typedValue);
             }
 
             // move to content and read typed value
@@ -812,7 +812,7 @@ namespace System.Xml
                 {
                     if (_xmlSchemaInfo.ContentType == XmlSchemaContentType.TextOnly)
                     {
-                        typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType, unwrapTypedValue)!;
+                        typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType!, unwrapTypedValue);
                     }
                     else
                     {
@@ -854,7 +854,7 @@ namespace System.Xml
             // move to next node
             await this.ReadAsync().ConfigureAwait(false);
 
-            return new Tuple<XmlSchemaType, string, object>(xmlType, originalString, typedValue);
+            return new Tuple<XmlSchemaType, string, object>(xmlType!, originalString, typedValue);
         }
 
         private async Task<object?> ReadTillEndElementAsync()

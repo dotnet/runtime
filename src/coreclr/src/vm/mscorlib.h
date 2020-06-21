@@ -1241,6 +1241,30 @@ DEFINE_FIELD_U(_laLocalKeyValueStore,      LAHashKeyToTrackersObject,       _laL
 
 DEFINE_CLASS(LAHASHKEYTOTRACKERS, CompilerServices, LAHashKeyToTrackers)
 
+DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
+DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)
+DEFINE_FIELD_U(_totalAvailableMemoryBytes, GCMemoryInfoData, totalAvailableMemoryBytes)
+DEFINE_FIELD_U(_memoryLoadBytes, GCMemoryInfoData, lastRecordedMemLoadBytes)
+DEFINE_FIELD_U(_heapSizeBytes, GCMemoryInfoData, lastRecordedHeapSizeBytes)
+DEFINE_FIELD_U(_fragmentedBytes, GCMemoryInfoData, lastRecordedFragmentationBytes)
+DEFINE_FIELD_U(_totalCommittedBytes, GCMemoryInfoData, totalCommittedBytes)
+DEFINE_FIELD_U(_promotedBytes, GCMemoryInfoData, promotedBytes)
+DEFINE_FIELD_U(_pinnedObjectsCount, GCMemoryInfoData, pinnedObjectCount)
+DEFINE_FIELD_U(_finalizationPendingCount, GCMemoryInfoData, finalizationPendingCount)
+DEFINE_FIELD_U(_index, GCMemoryInfoData, index)
+DEFINE_FIELD_U(_generation, GCMemoryInfoData, generation)
+DEFINE_FIELD_U(_pauseTimePercentage, GCMemoryInfoData, pauseTimePercent)
+DEFINE_FIELD_U(_compacted, GCMemoryInfoData, isCompaction)
+DEFINE_FIELD_U(_concurrent, GCMemoryInfoData, isConcurrent)
+DEFINE_FIELD_U(_pauseDuration0, GCMemoryInfoData, pauseDuration0)
+DEFINE_FIELD_U(_pauseDuration1, GCMemoryInfoData, pauseDuration1)
+DEFINE_FIELD_U(_generationInfo0, GCMemoryInfoData, generationInfo0)
+DEFINE_FIELD_U(_generationInfo1, GCMemoryInfoData, generationInfo1)
+DEFINE_FIELD_U(_generationInfo2, GCMemoryInfoData, generationInfo2)
+DEFINE_FIELD_U(_generationInfo3, GCMemoryInfoData, generationInfo3)
+DEFINE_FIELD_U(_generationInfo4, GCMemoryInfoData, generationInfo4)
+
+
 #undef DEFINE_CLASS
 #undef DEFINE_METHOD
 #undef DEFINE_FIELD

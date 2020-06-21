@@ -29,6 +29,7 @@ namespace System
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsIllumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
+        public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -41,6 +42,7 @@ namespace System
         public static bool Is32BitProcess => IntPtr.Size == 4;
         public static bool IsNotWindows => !IsWindows;
 
+        public static bool IsThreadingSupported => !IsBrowser;
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
         public static bool IsDrawingSupported

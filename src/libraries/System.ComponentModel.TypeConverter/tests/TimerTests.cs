@@ -36,7 +36,7 @@ namespace System.Timers.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TestTimerStartAutoReset()
         {
             using (var timer = new TestTimer(1))

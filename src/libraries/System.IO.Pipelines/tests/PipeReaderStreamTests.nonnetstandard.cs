@@ -207,7 +207,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancellationTokenFlowsToUnderlyingPipeReader()
         {
             var pipe = new Pipe();

@@ -473,7 +473,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WriteAsyncStringTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
@@ -574,7 +574,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WriteLineCharMemoryTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)

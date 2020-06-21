@@ -266,6 +266,57 @@ int main(const int argc, const pal::char_t *argv[])
         std::cout << tostr(test_output.str()).data() << std::endl;
         return success ? EXIT_SUCCESS : EXIT_FAILURE;
     }
+    else if (pal::strcmp(command, _X("component_get_function_pointer")) == 0)
+    {
+        // args: ... <hostfxr_path> <app_or_config_path> <type_name> <method_name> [<type_name> <method_name>...]
+        const int min_argc = 4;
+        if (argc < min_argc + 2)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::string_t hostfxr_path = argv[2];
+        const pal::char_t *app_or_config_path = argv[3];
+
+        int remaining_argc = argc - min_argc;
+        const pal::char_t **remaining_argv = nullptr;
+        if (argc > min_argc)
+            remaining_argv = &argv[min_argc];
+
+        pal::stringstream_t test_output;
+        bool success = false;
+
+        success = host_context_test::component_get_function_pointer(hostfxr_path, app_or_config_path, remaining_argc, remaining_argv, test_output);
+
+        std::cout << tostr(test_output.str()).data() << std::endl;
+        return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    else if (pal::strcmp(command, _X("app_get_function_pointer")) == 0)
+    {
+        // args: ... <hostfxr_path> <app_path> <type_name> <method_name> [<type_name> <method_name>...]
+        const int min_argc = 3;
+        if (argc < min_argc + 3)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::string_t hostfxr_path = argv[2];
+
+        int remaining_argc = argc - min_argc;
+        const pal::char_t **remaining_argv = nullptr;
+        if (argc > min_argc)
+            remaining_argv = &argv[min_argc];
+
+        pal::stringstream_t test_output;
+        bool success = false;
+
+        success = host_context_test::app_get_function_pointer(hostfxr_path, remaining_argc, remaining_argv, test_output);
+
+        std::cout << tostr(test_output.str()).data() << std::endl;
+        return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
     else if (pal::strcmp(command, _X("run_app")) == 0)
     {
         // args: ... <hostfxr_path> <dotnet_command_line>

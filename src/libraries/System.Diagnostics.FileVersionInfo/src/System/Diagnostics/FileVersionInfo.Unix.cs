@@ -224,6 +224,7 @@ namespace System.Diagnostics
 
         /// <summary>Parses a string as a UInt16 until it hits a non-digit.</summary>
         /// <param name="s">The string to parse.</param>
+        /// <param name="endedEarly">Whether parsing ended prior to reaching the end of the input.</param>
         /// <returns>The parsed value.</returns>
         private static ushort ParseUInt16UntilNonDigit(string s, out bool endedEarly)
         {

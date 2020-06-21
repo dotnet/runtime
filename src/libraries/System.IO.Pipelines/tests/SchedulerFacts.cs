@@ -45,7 +45,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task UseSynchronizationContextFalseIgnoresSyncContextForReaderScheduler()
         {
             SynchronizationContext previous = SynchronizationContext.Current;
