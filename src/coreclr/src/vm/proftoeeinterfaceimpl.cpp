@@ -7079,9 +7079,16 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
                                              requestRundown,
                                              NULL,
                                              &ProfToEEInterfaceImpl::EventPipeCallbackHelper);
-        EventPipe::StartStreaming(sessionID);
+        if (sessionID != 0)
+        {
+            EventPipe::StartStreaming(sessionID);
 
-        *pSession = sessionID;
+            *pSession = sessionID;
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
     }
     EX_CATCH_HRESULT(hr);
 
