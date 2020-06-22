@@ -27,8 +27,8 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>Less than 0 if x is less than y, 0 if x is equal to y and greater than 0 if x is greater than y.</returns>
         public int Compare(string x, string y)
         {
-            var xParts = x?.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
-            var yParts = y?.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+            string[] xParts = x?.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+            string[] yParts = y?.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
 
             // Compare each part until we get two parts that are not equal
             for (int i = 0; i < Math.Min(xParts.Length, yParts.Length); i++)
@@ -36,11 +36,11 @@ namespace Microsoft.Extensions.Configuration
                 x = xParts[i];
                 y = yParts[i];
 
-                var value1 = 0;
-                var value2 = 0;
+                int value1 = 0;
+                int value2 = 0;
 
-                var xIsInt = x != null && int.TryParse(x, out value1);
-                var yIsInt = y != null && int.TryParse(y, out value2);
+                bool xIsInt = x != null && int.TryParse(x, out value1);
+                bool yIsInt = y != null && int.TryParse(y, out value2);
 
                 int result;
 

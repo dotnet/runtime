@@ -710,10 +710,13 @@ namespace ILCompiler.PEWriter
                 sectionAlignment = fileAlignment;
             }
 
-            dllCharacteristics &= (DllCharacteristics.NxCompatible | DllCharacteristics.TerminalServerAware | DllCharacteristics.AppContainer);
+            dllCharacteristics &= DllCharacteristics.AppContainer;
 
             // In Crossgen1, this is under a debug-specific condition 'if (0 == CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NoASLRForNgen))'
             dllCharacteristics |= DllCharacteristics.DynamicBase;
+
+            // Without NxCompatible the PE executable cannot execute on Windows ARM64
+            dllCharacteristics |= DllCharacteristics.NxCompatible | DllCharacteristics.TerminalServerAware;
 
             if (is64BitTarget)
             {

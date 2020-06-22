@@ -88,10 +88,6 @@ DWORD GetCountBucketParamsForEvent(LPCWSTR wzEventName)
 #include "dbginterface.h"
 #include <sha1.h>
 
-#ifdef FEATURE_APPX
-#include "appxutil.h"
-#endif
-
 //------------------------------------------------------------------------------
 // Description
 //   Converts an array of bytes to a string of base32 encoded characters.

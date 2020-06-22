@@ -2944,7 +2944,7 @@ void emitter::spillIntArgRegsToShadowSlots()
 //
 void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem)
 {
-    assert(mem->OperIs(GT_IND));
+    assert(mem->OperIs(GT_IND, GT_NULLCHECK));
 
     GenTree* addr = mem->Addr();
 

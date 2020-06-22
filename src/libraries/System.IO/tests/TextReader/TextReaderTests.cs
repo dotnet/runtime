@@ -162,7 +162,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ReadBlockAsyncCharArr()
         {
             (char[] chArr, CharArrayTextReader textReader) baseInfo = GetCharArray();
@@ -180,7 +180,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ReadAsync()
         {
             (char[] chArr, CharArrayTextReader textReader) baseInfo = GetCharArray();
@@ -236,7 +236,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ReadLineAsyncContinuousNewLinesAndTabs()
         {
             char[] newLineTabData = new char[] { '\n', '\n', '\r', '\r', '\n' };

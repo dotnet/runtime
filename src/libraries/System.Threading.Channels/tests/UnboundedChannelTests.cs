@@ -137,7 +137,7 @@ namespace System.Threading.Channels.Tests
             await c.Reader.Completion;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void AllowSynchronousContinuations_WaitToReadAsync_ContinuationsInvokedAccordingToSetting()
         {
             Channel<int> c = CreateChannel();
@@ -153,7 +153,7 @@ namespace System.Threading.Channels.Tests
             r.GetAwaiter().GetResult();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void AllowSynchronousContinuations_CompletionTask_ContinuationsInvokedAccordingToSetting()
         {
             Channel<int> c = CreateChannel();

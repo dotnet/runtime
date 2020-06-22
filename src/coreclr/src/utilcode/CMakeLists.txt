@@ -62,7 +62,6 @@ set(UTILCODE_COMMON_SOURCES
 # of UTILCODE_SOURCES above after fixing compiler errors.
 if(CLR_CMAKE_TARGET_WIN32)
   list(APPEND UTILCODE_COMMON_SOURCES
-    appxutil.cpp
     dacutil.cpp
     dlwrap.cpp
     securitywrapper.cpp

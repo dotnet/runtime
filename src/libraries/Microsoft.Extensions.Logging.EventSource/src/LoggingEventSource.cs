@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         // It's important to have _filterSpec initialization here rather than in ctor
         // base ctor might call OnEventCommand and set filter spec
         // having assignment in ctor would overwrite the value
-        private LoggerFilterRule[] _filterSpec = new LoggerFilterRule[0];
+        private LoggerFilterRule[] _filterSpec = Array.Empty<LoggerFilterRule>();
         private CancellationTokenSource _cancellationTokenSource;
 
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                 fixed (char* formattedMessage = FormattedMessage)
                 {
                     const int eventDataCount = 6;
-                    var eventData = stackalloc EventData[eventDataCount];
+                    EventData* eventData = stackalloc EventData[eventDataCount];
 
                     SetEventData(ref eventData[0], ref Level);
                     SetEventData(ref eventData[1], ref FactoryID);
@@ -184,7 +184,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                 fixed (char* loggerName = LoggerName)
                 {
                     const int eventDataCount = 3;
-                    var eventData = stackalloc EventData[eventDataCount];
+                    EventData* eventData = stackalloc EventData[eventDataCount];
 
                     SetEventData(ref eventData[0], ref ID);
                     SetEventData(ref eventData[1], ref FactoryID);
@@ -211,7 +211,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                 fixed (char* argumentsJson = ArgumentsJson)
                 {
                     const int eventDataCount = 7;
-                    var eventData = stackalloc EventData[eventDataCount];
+                    EventData* eventData = stackalloc EventData[eventDataCount];
 
                     SetEventData(ref eventData[0], ref Level);
                     SetEventData(ref eventData[1], ref FactoryID);
@@ -238,7 +238,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                 fixed (char* argumentsJson = ArgumentsJson)
                 {
                     const int eventDataCount = 4;
-                    var eventData = stackalloc EventData[eventDataCount];
+                    EventData* eventData = stackalloc EventData[eventDataCount];
 
                     SetEventData(ref eventData[0], ref ID);
                     SetEventData(ref eventData[1], ref FactoryID);
@@ -260,7 +260,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                 fixed (char* loggerName = LoggerName)
                 {
                     const int eventDataCount = 3;
-                    var eventData = stackalloc EventData[eventDataCount];
+                    EventData* eventData = stackalloc EventData[eventDataCount];
 
                     SetEventData(ref eventData[0], ref ID);
                     SetEventData(ref eventData[1], ref FactoryID);
@@ -276,7 +276,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         {
             if (command.Command == EventCommand.Update || command.Command == EventCommand.Enable)
             {
-                if (!command.Arguments.TryGetValue("FilterSpecs", out var filterSpec))
+                if (!command.Arguments.TryGetValue("FilterSpecs", out string filterSpec))
                 {
                     filterSpec = string.Empty; // This means turn on everything.
                 }
@@ -304,14 +304,14 @@ namespace Microsoft.Extensions.Logging.EventSource
         [NonEvent]
         internal IChangeToken GetFilterChangeToken()
         {
-            var cts = LazyInitializer.EnsureInitialized(ref _cancellationTokenSource, () => new CancellationTokenSource());
+            CancellationTokenSource cts = LazyInitializer.EnsureInitialized(ref _cancellationTokenSource, () => new CancellationTokenSource());
             return new CancellationChangeToken(cts.Token);
         }
 
         [NonEvent]
         private void FireChangeToken()
         {
-            var tcs = Interlocked.Exchange(ref _cancellationTokenSource, null);
+            CancellationTokenSource tcs = Interlocked.Exchange(ref _cancellationTokenSource, null);
             tcs?.Cancel();
         }
 
@@ -341,12 +341,12 @@ namespace Microsoft.Extensions.Logging.EventSource
 
             if (filterSpec != null)
             {
-                var ruleStrings = filterSpec.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var rule in ruleStrings)
+                string[] ruleStrings = filterSpec.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string rule in ruleStrings)
                 {
-                    var level = defaultLevel;
-                    var parts = rule.Split(new[] { ':' }, 2);
-                    var loggerName = parts[0];
+                    LogLevel level = defaultLevel;
+                    string[] parts = rule.Split(new[] { ':' }, 2);
+                    string loggerName = parts[0];
                     if (loggerName.Length == 0)
                     {
                         continue;
@@ -429,7 +429,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [NonEvent]
         private LogLevel GetDefaultLevel()
         {
-            var allMessageKeywords = Keywords.Message | Keywords.FormattedMessage | Keywords.JsonMessage;
+            EventKeywords allMessageKeywords = Keywords.Message | Keywords.FormattedMessage | Keywords.JsonMessage;
 
             if (IsEnabled(EventLevel.Verbose, allMessageKeywords))
             {
@@ -466,7 +466,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         {
             if (typeof(T) == typeof(string))
             {
-                var str = value as string;
+                string str = value as string;
 #if DEBUG
                 fixed (char* rePinnedString = str)
                 {

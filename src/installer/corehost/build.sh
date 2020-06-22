@@ -98,5 +98,4 @@ setup_dirs
 check_prereqs
 
 # Build the installer native components.
-# note the third argument, tryrun_dir is empty for installers
-build_native "$__BuildArch" "$__scriptpath" "" "$__IntermediatesDir" "installer component"
+build_native "$__BuildArch" "$__scriptpath" "$__scriptpath" "$__IntermediatesDir" "installer component"

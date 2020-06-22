@@ -1747,7 +1747,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_NULLCHECK:
-            genCodeForNullCheck(treeNode->AsOp());
+            genCodeForNullCheck(treeNode->AsIndir());
             break;
 
         case GT_CATCH_ARG:
@@ -3795,7 +3795,7 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 // Return value:
 //    None
 //
-void CodeGen::genCodeForNullCheck(GenTreeOp* tree)
+void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_NULLCHECK));
 

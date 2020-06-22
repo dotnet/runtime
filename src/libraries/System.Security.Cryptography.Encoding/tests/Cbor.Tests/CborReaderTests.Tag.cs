@@ -67,7 +67,7 @@ namespace System.Formats.Cbor.Tests
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
             reader.ReadTag();
-            Assert.Equal(CborReaderState.EndOfData, reader.PeekState());
+            Assert.Throws<CborContentException>(() => reader.PeekState());
         }
 
         [Theory]
@@ -83,7 +83,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<InvalidOperationException>(() => reader.ReadTag());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -103,7 +103,7 @@ namespace System.Formats.Cbor.Tests
             CborTag tag = reader.PeekTag();
             Assert.Equal(expectedTag, (ulong)tag);
             Assert.Equal(CborReaderState.Tag, reader.PeekState());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -120,11 +120,11 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.PeekTag());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
-        public static void ReadTag_NestedTagWithMissingPayload_ShouldThrowFormatException()
+        public static void ReadTag_NestedTagWithMissingPayload_ShouldThrowCborContentException()
         {
             byte[] encoding = "9fc2ff".HexToByteArray();
             var reader = new CborReader(encoding);
@@ -132,11 +132,11 @@ namespace System.Formats.Cbor.Tests
             reader.ReadStartArray();
             reader.ReadTag();
 
-            int bytesRead = reader.BytesRead;
+            int bytesRemaining = reader.BytesRemaining;
 
-            Assert.Equal(CborReaderState.FormatError, reader.PeekState());
-            Assert.Throws<FormatException>(() => reader.ReadEndArray());
-            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Throws<CborContentException>(() => reader.PeekState());
+            Assert.Throws<CborContentException>(() => reader.ReadEndArray());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -144,7 +144,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData("9f01c202ff")] // equivalent indefinite-length array
         public static void ReadTag_CallingEndReadArrayPrematurely_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            // encoding is valid CBOR, so should not throw FormatException
+            // encoding is valid CBOR, so should not throw CborContentException
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
 
@@ -152,10 +152,10 @@ namespace System.Formats.Cbor.Tests
             reader.ReadInt64();
             reader.ReadTag();
 
-            int bytesRead = reader.BytesRead;
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Equal(CborReaderState.UnsignedInteger, reader.PeekState());
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
-            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -163,7 +163,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData("bf02c202ff")] // equivalent indefinite-length map
         public static void ReadTag_CallingEndReadMapPrematurely_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            // encoding is valid CBOR, so should not throw FormatException
+            // encoding is valid CBOR, so should not throw CborContentException
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
 
@@ -171,10 +171,10 @@ namespace System.Formats.Cbor.Tests
             reader.ReadInt64();
             reader.ReadTag();
 
-            int bytesRead = reader.BytesRead;
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Equal(CborReaderState.UnsignedInteger, reader.PeekState());
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
-            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -197,25 +197,25 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [InlineData("c01a514b67b0")] // string datetime tag with unix time payload
-        public static void ReadDateTimeOffset_InvalidTagPayload_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadDateTimeOffset_InvalidTagPayload_ShouldThrowCborContentException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<FormatException>(() => reader.ReadDateTimeOffset());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Throws<CborContentException>(() => reader.ReadDateTimeOffset());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
         [InlineData("c07330392f30342f323032302031393a35313a3530")] // 0("09/04/2020 19:51:50")
         [InlineData("c06e4c617374204368726973746d6173")] // 0("Last Christmas")
-        public static void ReadDateTimeOffset_InvalidDateString_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadDateTimeOffset_InvalidDateString_ShouldThrowCborContentException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<FormatException>(() => reader.ReadDateTimeOffset());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Throws<CborContentException>(() => reader.ReadDateTimeOffset());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -227,7 +227,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadDateTimeOffset());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -238,10 +238,10 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(hexEncoding.HexToByteArray());
 
             reader.ReadStartArray();
-            int bytesRead = reader.BytesRead;
-            Assert.Throws<FormatException>(() => reader.ReadDateTimeOffset());
+            int bytesRemaining = reader.BytesRemaining;
+            Assert.Throws<CborContentException>(() => reader.ReadDateTimeOffset());
 
-            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
             Assert.Equal(CborReaderState.Tag, reader.PeekState());
             Assert.Equal(CborTag.DateTimeString, reader.ReadTag());
         }
@@ -250,16 +250,16 @@ namespace System.Formats.Cbor.Tests
         public static void ReadDateTimeOffset_StrictConformance_OnError_ShouldPreserveReaderState()
         {
             string hexEncoding = "a20101c06001"; // { 1 : 1 , 0("") : 1 } conforming CBOR with invalid date/time schema
-            var reader = new CborReader(hexEncoding.HexToByteArray(), CborConformanceLevel.Strict);
+            var reader = new CborReader(hexEncoding.HexToByteArray(), CborConformanceMode.Strict);
 
             reader.ReadStartMap();
             reader.ReadInt32();
             reader.ReadInt32();
 
-            Assert.Throws<FormatException>(() => reader.ReadDateTimeOffset()); // throws a format exception due to malformed date/time string
+            Assert.Throws<CborContentException>(() => reader.ReadDateTimeOffset()); // throws a format exception due to malformed date/time string
             // the following operation would original throw a false positive duplicate key error,
             // due to the checkpoint restore logic not properly resetting key uniqueness validation
-            reader.SkipValue(disableConformanceLevelChecks: false);
+            reader.SkipValue(disableConformanceModeChecks: false);
 
             reader.ReadInt32();
             reader.ReadEndMap();
@@ -288,25 +288,25 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [InlineData("c174323031332d30332d32315432303a30343a30305a")] // epoch datetime tag with string payload
-        public static void ReadUnixTimeSeconds_InvalidTagPayload_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadUnixTimeSeconds_InvalidTagPayload_ShouldThrowCborContentException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<FormatException>(() => reader.ReadUnixTimeSeconds());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Throws<CborContentException>(() => reader.ReadUnixTimeSeconds());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
         [InlineData("c1f97e00")] // 0(NaN)
         [InlineData("c1f9fc00")] // 0(-Infinity)
-        public static void ReadUnixTimeSeconds_InvalidFloatPayload_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadUnixTimeSeconds_InvalidFloatPayload_ShouldThrowCborContentException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<FormatException>(() => reader.ReadUnixTimeSeconds());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Throws<CborContentException>(() => reader.ReadUnixTimeSeconds());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -318,7 +318,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadUnixTimeSeconds());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -329,10 +329,10 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(hexEncoding.HexToByteArray());
 
             reader.ReadStartArray();
-            int bytesRead = reader.BytesRead;
-            Assert.Throws<FormatException>(() => reader.ReadUnixTimeSeconds());
+            int bytesRemaining = reader.BytesRemaining;
+            Assert.Throws<CborContentException>(() => reader.ReadUnixTimeSeconds());
 
-            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
             Assert.Equal(CborReaderState.Tag, reader.PeekState());
             Assert.Equal(CborTag.UnixTimeSeconds, reader.ReadTag());
         }
@@ -374,19 +374,19 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadBigInteger());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
         [InlineData("c280")]
         [InlineData("c301")]
-        public static void ReadBigInteger_InvalidTagPayload_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadBigInteger_InvalidTagPayload_ShouldThrowCborContentException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<FormatException>(() => reader.ReadBigInteger());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Throws<CborContentException>(() => reader.ReadBigInteger());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -397,10 +397,10 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(hexEncoding.HexToByteArray());
 
             reader.ReadStartArray();
-            int bytesRead = reader.BytesRead;
-            Assert.Throws<FormatException>(() => reader.ReadBigInteger());
+            int bytesRemaining = reader.BytesRemaining;
+            Assert.Throws<CborContentException>(() => reader.ReadBigInteger());
 
-            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
             Assert.Equal(CborReaderState.Tag, reader.PeekState());
         }
 
@@ -439,7 +439,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<OverflowException>(() => reader.ReadDecimal());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -449,7 +449,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<InvalidOperationException>(() => reader.ReadDecimal());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -458,12 +458,12 @@ namespace System.Formats.Cbor.Tests
         [InlineData("c48101")] // 4([1])
         [InlineData("c4820160")] // 4([1, ""])
         [InlineData("c4826001")] // 4(["", 1])
-        public static void ReadDecimal_InvalidFormat_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadDecimal_InvalidFormat_ShouldThrowCborContentException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Throws<FormatException>(() => reader.ReadDecimal());
-            Assert.Equal(0, reader.BytesRead);
+            Assert.Throws<CborContentException>(() => reader.ReadDecimal());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -479,77 +479,78 @@ namespace System.Formats.Cbor.Tests
 
             reader.ReadStartArray();
 
-            int bytesRead = reader.BytesRead;
-            Assert.Throws<FormatException>(() => reader.ReadDecimal());
+            int bytesRemaining = reader.BytesRemaining;
+            Assert.Throws<CborContentException>(() => reader.ReadDecimal());
 
-            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
             Assert.Equal(CborReaderState.Tag, reader.PeekState());
             Assert.Equal(CborTag.DecimalFraction, reader.ReadTag());
         }
 
         [Theory]
         [MemberData(nameof(SupportedConformanceTaggedValues))]
-        public static void ReadTaggedValue_SupportedConformance_ShouldSucceed(CborConformanceLevel level, object expectedValue, string hexEncoding)
+        public static void ReadTaggedValue_SupportedConformance_ShouldSucceed(CborConformanceMode mode, object expectedValue, string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
             Helpers.VerifyValue(reader, expectedValue);
         }
 
         public static IEnumerable<object[]> SupportedConformanceTaggedValues =>
-            from l in new[] { CborConformanceLevel.Lax, CborConformanceLevel.Strict, CborConformanceLevel.Canonical }
+            from l in new[] { CborConformanceMode.Lax, CborConformanceMode.Strict, CborConformanceMode.Canonical }
             from v in TaggedValues
             select new object[] { l, v.value, v.hexEncoding };
 
         [Theory]
         [MemberData(nameof(UnsupportedConformanceTaggedValues))]
-        public static void ReadTaggedValue_UnsupportedConformance_ShouldThrowFormatException(CborConformanceLevel level, object expectedValue, string hexEncoding)
+        public static void ReadTaggedValue_UnsupportedConformance_ShouldThrowCborContentException(CborConformanceMode mode, object expectedValue, string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
-            Assert.Throws<FormatException>(() => Helpers.VerifyValue(reader, expectedValue));
-            Assert.Equal(0, reader.BytesRead);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, mode);
+            Assert.Throws<CborContentException>(() => Helpers.VerifyValue(reader, expectedValue));
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         public static IEnumerable<object[]> UnsupportedConformanceTaggedValues =>
-            from l in new[] { CborConformanceLevel.Ctap2Canonical }
+            from l in new[] { CborConformanceMode.Ctap2Canonical }
             from v in TaggedValues
             select new object[] { l, v.value, v.hexEncoding };
 
         [Theory]
         [MemberData(nameof(TaggedValuesSupportedConformance))]
-        public static void PeekTag_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        public static void PeekTag_SupportedConformanceMode_ShouldSucceed(CborConformanceMode mode, string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
             reader.PeekTag();
         }
 
         public static IEnumerable<object[]> TaggedValuesSupportedConformance =>
-            from l in new[] { CborConformanceLevel.Lax, CborConformanceLevel.Strict, CborConformanceLevel.Canonical }
+            from l in new[] { CborConformanceMode.Lax, CborConformanceMode.Strict, CborConformanceMode.Canonical }
             from v in TaggedValues
             select new object[] { l, v.hexEncoding };
 
         [Theory]
         [MemberData(nameof(TaggedValuesUnsupportedConformance))]
-        public static void PeekTag_UnsupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        public static void PeekTag_UnsupportedConformanceMode_ShouldThrowCborContentException(CborConformanceMode mode, string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
-            Assert.Throws<FormatException>(() => reader.PeekTag());
+            var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
+            Assert.Throws<CborContentException>(() => reader.PeekTag());
         }
 
         public static IEnumerable<object[]> TaggedValuesUnsupportedConformance =>
-            from l in new[] { CborConformanceLevel.Ctap2Canonical }
+            from l in new[] { CborConformanceMode.Ctap2Canonical }
             from v in TaggedValues
             select new object[] { l, v.hexEncoding };
 
         [Theory]
         [MemberData(nameof(UnsupportedConformanceInvalidTypes))]
-        public static void PeekTag_InvalidType_UnsupportedConformanceLevel_ShouldThrowInvalidOperationException(CborConformanceLevel level, string hexEncoding)
+        public static void PeekTag_InvalidType_UnsupportedConformanceMode_ShouldThrowInvalidOperationException(CborConformanceMode mode, string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray(), level);
+            var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
             Assert.Throws<InvalidOperationException>(() => reader.PeekTag());
         }
 
         public static IEnumerable<object[]> UnsupportedConformanceInvalidTypes =>
-            from l in new[] { CborConformanceLevel.Ctap2Canonical }
+            from l in new[] { CborConformanceMode.Ctap2Canonical }
             from e in new[] { "01", "40", "60" }
             select new object[] { l, e };
 

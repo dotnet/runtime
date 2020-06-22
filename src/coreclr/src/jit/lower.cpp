@@ -111,16 +111,56 @@ GenTree* Lowering::LowerNode(GenTree* node)
     assert(node != nullptr);
     switch (node->gtOper)
     {
+        case GT_NULLCHECK:
         case GT_IND:
-            // Process struct typed indirs separately, they only appear as the source of
-            // a block copy operation or a return node.
-            if (node->TypeGet() != TYP_STRUCT)
+            // Process struct typed indirs separately unless they are unused;
+            // they only appear as the source of a block copy operation or a return node.
+            if (!node->TypeIs(TYP_STRUCT) || node->IsUnusedValue())
             {
                 // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
                 // address containment in some cases so we end up creating trivial (reg + offfset)
                 // or (reg + reg) LEAs that are not necessary.
                 TryCreateAddrMode(node->AsIndir()->Addr(), true);
                 ContainCheckIndir(node->AsIndir());
+
+                if (node->OperIs(GT_NULLCHECK) || node->IsUnusedValue())
+                {
+                    // A nullcheck is essentially the same as an indirection with no use.
+                    // The difference lies in whether a target register must be allocated.
+                    // On XARCH we can generate a compare with no target register as long as the addresss
+                    // is not contained.
+                    // On ARM64 we can generate a load to REG_ZR in all cases.
+                    // However, on ARM we must always generate a load to a register.
+                    // In the case where we require a target register, it is better to use GT_IND, since
+                    // GT_NULLCHECK is a non-value node and would therefore require an internal register
+                    // to use as the target. That is non-optimal because it will be modeled as conflicting
+                    // with the source register(s).
+                    // So, to summarize:
+                    // - On ARM64, always use GT_NULLCHECK for a dead indirection.
+                    // - On ARM, always use GT_IND.
+                    // - On XARCH, use GT_IND if we have a contained address, and GT_NULLCHECK otherwise.
+                    // In all cases, change the type to TYP_INT.
+                    //
+                    node->gtType = TYP_INT;
+#ifdef TARGET_ARM64
+                    bool useNullCheck = true;
+#elif TARGET_ARM
+                    bool useNullCheck = false;
+#else  // TARGET_XARCH
+                    bool useNullCheck = !node->AsIndir()->Addr()->isContained();
+#endif // !TARGET_XARCH
+
+                    if (useNullCheck && node->OperIs(GT_IND))
+                    {
+                        node->ChangeOper(GT_NULLCHECK);
+                        node->ClearUnusedValue();
+                    }
+                    else if (!useNullCheck && node->OperIs(GT_NULLCHECK))
+                    {
+                        node->ChangeOper(GT_IND);
+                        node->SetUnusedValue();
+                    }
+                }
             }
             break;
 

@@ -10,7 +10,7 @@ namespace System.Threading.Tests
     {
         private void EmptyTimerTarget(object o) { }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Timer_Change_DueTime_OutOfRange_Throws()
         {
             using (var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1))
@@ -24,7 +24,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Timer_Change_Period_OutOfRange_Throws()
         {
             using (var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1))
@@ -38,7 +38,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Timer_Change_AfterDispose_Throws()
         {
             var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1);
@@ -49,7 +49,7 @@ namespace System.Threading.Tests
             Assert.Throws<ObjectDisposedException>(() => t.Change(TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1)));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]

@@ -1040,6 +1040,8 @@ namespace System.Xml.Schema
         /// <param name="ct">complex type with Sequence or Choice Particle</param>
         /// <param name="lastUsedSeqItem">ordinal number in the sequence to indicate current sequence position</param>
         /// <param name="bParticleChanged">This indicates to the caller if Sequence was changed to Choice</param>
+        /// <param name="parentSchema">The parent schema.</param>
+        /// <param name="setMaxoccurs">Whether set max occurs.</param>
         internal XmlSchemaElement FindMatchingElement(bool bCreatingNewType, XmlReader xtr, XmlSchemaComplexType ct, ref int lastUsedSeqItem, ref bool bParticleChanged, XmlSchema? parentSchema, bool setMaxoccurs)
         {
             if (xtr.NamespaceURI == XmlSchema.Namespace)

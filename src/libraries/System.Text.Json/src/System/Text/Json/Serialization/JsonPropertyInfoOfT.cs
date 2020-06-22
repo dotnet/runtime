@@ -97,8 +97,6 @@ namespace System.Text.Json
 
         public override bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer)
         {
-            Debug.Assert(EscapedName.HasValue);
-
             bool success;
             T value = Get!(obj);
 
@@ -111,7 +109,7 @@ namespace System.Text.Json
                 {
                     if (!Converter.HandleNull)
                     {
-                        writer.WriteNull(EscapedName.Value);
+                        writer.WriteNullSection(EscapedNameSection);
                     }
                     else
                     {
@@ -121,7 +119,7 @@ namespace System.Text.Json
                         if (state.Current.PropertyState < StackFramePropertyState.Name)
                         {
                             state.Current.PropertyState = StackFramePropertyState.Name;
-                            writer.WritePropertyName(EscapedName.Value);
+                            writer.WritePropertyNameSection(EscapedNameSection);
                         }
 
                         int originalDepth = writer.CurrentDepth;
@@ -143,7 +141,7 @@ namespace System.Text.Json
                 if (state.Current.PropertyState < StackFramePropertyState.Name)
                 {
                     state.Current.PropertyState = StackFramePropertyState.Name;
-                    writer.WritePropertyName(EscapedName.Value);
+                    writer.WritePropertyNameSection(EscapedNameSection);
                 }
 
                 success = Converter.TryWrite(writer, value, Options, ref state);
@@ -193,7 +191,7 @@ namespace System.Text.Json
             }
             else if (Converter.CanUseDirectReadOrWrite)
             {
-                if (!(isNullToken && IgnoreDefaultValuesOnRead && Converter.CanBeNull))
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
                     T fastvalue = Converter.Read(ref reader, RuntimePropertyType!, Options);
@@ -205,8 +203,7 @@ namespace System.Text.Json
             else
             {
                 success = true;
-
-                if (!(isNullToken && IgnoreDefaultValuesOnRead && Converter.CanBeNull))
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
                 {
                     success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T value);
                     if (success)

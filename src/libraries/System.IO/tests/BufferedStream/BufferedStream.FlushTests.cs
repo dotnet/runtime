@@ -39,7 +39,7 @@ namespace System.IO.Tests
             Assert.Equal(0, wrapper.TimesCalled(nameof(wrapper.FlushAsync)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true, true)]
         [InlineData(true, false)]
         [InlineData(false, true)]

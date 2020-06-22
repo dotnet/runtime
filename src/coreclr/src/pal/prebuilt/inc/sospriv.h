@@ -2548,6 +2548,9 @@ EXTERN_C const IID IID_ISOSDacInterface8;
             CLRDATA_ADDRESS *pFinalizationFillPointers,
             unsigned int *pNeeded) = 0;
 
+        virtual HRESULT STDMETHODCALLTYPE GetAssemblyLoadContext(
+            CLRDATA_ADDRESS methodTable,
+            CLRDATA_ADDRESS* assemblyLoadContext) = 0;
     };
 
 
@@ -2599,6 +2602,11 @@ EXTERN_C const IID IID_ISOSDacInterface8;
             CLRDATA_ADDRESS *pFinalizationFillPointers,
             unsigned int *pNeeded);
 
+        HRESULT ( STDMETHODCALLTYPE *GetAssemblyLoadContext )(
+            ISOSDacInterface8 * This,
+            CLRDATA_ADDRESS methodTable,
+            CLRDATA_ADDRESS *assemblyLoadContext);
+           
         END_INTERFACE
     } ISOSDacInterface8Vtbl;
 
@@ -2606,7 +2614,6 @@ EXTERN_C const IID IID_ISOSDacInterface8;
     {
         CONST_VTBL struct ISOSDacInterface8Vtbl *lpVtbl;
     };
-
 
 
 #ifdef COBJMACROS
@@ -2636,6 +2643,9 @@ EXTERN_C const IID IID_ISOSDacInterface8;
 
 #define ISOSDacInterface8_GetFinalizationFillPointersSvr(This,heapAddr,cFillPointers,pFinalizationFillPointers,pNeeded) \
     ( (This)->lpVtbl -> GetFinalizationFillPointersSvr(This,heapAddr,cFillPointers,pFinalizationFillPointers,pNeeded) )
+
+#define ISOSDacInterface8_GetAssemblyLoadContext(This,methodTable,assemblyLoadContext)	\
+    ( (This)->lpVtbl -> GetAssemblyLoadContext(This,methodTable,assemblyLoadContext) )
 
 #endif /* COBJMACROS */
 

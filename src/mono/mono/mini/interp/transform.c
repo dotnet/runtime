@@ -4907,8 +4907,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					goto_if_nok (error, exit);
 				} else if (td->sp [-1].type == STACK_TYPE_VT) {
 					/* First we pop the vt object from the stack. Then we push the field */
-					/* FIXME unaligned field load ? */
 					int opcode = MINT_LDFLD_VT_I1 + mt - MINT_TYPE_I1;
+#ifdef NO_UNALIGNED_ACCESS
+					if (field->offset % SIZEOF_VOID_P != 0) {
+						if (mt == MINT_TYPE_I8)
+							opcode = MINT_LDFLD_VT_I8_UNALIGNED;
+						else if (mt == MINT_TYPE_R8)
+							opcode = MINT_LDFLD_VT_R8_UNALIGNED;
+					}
+#endif
 					interp_add_ins (td, opcode);
 					g_assert (m_class_is_valuetype (klass));
 					td->last_ins->data [0] = field->offset - MONO_ABI_SIZEOF (MonoObject);
@@ -6217,6 +6224,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					g_warning("CEE_LOCALLOC: stack not empty");
 				++td->ip;
 				SET_SIMPLE_TYPE(td->sp - 1, STACK_TYPE_MP);
+				td->has_localloc = TRUE;
 				break;
 #if 0
 			case CEE_UNUSED57: ves_abort(); break;
@@ -7560,6 +7568,22 @@ interp_optimize_code (TransformData *td)
 		MONO_TIME_TRACK (mono_interp_stats.super_instructions_time, interp_super_instructions (td));
 }
 
+/*
+ * Very few methods have localloc. Handle it separately to not impact performance
+ * of other methods. We replace the normal return opcodes with opcodes that also
+ * reset the localloc stack.
+ */
+static void
+interp_fix_localloc_ret (TransformData *td)
+{
+	g_assert (td->has_localloc);
+	InterpInst *ins;
+	for (ins = td->first_ins; ins != NULL; ins = ins->next) {
+		if (ins->opcode >= MINT_RET && ins->opcode <= MINT_RET_VT)
+			ins->opcode += MINT_RET_LOCALLOC - MINT_RET;
+	}
+}
+
 static void
 generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoGenericContext *generic_context, MonoError *error)
 {
@@ -7635,6 +7659,9 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 
 	generate_code (td, method, header, generic_context, error);
 	goto_if_nok (error, exit);
+
+	if (td->has_localloc)
+		interp_fix_localloc_ret (td);
 
 	interp_optimize_code (td);
 

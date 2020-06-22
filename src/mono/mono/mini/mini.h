@@ -2114,6 +2114,7 @@ guint     mono_type_to_load_membase         (MonoCompile *cfg, MonoType *type);
 guint     mono_type_to_store_membase        (MonoCompile *cfg, MonoType *type);
 guint32   mono_type_to_stloc_coerce         (MonoType *type);
 guint     mini_type_to_stind                (MonoCompile* cfg, MonoType *type);
+MonoStackType mini_type_to_stack_type       (MonoCompile *cfg, MonoType *t);
 MonoJitInfo* mini_lookup_method             (MonoDomain *domain, MonoMethod *method, MonoMethod *shared);
 guint32   mono_reverse_branch_op            (guint32 opcode);
 void      mono_disassemble_code             (MonoCompile *cfg, guint8 *code, int size, char *id);
@@ -2257,6 +2258,7 @@ void              mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, 
 void              mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, int align);
 void              mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native);
 void              mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass *klass);
+void              mini_emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype);
 int               mini_emit_sext_index_reg (MonoCompile *cfg, MonoInst *index);
 MonoInst*         mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck);
 MonoInst*         mini_emit_get_gsharedvt_info_klass (MonoCompile *cfg, MonoClass *klass, MonoRgctxInfoType rgctx_type);

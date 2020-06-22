@@ -98,6 +98,12 @@ namespace System.Net.Http
         public const int DefaultHttpsPort = 443;
 
         /// <summary>Initializes the pool.</summary>
+        /// <param name="poolManager">The manager associated with this pool.</param>
+        /// <param name="kind">The kind of HTTP connections stored in this pool.</param>
+        /// <param name="host">The host with which this pool is associated.</param>
+        /// <param name="port">The port with which this pool is associated.</param>
+        /// <param name="sslHostName">The SSL host with which this pool is associated.</param>
+        /// <param name="proxyUri">The proxy this pool targets (optional).</param>
         /// <param name="maxConnections">The maximum number of connections allowed to be associated with the pool at any given time.</param>
         public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, int maxConnections)
         {
@@ -1552,6 +1558,7 @@ namespace System.Net.Http
             /// <param name="nowTicks">The current tick count.  Passed in to amortize the cost of calling Environment.TickCount.</param>
             /// <param name="pooledConnectionLifetime">How long a connection can be open to be considered reusable.</param>
             /// <param name="pooledConnectionIdleTimeout">How long a connection can have been idle in the pool to be considered reusable.</param>
+            /// <param name="poll">true to poll the connection to check if it's usable; otherwise, false. Defaults to false.</param>
             /// <returns>
             /// true if we believe the connection can be reused; otherwise, false.  There is an inherent race condition here,
             /// in that the server could terminate the connection or otherwise make it unusable immediately after we check it,

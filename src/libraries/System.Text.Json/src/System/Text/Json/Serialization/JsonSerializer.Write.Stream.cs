@@ -108,15 +108,13 @@ namespace System.Text.Json
             using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
             {
                 //  We treat typeof(object) special and allow polymorphic behavior.
-                if (inputType == typeof(object) && value != null)
+                if (inputType == JsonClassInfo.ObjectType && value != null)
                 {
                     inputType = value!.GetType();
                 }
 
                 WriteStack state = default;
-                state.Initialize(inputType, options, supportContinuation: true);
-
-                JsonConverter converterBase = state.Current.JsonClassInfo!.PropertyInfoForClassInfo.ConverterBase;
+                JsonConverter converterBase = state.Initialize(inputType, options, supportContinuation: true);
 
                 bool isFinalBlock;
 
