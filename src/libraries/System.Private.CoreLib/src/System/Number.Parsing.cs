@@ -1710,6 +1710,16 @@ namespace System
             return result;
         }
 
+        internal static Half ParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
+        {
+            if (!TryParseHalf(value, styles, info, out Half result))
+            {
+                ThrowOverflowOrFormatException(ParsingStatus.Failed);
+            }
+
+            return result;
+        }
+
         internal static unsafe ParsingStatus TryParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
         {
             byte* pDigits = stackalloc byte[DecimalNumberBufferLength];
@@ -2076,7 +2086,7 @@ namespace System
 
             if ((number.DigitsCount == 0) || (number.Scale < HalfMinExponent))
             {
-                result = (Half)0;
+                result = default;
             }
             else if (number.Scale > HalfMaxExponent)
             {

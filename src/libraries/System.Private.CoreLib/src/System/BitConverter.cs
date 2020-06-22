@@ -499,5 +499,11 @@ namespace System
 
             return *((float*)&value);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe short HalfToInt16Bits(Half value)
+        {
+            return *((short*)&value);
+        }
     }
 }
