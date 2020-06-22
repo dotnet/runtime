@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Hosting
                 args.Payload.OfType<string>().Any(p => p.Contains("Request starting")));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_EnablesActivityTracking()
         {
@@ -75,9 +75,19 @@ namespace Microsoft.Extensions.Hosting
                 Assert.Equal(1, scopeObjectList.Count);
                 var activityDictionary = (scopeObjectList.FirstOrDefault() as IEnumerable<KeyValuePair<string, object>>)
                                                 .ToDictionary(x => x.Key, x => x.Value);
-                Assert.Equal(activity.SpanId.ToString(), activityDictionary["SpanId"]);
-                Assert.Equal(activity.RootId.ToString(), activityDictionary["TraceId"]);
-                Assert.Equal(activity.ParentSpanId.ToString(), activityDictionary["ParentId"]);
+                switch (activity.IdFormat)
+                {
+                    case ActivityIdFormat.Hierarchical:
+                        Assert.Equal(activity.Id, activityDictionary["SpanId"]);
+                        Assert.Equal(activity.RootId, activityDictionary["TraceId"]);
+                        Assert.Equal(activity.ParentId, activityDictionary["ParentId"]);
+                        break;
+                    case ActivityIdFormat.W3C:
+                        Assert.Equal(activity.SpanId.ToHexString(), activityDictionary["SpanId"]);
+                        Assert.Equal(activity.TraceId.ToHexString(), activityDictionary["TraceId"]);
+                        Assert.Equal(activity.ParentSpanId.ToHexString(), activityDictionary["ParentId"]);
+                        break;
+                }
             });
             var loggerProvider = new ScopeDelegateLoggerProvider(logger);
             var host = Host.CreateDefaultBuilder()
