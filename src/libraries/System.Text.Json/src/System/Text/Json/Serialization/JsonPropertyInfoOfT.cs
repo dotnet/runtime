@@ -97,13 +97,16 @@ namespace System.Text.Json
         {
             T value = Get!(obj);
 
+            // Since devirtualization only works in non-shared generics,
+            // the default comparer is uded only for value types for now.
+            // For reference types there is a quick check for null.
             if (IgnoreDefaultValuesOnWrite && (
-                default(T) is null ? value is null : EqualityComparer<T>.Default.Equals(default, value)))
+                default(T) == null ? value == null : EqualityComparer<T>.Default.Equals(default, value)))
             {
                 return true;
             }
 
-            if (value is null)
+            if (value == null)
             {
                 Debug.Assert(Converter.CanBeNull);
 
