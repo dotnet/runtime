@@ -48,14 +48,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 yield return entry;
             }
-            yield return new DependencyListEntry(_localMethod, "Local method import");
+            if (_localMethod != null)
+                yield return new DependencyListEntry(_localMethod, "Local method import");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            int result = comparer.Compare(_localMethod, ((LocalMethodImport)other)._localMethod);
-            if (result != 0)
-                return result;
+            if (_localMethod != null)
+            {
+                int result = comparer.Compare(_localMethod, ((LocalMethodImport)other)._localMethod);
+                if (result != 0)
+                    return result;
+            }
 
             return base.CompareToImpl(other, comparer);
         }
