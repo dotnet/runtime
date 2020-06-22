@@ -63,13 +63,10 @@
   <PropertyGroup Condition="'$(_Framework)' != 'net461'">
     <WorkItemCommand>$(WorkItemCommand) $(CliArguments)</WorkItemCommand>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(HelixSourcePrefix)' == 'pr'">
-    <WorkItemTimeout>0:15</WorkItemTimeout>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(HelixSourcePrefix)' == 'official'">
+  
+  <PropertyGroup>
     <WorkItemTimeout>0:45</WorkItemTimeout>
+    <WorkItemTimeout Condition="'$(HelixSourcePrefix)' != 'official'">0:15</WorkItemTimeout>
   </PropertyGroup>
 
   <ItemGroup>
