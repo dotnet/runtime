@@ -11,6 +11,6 @@
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
 </Project>

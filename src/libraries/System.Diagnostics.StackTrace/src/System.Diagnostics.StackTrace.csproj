@@ -34,6 +34,6 @@
     <ProjectReference Include="..\..\System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
 </Project>

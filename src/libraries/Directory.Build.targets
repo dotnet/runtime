@@ -1,4 +1,4 @@
-<Project InitialTargets="AddSkipGetTargetFrameworkToProjectReferences">
+<Project InitialTargets="UpdateProjectReferencesWithAttributes">
   <PropertyGroup>
     <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>  
   </PropertyGroup>
@@ -184,10 +184,12 @@
   <!-- Define this target to override the workaround in arcade as we don't need it for our pkgprojs -->
   <Target Name="InitializeStandardNuspecProperties" />
 
-  <Target Name="AddSkipGetTargetFrameworkToProjectReferences" Condition="'@(ProjectReference)' != ''">
+  <Target Name="UpdateProjectReferencesWithAttributes" Condition="'@(ProjectReference)' != ''">
     <ItemGroup>
       <ProjectReference>
         <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+        <AdditionalProperties Condition="'%(Filename)' == 'System.Private.CoreLib' and '$(RuntimeFlavor)' == 'CoreCLR'">Configuration=$(CoreCLRConfiguration);TargetFramework=$(NetCoreAppCurrent)</AdditionalProperties>
+        <AdditionalProperties Condition="'%(Filename)' == 'System.Private.CoreLib' and '$(RuntimeFlavor)' == 'Mono'">Configuration=$(MonoConfiguration);TargetFramework=$(NetCoreAppCurrent)</AdditionalProperties>
       </ProjectReference>
     </ItemGroup>
   </Target>

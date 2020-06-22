@@ -132,7 +132,7 @@
     <Reference Include="System.Security.Cryptography.Algorithms" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ProjectReference Include="$(CoreLibProject)" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Primitives" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
