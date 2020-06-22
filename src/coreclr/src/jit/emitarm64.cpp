@@ -4009,23 +4009,9 @@ void emitter::emitIns_R_R(
     {
         case INS_mov:
             assert(insOptsNone(opt));
-            // Is the mov even necessary?
-            if (reg1 == reg2)
-            {
-                // A mov with a EA_4BYTE has the side-effect of clearing the upper bits
-                // So only eliminate mov instructions that are not clearing the upper bits
-                //
-                if (isGeneralRegisterOrSP(reg1) && (size == EA_8BYTE))
-                {
-                    return;
-                }
-                else if (isVectorRegister(reg1) && (size == EA_16BYTE))
-                {
-                    return;
-                }
-            }
 
-            if (IsMovRedundantToPrevMov(ins, reg1, reg2))
+            // Is the mov even necessary?
+            if (emitComp->opts.OptimizationEnabled() && IsRedundantMov(ins, size, reg1, reg2))
             {
                 return;
             }
@@ -14888,9 +14874,23 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
 //----------------------------------------------------------------------------------------
-// IsMovRedundantToPrevMov:
-//    Check if previous instruction was a 'mov' where dst was current src and src was current dst.
-//    Or if previous `mov` moved between same src/dst.
+// IsRedundantMov:
+//    Check if the current `mov` instruction is redundant and can be omitted.
+//    A `mov` is redundant in following 3 cases:
+//
+//    1. Move to same register
+//
+//         mov Rx, Rx
+//
+//    2. Move that is identical to last instruction emitted.
+//
+//         mov Rx, Rx  # <-- last instruction
+//         mov Rx, Rx  # <-- current instruction can be omitted.
+//
+//    3. Opposite Move as that of last instruction emitted.
+//
+//         mov Rx, Ry  # <-- last instruction
+//         mov Ry, Rx  # <-- current instruction can be omitted.
 //
 // Arguments:
 //    ins - The current instruction
@@ -14900,9 +14900,31 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 // Return Value:
 //    true if previous instruction moved from current dst to src.
 
-bool emitter::IsMovRedundantToPrevMov(instruction ins, regNumber dst, regNumber src)
+bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src)
 {
+    bool isRedundant = false;
+#ifdef DEBUG
+    const char* reason = nullptr;
+#endif // DEBUG
+
     assert(ins == INS_mov);
+
+    if (dst == src)
+    {
+        // A mov with a EA_4BYTE has the side-effect of clearing the upper bits
+        // So only eliminate mov instructions that are not clearing the upper bits
+        //
+        if (isGeneralRegisterOrSP(dst) && (size == EA_8BYTE))
+        {
+            reason      = "\n -- suppressing mov because src and dst is same 8-byte register.\n";
+            isRedundant = true;
+        }
+        else if (isVectorRegister(dst) && (size == EA_16BYTE))
+        {
+            reason      = "\n -- suppressing mov because src and dst is same 16-byte register.\n";
+            isRedundant = true;
+        }
+    }
 
     if (emitLastIns != nullptr && emitLastIns->idIns() == INS_mov)
     {
@@ -14910,13 +14932,27 @@ bool emitter::IsMovRedundantToPrevMov(instruction ins, regNumber dst, regNumber 
         regNumber prevDst = emitLastIns->idReg1();
         regNumber prevSrc = emitLastIns->idReg2();
 
-        if (((prevDst == src) && (prevSrc == dst)) || // opposite movs
-            (prevDst == dst) && (prevSrc == src))     // similar movs
+        if ((prevDst == dst) && (prevSrc == src))
         {
-            JITDUMP("\n -- suppressing mov as previous mov instruction was sufficient.\n");
+            reason      = "\n -- suppressing mov because previous instruction already moved from src to dst register.\n";
+            isRedundant = true;
+        }
+
+        // A mov with a EA_4BYTE has the side-effect of clearing the upper bits
+        // So only eliminate mov instructions that are not clearing the upper bits
+        //
+        if (((size == EA_8BYTE) || (size == EA_16BYTE)) && (prevDst == src) && (prevSrc == dst))
+        {
+            JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst to src register.\n");
             return true;
         }
     }
-    return false;
+
+    if (isRedundant)
+    {
+        JITDUMP(reason);
+    }
+
+    return isRedundant;
 }
 #endif // defined(TARGET_ARM64)
