@@ -7369,6 +7369,12 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
     preHead->inheritWeight(head);
     preHead->bbFlags &= ~BBF_PROF_WEIGHT;
 
+    // Copy the bbReach set from head for the new preHead block
+    preHead->bbReach = BlockSetOps::MakeEmpty(this);
+    BlockSetOps::Assign(this, preHead->bbReach, head->bbReach);
+    // Also include 'head' in the preHead bbReach set
+    BlockSetOps::AddElemD(this, preHead->bbReach, head->bbNum);
+
 #ifdef DEBUG
     if (verbose)
     {
