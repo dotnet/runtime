@@ -58,6 +58,7 @@ namespace System
 
             Debug.Assert(value >= 128);
 
+            // Rotate the buffer and overwrite the last byte
             if (BitConverter.IsLittleEndian)
             {
                 fourByteBuffer = (fourByteBuffer >> 8) | (value << 24);
@@ -84,7 +85,7 @@ namespace System
             uint temp = fourByteBuffer; // make a copy so that the *copy* (not the original) is marked address-taken
             if (Rune.DecodeFromUtf8(new ReadOnlySpan<byte>(&temp, bytesLeftInBuffer), out Rune rune, out bytesConsumed) == OperationStatus.Done)
             {
-                Debug.Assert(bytesConsumed >= 2);
+                Debug.Assert(bytesConsumed >= 2, $"Rune.DecodeFromUtf8 consumed {bytesConsumed} bytes, likely indicating input was modified concurrently during UnescapePercentEncodedUTF8Sequence's execution");
 
                 if (!iriParsing || IriHelper.CheckIriUnicodeRange((uint)rune.Value, isQuery))
                 {
@@ -100,7 +101,7 @@ namespace System
             }
             else
             {
-                Debug.Assert(bytesConsumed > 0);
+                Debug.Assert(bytesConsumed > 0, $"Rune.DecodeFromUtf8 consumed {bytesConsumed} bytes when decoding {bytesLeftInBuffer} bytes");
             }
             charsToCopy += bytesConsumed * 3;
 
@@ -111,9 +112,28 @@ namespace System
 
         NoMoreOrInvalidInput:
             Debug.Assert(bytesLeftInBuffer < 4);
+
+            // If we have more than 1 byte left, we try to decode it
             if (bytesLeftInBuffer > 1)
             {
                 Debug.Assert(bytesLeftInBuffer == 2 || bytesLeftInBuffer == 3);
+
+                // We reach this branch if we don't have 4 valid bytes to consume
+                // We have to allign the read bytes to the start of fourByteBuffer memory
+                // We do this by shifting the fourByteBuffer, the shift direction is determined by system endianness
+
+                // If we read 3 bytes, we shift by 1; if we read 2, we shift by 2
+                // (32 - (bytesLeftInBuffer << 3)) calculates this offset:
+                // bytesLeftInBuffer == 3 => (32 - (3 << 3)) => 32 - 24 => 8 bits
+                // bytesLeftInBuffer == 2 => (32 - (2 << 3)) => 32 - 16 => 16 bits
+
+                // For invalid input we tried to decode in DecodeRune, we may return here if we have more than 1 byte left
+                // If bytesConsumed is 1, shift by 1 byte
+                // If bytesConsumed is 2:
+                // a) We had 4 bytes in the buffer and now only have 2 => Shift by 2 bytes
+                // b) We read 1 more byte, leaving us with 3 bytes in the buffer => Shift by 1 byte
+                // The case for bytesConsumed == 2 is handeled by the else block as the offsets are the same as for valid input described above
+
                 if (bytesConsumed == 1)
                 {
                     if (BitConverter.IsLittleEndian)
