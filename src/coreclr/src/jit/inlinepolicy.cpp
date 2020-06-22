@@ -381,7 +381,7 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                         // not too deep, allow the inline even if it goes over budget.
                         //
                         // For now, "not too deep" means a top-level inline. Note
-                        // depth 0 is used for the root method, so inline candiate depth
+                        // depth 0 is used for the root method, so inline candidate depth
                         // will be 1 or more.
                         //
                         assert(m_IsForceInlineKnown);
