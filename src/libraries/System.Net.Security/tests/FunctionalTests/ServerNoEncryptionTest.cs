@@ -68,6 +68,7 @@ namespace System.Net.Security.Tests
                     CipherAlgorithmType expected = CipherAlgorithmType.Null;
                     Assert.Equal(expected, sslStream.CipherAlgorithm);
                     Assert.Equal(0, sslStream.CipherStrength);
+                    Assert.False(sslStream.IsEncrypted);
                 }
             }
         }
@@ -93,6 +94,7 @@ namespace System.Net.Security.Tests
                         CipherAlgorithmType expected = CipherAlgorithmType.Null;
                         Assert.Equal(expected, sslStream.CipherAlgorithm);
                         Assert.Equal(0, sslStream.CipherStrength);
+                        Assert.False(sslStream.IsEncrypted);
                     }
                     else
                     {

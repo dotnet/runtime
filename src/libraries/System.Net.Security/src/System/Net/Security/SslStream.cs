@@ -476,7 +476,7 @@ namespace System.Net.Security
             }
         }
 
-        public override bool IsEncrypted => IsAuthenticated;
+        public override bool IsEncrypted => IsAuthenticated && CipherAlgorithm != CipherAlgorithmType.Null;
 
         public override bool IsSigned => IsAuthenticated;
 
