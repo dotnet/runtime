@@ -370,7 +370,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                return new LocalMethodImport(
+                return new DelayLoadMethodImport(
                     this,
                     ReadyToRunFixupKind.MethodEntry,
                     method,
@@ -403,9 +403,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null), false, false, false);
                 MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
-                if (methodCodeNodeDebug == null && methodNodeDebug is LocalMethodImport localMethodImport)
+                if (methodCodeNodeDebug == null && methodNodeDebug is DelayLoadMethodImport DelayLoadMethodImport)
                 {
-                    methodCodeNodeDebug = localMethodImport.MethodCodeNode;
+                    methodCodeNodeDebug = DelayLoadMethodImport.MethodCodeNode;
                 }
                 if (methodCodeNodeDebug == null && methodNodeDebug is PrecodeMethodImport precodeMethodImport)
                 {

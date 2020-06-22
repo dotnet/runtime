@@ -11,12 +11,12 @@ using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class LocalMethodImport : DelayLoadHelperImport, IMethodNode
+    public class DelayLoadMethodImport : DelayLoadHelperImport, IMethodNode
     {
         private readonly MethodWithGCInfo _localMethod;
         private readonly MethodWithToken _method;
 
-        public LocalMethodImport(
+        public DelayLoadMethodImport(
             NodeFactory factory,
             ReadyToRunFixupKind fixupKind,
             MethodWithToken method,
@@ -54,9 +54,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            if (_localMethod != null)
+            if ((_localMethod != null) && (((DelayLoadMethodImport)other)._localMethod != null))
             {
-                int result = comparer.Compare(_localMethod, ((LocalMethodImport)other)._localMethod);
+                int result = comparer.Compare(_localMethod, ((DelayLoadMethodImport)other)._localMethod);
                 if (result != 0)
                     return result;
             }
