@@ -555,7 +555,7 @@ namespace System.Net
 
         internal ChannelBinding GetChannelBinding()
         {
-            return HttpListenerContext.Listener.GetChannelBindingFromTls(_connectionId);
+            return HttpListener.GetChannelBindingFromTls(HttpListenerContext.ListenerSession, _connectionId);
         }
 
         internal void CheckDisposed()

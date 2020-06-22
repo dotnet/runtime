@@ -70,9 +70,9 @@ namespace Microsoft.Extensions.Hosting
 
             builder.ConfigureAppConfiguration((hostingContext, config) =>
             {
-                var env = hostingContext.HostingEnvironment;
-                
-                var reloadOnChange = hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
+                IHostEnvironment env = hostingContext.HostingEnvironment;
+
+                bool reloadOnChange = hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
 
                 config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: reloadOnChange)
                       .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Hosting
             })
             .ConfigureLogging((hostingContext, logging) =>
             {
-                var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+                bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
                 // IMPORTANT: This needs to be added *before* configuration is loaded, this lets
                 // the defaults be overridden by the configuration.
@@ -118,7 +118,7 @@ namespace Microsoft.Extensions.Hosting
             })
             .UseDefaultServiceProvider((context, options) =>
             {
-                var isDevelopment = context.HostingEnvironment.IsDevelopment();
+                bool isDevelopment = context.HostingEnvironment.IsDevelopment();
                 options.ValidateScopes = isDevelopment;
                 options.ValidateOnBuild = isDevelopment;
             });

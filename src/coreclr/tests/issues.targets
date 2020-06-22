@@ -118,6 +118,24 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/mono/runningmono/*">
             <Issue>This test is to verify we are running mono, and therefore only makes sense on mono.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_dbgsizeof32_Target_32Bit/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37470</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_dbgsizeof64/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37470</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_dbgsizeof_Target_32Bit/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37470</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_relsizeof32_Target_32Bit/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37470</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_relsizeof64_Target_32Bit/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37470</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/xxobj/sizeof/_il_relsizeof_Target_32Bit/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37470</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->

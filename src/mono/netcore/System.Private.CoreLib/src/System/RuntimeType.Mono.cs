@@ -1685,6 +1685,8 @@ namespace System
                 throw new NotSupportedException(Environment.GetResourceString("Acc_CreateVoid"));
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         internal object? CreateInstanceImpl(
             BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture)
         {

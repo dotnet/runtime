@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <TestConsoleAppSourceFiles Include="$(MSBuildProjectDirectory)\*.cs" />
+    <TestConsoleAppSourceFiles Condition="'@(TestConsoleAppSourceFiles)' == ''" Include="$(MSBuildProjectDirectory)\*.cs" />
 
     <TestSupportFiles Include="$(MSBuildThisFileDirectory)SupportFiles\Directory.Build.*">
       <DestinationFolder>$(TrimmingTestDir)</DestinationFolder>
@@ -41,7 +41,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <TestConsoleApps Include="@(TestConsoleAppSourceFiles->'%(ProjectFile)')">
+      <TestConsoleApps Include="@(TestConsoleAppSourceFiles->'%(ProjectFile)')" Condition="!$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(PackageRID)'))">
         <ProjectCompileItems>%(Identity)</ProjectCompileItems>
       </TestConsoleApps>
     </ItemGroup>
@@ -81,7 +81,7 @@
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) -p:configuration=$(Configuration)</TestPublishTrimmedCommand>
     </PropertyGroup>
 
-    <Exec Command="$(TestPublishTrimmedCommand)" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
+    <Exec Command="$(TestPublishTrimmedCommand) %(TestConsoleApps.AdditionalArgs)" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
   </Target>
 
   <Target Name="ExecuteApplications"

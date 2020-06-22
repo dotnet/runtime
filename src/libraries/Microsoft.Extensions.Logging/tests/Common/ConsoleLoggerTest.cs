@@ -232,7 +232,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void WriteError_LogsCorrectColors()
         {
             // Arrange
@@ -295,7 +295,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void WriteDebug_LogsCorrectColors()
         {
             // Arrange
@@ -402,7 +402,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(FormatsAndLevels))]
         public void WriteCore_LogsCorrectTimestampInUtc(ConsoleLoggerFormat format, LogLevel level)
         {
@@ -508,7 +508,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void WritingScopes_LogsWithCorrectColors()
         {
             // Arrange

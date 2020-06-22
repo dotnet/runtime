@@ -13,7 +13,7 @@ namespace System.Net.NameResolution.Tests
 {
     public class GetHostEntryTest
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Dns_GetHostEntryAsync_IPAddress_Ok()
         {
             IPAddress localIPAddress = await TestSettings.GetLocalIPAddress();
@@ -132,7 +132,7 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAsync<ArgumentException>(() => Task.Factory.FromAsync(Dns.BeginGetHostEntry, Dns.EndGetHostEntry, address.ToString(), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DnsGetHostEntry_MachineName_AllVariationsMatch()
         {
             IPHostEntry syncResult = Dns.GetHostEntry(TestSettings.LocalHost);

@@ -1481,10 +1481,10 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #endif
         {
 #if defined(CROSSGEN_COMPILE)
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
             if ((!IsNgenPDBCompilationProcess()
                 && GetAppDomain()->ToCompilationDomain()->GetTargetModule() != g_pObjectClass->GetModule()))
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
             {
                 // Disable AOT compiling for managed implementation of hardware intrinsics.
                 // We specially treat them here to ensure correct ISA features are set during compilation

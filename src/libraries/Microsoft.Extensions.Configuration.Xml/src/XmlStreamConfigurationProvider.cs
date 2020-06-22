@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                 IgnoreWhitespace = true
             };
 
-            using (var reader = decryptor.CreateDecryptingXmlReader(stream, readerSettings))
+            using (XmlReader reader = decryptor.CreateDecryptingXmlReader(stream, readerSettings))
             {
                 var prefixStack = new Stack<string>();
 
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                 ProcessAttributes(reader, prefixStack, data, AddNamePrefix);
                 ProcessAttributes(reader, prefixStack, data, AddAttributePair);
 
-                var preNodeType = reader.NodeType;
+                XmlNodeType preNodeType = reader.NodeType;
                 while (reader.Read())
                 {
                     switch (reader.NodeType)
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                                 // it means there is no text/CDATA node in current element
                                 if (preNodeType == XmlNodeType.Element)
                                 {
-                                    var key = ConfigurationPath.Combine(prefixStack.Reverse());
+                                    string key = ConfigurationPath.Combine(prefixStack.Reverse());
                                     data[key] = string.Empty;
                                 }
 
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                         case XmlNodeType.CDATA:
                         case XmlNodeType.Text:
                             {
-                                var key = ConfigurationPath.Combine(prefixStack.Reverse());
+                                string key = ConfigurationPath.Combine(prefixStack.Reverse());
                                 if (data.ContainsKey(key))
                                 {
                                     throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key,
@@ -182,7 +182,7 @@ namespace Microsoft.Extensions.Configuration.Xml
             // If current element is not root element
             if (prefixStack.Any())
             {
-                var lastPrefix = prefixStack.Pop();
+                string lastPrefix = prefixStack.Pop();
                 prefixStack.Push(ConfigurationPath.Combine(lastPrefix, reader.Value));
             }
             else
@@ -197,7 +197,7 @@ namespace Microsoft.Extensions.Configuration.Xml
             IDictionary<string, string> data, XmlWriter writer)
         {
             prefixStack.Push(reader.LocalName);
-            var key = ConfigurationPath.Combine(prefixStack.Reverse());
+            string key = ConfigurationPath.Combine(prefixStack.Reverse());
             if (data.ContainsKey(key))
             {
                 throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key, GetLineInfo(reader)));

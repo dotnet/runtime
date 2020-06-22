@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using StackCrawlMark = System.Threading.StackCrawlMark;
@@ -20,6 +21,7 @@ namespace System
             }
         }
 
+        [RequiresUnreferencedCode("The type might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(string typeName, bool throwOnError, bool ignoreCase)
         {
@@ -27,6 +29,7 @@ namespace System
             return RuntimeType.GetType(typeName, throwOnError, ignoreCase, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("The type might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(string typeName, bool throwOnError)
         {
@@ -34,6 +37,7 @@ namespace System
             return RuntimeType.GetType(typeName, throwOnError, false, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("The type might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(string typeName)
         {
@@ -41,6 +45,7 @@ namespace System
             return RuntimeType.GetType(typeName, false, false, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("The type might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(
             string typeName,
@@ -51,6 +56,7 @@ namespace System
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, false, false, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("The type might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(
             string typeName,
@@ -62,6 +68,7 @@ namespace System
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, false, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("The type might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(
             string typeName,

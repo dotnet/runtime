@@ -1023,6 +1023,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sigReader.op1ClsHnd));
                         break;
 
+                    case NI_AdvSimd_Arm64_AddSaturateScalar:
+                        assert(varTypeIsSIMD(op2->TypeGet()));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sigReader.op2ClsHnd));
+                        break;
+
                     default:
                         break;
                 }

@@ -746,7 +746,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomMarshaler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomQueryInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\IDynamicInterfaceCastable.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\IMarshal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InterfaceTypeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InvalidComObjectException.cs" />
@@ -1186,6 +1185,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\TraceLogging\TraceLoggingTypeInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\TraceLogging\TypeAnalysis.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\TraceLogging\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\QCallHandles.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)\..\..\Common\src\System\HexConverter.cs">

@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
     /// Represents the user secrets ID.
     /// </para>
     /// <para>
-    /// In most cases, this attribute is automatically generated during compilation by MSBuild targets 
+    /// In most cases, this attribute is automatically generated during compilation by MSBuild targets
     /// included in the UserSecrets NuGet package. These targets use the MSBuild property 'UserSecretsId'
     /// to set the value for <see cref="UserSecretsId"/>.
     /// </para>
