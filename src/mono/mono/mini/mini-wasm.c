@@ -8,6 +8,7 @@
 #include <mono/metadata/seq-points-data.h>
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/seq-points.h>
+#include <mono/utils/mono-threads.h>
 
 //XXX This is dirty, extend ee.h to support extracting info from MonoInterpFrameHandle
 #include <mono/mini/interp/interp-internals.h>
@@ -391,6 +392,7 @@ EMSCRIPTEN_KEEPALIVE void mono_set_timeout_exec (int id);
 
 //JS functions imported that we use
 extern void mono_set_timeout (int t, int d);
+extern void mono_wasm_queue_tp_cb (void);
 G_END_DECLS
 
 #endif // HOST_WASM
@@ -582,11 +584,48 @@ mono_wasm_set_timeout (int timeout, int id)
 #endif
 }
 
+static void
+tp_cb (void)
+{
+	ERROR_DECL (error);
+
+	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
+	g_assert (klass);
+
+	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "Callback", -1, 0, error);
+	mono_error_assert_ok (error);
+	g_assert (method);
+
+	MonoObject *exc = NULL;
+
+	mono_runtime_try_invoke (method, NULL, NULL, &exc, error);
+
+	if (!is_ok (error)) {
+		printf ("tp callback failed due to %s\n", mono_error_get_message (error));
+		mono_error_cleanup (error);
+	}
+
+	if (exc) {
+		char *type_name = mono_type_get_full_name (mono_object_class (exc));
+		printf ("tp callback threw a %s\n", type_name);
+		g_free (type_name);
+	}
+}
+
+void
+mono_wasm_queue_tp_cb (void)
+{
+#ifdef HOST_WASM
+	mono_threads_schedule_background_job (tp_cb);
+#endif
+}
+
 void
 mono_arch_register_icall (void)
 {
 #ifdef ENABLE_NETCORE
 	mono_add_internal_call_internal ("System.Threading.TimerQueue::SetTimeout", mono_wasm_set_timeout);
+	mono_add_internal_call_internal ("System.Threading.ThreadPool::QueueCallback", mono_wasm_queue_tp_cb);
 #else
 	mono_add_internal_call_internal ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
 #endif
