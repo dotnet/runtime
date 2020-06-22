@@ -36,7 +36,8 @@ var BindingSupportLib = {
 			DataView.prototype[Symbol.for("wasm type")] = 3;
 			Function.prototype[Symbol.for("wasm type")] =  4;
 			Map.prototype[Symbol.for("wasm type")] = 5;
-			SharedArrayBuffer.prototype[Symbol.for("wasm type")] =  6;
+			if (typeof SharedArrayBuffer !== "undefined")
+				SharedArrayBuffer.prototype[Symbol.for("wasm type")] =  6;
 			Int8Array.prototype[Symbol.for("wasm type")] = 10;
 			Uint8Array.prototype[Symbol.for("wasm type")] = 11;
 			Uint8ClampedArray.prototype[Symbol.for("wasm type")] = 12;
