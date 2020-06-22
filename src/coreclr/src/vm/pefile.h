@@ -581,11 +581,13 @@ public:
 
 #endif //!DACCESS_COMPILE
 
+    // Returns AssemblyLoadContext into which the current PEFile was loaded.
+    // It returns NULL for System.Private.CoreLib during early runtime initialization
+    // stage when the related AssemblyLoadContext does not exist yet.
     PTR_AssemblyLoadContext GetAssemblyLoadContext()
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(m_pAssemblyLoadContext != NULL);
         return m_pAssemblyLoadContext;
     }
 
