@@ -806,6 +806,15 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 #ifdef SCHED_BATCH
 		case SCHED_BATCH:
 #endif
+#ifdef SCHED_IA
+		case SCHED_IA:
+#endif
+#ifdef SCHED_FSS
+		case SCHED_FSS:
+#endif
+#ifdef SCHED_FX
+		case SCHED_FX:
+#endif
 		case SCHED_OTHER:
 			param.sched_priority = 0;
 			break;
