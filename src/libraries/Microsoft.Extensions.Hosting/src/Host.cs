@@ -70,9 +70,15 @@ namespace Microsoft.Extensions.Hosting
 
             builder.ConfigureAppConfiguration((hostingContext, config) =>
             {
+<<<<<<< HEAD
                 IHostEnvironment env = hostingContext.HostingEnvironment;
 
                 bool reloadOnChange = hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
+=======
+                var env = hostingContext.HostingEnvironment;
+
+                var reloadOnChange = hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
+>>>>>>> 474d49daa09... Remove trailing whitespace
 
                 config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: reloadOnChange)
                       .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
@@ -115,14 +121,14 @@ namespace Microsoft.Extensions.Hosting
                     // Add the EventLogLoggerProvider on windows machines
                     logging.AddEventLog();
                 }
-                
+
                 logging.Configure(options =>
                 {
                     options.ActivityTrackingOptions = ActivityTrackingOptions.SpanId
                                                         | ActivityTrackingOptions.TraceId
                                                         | ActivityTrackingOptions.ParentId;
                 });
-                
+
             })
             .UseDefaultServiceProvider((context, options) =>
             {
