@@ -189,7 +189,6 @@ var Module = {
 						{
 							var fullPath = directory != '/' ? directory + '/' + files[j] : files[j];
 							var content = new Uint8Array (read ("supportFiles/" + fullPath, 'binary'));
-							console.log(fullPath);
 							writeContentToFile(content, fullPath);
 						}
 					}

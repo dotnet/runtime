@@ -10,8 +10,7 @@ XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 dotnet xharness wasm test --engine=$JAVASCRIPT_ENGINE \
     --js-file=runtime.js -v \
     --output-directory=$XHARNESS_OUT \
-    -- --enable-gc --enable-zoneinfo \
-    --run WasmTestRunner.dll ${@:2}
+    -- --enable-gc --run WasmTestRunner.dll ${@:2}
 
 _exitCode=$?
 
