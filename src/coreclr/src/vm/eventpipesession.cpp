@@ -569,7 +569,7 @@ void EventPipeSession::SuspendWriteEvent()
     CONTRACTL_END;
 
     {
-        CrstHolder crst(EventPipeThread::GetGlobalThreadLock());
+        SpinLockHolder holder(EventPipeThread::GetGlobalThreadLock());
 
         EventPipeThreadIterator eventPipeThreads = EventPipeThread::GetThreads();
         EventPipeThread *pThread = nullptr;

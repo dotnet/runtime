@@ -87,7 +87,7 @@ class EventPipeThread
 {
     static thread_local EventPipeThreadHolder gCurrentEventPipeThreadHolder;
 
-    static CrstStatic s_threadsCrst;
+    static SpinLock s_threadsLock;
     static SList<SListElem<EventPipeThread *>> s_pThreads;
 
     ~EventPipeThread();
@@ -124,17 +124,17 @@ class EventPipeThread
     EventPipeThread();
 
 public:
-    static bool Initialize();
+    static void Initialize();
 
     static EventPipeThread *Get();
     static EventPipeThread* GetOrCreate();
 
     static EventPipeThreadIterator GetThreads();
-    static CrstStatic *GetGlobalThreadLock()
+    static SpinLock *GetGlobalThreadLock()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return &s_threadsCrst;
+        return &s_threadsLock;
     }
 
     void AddRef();

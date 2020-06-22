@@ -102,7 +102,7 @@ void AcquireEventPipeThreadRef(EventPipeThread *pThread)
 
 thread_local EventPipeThreadHolder EventPipeThread::gCurrentEventPipeThreadHolder;
 
-CrstStatic EventPipeThread::s_threadsCrst;
+SpinLock EventPipeThread::s_threadsLock;
 SList<SListElem<EventPipeThread *>> EventPipeThread::s_pThreads;
 
 EventPipeThread::EventPipeThread()
@@ -137,13 +137,11 @@ EventPipeThread::~EventPipeThread()
 #endif
 }
 
-bool EventPipeThread::Initialize()
+void EventPipeThread::Initialize()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return s_threadsCrst.InitNoThrow(
-        CrstEventPipeThreads,
-        (CrstFlags)(CRST_TAKEN_DURING_SHUTDOWN));
+    s_threadsLock.Init(LOCK_TYPE_DEFAULT);
 }
 
 EventPipeThread *EventPipeThread::Get()
@@ -169,7 +167,7 @@ EventPipeThread* EventPipeThread::GetOrCreate()
             gCurrentEventPipeThreadHolder = new EventPipeThread();
             
             {
-                CrstHolder crst(&s_threadsCrst);
+                SpinLockHolder crst(&s_threadsLock);
                 s_pThreads.InsertTail(new SListElem<EventPipeThread *>((EventPipeThread *)gCurrentEventPipeThreadHolder));
             }
         }
@@ -200,7 +198,7 @@ void EventPipeThread::Release()
 
     if (FastInterlockDecrement(&m_refCount) == 0)
     {
-        CrstHolder crst(&s_threadsCrst);
+        SpinLockHolder crst(&s_threadsLock);
         
         // Remove ourselves from the global list
         SListElem<EventPipeThread *> *pElem = s_pThreads.GetHead();
