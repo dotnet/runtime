@@ -35,9 +35,9 @@ namespace System.Threading.Tasks
         {
             // To get the AsyncCausality events, we need to inform the AsyncCausalityTracer
             if (command.Command == EventCommand.Enable)
-                AsyncCausalityTracer.EnableToETW(true);
+                AsyncCausalityTracer.Enable();
             else if (command.Command == EventCommand.Disable)
-                AsyncCausalityTracer.EnableToETW(false);
+                AsyncCausalityTracer.Disable();
 
             if (IsEnabled(EventLevel.Informational, Keywords.TasksFlowActivityIds))
                 ActivityTracker.Instance.Enable();
