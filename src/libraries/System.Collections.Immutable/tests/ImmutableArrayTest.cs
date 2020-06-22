@@ -1631,7 +1631,7 @@ namespace System.Collections.Immutable.Tests
             // ImmutableArray<T>.CopyTo defers to Array.Copy for argument validation, so
             // the parameter names here come from Array.Copy.
 
-            AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(null));
+            AssertExtensions.Throws<ArgumentNullException>("destinationArray", () => array.CopyTo(null));
             AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(0, null, 0, 0));
             AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(-1, null, -1, -1)); // The destination should be validated first.
@@ -2228,7 +2228,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(new[] { "1" }, s_twoElementRefTypeWithNull.OfType<string>());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void AddThreadSafety()
         {
             // Note the point of this thread-safety test is *not* to test the thread-safety of the test itself.

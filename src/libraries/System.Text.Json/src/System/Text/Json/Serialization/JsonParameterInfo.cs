@@ -12,32 +12,19 @@ namespace System.Text.Json
     /// Holds relevant state about a method parameter, like the default value of
     /// the parameter, and the position in the method's parameter list.
     /// </summary>
-    [DebuggerDisplay("ParameterInfo={ParameterInfo}")]
     internal abstract class JsonParameterInfo
     {
-        private Type _runtimePropertyType = null!;
 
-        public abstract JsonConverter ConverterBase { get; }
+        public JsonConverter ConverterBase { get; private set; } = null!;
 
         // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the CLR `default` for the `ParameterType`.
         public object? DefaultValue { get; protected set; }
 
-        // The name from a Json value. This is cached for performance on first deserialize.
-        public byte[]? JsonPropertyName { get; set; }
-
         // Options can be referenced here since all JsonPropertyInfos originate from a JsonClassInfo that is cached on JsonSerializerOptions.
-        protected JsonSerializerOptions Options { get; set; } = null!; // initialized in Init method
-
-        public ParameterInfo ParameterInfo { get; private set; } = null!;
+        public JsonSerializerOptions? Options { get; set; } // initialized in Init method
 
         // The name of the parameter as UTF-8 bytes.
-        public byte[] ParameterName { get; private set; } = null!;
-
-        // The name of the parameter.
-        public string NameAsString { get; private set; } = null!;
-
-        // Key for fast property name lookup.
-        public ulong ParameterNameKey { get; private set; }
+        public byte[] NameAsUtf8Bytes { get; private set; } = null!;
 
         // The zero-based position of the parameter in the formal parameter list.
         public int Position { get; private set; }
@@ -47,61 +34,46 @@ namespace System.Text.Json
         {
             get
             {
+                Debug.Assert(ShouldDeserialize);
                 if (_runtimeClassInfo == null)
                 {
-                    _runtimeClassInfo = Options.GetOrAddClass(_runtimePropertyType);
+                    Debug.Assert(Options != null);
+                    _runtimeClassInfo = Options!.GetOrAddClass(RuntimePropertyType);
                 }
 
                 return _runtimeClassInfo;
             }
         }
 
+        internal Type RuntimePropertyType { get; set; } = null!;
+
         public bool ShouldDeserialize { get; private set; }
 
         public virtual void Initialize(
-            Type declaredPropertyType,
             Type runtimePropertyType,
             ParameterInfo parameterInfo,
             JsonPropertyInfo matchingProperty,
             JsonSerializerOptions options)
         {
-            _runtimePropertyType = runtimePropertyType;
-
-            Options = options;
-            ParameterInfo = parameterInfo;
+            RuntimePropertyType = runtimePropertyType;
             Position = parameterInfo.Position;
+            NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!;
+            Options = options;
             ShouldDeserialize = true;
-
-            DetermineParameterName(matchingProperty);
-        }
-
-        private void DetermineParameterName(JsonPropertyInfo matchingProperty)
-        {
-            NameAsString = matchingProperty.NameAsString!;
-
-            // `NameAsString` is valid UTF16, so just call the simple UTF16->UTF8 encoder.
-            ParameterName = Encoding.UTF8.GetBytes(NameAsString);
-
-            ParameterNameKey = JsonClassInfo.GetKey(ParameterName);
+            ConverterBase = matchingProperty.ConverterBase;
         }
 
         // Create a parameter that is ignored at run-time. It uses the same type (typeof(sbyte)) to help
         // prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
         public static JsonParameterInfo CreateIgnoredParameterPlaceholder(
-            ParameterInfo parameterInfo,
             JsonPropertyInfo matchingProperty,
             JsonSerializerOptions options)
         {
-            JsonParameterInfo jsonParameterInfo = new JsonParameterInfo<sbyte>();
-            jsonParameterInfo.Options = options;
-            jsonParameterInfo.ParameterInfo = parameterInfo;
-            jsonParameterInfo.ShouldDeserialize = false;
-
-            jsonParameterInfo.DetermineParameterName(matchingProperty);
-
-            return jsonParameterInfo;
+            return new JsonParameterInfo<sbyte>
+            {
+                RuntimePropertyType = typeof(sbyte),
+                NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!,
+            };
         }
-
-        public abstract bool ReadJson(ref ReadStack state, ref Utf8JsonReader reader, out object? argument);
     }
 }

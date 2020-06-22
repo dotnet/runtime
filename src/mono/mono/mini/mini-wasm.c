@@ -455,6 +455,14 @@ mono_arch_find_static_call_vtable (host_mgreg_t *regs, guint8 *code)
 	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
 }
 
+GSList*
+mono_arch_get_cie_program (void)
+{
+	GSList *l = NULL;
+
+	return l;
+}
+
 gpointer
 mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
 {
@@ -533,7 +541,12 @@ EMSCRIPTEN_KEEPALIVE void
 mono_set_timeout_exec (int id)
 {
 	ERROR_DECL (error);
+
+#ifdef ENABLE_NETCORE
+	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "TimerQueue");
+#else
 	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "WasmRuntime");
+#endif
 	g_assert (klass);
 
 	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "TimeoutCallback", -1, 0, error);
@@ -572,7 +585,11 @@ mono_wasm_set_timeout (int timeout, int id)
 void
 mono_arch_register_icall (void)
 {
+#ifdef ENABLE_NETCORE
+	mono_add_internal_call_internal ("System.Threading.TimerQueue::SetTimeout", mono_wasm_set_timeout);
+#else
 	mono_add_internal_call_internal ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
+#endif
 }
 
 void

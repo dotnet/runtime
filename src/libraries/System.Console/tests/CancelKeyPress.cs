@@ -14,6 +14,7 @@ public partial class CancelKeyPressTests
     private const int WaitFailTestTimeoutSeconds = 30;
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void CanAddAndRemoveHandler()
     {
         ConsoleCancelEventHandler handler = (sender, e) =>
@@ -26,7 +27,7 @@ public partial class CancelKeyPressTests
         Console.CancelKeyPress -= handler;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     public void CanAddAndRemoveHandler_Remote()
     {
         // xunit registers a CancelKeyPress handler at the beginning of the test run and never

@@ -5,12 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-
-using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
@@ -124,16 +122,17 @@ namespace Internal.Cryptography.Pal
                 encodedSets.Reverse();
             }
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            using (writer.PushSequence())
             {
-                writer.PushSequence();
                 foreach (byte[] encodedSet in encodedSets)
                 {
                     writer.WriteEncodedValue(encodedSet);
                 }
-                writer.PopSequence();
-                return writer.Encode();
             }
+
+            return writer.Encode();
         }
 
         private static bool NeedsQuoting(string rdnValue)
@@ -518,16 +517,16 @@ namespace Internal.Cryptography.Pal
                 chars = ExtractValue(chars);
             }
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.PushSetOf();
-                writer.PushSequence();
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
+            using (writer.PushSetOf())
+            using (writer.PushSequence())
+            {
                 try
                 {
-                    writer.WriteObjectIdentifier(tagOid);
+                    writer.WriteObjectIdentifier(tagOid.Value!);
                 }
-                catch (CryptographicException e)
+                catch (ArgumentException e)
                 {
                     throw new CryptographicException(SR.Cryptography_Invalid_X500Name, e);
                 }
@@ -544,34 +543,20 @@ namespace Internal.Cryptography.Pal
                         throw new CryptographicException(SR.Cryptography_Invalid_IA5String);
                     }
                 }
-                else if (IsValidPrintableString(chars))
-                {
-                    writer.WriteCharacterString(UniversalTagNumber.PrintableString, chars);
-                }
                 else
                 {
-                    writer.WriteCharacterString(UniversalTagNumber.UTF8String, chars);
+                    try
+                    {
+                        writer.WriteCharacterString(UniversalTagNumber.PrintableString, chars);
+                    }
+                    catch (EncoderFallbackException)
+                    {
+                        writer.WriteCharacterString(UniversalTagNumber.UTF8String, chars);
+                    }
                 }
+            }
 
-                writer.PopSequence();
-                writer.PopSetOf();
-                return writer.Encode();
-            }
-        }
-
-        private static bool IsValidPrintableString(ReadOnlySpan<char> value)
-        {
-            try
-            {
-                Encoding encoding = AsnCharacterStringEncodings.GetEncoding(UniversalTagNumber.PrintableString);
-                // Throws on invalid characters.
-                encoding.GetByteCount(value);
-                return true;
-            }
-            catch (EncoderFallbackException)
-            {
-                return false;
-            }
+            return writer.Encode();
         }
 
         private static char[] ExtractValue(ReadOnlySpan<char> chars)

@@ -593,7 +593,7 @@ namespace System.Net.Http
                 return;
             }
 
-            foreach (KeyValuePair<HeaderDescriptor, HttpHeaders.HeaderStoreItemInfo> header in headers.HeaderStore)
+            foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
             {
                 int headerValuesCount = HttpHeaders.GetValuesAsStrings(header.Key, header.Value, ref _headerValues);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
@@ -920,7 +920,7 @@ namespace System.Net.Http
             }
             else
             {
-                string headerValue = staticValue ?? descriptor.GetHeaderValue(literalValue);
+                string headerValue = staticValue ?? _connection.GetResponseHeaderValueWithCaching(descriptor, literalValue);
 
                 switch (_headerState)
                 {
@@ -1228,7 +1228,7 @@ namespace System.Net.Http
             {
                 if (_stream == null)
                 {
-                    return new ValueTask<int>(Task.FromException<int>(new ObjectDisposedException(nameof(Http3RequestStream))));
+                    return ValueTask.FromException<int>(new ObjectDisposedException(nameof(Http3RequestStream)));
                 }
 
                 Debug.Assert(_response != null);
@@ -1275,7 +1275,7 @@ namespace System.Net.Http
             {
                 if (_stream == null)
                 {
-                    return new ValueTask(Task.FromException(new ObjectDisposedException(nameof(Http3WriteStream))));
+                    return ValueTask.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
                 }
 
                 return _stream.WriteRequestContentAsync(buffer, cancellationToken);

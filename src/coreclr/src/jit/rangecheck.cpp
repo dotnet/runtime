@@ -348,7 +348,13 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
             return IsMonotonicallyIncreasing(op1, true) && IsMonotonicallyIncreasing(op2, true);
 
         case GT_CNS_INT:
-            return (op2->AsIntConCommon()->IconValue() >= 0) && IsMonotonicallyIncreasing(op1, false);
+            if (op2->AsIntConCommon()->IconValue() < 0)
+            {
+                JITDUMP("Not monotonically increasing because of encountered negative constant\n");
+                return false;
+            }
+
+            return IsMonotonicallyIncreasing(op1, false);
 
         default:
             JITDUMP("Not monotonically increasing because expression is not recognized.\n");
@@ -419,6 +425,10 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
             }
         }
         return true;
+    }
+    else if (expr->OperGet() == GT_COMMA)
+    {
+        return IsMonotonicallyIncreasing(expr->gtEffectiveVal(), rejectNegativeConst);
     }
     JITDUMP("Unknown tree type\n");
     return false;
@@ -729,7 +739,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 }
 
 // Merge assertions from the pred edges of the block, i.e., check for any assertions about "op's" value numbers for phi
-// arguments. If not a phi argument, check if we assertions about local variables.
+// arguments. If not a phi argument, check if we have assertions about local variables.
 void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DEBUGARG(int indent))
 {
     JITDUMP("Merging assertions from pred edges of " FMT_BB " for op [%06d] " FMT_VN "\n", block->bbNum,
@@ -1216,6 +1226,10 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         }
 
         JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
+    }
+    else if (expr->OperGet() == GT_COMMA)
+    {
+        range = GetRange(block, expr->gtEffectiveVal(), monIncreasing DEBUGARG(indent + 1));
     }
     else
     {

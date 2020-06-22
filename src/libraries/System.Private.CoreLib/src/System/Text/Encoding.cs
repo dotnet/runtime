@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -117,8 +119,8 @@ namespace System.Text
         private bool _isReadOnly = true;
 
         // Encoding (encoder) fallback
-        internal EncoderFallback encoderFallback = null!;
-        internal DecoderFallback decoderFallback = null!;
+        internal EncoderFallback encoderFallback;
+        internal DecoderFallback decoderFallback;
 
         protected Encoding() : this(0)
         {
@@ -153,17 +155,19 @@ namespace System.Text
             // Remember code page
             _codePage = codePage;
 
-            this.encoderFallback = encoderFallback ?? new InternalEncoderBestFitFallback(this);
-            this.decoderFallback = decoderFallback ?? new InternalDecoderBestFitFallback(this);
+            this.encoderFallback = encoderFallback ?? EncoderFallback.ReplacementFallback;
+            this.decoderFallback = decoderFallback ?? DecoderFallback.ReplacementFallback;
         }
 
         // Default fallback that we'll use.
+        [MemberNotNull(nameof(encoderFallback))]
+        [MemberNotNull(nameof(decoderFallback))]
         internal virtual void SetDefaultFallbacks()
         {
             // For UTF-X encodings, we use a replacement fallback with an "\xFFFD" string,
             // For ASCII we use "?" replacement fallback, etc.
-            encoderFallback = new InternalEncoderBestFitFallback(this);
-            decoderFallback = new InternalDecoderBestFitFallback(this);
+            encoderFallback = EncoderFallback.ReplacementFallback;
+            decoderFallback = DecoderFallback.ReplacementFallback;
         }
 
         // Converts a byte array from one encoding to another. The bytes in the
@@ -287,8 +291,15 @@ namespace System.Text
                 GetEncoding(EncodingTable.GetCodePageFromName(name), encoderFallback, decoderFallback);
         }
 
-        // Return a list of all EncodingInfo objects describing all of our encodings
-        public static EncodingInfo[] GetEncodings() => EncodingTable.GetEncodings();
+        /// <summary>
+        /// Get the <see cref="EncodingInfo"/> list from the runtime and all registered encoding providers
+        /// </summary>
+        /// <returns>The list of the <see cref="EncodingProvider"/> objects</returns>
+        public static EncodingInfo[] GetEncodings()
+        {
+            Dictionary<int, EncodingInfo>? result = EncodingProvider.GetEncodingListFromProviders();
+            return result == null ? EncodingTable.GetEncodings() : EncodingTable.GetEncodings(result);
+        }
 
         public virtual byte[] GetPreamble() => Array.Empty<byte>();
 
@@ -488,11 +499,8 @@ namespace System.Text
 
         public static Encoding ASCII => ASCIIEncoding.s_default;
 
-        // Returns an encoding for the Latin1 character set. The returned encoding
-        // will be an instance of the Latin1Encoding class.
-        //
-        // This is for our optimizations
-        private static Encoding Latin1 => Latin1Encoding.s_default;
+        /// <summary>Gets an encoding for the Latin1 character set (ISO-8859-1).</summary>
+        public static Encoding Latin1 => Latin1Encoding.s_default;
 
         // Returns the number of bytes required to encode the given character
         // array.
@@ -1040,13 +1048,49 @@ namespace System.Text
         public override int GetHashCode() =>
             _codePage + this.EncoderFallback.GetHashCode() + this.DecoderFallback.GetHashCode();
 
-        internal virtual char[] GetBestFitUnicodeToBytesData() =>
-            // Normally we don't have any best fit data.
-            Array.Empty<char>();
+        /// <summary>
+        /// Creates a <see cref="Stream"/> which serves to transcode data between an inner <see cref="Encoding"/>
+        /// and an outer <see cref="Encoding"/>, similar to <see cref="Convert"/>.
+        /// </summary>
+        /// <param name="innerStream">The <see cref="Stream"/> to wrap.</param>
+        /// <param name="innerStreamEncoding">The <see cref="Encoding"/> associated with <paramref name="innerStream"/>.</param>
+        /// <param name="outerStreamEncoding">The <see cref="Encoding"/> associated with the <see cref="Stream"/> returned
+        /// by this method.</param>
+        /// <param name="leaveOpen"><see langword="true"/> if disposing the <see cref="Stream"/> returned by this method
+        /// should <em>not</em> dispose <paramref name="innerStream"/>.</param>
+        /// <returns>A <see cref="Stream"/> which transcodes the contents of <paramref name="innerStream"/>
+        /// as <paramref name="outerStreamEncoding"/>.</returns>
+        /// <remarks>
+        /// The returned <see cref="Stream"/>'s <see cref="Stream.CanRead"/> and <see cref="Stream.CanWrite"/> properties
+        /// will reflect whether <paramref name="innerStream"/> is readable or writable. If <paramref name="innerStream"/>
+        /// is full-duplex, the returned <see cref="Stream"/> will be as well. However, the returned <see cref="Stream"/>
+        /// is not seekable, even if <paramref name="innerStream"/>'s <see cref="Stream.CanSeek"/> property returns <see langword="true"/>.
+        /// </remarks>
+        public static Stream CreateTranscodingStream(Stream innerStream, Encoding innerStreamEncoding, Encoding outerStreamEncoding, bool leaveOpen = false)
+        {
+            if (innerStream is null)
+            {
+                throw new ArgumentNullException(nameof(innerStream));
+            }
 
-        internal virtual char[] GetBestFitBytesToUnicodeData() =>
-            // Normally we don't have any best fit data.
-            Array.Empty<char>();
+            if (innerStreamEncoding is null)
+            {
+                throw new ArgumentNullException(nameof(innerStreamEncoding));
+            }
+
+            if (outerStreamEncoding is null)
+            {
+                throw new ArgumentNullException(nameof(outerStreamEncoding));
+            }
+
+            // We can't entirely optimize away the case where innerStreamEncoding == outerStreamEncoding. For example,
+            // the Encoding might perform a lossy conversion when it sees invalid data, so we still need to call it
+            // to perform basic validation. It's also possible that somebody subclassed one of the built-in types
+            // like ASCIIEncoding or UTF8Encoding and is running some non-standard logic. If this becomes a bottleneck
+            // we can consider targeted optimizations in a future release.
+
+            return new TranscodingStream(innerStream, innerStreamEncoding, outerStreamEncoding, leaveOpen);
+        }
 
         [DoesNotReturn]
         internal void ThrowBytesOverflow() =>

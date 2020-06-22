@@ -136,10 +136,10 @@ mono_dl_convert_flags (int flags)
 
 #ifdef ENABLE_NETCORE
 	// Specifying both will default to LOCAL
-	if (flags & MONO_DL_LOCAL)
-		lflags |= RTLD_LOCAL;
-	else if (flags & MONO_DL_GLOBAL)
+	if (flags & MONO_DL_GLOBAL && !(flags & MONO_DL_LOCAL))
 		lflags |= RTLD_GLOBAL;
+	else 
+		lflags |= RTLD_LOCAL;
 #else
 	lflags = flags & MONO_DL_LOCAL ? RTLD_LOCAL : RTLD_GLOBAL;
 #endif

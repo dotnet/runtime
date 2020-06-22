@@ -124,19 +124,6 @@ namespace System.Threading.Channels
         }
 
         /// <summary>Gets whether the operation has completed.</summary>
-        /// <remarks>
-        /// The operation is considered completed if both a) it's in the completed state,
-        /// AND b) it has a non-null continuation.  We need to consider both because they're
-        /// not set atomically.  If we only considered the state, then if we set the state to
-        /// completed and then set the continuation, it's possible for an awaiter to check
-        /// IsCompleted, see true, call GetResult, and return the object to the pool, and only
-        /// then do we try to store the continuation into an object we no longer own.  If we
-        /// only considered the state, then if we set the continuation and then set the state,
-        /// a racing awaiter could see the continuation set before the state has transitioned
-        /// to completed and could end up calling GetResult in an incomplete state.  And if we
-        /// only considered the continuation, then we have issues if OnCompleted is used before
-        /// the operation completes, as the continuation will be
-        /// </remarks>
         internal bool IsCompleted => ReferenceEquals(_continuation, s_completedSentinel);
 
         /// <summary>Gets the result of the operation.</summary>
@@ -301,7 +288,11 @@ namespace System.Threading.Channels
             }
         }
 
-        /// <summary>Unregisters from cancellation.</summary>
+        /// <summary>Unregisters from cancellation and returns whether cancellation already started.</summary>
+        /// <returns>
+        /// true if either the instance wasn't cancelable or cancellation successfully unregistered without cancellation having started.
+        /// false if cancellation successfully unregistered after cancellation was initiated.
+        /// </returns>
         /// <remarks>
         /// This is important for two reasons:
         /// 1. To avoid leaking a registration into a token, so it must be done prior to completing the operation.
@@ -309,7 +300,17 @@ namespace System.Threading.Channels
         /// that no one else will try to complete the operation (assuming the caller is properly constructed
         /// and themselves guarantees only a single completer other than through cancellation).
         /// </remarks>
-        public void UnregisterCancellation() => _registration.Dispose();
+        public bool UnregisterCancellation()
+        {
+            if (CancellationToken.CanBeCanceled)
+            {
+                _registration.Dispose(); // Dispose rather than Unregister is important to know work has quiesced
+                return _completionReserved == 0;
+            }
+
+            Debug.Assert(_registration == default);
+            return true;
+        }
 
         /// <summary>Completes the operation with a success state and the specified result.</summary>
         /// <param name="item">The result value.</param>

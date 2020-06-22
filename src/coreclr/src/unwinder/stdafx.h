@@ -12,6 +12,7 @@
 #define USE_COM_CONTEXT_DEF
 
 #include <common.h>
+
 #include <debugger.h>
 #include <methoditer.h>
 #ifdef DACCESS_COMPILE

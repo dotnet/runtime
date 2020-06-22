@@ -15,7 +15,7 @@
 
 #include "dasmenum.hpp"
 #include "dis.h"
-#include <ndpversion.h>
+#include <clrversion.h>
 #include "resource.h"
 
 #include "new.hpp"
@@ -97,7 +97,7 @@ FILE* OpenOutput(__in __nullterminated const char* szFileName);
 
 void PrintLogo()
 {
-    printf("Microsoft (R) .NET Framework IL Disassembler.  Version " VER_FILEVERSION_STR);
+    printf("Microsoft (R) .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
     printf("\n%S\n\n", VER_LEGALCOPYRIGHT_LOGO_STR_L);
 }
 

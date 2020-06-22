@@ -35,6 +35,7 @@ using System.IO;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -217,12 +218,12 @@ namespace System.Reflection.Emit
         private bool manifest_module_used;
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [DynamicDependency("RuntimeResolve", typeof(ModuleBuilder))]
         private static extern void basic_init(AssemblyBuilder ab);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void UpdateNativeCustomAttributes(AssemblyBuilder ab);
 
-        [PreserveDependency("RuntimeResolve", "System.Reflection.Emit.ModuleBuilder")]
         internal AssemblyBuilder(AssemblyName n, string? directory, AssemblyBuilderAccess access, bool corlib_internal)
         {
             aname = (AssemblyName)n.Clone();
@@ -405,11 +406,7 @@ namespace System.Reflection.Emit
                 cattrs[0] = customBuilder;
             }
 
-            /*
-            Only update the native list of custom attributes if we're adding one that is known to change dynamic execution behavior.
-            */
-            if (customBuilder.Ctor != null && customBuilder.Ctor.DeclaringType == typeof(System.Runtime.CompilerServices.RuntimeCompatibilityAttribute))
-                UpdateNativeCustomAttributes(this);
+            UpdateNativeCustomAttributes(this);
         }
 
         [ComVisible(true)]
@@ -528,14 +525,7 @@ namespace System.Reflection.Emit
             return AssemblyName.Create(_mono_assembly, null);
         }
 
-        // FIXME: "This always returns an empty array"
-        public override AssemblyName[] GetReferencedAssemblies()
-        {
-            throw new NotImplementedException();
-#if FALSE
-			return GetReferencedAssemblies (this);
-#endif
-        }
+        public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies (this);
 
         public override Module[] GetLoadedModules(bool getResourceModules)
         {
@@ -546,22 +536,14 @@ namespace System.Reflection.Emit
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {
-            throw new NotImplementedException();
-#if FALSE
-			StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-			return GetSatelliteAssembly (culture, null, true, ref stackMark);
-#endif
+            return GetSatelliteAssembly(culture, null);
         }
 
         //FIXME MS has issues loading satelite assemblies from SRE
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
         {
-            throw new NotImplementedException();
-#if FALSE
-			StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-			return GetSatelliteAssembly (culture, version, true, ref stackMark);
-#endif
+            return RuntimeAssembly.InternalGetSatelliteAssembly(this, culture, version, true)!;
         }
 
         public override Module ManifestModule

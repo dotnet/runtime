@@ -629,6 +629,9 @@ typedef struct _DacGlobals
     ULONG fn__Unknown_AddRefSpecial;
     ULONG fn__Unknown_AddRefInner;
 #endif
+#ifdef FEATURE_COMWRAPPERS
+    ULONG fn__ManagedObjectWrapper_QueryInterface;
+#endif
 
     // Vtable pointer values for all classes that must
     // be instanted using vtable pointers as the identity.

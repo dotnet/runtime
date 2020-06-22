@@ -6,6 +6,6 @@ set(RUNTIMEINFO_SOURCES
 
 add_library_clr(runtimeinfo STATIC ${RUNTIMEINFO_SOURCES})
 
-add_dependencies(runtimeinfo runtime_module_index_header)
-add_dependencies(runtimeinfo dac_module_index_header)
-add_dependencies(runtimeinfo dbi_module_index_header)
+add_dependencies(runtimeinfo coreclr_module_index_header)
+add_dependencies(runtimeinfo mscordaccore_module_index_header)
+add_dependencies(runtimeinfo mscordbi_module_index_header)

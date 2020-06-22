@@ -25,9 +25,8 @@ namespace System.PrivateUri.Tests
             string nonUnicodeImplicitTestFile = s_isWindowsSystem ? @"c:\path\path3\test.txt" : "/path/path3/test.txt";
             string nonUnicodeImplicitFileBase = s_isWindowsSystem ? @"c:\path\file.txt" : "/path/file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareImplicitVsExplicitFiles(nonUnicodeImplicitTestFile,
-                nonUnicodeImplicitFileBase, out testResults);
+                nonUnicodeImplicitFileBase, out string testResults);
             Assert.True((errorCount == 0), testResults);
         }
 
@@ -37,9 +36,8 @@ namespace System.PrivateUri.Tests
             string nonUnicodeImplicitTestFile = s_isWindowsSystem ? @"c:\path\path3\test.txt%25%" : "/path/path3/test.txt%25%";
             string nonUnicodeImplicitFileBase = s_isWindowsSystem ? @"c:\path\file.txt" : "/path/file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareImplicitVsExplicitFiles(nonUnicodeImplicitTestFile,
-                nonUnicodeImplicitFileBase, out testResults);
+                nonUnicodeImplicitFileBase, out string testResults);
             Assert.True((errorCount == 4), testResults);
             // AbsolutePath, AbsoluteUri, LocalPath, PathAndQuery
         }
@@ -50,9 +48,8 @@ namespace System.PrivateUri.Tests
             string unicodeImplicitTestFile = s_isWindowsSystem ? @"c:\path\\u30AF\path3\\u30EB\u30DE.text" : "/path//u30AF/path3//u30EB/u30DE.text";
             string nonUnicodeImplicitFileBase = s_isWindowsSystem ? @"c:\path\file.txt" : "/path/file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareImplicitVsExplicitFiles(unicodeImplicitTestFile,
-                nonUnicodeImplicitFileBase, out testResults);
+                nonUnicodeImplicitFileBase, out string testResults);
             Assert.True((errorCount == 0), testResults);
         }
 
@@ -62,9 +59,8 @@ namespace System.PrivateUri.Tests
             string unicodeImplicitTestFile = s_isWindowsSystem ? @"c:\path\\u30AF\path3\\u30EB\u30DE.text%25%" : "/path//u30AF/path3//u30EB/u30DE.text%25%";
             string nonUnicodeImplicitFileBase = s_isWindowsSystem ? @"c:\path\file.txt" : "/path/file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareImplicitVsExplicitFiles(unicodeImplicitTestFile,
-                nonUnicodeImplicitFileBase, out testResults);
+                nonUnicodeImplicitFileBase, out string testResults);
             Assert.True((errorCount == (s_isWindowsSystem ? 4 : 0)), testResults);
             // AbsolutePath, AbsoluteUri, LocalPath, PathAndQuery
         }
@@ -75,9 +71,8 @@ namespace System.PrivateUri.Tests
             string nonUnicodeImplicitTestUnc = @"\\c\path\path3\test.txt";
             string nonUnicodeImplicitUncBase = @"\\c/path/file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareImplicitVsExplicitFiles(nonUnicodeImplicitTestUnc,
-                nonUnicodeImplicitUncBase, out testResults);
+                nonUnicodeImplicitUncBase, out string testResults);
             Assert.True((errorCount == 1), testResults);
             Assert.True(IsOriginalString(testResults), testResults);
         }
@@ -89,9 +84,8 @@ namespace System.PrivateUri.Tests
             string nonUnicodeImplicitTestUnc = @"//c/path/path3/test.txt";
             string nonUnicodeImplicitUncBase = @"//c/path/file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareImplicitVsExplicitFiles(nonUnicodeImplicitTestUnc,
-                nonUnicodeImplicitUncBase, out testResults);
+                nonUnicodeImplicitUncBase, out string testResults);
             Assert.True((errorCount == 1), testResults);
             Assert.True(IsOriginalString(testResults), testResults);
         }
@@ -102,9 +96,8 @@ namespace System.PrivateUri.Tests
             string unicodeImplicitTestUnc = @"\\c\path\\u30AF\path3\\u30EB\u30DE.text";
             string nonUnicodeImplicitUncBase = @"\\c\path\file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareImplicitVsExplicitFiles(unicodeImplicitTestUnc,
-                nonUnicodeImplicitUncBase, out testResults);
+                nonUnicodeImplicitUncBase, out string testResults);
             Assert.True((errorCount == 1), testResults);
             Assert.True(IsOriginalString(testResults), testResults);
         }
@@ -155,9 +148,8 @@ namespace System.PrivateUri.Tests
             string nonUnicodeImplicitTestFile = s_isWindowsSystem ? @"c:\path\path3\test.txt" : "/path/path3/test.txt";
             string nonUnicodeImplicitFileBase = s_isWindowsSystem ? @"c:\path\file.txt" : "/path/file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareVsOriginal(nonUnicodeImplicitTestFile,
-                nonUnicodeImplicitFileBase, out testResults);
+                nonUnicodeImplicitFileBase, out string testResults);
             Assert.True((errorCount == (s_isWindowsSystem ? 1 : 0)), testResults);
             if (s_isWindowsSystem)
             {
@@ -171,9 +163,8 @@ namespace System.PrivateUri.Tests
             string nonUnicodeUncTestFile = @"\\c\path\path3\test.txt";
             string nonUnicodeUncFileBase = @"\\c\path\file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareVsOriginal(nonUnicodeUncTestFile,
-                nonUnicodeUncFileBase, out testResults);
+                nonUnicodeUncFileBase, out string testResults);
             Assert.True((errorCount == 1), testResults);
             Assert.True(IsOriginalString(testResults), testResults);
         }
@@ -185,9 +176,8 @@ namespace System.PrivateUri.Tests
             string nonUnicodeUncTestFile = @"//c/path/path3/test.txt";
             string nonUnicodeUncFileBase = @"//c/path/file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareVsOriginal(nonUnicodeUncTestFile,
-                nonUnicodeUncFileBase, out testResults);
+                nonUnicodeUncFileBase, out string testResults);
             Assert.True((errorCount == 1), testResults);
             Assert.True(IsOriginalString(testResults), testResults);
         }
@@ -198,9 +188,8 @@ namespace System.PrivateUri.Tests
             string nonUnicodeTest = @"http://user:password@host.com:9090/path/path3/test.txt";
             string nonUnicodeBase = @"http://user:password@host.com:9090/path2/file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareVsOriginal(nonUnicodeTest,
-                nonUnicodeBase, out testResults);
+                nonUnicodeBase, out string testResults);
             Assert.True((errorCount == 0), testResults);
         }
 
@@ -210,9 +199,8 @@ namespace System.PrivateUri.Tests
             string nonUnicodeTest = @"http://user:password@host.com:9090/path/path3/test.txt%25%";
             string nonUnicodeBase = @"http://user:password@host.com:9090/path2/file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareVsOriginal(nonUnicodeTest,
-                nonUnicodeBase, out testResults);
+                nonUnicodeBase, out string testResults);
             Assert.True((errorCount == 1), testResults);
             Assert.True(IsOriginalString(testResults), testResults);
         }
@@ -223,9 +211,8 @@ namespace System.PrivateUri.Tests
             string unicodeTest = "http://user:password@host.com:9090/path\u30AF/path3/\u30EBtest.txt";
             string nonUnicodeBase = "http://user:password@host.com:9090/path2/file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareVsOriginal(unicodeTest,
-                nonUnicodeBase, out testResults);
+                nonUnicodeBase, out string testResults);
             Assert.True((errorCount == 1), testResults);
             Assert.True(IsOriginalString(testResults), testResults);
         }
@@ -236,9 +223,8 @@ namespace System.PrivateUri.Tests
             string unicodeTest = "http://user:password@host.com:9090/path\u30AF/path3/\u30EBtest.txt%25%";
             string nonUnicodeBase = "http://user:password@host.com:9090/path2/file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareVsOriginal(unicodeTest,
-                nonUnicodeBase, out testResults);
+                nonUnicodeBase, out string testResults);
             Assert.True((errorCount == 1), testResults);
             Assert.True(IsOriginalString(testResults), testResults);
         }
@@ -249,9 +235,8 @@ namespace System.PrivateUri.Tests
             string unicodeTest = "http://user:password@host.com:9090/path\u30AF/path3/\u30EBtest.txt";
             string nonUnicodeBase = "http://user:password@host.com:9090/path2/file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareVsOriginal(unicodeTest,
-                nonUnicodeBase, out testResults);
+                nonUnicodeBase, out string testResults);
             Assert.True((errorCount == 1), testResults);
             Assert.True(IsOriginalString(testResults), testResults);
         }
@@ -262,9 +247,8 @@ namespace System.PrivateUri.Tests
             string unicodeTest = "http://user:password@host.com:9090/path\u30AF/path3/\u30EBtest.txt%25%";
             string nonUnicodeBase = "http://user:password@host.com:9090/path2/file.txt";
 
-            string testResults;
             int errorCount = RelatavizeRestoreCompareVsOriginal(unicodeTest,
-                nonUnicodeBase, out testResults);
+                nonUnicodeBase, out string testResults);
             Assert.True((errorCount == 1), testResults);
             Assert.True(IsOriginalString(testResults), testResults);
         }
@@ -272,7 +256,6 @@ namespace System.PrivateUri.Tests
         public static int RelatavizeRestoreCompareVsOriginal(string original, string baseString, out string errors)
         {
             Uri startUri = new Uri(original);
-            string abs = startUri.AbsolutePath;
             Uri baseUri = new Uri(baseString);
 
             Uri rel = baseUri.MakeRelativeUri(startUri);

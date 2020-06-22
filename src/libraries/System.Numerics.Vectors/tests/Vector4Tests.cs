@@ -397,15 +397,60 @@ namespace System.Numerics.Tests
         }
 
         // A test for Lerp (Vector4f, Vector4f, float)
-        // Lerp test from the same point
+        // Lerp test with special float value
         [Fact]
         public void Vector4LerpTest5()
+        {
+            Vector4 a = new Vector4(45.67f, 90.0f, 0, 0);
+            Vector4 b = new Vector4(float.PositiveInfinity, float.NegativeInfinity, 0, 0);
+
+            float t = 0.408f;
+            Vector4 actual = Vector4.Lerp(a, b, t);
+            Assert.True(float.IsPositiveInfinity(actual.X), "Vector4f.Lerp did not return the expected value.");
+            Assert.True(float.IsNegativeInfinity(actual.Y), "Vector4f.Lerp did not return the expected value.");
+        }
+
+        // A test for Lerp (Vector4f, Vector4f, float)
+        // Lerp test from the same point
+        [Fact]
+        public void Vector4LerpTest6()
         {
             Vector4 a = new Vector4(4.0f, 5.0f, 6.0f, 7.0f);
             Vector4 b = new Vector4(4.0f, 5.0f, 6.0f, 7.0f);
 
             float t = 0.85f;
             Vector4 expected = a;
+            Vector4 actual = Vector4.Lerp(a, b, t);
+            Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Lerp did not return the expected value.");
+        }
+
+        // A test for Lerp (Vector4f, Vector4f, float)
+        // Lerp test with values known to be innacurate with the old lerp impl
+        [Fact]
+        public void Vector4LerpTest7()
+        {
+            Vector4 a = new Vector4(0.44728136f);
+            Vector4 b = new Vector4(0.46345946f);
+
+            float t = 0.26402435f;
+
+            Vector4 expected = new Vector4(0.45155275f);
+            Vector4 actual = Vector4.Lerp(a, b, t);
+            Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Lerp did not return the expected value.");
+        }
+
+        // A test for Lerp (Vector4f, Vector4f, float)
+        // Lerp test with values known to be innacurate with the old lerp impl
+        // (Old code incorrectly gets 0.33333588)
+        [Fact]
+        public void Vector4LerpTest8()
+        {
+            Vector4 a = new Vector4(-100);
+            Vector4 b = new Vector4(0.33333334f);
+
+            float t = 1f;
+
+            Vector4 expected = new Vector4(0.33333334f);
             Vector4 actual = Vector4.Lerp(a, b, t);
             Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Lerp did not return the expected value.");
         }

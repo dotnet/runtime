@@ -78,8 +78,8 @@ namespace System.Tests
             }
         }
 
-        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         public static void GetHashCode_WithComparison()
         {
             // Since hash code generation is randomized, it's possible (though unlikely) that

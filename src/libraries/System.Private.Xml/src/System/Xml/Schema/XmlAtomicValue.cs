@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -18,10 +19,10 @@ namespace System.Xml.Schema
     public sealed class XmlAtomicValue : XPathItem, ICloneable
     {
         private readonly XmlSchemaType _xmlType;
-        private readonly object _objVal;
+        private readonly object? _objVal;
         private readonly TypeCode _clrType;
         private Union _unionVal;
-        private readonly NamespacePrefixForQName _nsPrefix;
+        private readonly NamespacePrefixForQName? _nsPrefix;
 
         [StructLayout(LayoutKind.Explicit, Size = 8)]
         private struct Union
@@ -48,7 +49,8 @@ namespace System.Xml.Schema
                 this.ns = ns;
                 this.prefix = prefix;
             }
-            public string LookupNamespace(string prefix)
+
+            public string? LookupNamespace(string? prefix)
             {
                 if (prefix == this.prefix)
                 {
@@ -57,7 +59,7 @@ namespace System.Xml.Schema
                 return null;
             }
 
-            public string LookupPrefix(string namespaceName)
+            public string? LookupPrefix(string? namespaceName)
             {
                 if (ns == namespaceName)
                 {
@@ -126,7 +128,7 @@ namespace System.Xml.Schema
             _objVal = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType, string value, IXmlNamespaceResolver nsResolver)
+        internal XmlAtomicValue(XmlSchemaType xmlType, string value, IXmlNamespaceResolver? nsResolver)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
             if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
@@ -134,8 +136,8 @@ namespace System.Xml.Schema
             _objVal = value;
             if (nsResolver != null && (_xmlType.TypeCode == XmlTypeCode.QName || _xmlType.TypeCode == XmlTypeCode.Notation))
             {
-                string prefix = GetPrefixFromQName(value);
-                _nsPrefix = new NamespacePrefixForQName(prefix, nsResolver.LookupNamespace(prefix));
+                string prefix = GetPrefixFromQName(value)!;
+                _nsPrefix = new NamespacePrefixForQName(prefix, nsResolver.LookupNamespace(prefix)!);
             }
         }
 
@@ -147,7 +149,7 @@ namespace System.Xml.Schema
             _objVal = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType, object value, IXmlNamespaceResolver nsResolver)
+        internal XmlAtomicValue(XmlSchemaType xmlType, object value, IXmlNamespaceResolver? nsResolver)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
             if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
@@ -156,10 +158,10 @@ namespace System.Xml.Schema
 
             if (nsResolver != null && (_xmlType.TypeCode == XmlTypeCode.QName || _xmlType.TypeCode == XmlTypeCode.Notation))
             { //Its a qualifiedName
-                XmlQualifiedName qname = _objVal as XmlQualifiedName;
+                XmlQualifiedName qname = (_objVal as XmlQualifiedName)!;
                 Debug.Assert(qname != null); //string representation is handled in a different overload
                 string ns = qname.Namespace;
-                _nsPrefix = new NamespacePrefixForQName(nsResolver.LookupPrefix(ns), ns);
+                _nsPrefix = new NamespacePrefixForQName(nsResolver.LookupPrefix(ns)!, ns);
             }
         }
 
@@ -201,7 +203,7 @@ namespace System.Xml.Schema
 
         public override Type ValueType
         {
-            get { return _xmlType.Datatype.ValueType; }
+            get { return _xmlType.Datatype!.ValueType; }
         }
 
         public override object TypedValue
@@ -342,7 +344,7 @@ namespace System.Xml.Schema
             }
         }
 
-        public override object ValueAs(Type type, IXmlNamespaceResolver nsResolver)
+        public override object ValueAs(Type type, IXmlNamespaceResolver? nsResolver)
         {
             XmlValueConverter valueConverter = _xmlType.ValueConverter;
 
@@ -392,7 +394,7 @@ namespace System.Xml.Schema
             return Value;
         }
 
-        private string GetPrefixFromQName(string value)
+        private string? GetPrefixFromQName(string value)
         {
             int colonOffset;
             int len = ValidateNames.ParseQName(value, 0, out colonOffset);

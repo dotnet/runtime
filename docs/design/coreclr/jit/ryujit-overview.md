@@ -843,7 +843,7 @@ bad tree and wish to understand how it got corrupted, you can place a conditiona
 `gtNewNode` to see when it is created, and then a data breakpoint on the field that you believe is corrupted.
 
 The trees are connected by line characters (either in ASCII, by default, or in slightly more readable Unicode when
-`COMPlus_JitDumpAscii=0` is specified), to make it a bit easier to read.
+`COMPlus_JitDumpASCII=0` is specified), to make it a bit easier to read.
 
 ## Variable naming
 

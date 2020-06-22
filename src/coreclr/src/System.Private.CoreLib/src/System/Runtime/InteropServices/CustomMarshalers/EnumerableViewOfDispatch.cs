@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Runtime.InteropServices.ComTypes;
 
 namespace System.Runtime.InteropServices.CustomMarshalers
@@ -21,7 +20,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
 
         private IDispatch Dispatch => (IDispatch)_dispatch;
 
-        public IEnumerator GetEnumerator()
+        public System.Collections.IEnumerator GetEnumerator()
         {
             Variant result;
             unsafe
@@ -50,7 +49,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
                 }
 
                 enumVariantPtr = Marshal.GetIUnknownForObject(enumVariant);
-                return (IEnumerator)EnumeratorToEnumVariantMarshaler.GetInstance(null).MarshalNativeToManaged(enumVariantPtr);
+                return (System.Collections.IEnumerator)EnumeratorToEnumVariantMarshaler.GetInstance(null).MarshalNativeToManaged(enumVariantPtr);
             }
             finally
             {

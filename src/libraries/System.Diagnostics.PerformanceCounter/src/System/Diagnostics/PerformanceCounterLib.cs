@@ -455,7 +455,7 @@ namespace System.Diagnostics
                         iniWriter.Write(languageId);
                         iniWriter.Write(HelpSufix);
                         iniWriter.Write("=");
-                        if (categoryHelp == null || categoryHelp == string.Empty)
+                        if (string.IsNullOrEmpty(categoryHelp))
                             iniWriter.WriteLine(SR.HelpNotAvailable);
                         else
                             iniWriter.WriteLine(categoryHelp);

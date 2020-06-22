@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
-
 
 namespace System.Xml
 {
@@ -35,18 +35,21 @@ namespace System.Xml
                 {
                     throw new XmlException(SR.Xml_StackOverflow, string.Empty);
                 }
+
                 object[] newstack = new object[_size + _growthRate];
                 if (_used > 0)
                 {
                     System.Array.Copy(_stack, newstack, _used);
                 }
+
                 _stack = newstack;
                 _size += _growthRate;
             }
+
             return _stack[_used++];
         }
 
-        internal object Pop()
+        internal object? Pop()
         {
             if (0 < _used)
             {
@@ -54,10 +57,11 @@ namespace System.Xml
                 object result = _stack[_used];
                 return result;
             }
+
             return null;
         }
 
-        internal object Peek()
+        internal object? Peek()
         {
             return _used > 0 ? _stack[_used - 1] : null;
         }

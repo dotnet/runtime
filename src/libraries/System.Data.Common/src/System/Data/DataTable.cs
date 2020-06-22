@@ -1593,7 +1593,6 @@ namespace System.Data
         [TypeConverter(typeof(PrimaryKeyTypeConverter))]
         public DataColumn[] PrimaryKey
         {
-            [PreserveDependency(".ctor", "System.Data.PrimaryKeyTypeConverter")] // TODO: Remove when https://github.com/mono/linker/issues/800 is fixed
             get
             {
                 UniqueConstraint primayKeyConstraint = _primaryKey;
@@ -1604,7 +1603,6 @@ namespace System.Data
                 }
                 return Array.Empty<DataColumn>();
             }
-            [PreserveDependency(".ctor", "System.Data.DefaultValueTypeConverter")] // TODO: Remove when https://github.com/mono/linker/issues/800 is fixed
             set
             {
                 UniqueConstraint key = null;
@@ -3690,12 +3688,12 @@ namespace System.Data
             IndexField[] indexDesc = Array.Empty<IndexField>();
             if ((null != sortString) && (0 < sortString.Length))
             {
-                string[] split = sortString.Split(',');
+                string[] split = sortString.Split(',', StringSplitOptions.TrimEntries);
                 indexDesc = new IndexField[split.Length];
 
                 for (int i = 0; i < split.Length; i++)
                 {
-                    string current = split[i].Trim();
+                    string current = split[i];
 
                     // handle ASC and DESC.
                     int length = current.Length;

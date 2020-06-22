@@ -23,7 +23,7 @@ namespace System.IO.Packaging
         /// <param name="streamFileMode">Mode in which the stream should be opened</param>
         /// <param name="streamFileAccess">Access with which the stream should be opened</param>
         /// <returns>Stream Corresponding to this part</returns>
-        protected override Stream GetStreamCore(FileMode streamFileMode, FileAccess streamFileAccess)
+        protected override Stream? GetStreamCore(FileMode streamFileMode, FileAccess streamFileAccess)
         {
             if (_zipArchiveEntry != null)
             {

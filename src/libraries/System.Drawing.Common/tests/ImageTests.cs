@@ -199,5 +199,16 @@ namespace System.Drawing.Tests
                     paramList.Param.Select(p => p.Encoder.Guid));
             }
         }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws ExternalException")]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void Save_InvalidDirectory_ThrowsDirectoryNotFoundException()
+        {
+            using (var bitmap = new Bitmap(1, 1))
+            {
+                var badTarget = System.IO.Path.Combine("NoSuchDirectory", "NoSuchFile");
+                AssertExtensions.Throws<DirectoryNotFoundException>(() => bitmap.Save(badTarget), $"The directory NoSuchDirectory of the filename {badTarget} does not exist.");
+            }
+        }
     }
 }

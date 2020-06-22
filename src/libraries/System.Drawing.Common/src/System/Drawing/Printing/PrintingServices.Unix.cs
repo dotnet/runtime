@@ -422,9 +422,9 @@ namespace System.Drawing.Printing
             int x_resolution, y_resolution;
             try
             {
-                if (resolution.Contains("x")) // string.Contains(char) is .NetCore2.1+ specific
+                if (resolution.Contains('x'))
                 {
-                    string[] resolutions = resolution.Split(new[] { 'x' });
+                    string[] resolutions = resolution.Split('x');
                     x_resolution = Convert.ToInt32(resolutions[0]);
                     y_resolution = Convert.ToInt32(resolutions[1]);
                 }
@@ -664,12 +664,10 @@ namespace System.Drawing.Printing
                 NameValueCollection options = LoadPrinterOptions(cups_dests.options, cups_dests.num_options);
 
                 if (options["printer-state"] != null)
-                    // TODO-NULLABLE dotnet/roslyn#34644
-                    state = int.Parse(options["printer-state"]!);
+                    state = int.Parse(options["printer-state"]!); // TODO-NULLABLE dotnet/roslyn#34644
 
                 if (options["printer-comment"] != null)
-                    // TODO-NULLABLE dotnet/roslyn#34644
-                    comment = options["printer-state"]!;
+                    comment = options["printer-state"]!; // TODO-NULLABLE dotnet/roslyn#34644
 
                 switch (state)
                 {

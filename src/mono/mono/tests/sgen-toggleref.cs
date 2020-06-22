@@ -19,17 +19,43 @@ public class Toggleref {
 	}
 }
 
-[StructLayout (LayoutKind.Explicit)]
 public struct Helper {
-	[FieldOffset(0)]
-	IntPtr ptr;
-	[FieldOffset(0)]
-	object obj;
+	private class ObjectWrapper
+	{
+		public object Object;
+	}
+
+	private class IntPtrWrapper
+	{
+		public IntPtr Value;
+	}
+
+	[StructLayout(LayoutKind.Explicit)]
+	private struct ObjectReinterpreter
+	{
+		[FieldOffset(0)] public ObjectWrapper AsObject;
+		[FieldOffset(0)] public IntPtrWrapper AsIntPtr;
+	}
+
+	private static object mutualObject;
+	private static ObjectReinterpreter reinterpreter;
+
+	static Helper()
+	{
+		Helper.mutualObject = new object();
+		Helper.reinterpreter = new ObjectReinterpreter();
+		Helper.reinterpreter.AsObject = new ObjectWrapper();
+	}	
+		
 	public static IntPtr ObjToPtr (object obj)
 	{
-		Helper h = default (Helper);
-		h.obj = obj;
-		return h.ptr;
+		lock (Helper.mutualObject)
+		{
+			Helper.reinterpreter.AsObject.Object = obj;
+			IntPtr address = Helper.reinterpreter.AsIntPtr.Value;
+			Helper.reinterpreter.AsObject.Object = null;
+			return address;
+		}
 	}
 }
 

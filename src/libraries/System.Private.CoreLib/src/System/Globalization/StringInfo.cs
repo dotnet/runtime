@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Unicode;
 
 namespace System.Globalization
@@ -15,7 +16,7 @@ namespace System.Globalization
     /// </summary>
     public class StringInfo
     {
-        private string _str = null!; // initialized in helper called by ctors
+        private string _str;
 
         private int[]? _indexes;
 
@@ -56,6 +57,7 @@ namespace System.Globalization
         public string String
         {
             get => _str;
+            [MemberNotNull(nameof(_str))]
             set
             {
                 _str = value ?? throw new ArgumentNullException(nameof(value));

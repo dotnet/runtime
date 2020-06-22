@@ -197,7 +197,7 @@ namespace System.Reflection
         {
             if (className == null)
                 throw new ArgumentNullException(nameof(className));
-            if (className == string.Empty)
+            if (className.Length == 0)
                 throw new ArgumentException("Type name can't be empty");
             return assembly.InternalGetType(this, className, throwOnError, ignoreCase);
         }
@@ -371,6 +371,8 @@ namespace System.Reflection
                 return res;
             }
         }
+
+        internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
 
         // This calls ves_icall_reflection_get_token, so needs a Module argument
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

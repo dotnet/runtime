@@ -383,15 +383,12 @@ mono_setup_thread_context(DWORD thread_id, MonoContext *mono_context)
 	handle = OpenThread (THREAD_ALL_ACCESS, FALSE, thread_id);
 	g_assert (handle);
 
-	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
 
 	if (!GetThreadContext (handle, &context)) {
 		CloseHandle (handle);
 		return FALSE;
 	}
-
-	g_assert (context.ContextFlags & CONTEXT_INTEGER);
-	g_assert (context.ContextFlags & CONTEXT_CONTROL);
 
 	memset (mono_context, 0, sizeof (MonoContext));
 	mono_sigctx_to_monoctx (&context, mono_context);

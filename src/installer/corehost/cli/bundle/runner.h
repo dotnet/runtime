@@ -21,20 +21,26 @@ namespace bundle
     {
     public:
         runner_t(const pal::char_t* bundle_path,
-                 const pal::char_t *app_path,
-                 int64_t header_offset)
+            const pal::char_t* app_path,
+            int64_t header_offset)
             : info_t(bundle_path, app_path, header_offset) {}
 
         const pal::string_t& extraction_path() const { return m_extraction_path; }
 
-        const file_entry_t *probe(const pal::string_t& path) const;
-        bool locate(const pal::string_t& relative_path, pal::string_t& full_path) const;
+        bool probe(const pal::string_t& relative_path, int64_t* offset, int64_t* size) const;
+        const file_entry_t* probe(const pal::string_t& relative_path) const;
+        bool locate(const pal::string_t& relative_path, pal::string_t& full_path, bool& extracted_to_disk) const;
+        bool locate(const pal::string_t& relative_path, pal::string_t& full_path) const
+        {
+            bool extracted_to_disk;
+            return locate(relative_path, full_path, extracted_to_disk);
+        }
 
         static StatusCode process_manifest_and_extract()
         {
             return ((runner_t*) the_app)->extract();
         }
-
+        
         static const runner_t* app() { return (const runner_t*)the_app; }
 
     private:

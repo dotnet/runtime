@@ -153,6 +153,15 @@ namespace System.Drawing
         /// </summary>
         public void Save(string filename) => Save(filename, RawFormat);
 
+        private static void ThrowIfDirectoryDoesntExist(string filename)
+        {
+            var directoryPart = System.IO.Path.GetDirectoryName(filename);
+            if (!string.IsNullOrEmpty(directoryPart) && !System.IO.Directory.Exists(directoryPart))
+            {
+                throw new DirectoryNotFoundException(SR.Format(SR.TargetDirectoryDoesNotExist, directoryPart, filename));
+            }
+        }
+
         /// <summary>
         /// Gets the width and height of this <see cref='Image'/>.
         /// </summary>

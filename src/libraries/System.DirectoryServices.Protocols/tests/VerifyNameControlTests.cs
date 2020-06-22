@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class VerifyNameControlTests
     {
         [Fact]
@@ -18,12 +21,18 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.1338", control.Type);
 
-            Assert.Equal(new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 0, 4, 0 }, control.GetValue());
+            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 0, 4, 0 } : new byte[] { 48, 5, 2, 1, 0, 4, 0 };
+            Assert.Equal(expected, control.GetValue());
+        }
+
+        public static IEnumerable<object[]> Ctor_ServerName_Data()
+        {
+            yield return new object[] { "", (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 0, 4, 0 } : new byte[] { 48, 5, 2, 1, 0, 4, 0 } };
+            yield return new object[] { "S", (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 7, 2, 1, 0, 4, 2, 83, 0 } : new byte[] { 48, 7, 2, 1, 0, 4, 2, 83, 0 } };
         }
 
         [Theory]
-        [InlineData("", new byte[] { 48, 132, 0, 0, 0, 5, 2, 1, 0, 4, 0 })]
-        [InlineData("S", new byte[] { 48, 132, 0, 0, 0, 7, 2, 1, 0, 4, 2, 83, 0 })]
+        [MemberData(nameof(Ctor_ServerName_Data))]
         public void Ctor_ServerName(string serverName, byte[] expectedValue)
         {
             var control = new VerifyNameControl(serverName);
@@ -36,9 +45,14 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Equal(expectedValue, control.GetValue());
         }
 
+        public static IEnumerable<object[]> Ctor_ServerName_Flag_Data()
+        {
+            yield return new object[] { "", -1, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ?  new byte[] { 48, 132, 0, 0, 0, 8, 2, 4, 255, 255, 255, 255, 4, 0 } : new byte[] { 48, 5, 2, 1, 255, 4, 0 } };
+            yield return new object[] { "S", 10, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 7, 2, 1, 10, 4, 2, 83, 0 } : new byte[] { 48, 7, 2, 1, 10, 4, 2, 83, 0 } };
+        }
+
         [Theory]
-        [InlineData("", -1, new byte[] { 48, 132, 0, 0, 0, 8, 2, 4, 255, 255, 255, 255, 4, 0 })]
-        [InlineData("S", 10, new byte[] { 48, 132, 0, 0, 0, 7, 2, 1, 10, 4, 2, 83, 0 })]
+        [MemberData(nameof(Ctor_ServerName_Flag_Data))]
         public void Ctor_ServerName_Flag(string serverName, int flag, byte[] expectedValue)
         {
             var control = new VerifyNameControl(serverName, flag);

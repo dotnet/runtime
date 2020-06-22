@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Logging.Debug
                 throw new ArgumentNullException(nameof(formatter));
             }
 
-            var message = formatter(state, exception);
+            string message = formatter(state, exception);
 
             if (string.IsNullOrEmpty(message))
             {

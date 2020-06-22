@@ -293,7 +293,7 @@ namespace System
         public static Version Parse(ReadOnlySpan<char> input) =>
             ParseVersion(input, throwOnFailure: true)!;
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out Version? result)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out Version? result)
         {
             if (input == null)
             {

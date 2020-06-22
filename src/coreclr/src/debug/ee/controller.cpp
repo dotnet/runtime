@@ -23,6 +23,7 @@
 #include "eeconfig.h"
 
 #include "../../vm/methoditer.h"
+#include "../../vm/tailcallhelp.h"
 
 const char *GetTType( TraceType tt);
 
@@ -5644,9 +5645,56 @@ bool DebuggerStepper::TrapStepInHelper(
     return false;
 }
 
-FORCEINLINE bool IsTailCall(const BYTE * pTargetIP)
+static bool IsTailCallJitHelper(const BYTE * ip)
 {
-    return TailCallStubManager::IsTailCallStubHelper(reinterpret_cast<PCODE>(pTargetIP));
+    return TailCallStubManager::IsTailCallJitHelper(reinterpret_cast<PCODE>(ip));
+}
+
+// Check whether a call to an IP will be a tailcall dispatched by first
+// returning. When a tailcall cannot be performed just with a jump instruction,
+// the code will be doing a regular call to a managed function called the
+// tailcall dispatcher. This functions dispatches tailcalls in a special way: if
+// there is a previous "tailcall aware" frame, then it will simply record the
+// next tailcall to perform and immediately return. Otherwise it will set up
+// such a tailcall aware frame and dispatch tailcalls. In the former case the
+// control flow will be a little peculiar in that the function will return
+// immediately, so we need special handling in the debugger for it. This
+// function detects that case to be used for those scenarios.
+static bool IsTailCallThatReturns(const BYTE * ip, ControllerStackInfo* info)
+{
+    MethodDesc* pTailCallDispatcherMD = TailCallHelp::GetTailCallDispatcherMD();
+    if (pTailCallDispatcherMD == NULL)
+    {
+        return false;
+    }
+
+    TraceDestination trace;
+    if (!g_pEEInterface->TraceStub(ip, &trace) || !g_pEEInterface->FollowTrace(&trace))
+    {
+        return false;
+    }
+
+    MethodDesc* pTargetMD =
+        trace.GetTraceType() == TRACE_UNJITTED_METHOD
+        ? trace.GetMethodDesc()
+        : g_pEEInterface->GetNativeCodeMethodDesc(trace.GetAddress());
+
+    if (pTargetMD != pTailCallDispatcherMD)
+    {
+        return false;
+    }
+
+    LOG((LF_CORDB, LL_INFO1000, "ITCTR: target %p is the tailcall dispatcher\n", ip));
+
+    _ASSERTE(info->HasReturnFrame());
+    LPVOID retAddr = (LPVOID)GetControlPC(&info->GetReturnFrame().registers);
+    TailCallTls* tls = GetThread()->GetTailCallTls();
+    LPVOID tailCallAwareRetAddr = tls->GetFrame()->TailCallAwareReturnAddress;
+
+    LOG((LF_CORDB,LL_INFO1000, "ITCTR: ret addr is %p, tailcall aware ret addr is %p\n",
+        retAddr, tailCallAwareRetAddr));
+
+    return retAddr == tailCallAwareRetAddr;
 }
 
 // bool DebuggerStepper::TrapStep()   TrapStep attepts to set a
@@ -5864,11 +5912,18 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                     fCallingIntoFunclet = IsAddrWithinMethodIncludingFunclet(ji, info->m_activeFrame.md, walker.GetNextIP()) &&
                         ((CORDB_ADDRESS)(SIZE_T)walker.GetNextIP() != ji->m_addrOfCode);
 #endif
-                    // At this point, we know that the call/branch target is not in the current method.
-                    // So if the current instruction is a jump, this must be a tail call or possibly a jump to the finally.
-                    // So, check if the  call/branch target is the JIT helper for handling tail calls if we are not calling
-                    // into the funclet.
-                    if ((fIsJump && !fCallingIntoFunclet) || IsTailCall(walker.GetNextIP()))
+                    // At this point, we know that the call/branch target is not
+                    // in the current method. The possible cases is that this is
+                    // a jump or a tailcall-via-helper. There are two separate
+                    // tailcalling mechanisms: on x86 we use a JIT helper which
+                    // will look like a regular call and which won't return, so
+                    // a step over becomes a step out. On other platforms we use
+                    // a separate mechanism that will perform a tailcall by
+                    // returning to an IL stub first. A step over in this case
+                    // is done by stepping out to the previous user function
+                    // (non IL stub).
+                    if ((fIsJump && !fCallingIntoFunclet) || IsTailCallJitHelper(walker.GetNextIP()) ||
+                        IsTailCallThatReturns(walker.GetNextIP(), info))
                     {
                         // A step-over becomes a step-out for a tail call.
                         if (!in)
@@ -6014,7 +6069,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                 return true;
             }
 
-            if (IsTailCall(walker.GetNextIP()))
+            if (IsTailCallJitHelper(walker.GetNextIP()) || IsTailCallThatReturns(walker.GetNextIP(), info))
             {
                 if (!in)
                 {
@@ -6306,7 +6361,19 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
         }
         else
 #endif // FEATURE_MULTICASTSTUB_AS_IL
-        if (info->m_activeFrame.managed)
+        if (info->m_activeFrame.md != nullptr && info->m_activeFrame.md->IsILStub() &&
+            info->m_activeFrame.md->AsDynamicMethodDesc()->GetILStubResolver()->GetStubType() == ILStubResolver::TailCallCallTargetStub)
+        {
+            // Normally the stack trace would not include IL stubs, but we
+            // include this specific IL stub so that we can check if a call into
+            // the tailcall dispatcher will result in any user code being
+            // executed or will return and allow a previous tailcall dispatcher
+            // to deal with the tailcall. Thus we just skip that frame here.
+            LOG((LF_CORDB, LL_INFO10000,
+                 "DS::TSO: CallTailCallTarget frame.\n"));
+            continue;
+        }
+        else if (info->m_activeFrame.managed)
         {
             LOG((LF_CORDB, LL_INFO10000,
                  "DS::TSO: return frame is managed.\n"));
@@ -6487,7 +6554,6 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                  "DS::TSO: Setting unmanaged trace patch at 0x%x(%x)\n",
                      GetControlPC(&(info->m_activeFrame.registers)),
                      info->GetReturnFrame().fp.GetSPValue()));
-
 
                 AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE *)GetControlPC(&(info->m_activeFrame.registers)),
                          info->GetReturnFrame().fp,

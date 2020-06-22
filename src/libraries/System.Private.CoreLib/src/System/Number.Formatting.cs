@@ -378,15 +378,13 @@ namespace System
 
         public static string FormatDouble(double value, string? format, NumberFormatInfo info)
         {
-            Span<char> stackBuffer = stackalloc char[CharStackBufferSize];
-            var sb = new ValueStringBuilder(stackBuffer);
+            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
             return FormatDouble(ref sb, value, format, info) ?? sb.ToString();
         }
 
         public static bool TryFormatDouble(double value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
         {
-            Span<char> stackBuffer = stackalloc char[CharStackBufferSize];
-            var sb = new ValueStringBuilder(stackBuffer);
+            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
             string? s = FormatDouble(ref sb, value, format, info);
             return s != null ?
                 TryCopyTo(s, destination, out charsWritten) :
@@ -586,15 +584,13 @@ namespace System
 
         public static string FormatSingle(float value, string? format, NumberFormatInfo info)
         {
-            Span<char> stackBuffer = stackalloc char[CharStackBufferSize];
-            var sb = new ValueStringBuilder(stackBuffer);
+            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
             return FormatSingle(ref sb, value, format, info) ?? sb.ToString();
         }
 
         public static bool TryFormatSingle(float value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
         {
-            Span<char> stackBuffer = stackalloc char[CharStackBufferSize];
-            var sb = new ValueStringBuilder(stackBuffer);
+            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
             string? s = FormatSingle(ref sb, value, format, info);
             return s != null ?
                 TryCopyTo(s, destination, out charsWritten) :
@@ -1069,7 +1065,7 @@ namespace System
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
                     byte* pDigits = stackalloc byte[UInt64NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt32NumberBufferLength);
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt64NumberBufferLength);
 
                     UInt64ToNumber(value, ref number);
 

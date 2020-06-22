@@ -82,9 +82,9 @@ namespace System.Net.WebSockets
                 var request = new HttpRequestMessage(HttpMethod.Get, uri);
                 if (options._requestHeaders?.Count > 0) // use field to avoid lazily initializing the collection
                 {
-                    foreach (string? key in options.RequestHeaders) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
+                    foreach (string key in options.RequestHeaders)
                     {
-                        request.Headers.TryAddWithoutValidation(key!, options.RequestHeaders[key!]);
+                        request.Headers.TryAddWithoutValidation(key, options.RequestHeaders[key]);
                     }
                 }
 
@@ -247,7 +247,10 @@ namespace System.Net.WebSockets
             }
         }
 
+        /// <summary>Adds the necessary headers for the web socket request.</summary>
+        /// <param name="request">The request to which the headers should be added.</param>
         /// <param name="secKey">The generated security key to send in the Sec-WebSocket-Key header.</param>
+        /// <param name="options">The options controlling the request.</param>
         private static void AddWebSocketHeaders(HttpRequestMessage request, string secKey, ClientWebSocketOptions options)
         {
             request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);

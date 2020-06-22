@@ -16,11 +16,11 @@ namespace Microsoft.Extensions.DependencyModel
         {
             if (string.IsNullOrEmpty(assemblyName))
             {
-                throw new ArgumentException(nameof(assemblyName));
+                throw new ArgumentException(null, nameof(assemblyName));
             }
             if (string.IsNullOrEmpty(path))
             {
-                throw new ArgumentException(nameof(path));
+                throw new ArgumentException(null, nameof(path));
             }
             _assemblyName = assemblyName;
             Path = path;
@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         public static RuntimeAssembly Create(string path)
         {
-            var assemblyName = System.IO.Path.GetFileNameWithoutExtension(path);
+            string assemblyName = System.IO.Path.GetFileNameWithoutExtension(path);
             if (assemblyName == null)
             {
                 throw new ArgumentException($"Provided path has empty file name '{path}'", nameof(path));

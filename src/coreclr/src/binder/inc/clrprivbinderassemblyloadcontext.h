@@ -59,11 +59,6 @@ public:
         return &m_appContext;
     }
 
-    inline INT_PTR GetManagedAssemblyLoadContext()
-    {
-        return m_ptrManagedAssemblyLoadContext;
-    }
-
     HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage,
                               /* in */ BOOL fIsNativeImage,
                               /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
@@ -78,7 +73,11 @@ private:
 
     CLRPrivBinderCoreCLR *m_pTPABinder;
 
-    INT_PTR m_ptrManagedAssemblyLoadContext;
+    // A strong GC handle to the managed AssemblyLoadContext. This handle is set when the unload of the AssemblyLoadContext is initiated
+    // to keep the managed AssemblyLoadContext alive until the unload is finished.
+    // We still keep the weak handle pointing to the same managed AssemblyLoadContext so that native code can use the handle above 
+    // to refer to it during the whole lifetime of the AssemblyLoadContext.
+    INT_PTR m_ptrManagedStrongAssemblyLoadContext;
 
     LoaderAllocator* m_pAssemblyLoaderAllocator;
     void* m_loaderAllocatorHandle;

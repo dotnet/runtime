@@ -1636,6 +1636,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_PendingSend_SendsReset(bool waitForData)
         {
             var cts = new CancellationTokenSource();
+            var rstReceived = new TaskCompletionSource<bool>();
 
             string content = new string('*', 300);
             var stream = new CustomContent.SlowTestStream(Encoding.UTF8.GetBytes(content), null, count: 60);
@@ -1649,8 +1650,8 @@ namespace System.Net.Http.Functional.Tests
 
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.SendAsync(request, cts.Token));
 
-                    // Delay for a bit to ensure that the RST_STREAM for the previous request is sent before the next request starts.
-                    await Task.Delay(2000);
+                    // Wait until the RST_STREAM for the previous request is received before the next request starts.
+                    await rstReceived.Task.TimeoutAfter(TimeSpan.FromSeconds(60));
 
                     // Send another request to verify that connection is still functional.
                     request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -1678,7 +1679,9 @@ namespace System.Net.Http.Functional.Tests
                     frameCount++;
                  } while (frame.Type != FrameType.RstStream);
 
-                 Assert.Equal(1, frame.StreamId);
+                Assert.Equal(1, frame.StreamId);
+
+                rstReceived.SetResult(true);
 
                 frame = null;
                 (streamId, requestData) = await connection.ReadAndParseRequestHeaderAsync();
@@ -1702,7 +1705,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_PendingReceive_SendsReset(bool doRead)
         {
             var cts = new CancellationTokenSource();
-            var doCancel = new TaskCompletionSource<bool>();
+            var doCancel = new TaskCompletionSource();
             HttpResponseMessage response = null;
 
             using (HttpClient client = CreateHttpClient())
@@ -1723,7 +1726,7 @@ namespace System.Net.Http.Functional.Tests
                             _ = await stream.ReadAsync(buffer, cts.Token);
                         }
 
-                        doCancel.SetResult(true);
+                        doCancel.SetResult();
                         _output.WriteLine($"{DateTime.Now} cancellation requested.");
 
                         // Keep reading response.
@@ -1773,7 +1776,7 @@ namespace System.Net.Http.Functional.Tests
             // test for https://github.com/dotnet/runtime/issues/30187
             var throwingContent = new ThrowingContent(() => new InvalidOperationException());
 
-            var tcs = new TaskCompletionSource<bool>();
+            var tcs = new TaskCompletionSource();
             await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -1790,7 +1793,7 @@ namespace System.Net.Http.Functional.Tests
             async server =>
             {
                 await server.EstablishConnectionAsync();
-                tcs.SetResult(false);
+                tcs.SetResult();
             });
         }
 
@@ -1802,7 +1805,7 @@ namespace System.Net.Http.Functional.Tests
 
             var throwingContent = new ThrowingContent(() => new CustomException());
 
-            var tcs = new TaskCompletionSource<bool>();
+            var tcs = new TaskCompletionSource();
             await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -1818,7 +1821,7 @@ namespace System.Net.Http.Functional.Tests
             async server =>
             {
                 await server.EstablishConnectionAsync();
-                tcs.SetResult(false);
+                tcs.SetResult();
             });
         }
 
@@ -1862,7 +1865,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31220")]
         public async Task PostAsyncExpect100Continue_NonSuccessResponse_RequestBodyNotSent()
         {
             string responseContent = "no no!";
@@ -1870,8 +1872,9 @@ namespace System.Net.Http.Functional.Tests
             await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
             {
                 using (var handler = new SocketsHttpHandler())
-                using (HttpClient client = CreateHttpClient())
+                using (HttpClient client = CreateHttpClient(handler))
                 {
+                    TestHelper.EnableUnencryptedHttp2IfNecessary(handler);
                     handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
                     // Increase default Expect: 100-continue timeout to ensure that we don't accidentally fire the timer and send the request body.
                     handler.Expect100ContinueTimeout = TimeSpan.FromSeconds(300);
@@ -1899,7 +1902,7 @@ namespace System.Net.Http.Functional.Tests
                 await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(responseContent));
 
                 // Client should send empty request body
-                byte[] requestBody = await connection.ReadBodyAsync();
+                byte[] requestBody = await connection.ReadBodyAsync(expectEndOfStream:true);
                 Assert.Null(requestBody);
 
                 await connection.ShutdownIgnoringErrorsAsync(streamId);
@@ -1909,7 +1912,7 @@ namespace System.Net.Http.Functional.Tests
         class DuplexContent : HttpContent
         {
             private TaskCompletionSource<Stream> _waitForStream;
-            private TaskCompletionSource<bool> _waitForCompletion;
+            private TaskCompletionSource _waitForCompletion;
 
             public DuplexContent()
             {
@@ -1924,7 +1927,7 @@ namespace System.Net.Http.Functional.Tests
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {
-                _waitForCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _waitForCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 _waitForStream.SetResult(stream);
                 await _waitForCompletion.Task;
             }
@@ -1936,14 +1939,12 @@ namespace System.Net.Http.Functional.Tests
 
             public void Complete()
             {
-                _waitForCompletion.SetResult(true);
-                _waitForCompletion = null;
+                _waitForCompletion.SetResult();
             }
 
             public void Fail(Exception e)
             {
                 _waitForCompletion.SetException(e);
-                _waitForCompletion = null;
             }
         }
 
@@ -2817,8 +2818,8 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Waits for seconds for events that shouldn't happen")]
         public async Task SendAsync_StreamContentRequestBody_WaitsForRequestBodyToComplete()
         {
-            var waitToSendRequestBody = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var sendAsyncCompleted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var waitToSendRequestBody = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var sendAsyncCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             // Create a content stream that will wait for a signal before it dribbles out some request content.
             int sent = 0;
@@ -2845,11 +2846,11 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(sendAsyncTask.IsCompleted);
 
                     // Now let the request content go.  The SendAsync task should complete quickly.
-                    waitToSendRequestBody.SetResult(true);
+                    waitToSendRequestBody.SetResult();
                     using (HttpResponseMessage r = await sendAsyncTask)
                     {
                         // Wake up the server.
-                        sendAsyncCompleted.SetResult(true);
+                        sendAsyncCompleted.SetResult();
                     }
                 }
             },

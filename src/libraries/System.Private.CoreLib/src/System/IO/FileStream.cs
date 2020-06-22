@@ -378,7 +378,7 @@ namespace System.IO
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             if (IsClosed)
@@ -505,7 +505,7 @@ namespace System.IO
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
             }
 
             if (IsClosed)

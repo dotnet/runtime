@@ -20,6 +20,9 @@ namespace System.Text
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public readonly struct Rune : IComparable<Rune>, IEquatable<Rune>
     {
+        internal const int MaxUtf16CharsPerRune = 2; // supplementary plane code points are encoded as 2 UTF-16 code units
+        internal const int MaxUtf8BytesPerRune = 4; // supplementary plane code points are encoded as 4 UTF-8 code units
+
         private const char HighSurrogateStart = '\ud800';
         private const char LowSurrogateStart = '\udc00';
         private const int HighSurrogateRange = 0x3FF;
@@ -163,7 +166,15 @@ namespace System.Text
         /// <remarks>
         /// The return value will be 1 or 2.
         /// </remarks>
-        public int Utf16SequenceLength => UnicodeUtility.GetUtf16SequenceLength(_value);
+        public int Utf16SequenceLength
+        {
+            get
+            {
+                int codeUnitCount = UnicodeUtility.GetUtf16SequenceLength(_value);
+                Debug.Assert(codeUnitCount > 0 && codeUnitCount <= MaxUtf16CharsPerRune);
+                return codeUnitCount;
+            }
+        }
 
         /// <summary>
         /// Returns the length in code units of the
@@ -172,7 +183,15 @@ namespace System.Text
         /// <remarks>
         /// The return value will be 1 through 4, inclusive.
         /// </remarks>
-        public int Utf8SequenceLength => UnicodeUtility.GetUtf8SequenceLength(_value);
+        public int Utf8SequenceLength
+        {
+            get
+            {
+                int codeUnitCount = UnicodeUtility.GetUtf8SequenceLength(_value);
+                Debug.Assert(codeUnitCount > 0 && codeUnitCount <= MaxUtf8BytesPerRune);
+                return codeUnitCount;
+            }
+        }
 
         /// <summary>
         /// Returns the Unicode scalar value as an integer.
@@ -185,8 +204,8 @@ namespace System.Text
             Debug.Assert(!GlobalizationMode.Invariant, "This should've been checked by the caller.");
             Debug.Assert(textInfo != null, "This should've been checked by the caller.");
 
-            Span<char> original = stackalloc char[2]; // worst case scenario = 2 code units (for a surrogate pair)
-            Span<char> modified = stackalloc char[2]; // case change should preserve UTF-16 code unit count
+            Span<char> original = stackalloc char[MaxUtf16CharsPerRune];
+            Span<char> modified = stackalloc char[MaxUtf16CharsPerRune];
 
             int charCount = rune.EncodeToUtf16(original);
             original = original.Slice(0, charCount);
@@ -220,8 +239,8 @@ namespace System.Text
             Debug.Assert(!GlobalizationMode.Invariant, "This should've been checked by the caller.");
             Debug.Assert(culture != null, "This should've been checked by the caller.");
 
-            Span<char> original = stackalloc char[2]; // worst case scenario = 2 code units (for a surrogate pair)
-            Span<char> modified = stackalloc char[2]; // case change should preserve UTF-16 code unit count
+            Span<char> original = stackalloc char[MaxUtf16CharsPerRune]; // worst case scenario = 2 code units (for a surrogate pair)
+            Span<char> modified = stackalloc char[MaxUtf16CharsPerRune]; // case change should preserve UTF-16 code unit count
 
             int charCount = rune.EncodeToUtf16(original);
             original = original.Slice(0, charCount);
@@ -885,7 +904,7 @@ namespace System.Text
             }
             else
             {
-                Span<char> buffer = stackalloc char[2];
+                Span<char> buffer = stackalloc char[MaxUtf16CharsPerRune];
                 UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar(_value, out buffer[0], out buffer[1]);
                 return buffer.ToString();
             }

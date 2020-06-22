@@ -16,7 +16,7 @@ namespace System.IO.Tests
         public static void Ctor_Empty()
         {
             var exception = new PathTooLongException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_PATHTOOLONG, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: HResults.COR_E_PATHTOOLONG, validateMessage: false);
         }
 
         [Fact]
@@ -24,7 +24,7 @@ namespace System.IO.Tests
         {
             string message = "This path is too long to hike in a single day.";
             var exception = new PathTooLongException(message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_PATHTOOLONG, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: HResults.COR_E_PATHTOOLONG, message: message);
         }
 
         [Fact]
@@ -33,7 +33,7 @@ namespace System.IO.Tests
             string message = "This path is too long to hike in a single day.";
             var innerException = new Exception("Inner exception");
             var exception = new PathTooLongException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_PATHTOOLONG, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: HResults.COR_E_PATHTOOLONG, innerException: innerException, message: message);
         }
     }
 }

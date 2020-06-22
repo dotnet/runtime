@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>netcoreapp3.0;netstandard2.1;netstandard2.0;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.1;netstandard2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -22,26 +22,23 @@
     <Compile Include="System\Text\Unicode\UnicodeRanges.cs" />
     <Compile Include="System\Text\Unicode\UnicodeRanges.generated.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
     <Compile Include="System\Text\Encodings\Web\Sse2Helper.cs" />
     <Compile Include="System\Text\Encodings\Web\Ssse3Helper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs">
-      <Link>System\Text\UnicodeDebug.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs">
-      <Link>System\Text\UnicodeUtility.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
-    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs"
+             Link="System\Text\UnicodeDebug.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs"
+             Link="System\Text\UnicodeUtility.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />

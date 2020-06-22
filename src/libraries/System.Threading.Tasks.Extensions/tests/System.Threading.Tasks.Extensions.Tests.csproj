@@ -9,14 +9,11 @@
     <Compile Include="AsyncValueTaskMethodBuilderTests.cs" />
     <Compile Include="ManualResetValueTaskSourceTests.cs" />
     <Compile Include="ValueTaskTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs">
-      <Link>Common\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Threading\Tasks\Sources\ManualResetValueTaskSourceFactory.cs">
-      <Link>Common\System\Threading\Tasks\Sources\ManualResetValueTaskSourceFactory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Threading\Tasks\GetStateMachineData.cs">
-      <Link>Common\System\Threading\Tasks\GetStateMachineData.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs"
+             Link="Common\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\Sources\ManualResetValueTaskSourceFactory.cs"
+             Link="Common\System\Threading\Tasks\Sources\ManualResetValueTaskSourceFactory.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\GetStateMachineData.cs"
+             Link="Common\System\Threading\Tasks\GetStateMachineData.cs" />
   </ItemGroup>
 </Project>

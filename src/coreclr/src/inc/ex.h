@@ -278,17 +278,13 @@ protected:
 };
 
 #if 1
-template <typename T>
-inline void Exception__Delete(T* pvMemory);
 
-template <>
-inline void Exception__Delete<Exception>(Exception* pvMemory)
+inline void Exception__Delete(Exception* pvMemory)
 {
   Exception::Delete(pvMemory);
 }
 
-NEW_WRAPPER_TEMPLATE1(ExceptionHolderTemplate, Exception__Delete<_TYPE>);
-typedef ExceptionHolderTemplate<Exception> ExceptionHolder;
+using ExceptionHolder = SpecializedWrapper<Exception, Exception__Delete>;
 #else
 
 //------------------------------------------------------------------------------
@@ -710,92 +706,16 @@ private:
         EX_RETHROW;                                                     \
     }                                                                   \
 
-// Don't use this - use RethrowCorruptingExceptions (see below) instead.
 #define SwallowAllExceptions ;
 
-//////////////////////////////////////////////////////////////////////
-//
-// Corrupted State Exception Support
-//
-/////////////////////////////////////////////////////////////////////
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-
-#define CORRUPTING_EXCEPTIONS_ONLY(expr) expr
-#define COMMA_CORRUPTING_EXCEPTIONS_ONLY(expr) ,expr
-
-// EX_END_CATCH has been modified to not swallow Corrupting Exceptions (CE) when one of the
-// following arguments are passed to it:
-//
-// 1) RethrowTerminalExceptions - rethrows both terminal and corrupting exceptions
-// 2) RethrowCorruptingExceptions - swallows all exceptions exception corrupting exceptions. This SHOULD BE USED instead of SwallowAllExceptions.
-// 3) RethrowTerminalExceptionsEx - same as (1) but rethrow of CE can be controlled via a condition.
-// 4) RethrowCorruptingExceptionsEx - same as (2) but rethrow of CE can be controlled via a condition.
-//
-// By default, if a CE is encountered when one of the above policies are applied, the runtime will
-// ensure that the CE propagates up the stack and not get swallowed unless the developer chooses to override the behaviour.
-// This can be done by using the "Ex" versions above that take a conditional which evaluates to a BOOL. In such a case,
-// the CE will *only* be rethrown if the conditional evalutes to TRUE. For examples, refer to COMToCLRWorker or
-// DispatchInfo::InvokeMember implementations.
-//
-// SET_CE_RETHROW_FLAG_FOR_EX_CATCH macros helps evaluate if the CE is to be rethrown or not. This has been redefined in
-// Clrex.h to add the condition of evaluating the throwable as well (which is not available outside the VM folder).
-//
-// Passing FALSE as the second argument to IsProcessCorruptedStateException implies that SET_CE_RETHROW_FLAG_FOR_EX_CATCH
-// will ensure that we dont rethrow SO and allow EX_ENDTRY to SO specific processing. If none is done, then EX_ENDTRY will
-// rethrow SO. By that time stack has been reclaimed and thus, throwing SO will be safe.
-//
-// We also check the global override flag incase it has been set to force pre-V4 beahviour. "0" implies it has not
-// been overriden.
-#define SET_CE_RETHROW_FLAG_FOR_EX_CATCH(expr)      ((((expr) == TRUE) && \
-                                                      (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_legacyCorruptedStateExceptionsPolicy) == 0) && \
-                                                      IsProcessCorruptedStateException(GetCurrentExceptionCode(), FALSE)))
-
-// This rethrow policy can be used in EX_END_CATCH to swallow all exceptions except the corrupting ones.
-// This macro can be used to rethrow the CE based upon a BOOL condition.
-#define RethrowCorruptingExceptionsEx(expr)                              \
-    if (SET_CE_RETHROW_FLAG_FOR_EX_CATCH(expr))                          \
-    {                                                                    \
-        STATIC_CONTRACT_THROWS_TERMINAL;                                 \
-        EX_RETHROW;                                                      \
-    }
-
-#define RethrowCorruptingExceptionsExAndHookRethrow(shouldRethrowExpr, aboutToRethrowExpr) \
-    if (SET_CE_RETHROW_FLAG_FOR_EX_CATCH(shouldRethrowExpr))             \
-    {                                                                    \
-        STATIC_CONTRACT_THROWS_TERMINAL;                                 \
-        aboutToRethrowExpr;                                              \
-        EX_RETHROW;                                                      \
-    }
-
-#else // !FEATURE_CORRUPTING_EXCEPTIONS
-
-#define CORRUPTING_EXCEPTIONS_ONLY(expr)
-#define COMMA_CORRUPTING_EXCEPTIONS_ONLY(expr)
-
-// When we dont have support for CE, just map it to SwallowAllExceptions
-#define RethrowCorruptingExceptionsEx(expr) SwallowAllExceptions
-#define RethrowCorruptingExceptionsExAndHookRethrow(shouldRethrowExpr, aboutToRethrowExpr) SwallowAllExceptions
-#define SET_CE_RETHROW_FLAG_FOR_EX_CATCH(expr) !TRUE
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-// Map to RethrowCorruptingExceptionsEx so that it does the "right" thing
-#define RethrowCorruptingExceptions RethrowCorruptingExceptionsEx(TRUE)
-
-// This macro can be used to rethrow the CE based upon a BOOL condition. It will continue to rethrow terminal
-// exceptions unconditionally.
-#define RethrowTerminalExceptionsEx(expr)                               \
-    if (GET_EXCEPTION()->IsTerminal() ||                                \
-        SET_CE_RETHROW_FLAG_FOR_EX_CATCH(expr))                         \
+// When applied to EX_END_CATCH, this policy will always rethrow Terminal exceptions if they are
+// encountered.
+#define RethrowTerminalExceptions                                       \
+    if (GET_EXCEPTION()->IsTerminal())                                  \
     {                                                                   \
         STATIC_CONTRACT_THROWS_TERMINAL;                                \
         EX_RETHROW;                                                     \
     }                                                                   \
-
-
-// When applied to EX_END_CATCH, this policy will always rethrow Terminal and Corrupting exceptions if they are
-// encountered.
-#define RethrowTerminalExceptions  RethrowTerminalExceptionsEx(TRUE)
 
 // Special define to be used in EEStartup that will also check for VM initialization before
 // commencing on a path that may use the managed thread object.

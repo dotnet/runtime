@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
@@ -28,9 +29,7 @@ namespace System.Security.Cryptography.Pkcs
             if (algorithmParameters?.Length > 0)
             {
                 // Read to ensure that there is precisely one legally encoded value.
-                AsnReader reader = new AsnReader(algorithmParameters.Value, AsnEncodingRules.BER);
-                reader.ReadEncodedValue();
-                reader.ThrowIfNotEmpty();
+                PkcsHelpers.EnsureSingleBerValue(algorithmParameters.Value.Span);
             }
 
             AlgorithmId = algorithmId;
@@ -67,28 +66,33 @@ namespace System.Security.Cryptography.Pkcs
             out int bytesRead,
             bool skipCopy = false)
         {
-            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
-            // By using the default/empty ReadOnlyMemory value, the Decode method will have to
-            // make copies of the data when assigning ReadOnlyMemory fields.
-            ReadOnlyMemory<byte> rebind = skipCopy ? source : default;
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
+                // By using the default/empty ReadOnlyMemory value, the Decode method will have to
+                // make copies of the data when assigning ReadOnlyMemory fields.
+                ReadOnlyMemory<byte> rebind = skipCopy ? source : default;
 
-            int localRead = reader.PeekEncodedValue().Length;
-            PrivateKeyInfoAsn.Decode(ref reader, rebind, out PrivateKeyInfoAsn privateKeyInfo);
-            bytesRead = localRead;
+                int localRead = reader.PeekEncodedValue().Length;
+                PrivateKeyInfoAsn.Decode(ref reader, rebind, out PrivateKeyInfoAsn privateKeyInfo);
+                bytesRead = localRead;
 
-            return new Pkcs8PrivateKeyInfo(
-                privateKeyInfo.PrivateKeyAlgorithm.Algorithm,
-                privateKeyInfo.PrivateKeyAlgorithm.Parameters,
-                privateKeyInfo.PrivateKey,
-                SignerInfo.MakeAttributeCollection(privateKeyInfo.Attributes));
+                return new Pkcs8PrivateKeyInfo(
+                    new Oid(privateKeyInfo.PrivateKeyAlgorithm.Algorithm, null),
+                    privateKeyInfo.PrivateKeyAlgorithm.Parameters,
+                    privateKeyInfo.PrivateKey,
+                    SignerInfo.MakeAttributeCollection(privateKeyInfo.Attributes));
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         public byte[] Encode()
         {
-            using (AsnWriter writer = WritePkcs8())
-            {
-                return writer.Encode();
-            }
+            AsnWriter writer = WritePkcs8();
+            return writer.Encode();
         }
 
         public byte[] Encrypt(ReadOnlySpan<char> password, PbeParameters pbeParameters)
@@ -101,8 +105,8 @@ namespace System.Security.Cryptography.Pkcs
                 password,
                 ReadOnlySpan<byte>.Empty);
 
-            using (AsnWriter pkcs8 = WritePkcs8())
-            using (AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(password, pkcs8, pbeParameters))
+            AsnWriter pkcs8 = WritePkcs8();
+            AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(password, pkcs8, pbeParameters);
             {
                 return writer.Encode();
             }
@@ -118,19 +122,15 @@ namespace System.Security.Cryptography.Pkcs
                 ReadOnlySpan<char>.Empty,
                 passwordBytes);
 
-            using (AsnWriter pkcs8 = WritePkcs8())
-            using (AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(passwordBytes, pkcs8, pbeParameters))
-            {
-                return writer.Encode();
-            }
+            AsnWriter pkcs8 = WritePkcs8();
+            AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(passwordBytes, pkcs8, pbeParameters);
+            return writer.Encode();
         }
 
         public bool TryEncode(Span<byte> destination, out int bytesWritten)
         {
-            using (AsnWriter writer = WritePkcs8())
-            {
-                return writer.TryEncode(destination, out bytesWritten);
-            }
+            AsnWriter writer = WritePkcs8();
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         public bool TryEncrypt(
@@ -147,11 +147,9 @@ namespace System.Security.Cryptography.Pkcs
                 password,
                 ReadOnlySpan<byte>.Empty);
 
-            using (AsnWriter pkcs8 = WritePkcs8())
-            using (AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(password, pkcs8, pbeParameters))
-            {
-                return writer.TryEncode(destination, out bytesWritten);
-            }
+            AsnWriter pkcs8 = WritePkcs8();
+            AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(password, pkcs8, pbeParameters);
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         public bool TryEncrypt(
@@ -168,11 +166,9 @@ namespace System.Security.Cryptography.Pkcs
                 ReadOnlySpan<char>.Empty,
                 passwordBytes);
 
-            using (AsnWriter pkcs8 = WritePkcs8())
-            using (AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(passwordBytes, pkcs8, pbeParameters))
-            {
-                return writer.TryEncode(destination, out bytesWritten);
-            }
+            AsnWriter pkcs8 = WritePkcs8();
+            AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(passwordBytes, pkcs8, pbeParameters);
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         public static Pkcs8PrivateKeyInfo DecryptAndDecode(
@@ -245,7 +241,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 PrivateKeyAlgorithm =
                 {
-                    Algorithm = AlgorithmId,
+                    Algorithm = AlgorithmId.Value!,
                 },
                 PrivateKey = PrivateKeyBytes,
             };

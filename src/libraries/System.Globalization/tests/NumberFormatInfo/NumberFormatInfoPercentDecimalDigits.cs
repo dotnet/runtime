@@ -2,16 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class NumberFormatInfoPercentDecimalDigits
     {
-        [Fact]
-        public void PercentDecimalDigits_GetInvariantInfo_ReturnsExpected()
+        public static IEnumerable<object[]> PercentDecimalDigits_TestData()
         {
-            Assert.Equal(2, NumberFormatInfo.InvariantInfo.PercentDecimalDigits);
+            yield return new object[] { NumberFormatInfo.InvariantInfo, 2, 2 };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, 2, 3 };
+        }
+
+        [Theory]
+        [MemberData(nameof(PercentDecimalDigits_TestData))]
+        public void PercentDecimalDigits_Get_ReturnsExpected(NumberFormatInfo format, int expectedNls, int expectedIcu)
+        {
+            int expected = PlatformDetection.IsNlsGlobalization ? expectedNls : expectedIcu;
+            Assert.Equal(expected, format.PercentDecimalDigits);
         }
 
         [Theory]

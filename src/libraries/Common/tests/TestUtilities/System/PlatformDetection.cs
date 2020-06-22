@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Security;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Microsoft.Win32;
@@ -21,8 +22,14 @@ namespace System
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
+        public static bool IsNotMonoInterpreter => !IsMonoInterpreter;
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
+        public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
+        public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
+        public static bool IsIllumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
+        public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
+        public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -35,6 +42,7 @@ namespace System
         public static bool Is32BitProcess => IntPtr.Size == 4;
         public static bool IsNotWindows => !IsWindows;
 
+        public static bool IsThreadingSupported => !IsBrowser;
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
         public static bool IsDrawingSupported
@@ -62,6 +70,7 @@ namespace System
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsSsl3 => GetSsl3Support();
+        public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
 #if NETCOREAPP
         public static bool IsReflectionEmitSupported = RuntimeFeature.IsDynamicCodeSupported;
@@ -107,11 +116,13 @@ namespace System
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
         // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
+        public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || IsIllumos || IsSolaris;
+
         public static bool SupportsAlpn => (IsWindows && !IsWindows7) ||
-            ((!IsOSX && !IsWindows) &&
+            (IsOpenSslSupported &&
             (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));
 
-        public static bool SupportsClientAlpn => SupportsAlpn || (IsOSX && PlatformDetection.OSXVersion > new Version(10, 12));
+        public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsiOS || IstvOS;
 
         // OpenSSL 1.1.1 and above.
         public static bool SupportsTls13 => GetTls13Support();
@@ -140,7 +151,7 @@ namespace System
             }
             else if (IsOSX)
             {
-                return "OSX Version=" + m_osxProductVersion.Value.ToString();
+                return "OSX Version=" + Environment.OSVersion.Version.ToString();
             }
             else
             {
@@ -148,6 +159,35 @@ namespace System
 
                 return $"Distro={v.Id} VersionId={v.VersionId}";
             }
+        }
+
+        private static Lazy<Version> m_icuVersion = new Lazy<Version>(GetICUVersion);
+        public static Version ICUVersion => m_icuVersion.Value;
+
+        public static bool IsIcuGlobalization => ICUVersion > new Version(0,0,0,0);
+        public static bool IsNlsGlobalization => !IsIcuGlobalization;
+
+        private static Version GetICUVersion()
+        {
+            int version = 0;
+            try
+            {
+                Type interopGlobalization = Type.GetType("Interop+Globalization");
+                if (interopGlobalization != null)
+                {
+                    MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
+                    if (methodInfo != null)
+                    {
+                        version = (int)methodInfo.Invoke(null, null);
+                    }
+                }
+            }
+            catch { }
+
+            return new Version(version >> 24,
+                              (version >> 16) & 0xFF,
+                              (version >> 8) & 0xFF,
+                              version & 0xFF);
         }
 
         private static bool GetIsInContainer()
@@ -230,16 +270,18 @@ namespace System
                 // assume no if key is missing or on error.
                 return false;
             }
-            else if (IsOSX)
+            else if (IsOSX || IsiOS || IstvOS)
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/1979")]
                 return false;
             }
-            else
+            else if (IsOpenSslSupported)
             {
-                // Covers Linux and FreeBSD
+                // Covers Linux, FreeBSD, illumos and Solaris
                 return OpenSslVersion >= new Version(1,1,1);
             }
+
+            return false;
         }
 
         private static bool GetIsRunningOnMonoInterpreter()

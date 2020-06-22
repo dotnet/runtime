@@ -2,18 +2,82 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
-{
-    internal partial class CborReader
-    {
-        public void SkipValue()
-        {
-            int depth = 0;
+#nullable enable
+using System.Diagnostics;
 
-            do
+namespace System.Formats.Cbor
+{
+    public partial class CborReader
+    {
+        /// <summary>
+        ///   Reads the contents of the next value, discarding the result and advancing the reader.
+        /// </summary>
+        /// <param name="disableConformanceModeChecks">
+        ///   Disable conformance mode validation for the skipped value,
+        ///   equivalent to using <see cref="CborConformanceMode.Lax"/>.
+        /// </param>
+        /// <exception cref="InvalidOperationException">
+        ///   the reader is not at the start of new value.
+        /// </exception>
+        /// <exception cref="CborContentException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
+        /// </exception>
+        public void SkipValue(bool disableConformanceModeChecks = false)
+        {
+            SkipToAncestor(0, disableConformanceModeChecks);
+        }
+
+        /// <summary>
+        ///   Reads the remaining contents of the current value context,
+        ///   discarding results and advancing the reader to the next value
+        ///   in the parent context.
+        /// </summary>
+        /// <param name="disableConformanceModeChecks">
+        ///   Disable conformance mode validation for the skipped values,
+        ///   equivalent to using <see cref="CborConformanceMode.Lax"/>.
+        /// </param>
+        /// <exception cref="InvalidOperationException">
+        ///   the reader is at the root context
+        /// </exception>
+        /// <exception cref="CborContentException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
+        /// </exception>
+        public void SkipToParent(bool disableConformanceModeChecks = false)
+        {
+            if (_currentMajorType is null)
             {
-                SkipNextNode(ref depth);
-            } while (depth > 0);
+                throw new InvalidOperationException(SR.Cbor_Reader_IsAtRootContext);
+            }
+
+            SkipToAncestor(1, disableConformanceModeChecks);
+        }
+
+        private void SkipToAncestor(int depth, bool disableConformanceModeChecks)
+        {
+            Debug.Assert(0 <= depth && depth <= CurrentDepth);
+            Checkpoint checkpoint = CreateCheckpoint();
+            _isConformanceModeCheckEnabled = !disableConformanceModeChecks;
+
+            try
+            {
+                do
+                {
+                    SkipNextNode(ref depth);
+                } while (depth > 0);
+            }
+            catch
+            {
+                RestoreCheckpoint(in checkpoint);
+                throw;
+            }
+            finally
+            {
+                _isConformanceModeCheckEnabled = true;
+            }
         }
 
         private void SkipNextNode(ref int depth)
@@ -21,7 +85,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             CborReaderState state;
 
             // peek, skipping any tags we might encounter
-            while ((state = Peek()) == CborReaderState.Tag)
+            while ((state = PeekStateCore()) == CborReaderState.Tag)
             {
                 ReadTag();
             }
@@ -33,7 +97,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     break;
 
                 case CborReaderState.NegativeInteger:
-                    ReadCborNegativeIntegerEncoding();
+                    ReadCborNegativeIntegerRepresentation();
                     break;
 
                 case CborReaderState.ByteString:
@@ -44,25 +108,25 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     SkipString(type: CborMajorType.TextString);
                     break;
 
-                case CborReaderState.StartByteString:
-                    ReadStartByteStringIndefiniteLength();
+                case CborReaderState.StartIndefiniteLengthByteString:
+                    ReadStartIndefiniteLengthByteString();
                     depth++;
                     break;
 
-                case CborReaderState.EndByteString:
+                case CborReaderState.EndIndefiniteLengthByteString:
                     ValidatePop(state, depth);
-                    ReadEndByteStringIndefiniteLength();
+                    ReadEndIndefiniteLengthByteString();
                     depth--;
                     break;
 
-                case CborReaderState.StartTextString:
-                    ReadStartTextStringIndefiniteLength();
+                case CborReaderState.StartIndefiniteLengthTextString:
+                    ReadStartIndefiniteLengthTextString();
                     depth++;
                     break;
 
-                case CborReaderState.EndTextString:
+                case CborReaderState.EndIndefiniteLengthTextString:
                     ValidatePop(state, depth);
-                    ReadEndTextStringIndefiniteLength();
+                    ReadEndIndefiniteLengthTextString();
                     depth--;
                     break;
 
@@ -96,17 +160,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 case CborReaderState.Null:
                 case CborReaderState.Boolean:
-                case CborReaderState.SpecialValue:
-                    ReadSpecialValue();
+                case CborReaderState.SimpleValue:
+                    ReadSimpleValue();
                     break;
 
-                case CborReaderState.EndOfData:
-                    throw new FormatException("Unexpected end of buffer.");
-                case CborReaderState.FormatError:
-                    throw new FormatException("Invalid CBOR format.");
-
                 default:
-                    throw new InvalidOperationException($"Unexpected CBOR reader state {state}.");
+                    throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_Skip_InvalidState, state));
             }
 
             // guards against cases where the caller attempts to skip when reader is not positioned at the start of a value
@@ -114,7 +173,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 if (depth == 0)
                 {
-                    throw new InvalidOperationException($"Reader state {state} is not at start of a data item.");
+                    throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_Skip_InvalidState, state));
                 }
             }
         }

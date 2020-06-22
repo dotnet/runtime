@@ -46,7 +46,6 @@ public:
     //====================================================================
     static FCDECL2(Object *, GetExceptionForHR, INT32 errorCode, LPVOID errorInfo);
     static FCDECL1(int, GetHRForException, Object* eUNSAFE);
-    static FCDECL1(int, GetHRForException_WinRT, Object* eUNSAFE);
 
     static FCDECL2(UINT32, SizeOfClass, ReflectClassBaseObject* refClass, CLR_BOOL throwIfNotMarshalable);
 
@@ -70,16 +69,6 @@ public:
     static FCDECL1(LPVOID, GetFunctionPointerForDelegateInternal, Object* refDelegateUNSAFE);
 
 #ifdef FEATURE_COMINTEROP
-    //====================================================================
-    // map GUID to Type
-    //====================================================================
-    static FCDECL1(Object*, GetLoadedTypeForGUID, GUID* pGuid);
-
-    //====================================================================
-    // map Type to ITypeInfo*
-    //====================================================================
-    static FCDECL1(ITypeInfo*, GetITypeInfoForType, ReflectClassBaseObject* refClassUNSAFE);
-
     //====================================================================
     // return the IUnknown* for an Object
     //====================================================================
@@ -200,11 +189,6 @@ public:
     static FCDECL1(Object*, WrapIUnknownWithComObject, IUnknown* pUnk);
 
     static FCDECL2(void, ChangeWrapperHandleStrength, Object* orefUNSAFE, CLR_BOOL fIsWeak);
-    static FCDECL2(void, InitializeWrapperForWinRT, Object *unsafe_pThis, IUnknown **ppUnk);
-    static FCDECL2(void, InitializeManagedWinRTFactoryObject, Object *unsafe_pThis, ReflectClassBaseObject *unsafe_pType);
-    static FCDECL1(Object *, GetNativeActivationFactory, ReflectClassBaseObject *unsafe_pType);
-    static void QCALLTYPE GetInspectableIIDs(QCall::ObjectHandleOnStack hobj, QCall::ObjectHandleOnStack retArrayGuids);
-
 private:
     static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT);
     static BOOL IsObjectInContext(OBJECTREF *pObj);

@@ -16,7 +16,7 @@ int32_t AppleCryptoNative_EccGenerateKey(
     if (pPublicKey == NULL || pPrivateKey == NULL || pOSStatus == NULL)
         return kErrorBadInput;
 
-    CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(NULL, 2, &kCFTypeDictionaryKeyCallBacks, NULL);
+    CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(NULL, 3, &kCFTypeDictionaryKeyCallBacks, NULL);
 
     CFNumberRef cfKeySizeValue = CFNumberCreate(NULL, kCFNumberIntType, &keySizeBits);
     OSStatus status;

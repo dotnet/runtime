@@ -359,7 +359,7 @@ namespace System.Threading.Tests
             // Returning LockCookie to call Exit on is the fastest implementation because of it works naturally with the RCU pattern.
             // The traditional Enter/Exit lock interface would require thread local storage or some other scheme to reclaim the cookie.
             // Returning LockCookie to call Exit on is the fastest implementation because of it works naturally with the RCU pattern.
-            // The traditional Enter/Exit lock interface would require thread local storage or some other scheme to reclaim the cookie.
+            // The traditional Enter/Exit lock interface would require thread local storage or some other scheme to reclaim the cookie
             public LockCookie Enter()
             {
                 int currentThreadId = Environment.CurrentManagedThreadId;

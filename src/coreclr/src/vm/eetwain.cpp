@@ -5757,7 +5757,7 @@ bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKi
 
     if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
     {
-        // Hijacking of NativeCallable method is not allowed
+        // Hijacking of UnmanagedCallersOnly method is not allowed
         return false;
     }
 

@@ -119,66 +119,70 @@ namespace System.Net.Sockets
 
         internal Task ConnectAsync(EndPoint remoteEP)
         {
-            var tcs = new TaskCompletionSource<bool>(this);
-            BeginConnect(remoteEP, iar =>
+            // Use ValueTaskReceive so the AwaitableSocketAsyncEventArgs can be re-used later.
+            AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref EventArgs.ValueTaskReceive, () => new AwaitableSocketAsyncEventArgs());
+
+            if (!saea.Reserve())
             {
-                var innerTcs = (TaskCompletionSource<bool>)iar.AsyncState!;
-                try
-                {
-                    ((Socket)innerTcs.Task.AsyncState!).EndConnect(iar);
-                    innerTcs.TrySetResult(true);
-                }
-                catch (Exception e) { innerTcs.TrySetException(e); }
-            }, tcs);
-            return tcs.Task;
+                saea = new AwaitableSocketAsyncEventArgs();
+                saea.Reserve();
+            }
+
+            saea.RemoteEndPoint = remoteEP;
+            return saea.ConnectAsync(this).AsTask();
         }
 
         internal Task ConnectAsync(IPAddress address, int port)
-        {
-            var tcs = new TaskCompletionSource<bool>(this);
-            BeginConnect(address, port, iar =>
-            {
-                var innerTcs = (TaskCompletionSource<bool>)iar.AsyncState!;
-                try
-                {
-                    ((Socket)innerTcs.Task.AsyncState!).EndConnect(iar);
-                    innerTcs.TrySetResult(true);
-                }
-                catch (Exception e) { innerTcs.TrySetException(e); }
-            }, tcs);
-            return tcs.Task;
-        }
+            => ConnectAsync(new IPEndPoint(address, port));
 
         internal Task ConnectAsync(IPAddress[] addresses, int port)
         {
-            var tcs = new TaskCompletionSource<bool>(this);
-            BeginConnect(addresses, port, iar =>
+            if (addresses == null)
             {
-                var innerTcs = (TaskCompletionSource<bool>)iar.AsyncState!;
+                throw new ArgumentNullException(nameof(addresses));
+            }
+            if (addresses.Length == 0)
+            {
+                throw new ArgumentException(SR.net_invalidAddressList, nameof(addresses));
+            }
+
+            return DoConnectAsync(addresses, port);
+        }
+
+        private async Task DoConnectAsync(IPAddress[] addresses, int port)
+        {
+            Exception? lastException = null;
+            foreach (IPAddress address in addresses)
+            {
                 try
                 {
-                    ((Socket)innerTcs.Task.AsyncState!).EndConnect(iar);
-                    innerTcs.TrySetResult(true);
+                    await ConnectAsync(address, port).ConfigureAwait(false);
+                    return;
                 }
-                catch (Exception e) { innerTcs.TrySetException(e); }
-            }, tcs);
-            return tcs.Task;
+                catch (Exception ex)
+                {
+                    lastException = ex;
+                }
+            }
+            Debug.Assert(lastException != null);
+            ExceptionDispatchInfo.Throw(lastException);
         }
 
         internal Task ConnectAsync(string host, int port)
         {
-            var tcs = new TaskCompletionSource<bool>(this);
-            BeginConnect(host, port, iar =>
+            if (host == null)
             {
-                var innerTcs = (TaskCompletionSource<bool>)iar.AsyncState!;
-                try
-                {
-                    ((Socket)innerTcs.Task.AsyncState!).EndConnect(iar);
-                    innerTcs.TrySetResult(true);
-                }
-                catch (Exception e) { innerTcs.TrySetException(e); }
-            }, tcs);
-            return tcs.Task;
+                throw new ArgumentNullException(nameof(host));
+            }
+
+            if (IPAddress.TryParse(host, out IPAddress? parsedAddress))
+            {
+                return ConnectAsync(new IPEndPoint(parsedAddress, port));
+            }
+            else
+            {
+                return ConnectAsync(new DnsEndPoint(host, port));
+            }
         }
 
         internal Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool fromNetworkStream)
@@ -191,7 +195,7 @@ namespace System.Net.Sockets
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref EventArgs.ValueTaskReceive, () => new AwaitableSocketAsyncEventArgs());
@@ -340,7 +344,7 @@ namespace System.Net.Sockets
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref EventArgs.ValueTaskSend, () => new AwaitableSocketAsyncEventArgs());
@@ -364,7 +368,7 @@ namespace System.Net.Sockets
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask(Task.FromCanceled(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
             }
 
             AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref EventArgs.ValueTaskSend, () => new AwaitableSocketAsyncEventArgs());
@@ -902,7 +906,7 @@ namespace System.Net.Sockets
 
                 return error == SocketError.Success ?
                     new ValueTask<int>(bytesTransferred) :
-                    new ValueTask<int>(Task.FromException<int>(CreateException(error)));
+                    ValueTask.FromException<int>(CreateException(error));
             }
 
             /// <summary>Initiates a send operation on the associated socket.</summary>
@@ -924,7 +928,7 @@ namespace System.Net.Sockets
 
                 return error == SocketError.Success ?
                     new ValueTask<int>(bytesTransferred) :
-                    new ValueTask<int>(Task.FromException<int>(CreateException(error)));
+                    ValueTask.FromException<int>(CreateException(error));
             }
 
             public ValueTask SendAsyncForNetworkStream(Socket socket, CancellationToken cancellationToken)
@@ -943,7 +947,33 @@ namespace System.Net.Sockets
 
                 return error == SocketError.Success ?
                     default :
-                    new ValueTask(Task.FromException(CreateException(error)));
+                    ValueTask.FromException(CreateException(error));
+            }
+
+            public ValueTask ConnectAsync(Socket socket)
+            {
+                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
+
+                try
+                {
+                    if (socket.ConnectAsync(this))
+                    {
+                        return new ValueTask(this, _token);
+                    }
+                }
+                catch
+                {
+                    Release();
+                    throw;
+                }
+
+                SocketError error = SocketError;
+
+                Release();
+
+                return error == SocketError.Success ?
+                    default :
+                    ValueTask.FromException(CreateException(error));
             }
 
             /// <summary>Gets the status of the operation.</summary>

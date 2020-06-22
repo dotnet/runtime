@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
@@ -259,7 +258,6 @@ namespace System.Collections.Immutable
             /// <param name="start">The starting index within <paramref name="items"/> that should be captured by the node tree.</param>
             /// <param name="length">The number of elements from <paramref name="items"/> that should be captured by the node tree.</param>
             /// <returns>The root of the created node tree.</returns>
-            [Pure]
             internal static Node NodeTreeFromList(IOrderedCollection<T> items, int start, int length)
             {
                 Requires.NotNull(items, nameof(items));
@@ -704,7 +702,6 @@ namespace System.Collections.Immutable
             /// The zero-based index of the first occurrence of <paramref name="item"/> within the entire
             /// <see cref="ImmutableList{T}"/>, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             internal int IndexOf(T item, IEqualityComparer<T>? equalityComparer) => this.IndexOf(item, 0, this.Count, equalityComparer);
 
             /// <summary>
@@ -720,7 +717,6 @@ namespace System.Collections.Immutable
             /// <returns>
             /// <c>true</c> if it is found, <c>false</c> otherwise.
             /// </returns>
-            [Pure]
             internal bool Contains(T item, IEqualityComparer<T> equalityComparer) => Contains(this, item, equalityComparer);
 
             /// <summary>
@@ -748,7 +744,6 @@ namespace System.Collections.Immutable
             /// elements in the <see cref="ImmutableList{T}"/> that starts at <paramref name="index"/> and
             /// contains <paramref name="count"/> number of elements, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             internal int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer)
             {
                 Requires.Range(index >= 0, nameof(index));
@@ -791,7 +786,6 @@ namespace System.Collections.Immutable
             /// in the <see cref="ImmutableList{T}"/> that contains <paramref name="count"/> number of elements
             /// and ends at <paramref name="index"/>, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             internal int LastIndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer)
             {
                 Requires.Range(index >= 0, nameof(index));

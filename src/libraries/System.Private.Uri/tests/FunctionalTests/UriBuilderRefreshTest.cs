@@ -8,7 +8,7 @@ namespace System.PrivateUri.Tests
 {
     public class UriBuilderRefreshTest
     {
-        private static Uri s_starterUri = new Uri("http://user:psw@host:9090/path/file.txt?query#fragment");
+        private static readonly Uri s_starterUri = new Uri("http://user:psw@host:9090/path/file.txt?query#fragment");
 
         [Fact]
         public void UriBuilder_ChangeScheme_Refreshed()
@@ -62,12 +62,12 @@ namespace System.PrivateUri.Tests
         public void UriBuilder_ChangePort_Refreshed()
         {
             UriBuilder builder = new UriBuilder(s_starterUri);
-            Assert.Equal<int>(s_starterUri.Port, builder.Port);
-            Assert.Equal<int>(s_starterUri.Port, builder.Uri.Port);
+            Assert.Equal(s_starterUri.Port, builder.Port);
+            Assert.Equal(s_starterUri.Port, builder.Uri.Port);
             int newValue = 1010;
             builder.Port = newValue;
-            Assert.Equal<int>(newValue, builder.Port);
-            Assert.Equal<int>(newValue, builder.Uri.Port);
+            Assert.Equal(newValue, builder.Port);
+            Assert.Equal(newValue, builder.Uri.Port);
         }
 
         [Fact]

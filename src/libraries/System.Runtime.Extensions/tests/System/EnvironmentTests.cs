@@ -37,7 +37,7 @@ namespace System.Tests
             Assert.Throws<DirectoryNotFoundException>(() => Environment.CurrentDirectory = GetTestFilePath());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CurrentDirectory_SetToValidOtherDirectory()
         {
             RemoteExecutor.Invoke(() =>
@@ -61,7 +61,7 @@ namespace System.Tests
             Assert.Equal(Environment.CurrentManagedThreadId, Environment.CurrentManagedThreadId);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void CurrentManagedThreadId_DifferentForActiveThreads()
         {
             var ids = new HashSet<int>();
@@ -132,9 +132,9 @@ namespace System.Tests
             Assert.Contains(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Windows" : "Unix", versionString);
         }
 
-        // On Unix, we must parse the version from uname -r
+        // On non-OSX Unix, we must parse the version from uname -r
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)]
         [InlineData("2.6.19-1.2895.fc6", 2, 6, 19, 1)]
         [InlineData("xxx1yyy2zzz3aaa4bbb", 1, 2, 3, 4)]
         [InlineData("2147483647.2147483647.2147483647.2147483647", int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue)]
@@ -152,6 +152,19 @@ namespace System.Tests
             var actual = ((OperatingSystem)getOSMethod.Invoke(null, new object[] { input })).Version;
 
             Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void OSVersion_ValidVersion_OSX()
+        {
+            Version version = Environment.OSVersion.Version;
+
+            // verify that the Environment.OSVersion.Version matches the current RID
+            Assert.Contains(version.ToString(2), RuntimeInformation.RuntimeIdentifier);
+
+            Assert.True(version.Build >= 0, "OSVersion Build should be non-negative");
+            Assert.Equal(-1, version.Revision); // Revision is never set on OSX
         }
 
         [Fact]
@@ -199,7 +212,7 @@ namespace System.Tests
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FailFast_ExpectFailureExitCode()
         {
             using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() => Environment.FailFast("message")))
@@ -220,7 +233,7 @@ namespace System.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FailFast_ExceptionStackTrace_ArgumentException()
         {
             var psi = new ProcessStartInfo();
@@ -241,7 +254,7 @@ namespace System.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FailFast_ExceptionStackTrace_StackOverflowException()
         {
             // Test using another type of exception
@@ -263,7 +276,7 @@ namespace System.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FailFast_ExceptionStackTrace_InnerException()
         {
             // Test if inner exception details are also logged

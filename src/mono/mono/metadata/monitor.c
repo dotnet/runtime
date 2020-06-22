@@ -1412,7 +1412,7 @@ mono_monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_in
 
 #ifdef DISABLE_THREADS
 	if (ms == MONO_INFINITE_WAIT) {
-		mono_error_set_synchronization_lock (error, "Cannot wait on monitors on this runtime.");
+		mono_error_set_platform_not_supported (error, "Cannot wait on monitors on this runtime.");
 		return FALSE;
 	}
 #endif

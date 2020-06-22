@@ -12,7 +12,7 @@ using Xunit;
 
 public partial class CancelKeyPressTests
 {
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/30130")]
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
     public void HandlerInvokedForSigInt()
@@ -20,7 +20,7 @@ public partial class CancelKeyPressTests
         HandlerInvokedForSignal(SIGINT);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/30130")]
     [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)] // Jenkins blocks SIGQUIT on OS X, causing the test to fail in CI
     public void HandlerInvokedForSigQuit()
@@ -28,7 +28,7 @@ public partial class CancelKeyPressTests
         HandlerInvokedForSignal(SIGQUIT);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/30130")]
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // events are triggered by Unix signals (SIGINT, SIGQUIT, SIGCHLD).
     public void ExitDetectionNotBlockedByHandler()
@@ -36,12 +36,12 @@ public partial class CancelKeyPressTests
         RemoteExecutor.Invoke(() =>
         {
             var mre = new ManualResetEventSlim();
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource();
 
             // CancelKeyPress is triggered by SIGINT/SIGQUIT
             Console.CancelKeyPress += (sender, e) =>
             {
-                tcs.SetResult(null);
+                tcs.SetResult();
                 // Block CancelKeyPress
                 Assert.True(mre.Wait(WaitFailTestTimeoutSeconds * 1000));
             };

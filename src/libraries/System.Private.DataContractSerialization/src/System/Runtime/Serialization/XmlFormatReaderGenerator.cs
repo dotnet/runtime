@@ -119,7 +119,7 @@ namespace System.Runtime.Serialization
                         ReadClass(classContract);
                     }
 
-                    bool isFactoryType = InvokeFactoryMethod(classContract, objectId);
+                    _ = InvokeFactoryMethod(classContract, objectId);
                     if (Globals.TypeOfIDeserializationCallback.IsAssignableFrom(classContract.UnderlyingType))
                     {
                         _ilg.Call(_objectLocal, XmlFormatGeneratorStatics.OnDeserializationMethod, null);

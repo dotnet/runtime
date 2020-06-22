@@ -450,7 +450,7 @@ namespace System.Runtime.Serialization
             XmlElement isValueTypeElement = null;
             if (dataContract.BaseContract != null)
             {
-                XmlSchemaComplexContentExtension extension = CreateTypeContent(type, dataContract.BaseContract.StableName, schema);
+                _ = CreateTypeContent(type, dataContract.BaseContract.StableName, schema);
             }
             else
             {

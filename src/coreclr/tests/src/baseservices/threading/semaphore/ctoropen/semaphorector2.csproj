@@ -4,8 +4,7 @@
     <CLRTestPriority>1</CLRTestPriority>
     <CLRTestExecutionArguments>/iCount:0 /mCount:1 /semName:MySemaphoreName</CLRTestExecutionArguments>
     <!-- Test unsupported outside of windows -->
-    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="semaphorector2.cs" />

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using ILCompiler;
+using Internal.TypeSystem;
 using NumberStyles = System.Globalization.NumberStyles;
 
 namespace Internal.JitInterface
@@ -29,7 +30,11 @@ namespace Internal.JitInterface
         private Dictionary<string, string> _config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private object _keepAlive; // Keeps callback delegates alive
 
-        public static void Initialize(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, string jitPath = null)
+        public static void Initialize(
+            TargetDetails target,
+            IEnumerable<CorJitFlag> jitFlags,
+            IEnumerable<KeyValuePair<string, string>> parameters,
+            string jitPath = null)
         {
             var config = new JitConfigProvider(jitFlags, parameters);
 
@@ -39,18 +44,22 @@ namespace Internal.JitInterface
                 throw new InvalidOperationException();
 
 #if READYTORUN
-            if (jitPath != null)
+            NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, (libName, assembly, searchPath) =>
             {
-                NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, (libName, assembly, searchPath) =>
+                IntPtr libHandle = IntPtr.Zero;
+                if (libName == CorInfoImpl.JitLibrary)
                 {
-                    IntPtr libHandle = IntPtr.Zero;
-                    if (libName == CorInfoImpl.JitLibrary)
+                    if (!string.IsNullOrEmpty(jitPath))
                     {
-                        libHandle = NativeLibrary.Load(jitPath, assembly, searchPath);
+                        libHandle = NativeLibrary.Load(jitPath);
                     }
-                    return libHandle;
-                });
-            }
+                    else
+                    {
+                        libHandle = NativeLibrary.Load("clrjit-" + GetTargetSpec(target), assembly, searchPath);
+                    }
+                }
+                return libHandle;
+            });
 #else
             Debug.Assert(jitPath == null);
 #endif
@@ -120,6 +129,20 @@ namespace Internal.JitInterface
             }
 
             return String.Empty;
+        }
+
+        private static string GetTargetSpec(TargetDetails target)
+        {
+            string targetOSComponent = (target.OperatingSystem == TargetOS.Windows ? "win" : "unix");
+            string targetArchComponent = target.Architecture switch
+            {
+                TargetArchitecture.X86 => "x86",
+                TargetArchitecture.X64 => "x64",
+                TargetArchitecture.ARM => "arm",
+                TargetArchitecture.ARM64 => "arm64",
+                _ => throw new NotImplementedException(target.Architecture.ToString())
+            };
+            return targetOSComponent + '-' + targetArchComponent;
         }
 
         #region Unmanaged instance

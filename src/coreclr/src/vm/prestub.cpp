@@ -370,7 +370,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
                 if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
                 {
                     ILStubResolver* pStubResolver = stubMethodDesc->GetILStubResolver();
-                    if (pStubResolver->IsCLRToNativeInteropStub())
+                    if (pStubResolver->GetStubType() == ILStubResolver::CLRToNativeInteropStub)
                     {
                         MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
                         if (pTargetMD != NULL)
@@ -443,12 +443,12 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
             CallerGCMode callerGcMode = pConfig->GetCallerGCMode();
             // If the method is eligible for tiering but is being
             // called from a Preemptive GC Mode thread or the method
-            // has the NativeCallableAttribute then the Tiered Compilation
+            // has the UnmanagedCallersOnlyAttribute then the Tiered Compilation
             // should be disabled.
             if (shouldTier
                 && (callerGcMode == CallerGCMode::Preemptive
                     || (callerGcMode == CallerGCMode::Unknown
-                        && HasNativeCallableAttribute())))
+                        && HasUnmanagedCallersOnlyAttribute())))
             {
                 NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
                 if (codeVersion.IsDefaultVersion())
@@ -625,16 +625,6 @@ COR_ILMETHOD_DECODER* MethodDesc::GetAndVerifyMetadataILHeader(PrepareCodeConfig
     COR_ILMETHOD* ilHeader = pConfig->GetILHeader();
     if (ilHeader == NULL)
     {
-#ifdef FEATURE_COMINTEROP
-        // Abstract methods can be called through WinRT derivation if the deriving type
-        // is not implemented in managed code, and calls through the CCW to the abstract
-        // method. Throw a sensible exception in that case.
-        if (GetMethodTable()->IsExportedToWinRT() && IsAbstract())
-        {
-            COMPlusThrowHR(E_NOTIMPL);
-        }
-#endif // FEATURE_COMINTEROP
-
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
     }
 
@@ -1690,9 +1680,9 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
         CPUSTUBLINKER sl;
         _ASSERTE(pUnboxedMD != NULL && pUnboxedMD != pMD);
 
-        // The shuffle for an unboxing stub of a method that doesn't capture the 
+        // The shuffle for an unboxing stub of a method that doesn't capture the
         // type of the this pointer must be a no-op
-        _ASSERTE(pUnboxedMD->RequiresInstMethodTableArg() || (portableShuffle.GetCount() == 1)); 
+        _ASSERTE(pUnboxedMD->RequiresInstMethodTableArg() || (portableShuffle.GetCount() == 1));
 
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
@@ -1806,14 +1796,14 @@ extern "C" MethodDesc * STDCALL PreStubGetMethodDescForCompactEntryPoint (PCODE 
 
 //=============================================================================
 // This function generates the real code when from Preemptive mode.
-// It is specifically designed to work with the NativeCallableAttribute.
+// It is specifically designed to work with the UnmanagedCallersOnlyAttribute.
 //=============================================================================
 static PCODE PreStubWorker_Preemptive(
     _In_ TransitionBlock* pTransitionBlock,
     _In_ MethodDesc* pMD,
     _In_opt_ Thread* currentThread)
 {
-    _ASSERTE(pMD->HasNativeCallableAttribute());
+    _ASSERTE(pMD->HasUnmanagedCallersOnlyAttribute());
 
     PCODE pbRetVal = NULL;
 
@@ -1835,7 +1825,7 @@ static PCODE PreStubWorker_Preemptive(
     MAKE_CURRENT_THREAD_AVAILABLE_EX(currentThread);
 
     // No GC frame is needed here since there should be no OBJECTREFs involved
-    // in this call due to NativeCallableAttribute semantics.
+    // in this call due to UnmanagedCallersOnlyAttribute semantics.
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -1917,8 +1907,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
             {
                 pDispatchingMT = curobj->GetMethodTable();
 
-#ifdef FEATURE_ICASTABLE
-                if (pDispatchingMT->IsICastable())
+                if (pDispatchingMT->IsICastable() || pDispatchingMT->IsIDynamicInterfaceCastable())
                 {
                     MethodTable* pMDMT = pMD->GetMethodTable();
                     TypeHandle objectType(pDispatchingMT);
@@ -1935,7 +1924,6 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
                         pDispatchingMT = pMDMT;
                     }
                 }
-#endif // FEATURE_ICASTABLE
 
                 // For value types, the only virtual methods are interface implementations.
                 // Thus pDispatching == pMT because there
@@ -2171,7 +2159,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         if (GetModule()->IsReadyToRun() && GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs() && MayUsePrecompiledILStub())
         {
-            // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such 
+            // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such
             // a stub, we'll use it directly instead and avoid emitting an IL stub.
             PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
             pCode = GetPrecompiledR2RCode(&config);
@@ -2564,13 +2552,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 {
                     // We do not emit activation fixups for version resilient references. Activate the target explicitly.
                     pMD->EnsureActive();
-                }
-                else
-                {
-#ifdef FEATURE_WINMD_RESILIENT
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
-                    pMD->EnsureActive();
-#endif
                 }
 
                 break;

@@ -32,7 +32,7 @@ if /i [%1] == [wasm]        ( set __BuildArch=wasm&&set __VCBuildArch=x86_amd64&
 
 if /i [%1] == [outconfig] ( set __outConfig=%2&&shift&&shift&goto Arg_Loop)
 
-if /i [%1] == [WebAssembly] ( set __TargetOS=WebAssembly&&shift&goto Arg_Loop)
+if /i [%1] == [Browser] ( set __TargetOS=Browser&&shift&goto Arg_Loop)
 
 if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
 

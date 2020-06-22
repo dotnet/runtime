@@ -14,9 +14,11 @@
 #ifndef _METADATA_H_
 #define _METADATA_H_
 
-#include "../md/inc/metamodelro.h"
-#include "../md/inc/liteweightstgdb.h"
+#include "ex.h"
 
+class CorProfileData;
+class IMetaModelCommon;
+class MDInternalRW;
 class UTSemReadWrite;
 
 inline int IsGlobalMethodParentTk(mdTypeDef td)
@@ -1123,8 +1125,12 @@ DECLARE_INTERFACE_(IMDInternalEmit, IUnknown)
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
 
 struct IMDCustomDataSource;
-
-#include "../md/inc/metamodel.h"
+class CMiniMdSchema;
+struct CMiniTableDef;
+namespace MetaData
+{
+    class DataBlob;
+}
 
 // {CC0C8F7A-A00B-493D-80B6-CE0C92491670}
 EXTERN_GUID(IID_IMDCustomDataSource, 0xcc0c8f7a, 0xa00b, 0x493d, 0x80, 0xb6, 0xce, 0xc, 0x92, 0x49, 0x16, 0x70);
@@ -1167,6 +1173,37 @@ DECLARE_INTERFACE_(IMetaDataDispenserCustom, IUnknown)
 struct ICorDebugDataTarget;
 HRESULT CreateRemoteMDInternalRWSource(TADDR mdInternalRWRemoteAddress, ICorDebugDataTarget* pDataTarget, DWORD defines, DWORD dataStructureVersion, IMDCustomDataSource** ppDataSource);
 #endif
+
+enum MetaDataReorderingOptions {
+    NoReordering=0x0,
+    ReArrangeStringPool=0x1
+};
+
+#ifdef FEATURE_PREJIT
+
+// {0702E333-8D64-4ca7-B564-4AA56B1FCEA3}
+EXTERN_GUID(IID_IMetaDataCorProfileData, 0x702e333, 0x8d64, 0x4ca7, 0xb5, 0x64, 0x4a, 0xa5, 0x6b, 0x1f, 0xce, 0xa3 );
+
+#undef  INTERFACE
+#define INTERFACE IMetaDataCorProfileData
+DECLARE_INTERFACE_(IMetaDataCorProfileData, IUnknown)
+{
+    STDMETHOD(SetCorProfileData)(
+        CorProfileData *pProfileData) PURE;         // [IN] Pointer to profile data
+};
+
+// {2B464817-C0F6-454e-99E7-C352D8384D7B}
+EXTERN_GUID(IID_IMDInternalMetadataReorderingOptions, 0x2B464817, 0xC0F6, 0x454e, 0x99, 0xE7, 0xC3, 0x52, 0xD8, 0x38, 0x4D, 0x7B );
+
+#undef  INTERFACE
+#define INTERFACE IMDInternalMetadataReorderingOptions
+DECLARE_INTERFACE_(IMDInternalMetadataReorderingOptions, IUnknown)
+{
+    STDMETHOD(SetMetaDataReorderingOptions)(
+        MetaDataReorderingOptions options) PURE;         // [IN] metadata reordering options
+};
+
+#endif //FEATURE_PREJIT
 
 #ifdef __HOLDER_H_
 

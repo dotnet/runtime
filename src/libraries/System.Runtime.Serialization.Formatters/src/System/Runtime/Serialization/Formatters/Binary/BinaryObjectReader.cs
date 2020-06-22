@@ -362,8 +362,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Array object encountered in stream
         private void ParseArray(ParseRecord pr)
         {
-            long genId = pr._objectId;
-
             Debug.Assert(_stack != null);
             if (pr._arrayTypeEnum == InternalArrayTypeE.Base64)
             {

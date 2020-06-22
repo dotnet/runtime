@@ -217,7 +217,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void RunThreadLocalTest7_WeakReference()
         {
             var threadLocalWeakReferenceTest = new ThreadLocalWeakReferenceTest();

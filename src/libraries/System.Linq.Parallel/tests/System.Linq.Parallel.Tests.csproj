@@ -4,15 +4,12 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs">
-      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs">
-      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Threading\ThreadPoolHelpers.cs">
-      <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
+             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
+             Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadPoolHelpers.cs"
+             Link="CommonTest\System\Threading\ThreadPoolHelpers.cs" />
     <Compile Include="Combinatorial\CancellationParallelQueryCombinationTests.cs" />
     <Compile Include="Combinatorial\FailingParallelQueryCombinationTests.cs" />
     <Compile Include="Combinatorial\ParallelQueryCombinationTests.cs" />

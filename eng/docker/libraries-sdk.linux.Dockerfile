@@ -1,6 +1,6 @@
 # Builds and copies library artifacts into target dotnet sdk image
 ARG BUILD_BASE_IMAGE=mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-f39df28-20191023143754
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/core/sdk:3.0.100-buster
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:5.0-buster-slim
 
 FROM $BUILD_BASE_IMAGE as corefxbuild
 
@@ -13,7 +13,7 @@ RUN ./build.sh -ci -subset clr+libs -runtimeconfiguration release -c $CONFIGURAT
 FROM $SDK_BASE_IMAGE as target
 
 ARG TESTHOST_LOCATION=/repo/artifacts/bin/testhost
-ARG TFM=netcoreapp5.0
+ARG TFM=net5.0
 ARG OS=Linux
 ARG ARCH=x64
 ARG CONFIGURATION=Release

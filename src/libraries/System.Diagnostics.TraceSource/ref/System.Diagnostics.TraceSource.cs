@@ -207,12 +207,13 @@ namespace System.Diagnostics
     public abstract partial class TraceListener : System.MarshalByRefObject, System.IDisposable
     {
         protected TraceListener() { }
-        protected TraceListener(string name) { }
+        protected TraceListener(string? name) { }
         public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
         public System.Diagnostics.TraceFilter? Filter { get { throw null; } set { } }
         public int IndentLevel { get { throw null; } set { } }
         public int IndentSize { get { throw null; } set { } }
         public virtual bool IsThreadSafe { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public virtual string Name { get { throw null; } set { } }
         protected bool NeedIndent { get { throw null; } set { } }
         public System.Diagnostics.TraceOptions TraceOutputOptions { get { throw null; } set { } }
@@ -263,10 +264,10 @@ namespace System.Diagnostics
         public void Remove(string name) { }
         public void RemoveAt(int index) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        int System.Collections.IList.Add(object value) { throw null; }
+        int System.Collections.IList.Add(object? value) { throw null; }
         bool System.Collections.IList.Contains(object? value) { throw null; }
         int System.Collections.IList.IndexOf(object? value) { throw null; }
-        void System.Collections.IList.Insert(int index, object value) { }
+        void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
     }
     [System.FlagsAttribute]

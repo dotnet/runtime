@@ -28,11 +28,11 @@ namespace System.Net.Mail
             if (headers == null)
                 throw new ArgumentNullException(nameof(headers));
 
-            foreach (string? key in headers) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
+            foreach (string key in headers)
             {
                 string[] values = headers!.GetValues(key)!;
                 foreach (string value in values)
-                    WriteHeader(key!, value, allowUnicode);
+                    WriteHeader(key, value, allowUnicode);
             }
         }
 

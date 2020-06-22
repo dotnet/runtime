@@ -29,7 +29,12 @@ namespace System
             string? resourceString = null;
             try
             {
-                resourceString = ResourceManager.GetString(resourceKey);
+                resourceString =
+#if SYSTEM_PRIVATE_CORELIB
+                    InternalGetResourceString(resourceKey);
+#else
+                    ResourceManager.GetString(resourceKey);
+#endif
             }
             catch (MissingManifestResourceException) { }
 

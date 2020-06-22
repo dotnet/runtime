@@ -392,6 +392,14 @@ namespace System.Reflection.Tests
             Assert.Equal("MyAssemblyName, Version=1.0.0.0, PublicKeyToken=b03f5f7f11d50a3a", assemblyName.FullName);
         }
 
+        [Fact]
+        public static void Name_WithNullPublicKey()
+        {
+            AssemblyName assemblyName = new AssemblyName("noname,PublicKeyToken=null");
+            Assert.Equal(0, assemblyName.GetPublicKeyToken().Length);
+            Assert.Equal("noname, PublicKeyToken=null", assemblyName.FullName);
+        }
+
         public static IEnumerable<object[]> Version_TestData()
         {
             yield return new object[] { new Version(255, 1), "255.1" };

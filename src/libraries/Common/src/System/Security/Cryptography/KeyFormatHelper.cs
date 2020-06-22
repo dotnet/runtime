@@ -5,8 +5,7 @@
 #nullable enable
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 
@@ -37,12 +36,22 @@ namespace System.Security.Cryptography
             ReadOnlyMemory<byte> source,
             out int bytesRead)
         {
-            // X.509 SubjectPublicKeyInfo is described as DER.
-            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.DER);
-            int read = reader.PeekEncodedValue().Length;
-            SubjectPublicKeyInfoAsn.Decode(ref reader, source, out SubjectPublicKeyInfoAsn spki);
+            SubjectPublicKeyInfoAsn spki;
+            int read;
 
-            if (Array.IndexOf(validOids, spki.Algorithm.Algorithm.Value) < 0)
+            try
+            {
+                // X.509 SubjectPublicKeyInfo is described as DER.
+                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.DER);
+                read = reader.PeekEncodedValue().Length;
+                SubjectPublicKeyInfoAsn.Decode(ref reader, source, out spki);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            if (Array.IndexOf(validOids, spki.Algorithm.Algorithm) < 0)
             {
                 throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
             }
@@ -58,12 +67,22 @@ namespace System.Security.Cryptography
             out int bytesRead,
             out TRet ret)
         {
-            // X.509 SubjectPublicKeyInfo is described as DER.
-            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.DER);
-            int read = reader.PeekEncodedValue().Length;
-            SubjectPublicKeyInfoAsn.Decode(ref reader, source, out SubjectPublicKeyInfoAsn spki);
+            SubjectPublicKeyInfoAsn spki;
+            int read;
 
-            if (Array.IndexOf(validOids, spki.Algorithm.Algorithm.Value) < 0)
+            try
+            {
+                // X.509 SubjectPublicKeyInfo is described as DER.
+                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.DER);
+                read = reader.PeekEncodedValue().Length;
+                SubjectPublicKeyInfoAsn.Decode(ref reader, source, out spki);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            if (Array.IndexOf(validOids, spki.Algorithm.Algorithm) < 0)
             {
                 throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
             }
@@ -93,17 +112,24 @@ namespace System.Security.Cryptography
             ReadOnlyMemory<byte> source,
             out int bytesRead)
         {
-            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
-            int read = reader.PeekEncodedValue().Length;
-            PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
-
-            if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm.Value) < 0)
+            try
             {
-                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
-            }
+                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
+                int read = reader.PeekEncodedValue().Length;
+                PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
 
-            bytesRead = read;
-            return privateKeyInfo.PrivateKey;
+                if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm) < 0)
+                {
+                    throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+                }
+
+                bytesRead = read;
+                return privateKeyInfo.PrivateKey;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         private static void ReadPkcs8<TRet>(
@@ -113,18 +139,25 @@ namespace System.Security.Cryptography
             out int bytesRead,
             out TRet ret)
         {
-            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
-            int read = reader.PeekEncodedValue().Length;
-            PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
-
-            if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm.Value) < 0)
+            try
             {
-                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
-            }
+                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
+                int read = reader.PeekEncodedValue().Length;
+                PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
 
-            // Fails if there are unconsumed bytes.
-            keyReader(privateKeyInfo.PrivateKey, privateKeyInfo.PrivateKeyAlgorithm, out ret);
-            bytesRead = read;
+                if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm) < 0)
+                {
+                    throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+                }
+
+                // Fails if there are unconsumed bytes.
+                keyReader(privateKeyInfo.PrivateKey, privateKeyInfo.PrivateKeyAlgorithm, out ret);
+                bytesRead = read;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static unsafe void ReadEncryptedPkcs8<TRet>(
@@ -156,7 +189,13 @@ namespace System.Security.Cryptography
             {
                 using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
                 {
-                    ReadEncryptedPkcs8(validOids, manager.Memory, passwordBytes, keyReader, out bytesRead, out ret);
+                    ReadEncryptedPkcs8(
+                        validOids,
+                        manager.Memory,
+                        passwordBytes,
+                        keyReader,
+                        out bytesRead,
+                        out ret);
                 }
             }
         }
@@ -206,9 +245,19 @@ namespace System.Security.Cryptography
             out int bytesRead,
             out TRet ret)
         {
-            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
-            int read = reader.PeekEncodedValue().Length;
-            EncryptedPrivateKeyInfoAsn.Decode(ref reader, source, out EncryptedPrivateKeyInfoAsn epki);
+            int read;
+            EncryptedPrivateKeyInfoAsn epki;
+
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
+                read = reader.PeekEncodedValue().Length;
+                EncryptedPrivateKeyInfoAsn.Decode(ref reader, source, out epki);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
 
             // No supported encryption algorithms produce more bytes of decryption output than there
             // were of decryption input.
@@ -258,12 +307,11 @@ namespace System.Security.Cryptography
             AsnWriter? attributesWriter = null)
         {
             // Ensure both algorithm identifier and key writers are balanced.
-            ReadOnlySpan<byte> algorithmIdentifier = algorithmIdentifierWriter.EncodeAsSpan();
-            ReadOnlySpan<byte> privateKey = privateKeyWriter.EncodeAsSpan();
+            int algorithmIdentifierLength = algorithmIdentifierWriter.GetEncodedLength();
+            int privateKeyLength = privateKeyWriter.GetEncodedLength();
 
-            Debug.Assert(algorithmIdentifier.Length > 0, "algorithmIdentifier was empty");
-            Debug.Assert(algorithmIdentifier[0] == 0x30, "algorithmIdentifier is not a constructed sequence");
-            Debug.Assert(privateKey.Length > 0, "privateKey was empty");
+            Debug.Assert(algorithmIdentifierLength > 0, "algorithmIdentifier was empty");
+            Debug.Assert(privateKeyLength > 0, "privateKey was empty");
 
             // https://tools.ietf.org/html/rfc5208#section-5
             //
@@ -285,17 +333,16 @@ namespace System.Security.Cryptography
             writer.WriteInteger(0);
 
             // PKI.Algorithm (AlgorithmIdentifier)
-            writer.WriteEncodedValue(algorithmIdentifier);
+            algorithmIdentifierWriter.CopyTo(writer);
 
             // PKI.privateKey
-            writer.WriteOctetString(privateKey);
+            using (writer.PushOctetString())
+            {
+                privateKeyWriter.CopyTo(writer);
+            }
 
             // PKI.Attributes
-            if (attributesWriter != null)
-            {
-                ReadOnlySpan<byte> attributes = attributesWriter.EncodeAsSpan();
-                writer.WriteEncodedValue(attributes);
-            }
+            attributesWriter?.CopyTo(writer);
 
             writer.PopSequence();
             return writer;
@@ -331,8 +378,6 @@ namespace System.Security.Cryptography
             AsnWriter pkcs8Writer,
             PbeParameters pbeParameters)
         {
-            ReadOnlySpan<byte> pkcs8Span = pkcs8Writer.EncodeAsSpan();
-
             PasswordBasedEncryption.InitiateEncryption(
                 pbeParameters,
                 out SymmetricAlgorithm cipher,
@@ -352,7 +397,7 @@ namespace System.Security.Cryptography
 
                 // We need at least one block size beyond the input data size.
                 encryptedRent = CryptoPool.Rent(
-                    checked(pkcs8Span.Length + (cipher.BlockSize / 8)));
+                    checked(pkcs8Writer.GetEncodedLength() + (cipher.BlockSize / 8)));
 
                 RandomNumberGenerator.Fill(salt);
 
@@ -361,7 +406,7 @@ namespace System.Security.Cryptography
                     passwordBytes,
                     cipher,
                     isPkcs12,
-                    pkcs8Span,
+                    pkcs8Writer,
                     pbeParameters,
                     salt,
                     encryptedRent,
@@ -388,17 +433,13 @@ namespace System.Security.Cryptography
                 writer.WriteOctetString(encryptedSpan);
                 writer.PopSequence();
 
-                AsnWriter ret = writer;
-                // Don't dispose writer on the way out.
-                writer = null;
-                return ret;
+                return writer;
             }
             finally
             {
                 CryptographicOperations.ZeroMemory(encryptedSpan);
                 CryptoPool.Return(encryptedRent!, clearSize: 0);
 
-                writer?.Dispose();
                 cipher.Dispose();
             }
         }
@@ -433,9 +474,19 @@ namespace System.Security.Cryptography
             ReadOnlyMemory<byte> source,
             out int bytesRead)
         {
-            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
-            int localRead = reader.PeekEncodedValue().Length;
-            EncryptedPrivateKeyInfoAsn.Decode(ref reader, source, out EncryptedPrivateKeyInfoAsn epki);
+            int localRead;
+            EncryptedPrivateKeyInfoAsn epki;
+
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
+                localRead = reader.PeekEncodedValue().Length;
+                EncryptedPrivateKeyInfoAsn.Decode(ref reader, source, out epki);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
 
             // No supported encryption algorithms produce more bytes of decryption output than there
             // were of decryption input.
@@ -479,15 +530,13 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                using (AsnWriter pkcs8Writer = new AsnWriter(AsnEncodingRules.BER))
-                {
-                    pkcs8Writer.WriteEncodedValue(decrypted);
+                AsnWriter pkcs8Writer = new AsnWriter(AsnEncodingRules.BER);
+                pkcs8Writer.WriteEncodedValueForCrypto(decrypted);
 
-                    return WriteEncryptedPkcs8(
-                        newPassword,
-                        pkcs8Writer,
-                        pbeParameters);
-                }
+                return WriteEncryptedPkcs8(
+                    newPassword,
+                    pkcs8Writer,
+                    pbeParameters);
             }
             catch (CryptographicException e)
             {
@@ -518,15 +567,13 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                using (AsnWriter pkcs8Writer = new AsnWriter(AsnEncodingRules.BER))
-                {
-                    pkcs8Writer.WriteEncodedValue(decrypted);
+                AsnWriter pkcs8Writer = new AsnWriter(AsnEncodingRules.BER);
+                pkcs8Writer.WriteEncodedValueForCrypto(decrypted);
 
-                    return WriteEncryptedPkcs8(
-                        newPasswordBytes,
-                        pkcs8Writer,
-                        pbeParameters);
-                }
+                return WriteEncryptedPkcs8(
+                    newPasswordBytes,
+                    pkcs8Writer,
+                    pbeParameters);
             }
             catch (CryptographicException e)
             {

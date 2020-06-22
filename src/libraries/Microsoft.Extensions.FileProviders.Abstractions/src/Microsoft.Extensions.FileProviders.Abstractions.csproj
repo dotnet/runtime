@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
@@ -7,9 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)Extensions\EmptyDisposable.cs">
-      <Link>Common\src\Extensions\EmptyDisposable.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Extensions\EmptyDisposable.cs"
+             Link="Common\src\Extensions\EmptyDisposable.cs" />
   </ItemGroup>
 
   <ItemGroup>

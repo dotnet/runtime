@@ -22,7 +22,7 @@ public class Vector2_3_4Test
         }
         catch (System.Exception ex)
         {
-            Console.WriteLine(ex.ToString());
+            Console.WriteLine(ex);
             return 101;
         }
         return 100;
@@ -30,6 +30,7 @@ public class Vector2_3_4Test
 
     private static void RunVector2Tests()
     {
+        Console.WriteLine($"Running {nameof(RunVector2Tests)}... ");
         float X = StartingIntValue;
         float Y = StartingIntValue + 1;
         float Z = StartingIntValue + 232;
@@ -68,9 +69,10 @@ public class Vector2_3_4Test
             return newVector;
         }));
     }
-    
+
     private static void RunVector3Tests()
     {
+        Console.WriteLine($"Running {nameof(RunVector3Tests)}... ");
         float X = StartingIntValue;
         float Y = StartingIntValue + 1;
         float Z = StartingIntValue + 232;
@@ -112,6 +114,7 @@ public class Vector2_3_4Test
 
     private static void RunVector4Tests()
     {
+        Console.WriteLine($"Running {nameof(RunVector4Tests)}... ");
         float X = StartingIntValue;
         float Y = StartingIntValue + 1;
         float Z = StartingIntValue + 232;

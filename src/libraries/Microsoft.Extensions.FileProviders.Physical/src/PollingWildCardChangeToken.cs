@@ -106,14 +106,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         private bool CalculateChanges()
         {
-            var result = _matcher.Execute(_directoryInfo);
+            PatternMatchingResult result = _matcher.Execute(_directoryInfo);
 
-            var files = result.Files.OrderBy(f => f.Path, StringComparer.Ordinal);
+            IOrderedEnumerable<FilePatternMatch> files = result.Files.OrderBy(f => f.Path, StringComparer.Ordinal);
             using (var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
             {
-                foreach (var file in files)
+                foreach (FilePatternMatch file in files)
                 {
-                    var lastWriteTimeUtc = GetLastWriteUtc(file.Path);
+                    DateTime lastWriteTimeUtc = GetLastWriteUtc(file.Path);
                     if (_lastScanTimeUtc != null && _lastScanTimeUtc < lastWriteTimeUtc)
                     {
                         // _lastScanTimeUtc is the greatest timestamp that any last writes could have been.
@@ -124,7 +124,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     ComputeHash(sha256, file.Path, lastWriteTimeUtc);
                 }
 
-                var currentHash = sha256.GetHashAndReset();
+                byte[] currentHash = sha256.GetHashAndReset();
                 if (!ArrayEquals(_previousHash, currentHash))
                 {
                     return true;
@@ -156,7 +156,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             Debug.Assert(previousHash.Length == currentHash.Length);
-            for (var i = 0; i < previousHash.Length; i++)
+            for (int i = 0; i < previousHash.Length; i++)
             {
                 if (previousHash[i] != currentHash[i])
                 {
@@ -169,13 +169,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         private void ComputeHash(IncrementalHash sha256, string path, DateTime lastChangedUtc)
         {
-            var byteCount = Encoding.Unicode.GetByteCount(path);
+            int byteCount = Encoding.Unicode.GetByteCount(path);
             if (_byteBuffer == null || byteCount > _byteBuffer.Length)
             {
                 _byteBuffer = new byte[Math.Max(byteCount, 256)];
             }
 
-            var length = Encoding.Unicode.GetBytes(path, 0, path.Length, _byteBuffer, 0);
+            int length = Encoding.Unicode.GetBytes(path, 0, path.Length, _byteBuffer, 0);
             sha256.AppendData(_byteBuffer, 0, length);
             sha256.AppendData(Separator, 0, Separator.Length);
 

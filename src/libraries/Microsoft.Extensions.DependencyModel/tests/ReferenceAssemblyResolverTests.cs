@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
-using Microsoft.DotNet.PlatformAbstractions;
-using Microsoft.Extensions.DependencyModel;
 using Microsoft.Extensions.DependencyModel.Resolution;
 using Xunit;
 using F = Microsoft.Extensions.DependencyModel.Tests.TestLibraryFactory;

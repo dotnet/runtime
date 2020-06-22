@@ -1171,6 +1171,7 @@ InlineContext* InlineStrategy::NewRoot()
     InlineContext* rootContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
 
     rootContext->m_ILSize = m_Compiler->info.compILCodeSize;
+    rootContext->m_Code   = m_Compiler->info.compCode;
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
@@ -1576,7 +1577,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     strncpy(buf, methodName, sizeof(buf));
     buf[sizeof(buf) - 1] = 0;
 
-    for (int i = 0; i < _countof(buf); i++)
+    for (size_t i = 0; i < _countof(buf); i++)
     {
         switch (buf[i])
         {

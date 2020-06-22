@@ -756,7 +756,7 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 
 // Return the size of the user-mode portion of the virtual address space of this process.
 // Return:
-//  non zero if it has succeeded, 0 if it has failed
+//  non zero if it has succeeded, (size_t)-1 if not available
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
     LIMITED_METHOD_CONTRACT;
@@ -771,16 +771,6 @@ static size_t g_RestrictedPhysicalMemoryLimit = (size_t)MAX_PTR;
 
 #ifndef TARGET_UNIX
 
-// For 32-bit processes the virtual address range could be smaller than the amount of physical
-// memory on the machine/in the container, we need to restrict by the VM.
-static bool g_UseRestrictedVirtualMemory = false;
-
-typedef BOOL (WINAPI *PGET_PROCESS_MEMORY_INFO)(HANDLE handle, PROCESS_MEMORY_COUNTERS* memCounters, uint32_t cb);
-static PGET_PROCESS_MEMORY_INFO GCGetProcessMemoryInfo = 0;
-
-typedef BOOL (WINAPI *PIS_PROCESS_IN_JOB)(HANDLE processHandle, HANDLE jobHandle, BOOL* result);
-typedef BOOL (WINAPI *PQUERY_INFORMATION_JOB_OBJECT)(HANDLE jobHandle, JOBOBJECTINFOCLASS jobObjectInfoClass, void* lpJobObjectInfo, DWORD cbJobObjectInfoLength, LPDWORD lpReturnLength);
-
 static size_t GetRestrictedPhysicalMemoryLimit()
 {
     LIMITED_METHOD_CONTRACT;
@@ -793,34 +783,14 @@ static size_t GetRestrictedPhysicalMemoryLimit()
     uint64_t total_virtual = 0;
     uint64_t total_physical = 0;
     BOOL in_job_p = FALSE;
-    HINSTANCE hinstKernel32 = 0;
 
-    PIS_PROCESS_IN_JOB GCIsProcessInJob = 0;
-    PQUERY_INFORMATION_JOB_OBJECT GCQueryInformationJobObject = 0;
-
-    GCIsProcessInJob = &(::IsProcessInJob);
-
-    if (!GCIsProcessInJob(GetCurrentProcess(), NULL, &in_job_p))
+    if (!IsProcessInJob(GetCurrentProcess(), NULL, &in_job_p))
         goto exit;
 
     if (in_job_p)
     {
-        hinstKernel32 = WszLoadLibrary(L"kernel32.dll");
-        if (!hinstKernel32)
-            goto exit;
-
-        GCGetProcessMemoryInfo = (PGET_PROCESS_MEMORY_INFO)GetProcAddress(hinstKernel32, "K32GetProcessMemoryInfo");
-
-        if (!GCGetProcessMemoryInfo)
-            goto exit;
-
-        GCQueryInformationJobObject = &(::QueryInformationJobObject);
-
-        if (!GCQueryInformationJobObject)
-            goto exit;
-
         JOBOBJECT_EXTENDED_LIMIT_INFORMATION limit_info;
-        if (GCQueryInformationJobObject (NULL, JobObjectExtendedLimitInformation, &limit_info,
+        if (QueryInformationJobObject(NULL, JobObjectExtendedLimitInformation, &limit_info,
             sizeof(limit_info), NULL))
         {
             size_t job_memory_limit = (size_t)MAX_PTR;
@@ -867,13 +837,6 @@ exit:
     if (job_physical_memory_limit == (size_t)MAX_PTR)
     {
         job_physical_memory_limit = 0;
-
-        if (hinstKernel32 != 0)
-        {
-            FreeLibrary(hinstKernel32);
-            hinstKernel32 = 0;
-            GCGetProcessMemoryInfo = 0;
-        }
     }
 
     // Check to see if we are limited by VM.
@@ -893,15 +856,8 @@ exit:
 
     if (total_virtual < total_physical)
     {
-        if (hinstKernel32 != 0)
-        {
-            // We can also free the lib here - if we are limited by VM we will not be calling
-            // GetProcessMemoryInfo.
-            FreeLibrary(hinstKernel32);
-            GCGetProcessMemoryInfo = 0;
-        }
-        g_UseRestrictedVirtualMemory = true;
-        job_physical_memory_limit = (size_t)total_virtual;
+        // Limited by virtual address space
+        job_physical_memory_limit = 0;
     }
 
     VolatileStore(&g_RestrictedPhysicalMemoryLimit, job_physical_memory_limit);
@@ -928,9 +884,6 @@ static size_t GetRestrictedPhysicalMemoryLimit()
 // Get the physical memory that this process can use.
 // Return:
 //  non zero if it has succeeded, 0 if it has failed
-//
-// PERF TODO: Requires more work to not treat the restricted case to be special.
-// To be removed before 3.0 ships.
 uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
 {
     LIMITED_METHOD_CONTRACT;
@@ -941,11 +894,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
     size_t restricted_limit = GetRestrictedPhysicalMemoryLimit();
     if (restricted_limit != 0)
     {
-        if (is_restricted
-#ifndef TARGET_UNIX
-            && !g_UseRestrictedVirtualMemory
-#endif
-            )
+        if (is_restricted)
             *is_restricted = true;
 
         return restricted_limit;
@@ -965,26 +914,22 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
 //  available_page_file - The maximum amount of memory the current process can commit, in bytes.
 // Remarks:
 //  Any parameter can be null.
-void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
+void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
 {
     LIMITED_METHOD_CONTRACT;
 
-    uint64_t restricted_limit = GetRestrictedPhysicalMemoryLimit();
     if (restricted_limit != 0)
     {
         size_t workingSetSize;
         BOOL status = FALSE;
 #ifndef TARGET_UNIX
-        if (!g_UseRestrictedVirtualMemory)
-        {
-            PROCESS_MEMORY_COUNTERS pmc;
-            status = GCGetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
-            workingSetSize = pmc.WorkingSetSize;
-        }
+        PROCESS_MEMORY_COUNTERS pmc;
+        status = GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
+        workingSetSize = pmc.WorkingSetSize;
 #else
         status = PAL_GetPhysicalMemoryUsed(&workingSetSize);
 #endif
-        if(status)
+        if (status)
         {
             if (memory_load)
                 *memory_load = (uint32_t)((float)workingSetSize * 100.0 / (float)restricted_limit);
@@ -1009,9 +954,10 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
     GetProcessMemoryLoad(&ms);
 
 #ifndef TARGET_UNIX
-    if (g_UseRestrictedVirtualMemory)
+    // For 32-bit processes the virtual address range could be smaller than the amount of physical
+    // memory on the machine/in the container, we need to restrict by the VM.
+    if (ms.ullTotalVirtual < ms.ullTotalPhys)
     {
-        _ASSERTE (ms.ullTotalVirtual == restricted_limit);
         if (memory_load != NULL)
             *memory_load = (uint32_t)((float)(ms.ullTotalVirtual - ms.ullAvailVirtual) * 100.0 / (float)ms.ullTotalVirtual);
         if (available_physical != NULL)

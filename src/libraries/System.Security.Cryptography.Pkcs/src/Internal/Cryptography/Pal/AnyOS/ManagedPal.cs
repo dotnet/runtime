@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
@@ -44,20 +45,27 @@ namespace Internal.Cryptography.Pal.AnyOS
                     false);
             }
 
-            // Certificates are DER encoded.
-            AsnReader reader = new AsnReader(extension.RawData, AsnEncodingRules.DER);
-
-            if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents))
+            try
             {
-                reader.ThrowIfNotEmpty();
-                return contents.ToArray();
-            }
+                // Certificates are DER encoded.
+                AsnValueReader reader = new AsnValueReader(extension.RawData, AsnEncodingRules.DER);
 
-            // TryGetPrimitiveOctetStringBytes will have thrown if the next tag wasn't
-            // Universal (primitive) OCTET STRING, since we're in DER mode.
-            // So there's really no way we can get here.
-            Debug.Fail($"TryGetPrimitiveOctetStringBytes returned false in DER mode");
-            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                if (reader.TryReadPrimitiveOctetString(out ReadOnlySpan<byte> contents))
+                {
+                    reader.ThrowIfNotEmpty();
+                    return contents.ToArray();
+                }
+
+                // TryGetPrimitiveOctetStringBytes will have thrown if the next tag wasn't
+                // Universal (primitive) OCTET STRING, since we're in DER mode.
+                // So there's really no way we can get here.
+                Debug.Fail($"TryGetPrimitiveOctetStringBytes returned false in DER mode");
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         [return: MaybeNull]
@@ -114,23 +122,19 @@ namespace Internal.Cryptography.Pal.AnyOS
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                AsnReader reader = new AsnReader(contentEncryptionAlgorithm.Parameters.Value, AsnEncodingRules.BER);
-
-                if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> primitiveBytes))
+                try
                 {
-                    alg.IV = primitiveBytes.ToArray();
-                }
-                else
-                {
-                    byte[] iv = new byte[alg.BlockSize / 8];
+                    AsnReader reader = new AsnReader(contentEncryptionAlgorithm.Parameters.Value, AsnEncodingRules.BER);
+                    alg.IV = reader.ReadOctetString();
 
-                    if (!reader.TryCopyOctetStringBytes(iv, out int bytesWritten) ||
-                        bytesWritten != iv.Length)
+                    if (alg.IV.Length != alg.BlockSize / 8)
                     {
                         throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                     }
-
-                    alg.IV = iv;
+                }
+                catch (AsnContentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
                 }
             }
 
@@ -139,7 +143,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
         private static SymmetricAlgorithm OpenAlgorithm(AlgorithmIdentifier algorithmIdentifier)
         {
-            SymmetricAlgorithm alg = OpenAlgorithm(algorithmIdentifier.Oid);
+            SymmetricAlgorithm alg = OpenAlgorithm(algorithmIdentifier.Oid.Value!);
 
             if (alg is RC2)
             {
@@ -156,13 +160,13 @@ namespace Internal.Cryptography.Pal.AnyOS
             return alg;
         }
 
-        private static SymmetricAlgorithm OpenAlgorithm(Oid algorithmIdentifier)
+        private static SymmetricAlgorithm OpenAlgorithm(string algorithmIdentifier)
         {
             Debug.Assert(algorithmIdentifier != null);
 
             SymmetricAlgorithm alg;
 
-            switch (algorithmIdentifier.Value)
+            switch (algorithmIdentifier)
             {
                 case Oids.Rc2Cbc:
 #pragma warning disable CA5351
@@ -192,7 +196,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                     alg.KeySize = 256;
                     break;
                 default:
-                    throw new CryptographicException(SR.Cryptography_Cms_UnknownAlgorithm, algorithmIdentifier.Value);
+                    throw new CryptographicException(SR.Cryptography_Cms_UnknownAlgorithm, algorithmIdentifier);
             }
 
             // These are the defaults, but they're restated here for clarity.

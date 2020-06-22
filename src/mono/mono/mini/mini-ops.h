@@ -1099,15 +1099,29 @@ MINI_OP(OP_SSSE3_SHUFFLE, "ssse3_shuffle", XREG, XREG, XREG)
 MINI_OP3(OP_SSSE3_ALIGNR, "ssse3_alignr", XREG, XREG, XREG, IREG)
 
 /* sse 4.1 */
-/* inst_c0 is the rounding mode: 0 = round, 1 = floor, 2 = ceiling */
-MINI_OP(OP_SSE41_ROUNDPD, "roundpd", XREG, XREG, NONE)
-MINI_OP(OP_SSE41_ROUNDSS, "roundss", XREG, XREG, NONE)
+MINI_OP(OP_SSE41_ROUNDP, "roundp", XREG, XREG, NONE) // packed, inst_c0 - mode, inst_c1 - r4 or r8
+MINI_OP(OP_SSE41_ROUNDS, "rounds", XREG, XREG, NONE) // scalar, inst_c0 - mode, inst_c1 - r4 or r8
 MINI_OP3(OP_SSE41_INSERT, "sse41_insert", XREG, XREG, XREG, IREG)
-MINI_OP(OP_SSE41_PTESTZ, "sse41_ptestz", IREG, XREG, XREG)
+MINI_OP3(OP_SSE41_BLENDV, "sse41_blendv", XREG, XREG, XREG, XREG)
+MINI_OP(OP_SSE41_BLEND_IMM, "sse41_blend", XREG, XREG, XREG)
+MINI_OP(OP_SSE41_LOADANT, "sse41_loadant", XREG, XREG, NONE)
+MINI_OP(OP_SSE41_MUL, "sse41_mul", XREG, XREG, XREG)
+MINI_OP(OP_SSE41_MULLO, "sse41_mullo", XREG, XREG, XREG)
+MINI_OP(OP_SSE_CVTII, "sse_cvtii", XREG, XREG, NONE)
+MINI_OP(OP_SSE41_DPPS_IMM, "sse_dpps", XREG, XREG, XREG)
+MINI_OP(OP_SSE41_DPPD_IMM, "sse_dppd", XREG, XREG, XREG)
+MINI_OP(OP_SSE41_MPSADBW_IMM, "sse_mpsadbw", XREG, XREG, XREG)
+
+/* pclmulqdq */
+MINI_OP(OP_PCLMULQDQ_IMM, "pclmulqdq", XREG, XREG, XREG)
+
+/* aes */
+MINI_OP(OP_AES_KEYGEN_IMM, "aes_keygen", XREG, XREG, NONE)
 
 /* sse 4.2 */
 MINI_OP(OP_SSE42_CRC32, "sse42_crc32", IREG, IREG, IREG)
 MINI_OP(OP_SSE42_CRC64, "sse42_crc64", LREG, LREG, LREG)
+MINI_OP(OP_SSE42_PTESTZ, "sse42_ptestc", IREG, XREG, XREG)
 
 /* Intel BMI1 */
 /* Count trailing zeroes, return 32/64 if the input is 0 */
@@ -1391,7 +1405,7 @@ MINI_OP(OP_S390_LOADARG,	   "s390_loadarg", NONE, NONE, NONE)
 MINI_OP(OP_S390_ARGREG, 	   "s390_argreg", NONE, NONE, NONE)
 MINI_OP(OP_S390_ARGPTR, 	   "s390_argptr", NONE, NONE, NONE)
 MINI_OP(OP_S390_STKARG, 	   "s390_stkarg", NONE, NONE, NONE)
-MINI_OP(OP_S390_MOVE,	 	   "s390_move", IREG, IREG, NONE)
+MINI_OP(OP_S390_MOVE,	 	   "s390_move", NONE, IREG, IREG)
 MINI_OP(OP_S390_SETF4RET,	   "s390_setf4ret", FREG, FREG, NONE)
 MINI_OP(OP_S390_BKCHAIN, 	   "s390_bkchain", IREG, IREG, NONE)
 MINI_OP(OP_S390_LADD,          "s390_long_add", LREG, IREG, IREG)
@@ -1522,6 +1536,7 @@ MINI_OP(OP_XOP, "xop", NONE, NONE, NONE)
 MINI_OP(OP_XOP_X_I, "xop_x_i", XREG, IREG, NONE)
 MINI_OP(OP_XOP_X_X, "xop_x_x", XREG, XREG, NONE)
 MINI_OP(OP_XOP_I4_X, "xop_i4_x", IREG, XREG, NONE)
+MINI_OP(OP_XOP_I4_X_X, "xop_i4_x_x", IREG, XREG, XREG)
 MINI_OP(OP_XOP_I8_X, "xop_i8_x", LREG, XREG, NONE)
 MINI_OP(OP_XOP_X_X_X, "xop_x_x_x", XREG, XREG, XREG)
 MINI_OP(OP_XOP_X_X_I4, "xop_x_x_i4", XREG, XREG, IREG)

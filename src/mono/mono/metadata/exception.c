@@ -200,6 +200,7 @@ create_exception_two_strings (MonoClass *klass, MonoStringHandle a1, MonoStringH
 		method = m;
 		break;
 	}
+	g_assert (method);
 
 	gpointer args [ ] = { MONO_HANDLE_RAW (a1), MONO_HANDLE_RAW (a2) };
 

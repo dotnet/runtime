@@ -14,6 +14,10 @@ namespace System
     {
         private static IntPtr InvalidHandleValue => new IntPtr(-1);
 
+        /// <summary>Ensures that the console has been initialized for use.</summary>
+        internal static void EnsureConsoleInitialized()
+        { }
+
         private static bool IsWindows7()
         {
             // Version lies for all apps from the OS kick in starting with Windows 8 (6.2). They can
@@ -566,30 +570,17 @@ namespace System
             }
         }
 
-        public static int CursorLeft
+        public static (int Left, int Top) GetCursorPosition()
         {
-            get
-            {
-                Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
-                return csbi.dwCursorPosition.X;
-            }
-        }
-
-        public static int CursorTop
-        {
-            get
-            {
-                Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
-                return csbi.dwCursorPosition.Y;
-            }
+            Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+            return (csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y);
         }
 
         public static unsafe string Title
         {
             get
             {
-                Span<char> initialBuffer = stackalloc char[256];
-                ValueStringBuilder builder = new ValueStringBuilder(initialBuffer);
+                ValueStringBuilder builder = new ValueStringBuilder(stackalloc char[256]);
 
                 while (true)
                 {

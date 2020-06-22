@@ -96,15 +96,12 @@ namespace System.Text.Json
         /// </summary>
         public JsonConverter InitializeReEntry(Type type, JsonSerializerOptions options, string? propertyName = null)
         {
-            JsonClassInfo newClassInfo = options.GetOrAddClass(type);
-
-            // todo: check if type==newtype and skip below?
-            // https://github.com/dotnet/runtime/issues/32358
+            JsonClassInfo classInfo = options.GetOrAddClass(type);
 
             // Set for exception handling calculation of JsonPath.
             JsonPropertyNameAsString = propertyName;
 
-            PolymorphicJsonPropertyInfo = newClassInfo.PropertyInfoForClassInfo;
+            PolymorphicJsonPropertyInfo = classInfo.PropertyInfoForClassInfo;
             return PolymorphicJsonPropertyInfo.ConverterBase;
         }
 

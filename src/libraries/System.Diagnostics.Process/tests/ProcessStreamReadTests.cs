@@ -17,7 +17,7 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessStreamReadTests : ProcessTestBase
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSyncErrorStream()
         {
             Process p = CreateProcessPortable(RemotelyInvokable.ErrorProcessBody);
@@ -29,7 +29,7 @@ namespace System.Diagnostics.Tests
             Assert.True(p.WaitForExit(WaitInMS));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestAsyncErrorStream()
         {
             for (int i = 0; i < 2; ++i)
@@ -56,7 +56,38 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TestAsyncErrorStream_SynchronizingObject(bool invokeRequired)
+        {
+            StringBuilder sb = new StringBuilder();
+            int invokeCalled = 0;
+
+            Process p = CreateProcessPortable(RemotelyInvokable.ErrorProcessBody);
+            p.SynchronizingObject = new DelegateSynchronizeInvoke()
+            {
+                InvokeRequiredDelegate = () => invokeRequired,
+                InvokeDelegate = (d, args) =>
+                {
+                    invokeCalled++;
+                    return d.DynamicInvoke(args);
+                }
+            };
+            p.StartInfo.RedirectStandardError = true;
+            p.ErrorDataReceived += (s, e) => sb.Append(e.Data);
+            p.Start();
+            p.BeginErrorReadLine();
+
+            Assert.True(p.WaitForExit(WaitInMS));
+            p.WaitForExit(); // This ensures async event handlers are finished processing.
+
+            const string Expected = RemotelyInvokable.TestConsoleApp + " started error stream" + RemotelyInvokable.TestConsoleApp + " closed error stream";
+            Assert.Equal(Expected, sb.ToString());
+            Assert.Equal(invokeRequired ? 3 : 0, invokeCalled);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSyncOutputStream()
         {
             Process p = CreateProcessPortable(RemotelyInvokable.StreamBody);
@@ -67,7 +98,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemotelyInvokable.TestConsoleApp + " started" + Environment.NewLine + RemotelyInvokable.TestConsoleApp + " closed" + Environment.NewLine, s);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestAsyncOutputStream()
         {
             for (int i = 0; i < 2; ++i)
@@ -93,7 +124,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         async public Task TestAsyncOutputStream_CancelOutputRead()
         {
             // This test might have some false negatives due to possible race condition in System.Diagnostics.AsyncStreamReader.ReadBufferAsync
@@ -176,7 +207,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         async public Task TestAsyncOutputStream_BeginCancelBeginOutputRead()
         {
             using (AnonymousPipeServerStream pipeWrite = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable))
@@ -314,7 +345,43 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [PlatformSpecific(~TestPlatforms.Windows)] // currently on Windows these operations async-over-sync on Windows
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task ReadAsync_OutputStreams_Cancel_RespondsQuickly()
+        {
+            Process p = CreateProcessLong();
+            try
+            {
+                p.StartInfo.RedirectStandardOutput = true;
+                p.StartInfo.RedirectStandardError = true;
+                Assert.True(p.Start());
+
+                using (var cts = new CancellationTokenSource())
+                {
+                    ValueTask<int> vt = p.StandardOutput.ReadAsync(new char[1].AsMemory(), cts.Token);
+                    await Task.Delay(1);
+                    Assert.False(vt.IsCompleted);
+                    cts.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
+                }
+
+                using (var cts = new CancellationTokenSource())
+                {
+                    ValueTask<int> vt = p.StandardError.ReadAsync(new char[1].AsMemory(), cts.Token);
+                    await Task.Delay(1);
+                    Assert.False(vt.IsCompleted);
+                    cts.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
+                }
+            }
+            finally
+            {
+                p.Kill();
+                p.Dispose();
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSyncStreams()
         {
             const string expected = "This string should come as output";
@@ -331,7 +398,7 @@ namespace System.Diagnostics.Tests
             p.WaitForExit(); // wait for event handlers to complete
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestEOFReceivedWhenStdInClosed()
         {
             // This is the test for the fix of https://github.com/dotnet/runtime/issues/19277.
@@ -386,7 +453,7 @@ namespace System.Diagnostics.Tests
             p1.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestAsyncHalfCharacterAtATime()
         {
             var receivedOutput = false;
@@ -427,7 +494,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestManyOutputLines()
         {
             const int ExpectedLineCount = 144;
@@ -455,7 +522,48 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ExpectedLineCount + 1, totalLinesReceived);
         }
 
-        [Fact]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TestManyOutputLines_SynchronizingObject(bool invokeRequired)
+        {
+            const int ExpectedLineCount = 144;
+
+            int nonWhitespaceLinesReceived = 0;
+            int totalLinesReceived = 0;
+            int invokeCalled = 0;
+
+            Process p = CreateProcessPortable(RemotelyInvokable.Write144Lines);
+            p.SynchronizingObject = new DelegateSynchronizeInvoke()
+            {
+                InvokeRequiredDelegate = () => invokeRequired,
+                InvokeDelegate = (d, args) =>
+                {
+                    invokeCalled++;
+                    return d.DynamicInvoke(args);
+                }
+            };
+            p.StartInfo.RedirectStandardOutput = true;
+            p.OutputDataReceived += (s, e) =>
+            {
+                if (!string.IsNullOrWhiteSpace(e.Data))
+                {
+                    nonWhitespaceLinesReceived++;
+                }
+                totalLinesReceived++;
+            };
+            p.Start();
+            p.BeginOutputReadLine();
+
+            Assert.True(p.WaitForExit(WaitInMS));
+            p.WaitForExit(); // This ensures async event handlers are finished processing.
+
+            Assert.Equal(ExpectedLineCount, nonWhitespaceLinesReceived);
+            Assert.Equal(ExpectedLineCount + 1, totalLinesReceived);
+            Assert.Equal(invokeRequired ? totalLinesReceived : 0, invokeCalled);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnCoreClr("Avoid asserts in FileStream.Read when concurrently disposed", ~RuntimeConfiguration.Release)]
         public void TestClosingStreamsAsyncDoesNotThrow()
         {
@@ -474,7 +582,7 @@ namespace System.Diagnostics.Tests
             RemotelyInvokable.FireClosedEvent();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestClosingStreamsUndefinedDoesNotThrow()
         {
             Process p = CreateProcessPortable(RemotelyInvokable.WriteLinesAfterClose);
@@ -486,7 +594,7 @@ namespace System.Diagnostics.Tests
             RemotelyInvokable.FireClosedEvent();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestClosingSyncModeDoesNotCloseStreams()
         {
             Process p = CreateProcessPortable(RemotelyInvokable.WriteLinesAfterClose);
@@ -505,7 +613,7 @@ namespace System.Diagnostics.Tests
             error.ReadToEnd();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestStreamNegativeTests()
         {
             {
@@ -554,7 +662,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestCustomStandardInputEncoding()
         {
             var process = CreateProcessPortable(RemotelyInvokable.ReadLineWithCustomEncodingWriteLineWithUtf8, Encoding.UTF32.WebName);
@@ -575,7 +683,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemotelyInvokable.SuccessExitCode, process.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestMismatchedStandardInputEncoding()
         {
             var process = CreateProcessPortable(RemotelyInvokable.ReadLineWithCustomEncodingWriteLineWithUtf8, Encoding.UTF32.WebName);

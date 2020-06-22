@@ -254,7 +254,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool is_subclass_of(IntPtr childType, IntPtr baseType);
 
-        [PreserveDependency(".ctor()", "System.Runtime.CompilerServices.IsByRefLikeAttribute")]
+        [DynamicDependency("#ctor()", typeof(IsByRefLikeAttribute))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool IsByRefLike(RuntimeType type);
 
@@ -289,7 +289,7 @@ namespace System
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));
 
-            if (typeName == string.Empty)
+            if (typeName.Length == 0)
                 if (throwOnError)
                     throw new TypeLoadException("A null or zero length string does not represent a valid Type.");
                 else

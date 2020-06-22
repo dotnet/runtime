@@ -436,7 +436,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                string entryName = (string)rootEntry.Properties["distinguishedName"].Value;
                 // Search for computer "serviceConnectionObjects" where the keywords attribute
                 // contains the specified keyword
                 // set up the searcher object

@@ -1,0 +1,56 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
+    <TestRuntime>true</TestRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\GetStringComparerTests.cs"
+             Link="GetStringComparerTests.cs" />
+    <Compile Include="..\IdnMapping\Data\ConformanceIdnaUnicodeTestResult.cs"
+             Link="IdnMapping\Data\ConformanceIdnaUnicodeTestResult.cs" />
+    <Compile Include="..\IdnMapping\Data\Unicode_9_0\Unicode_9_0_IdnaTest.cs"
+             Link="IdnMapping\Data\Unicode_9_0\Unicode_9_0_IdnaTest.cs" />
+    <Compile Include="..\IdnMapping\Data\Unicode_11_0\Unicode_11_0_IdnaTest.cs"
+             Link="IdnMapping\Data\Unicode_11_0\Unicode_11_0_IdnaTest.cs" />
+    <Compile Include="..\IdnMapping\Data\Unicode_13_0\Unicode_13_0_IdnaTest.cs"
+             Link="IdnMapping\Data\Unicode_13_0\Unicode_13_0_IdnaTest.cs" />
+    <Compile Include="..\IdnMapping\IdnMappingIdnaConformanceTests.cs"
+             Link="IdnMapping\IdnMappingIdnaConformanceTests.cs" />
+    <Compile Include="..\IdnMapping\Data\Factory.cs"
+             Link="IdnMapping\Data\Factory.cs" />
+    <Compile Include="..\IdnMapping\Data\ConformanceIdnaTestResult.cs"
+             Link="IdnMapping\Data\ConformanceIdnaTestResult.cs" />
+    <Compile Include="..\IdnMapping\Data\Unicode_6_0\Unicode_6_0_IdnaTest.cs"
+             Link="IdnMapping\Data\Unicode_6_0\Unicode_6_0_IdnaTest.cs" />
+    <Compile Include="..\IdnMapping\Data\Unicode_Win7\Unicode_Win7_IdnaTest.cs"
+             Link="IdnMapping\Data\Unicode_Win7\Unicode_Win7_IdnaTest.cs" />
+    <Compile Include="..\IdnMapping\Data\Unicode_IdnaTest.cs"
+             Link="IdnMapping\Data\Unicode_IdnaTest.cs" />
+    <Compile Include="..\IdnMapping\Data\IConformanceIdnaTest.cs"
+             Link="IdnMapping\Data\IConformanceIdnaTest.cs" />
+    <Compile Include="..\IdnMapping\IdnMappingGetAsciiTests.cs"
+             Link="IdnMapping\IdnMappingGetAsciiTests.cs" />
+    <Compile Include="..\IdnMapping\IdnMappingGetUnicodeTests.cs"
+             Link="IdnMapping\IdnMappingGetUnicodeTests.cs" />
+    <Compile Include="..\IdnMapping\IdnMappingUseStd3AsciiRulesTests.cs"
+             Link="IdnMapping\IdnMappingUseStd3AsciiRulesTests.cs" />
+    <Compile Include="..\Normalization\StringNormalizationTests.cs"
+             Link="Normalization\StringNormalizationTests.cs" />
+    <Compile Include="..\Normalization\NormalizationAll.cs"
+             Link="Normalization\NormalizationAll.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\IdnMapping\Data\Unicode_6_0\IdnaTest_6.txt" />
+    <EmbeddedResource Include="..\IdnMapping\Data\Unicode_Win7\IdnaTest_Win7.txt" />
+    <EmbeddedResource Include="..\IdnMapping\Data\Unicode_9_0\IdnaTest_9.txt" />
+    <EmbeddedResource Include="..\IdnMapping\Data\Unicode_11_0\IdnaTest_11.txt" />
+    <EmbeddedResource Include="..\IdnMapping\Data\Unicode_13_0\IdnaTest_13.txt" />
+    <EmbeddedResource Include="..\Normalization\Data\win8.txt">
+      <LogicalName>NormalizationDataWin8</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\Normalization\Data\win7.txt">
+      <LogicalName>NormalizationDataWin7</LogicalName>
+    </EmbeddedResource>
+    <None Include="runtimeconfig.template.json" />
+  </ItemGroup>
+</Project>
