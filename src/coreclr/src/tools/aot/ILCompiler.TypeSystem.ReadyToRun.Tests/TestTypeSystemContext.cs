@@ -25,9 +25,7 @@ namespace TypeSystemTests
 
         MetadataFieldLayoutAlgorithm _metadataFieldLayout = new TestMetadataFieldLayoutAlgorithm();
         MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
-#if !READYTORUN
         ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
-#endif
         VirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
         
         public CanonicalizationMode CanonMode { get; set; } = CanonicalizationMode.RuntimeDetermined;
@@ -62,15 +60,12 @@ namespace TypeSystemTests
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
-#if !READYTORUN
             if (type == UniversalCanonType)
                 return UniversalCanonLayoutAlgorithm.Instance;
-#endif
 
             return _metadataFieldLayout;
         }
 
-#if !READYTORUN
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
         {
             if (_arrayOfTRuntimeInterfacesAlgorithm == null)
@@ -79,7 +74,6 @@ namespace TypeSystemTests
             }
             return _arrayOfTRuntimeInterfacesAlgorithm;
         }
-#endif
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForDefType(DefType type)
         {
