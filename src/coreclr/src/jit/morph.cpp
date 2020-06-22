@@ -10342,9 +10342,6 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         if (varTypeIsStruct(varDsc) && varDsc->CanBeReplacedWithItsField(this))
         {
             JITDUMP(" not morphing a single reg call return\n");
-            // Set `lvIsMultiRegRet` to exclude it from SSA, it is a temporary solution,
-            // inspired by multi-reg call work. We should support SSA for such structs in the future.
-            varDsc->lvIsMultiRegRet = true;
             return tree;
         }
     }

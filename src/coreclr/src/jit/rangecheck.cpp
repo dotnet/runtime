@@ -444,7 +444,12 @@ LclSsaVarDsc* RangeCheck::GetSsaDefAsg(GenTreeLclVarCommon* lclUse)
         return nullptr;
     }
 
-    LclSsaVarDsc* ssaDef = m_pCompiler->lvaGetDesc(lclUse)->GetPerSsaData(ssaNum);
+    LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclUse);
+    if (varDsc->CanBeReplacedWithItsField(m_pCompiler))
+    {
+        varDsc = m_pCompiler->lvaGetDesc(varDsc->lvFieldLclStart);
+    }
+    LclSsaVarDsc* ssaDef = varDsc->GetPerSsaData(ssaNum);
 
     // RangeCheck does not care about uninitialized variables.
     if (ssaDef->GetAssignment() == nullptr)
@@ -472,6 +477,11 @@ LclSsaVarDsc* RangeCheck::GetSsaDefAsg(GenTreeLclVarCommon* lclUse)
 #ifdef DEBUG
 UINT64 RangeCheck::HashCode(unsigned lclNum, unsigned ssaNum)
 {
+    LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclNum);
+    if (varDsc->CanBeReplacedWithItsField(m_pCompiler))
+    {
+        lclNum = varDsc->lvFieldLclStart;
+    }
     assert(ssaNum != SsaConfig::RESERVED_SSA_NUM);
     return UINT64(lclNum) << 32 | ssaNum;
 }
@@ -499,7 +509,8 @@ RangeCheck::Location* RangeCheck::GetDef(unsigned lclNum, unsigned ssaNum)
 
 RangeCheck::Location* RangeCheck::GetDef(GenTreeLclVarCommon* lcl)
 {
-    return GetDef(lcl->GetLclNum(), lcl->GetSsaNum());
+    unsigned lclNum = lcl->GetLclNum();
+    return GetDef(lclNum, lcl->GetSsaNum());
 }
 
 // Add the def location to the hash table.
@@ -546,7 +557,12 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
         Limit      limit(Limit::keUndef);
         genTreeOps cmpOper = GT_NONE;
 
-        LclSsaVarDsc* ssaData     = m_pCompiler->lvaTable[lcl->GetLclNum()].GetPerSsaData(lcl->GetSsaNum());
+        LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl);
+        if (varDsc->CanBeReplacedWithItsField(m_pCompiler))
+        {
+            varDsc = m_pCompiler->lvaGetDesc(varDsc->lvFieldLclStart);
+        }
+        LclSsaVarDsc* ssaData     = varDsc->GetPerSsaData(lcl->GetSsaNum());
         ValueNum      normalLclVN = m_pCompiler->vnStore->VNConservativeNormalValue(ssaData->m_vnPair);
 
         // Current assertion is of the form (i < len - cns) != 0
