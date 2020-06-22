@@ -4502,12 +4502,6 @@ namespace System
                     copy.Dispose();
                 }
             }
-            else if (_syntax.InFact(UriSyntaxFlags.ConvertPathSlashes) && InFact(Flags.BackslashInPath))
-            {
-                Span<char> chars = dest.RawChars.Slice(start, dest.Length - start);
-                for (int i = 0; i < chars.Length; i++)
-                    if (chars[i] == '\\') chars[i] = '/';
-            }
 
             if (formatAs != UriFormat.UriEscaped && InFact(Flags.PathNotCanonical))
             {
