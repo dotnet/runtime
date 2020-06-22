@@ -17462,18 +17462,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 
                     if (context != nullptr)
                     {
-                        CORINFO_CLASS_HANDLE exactClass = nullptr;
-
-                        if (((size_t)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
-                        {
-                            exactClass = (CORINFO_CLASS_HANDLE)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK);
-                        }
-                        else
-                        {
-                            CORINFO_METHOD_HANDLE exactMethod =
-                                (CORINFO_METHOD_HANDLE)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK);
-                            exactClass = info.compCompHnd->getMethodClass(exactMethod);
-                        }
+                        CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(context);
 
                         // Grab the signature in this context.
                         CORINFO_SIG_INFO sig;
