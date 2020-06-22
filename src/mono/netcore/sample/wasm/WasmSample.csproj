@@ -25,10 +25,14 @@
              Targets="Build;Publish"/>
   </Target>
 
-  <UsingTask TaskName="WasmAppBuilder" 
+  <UsingTask TaskName="WasmAppBuilder"
              AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
 
   <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
+  <ItemGroup>
+      <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
+      <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true'" />
+    </ItemGroup>
     <ItemGroup>
       <AssemblySearchPaths Include="bin"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
@@ -39,11 +43,24 @@
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
       MainAssembly="bin\WasmSample.dll"
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
-      AssemblySearchPaths="@(AssemblySearchPaths)"/>
+      AssemblySearchPaths="@(AssemblySearchPaths)"
+      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
+   />
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
+
+  
+
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="2.4.0" />
+    <!-- <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" /> -->
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Runtime.TestData" Version="$(SystemRuntimeTestDataVersion)" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
 </Project>
+

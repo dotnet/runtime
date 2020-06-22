@@ -80,6 +80,7 @@
     <SystemPrivateRuntimeUnicodeDataVersion>5.0.0-beta.20319.2</SystemPrivateRuntimeUnicodeDataVersion>
     <SystemSecurityCryptographyX509CertificatesTestDataVersion>5.0.0-beta.20319.2</SystemSecurityCryptographyX509CertificatesTestDataVersion>
     <SystemWindowsExtensionsTestDataVersion>5.0.0-beta.20319.2</SystemWindowsExtensionsTestDataVersion>
+    <SystemRuntimeTestDataVersion>5.0.0-beta.20319.2</SystemRuntimeTestDataVersion>
     <!-- Standard dependencies -->
     <NETStandardLibraryVersion>2.2.0-prerelease.19564.1</NETStandardLibraryVersion>
     <!-- dotnet-optimization dependencies -->

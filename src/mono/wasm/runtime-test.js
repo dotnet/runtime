@@ -93,12 +93,12 @@ function fail_exec (reason) {
 }
 
 function inspect_object (o) {
-    var r = "";
-    for(var p in o) {
-        var t = typeof o[p];
-        r += "'" + p + "' => '" + t + "', ";
-    }
-    return r;
+	var r = "";
+	for(var p in o) {
+		var t = typeof o[p];
+		r += "'" + p + "' => '" + t + "', ";
+	}
+	return r;
 }
 
 // Preprocess arguments
@@ -132,7 +132,7 @@ while (true) {
 		args = args.slice (1);
 	} else if (args [0] == "--enable-zoneinfo") {
 		enable_zoneinfo = true;
-		args = args.slice (1);			
+		args = args.slice (1);
 	} else {
 		break;
 	}
@@ -149,7 +149,7 @@ function writeContentToFile(content, path)
 if (typeof window == "undefined")
   load ("mono-config.js");
 
-var Module = { 
+var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 
 	print: function(x) { print ("WASM: " + x) },
@@ -189,6 +189,7 @@ var Module = {
 						{
 							var fullPath = directory != '/' ? directory + '/' + files[j] : files[j];
 							var content = new Uint8Array (read ("supportFiles/" + fullPath, 'binary'));
+							console.log(fullPath);
 							writeContentToFile(content, fullPath);
 						}
 					}
@@ -206,35 +207,37 @@ var Module = {
 			f ();
 		}
 		if (enable_zoneinfo) {
-			// Load the zoneinfo data into the VFS rooted at /zoneinfo
-			FS.mkdir("zoneinfo");
-			Module['FS_createPath']('/', 'zoneinfo', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Indian', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Atlantic', true, true);
-			Module['FS_createPath']('/zoneinfo', 'US', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Brazil', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Pacific', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Arctic', true, true);
-			Module['FS_createPath']('/zoneinfo', 'America', true, true);
-			Module['FS_createPath']('/zoneinfo/America', 'Indiana', true, true);
-			Module['FS_createPath']('/zoneinfo/America', 'Argentina', true, true);
-			Module['FS_createPath']('/zoneinfo/America', 'Kentucky', true, true);
-			Module['FS_createPath']('/zoneinfo/America', 'North_Dakota', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Australia', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Etc', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Asia', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Antarctica', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Europe', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Mexico', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Africa', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Chile', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Canada', true, true);			
-			var zoneInfoData = read ('zoneinfo.data', 'binary');
-			var metadata = JSON.parse(read ("mono-webassembly-zoneinfo-fs-smd.js.metadata", 'utf-8'));
+			FS.mkdir("usr");
+			Module['FS_createPath']('/', 'usr', true, true);
+			FS.mkdir("share");
+			Module['FS_createPath']('/usr', 'share', true, true);
+			FS.mkdir("/usr/share/zoneinfo")
+			Module['FS_createPath']('/usr/share/zoneinfo', 'Indian', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'Atlantic', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'US', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'Brazil', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'Pacific', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'Arctic', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'America', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo/America', 'Indiana', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo/America', 'Argentina', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo/America', 'Kentucky', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo/America', 'North_Dakota', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'Australia', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'Etc', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'Asia', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'Antarctica', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'Europe', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'Mexico', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'Africa', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'Chile', true, true);
+			Module['FS_createPath']('/usr/share/zoneinfo', 'Canada', true, true);
+			var zoneInfoData = new Uint8Array(read ('supportFiles/zoneinfo/zoneinfo.data', 'binary'));
+			var metadata = JSON.parse(read ("supportFiles/zoneinfo/mono-webassembly-zoneinfo-fs-smd.js.metadata", 'utf-8'));
 			var files = metadata.files;
 			for (var i = 0; i < files.length; ++i) {
 				var byteArray = zoneInfoData.subarray(files[i].start, files[i].end);
-				writeContentToFile(byteArray, files[i].filename);
+				writeContentToFile(byteArray, `/usr/share${files[i].filename}`);
 			}
 		}
 		MONO.mono_load_runtime_and_bcl (
@@ -283,7 +286,7 @@ if (typeof window == "undefined")
 const IGNORE_PARAM_COUNT = -1;
 
 var App = {
-    init: function () {
+	init: function () {
 
 		var assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string'])
 		var find_class = Module.cwrap ('mono_wasm_assembly_find_class', 'number', ['number', 'string', 'string'])
@@ -400,5 +403,5 @@ var App = {
 		} else {
 			fail_exec ("Unhanded argument: " + args [0]);
 		}
-    },
+	},
 };

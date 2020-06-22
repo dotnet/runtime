@@ -266,6 +266,9 @@
              Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="System.Runtime.TestData" Version="$(SystemRuntimeTestDataVersion)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
