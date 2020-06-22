@@ -2,6 +2,10 @@
 using System.ComponentModel;
 using System.Reflection;
 
+/// <summary>
+/// Tests that System.ComponentModel.TypeConverter.ConvertFromInvariantString
+/// is not trimmed out when needed by DefaultValueAttribute in a trimmed application.
+/// </summary>
 class Program
 {
     static int Main(string[] args)

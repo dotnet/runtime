@@ -1,12 +1,22 @@
 using System;
 using System.ComponentModel;
 
+/// <summary>
+/// Tests that the System.ComponentModel.TypeDescriptor.ComObjectType
+/// property works as expected when used in a trimmed application.
+/// </summary>
 class Program
 {
     static int Main(string[] args)
     {
         Type type = TypeDescriptor.ComObjectType;
-        Activator.CreateInstance(type);
-        return 100;
+
+        // Tests that the ctor for System.ComponentModel.TypeDescriptor+TypeDescriptorComObject is not trimmed out.
+        object obj = Activator.CreateInstance(type);
+        string expectedObjTypeName = "System.ComponentModel.TypeDescriptor+TypeDescriptorComObject, System.ComponentModel.TypeConverter, Version=";
+
+        return obj != null && obj.GetType().AssemblyQualifiedName.StartsWith(expectedObjTypeName)
+            ? 100
+            : -1;
     }
 }

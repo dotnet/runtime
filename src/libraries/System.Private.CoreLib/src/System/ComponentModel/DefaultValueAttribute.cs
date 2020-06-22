@@ -20,7 +20,10 @@ namespace System.ComponentModel
         /// </summary>
         private object? _value;
 
-        // Delegate ad hoc created 'TypeDescriptor.ConvertFromInvariantString' reflection object cache
+        // Delegate ad hoc created 'TypeDescriptor.ConvertFromInvariantString' reflection object cache.
+        // Used by the DefaultValueAttributeCtorTest in System.Runtime.TrimmingTests to assert that
+        // System.ComponentModel.TypeConverter.ConvertFromInvariantString is not trimmed out when needed by
+        // DefaultValueAttribute in a trimmed application.
         private static object? s_convertFromInvariantString;
 
         /// <summary>
