@@ -318,15 +318,15 @@ namespace System.Text.Json.Serialization.Converters
             return converted;
         }
 
-        internal override T ReadWithQuotes(ReadOnlySpan<byte> unescapedPropertyName, string? unescapedPropertyNameAsString)
+        internal override T ReadWithQuotes(ref Utf8JsonReader reader)
         {
-            string enumString = JsonReaderHelper.TranscodeHelper(unescapedPropertyName);
+            string? enumString = reader.GetString();
+            Debug.Assert(enumString != null);
 
             if (!Enum.TryParse(enumString, out T value)
                 && !Enum.TryParse(enumString, ignoreCase: true, out value))
             {
                 ThrowHelper.ThrowJsonException();
-                return default;
             }
 
             return value;

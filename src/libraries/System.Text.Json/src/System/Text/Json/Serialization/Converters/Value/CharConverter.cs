@@ -28,5 +28,28 @@ namespace System.Text.Json.Serialization.Converters
 #endif
                 );
         }
+
+        internal override char ReadWithQuotes(ref Utf8JsonReader reader)
+        {
+            string? str = reader.GetString();
+            if (string.IsNullOrEmpty(str) || str.Length > 1)
+            {
+                throw ThrowHelper.GetInvalidOperationException_ExpectedChar(JsonTokenType.String);
+            }
+            return str[0];
+        }
+
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, char value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            writer.WritePropertyName(
+#if BUILDING_INBOX_LIBRARY
+                MemoryMarshal.CreateSpan(ref value, 1)
+#else
+                value.ToString()
+#endif
+                );
+        }
+
+        internal override bool CanBeDictionaryKey => true;
     }
 }

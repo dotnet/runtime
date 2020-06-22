@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization.Converters
@@ -19,10 +18,9 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteStringValue(value);
         }
 
-        internal override string ReadWithQuotes(ReadOnlySpan<byte> unescapedPropertyName, string? unescapedPropertyNameAsString)
+        internal override string ReadWithQuotes(ref Utf8JsonReader reader)
         {
-            Debug.Assert(unescapedPropertyNameAsString != null);
-            return unescapedPropertyNameAsString;
+            return reader.GetString()!;
         }
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, [DisallowNull] string? value, JsonSerializerOptions options, ref WriteStack state)

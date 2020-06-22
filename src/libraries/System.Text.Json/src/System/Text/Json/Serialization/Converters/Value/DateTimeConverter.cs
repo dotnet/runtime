@@ -15,5 +15,22 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WriteStringValue(value);
         }
+
+        internal override DateTime ReadWithQuotes(ref Utf8JsonReader reader)
+        {
+            if (!reader.TryGetDateTimeCore(out DateTime value))
+            {
+                throw ThrowHelper.GetFormatException(DataType.DateTime);
+            }
+
+            return value;
+        }
+
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            writer.WritePropertyName(value);
+        }
+
+        internal override bool CanBeDictionaryKey => true;
     }
 }

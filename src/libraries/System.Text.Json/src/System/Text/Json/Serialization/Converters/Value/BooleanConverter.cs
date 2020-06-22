@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Text;
+
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class BooleanConverter : JsonConverter<bool>
@@ -15,5 +17,24 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WriteBooleanValue(value);
         }
+
+        internal override bool ReadWithQuotes(ref Utf8JsonReader reader)
+        {
+            ReadOnlySpan<byte> propertyName = reader.GetSpan();
+            if (Utf8Parser.TryParse(propertyName, out bool value, out int bytesConsumed)
+                && propertyName.Length == bytesConsumed)
+            {
+                return value;
+            }
+
+            throw ThrowHelper.GetFormatException(DataType.Boolean);
+        }
+
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, bool value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            writer.WritePropertyName(value);
+        }
+
+        internal override bool CanBeDictionaryKey => true;
     }
 }

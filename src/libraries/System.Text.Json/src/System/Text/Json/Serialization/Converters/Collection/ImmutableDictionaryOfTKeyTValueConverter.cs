@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Converters
         where TCollection : IReadOnlyDictionary<TKey, TValue>
         where TKey : notnull
     {
-        protected override void Add(in TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
+        protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
             ((Dictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
         }

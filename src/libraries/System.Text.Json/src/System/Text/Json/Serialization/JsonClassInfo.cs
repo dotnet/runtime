@@ -29,7 +29,7 @@ namespace System.Text.Json
         // If enumerable, the JsonClassInfo for the element type.
         private JsonClassInfo? _elementClassInfo;
 
-        // If dictionary, the JsonClassInfo for TKey.
+        // If dictionary, the JsonClassInfo for the key type.
         private JsonClassInfo? _keyClassInfo;
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace System.Text.Json
                 if (_keyClassInfo == null && KeyType != null)
                 {
                     Debug.Assert(ClassType == ClassType.Dictionary);
-
+                    // TODO: When looking for the key converter, only consider types with an internal converter.
                     _keyClassInfo = Options.GetOrAddClass(KeyType);
                 }
 
@@ -223,13 +223,10 @@ namespace System.Text.Json
                         PropertyCache = cache;
                     }
                     break;
+                case ClassType.Enumerable:
                 case ClassType.Dictionary:
                     {
                         KeyType = converter.KeyType;
-                        goto case ClassType.Enumerable;
-                    }
-                case ClassType.Enumerable:
-                    {
                         ElementType = converter.ElementType;
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(runtimeType);
                     }

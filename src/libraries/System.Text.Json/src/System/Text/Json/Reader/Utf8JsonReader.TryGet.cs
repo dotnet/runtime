@@ -465,6 +465,11 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
             }
 
+            return TryGetBytesFromBase64Core(out value);
+        }
+
+        internal bool TryGetBytesFromBase64Core([NotNullWhen(true)] out byte[]? value)
+        {
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
 
             if (_stringHasEscaping)
@@ -495,6 +500,11 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
+            return TryGetByteCore(out value);
+        }
+
+        internal bool TryGetByteCore(out byte value)
+        {
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
             if (Utf8Parser.TryParse(span, out byte tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -525,6 +535,11 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
+            return TryGetSByteCore(out value);
+        }
+
+        internal bool TryGetSByteCore(out sbyte value)
+        {
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
             if (Utf8Parser.TryParse(span, out sbyte tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -554,6 +569,11 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
+            return TryGetInt16Core(out value);
+        }
+
+        internal bool TryGetInt16Core(out short value)
+        {
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
             if (Utf8Parser.TryParse(span, out short tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -583,6 +603,11 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
+            return TryGetInt32Core(out value);
+        }
+
+        internal bool TryGetInt32Core(out int value)
+        {
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
             if (Utf8Parser.TryParse(span, out int tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -612,6 +637,11 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
+            return TryGetInt64Core(out value);
+        }
+
+        internal bool TryGetInt64Core(out long value)
+        {
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
             if (Utf8Parser.TryParse(span, out long tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -731,6 +761,11 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
+            return TryGetSingleCore(out value);
+        }
+
+        internal bool TryGetSingleCore(out float value)
+        {
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
             if (Utf8Parser.TryParse(span, out float tmp, out int bytesConsumed, _numberFormat)
                 && span.Length == bytesConsumed)
@@ -760,6 +795,11 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
+            return TryGetDoubleCore(out value);
+        }
+
+        internal bool TryGetDoubleCore(out double value)
+        {
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
             if (Utf8Parser.TryParse(span, out double tmp, out int bytesConsumed, _numberFormat)
                 && span.Length == bytesConsumed)
@@ -789,6 +829,11 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
+            return TryGetDecimalCore(out value);
+        }
+
+        internal bool TryGetDecimalCore(out decimal value)
+        {
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
             if (Utf8Parser.TryParse(span, out decimal tmp, out int bytesConsumed, _numberFormat)
                 && span.Length == bytesConsumed)
@@ -817,6 +862,12 @@ namespace System.Text.Json
             {
                 throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
             }
+
+            return TryGetDateTimeCore(out value);
+        }
+
+        internal bool TryGetDateTimeCore(out DateTime value)
+        {
 
             ReadOnlySpan<byte> span = stackalloc byte[0];
 
@@ -881,6 +932,11 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
             }
 
+            return TryGetDateTimeOffsetCore(out value);
+        }
+
+        internal bool TryGetDateTimeOffsetCore(out DateTimeOffset value)
+        {
             ReadOnlySpan<byte> span = stackalloc byte[0];
 
             if (HasValueSequence)
@@ -945,6 +1001,11 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
             }
 
+            return TryGetGuidCore(out value);
+        }
+
+        internal bool TryGetGuidCore(out Guid value)
+        {
             ReadOnlySpan<byte> span = stackalloc byte[0];
 
             if (HasValueSequence)

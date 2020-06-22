@@ -21,6 +21,9 @@ namespace System.Text.Json
         public byte[]? JsonPropertyName;
         public string? JsonPropertyNameAsString; // This is used for string dictionary keys and re-entry cases that specify a property name.
 
+        // Stores the non-string dictionary keys for continuation.
+        public object? DictionaryKey;
+
         // Validation state.
         public int OriginalDepth;
         public JsonTokenType OriginalTokenType;

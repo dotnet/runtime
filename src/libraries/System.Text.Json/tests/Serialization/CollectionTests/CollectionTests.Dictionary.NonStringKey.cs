@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public class DictionaryKeyTests
+    public partial class DictionaryTests
     {
         public abstract class DictionaryKeyTestsBase<TKey, TValue>
         {
@@ -63,16 +63,57 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        public class DictionaryIntKey : DictionaryKeyTestsBase<int, int>
+        public class DictionaryBoolKey : DictionaryKeyTestsBase<bool, int>
         {
-            protected override int Key => 1;
+            protected override bool Key => true;
             protected override int Value => 1;
         }
 
-        public class DictionaryGuidKey : DictionaryKeyTestsBase<Guid, int>
+        public class DictionaryByteKey : DictionaryKeyTestsBase<byte, int>
         {
-            // Use singleton pattern here so the Guid key does not change everytime this is called.
-            protected override Guid Key { get; } = Guid.NewGuid();
+            protected override byte Key => byte.MaxValue;
+            protected override int Value => 1;
+        }
+
+        public class DictionaryCharKey : DictionaryKeyTestsBase<char, char>
+        {
+            protected override string _expectedJson => @"{""\uFFFF"":""\uFFFF""}";
+            protected override char Key => char.MaxValue;
+            protected override char Value => char.MaxValue;
+        }
+
+        public class DictionaryDateTimeKey : DictionaryKeyTestsBase<DateTime, int>
+        {
+            protected override string _expectedJson => $@"{{""{DateTime.MaxValue.ToString("O")}"":1}}";
+            protected override DateTime Key => DateTime.MaxValue;
+            protected override int Value => 1;
+        }
+
+        public class DictionaryDateTimeOffsetKey : DictionaryKeyTestsBase<DateTimeOffset, DateTimeOffset>
+        {
+            //TODO: The plus sign is escaped for the key but not for the value. Is this correct?
+            protected override string _expectedJson => $@"{{""9999-12-31T23:59:59.9999999\u002B00:00"":""{DateTimeOffset.MaxValue.ToString("O")}""}}";
+            protected override DateTimeOffset Key => DateTimeOffset.MaxValue;
+            protected override DateTimeOffset Value => DateTimeOffset.MaxValue;
+        }
+
+        public class DictionaryDecimalKey : DictionaryKeyTestsBase<decimal, int>
+        {
+            protected override decimal Key => decimal.MaxValue;
+            protected override int Value => 1;
+        }
+
+        //public class DictionaryDoubleKey : DictionaryKeyTestsBase<double, double>
+        //{
+        //    //TODO: The plus sign is escaped for the key but not for the value. Is this correct?
+        //    protected override string _expectedJson => $@"{{""1.7976931348623157E\u002B308"":{double.MaxValue}}}";
+        //    protected override double Key => double.MaxValue;
+        //    protected override double Value => double.MaxValue;
+        //}
+
+        public class DictionaryDoubleKey : DictionaryKeyTestsBase<double, int>
+        {
+            protected override double Key => 1;
             protected override int Value => 1;
         }
 
@@ -85,6 +126,50 @@ namespace System.Text.Json.Serialization.Tests
         public class DictionaryEnumFlagsKey : DictionaryKeyTestsBase<MyEnumFlags, int>
         {
             protected override MyEnumFlags Key => MyEnumFlags.Foo | MyEnumFlags.Bar;
+            protected override int Value => 1;
+        }
+
+        public class DictionaryGuidKey : DictionaryKeyTestsBase<Guid, int>
+        {
+            // Use singleton pattern here so the Guid key does not change everytime this is called.
+            protected override Guid Key { get; } = Guid.NewGuid();
+            protected override int Value => 1;
+        }
+
+        public class DictionaryInt16Key : DictionaryKeyTestsBase<short, int>
+        {
+            protected override short Key => short.MaxValue;
+            protected override int Value => 1;
+        }
+
+        public class DictionaryInt32Key : DictionaryKeyTestsBase<int, int>
+        {
+            protected override int Key => int.MaxValue;
+            protected override int Value => 1;
+        }
+
+        public class DictionaryInt64Key : DictionaryKeyTestsBase<long, int>
+        {
+            protected override long Key => long.MaxValue;
+            protected override int Value => 1;
+        }
+
+        public class DictionarySByteKey : DictionaryKeyTestsBase<sbyte, int>
+        {
+            protected override sbyte Key => sbyte.MaxValue;
+            protected override int Value => 1;
+        }
+
+        //public class DictionarySingleKey : DictionaryKeyTestsBase<float, float>
+        //{
+        //    //TODO: The plus sign is escaped for the key but not for the value. Is this correct?
+        //    protected override float Key => float.MaxValue;
+        //    protected override float Value => float.MaxValue;
+        //}
+
+        public class DictionarySingleKey : DictionaryKeyTestsBase<float, int>
+        {
+            protected override float Key => 1;
             protected override int Value => 1;
         }
 
@@ -136,14 +221,14 @@ namespace System.Text.Json.Serialization.Tests
                 => JsonSerializer.DeserializeAsync<Dictionary<TKey, TValue>>(new MemoryStream(Encoding.UTF8.GetBytes("{}"))).AsTask();
         }
 
-        public class DictionaryMyClassKeyUnsupported : DictionaryUnsupportedKeyTestsBase<MyClass, int>
+        public class DictionaryMyPublicClassKeyUnsupported : DictionaryUnsupportedKeyTestsBase<MyPublicClass, int>
         {
-            protected override MyClass Key => new MyClass();
+            protected override MyPublicClass Key => new MyPublicClass();
         }
 
-        public class DictionaryMyStructKeyUnsupported : DictionaryUnsupportedKeyTestsBase<MyStruct, int>
+        public class DictionaryMyPublicStructKeyUnsupported : DictionaryUnsupportedKeyTestsBase<MyPublicStruct, int>
         {
-            protected override MyStruct Key => new MyStruct();
+            protected override MyPublicStruct Key => new MyPublicStruct();
         }
 
         public class DictionaryUriKeyUnsupported : DictionaryUnsupportedKeyTestsBase<Uri, int>
@@ -241,7 +326,6 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             [Theory]
-            [InlineData(@"{""\u0039"":1}", typeof(Dictionary<int, int>), 9)]
             [InlineData(@"{""\u0041"":1}", typeof(Dictionary<string, int>), "A")]
             [InlineData(@"{""\u0066\u006f\u006f"":1}", typeof(Dictionary<MyEnum, int>), MyEnum.Foo)]
             [InlineData(@"{""\u0066\u006f\u006f\u002c\u0020\u0062\u0061\u0072"":1}", typeof(Dictionary<MyEnumFlags, int>), MyEnumFlags.Foo | MyEnumFlags.Bar)]
@@ -254,17 +338,31 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             [Fact]
-            public static void TestUnescapedGuidKey()
+            public static void TestMoreUnescapedKeys()
             {
-                // Test Guid which cannot be passed as parameter on above method.
-                Dictionary<Guid, int> result = JsonSerializer.Deserialize<Dictionary<Guid, int>>(@"{""\u0036bb67e4e-9780-4895-851b-75f72ac34c5a"":1}");
+                // Test types that cannot be passed as InlineData in above method.
 
-                Guid myGuid = new Guid("6bb67e4e-9780-4895-851b-75f72ac34c5a");
-                Assert.Equal(1, result[myGuid]);
+                Dictionary<Guid, int> result = JsonSerializer.Deserialize<Dictionary<Guid, int>>(@"{""\u0036bb67e4e-9780-4895-851b-75f72ac34c5a"":1}");
+                Guid guid = new Guid("6bb67e4e-9780-4895-851b-75f72ac34c5a");
+                Assert.Equal(1, result[guid]);
+
+                Dictionary<DateTime, int> result2 = JsonSerializer.Deserialize<Dictionary<DateTime, int>>(@"{""\u0032\u0030\u0030\u0039\u002d\u0030\u0036\u002d\u0031\u0035\u0054\u0031\u0033\u003a\u0034\u0035\u003a\u0033\u0030\u002e\u0030\u0030\u0030\u0030\u0030\u0030\u0030"":1}");
+                // 2009-06-15T13:45:30.0000000
+                DateTime dateTime = new DateTime(2009, 6, 15, 13, 45, 30, DateTimeKind.Unspecified);
+                Assert.Equal(1, result2[dateTime]);
+
+                Dictionary<DateTime, int> result3 = JsonSerializer.Deserialize<Dictionary<DateTime, int>>(@"{""\u0032\u0030\u0030\u0039\u002d\u0030\u0036\u002d\u0031\u0035\u0054\u0031\u0033\u003a\u0034\u0035\u003a\u0033\u0030\u002e\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u005a"":1}");
+                // 2009-06-15T13:45:30.0000000Z
+                dateTime = new DateTime(2009, 6, 15, 13, 45, 30, DateTimeKind.Utc);
+                Assert.Equal(1, result3[dateTime]);
+
+                Dictionary<DateTimeOffset, int> result4 = JsonSerializer.Deserialize<Dictionary<DateTimeOffset, int>>(@"{""\u0032\u0030\u0030\u0039\u002d\u0030\u0036\u002d\u0031\u0035\u0054\u0031\u0033\u003a\u0034\u0035\u003a\u0033\u0030\u002e\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u002d\u0030\u0037\u003a\u0030\u0030"":1}");
+                // 2009-06-15T13:45:30.0000000-07:00
+                DateTimeOffset dateTimeOffset = new DateTimeOffset(2009, 6, 15, 13, 45, 30, new TimeSpan(-7, 0, 0));
+                Assert.Equal(1, result4[dateTimeOffset]);
             }
 
             [Theory]
-            [InlineData(@"{""\u0039"":1}", typeof(Dictionary<int, int>), 9)]
             [InlineData(@"{""\u0041"":1}", typeof(Dictionary<string, int>), "A")]
             [InlineData(@"{""\u0066\u006f\u006f"":1}", typeof(Dictionary<MyEnum, int>), MyEnum.Foo)]
             [InlineData(@"{""\u0066\u006f\u006f\u002c\u0020\u0062\u0061\u0072"":1}", typeof(Dictionary<MyEnumFlags, int>), MyEnumFlags.Foo | MyEnumFlags.Bar)]
@@ -280,16 +378,36 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             [Fact]
-            public static async Task TestUnescapedGuidKeyAsync()
+            public static async Task TestMoreUnescapedKeyAsync()
             {
-                // Test Guid which cannot be passed as parameter on above method.
+                // Test types that cannot be passed as InlineData in above method.
+
                 byte[] utf8Json = Encoding.UTF8.GetBytes(@"{""\u0036bb67e4e-9780-4895-851b-75f72ac34c5a"":1}");
                 MemoryStream stream = new MemoryStream(utf8Json);
-
                 Dictionary<Guid, int> result = await JsonSerializer.DeserializeAsync<Dictionary<Guid, int>>(stream);
-
                 Guid myGuid = new Guid("6bb67e4e-9780-4895-851b-75f72ac34c5a");
                 Assert.Equal(1, result[myGuid]);
+
+                utf8Json = Encoding.UTF8.GetBytes(@"{""\u0032\u0030\u0030\u0039\u002d\u0030\u0036\u002d\u0031\u0035\u0054\u0031\u0033\u003a\u0034\u0035\u003a\u0033\u0030\u002e\u0030\u0030\u0030\u0030\u0030\u0030\u0030"":1}");
+                stream = new MemoryStream(utf8Json);
+                Dictionary<DateTime, int> result2 = await JsonSerializer.DeserializeAsync<Dictionary<DateTime, int>>(stream);
+                // 2009-06-15T13:45:30.0000000
+                DateTime myDate = new DateTime(2009, 6, 15, 13, 45, 30, DateTimeKind.Unspecified);
+                Assert.Equal(1, result2[myDate]);
+
+                utf8Json = Encoding.UTF8.GetBytes(@"{""\u0032\u0030\u0030\u0039\u002d\u0030\u0036\u002d\u0031\u0035\u0054\u0031\u0033\u003a\u0034\u0035\u003a\u0033\u0030\u002e\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u005a"":1}");
+                stream = new MemoryStream(utf8Json);
+                Dictionary<DateTime, int> result3 = await JsonSerializer.DeserializeAsync<Dictionary<DateTime, int>>(stream);
+                // 2009-06-15T13:45:30.0000000Z
+                myDate = new DateTime(2009, 6, 15, 13, 45, 30, DateTimeKind.Utc);
+                Assert.Equal(1, result3[myDate]);
+
+                utf8Json = Encoding.UTF8.GetBytes(@"{""\u0032\u0030\u0030\u0039\u002d\u0030\u0036\u002d\u0031\u0035\u0054\u0031\u0033\u003a\u0034\u0035\u003a\u0033\u0030\u002e\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u002d\u0030\u0037\u003a\u0030\u0030"":1}");
+                stream = new MemoryStream(utf8Json);
+                Dictionary<DateTimeOffset, int> result4 = await JsonSerializer.DeserializeAsync<Dictionary<DateTimeOffset, int>>(stream);
+                // 2009-06-15T13:45:30.0000000-07:00
+                DateTimeOffset dateTimeOffset = new DateTimeOffset(2009, 6, 15, 13, 45, 30, new TimeSpan(-7, 0, 0));
+                Assert.Equal(1, result4[dateTimeOffset]);
             }
 
             [Fact]
@@ -381,10 +499,6 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(@"{""1"":1}", json);
             }
         }
-
-        public class MyClass { }
-
-        public struct MyStruct { }
 
         public enum MyEnum
         {

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers.Text;
-using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -19,25 +18,19 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteNumberValue(value);
         }
 
-        internal override int ReadWithQuotes(ReadOnlySpan<byte> unescapedPropertyName, string? unescapedPropertyNameAsString)
+        internal override int ReadWithQuotes(ref Utf8JsonReader reader)
         {
-            if (Utf8Parser.TryParse(unescapedPropertyName, out int value, out int bytesConsumed)
-                && unescapedPropertyName.Length == bytesConsumed)
+            if (!reader.TryGetInt32Core(out int value))
             {
-                return value;
+                throw ThrowHelper.GetFormatException(NumericType.Int32);
             }
 
-            throw ThrowHelper.GetFormatException(NumericType.Int32);
+            return value;
         }
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, int value, JsonSerializerOptions options, ref WriteStack state)
         {
-            Span<byte> utf8PropertyName = stackalloc byte[JsonConstants.MaximumFormatInt64Length];
-
-            bool result = Utf8Formatter.TryFormat(value, utf8PropertyName, out int bytesWritten);
-            Debug.Assert(result);
-
-            writer.WritePropertyName(utf8PropertyName.Slice(0, bytesWritten));
+            writer.WritePropertyName(value);
         }
 
         internal override bool CanBeDictionaryKey => true;

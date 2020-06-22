@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class ObjectConverter : JsonConverter<object>
@@ -21,7 +19,7 @@ namespace System.Text.Json.Serialization.Converters
             throw new InvalidOperationException();
         }
 
-        internal override object ReadWithQuotes(ReadOnlySpan<byte> unescapedPropertyName, string? unescapedPropertyNameAsString)
+        internal override object ReadWithQuotes(ref Utf8JsonReader reader)
             => throw new NotSupportedException();
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
@@ -34,7 +32,6 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonConverter runtimeConverter = options.GetOrAddClass(runtimeType).PropertyInfoForClassInfo.ConverterBase;
 
-            // We don't support object itself as key type.
             if (runtimeConverter == this || !runtimeConverter.CanBeDictionaryKey)
             {
                 ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(parentType);

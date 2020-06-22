@@ -931,6 +931,10 @@ namespace System.Text.Json.Serialization.Tests
 
         private class MyClass : IClass { }
 
+        public class MyPublicClass { }
+
+        public struct MyPublicStruct { }
+
         private class MyNonGenericDictionary : Dictionary<string, int> { }
 
         private class MyFactory : JsonConverterFactory
