@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Hosting
                 args.Payload.OfType<string>().Any(p => p.Contains("Request starting")));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_EnablesActivityTracking()
         {
@@ -75,11 +75,9 @@ namespace Microsoft.Extensions.Hosting
                 Assert.Equal(1, scopeObjectList.Count);
                 var activityDictionary = (scopeObjectList.FirstOrDefault() as IEnumerable<KeyValuePair<string, object>>)
                                                 .ToDictionary(x => x.Key, x => x.Value);
-                Assert.Equal(activity.Id, activityDictionary["SpanId"]);
-                Assert.Equal(activity.RootId, activityDictionary["TraceId"]);
-                Assert.Equal(parentActivity.Id, activityDictionary["ParentId"]);
-
-
+                Assert.Equal(activity.SpanId.ToString(), activityDictionary["SpanId"]);
+                Assert.Equal(activity.RootId.ToString(), activityDictionary["TraceId"]);
+                Assert.Equal(activity.ParentSpanId.ToString(), activityDictionary["ParentId"]);
             });
             var loggerProvider = new ScopeDelegateLoggerProvider(logger);
             var host = Host.CreateDefaultBuilder()
