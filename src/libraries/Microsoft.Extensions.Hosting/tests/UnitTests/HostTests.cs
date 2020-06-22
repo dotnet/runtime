@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
@@ -58,6 +59,37 @@ namespace Microsoft.Extensions.Hosting
             Assert.Contains(events, args =>
                 args.EventSource.Name == "Microsoft-Extensions-Logging" &&
                 args.Payload.OfType<string>().Any(p => p.Contains("Request starting")));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public void CreateDefaultBuilder_EnablesActivityTracking()
+        {
+            var parentActivity = new Activity("ParentActivity");
+            parentActivity.Start();
+            var activity = new Activity("ChildActivity");
+            activity.Start();
+            var id = activity.Id;
+            var logger = new ScopeDelegateLogger((scopeObjectList) =>
+            {
+                Assert.Equal(1, scopeObjectList.Count);
+                var activityDictionary = (scopeObjectList.FirstOrDefault() as IEnumerable<KeyValuePair<string, object>>)
+                                                .ToDictionary(x => x.Key, x => x.Value);
+                Assert.Equal(activity.Id, activityDictionary["SpanId"]);
+                Assert.Equal(activity.RootId, activityDictionary["TraceId"]);
+                Assert.Equal(parentActivity.Id, activityDictionary["ParentId"]);
+
+
+            });
+            var loggerProvider = new ScopeDelegateLoggerProvider(logger);
+            var host = Host.CreateDefaultBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddProvider(loggerProvider);
+                })
+                .Build();
+
+            logger.LogInformation("Dummy log");
         }
 
         [Fact]
@@ -177,6 +209,65 @@ namespace Microsoft.Extensions.Hosting
         }
 
         internal class ServiceC { }
+
+        private class ScopeDelegateLoggerProvider : ILoggerProvider, ISupportExternalScope
+        {
+            private ScopeDelegateLogger _logger;
+            private IExternalScopeProvider _scopeProvider;
+            public ScopeDelegateLoggerProvider(ScopeDelegateLogger logger)
+            {
+                _logger = logger;
+            }
+            public ILogger CreateLogger(string categoryName)
+            {
+                _logger.ScopeProvider = _scopeProvider;
+                return _logger;
+            }
+
+            public void Dispose()
+            {
+            }
+
+            public void SetScopeProvider(IExternalScopeProvider scopeProvider)
+            {
+                _scopeProvider = scopeProvider;
+            }
+        }
+
+        private class ScopeDelegateLogger : ILogger
+        {
+            private Action<List<object>> _logDelegate;
+            internal IExternalScopeProvider ScopeProvider { get; set; }
+            public ScopeDelegateLogger(Action<List<object>> logDelegate)
+            {
+                _logDelegate = logDelegate;
+            }
+            public IDisposable BeginScope<TState>(TState state)
+            {
+                Scopes.Add(state);
+                return new Scope();
+            }
+
+            public List<object> Scopes { get; set; } = new List<object>();
+
+            public bool IsEnabled(LogLevel logLevel) => true;
+
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+            {
+                ScopeProvider.ForEachScope((scopeObject, state) =>
+                {
+                    Scopes.Add(scopeObject);
+                }, 0);
+                _logDelegate(Scopes);
+            }
+
+            private class Scope : IDisposable
+            {
+                public void Dispose()
+                {
+                }
+            }
+        }
 
         private class TestEventListener : EventListener
         {
