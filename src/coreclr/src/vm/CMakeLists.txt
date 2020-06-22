@@ -304,7 +304,6 @@ set(VM_SOURCES_WKS
     cachelinealloc.cpp
     callhelpers.cpp
     callsiteinspect.cpp
-    ceemain.cpp
     clrconfignative.cpp
     clrex.cpp
     clrprivbinderutil.cpp
@@ -408,6 +407,9 @@ set(VM_SOURCES_WKS
     weakreferencenative.cpp
     ${VM_SOURCES_GDBJIT}
 )
+
+# coreclr needs to compile codeman.cpp differently depending on flavor (i.e. dll vs. static lib))
+list(REMOVE_ITEM VM_SOURCES_WKS codeman.cpp)
 
 set(VM_HEADERS_WKS
     ${VM_HEADERS_DAC_AND_WKS_COMMON}

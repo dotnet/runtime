@@ -61,14 +61,25 @@ endif (CLR_CMAKE_HOST_WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=CoreCLR.dll)
 
+#these two files we need to compile differently for dll and lib flavors
+set (VM_SOURCES_WKS_SPECIAL
+    ../../../vm/codeman.cpp
+    ../../../vm/ceemain.cpp
+)
+
+include_directories("../../../vm")
+include_directories("../../../vm/${ARCH_SOURCES_DIR}")
+
 add_library_clr(coreclr
     SHARED
     ${CLR_SOURCES}
+    ${VM_SOURCES_WKS_SPECIAL} 
 )
 
 add_library_clr(coreclr_static
     STATIC
     ${CLR_SOURCES}
+    ${VM_SOURCES_WKS_SPECIAL} 
 )
 
 add_custom_target(coreclr_exports DEPENDS ${EXPORTS_FILE})
@@ -169,7 +180,10 @@ if(FEATURE_MERGE_JIT_AND_ENGINE)
 endif(FEATURE_MERGE_JIT_AND_ENGINE)
 
 target_link_libraries(coreclr ${CORECLR_LIBRARIES}  cee_wks ${CLRJIT_STATIC})
-target_link_libraries(coreclr_static ${CORECLR_LIBRARIES} cee_wks_mergeable clrjit_static)
+
+target_link_libraries(coreclr_static ${CORECLR_LIBRARIES} cee_wks clrjit_static)
+target_compile_definitions(coreclr_static PUBLIC FEATURE_MERGE_JIT_AND_ENGINE)
+target_compile_definitions(coreclr_static PUBLIC DISABLE_GS_COOKIE_ON_OSX)
 
 # Create the runtime module index header file containing the coreclr build id
 # for xplat and the timestamp/size on Windows.
