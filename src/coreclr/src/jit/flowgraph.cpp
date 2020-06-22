@@ -3070,6 +3070,14 @@ void Compiler::fgComputePreds()
     // Treat the initial block as a jump target
     fgFirstBB->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
 
+    // Under OSR, we may need to specially protect the original method entry.
+    //
+    if (opts.IsOSR() && (fgEntryBB != nullptr) && (fgEntryBB->bbFlags & BBF_IMPORTED))
+    {
+        JITDUMP("OSR: protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+        fgEntryBB->bbRefs = 1;
+    }
+
     for (block = fgFirstBB; block; block = block->bbNext)
     {
         switch (block->bbJumpKind)
@@ -21268,6 +21276,13 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
         // First basic block has an additional global incoming edge.
         if (block == fgFirstBB)
+        {
+            blockRefs += 1;
+        }
+
+        // Under OSR, if we also are keeping the original method entry around,
+        // mark that as implicitly referenced as well.
+        if (opts.IsOSR() && (block == fgEntryBB))
         {
             blockRefs += 1;
         }
