@@ -20,7 +20,7 @@
 
 #include "mono/metadata/assembly-internals.h"
 
-static int log_level = 1;
+static int log_level = 9;
 
 #define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { fprintf (stdout, __VA_ARGS__); } } while (0)
 
@@ -29,12 +29,14 @@ G_BEGIN_DECLS
 
 EMSCRIPTEN_KEEPALIVE int mono_wasm_set_breakpoint (const char *assembly_name, int method_token, int il_offset);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_remove_breakpoint (int bp_id);
+EMSCRIPTEN_KEEPALIVE int mono_wasm_set_pause_on_exceptions (gboolean pauseOnExceptions, gboolean unhandledOnly);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_current_bp_id (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_enum_frames (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_var_info (int scope, int* pos, int len);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_clear_all_breakpoints (void);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_setup_single_step (int kind);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_object_properties (int object_id, gboolean expand_value_types);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_get_exception_properties (int object_id);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_values (int object_id);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_value_expanded (int object_id, int idx);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_invoke_getter_on_object (int object_id, const char* name);
@@ -42,7 +44,9 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_invoke_getter_on_object (int object_id, cons
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, const char *assembly_name, const char *method_name);
 extern void mono_wasm_fire_bp (void);
-extern void mono_wasm_add_obj_var (const char*, const char*, guint64);
+extern void mono_wasm_fire_exc (gboolean unhandled, int exc_obj_id);
+extern void mono_wasm_add_obj_var (const char*, const char *, guint64);
+extern void mono_wasm_add_exc_var (const char*, const char *, const char *, guint64);
 extern void mono_wasm_add_value_type_unexpanded_var (const char*, const char*);
 extern void mono_wasm_begin_value_type_var (const char*, const char*);
 extern void mono_wasm_end_value_type_var (void);
@@ -52,10 +56,13 @@ extern void mono_wasm_add_properties_var (const char*, gint32);
 extern void mono_wasm_add_array_item (int);
 extern void mono_wasm_set_is_async_method (guint64);
 extern void mono_wasm_add_typed_value (const char *type, const char *str_value, double value);
+extern void mono_wasm_add_exc_prop (const char *className, const char *message, const char *stack, guint64 objectId);
 
 G_END_DECLS
 
 static void describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAsyncLocalThis, gboolean expandValueType);
+static void handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame);
+static void describe_exception_properties (MonoException *exc, char *class_name, guint64 object_id);
 
 //FIXME move all of those fields to the profiler object
 static gboolean debugger_enabled;
@@ -64,6 +71,7 @@ static int event_request_id;
 static GHashTable *objrefs;
 static GHashTable *obj_to_objref;
 static int objref_id = 0;
+static int pause_on_exc = 0;
 
 static const char*
 all_getters_allowed_class_names[] = {
@@ -327,7 +335,7 @@ mono_wasm_debugger_init (void)
 	if (!debugger_enabled)
 		return;
 
-	DebuggerEngineCallbacks cbs = {
+	DebuggerEngineCallbacks de_cbs = {
 		.tls_get_restore_state = tls_get_restore_state,
 		.try_process_suspend = try_process_suspend,
 		.begin_breakpoint_processing = begin_breakpoint_processing,
@@ -347,7 +355,7 @@ mono_wasm_debugger_init (void)
 	};
 
 	mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-	mono_de_init (&cbs);
+	mono_de_init (&de_cbs);
 	mono_de_set_log_level (log_level, stdout);
 
 	mini_debug_options.gen_sdb_seq_points = TRUE;
@@ -362,14 +370,20 @@ mono_wasm_debugger_init (void)
 
 	obj_to_objref = g_hash_table_new (NULL, NULL);
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
+
+	MonoDebuggerCallbacks dbg_cbs;
+	// Keep this at the end, we need to first initialize the callbacks - and then we
+	// just override the ones we need (which is only handle_exception at the moment).
+	memcpy (&dbg_cbs, mini_get_dbg_callbacks (), sizeof (MonoDebuggerCallbacks));
+	dbg_cbs.handle_exception = handle_exception;
+	mini_install_dbg_callbacks (&dbg_cbs);
 }
 
 MONO_API void
 mono_wasm_enable_debugging (int debug_level)
 {
-	DEBUG_PRINTF (1, "DEBUGGING ENABLED\n");
+	DEBUG_PRINTF (1, "DEBUGGING ENABLED: %d\n", debug_level);
 	debugger_enabled = TRUE;
-	log_level = debug_level;
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -502,6 +516,17 @@ mono_wasm_remove_breakpoint (int bp_id)
 		return 0;
 
 	mono_de_clear_breakpoint (bp);
+	return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_set_pause_on_exceptions (gboolean pauseOnExceptions, gboolean unhandledOnly)
+{
+	if (pauseOnExceptions)
+		pause_on_exc = unhandledOnly ? 1 : 2;
+	else
+		pause_on_exc = 0;
+	DEBUG_PRINTF (1, "setting pause on exception: %d\n", pause_on_exc);
 	return 1;
 }
 
@@ -871,6 +896,14 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 
 				mono_wasm_add_func_var (class_name, tm_desc, obj_id);
 				g_free (tm_desc);
+			} else if (mono_object_isinst_checked (obj, mono_defaults.exception_class, error)) {
+				MonoException *exc = (MonoException *)obj;
+				char *message = mono_string_to_utf8_checked_internal (exc->message, error);
+				char *stackTrace = mono_string_to_utf8_checked_internal (exc->stack_trace, error);
+				char *stackTrace2 = mono_exception_get_managed_backtrace (exc);
+				DEBUG_PRINTF (1, "ADD EXCEPTION VAR: %p - %x - %s - %s - %s\n", exc, obj_id, message, stackTrace, stackTrace2);
+				mono_wasm_add_exc_var (class_name, message, stackTrace2, obj_id);
+				g_free (message);
 			} else {
 				char *to_string_val = get_to_string_description (class_name, klass, addr);
 				mono_wasm_add_obj_var (class_name, to_string_val, obj_id);
@@ -1021,6 +1054,8 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 	klass_name = mono_class_full_name (klass);
 	getters_allowed = are_getters_allowed (klass_name);
 
+	DEBUG_PRINTF (2, "mono_class_get_properties: %s\n", klass_name);
+
 	iter = NULL;
 	pnum = 0;
 	while ((p = mono_class_get_properties (klass, &iter))) {
@@ -1078,22 +1113,32 @@ describe_delegate_properties (MonoObject *obj)
 	return TRUE;
 }
 
+static MonoObject *
+get_object_from_id (guint64 objectId)
+{
+	DEBUG_PRINTF (2, "get_object_from_id %llu\n", objectId);
+	ObjRef *ref = (ObjRef *)g_hash_table_lookup (objrefs, GINT_TO_POINTER (objectId));
+	if (!ref) {
+		DEBUG_PRINTF (2, "get_object_from_id !ref\n");
+		return NULL;
+	}
+
+	MonoObject *obj = mono_gchandle_get_target_internal (ref->handle);
+	DEBUG_PRINTF (2, "get_object_from_id #1 - %p\n", obj);
+	return obj;
+}
+
 static gboolean
 describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis, gboolean expandValueType)
 {
 	DEBUG_PRINTF (2, "describe_object_properties %llu\n", objectId);
-	ObjRef *ref = (ObjRef *)g_hash_table_lookup (objrefs, GINT_TO_POINTER (objectId));
-	if (!ref) {
-		DEBUG_PRINTF (2, "describe_object_properties !ref\n");
-		return FALSE;
-	}
-
-	MonoObject *obj = mono_gchandle_get_target_internal (ref->handle);
+	MonoObject *obj = get_object_from_id (objectId);
 	if (!obj) {
 		DEBUG_PRINTF (2, "describe_object_properties !obj\n");
 		return FALSE;
 	}
 
+	DEBUG_PRINTF (2, "describe_object_properties #2 - %p - %p\n", obj, obj->vtable->klass);
 	if (m_class_is_delegate (mono_object_class (obj))) {
 		// delegates get the same id format as regular objects
 		describe_delegate_properties (obj);
@@ -1102,6 +1147,29 @@ describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis, gboolea
 	}
 
 	return TRUE;
+}
+
+static void
+describe_exception_properties (MonoException *exc, char *class_name, guint64 objectId)
+{
+	ERROR_DECL (error);
+
+	char *message = mono_string_to_utf8_checked_internal (exc->message, error);
+	mono_error_assert_ok (error);
+	DEBUG_PRINTF (2, "describe_exception_properties #3: %s\n", message);
+
+	char *stack_trace = mono_exception_get_managed_backtrace (exc);
+	DEBUG_PRINTF (2, "describe_exception_properties #4: %s\n", stack_trace);
+	mono_error_assert_ok (error);
+
+	mono_wasm_add_exc_prop (class_name, message, stack_trace, objectId);
+
+	describe_object_properties_for_klass (exc, ((MonoObject *)exc)->vtable->klass, FALSE, FALSE);
+
+	DEBUG_PRINTF (2, "describe_exception_properties done\n");
+
+	g_free (message);
+	g_free (stack_trace);
 }
 
 static gboolean
@@ -1303,6 +1371,25 @@ mono_wasm_get_object_properties (int object_id, gboolean expand_value_types)
 }
 
 EMSCRIPTEN_KEEPALIVE void
+mono_wasm_get_exception_properties (int object_id)
+{
+	DEBUG_PRINTF (2, "getting properties of exception %d\n", object_id);
+
+	MonoException *exc = (MonoException *)get_object_from_id (object_id);
+	if (!exc) {
+		DEBUG_PRINTF (2, "describe_exception_properties !obj\n");
+		return;
+	}
+
+	MonoClass *klass = exc->object.vtable->klass;
+	MonoType *type = m_class_get_byval_arg (klass);
+
+	char *class_name = mono_type_full_name (type);
+	describe_exception_properties (exc, class_name, object_id);
+	g_free (class_name);
+}
+
+EMSCRIPTEN_KEEPALIVE void
 mono_wasm_get_array_values (int object_id)
 {
 	DEBUG_PRINTF (2, "getting array values %d\n", object_id);
@@ -1328,6 +1415,23 @@ gsize
 mono_debugger_tls_thread_id (DebuggerTlsData *debuggerTlsData)
 {
 	return 1;
+}
+
+static void
+handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame)
+{
+	DEBUG_PRINTF (2, "handle exception - %d - %p - %p - %p\n", pause_on_exc, exc, throw_ctx, catch_ctx);
+
+	if (pause_on_exc == 0)
+		return;
+	if (pause_on_exc == 1 && catch_ctx != NULL)
+		return;
+
+	int obj_id = get_object_id ((MonoObject *)exc);
+	DEBUG_PRINTF (2, "handle exception - calling mono_wasm_fire_exc(): %d\n", obj_id);
+
+	mono_wasm_fire_exc (catch_ctx == NULL, obj_id);
+	DEBUG_PRINTF (2, "handle exception - done\n");
 }
 
 #else // HOST_WASM
