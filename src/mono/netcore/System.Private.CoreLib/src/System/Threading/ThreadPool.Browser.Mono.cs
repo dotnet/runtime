@@ -4,33 +4,54 @@
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-    [UnsupportedOSPlatform("browser")]
-    public sealed class RegisteredWaitHandle : MarshalByRefObject
+    public sealed partial class Thread
     {
-        internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
-            int millisecondsTimeout, bool repeating)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ResetThreadPoolThread()
         {
-        }
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(IsThreadPoolThread);
 
+            if (_mayNeedResetForThreadPool)
+            {
+                ResetThreadPoolThreadSlow();
+            }
+        }
+    }
+
+    public sealed partial class RegisteredWaitHandle : MarshalByRefObject
+    {
         public bool Unregister(WaitHandle? waitObject)
         {
             throw new PlatformNotSupportedException();
         }
     }
 
+    internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
+    {
+        void IThreadPoolWorkItem.Execute()
+        {
+            Debug.Fail("Registered wait handles are currently not supported");
+        }
+    }
+
     public static partial class ThreadPool
     {
+        internal const bool SupportsTimeSensitiveWorkItems = true;
         internal const bool EnableWorkerTracking = false;
 
         private static bool _callbackQueued;
 
-        internal static void InitializeForThreadPoolThread() { }
+        internal static bool CanSetMinIOCompletionThreads(int ioCompletionThreads) => true;
+        internal static void SetMinIOCompletionThreads(int ioCompletionThreads) { }
+
+        internal static bool CanSetMaxIOCompletionThreads(int ioCompletionThreads) => true;
+        internal static void SetMaxIOCompletionThreads(int ioCompletionThreads) { }
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
@@ -76,36 +97,31 @@ namespace System.Threading
             QueueCallback();
         }
 
-        internal static bool KeepDispatching(int startTickCount)
-        {
-            return true;
-        }
+
+        /// <summary>
+        /// Called from the gate thread periodically to perform runtime-specific gate activities
+        /// </summary>
+        /// <param name="cpuUtilization">CPU utilization as a percentage since the last call</param>
+        /// <returns>True if the runtime still needs to perform gate activities, false otherwise</returns>
+        internal static bool PerformRuntimeSpecificGateActivities(int cpuUtilization) => false;
 
         internal static void NotifyWorkItemProgress()
         {
         }
 
-        internal static bool NotifyWorkItemComplete()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
         {
             return true;
         }
 
-        private static RegisteredWaitHandle RegisterWaitForSingleObject(
-             WaitHandle waitObject,
-             WaitOrTimerCallback callBack,
-             object? state,
-             uint millisecondsTimeOutInterval,
-             bool executeOnlyOnce,
-             bool flowExecutionContext)
-        {
-            if (waitObject == null)
-                throw new ArgumentNullException(nameof(waitObject));
+        internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
 
-            if (callBack == null)
-                throw new ArgumentNullException(nameof(callBack));
-
+        private static void RegisterWaitForSingleObjectCore(WaitHandle? waitObject, RegisteredWaitHandle registeredWaitHandle) =>
             throw new PlatformNotSupportedException();
-        }
+
+        internal static void UnsafeQueueWaitCompletion(CompleteWaitThreadPoolWorkItem completeWaitWorkItem) =>
+            UnsafeQueueUserWorkItemInternal(completeWaitWorkItem, preferLocal: false);
 
         [DynamicDependency("Callback")]
         [DynamicDependency("PumpThreadPool")]

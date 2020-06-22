@@ -1151,7 +1151,9 @@ namespace System.Threading
 
         private bool _unregisterCalled;
 
+#pragma warning disable CS0414 // The field is assigned but its value is never used. Some runtimes may not support registered wait handles.
         private bool _unregistered;
+#pragma warning restore CS0414
 
         private AutoResetEvent? _callbacksComplete;
 
