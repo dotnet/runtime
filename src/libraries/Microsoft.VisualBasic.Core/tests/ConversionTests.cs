@@ -368,6 +368,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(Hex_Single_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37066", TestPlatforms.Android)]
         public void Hex_Float(float value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
@@ -375,6 +376,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(Hex_Double_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37066", TestPlatforms.Android)]
         public void Hex_Double(double value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
@@ -382,6 +384,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(Hex_Decimal_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37066", TestPlatforms.Android)]
         public void Hex_Decimal(decimal value, string expected)
         {
             Assert.Equal(expected, Conversion.Hex(value));
@@ -705,6 +708,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(Oct_Single_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37066", TestPlatforms.Android)]
         public void Oct_Float(float value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
@@ -712,6 +716,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(Oct_Double_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37066", TestPlatforms.Android)]
         public void Oct_Double(double value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
@@ -719,6 +724,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(Oct_Decimal_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37066", TestPlatforms.Android)]
         public void Oct_Decimal(decimal value, string expected)
         {
             Assert.Equal(expected, Conversion.Oct(value));
@@ -886,6 +892,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(Val_Object_ArgumentException_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37066", TestPlatforms.Android)]
         public void Val_ArgumentException_Object(object value)
         {
             Assert.Throws<ArgumentException>(() => Conversion.Val(value));
@@ -893,6 +900,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(Val_Object_OverflowException_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37066", TestPlatforms.Android)]
         public void Val_OverflowException_Object(object value)
         {
             Assert.Throws<OverflowException>(() => Conversion.Val(value));
@@ -921,6 +929,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(Val_String_OverflowException_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37066", TestPlatforms.Android)]
         public void Val_OverflowException_String(string value)
         {
             Assert.Throws<OverflowException>(() => Conversion.Val(value));

@@ -28,6 +28,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 
         [Theory]
         [MemberData(nameof(FromObject_Invalid_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37066", TestPlatforms.Android)]
         public void FromObject_ThrowsInvalidCastException(object value)
         {
             Assert.Throws<InvalidCastException>(() => DateType.FromObject(value));
