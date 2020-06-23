@@ -1784,11 +1784,8 @@ MODSTRUCT *LOADGetPalLibrary()
             }
         }
 
-        int len = strlen(g_szCoreCLRPath);
-        int suffixLen = strlen(PAL_SHLIB_SUFFIX);
-        if (len <= suffixLen || strcmp(g_szCoreCLRPath + len - suffixLen, PAL_SHLIB_SUFFIX) != 0)
+        if (g_running_in_exe == true)
         {
-            g_running_in_exe = true;
             pal_module = (MODSTRUCT*)LOADLoadLibrary(nullptr, FALSE);
         }
         else

@@ -114,7 +114,8 @@ static void ConvertConfigPropertiesToUnicode(
     int propertyCount,
     LPCWSTR** propertyKeysWRef,
     LPCWSTR** propertyValuesWRef,
-    BundleProbe** bundleProbe)
+    BundleProbe** bundleProbe,
+    bool* running_in_exe)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
     ASSERTE_ALL_BUILDS(propertyKeysW != nullptr);
@@ -132,6 +133,11 @@ static void ConvertConfigPropertiesToUnicode(
             // If this application is a single-file bundle, the bundle-probe callback 
             // is passed in as the value of "BUNDLE_PROBE" property (encoded as a string).
             *bundleProbe = (BundleProbe*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+        }
+
+        if (strcmp(propertyKeys[propertyIndex], "EMBEDDED_RUNTIME") == 0)
+        {
+            *running_in_exe = true;
         }
     }
 
@@ -171,8 +177,23 @@ int coreclr_initialize(
             unsigned int* domainId)
 {
     HRESULT hr;
+
+    LPCWSTR* propertyKeysW;
+    LPCWSTR* propertyValuesW;
+    BundleProbe* bundleProbe = nullptr;
+    bool running_in_exe = false;
+
+    ConvertConfigPropertiesToUnicode(
+        propertyKeys,
+        propertyValues,
+        propertyCount,
+        &propertyKeysW,
+        &propertyValuesW,
+        &bundleProbe,
+        &running_in_exe);
+
 #ifdef TARGET_UNIX
-    DWORD error = PAL_InitializeCoreCLR(exePath);
+    DWORD error = PAL_InitializeCoreCLR(exePath, running_in_exe);
     hr = HRESULT_FROM_WIN32(error);
 
     // If PAL initialization failed, then we should return right away and avoid
@@ -189,18 +210,6 @@ int coreclr_initialize(
     IfFailRet(hr);
 
     ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
-
-    LPCWSTR* propertyKeysW;
-    LPCWSTR* propertyValuesW;
-    BundleProbe* bundleProbe = nullptr;
-
-    ConvertConfigPropertiesToUnicode(
-        propertyKeys,
-        propertyValues,
-        propertyCount,
-        &propertyKeysW,
-        &propertyValuesW,
-        &bundleProbe);
 
     if (bundleProbe != nullptr)
     {
