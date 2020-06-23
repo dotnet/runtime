@@ -1232,27 +1232,38 @@ EEJitManager::EEJitManager()
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
-bool DoesOSSupportAVX()
+#ifndef TARGET_UNIX
+static DWORD64 GetEnabledXStateFeaturesHelper()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef TARGET_UNIX
     // On Windows we have an api(GetEnabledXStateFeatures) to check if AVX is supported
     typedef DWORD64 (WINAPI *PGETENABLEDXSTATEFEATURES)();
     PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
 
     HMODULE hMod = WszLoadLibraryEx(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if(hMod == NULL)
-        return FALSE;
+        return 0;
 
     pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hMod, "GetEnabledXStateFeatures");
 
     if (pfnGetEnabledXStateFeatures == NULL)
     {
-        return FALSE;
+        return 0;
     }
 
     DWORD64 FeatureMask = pfnGetEnabledXStateFeatures();
+
+    return FeatureMask;
+}
+#endif // !TARGET_UNIX
+
+bool DoesOSSupportAVX()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifndef TARGET_UNIX
+    DWORD64 FeatureMask = GetEnabledXStateFeaturesHelper();
     if ((FeatureMask & XSTATE_MASK_AVX) == 0)
     {
         return FALSE;
@@ -1260,6 +1271,21 @@ bool DoesOSSupportAVX()
 #endif // !TARGET_UNIX
 
     return TRUE;
+}
+
+bool DoesOSSupportAVX512()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifndef TARGET_UNIX
+    DWORD64 FeatureMask = GetEnabledXStateFeaturesHelper();
+    if ((FeatureMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
+    {
+        return TRUE;
+    }
+#endif // !TARGET_UNIX
+
+    return FALSE;
 }
 
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1420,6 +1446,11 @@ void EEJitManager::SetCpuInfo()
                                         if ((buffer[4] & 0x20) != 0)        // AVX2
                                         {
                                             CPUCompileFlags.Set(InstructionSet_AVX2);
+                                        }
+
+                                        if (DoesOSSupportAVX512() && zmmStateSupport() == 1 && (buffer[6] & 0x01) != 0)
+                                        {
+                                            CPUCompileFlags.Set(InstructionSet_AVX512);
                                         }
                                     }
                                 }

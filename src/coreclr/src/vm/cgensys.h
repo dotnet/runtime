@@ -99,6 +99,7 @@ inline void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
 extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16]);
 extern "C" DWORD __stdcall getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16]);
 extern "C" DWORD __stdcall xmmYmmStateSupport();
+extern "C" DWORD __stdcall zmmStateSupport();
 #endif
 
 inline bool TargetHasAVXSupport()

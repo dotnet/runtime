@@ -2123,9 +2123,17 @@ namespace std
 #ifdef USE_VXSORT
 void do_vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
 {
-//    auto sorter = vxsort::cvxsort<int64_t, vxsort::AVX2, 8>();
-    auto sorter = vxsort::cvxsort<int64_t, vxsort::AVX512, 8>();
-    sorter.sort((int64_t*)low, (int64_t*)high);
+    assert(GCToEEInterface::HasInstructionSet(kInstructionSetAVX2));
+    if (GCToEEInterface::HasInstructionSet(kInstructionSetAVX512))
+    {
+        auto sorter = vxsort::cvxsort<int64_t, vxsort::AVX512, 8>();
+        sorter.sort((int64_t*)low, (int64_t*)high);
+    }
+    else
+    {
+        auto sorter = vxsort::cvxsort<int64_t, vxsort::AVX2, 8>();
+        sorter.sort((int64_t*)low, (int64_t*)high);
+    }
 #ifdef _DEBUG
     for (uint8_t** p = low; p < high; p++)
     {
@@ -2135,9 +2143,17 @@ void do_vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
 }
 void do_vxsort(uint32_t* low, uint32_t* high, unsigned int depth)
 {
-//    auto sorter = vxsort::cvxsort<uint32_t, vxsort::AVX2, 8>();
-    auto sorter = vxsort::cvxsort<uint32_t, vxsort::AVX512, 8>();
-    sorter.sort(low, high);
+    assert(GCToEEInterface::HasInstructionSet(kInstructionSetAVX2));
+    if (GCToEEInterface::HasInstructionSet(kInstructionSetAVX512))
+    {
+        auto sorter = vxsort::cvxsort<uint32_t, vxsort::AVX512, 8>();
+        sorter.sort(low, high);
+    }
+    else
+    {
+        auto sorter = vxsort::cvxsort<uint32_t, vxsort::AVX2, 8>();
+        sorter.sort(low, high);
+    }
 #ifdef _DEBUG
     for (uint32_t* p = low; p < high; p++)
     {

@@ -59,6 +59,7 @@ enum CORINFO_InstructionSet
     InstructionSet_SSE2_X64=25,
     InstructionSet_SSE41_X64=26,
     InstructionSet_SSE42_X64=27,
+    InstructionSet_AVX512=28,
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
     InstructionSet_X86Base=1,
@@ -88,6 +89,7 @@ enum CORINFO_InstructionSet
     InstructionSet_SSE2_X64=25,
     InstructionSet_SSE41_X64=26,
     InstructionSet_SSE42_X64=27,
+    InstructionSet_AVX512=28,
 #endif // TARGET_X86
 
 };

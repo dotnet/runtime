@@ -54,6 +54,18 @@ extern "C"
         return ((eax & 0x06) == 0x06) ? 1 : 0;
     }
 
+    DWORD zmmStateSupport()
+    {
+        DWORD eax;
+        __asm("  xgetbv\n" \
+        : "=a"(eax) /*output in eax*/\
+            : "c"(0) /*inputs - 0 in ecx*/\
+            : "edx" /* registers that are clobbered*/
+            );
+        // check OS has enabled both XMM and YMM state support
+        return ((eax & 0xe6) == 0xe6) ? 1 : 0;
+    }
+
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
     {
     }
