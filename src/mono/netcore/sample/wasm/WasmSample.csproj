@@ -25,7 +25,7 @@
              Targets="Build;Publish"/>
   </Target>
 
-  <UsingTask TaskName="WasmAppBuilder"
+  <UsingTask TaskName="WasmAppBuilder" 
              AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
 
   <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
@@ -39,18 +39,11 @@
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
       MainAssembly="bin\WasmSample.dll"
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
-      AssemblySearchPaths="@(AssemblySearchPaths)"
-      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
-   />
+      AssemblySearchPaths="@(AssemblySearchPaths)"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
-
-  <ItemGroup>
-    <PackageReference Include="System.Runtime.TestData" Version="$(SystemRuntimeTestDataVersion)" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
 </Project>
-
