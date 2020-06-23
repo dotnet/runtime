@@ -793,7 +793,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_3AI: // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
-        case IF_DV_3HI: // DV_3HI  ........XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (smlal{2}, umlal{2} by element)
             assert(isValidVectorDatasize(id->idOpSize()));
             assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
@@ -889,14 +888,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg3()));
             break;
 
-        case IF_DV_3H: // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
-                       // subhn{2}, pmull{2})
-            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));
-            assert(isVectorRegister(id->idReg2()));
-            assert(isVectorRegister(id->idReg3()));
-            break;
-
         case IF_DV_4A: // DR_4A   .........X.mmmmm .aaaaannnnnddddd      Rd Rn Rm Ra (scalar)
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isVectorRegister(id->idReg1()));
@@ -986,10 +977,6 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DV_3E:  // DV_3E   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
         case IF_DV_3F:  // DV_3F   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
         case IF_DV_3G:  // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
-        case IF_DV_3H:  // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
-                        // subhn{2}, pmull{2})
-        case IF_DV_3HI: // DV_3HI ........XXLMmmmm ....H.nnnnnddddd       Vd Vn Vm[] (smlal{2}, smlsl{2}, smull{2},
-                        // umlal{2}, umlsl{2}, umull{2} vector by elem)
         case IF_DV_4A:  // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
             // Tracked GC pointers cannot be placed into the SIMD registers.
             return false;
@@ -1625,7 +1612,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode3H[3] = {IF_DR_3A, IF_DV_3A, IF_DV_3AI};
     const static insFormat formatEncode3I[3] = {IF_DR_2E, IF_DR_2F, IF_DV_2M};
     const static insFormat formatEncode3J[3] = {IF_LS_2D, IF_LS_3F, IF_LS_2E};
-    const static insFormat formatEncode3K[3] = {IF_DR_3A, IF_DV_3H, IF_DV_3HI};
     const static insFormat formatEncode2A[2] = {IF_DR_2E, IF_DR_2F};
     const static insFormat formatEncode2B[2] = {IF_DR_3A, IF_DR_3B};
     const static insFormat formatEncode2C[2] = {IF_DR_3A, IF_DI_2D};
@@ -1643,7 +1629,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode2O[2] = {IF_DV_3E, IF_DV_3A};
     const static insFormat formatEncode2P[2] = {IF_DV_2Q, IF_DV_3B};
     const static insFormat formatEncode2Q[2] = {IF_DV_2S, IF_DV_3A};
-    const static insFormat formatEncode2R[2] = {IF_DV_3H, IF_DV_3HI};
 
     code_t    code           = BAD_CODE;
     insFormat insFmt         = emitInsFormat(ins);
@@ -1938,17 +1923,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             }
             break;
 
-        case IF_EN3K:
-            for (index = 0; index < 3; index++)
-            {
-                if (fmt == formatEncode3K[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
         case IF_EN2A:
             for (index = 0; index < 2; index++)
             {
@@ -2129,17 +2103,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             for (index = 0; index < 2; index++)
             {
                 if (fmt == formatEncode2Q[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2R:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2R[index])
                 {
                     encoding_found = true;
                     break;
@@ -11106,30 +11069,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_DV_3H: // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
-                       // subhn{2}, pmull{2})
-            code     = emitInsCode(ins, fmt);
-            elemsize = optGetElemsize(id->idInsOpt());
-            code |= insEncodeElemsize(elemsize);   // XX
-            code |= insEncodeReg_Vm(id->idReg3()); // mmmmm
-            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
-            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
-            dst += emitOutput_Instr(dst, code);
-            break;
-
-        case IF_DV_3HI: // DV_3HI  ........XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (smlal{2}, umlal{2} by element)
-            code     = emitInsCode(ins, fmt);
-            imm      = emitGetInsSC(id);
-            elemsize = optGetElemsize(id->idInsOpt());
-            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
-            code |= insEncodeElemsize(elemsize);            // XX
-            code |= insEncodeVectorIndexLMH(elemsize, imm); // LM H
-            code |= insEncodeReg_Vd(id->idReg1());          // ddddd
-            code |= insEncodeReg_Vn(id->idReg2());          // nnnnn
-            code |= insEncodeReg_Vm(id->idReg3());          // mmmmm
-            dst += emitOutput_Instr(dst, code);
-            break;
-
         case IF_DV_4A: // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
             code     = emitInsCode(ins, fmt);
             elemsize = id->idOpSize();
@@ -12813,52 +12752,6 @@ void emitter::emitDispIns(
             emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
             emitDispVectorReg(id->idReg3(), id->idInsOpt(), true);
             emitDispImm(emitGetInsSC(id), false);
-            break;
-
-        case IF_DV_3H: // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
-                       // subhn{2}, pmull{2})
-            if ((ins == INS_addhn) || (ins == INS_addhn2) || (ins == INS_raddhn) || (ins == INS_raddhn2) ||
-                (ins == INS_subhn) || (ins == INS_subhn2) || (ins == INS_rsubhn) || (ins == INS_rsubhn2))
-            {
-                // These are "high narrow" instruction i.e. their source registers are "wider" than the destination
-                // register.
-                emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
-                emitDispVectorReg(id->idReg2(), optWidenElemsize(id->idInsOpt()), true);
-                emitDispVectorReg(id->idReg3(), optWidenElemsize(id->idInsOpt()), false);
-            }
-            else
-            {
-                if (((ins == INS_pmull) && (id->idInsOpt() == INS_OPTS_1D)) ||
-                    (ins == (INS_pmull2) && (id->idInsOpt() == INS_OPTS_2D)))
-                {
-                    // PMULL Vd.1Q, Vn.1D, Vm.1D
-                    // PMULL2 Vd.1Q, Vn.2D, Vm.2D
-                    printf("%s.1q, ", emitVectorRegName(id->idReg1()));
-                }
-                else
-                {
-                    emitDispVectorReg(id->idReg1(), optWidenElemsize(id->idInsOpt()), true);
-                }
-
-                if ((ins == INS_saddw) || (ins == INS_saddw2) || (ins == INS_uaddw) || (ins == INS_uaddw2) ||
-                    (ins == INS_ssubw) || (ins == INS_ssubw2) || (ins == INS_usubw) || (ins == INS_usubw2))
-                {
-                    emitDispVectorReg(id->idReg2(), optWidenElemsize(id->idInsOpt()), true);
-                }
-                else
-                {
-                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
-                }
-
-                emitDispVectorReg(id->idReg3(), id->idInsOpt(), false);
-            }
-            break;
-
-        case IF_DV_3HI:
-            emitDispVectorReg(id->idReg1(), optWidenElemsize(id->idInsOpt()), true);
-            emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
-            elemsize = optGetElemsize(id->idInsOpt());
-            emitDispVectorRegIndex(id->idReg3(), elemsize, emitGetInsSC(id), false);
             break;
 
         case IF_DV_4A: // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
