@@ -19,8 +19,7 @@ namespace System.Threading.Tasks
             LoggingOn = false;
         }
 
-        internal static bool LoggingOn = false; // assumes false by default
-
+        internal static bool LoggingOn = false;
 
         // The TraceXXX methods should be called only if LoggingOn property returned true
         //
@@ -34,7 +33,6 @@ namespace System.Threading.Tasks
             }
             catch (Exception ex)
             {
-                // view function comment
                 LogAndDisable(ex);
             }
         }
@@ -49,7 +47,6 @@ namespace System.Threading.Tasks
             }
             catch (Exception ex)
             {
-                // view function comment
                 LogAndDisable(ex);
             }
         }
@@ -64,7 +61,6 @@ namespace System.Threading.Tasks
             }
             catch (Exception ex)
             {
-                // view function comment
                 LogAndDisable(ex);
             }
         }
@@ -79,7 +75,6 @@ namespace System.Threading.Tasks
             }
             catch (Exception ex)
             {
-                // view function comment
                 LogAndDisable(ex);
             }
         }
@@ -94,7 +89,6 @@ namespace System.Threading.Tasks
             }
             catch (Exception ex)
             {
-                // view function comment
                 LogAndDisable(ex);
             }
         }
