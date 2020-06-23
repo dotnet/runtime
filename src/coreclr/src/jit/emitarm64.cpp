@@ -14926,7 +14926,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         }
     }
 
-    if (emitLastIns != nullptr && emitLastIns->idIns() == INS_mov)
+    // Don't look back across IG boundary or if the last instruction was not mov
+    if (emitCurIGinsCnt > 0 && emitLastIns != nullptr && emitLastIns->idIns() == INS_mov)
     {
         // Check if we did same move in prev instruction except dst/src were switched.
         regNumber prevDst = emitLastIns->idReg1();
