@@ -6,9 +6,11 @@ using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 using System;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Security;
+using System.Security.Cryptography.X509Certificates.Asn1;
 using System.Text;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -919,6 +921,18 @@ namespace System.Security.Cryptography.X509Certificates
                         || bytesWritten != fields.DecodedDataLength)
                     {
                         Debug.Fail("The contents should have already been validated by the PEM reader.");
+                        throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
+                    }
+
+                    try
+                    {
+                        // Check that the contents are actually an X509 DER encoded
+                        // certificate, not something else that the constructor will
+                        // will otherwise be able to figure out.
+                        CertificateAsn.Decode(certBytes, AsnEncodingRules.DER);
+                    }
+                    catch (CryptographicException)
+                    {
                         throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
                     }
 

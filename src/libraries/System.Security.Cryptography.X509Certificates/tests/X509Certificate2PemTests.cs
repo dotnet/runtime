@@ -58,6 +58,35 @@ MII
         }
 
         [Fact]
+        public static void CreateFromPem_CryptographicException_CertIsPfx()
+        {
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaCertificate, TestData.RsaPkcs1Key))
+            {
+                string content = Convert.ToBase64String(cert.Export(X509ContentType.Pkcs12));
+                string certContents = $@"
+-----BEGIN CERTIFICATE-----
+{content}
+-----END CERTIFICATE-----
+";
+                Assert.Throws<CryptographicException>(() =>
+                    X509Certificate2.CreateFromPem(certContents, TestData.RsaPkcs1Key));
+            }
+        }
+
+        [Fact]
+        public static void CreateFromPem_CryptographicException_CertIsPkcs7()
+        {
+            string content = Convert.ToBase64String(TestData.Pkcs7ChainDerBytes);
+            string certContents = $@"
+-----BEGIN CERTIFICATE-----
+{content}
+-----END CERTIFICATE-----
+";
+            Assert.Throws<CryptographicException>(() =>
+                X509Certificate2.CreateFromPem(certContents, TestData.RsaPkcs1Key));
+        }
+
+        [Fact]
         public static void CreateFromPem_Rsa_Pkcs1_Success()
         {
             using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaCertificate, TestData.RsaPkcs1Key))

@@ -1430,50 +1430,87 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ImportFromPem_SingleCertificate_Success()
         {
-            X509Certificate2Collection cc = new X509Certificate2Collection();
-            cc.ImportFromPem(TestData.ECDsaCertificate);
-            Assert.Single(cc);
-            Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", cc[0].Thumbprint);
+            using(ImportedCollection ic = Cert.ImportFromPem(TestData.ECDsaCertificate))
+            {
+                Assert.Single(ic.Collection);
+                Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", ic.Collection[0].Thumbprint);
+            }
         }
 
         [Fact]
         public static void ImportFromPem_SingleCertificate_IgnoresUnrelatedPems_Success()
         {
             string pemAggregate = TestData.ECDsaPkcs8Key + TestData.ECDsaCertificate;
-            X509Certificate2Collection cc = new X509Certificate2Collection();
-            cc.ImportFromPem(pemAggregate);
-            Assert.Single(cc);
-            Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", cc[0].Thumbprint);
+
+            using(ImportedCollection ic = Cert.ImportFromPem(pemAggregate))
+            {
+                Assert.Single(ic.Collection);
+                Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", ic.Collection[0].Thumbprint);
+            }
         }
 
         [Fact]
         public static void ImportFromPem_MultiplePems_Success()
         {
             string pemAggregate = TestData.RsaCertificate + TestData.ECDsaCertificate;
-            X509Certificate2Collection cc = new X509Certificate2Collection();
-            cc.ImportFromPem(pemAggregate);
-            Assert.Equal(2, cc.Count);
-            Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cc[0].Thumbprint);
-            Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", cc[1].Thumbprint);
+
+            using(ImportedCollection ic = Cert.ImportFromPem(pemAggregate))
+            {
+                Assert.Equal(2, ic.Collection.Count);
+                Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", ic.Collection[0].Thumbprint);
+                Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", ic.Collection[1].Thumbprint);
+            }
         }
 
         [Fact]
         public static void ImportFromPem_Exception_AllOrNothing()
         {
+            using(ImportedCollection ic = Cert.ImportFromPem(TestData.DsaCertificate))
+            {
+                StringBuilder builder = new StringBuilder();
+                builder.AppendLine(TestData.RsaCertificate);
+                builder.AppendLine(@"
+    -----BEGIN CERTIFICATE-----
+    MIII
+    -----END CERTIFICATE-----");
+                builder.AppendLine(TestData.ECDsaCertificate);
+
+                Assert.ThrowsAny<CryptographicException>(() => ic.Collection.ImportFromPem(builder.ToString()));
+                Assert.Single(ic.Collection);
+                Assert.Equal("35052C549E4E7805E4EA204C2BE7F4BC19B88EC8", ic.Collection[0].Thumbprint);
+            }
+        }
+
+        [Fact]
+        public static void ImportFromPem_NonCertificateContent_Pkcs12_Fails()
+        {
             X509Certificate2Collection cc = new X509Certificate2Collection();
-            cc.ImportFromPem(TestData.DsaCertificate);
 
-            StringBuilder builder = new StringBuilder();
-            builder.AppendLine(TestData.RsaCertificate);
-            builder.AppendLine(@"
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaCertificate, TestData.RsaPkcs1Key))
+            {
+                string content = Convert.ToBase64String(cert.Export(X509ContentType.Pkcs12));
+                string certContents = $@"
 -----BEGIN CERTIFICATE-----
-MIII
------END CERTIFICATE-----");
-            builder.AppendLine(TestData.ECDsaCertificate);
+{content}
+-----END CERTIFICATE-----
+";
+                Assert.Throws<CryptographicException>(() => cc.ImportFromPem(certContents));
+            }
+        }
 
-            Assert.ThrowsAny<CryptographicException>(() => cc.ImportFromPem(builder.ToString()));
-            Assert.Single(cc);
-            Assert.Equal("35052C549E4E7805E4EA204C2BE7F4BC19B88EC8", cc[0].Thumbprint);
+        [Fact]
+        public static void ImportFromPem_NonCertificateContent_Pkcs7_Fails()
+        {
+            X509Certificate2Collection cc = new X509Certificate2Collection();
+
+            string content = Convert.ToBase64String(TestData.Pkcs7ChainDerBytes);
+            string certContents = $@"
+-----BEGIN CERTIFICATE-----
+{content}
+-----END CERTIFICATE-----
+";
+
+            Assert.Throws<CryptographicException>(() => cc.ImportFromPem(certContents));
         }
 
         private static void TestExportSingleCert_SecureStringPassword(X509ContentType ct)
