@@ -1403,6 +1403,9 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
 #define ST 2
 #define CMP 4
 #define RSH 8
+#define WID 16
+#define LNG 32
+#define NRW 64
 
 // clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
@@ -1482,6 +1485,9 @@ bool emitter::emitInsIsVectorRightShift(instruction ins)
 #undef ST
 #undef CMP
 #undef RHS
+#undef WID
+#undef LNG
+#undef NRW
 
 /*****************************************************************************
  *
