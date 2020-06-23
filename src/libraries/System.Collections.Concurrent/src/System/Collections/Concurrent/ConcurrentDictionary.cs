@@ -810,7 +810,7 @@ namespace System.Collections.Concurrent
             //         for (Node? current = Volatile.Read(ref buckets[i]); current != null; current = current._next)
             //             yield return new KeyValuePair<TKey, TValue>(current._key, current._value);
 
-            public readonly ConcurrentDictionary<TKey, TValue> _dictionary;
+            private readonly ConcurrentDictionary<TKey, TValue> _dictionary;
 
             private ConcurrentDictionary<TKey, TValue>.Node?[]? _buckets;
             private Node? _node;
