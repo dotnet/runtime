@@ -274,7 +274,6 @@ namespace Mono.Linker.Steps
 
 			if (Annotations.IsMarked (type)) {
 				var duplicateLevel = preserve != TypePreserve.Nothing ? preserve : nav.HasChildren ? TypePreserve.Nothing : TypePreserve.All;
-				Context.LogWarning ($"Duplicate preserve of '{type.FullName}' in '{_xmlDocumentLocation}'", 2025, _xmlDocumentLocation);
 			}
 
 			Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
