@@ -14902,11 +14902,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
 bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src)
 {
-    bool isRedundant = false;
-#ifdef DEBUG
-    const char* reason = nullptr;
-#endif // DEBUG
-
     assert(ins == INS_mov);
 
     if (dst == src)
@@ -14916,13 +14911,13 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         //
         if (isGeneralRegisterOrSP(dst) && (size == EA_8BYTE))
         {
-            reason      = "\n -- suppressing mov because src and dst is same 8-byte register.\n";
-            isRedundant = true;
+            JITDUMP("\n -- suppressing mov because src and dst is same 8-byte register.\n");
+            return true;
         }
         else if (isVectorRegister(dst) && (size == EA_16BYTE))
         {
-            reason      = "\n -- suppressing mov because src and dst is same 16-byte register.\n";
-            isRedundant = true;
+            JITDUMP("\n -- suppressing mov because src and dst is same 16-byte register.\n");
+            return true;
         }
     }
 
@@ -14935,8 +14930,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 
         if ((prevDst == dst) && (prevSrc == src))
         {
-            reason      = "\n -- suppressing mov because previous instruction already moved from src to dst register.\n";
-            isRedundant = true;
+            JITDUMP("\n -- suppressing mov because previous instruction already moved from src to dst register.\n");
+            return true;
         }
 
         // A mov with a EA_4BYTE has the side-effect of clearing the upper bits
@@ -14944,16 +14939,12 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         //
         if (((size == EA_8BYTE) || (size == EA_16BYTE)) && (prevDst == src) && (prevSrc == dst))
         {
-            JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst to src register.\n");
+            JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst to src "
+                    "register.\n");
             return true;
         }
     }
 
-    if (isRedundant)
-    {
-        JITDUMP(reason);
-    }
-
-    return isRedundant;
+    return false;
 }
 #endif // defined(TARGET_ARM64)
