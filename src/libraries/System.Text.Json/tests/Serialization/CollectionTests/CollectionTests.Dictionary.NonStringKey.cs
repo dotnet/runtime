@@ -179,6 +179,24 @@ namespace System.Text.Json.Serialization.Tests
             protected override int Value => 1;
         }
 
+        public class DictionaryUInt16Key : DictionaryKeyTestsBase<ushort, int>
+        {
+            protected override ushort Key => ushort.MaxValue;
+            protected override int Value => 1;
+        }
+
+        public class DictionaryUInt32Key : DictionaryKeyTestsBase<uint, int>
+        {
+            protected override uint Key => uint.MaxValue;
+            protected override int Value => 1;
+        }
+
+        public class DictionaryUInt64Key : DictionaryKeyTestsBase<ulong, int>
+        {
+            protected override ulong Key => ulong.MaxValue;
+            protected override int Value => 1;
+        }
+
         public abstract class DictionaryUnsupportedKeyTestsBase<TKey, TValue>
         {
             private Dictionary<TKey, TValue> _dictionary => BuildDictionary();
@@ -499,6 +517,11 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(@"{""1"":1}", json);
             }
         }
+
+        public class MyPublicClass { }
+
+        public struct MyPublicStruct { }
+
 
         public enum MyEnum
         {

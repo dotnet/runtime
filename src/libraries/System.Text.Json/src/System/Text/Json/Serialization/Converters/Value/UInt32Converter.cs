@@ -15,5 +15,22 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WriteNumberValue(value);
         }
+
+        internal override uint ReadWithQuotes(ref Utf8JsonReader reader)
+        {
+            if (!reader.TryGetUInt32Core(out uint value))
+            {
+                throw ThrowHelper.GetFormatException(NumericType.UInt16);
+            }
+
+            return value;
+        }
+
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, uint value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            writer.WritePropertyName(value);
+        }
+
+        internal override bool CanBeDictionaryKey => true;
     }
 }
