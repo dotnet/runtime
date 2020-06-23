@@ -324,6 +324,7 @@ else()
   endif()
 
   set_exports_linker_option(${JIT_EXPORTS_FILE})
+  set(JIT_EXPORTS_LINKER_OPTION ${EXPORTS_LINKER_OPTION})
   set(SHARED_LIB_SOURCES ${SOURCES})
 endif()
 
