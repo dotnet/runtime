@@ -516,6 +516,47 @@ namespace System.Text.Json.Serialization.Tests
                 json = Encoding.UTF8.GetString(stream.ToArray());
                 Assert.Equal(@"{""1"":1}", json);
             }
+
+            [Fact]
+            public void TestEnumKeyWithNamingPolicy()
+            {
+                var opts = new JsonSerializerOptions();
+                opts.Converters.Add(new JsonStringEnumConverter(new SuffixNamingPolicy()));
+
+                var myEnumIntDictionary = new Dictionary<MyEnum, int>();
+                myEnumIntDictionary.Add(MyEnum.Foo, 1);
+
+                string json = JsonSerializer.Serialize(myEnumIntDictionary, opts);
+                Assert.Equal(@"{""Foo_Suffix"":1}", json);
+
+                var myEnumFlagsIntDictionary = new Dictionary<MyEnumFlags, int>();
+                myEnumFlagsIntDictionary.Add(MyEnumFlags.Foo | MyEnumFlags.Bar, 1);
+
+                json = JsonSerializer.Serialize(myEnumFlagsIntDictionary, opts);
+                Assert.Equal(@"{""Foo_Suffix, Bar_Suffix"":1}", json);
+            }
+
+            [Fact]
+            public void TestEnumKeyWithNotValidIdentifier()
+            {
+                var myEnumIntDictionary = new Dictionary<MyEnum, int>();
+                myEnumIntDictionary.Add((MyEnum)(-1), 1);
+
+                string json = JsonSerializer.Serialize(myEnumIntDictionary);
+                Assert.Equal(@"{""-1"":1}", json);
+
+                myEnumIntDictionary = JsonSerializer.Deserialize<Dictionary<MyEnum, int>>(json);
+                Assert.Equal(1, myEnumIntDictionary[(MyEnum)(-1)]);
+
+                var myEnumFlagsIntDictionary = new Dictionary<MyEnumFlags, int>();
+                myEnumFlagsIntDictionary.Add((MyEnumFlags)(-1), 1);
+
+                json = JsonSerializer.Serialize(myEnumFlagsIntDictionary);
+                Assert.Equal(@"{""-1"":1}", json);
+
+                myEnumFlagsIntDictionary = JsonSerializer.Deserialize<Dictionary<MyEnumFlags, int>>(json);
+                Assert.Equal(1, myEnumFlagsIntDictionary[(MyEnumFlags)(-1)]);
+            }
         }
 
         public class MyPublicClass { }
@@ -562,6 +603,12 @@ namespace System.Text.Json.Serialization.Tests
         {
             public const string FixedName = nameof(FixedName);
             public override string ConvertName(string name) => FixedName;
+        }
+
+        public class SuffixNamingPolicy : JsonNamingPolicy
+        {
+            public const string Suffix = "_Suffix";
+            public override string ConvertName(string name) => name + Suffix;
         }
     }
 }

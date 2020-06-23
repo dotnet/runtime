@@ -334,8 +334,74 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
-            string enumString = value.ToString();
-            writer.WritePropertyName(enumString);
+            ulong key = ConvertToUInt64(value);
+
+            if (_nameCache.TryGetValue(key, out JsonEncodedText formatted))
+            {
+                writer.WritePropertyName(formatted);
+                return;
+            }
+
+            string original = value.ToString();
+            if (IsValidIdentifier(original))
+            {
+                // We are dealing with a combination of flag constants since
+                // all constant values were cached during warm-up.
+                JavaScriptEncoder? encoder = options.Encoder;
+
+                if (_nameCache.Count < NameCacheSizeSoftLimit)
+                {
+                    formatted = _namingPolicy == null
+                        ? JsonEncodedText.Encode(original, encoder)
+                        : FormatEnumValue(original, encoder);
+
+                    writer.WritePropertyName(formatted);
+
+                    _nameCache.TryAdd(key, formatted);
+                }
+                else
+                {
+                    // We also do not create a JsonEncodedText instance here because passing the string
+                    // directly to the writer is cheaper than creating one and not caching it for reuse.
+                    writer.WritePropertyName(
+                        _namingPolicy == null
+                        ? original
+                        : FormatEnumValueToString(original, encoder));
+                }
+
+                return;
+            }
+
+            switch (s_enumTypeCode)
+            {
+                case TypeCode.Int32:
+                    writer.WritePropertyName(Unsafe.As<T, int>(ref value));
+                    break;
+                case TypeCode.UInt32:
+                    writer.WritePropertyName(Unsafe.As<T, uint>(ref value));
+                    break;
+                case TypeCode.UInt64:
+                    writer.WritePropertyName(Unsafe.As<T, ulong>(ref value));
+                    break;
+                case TypeCode.Int64:
+                    writer.WritePropertyName(Unsafe.As<T, long>(ref value));
+                    break;
+                case TypeCode.Int16:
+                    writer.WritePropertyName(Unsafe.As<T, short>(ref value));
+                    break;
+                case TypeCode.UInt16:
+                    writer.WritePropertyName(Unsafe.As<T, ushort>(ref value));
+                    break;
+                case TypeCode.Byte:
+                    writer.WritePropertyName(Unsafe.As<T, byte>(ref value));
+                    break;
+                case TypeCode.SByte:
+                    writer.WritePropertyName(Unsafe.As<T, sbyte>(ref value));
+                    break;
+                default:
+                    ThrowHelper.ThrowJsonException();
+                    break;
+            }
         }
 
         internal override bool CanBeDictionaryKey => true;
