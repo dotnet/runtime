@@ -57,6 +57,11 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProcOnNewThread(CALLBACKP
 #else // _WIN32
     pthread_t newThreadToRuntime;
     int ret = pthread_create(&newThreadToRuntime, NULL, ProxyCall, &cxt);
+    if (ret != 0)
+    {
+        printf("Failed to create thread: %d\n", ret);
+        std::abort();
+    }
 
     // Wait for new thread to complete
     pthread_join(newThreadToRuntime, NULL);
