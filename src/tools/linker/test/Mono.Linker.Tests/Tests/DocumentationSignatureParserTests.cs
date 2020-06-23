@@ -48,25 +48,7 @@ namespace Mono.Linker.Tests
 		{
 			var generator = DocumentationSignatureGenerator.Instance;
 			var builder = new StringBuilder ();
-			switch (member) {
-			case TypeDefinition type:
-				generator.VisitTypeDefinition (type, builder);
-				break;
-			case MethodDefinition method:
-				generator.VisitMethod (method, builder);
-				break;
-			case FieldDefinition field:
-				generator.VisitField (field, builder);
-				break;
-			case PropertyDefinition property:
-				generator.VisitProperty (property, builder);
-				break;
-			case EventDefinition evt:
-				generator.VisitEvent (evt, builder);
-				break;
-			default:
-				throw new NotImplementedException ();
-			}
+			generator.VisitMember (member, builder);
 			Assert.AreEqual (expected, builder.ToString ());
 		}
 
