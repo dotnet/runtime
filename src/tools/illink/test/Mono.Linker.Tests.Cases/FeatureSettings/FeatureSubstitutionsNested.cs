@@ -2,7 +2,7 @@ using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Substitutions
+namespace Mono.Linker.Tests.Cases.FeatureSettings
 {
 	[SetupCompileResource ("Dependencies/ResourceFile.txt", "ResourceFileRemoveWhenTrue.txt")]
 	[SetupCompileResource ("Dependencies/ResourceFile.txt", "ResourceFileRemoveWhenFalse.txt")]

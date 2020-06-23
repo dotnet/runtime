@@ -1,8 +1,0 @@
-<linker feature="OptionalFeature" featurevalue="false">
-  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-    <type fullname="Mono.Linker.Tests.Cases.Substitutions.FeatureSubstitutions">
-      <method signature="System.Boolean get_IsOptionalFeatureEnabled()" body="stub" value="false">
-      </method>
-    </type>
-  </assembly>
-</linker>

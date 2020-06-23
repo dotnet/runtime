@@ -29,6 +29,7 @@
 //
 
 using System;
+using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.XPath;
@@ -71,6 +72,13 @@ namespace Mono.Linker.Steps
 			_resourceAssembly = resourceAssembly ?? throw new ArgumentNullException (nameof (resourceAssembly));
 		}
 
+		bool ShouldProcessElement (XPathNavigator nav) =>
+#if FEATURE_ILLINK
+			FeatureSettings.ShouldProcessElement (nav, Context, _xmlDocumentLocation);
+#else
+			true;
+#endif
+
 		protected override void Process ()
 		{
 			XPathNavigator nav = _document.CreateNavigator ();
@@ -86,17 +94,28 @@ namespace Mono.Linker.Steps
 				if (Context.IgnoreDescriptors)
 					return;
 			}
+
+			if (!ShouldProcessElement (nav))
+				return;
+
 			try {
-				ProcessAssemblies (Context, nav.SelectChildren ("assembly", _ns));
+				ProcessAssemblies (nav.SelectChildren ("assembly", _ns));
 			} catch (Exception ex) when (!(ex is LinkerFatalErrorException)) {
 				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Failed to process description file '{_xmlDocumentLocation}'", 1004), ex);
 			}
 		}
 
-		protected virtual void ProcessAssemblies (LinkContext context, XPathNodeIterator iterator)
+		protected virtual void ProcessAssemblies (XPathNodeIterator iterator)
 		{
 			while (iterator.MoveNext ()) {
-				AssemblyDefinition assembly = GetAssembly (context, GetAssemblyName (iterator.Current));
+				// Errors for invalid assembly names should show up even if this element will be
+				// skipped due to feature conditions.
+				var name = GetAssemblyName (iterator.Current);
+
+				if (!ShouldProcessElement (iterator.Current))
+					continue;
+
+				AssemblyDefinition assembly = GetAssembly (Context, name);
 				if (assembly != null)
 					ProcessAssembly (assembly, iterator);
 			}
@@ -121,6 +140,9 @@ namespace Mono.Linker.Steps
 		void ProcessNamespaces (AssemblyDefinition assembly, XPathNodeIterator iterator)
 		{
 			while (iterator.MoveNext ()) {
+				if (!ShouldProcessElement (iterator.Current))
+					continue;
+
 				string fullname = GetFullName (iterator.Current);
 				foreach (TypeDefinition type in assembly.MainModule.Types) {
 					if (type.Namespace != fullname)
@@ -147,6 +169,9 @@ namespace Mono.Linker.Steps
 		{
 			while (iterator.MoveNext ()) {
 				XPathNavigator nav = iterator.Current;
+
+				if (!ShouldProcessElement (nav))
+					continue;
 
 				string fullname = GetFullName (nav);
 
@@ -230,6 +255,8 @@ namespace Mono.Linker.Steps
 
 		protected virtual void ProcessType (TypeDefinition type, XPathNavigator nav)
 		{
+			Debug.Assert (ShouldProcessElement (nav));
+
 #if !FEATURE_ILLINK
 			if (IsExcluded (nav))
 				return;
@@ -321,22 +348,25 @@ namespace Mono.Linker.Steps
 
 		void ProcessFields (TypeDefinition type, XPathNodeIterator iterator)
 		{
-			while (iterator.MoveNext ())
-				ProcessField (type, iterator);
+			while (iterator.MoveNext ()) {
+				if (!ShouldProcessElement (iterator.Current))
+					continue;
+				ProcessField (type, iterator.Current);
+			}
 		}
 
-		protected virtual void ProcessField (TypeDefinition type, XPathNodeIterator iterator)
+		protected virtual void ProcessField (TypeDefinition type, XPathNavigator nav)
 		{
 #if !FEATURE_ILLINK
-			if (IsExcluded (iterator.Current))
+			if (IsExcluded (nav))
 				return;
 #endif
 
-			string value = GetSignature (iterator.Current);
+			string value = GetSignature (nav);
 			if (!String.IsNullOrEmpty (value))
 				ProcessFieldSignature (type, value);
 
-			value = GetAttribute (iterator.Current, "name");
+			value = GetAttribute (nav, "name");
 			if (!String.IsNullOrEmpty (value))
 				ProcessFieldName (type, value);
 		}
@@ -389,22 +419,25 @@ namespace Mono.Linker.Steps
 
 		void ProcessMethods (TypeDefinition type, XPathNodeIterator iterator, bool required)
 		{
-			while (iterator.MoveNext ())
-				ProcessMethod (type, iterator, required);
+			while (iterator.MoveNext ()) {
+				if (!ShouldProcessElement (iterator.Current))
+					continue;
+				ProcessMethod (type, iterator.Current, required);
+			}
 		}
 
-		protected virtual void ProcessMethod (TypeDefinition type, XPathNodeIterator iterator, bool required)
+		protected virtual void ProcessMethod (TypeDefinition type, XPathNavigator nav, bool required)
 		{
 #if !FEATURE_ILLINK
-			if (IsExcluded (iterator.Current))
+			if (IsExcluded (nav))
 				return;
 #endif
 
-			string value = GetSignature (iterator.Current);
+			string value = GetSignature (nav);
 			if (!String.IsNullOrEmpty (value))
 				ProcessMethodSignature (type, value, required);
 
-			value = GetAttribute (iterator.Current, "name");
+			value = GetAttribute (nav, "name");
 			if (!String.IsNullOrEmpty (value))
 				ProcessMethodName (type, value, required);
 		}
@@ -487,22 +520,25 @@ namespace Mono.Linker.Steps
 
 		void ProcessEvents (TypeDefinition type, XPathNodeIterator iterator, bool required)
 		{
-			while (iterator.MoveNext ())
-				ProcessEvent (type, iterator, required);
+			while (iterator.MoveNext ()) {
+				if (!ShouldProcessElement (iterator.Current))
+					continue;
+				ProcessEvent (type, iterator.Current, required);
+			}
 		}
 
-		protected virtual void ProcessEvent (TypeDefinition type, XPathNodeIterator iterator, bool required)
+		protected virtual void ProcessEvent (TypeDefinition type, XPathNavigator nav, bool required)
 		{
 #if !FEATURE_ILLINK
-			if (IsExcluded (iterator.Current))
+			if (IsExcluded (nav))
 				return;
 #endif
 
-			string value = GetSignature (iterator.Current);
+			string value = GetSignature (nav);
 			if (!String.IsNullOrEmpty (value))
 				ProcessEventSignature (type, value, required);
 
-			value = GetAttribute (iterator.Current, "name");
+			value = GetAttribute (nav, "name");
 			if (!String.IsNullOrEmpty (value))
 				ProcessEventName (type, value, required);
 		}
@@ -559,22 +595,25 @@ namespace Mono.Linker.Steps
 
 		void ProcessProperties (TypeDefinition type, XPathNodeIterator iterator, bool required)
 		{
-			while (iterator.MoveNext ())
-				ProcessProperty (type, iterator, required);
+			while (iterator.MoveNext ()) {
+				if (!ShouldProcessElement (iterator.Current))
+					continue;
+				ProcessProperty (type, iterator.Current, required);
+			}
 		}
 
-		protected virtual void ProcessProperty (TypeDefinition type, XPathNodeIterator iterator, bool required)
+		protected virtual void ProcessProperty (TypeDefinition type, XPathNavigator nav, bool required)
 		{
 #if !FEATURE_ILLINK
-			if (IsExcluded (iterator.Current))
+			if (IsExcluded (nav))
 				return;
 #endif
 
-			string value = GetSignature (iterator.Current);
+			string value = GetSignature (nav);
 			if (!String.IsNullOrEmpty (value))
-				ProcessPropertySignature (type, value, GetAccessors (iterator.Current), required);
+				ProcessPropertySignature (type, value, GetAccessors (nav), required);
 
-			value = GetAttribute (iterator.Current, "name");
+			value = GetAttribute (nav, "name");
 			if (!String.IsNullOrEmpty (value))
 				ProcessPropertyName (type, value, _accessorsAll, required);
 		}

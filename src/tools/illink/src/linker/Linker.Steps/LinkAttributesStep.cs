@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -153,15 +154,19 @@ namespace Mono.Linker.Steps
 		void ProcessAssemblies (LinkContext context, XPathNodeIterator iterator)
 		{
 			while (iterator.MoveNext ()) {
-				if (!ShouldProcessElement (iterator.Current))
-					return;
+				bool processAllAssemblies = GetFullName (iterator.Current) == "*";
+				// Errors for invalid assembly names should show up even if this element will be
+				// skipped due to feature conditions.
+				var name = processAllAssemblies ? null : GetAssemblyName (iterator.Current);
 
-				if (GetFullName (iterator.Current) == "*") {
-					foreach (AssemblyDefinition assemblyIterator in context.GetAssemblies ()) {
+				if (!ShouldProcessElement (iterator.Current))
+					continue;
+
+				if (processAllAssemblies) {
+					foreach (AssemblyDefinition assemblyIterator in context.GetAssemblies ())
 						ProcessTypes (assemblyIterator, iterator, true);
-					}
 				} else {
-					AssemblyDefinition assembly = GetAssembly (context, GetAssemblyName (iterator.Current));
+					AssemblyDefinition assembly = GetAssembly (context, name);
 
 					if (assembly == null) {
 						Context.LogWarning ($"Could not resolve assembly {GetAssemblyName (iterator.Current).Name} specified in {_xmlDocumentLocation}", 2007, _xmlDocumentLocation);
@@ -249,6 +254,8 @@ namespace Mono.Linker.Steps
 
 		void ProcessType (TypeDefinition type, XPathNavigator nav)
 		{
+			Debug.Assert (ShouldProcessElement (nav));
+
 			IEnumerable<CustomAttribute> attributes = ProcessAttributes (nav);
 			if (attributes.Count () > 0)
 				Context.CustomAttributes.AddCustomAttributes (type, attributes);
@@ -283,9 +290,9 @@ namespace Mono.Linker.Steps
 				return;
 
 			while (fields.MoveNext ()) {
-				if (!ShouldProcessElement (fields.Current)) {
-					return;
-				}
+				if (!ShouldProcessElement (fields.Current))
+					continue;
+
 				string value = GetSignature (fields.Current);
 				if (!String.IsNullOrEmpty (value))
 					ProcessFieldSignature (type, value, fields);
@@ -303,9 +310,8 @@ namespace Mono.Linker.Steps
 				return;
 
 			while (methods.MoveNext ()) {
-				if (!ShouldProcessElement (methods.Current)) {
-					return;
-				}
+				if (!ShouldProcessElement (methods.Current))
+					continue;
 
 				string value = GetSignature (methods.Current);
 				if (!String.IsNullOrEmpty (value))
@@ -323,9 +329,8 @@ namespace Mono.Linker.Steps
 			if (properties.Count == 0)
 				return;
 			while (properties.MoveNext ()) {
-				if (!ShouldProcessElement (properties.Current)) {
-					return;
-				}
+				if (!ShouldProcessElement (properties.Current))
+					continue;
 
 				string value = GetSignature (properties.Current);
 				if (!String.IsNullOrEmpty (value))
@@ -343,9 +348,8 @@ namespace Mono.Linker.Steps
 			if (events.Count == 0)
 				return;
 			while (events.MoveNext ()) {
-				if (!ShouldProcessElement (events.Current)) {
-					return;
-				}
+				if (!ShouldProcessElement (events.Current))
+					continue;
 
 				string value = GetSignature (events.Current);
 				if (!String.IsNullOrEmpty (value))
@@ -600,27 +604,6 @@ namespace Mono.Linker.Steps
 			return null;
 		}
 
-		bool ShouldProcessElement (XPathNavigator nav)
-		{
-			var feature = GetAttribute (nav, "feature");
-			if (string.IsNullOrEmpty (feature))
-				return true;
-
-			var value = GetAttribute (nav, "featurevalue");
-			if (string.IsNullOrEmpty (value)) {
-				Context.LogError ($"Feature {feature} does not specify a \"featurevalue\" attribute", 1001);
-				return false;
-			}
-
-			if (!bool.TryParse (value, out bool bValue)) {
-				Context.LogError ($"Unsupported non-boolean feature definition {feature}", 1002);
-				return false;
-			}
-
-			if (Context.FeatureSettings == null || !Context.FeatureSettings.TryGetValue (feature, out bool featureSetting))
-				return false;
-
-			return bValue == featureSetting;
-		}
+		bool ShouldProcessElement (XPathNavigator nav) => FeatureSettings.ShouldProcessElement (nav, Context, _xmlDocumentLocation);
 	}
 }
