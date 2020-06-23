@@ -660,7 +660,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </para>
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        /// The path specified in <paramref name="certPemFilePath" /> is null.
+        /// <paramref name="certPemFilePath" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         /// The certificate uses an unknown public key algorithm.
@@ -728,7 +728,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </para>
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        /// The path specified in <paramref name="certPemFilePath" /> is null.
+        /// <paramref name="certPemFilePath" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         /// <para>The certificate uses an unknown public key algorithm.</para>
@@ -922,7 +922,7 @@ namespace System.Security.Cryptography.X509Certificates
                     if (!Convert.TryFromBase64Chars(contents[fields.Base64Data], certBytes, out int bytesWritten)
                         || bytesWritten != fields.DecodedDataLength)
                     {
-                        // The contents should have already been validated by the PEM reader.
+                        Debug.Fail("The contents should have already been validated by the PEM reader.");
                         throw new ArgumentException(SR.Cryptography_X509_NoPemCertificate, nameof(certPem));
                     }
 

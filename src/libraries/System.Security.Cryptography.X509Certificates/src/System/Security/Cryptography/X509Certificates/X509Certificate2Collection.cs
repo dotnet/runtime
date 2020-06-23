@@ -5,6 +5,7 @@
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -254,7 +255,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// The decoded contents of a PEM are invalid or corrupt and could not be imported.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        /// <pararef name="certPemFilePath" /> is null.
+        /// <paramref name="certPemFilePath" /> is <see langword="null" />.
         /// </exception>
         public void ImportFromPemFile(string certPemFilePath)
         {
@@ -301,7 +302,7 @@ namespace System.Security.Cryptography.X509Certificates
                         if (!Convert.TryFromBase64Chars(contents[fields.Base64Data], certBytes, out int bytesWritten)
                             || bytesWritten != fields.DecodedDataLength)
                         {
-                            // The contents should have already been validated by the PEM reader.
+                            Debug.Fail("The contents should have already been validated by the PEM reader.");
                             throw new ArgumentException(SR.Cryptography_X509_NoPemCertificate, nameof(certPem));
                         }
 
