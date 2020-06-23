@@ -326,12 +326,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/CoreMangLib/cti/system/string/StringFormat2/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm64/Simd/*">
-            <Issue>https://github.com/dotnet/runtime/issues/10672</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/MDArray/DataTypes/float_cs_ro/*">
-            <Issue>https://github.com/dotnet/runtime/issues/10711</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_590772/DevDiv_590772/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
