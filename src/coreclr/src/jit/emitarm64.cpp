@@ -1468,6 +1468,42 @@ bool emitter::emitInsIsVectorRightShift(instruction ins)
         return false;
 }
 
+//------------------------------------------------------------------------
+// emitInsIsVectorLong: Returns true if the instruction has the destination register that is double that of both source
+// operands. Indicated by the suffix L.
+//
+bool emitter::emitInsIsVectorLong(instruction ins)
+{
+    if (ins < ArrLen(CodeGenInterface::instInfo))
+        return (CodeGenInterface::instInfo[ins] & LNG) != 0;
+    else
+        return false;
+}
+
+//------------------------------------------------------------------------
+// emitInsIsVectorNarrow: Returns true if the element width of the destination register of the instruction is half that
+// of both source operands. Indicated by the suffix N.
+//
+bool emitter::emitInsIsVectorNarrow(instruction ins)
+{
+    if (ins < ArrLen(CodeGenInterface::instInfo))
+        return (CodeGenInterface::instInfo[ins] & NRW) != 0;
+    else
+        return false;
+}
+
+//------------------------------------------------------------------------
+// emitInsIsVectorWide: Returns true if the element width of the destination register and the first source operand of
+// the instruction is double that of the second source operand. Indicated by the suffix W.
+//
+bool emitter::emitInsIsVectorWide(instruction ins)
+{
+    if (ins < ArrLen(CodeGenInterface::instInfo))
+        return (CodeGenInterface::instInfo[ins] & WID) != 0;
+    else
+        return false;
+}
+
 #undef LD
 #undef ST
 #undef CMP

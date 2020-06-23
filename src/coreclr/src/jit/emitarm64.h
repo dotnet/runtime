@@ -88,6 +88,9 @@ bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
 bool emitInsIsVectorRightShift(instruction ins);
+bool emitInsIsVectorLong(instruction ins);
+bool emitInsIsVectorNarrow(instruction ins);
+bool emitInsIsVectorWide(instruction ins);
 emitAttr emitInsTargetRegSize(instrDesc* id);
 emitAttr emitInsLoadStoreSize(instrDesc* id);
 
