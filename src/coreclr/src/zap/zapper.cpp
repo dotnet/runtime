@@ -15,14 +15,11 @@
 extern const WCHAR g_pwBaseLibrary[];
 extern bool g_fAllowNativeImages;
 bool g_fNGenMissingDependenciesOk;
-bool g_fNGenWinMDResilient;
 
 #ifdef FEATURE_READYTORUN_COMPILER
 bool g_fReadyToRunCompilation;
 bool g_fLargeVersionBubble;
 #endif
-
-static bool s_fNGenNoMetaData;
 
 /* --------------------------------------------------------------------------- *
  * Public entry points for ngen
@@ -31,7 +28,7 @@ static bool s_fNGenNoMetaData;
 // Zapper Object instead of creating one on your own.
 
 
-STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, SIZE_T customBaseAddress=0, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr)
+STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, SIZE_T customBaseAddress=0, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr)
 {
     HRESULT hr = S_OK;
 
@@ -74,8 +71,6 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
 
         ngo.fNgenLastRetry = false;
 
-        s_fNGenNoMetaData = (dwFlags & NGENWORKER_FLAGS_NO_METADATA) != 0;
-
         zap = Zapper::NewZapper(&ngo);
 
         if (pwzOutputFilename)
@@ -95,19 +90,12 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
         if (pwzAppPaths != nullptr)
             zap->SetAppPaths(pwzAppPaths);
 
-        if (pwzPlatformWinmdPaths != nullptr)
-            zap->SetPlatformWinmdPaths(pwzPlatformWinmdPaths);
-
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
         if (pwszCLRJITPath != nullptr)
             zap->SetCLRJITPath(pwszCLRJITPath);
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
         g_fNGenMissingDependenciesOk = !!(dwFlags & NGENWORKER_FLAGS_MISSINGDEPENDENCIESOK);
-
-#ifdef FEATURE_WINMD_RESILIENT
-        g_fNGenWinMDResilient = !!(dwFlags & NGENWORKER_FLAGS_WINMD_RESILIENT);
-#endif
 
 #ifdef FEATURE_READYTORUN_COMPILER
         g_fReadyToRunCompilation = !!(dwFlags & NGENWORKER_FLAGS_READYTORUN);
@@ -128,7 +116,7 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
     return hr;
 }
 
-STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzPlatformWinmdPaths, LPCWSTR pwzDiasymreaderPath)
+STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzDiasymreaderPath)
 {
     HRESULT hr = S_OK;
 
@@ -163,9 +151,6 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
 
         if (pwzAppNiPaths != nullptr)
             zap->SetAppNiPaths(pwzAppNiPaths);
-
-        if (pwzPlatformWinmdPaths != nullptr)
-            zap->SetPlatformWinmdPaths(pwzPlatformWinmdPaths);
 
 #if !defined(NO_NGENPDB)
         if (pwzDiasymreaderPath != nullptr)
@@ -217,8 +202,7 @@ ZapperOptions::ZapperOptions() :
   m_fPartialNGen(false),
   m_fPartialNGenSet(false),
   m_fNGenLastRetry(false),
-  m_compilerFlags(),
-  m_fNoMetaData(s_fNGenNoMetaData)
+  m_compilerFlags()
 {
     SetCompilerFlags();
 
@@ -898,10 +882,6 @@ void Zapper::CreateCompilationDomain()
                                                fForceProfile,
                                                fForceInstrument));
 
-#ifdef CROSSGEN_COMPILE
-    IfFailThrow(m_pDomain->SetPlatformWinmdPaths(m_platformWinmdPaths));
-#endif
-
     // we support only TPA binding on CoreCLR
 
     if (!m_trustedPlatformAssemblies.IsEmpty())
@@ -1114,7 +1094,7 @@ IMetaDataAssemblyEmit * Zapper::CreateAssemblyEmitter()
 
     // Hardwire the metadata version to be the current runtime version so that the ngen image
     // does not change when the directory runtime is installed in different directory (e.g. v2.0.x86chk vs. v2.0.80826).
-    BSTRHolder strVersion(SysAllocString(W("v")VER_PRODUCTVERSION_NO_QFE_STR_L));
+    BSTRHolder strVersion(SysAllocString(CLR_METADATA_VERSION_L));
     VARIANT versionOption;
     V_VT(&versionOption) = VT_BSTR;
     V_BSTR(&versionOption) = strVersion;
@@ -1180,10 +1160,11 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI);
     }
 
-    // .NET Core requires SSE2.
 #endif // TARGET_X86
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
+    // .NET Core requires SSE2.
+    m_pOpt->m_compilerFlags.Set(InstructionSet_X86Base);
     m_pOpt->m_compilerFlags.Set(InstructionSet_SSE);
     m_pOpt->m_compilerFlags.Set(InstructionSet_SSE2);
 #endif
@@ -1205,8 +1186,6 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-        m_pOpt->m_compilerFlags.Set(InstructionSet_SSE);
-        m_pOpt->m_compilerFlags.Set(InstructionSet_SSE2);
         m_pOpt->m_compilerFlags.Set(InstructionSet_AES);
         m_pOpt->m_compilerFlags.Set(InstructionSet_PCLMULQDQ);
         m_pOpt->m_compilerFlags.Set(InstructionSet_SSE3);
@@ -1214,11 +1193,11 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
         m_pOpt->m_compilerFlags.Set(InstructionSet_SSE41);
         m_pOpt->m_compilerFlags.Set(InstructionSet_SSE42);
         m_pOpt->m_compilerFlags.Set(InstructionSet_POPCNT);
-        // Leaving out CORJIT_FLAGS::CORJIT_FLAG_USE_AVX, CORJIT_FLAGS::CORJIT_FLAG_USE_FMA
-        // CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2, CORJIT_FLAGS::CORJIT_FLAG_USE_BMI1,
-        // CORJIT_FLAGS::CORJIT_FLAG_USE_BMI2 on purpose - these require VEX encodings
+        // Leaving out InstructionSet_AVX, InstructionSet_FMA, InstructionSet_AVX2,
+        // InstructionSet_BMI1, InstructionSet_BMI2 on purpose - these require VEX encodings
         // and the JIT doesn't support generating code for methods with mixed encodings.
-        m_pOpt->m_compilerFlags.Set(InstructionSet_LZCNT);
+        // Also leaving out InstructionSet_LZCNT because BSR from InstructionSet_X86Base
+        // is used as a fallback in CoreLib and doesn't require an IsSupported check.
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
     }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
@@ -1678,12 +1657,6 @@ void Zapper::SetAppNiPaths(LPCWSTR pwzAppNiPaths)
 {
     m_appNiPaths.Set(pwzAppNiPaths);
 }
-
-void Zapper::SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths)
-{
-    m_platformWinmdPaths.Set(pwzPlatformWinmdPaths);
-}
-
 
 void Zapper::SetOutputFilename(LPCWSTR pwzOutputFilename)
 {

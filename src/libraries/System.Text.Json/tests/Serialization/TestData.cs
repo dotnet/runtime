@@ -91,6 +91,8 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { new TestClassWithObjectImmutableTypes() };
                 yield return new object[] { new JsonElementTests.JsonElementClass() };
                 yield return new object[] { new JsonElementTests.JsonElementArrayClass() };
+                yield return new object[] { new JsonDocumentTests.JsonDocumentClass() };
+                yield return new object[] { new JsonDocumentTests.JsonDocumentArrayClass() };
                 yield return new object[] { new ClassWithComplexObjects() };
             }
         }

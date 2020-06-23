@@ -7,20 +7,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-
 namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
-        // The special dll name to be used for DllImport of QCalls
-        internal const string QCall = "QCall";
-
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
@@ -147,7 +137,14 @@ namespace System.Runtime.CompilerServices
         public static extern bool TryEnsureSufficientExecutionStack();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object GetUninitializedObjectInternal(Type type);
+        private static extern object GetUninitializedObjectInternal(
+            // This API doesn't call any constructors, but the type needs to be seen as constructed.
+            // A type is seen as constructed if a constructor is kept.
+            // This obviously won't cover a type with no constructor. Reference types with no
+            // constructor are an academic problem. Valuetypes with no constructors are a problem,
+            // but IL Linker currently treats them as always implicitly boxed.
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object AllocateUninitializedClone(object obj);
@@ -286,8 +283,22 @@ namespace System.Runtime.CompilerServices
 
         [DllImport(RuntimeHelpers.QCall)]
         private static extern IntPtr AllocateTypeAssociatedMemoryInternal(QCallTypeHandle type, uint size);
-    }
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void FreeTailCallArgBuffer();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static unsafe extern TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern long GetILBytesJitted();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int GetMethodsJittedCount();
+    }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
     internal class RawData
@@ -338,33 +349,34 @@ namespace System.Runtime.CompilerServices
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
-                                                             | 0x00400000;// enum_flag_ICastable;
+                                                             | 0x00400000 // enum_flag_ICastable;
+                                                             | 0x00200000;// enum_flag_IDynamicInterfaceCastable;
 
-        private const int ParentMethodTableOffset = 0x10
+        private const int DebugClassNamePtr = // adjust for debug_m_szClassName
 #if DEBUG
-        + sizeof(nuint)   // adjust for debug_m_szClassName
+#if TARGET_64BIT
+            8
+#else
+            4
 #endif
-        ;
+#else
+            0
+#endif
+            ;
+
+        private const int ParentMethodTableOffset = 0x10 + DebugClassNamePtr;
 
 #if TARGET_64BIT
-        private const int ElementTypeOffset = 0x30
+        private const int ElementTypeOffset = 0x30 + DebugClassNamePtr;
 #else
-        private const int ElementTypeOffset = 0x20
+        private const int ElementTypeOffset = 0x20 + DebugClassNamePtr;
 #endif
-#if DEBUG
-        + sizeof(nuint)   // adjust for debug_m_szClassName
-#endif
-        ;
 
 #if TARGET_64BIT
-        private const int InterfaceMapOffset = 0x38
+        private const int InterfaceMapOffset = 0x38 + DebugClassNamePtr;
 #else
-        private const int InterfaceMapOffset = 0x24
+        private const int InterfaceMapOffset = 0x24 + DebugClassNamePtr;
 #endif
-#if DEBUG
-        + sizeof(nuint)   // adjust for debug_m_szClassName
-#endif
-        ;
 
         public bool HasComponentSize
         {
@@ -421,4 +433,24 @@ namespace System.Runtime.CompilerServices
             }
         }
     }
+
+    // Helper structs used for tail calls via helper.
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct PortableTailCallFrame
+    {
+        public PortableTailCallFrame* Prev;
+        public IntPtr TailCallAwareReturnAddress;
+        public IntPtr NextCall;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct TailCallTls
+    {
+        public PortableTailCallFrame* Frame;
+        public IntPtr ArgBuffer;
+        private IntPtr _argBufferSize;
+        private IntPtr _argBufferGCDesc;
+        private fixed byte _argBufferInline[64];
+    }
+
 }

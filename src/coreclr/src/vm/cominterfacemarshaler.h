@@ -61,19 +61,11 @@ public:
 
     VOID InitializeExistingComObject(OBJECTREF *pComObj, IUnknown **ppIncomingIP);
 
-    static void IReferenceOrIReferenceArrayUnboxWorker(OBJECTREF oref, TypeHandle tkT, BOOL fIsIReferenceArray, OBJECTREF *porefResult);
-    static void IKeyValuePairUnboxWorker(OBJECTREF oref, OBJECTREF *porefResult);
-
 private:
     OBJECTREF FindOrCreateObjectRefInternal(IUnknown **ppIncomingIP, MethodTable *pIncomingItfMT, bool bIncomingIPAddRefed);
     VOID      CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj, IUnknown **ppIncomingIP, MethodTable *pIncomingItfMT, bool bIncomingIPAddRefed);
-    void IReferenceUnbox(IUnknown **ppIncomingIP, OBJECTREF *poref, bool bIncomingIPAddRefed);
-    void IReferenceArrayUnbox(IUnknown **ppIncomingIP, OBJECTREF *poref, bool bIncomingIPAddRefed);
-    void MarshalToNonRCWType(OBJECTREF *poref);
     static VOID      EnsureCOMInterfacesSupported(OBJECTREF oref, MethodTable* pClassMT);
 
-    inline bool SupportsIInspectable();
-    inline bool DontResolveClass();
     inline bool NeedUniqueObject();
 
     RCWCache*               m_pWrapperCache;    // initialization info
@@ -82,11 +74,6 @@ private:
     TypeHandle              m_typeHandle;       // inited and computed if inited value is NULL.  Need to represent all array information too.
     TypeHandle              m_itfTypeHandle;    // an interface supported by the object as returned from GetRuntimeClassName
     Thread*                 m_pThread;          // Current thread - avoid calling GetThread multiple times
-
-    bool                    m_fIReference;      // Is this an IReference<T> (ie, a WinRT "boxed" value type)
-    bool                    m_fIReferenceArray; // Is this an IReferenceArray<T> (ie, an array wrapped in a WinRT interface)
-    bool                    m_fNonRCWType;      // Is this redirected to a non-RCW CLR type
-
     DWORD                   m_flags;
 
     ICOMInterfaceMarshalerCallback  *m_pCallback;        // Callback to call when we created a RCW or got back RCW from cache

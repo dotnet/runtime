@@ -87,12 +87,13 @@
     <MSBuild Targets="$(DefaultCopyAllNativeTestProjectBinariesTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'=='true'"
-             Properties="Dummy=%(Identity)"
+             Properties="Dummy=%(Identity);BuildAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="$(DefaultCopyAllNativeTestProjectBinariesTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'!='true'"
+             Properties="BuildAllProjects=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 

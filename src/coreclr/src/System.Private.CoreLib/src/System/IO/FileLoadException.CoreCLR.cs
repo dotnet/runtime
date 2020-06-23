@@ -29,7 +29,7 @@ namespace System.IO
             else
                 GetMessageForHR(hResult, new StringHandleOnStack(ref message));
 
-            return string.Format(format, fileName, message);
+            return string.Format(format!, fileName, message);
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]

@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
     {
         public bool IsCurveValid(Oid oid)
         {
-            if (PlatformDetection.IsOSX)
+            if (PlatformDetection.IsOSXLike)
             {
                 return false;
             }
@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             get
             {
-                if (PlatformDetection.IsOSX)
+                if (PlatformDetection.IsOSXLike)
                 {
                     return false;
                 }

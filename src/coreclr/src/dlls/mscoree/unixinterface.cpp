@@ -18,6 +18,7 @@
 #ifdef FEATURE_GDBJIT
 #include "../../vm/gdbjithelpers.h"
 #endif // FEATURE_GDBJIT
+#include "bundle.h"
 
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
 
@@ -112,7 +113,8 @@ static void ConvertConfigPropertiesToUnicode(
     const char** propertyValues,
     int propertyCount,
     LPCWSTR** propertyKeysWRef,
-    LPCWSTR** propertyValuesWRef)
+    LPCWSTR** propertyValuesWRef,
+    BundleProbe** bundleProbe)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
     ASSERTE_ALL_BUILDS(propertyKeysW != nullptr);
@@ -124,16 +126,18 @@ static void ConvertConfigPropertiesToUnicode(
     {
         propertyKeysW[propertyIndex] = StringToUnicode(propertyKeys[propertyIndex]);
         propertyValuesW[propertyIndex] = StringToUnicode(propertyValues[propertyIndex]);
+
+        if (strcmp(propertyKeys[propertyIndex], "BUNDLE_PROBE") == 0)
+        {
+            // If this application is a single-file bundle, the bundle-probe callback 
+            // is passed in as the value of "BUNDLE_PROBE" property (encoded as a string).
+            *bundleProbe = (BundleProbe*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+        }
     }
 
     *propertyKeysWRef = propertyKeysW;
     *propertyValuesWRef = propertyValuesW;
 }
-
-#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
-// Reference to the global holding the path to the JIT
-extern LPCWSTR g_CLRJITPath;
-#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
 #ifdef FEATURE_GDBJIT
 GetInfoForMethodDelegate getInfoForMethodDelegate = NULL;
@@ -188,20 +192,24 @@ int coreclr_initialize(
 
     LPCWSTR* propertyKeysW;
     LPCWSTR* propertyValuesW;
+    BundleProbe* bundleProbe = nullptr;
+
     ConvertConfigPropertiesToUnicode(
         propertyKeys,
         propertyValues,
         propertyCount,
         &propertyKeysW,
-        &propertyValuesW);
+        &propertyValuesW,
+        &bundleProbe);
+
+    if (bundleProbe != nullptr)
+    {
+        static Bundle bundle(StringToUnicode(exePath), bundleProbe);
+        Bundle::AppBundle = &bundle;
+    }
 
     // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
     Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);
-
-#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
-    // Fetch the path to JIT binary, if specified
-    g_CLRJITPath = Configuration::GetKnobStringValue(W("JIT_PATH"));
-#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
     STARTUP_FLAGS startupFlags;
     InitializeStartupFlags(&startupFlags);

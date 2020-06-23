@@ -17,6 +17,7 @@
     <BuildRuntimePackages>false</BuildRuntimePackages>
 
     <IsShipping>false</IsShipping>
+    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
   <ItemGroup>

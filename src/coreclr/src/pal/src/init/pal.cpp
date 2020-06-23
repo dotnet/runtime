@@ -81,6 +81,15 @@ int CacheLineSize;
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <kvm.h>
+#elif defined(__sun)
+#ifndef _KERNEL
+#define _KERNEL
+#define UNDEF_KERNEL
+#endif
+#include <sys/procfs.h>
+#ifdef UNDEF_KERNEL
+#undef _KERNEL
+#endif
 #endif
 
 #include <algorithm>
@@ -359,18 +368,32 @@ Initialize(
         gPID = getpid();
         gSID = getsid(gPID);
 
+        // Initialize the thread local storage  
+        if (FALSE == TLSInitialize())
+        {
+            palError = ERROR_PALINIT_TLS;
+            goto done;
+        }
+
+        // Initialize debug channel settings before anything else.
+        if (FALSE == DBG_init_channels())
+        {
+            palError = ERROR_PALINIT_DBG_CHANNELS;
+            goto CLEANUP0a;
+        }
+
         // The gSharedFilesPath is allocated dynamically so its destructor does not get
         // called unexpectedly during cleanup
         gSharedFilesPath = InternalNew<PathCharString>();
         if (gSharedFilesPath == nullptr)
         {
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            goto done;
+            goto CLEANUP0a;
         }
 
         if (INIT_SharedFilesPath() == FALSE)
         {
-            goto done;
+            goto CLEANUP0a;
         }
 
         fFirstTimeInit = true;
@@ -400,28 +423,12 @@ Initialize(
         }
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
-        // Initialize the TLS lookaside cache
-        if (FALSE == TLSInitialize())
-        {
-            palError = ERROR_PALINIT_TLS;
-            goto done;
-        }
-
         InitializeCGroup();
 
         // Initialize the environment.
         if (FALSE == EnvironInitialize())
         {
             palError = ERROR_PALINIT_ENV;
-            goto CLEANUP0;
-        }
-
-        // Initialize debug channel settings before anything else.
-        // This depends on the environment, so it must come after
-        // EnvironInitialize.
-        if (FALSE == DBG_init_channels())
-        {
-            palError = ERROR_PALINIT_DBG_CHANNELS;
             goto CLEANUP0;
         }
 
@@ -726,6 +733,7 @@ CLEANUP1:
     SHMCleanup();
 CLEANUP0:
     CleanupCGroup();
+CLEANUP0a:
     TLSCleanup();
     ERROR("PAL_Initialize failed\n");
     SetLastError(palError);
@@ -889,6 +897,25 @@ PAL_IsDebuggerPresent()
         return TRUE;
     else
         return FALSE;
+#elif defined(__sun)
+    int readResult;
+    char statusFilename[64];
+    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/status", getpid());
+    int fd = open(statusFilename, O_RDONLY);
+    if (fd == -1)
+    {
+        return FALSE;
+    }
+
+    pstatus_t status;
+    do
+    {
+        readResult = read(fd, &status, sizeof(status));
+    }
+    while ((readResult == -1) && (errno == EINTR));
+
+    close(fd);
+    return status.pr_flttrace.word[0] != 0;
 #else
     return FALSE;
 #endif

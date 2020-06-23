@@ -59,7 +59,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FileShareOpen_Inheritable()
         {
             RemoteExecutor.Invoke(() =>

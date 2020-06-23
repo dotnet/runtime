@@ -79,20 +79,6 @@ namespace Internal.JitInterface
 #endif
     }
 
-    internal class UnboxingMethodDescFactory : Dictionary<MethodDesc, UnboxingMethodDesc>
-    {
-        public UnboxingMethodDesc GetUnboxingMethod(MethodDesc method)
-        {
-            if (!TryGetValue(method, out UnboxingMethodDesc result))
-            {
-                result = new UnboxingMethodDesc(method, this);
-                Add(method, result);
-            }
-
-            return result;
-        }
-    }
-
     internal static class UnboxingMethodDescExtensions
     {
         public static bool IsUnboxingThunk(this MethodDesc method)

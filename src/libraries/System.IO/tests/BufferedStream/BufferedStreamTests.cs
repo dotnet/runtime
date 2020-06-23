@@ -267,7 +267,7 @@ namespace System.IO.Tests
     internal sealed class ManuallyReleaseAsyncOperationsStream : Stream
     {
         private readonly MemoryStream _stream = new MemoryStream();
-        private readonly TaskCompletionSource<bool> _tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         private bool _canSeek = true;
 
         public override bool CanSeek => _canSeek;
@@ -282,7 +282,7 @@ namespace System.IO.Tests
 
         public void SetCanSeek(bool canSeek) => _canSeek = canSeek;
 
-        public void Release() { _tcs.SetResult(true); }
+        public void Release() => _tcs.SetResult();
 
         public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {

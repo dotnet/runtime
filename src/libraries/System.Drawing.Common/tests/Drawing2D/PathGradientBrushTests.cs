@@ -350,7 +350,7 @@ namespace System.Drawing.Drawing2D.Tests
 
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => brush.Blend = invalidBlend);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", null, () => brush.Blend = invalidBlend);
             }
         }
 
@@ -366,11 +366,11 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Blend_NullBlendProperites_ThrowsArgumentNullException()
+        public void Blend_NullBlendProperites_ThrowsArgumentException()
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentNullException>("source", () =>
+                AssertExtensions.Throws<ArgumentException, ArgumentNullException>("value", "source", () =>
                     brush.Blend = new Blend() { Factors = new float[0], Positions = null });
             }
         }
@@ -651,11 +651,11 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void InterpolationColors_NullPoints_ArgumentNullException()
+        public void InterpolationColors_NullPoints_ArgumentException()
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentNullException>("source", () =>
+                AssertExtensions.Throws<ArgumentException, ArgumentNullException>("value", "source", () =>
                     brush.InterpolationColors = new ColorBlend() { Colors = new Color[1], Positions = null });
             }
         }
@@ -680,11 +680,11 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void InterpolationColors_PointsLengthGreaterThenColorsLength_ArgumentException()
+        public void InterpolationColors_PointsLengthGreaterThenColorsLength_ArgumentOutOfRangeException()
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentException>(null, () =>
+                AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("value", null, () =>
                     brush.InterpolationColors = new ColorBlend() { Colors = new Color[1], Positions = new float[2] });
             }
         }

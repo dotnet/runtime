@@ -11,7 +11,9 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tools.RuntimeClient" Version="$(MicrosoftDiagnosticsToolsRuntimeClientVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="$(MicrosoftDiagnosticsNETCoreClientVersion)" />
   </ItemGroup>
+
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
 
   <PropertyGroup>

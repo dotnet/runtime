@@ -533,7 +533,7 @@ class SuperPMICollect:
                     if not os.path.isdir(final_mch_dir):
                         os.makedirs(final_mch_dir)
                 else:
-                    default_coreclr_bin_mch_location = os.path.join(coreclr_args.spmi_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
+                    default_coreclr_bin_mch_location = os.path.join(self.coreclr_args.spmi_location, "mch", "{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
                     if not os.path.isdir(default_coreclr_bin_mch_location):
                         os.makedirs(default_coreclr_bin_mch_location)
                     self.final_mch_file = os.path.abspath(os.path.join(default_coreclr_bin_mch_location, "{}.{}.{}.mch".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type)))
@@ -588,7 +588,9 @@ class SuperPMICollect:
             env_copy["SuperPMIShimLogPath"] = self.temp_location
             env_copy["SuperPMIShimPath"] = self.jit_path
             env_copy["COMPlus_AltJit"] = "*"
+            env_copy["COMPlus_AltJitNgen"] = "*"
             env_copy["COMPlus_AltJitName"] = self.collection_shim_name
+            env_copy["COMPlus_EnableExtraSuperPmiQueries"] = "1"
 
             if self.coreclr_args.use_zapdisable:
                 env_copy["COMPlus_ZapDisable"] = "1"
@@ -599,6 +601,7 @@ class SuperPMICollect:
             print_platform_specific_environment_vars(self.coreclr_args, "SuperPMIShimPath", self.jit_path)
             print_platform_specific_environment_vars(self.coreclr_args, "COMPlus_AltJit", "*")
             print_platform_specific_environment_vars(self.coreclr_args, "COMPlus_AltJitName", self.collection_shim_name)
+            print_platform_specific_environment_vars(self.coreclr_args, "COMPlus_AltJitNgen", "*")
             print("")
 
             if self.collection_command != None:

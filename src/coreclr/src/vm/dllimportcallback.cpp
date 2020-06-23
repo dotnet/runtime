@@ -21,6 +21,9 @@
 #include "dbginterface.h"
 #include "stubgen.h"
 #include "appdomain.inl"
+#include "callingconvention.h"
+#include "customattribute.h"
+#include "typeparse.h"
 
 #ifndef CROSSGEN_COMPILE
 
@@ -105,7 +108,20 @@ private:
 
 static UMEntryThunkFreeList s_thunkFreeList(DEFAULT_THUNK_FREE_LIST_THRESHOLD);
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
+#ifdef TARGET_X86
+
+#ifdef FEATURE_STUBS_AS_IL
+
+EXTERN_C void UMThunkStub(void);
+
+PCODE UMThunkMarshInfo::GetExecStubEntryPoint()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return GetEEFuncEntryPoint(UMThunkStub);
+}
+
+#else // FEATURE_STUBS_AS_IL
 
 EXTERN_C VOID __cdecl UMThunkStubRareDisable();
 EXTERN_C Thread* __stdcall CreateThreadBlockThrow();
@@ -599,6 +615,128 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     pcpusl->X86EmitNearJump(pEnableRejoin);
 }
 
+namespace
+{
+    // Templated function to compute if a char string begins with a constant string.
+    template<size_t S2LEN>
+    bool BeginsWith(ULONG s1Len, const char* s1, const char (&s2)[S2LEN])
+    {
+        WRAPPER_NO_CONTRACT;
+
+        ULONG s2Len = (ULONG)S2LEN - 1; // Remove null
+        if (s1Len < s2Len)
+            return false;
+
+        return (0 == strncmp(s1, s2, s2Len));
+    }
+}
+
+VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
+{
+    STANDARD_VM_CONTRACT;
+
+    MethodDesc* pMD = GetMethod();
+    _ASSERTE(pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute());
+
+    // Validate usage
+    COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(pMD);
+
+    BYTE* pData = NULL;
+    LONG cData = 0;
+
+    bool nativeCallableInternalData = false;
+    HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::UnmanagedCallersOnly, (const VOID **)(&pData), (ULONG *)&cData);
+    if (hr == S_FALSE)
+    {
+        hr = pMD->GetCustomAttribute(WellKnownAttribute::NativeCallableInternal, (const VOID **)(&pData), (ULONG *)&cData);
+        nativeCallableInternalData = SUCCEEDED(hr);
+    }
+
+    IfFailThrow(hr);
+
+    _ASSERTE(cData > 0);
+
+    CustomAttributeParser ca(pData, cData);
+
+    // UnmanagedCallersOnly and NativeCallableInternal each
+    // have optional named arguments.
+    CaNamedArg namedArgs[2];
+
+    // For the UnmanagedCallersOnly scenario.
+    CaType caCallConvs;
+
+    // Define attribute specific optional named properties
+    if (nativeCallableInternalData)
+    {
+        namedArgs[0].InitI4FieldEnum("CallingConvention", "System.Runtime.InteropServices.CallingConvention", (ULONG)(CorPinvokeMap)0);
+    }
+    else
+    {
+        caCallConvs.Init(SERIALIZATION_TYPE_SZARRAY, SERIALIZATION_TYPE_TYPE, SERIALIZATION_TYPE_UNDEFINED, NULL, 0);
+        namedArgs[0].Init("CallConvs", SERIALIZATION_TYPE_SZARRAY, caCallConvs);
+    }
+
+    // Define common optional named properties
+    CaTypeCtor caEntryPoint(SERIALIZATION_TYPE_STRING);
+    namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caEntryPoint);
+
+    InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
+    DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
+    IfFailThrow(Attribute::ParseAttributeArgumentValues(
+        pData,
+        cData,
+        &caValueArrayFactory,
+        NULL,
+        0,
+        namedArgs,
+        lengthof(namedArgs),
+        domainAssembly));
+
+    // If the value isn't defined, then return without setting anything.
+    if (namedArgs[0].val.type.tag == SERIALIZATION_TYPE_UNDEFINED)
+        return;
+
+    CorPinvokeMap callConvLocal = (CorPinvokeMap)0;
+    if (nativeCallableInternalData)
+    {
+        callConvLocal = (CorPinvokeMap)(namedArgs[0].val.u4 << 8);
+    }
+    else
+    {
+        // Set WinAPI as the default
+        callConvLocal = CorPinvokeMap::pmCallConvWinapi;
+
+        CaValue* arrayOfTypes = &namedArgs[0].val;
+        for (ULONG i = 0; i < arrayOfTypes->arr.length; i++)
+        {
+            CaValue& typeNameValue = arrayOfTypes->arr[i];
+
+            // According to ECMA-335, type name strings are UTF-8. Since we are
+            // looking for type names that are equivalent in ASCII and UTF-8,
+            // using a const char constant is acceptable. Type name strings are
+            // in Fully Qualified form, so we include the ',' delimiter.
+            if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvCdecl,"))
+            {
+                callConvLocal = CorPinvokeMap::pmCallConvCdecl;
+            }
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvStdcall,"))
+            {
+                callConvLocal = CorPinvokeMap::pmCallConvStdcall;
+            }
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvFastcall,"))
+            {
+                callConvLocal = CorPinvokeMap::pmCallConvFastcall;
+            }
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvThiscall,"))
+            {
+                callConvLocal = CorPinvokeMap::pmCallConvThiscall;
+            }
+        }
+    }
+
+    m_callConv = (UINT16)callConvLocal;
+}
+
 // Compiles an unmanaged to managed thunk for the given signature.
 Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStaticSigInfo* pSigInfo, MetaSig *pMetaSig, BOOL fNoStub)
 {
@@ -708,7 +846,9 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
 
     m_cbActualArgSize = cbActualArgSize;
 
-    m_callConv = static_cast<UINT16>(pSigInfo->GetCallConv());
+    // This could have been set in the UnmanagedCallersOnly scenario.
+    if (m_callConv == UINT16_MAX)
+        m_callConv = static_cast<UINT16>(pSigInfo->GetCallConv());
 
     UMThunkStubInfo stubInfo;
     memset(&stubInfo, 0, sizeof(stubInfo));
@@ -719,7 +859,7 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     stubInfo.m_cbSrcStack = static_cast<UINT16>(m_cbActualArgSize);
     stubInfo.m_cbDstStack = nStackBytes;
 
-    if (pSigInfo->GetCallConv() == pmCallConvCdecl)
+    if (m_callConv == pmCallConvCdecl)
     {
         // caller pop
         m_cbRetPop = 0;
@@ -729,7 +869,7 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
         // callee pop
         m_cbRetPop = static_cast<UINT16>(m_cbActualArgSize);
 
-        if (pSigInfo->GetCallConv() == pmCallConvThiscall)
+        if (m_callConv == pmCallConvThiscall)
         {
             stubInfo.m_wFlags |= umtmlThisCall;
             if (argit.HasRetBuffArg())
@@ -754,16 +894,18 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     return pcpusl->Link(pLoaderHeap);
 }
 
-#else // TARGET_X86 && !FEATURE_STUBS_AS_IL
+#endif // FEATURE_STUBS_AS_IL
+
+#else // TARGET_X86
 
 PCODE UMThunkMarshInfo::GetExecStubEntryPoint()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return GetEEFuncEntryPoint(UMThunkStub);
+    return m_pILStub;
 }
 
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
+#endif // TARGET_X86
 
 UMEntryThunkCache::UMEntryThunkCache(AppDomain *pDomain) :
     m_crst(CrstUMEntryThunkCache),
@@ -833,8 +975,9 @@ UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
     RETURN pThunk;
 }
 
-// FailFast if a native callable method invoked directly from managed code.
-// UMThunkStub.asm check the mode and call this function to failfast.
+// FailFast if a method marked UnmanagedCallersOnlyAttribute is
+// invoked directly from managed code. UMThunkStub.asm check the
+// mode and call this function to failfast.
 extern "C" VOID STDCALL ReversePInvokeBadTransition()
 {
     STATIC_CONTRACT_THROWS;
@@ -842,7 +985,7 @@ extern "C" VOID STDCALL ReversePInvokeBadTransition()
     // Fail
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
                                              COR_E_EXECUTIONENGINE,
-                                             W("Invalid Program: attempted to call a NativeCallable method from managed code.")
+                                             W("Invalid Program: attempted to call a UnmanagedCallersOnly method from managed code.")
                                             );
 }
 
@@ -1101,6 +1244,7 @@ VOID UMThunkMarshInfo::LoadTimeInit(Signature sig, Module * pModule, MethodDesc 
     m_sig = sig;
 
 #if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
+    m_callConv = UINT16_MAX;
     INDEBUG(m_cbRetPop = 0xcccc;)
 #endif
 }
@@ -1125,6 +1269,14 @@ VOID UMThunkMarshInfo::RunTimeInit()
     MethodDesc* pStubMD = NULL;
 
     MethodDesc * pMD = GetMethod();
+
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
+    if (pMD != NULL
+        && pMD->HasUnmanagedCallersOnlyAttribute())
+    {
+        SetUpForUnmanagedCallersOnly();
+    }
+#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
     // Lookup NGened stub - currently we only support ngening of reverse delegate invoke interop stubs
     if (pMD != NULL && pMD->IsEEImpl())
@@ -1194,33 +1346,20 @@ VOID UMThunkMarshInfo::RunTimeInit()
 
     if (pFinalILStub == NULL)
     {
-        if (pMD != NULL && !pMD->IsEEImpl() &&
-            !NDirect::MarshalingRequired(pMD, GetSignature().GetRawSig(), GetModule()))
-        {
-            // Call the method directly in no-delegate case if possible. This is important to avoid JITing
-            // for stubs created via code:ICLRRuntimeHost2::CreateDelegate during coreclr startup.
-            pFinalILStub = pMD->GetMultiCallableAddrOfCode();
-        }
+        PInvokeStaticSigInfo sigInfo;
+
+        if (pMD != NULL)
+            new (&sigInfo) PInvokeStaticSigInfo(pMD);
         else
-        {
-            // For perf, it is important to avoid expensive initialization of
-            // PInvokeStaticSigInfo if we have NGened stub.
-            PInvokeStaticSigInfo sigInfo;
+            new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
 
-            if (pMD != NULL)
-                new (&sigInfo) PInvokeStaticSigInfo(pMD);
-            else
-                new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
+        DWORD dwStubFlags = 0;
 
-            DWORD dwStubFlags = 0;
+        if (sigInfo.IsDelegateInterop())
+            dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
 
-            if (sigInfo.IsDelegateInterop())
-                dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
-
-            pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
-            pFinalILStub = JitILStub(pStubMD);
-
-        }
+        pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
+        pFinalILStub = JitILStub(pStubMD);
     }
 
 #if defined(TARGET_X86)
@@ -1277,13 +1416,6 @@ VOID UMThunkMarshInfo::RunTimeInit()
         // For all the other calling convention except cdecl, callee pops the stack arguments
         m_cbRetPop = cbRetPop + static_cast<UINT16>(m_cbActualArgSize);
     }
-#else // TARGET_X86
-    //
-    // m_cbActualArgSize gets the number of arg bytes for the NATIVE signature
-    //
-    m_cbActualArgSize =
-        (pStubMD != NULL) ? pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() : pMD->SizeOfArgStack();
-
 #endif // TARGET_X86
 
 #endif // TARGET_X86 && !FEATURE_STUBS_AS_IL

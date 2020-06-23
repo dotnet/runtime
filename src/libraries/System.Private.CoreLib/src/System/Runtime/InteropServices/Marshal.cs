@@ -10,13 +10,6 @@ using System.Text;
 using Internal.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -516,6 +509,8 @@ namespace System.Runtime.InteropServices
             PrelinkCore(m);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "This only needs to prelink methods that are actually used")]
         public static void PrelinkAll(Type c)
         {
             if (c is null)
@@ -540,7 +535,9 @@ namespace System.Runtime.InteropServices
         /// Creates a new instance of "structuretype" and marshals data from a
         /// native memory block to it.
         /// </summary>
-        public static object? PtrToStructure(IntPtr ptr, Type structureType)
+        public static object? PtrToStructure(IntPtr ptr,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+            Type structureType)
         {
             if (ptr == IntPtr.Zero)
             {
@@ -873,6 +870,9 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
 
+            // COMPAT: This block of code isn't entirely correct.
+            // Users passing in typeof(MulticastDelegate) as 't' skip this check
+            // since Delegate is a base type of MulticastDelegate.
             Type? c = t.BaseType;
             if (c != typeof(Delegate) && c != typeof(MulticastDelegate))
             {

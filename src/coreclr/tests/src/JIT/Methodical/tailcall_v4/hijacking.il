@@ -50,9 +50,9 @@
 .class private sequential ansi sealed beforefieldinit ForceHelper
        extends [System.Runtime]System.ValueType
 {
-  .field public valuetype ForceHelper* me
+  .field public valuetype ForceHelper* me1
+  .field public valuetype ForceHelper* me2
   .field public int64 counter
-  .field public int64 extraField
 } // end of class ForceHelper
 
 .class private auto ansi beforefieldinit Repro
@@ -91,12 +91,12 @@
     IL_002e:  ldarga.s   h
     IL_0030:  conv.u
     IL_0031:  ldarga.s   h
-    IL_0033:  ldfld      valuetype ForceHelper* ForceHelper::me
+    IL_0033:  ldfld      valuetype ForceHelper* ForceHelper::me1
     IL_0038:  beq.s      IL_0073
 
     IL_003a:  ldarga.s   h
     IL_003c:  ldfld      int64 ForceHelper::counter
-    IL_0041:  ldc.i4.1
+    IL_0041:  ldc.i4.3
     IL_0042:  conv.i8
     IL_0043:  ble.s      IL_0069
 
@@ -119,7 +119,7 @@
     IL_0069:  ldarga.s   h
     IL_006b:  ldarga.s   h
     IL_006d:  conv.u
-    IL_006e:  stfld      valuetype ForceHelper* ForceHelper::me
+    IL_006e:  stfld      valuetype ForceHelper* ForceHelper::me1
     IL_0073:  ldarg.0
     IL_0074:  ldarg.1
     IL_0075:  ldarg.1
@@ -156,12 +156,12 @@
     IL_002e:  ldarga.s   h
     IL_0030:  conv.u
     IL_0031:  ldarga.s   h
-    IL_0033:  ldfld      valuetype ForceHelper* ForceHelper::me
+    IL_0033:  ldfld      valuetype ForceHelper* ForceHelper::me2
     IL_0038:  beq.s      IL_0073
 
     IL_003a:  ldarga.s   h
     IL_003c:  ldfld      int64 ForceHelper::counter
-    IL_0041:  ldc.i4.1
+    IL_0041:  ldc.i4.3
     IL_0042:  conv.i8
     IL_0043:  ble.s      IL_0069
 
@@ -184,7 +184,7 @@
     IL_0069:  ldarga.s   h
     IL_006b:  ldarga.s   h
     IL_006d:  conv.u
-    IL_006e:  stfld      valuetype ForceHelper* ForceHelper::me
+    IL_006e:  stfld      valuetype ForceHelper* ForceHelper::me2
     IL_0073:  ldarg.0
     IL_0074:  ldarg.1
     IL_0075:  tail. call       instance void Repro::TailHelper1(valuetype ForceHelper)

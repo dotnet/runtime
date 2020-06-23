@@ -23,7 +23,7 @@ namespace System.DirectoryServices.AccountManagement
         public PrincipalSearcher(Principal queryFilter)
         {
             if (null == queryFilter)
-                throw new ArgumentException(nameof(queryFilter));
+                throw new ArgumentException(null, nameof(queryFilter));
 
             _ctx = queryFilter.Context;
             this.QueryFilter = queryFilter; // use property to enforce "no persisted principals" check

@@ -1217,13 +1217,13 @@ namespace System.Threading.Tasks.Tests
         {
             const int DiveDepth = 12_000;
 
-            var tcs = new TaskCompletionSource<bool>();
+            var tcs = new TaskCompletionSource();
             var t = (Task)tcs.Task;
             for (int i = 0; i < DiveDepth; i++)
             {
                 t = t.ContinueWith(_ => { }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
-            tcs.TrySetResult(true);
+            tcs.TrySetResult();
             t.Wait();
         }
 
@@ -1303,7 +1303,7 @@ namespace System.Threading.Tasks.Tests
             //    numCanceled, numLeftover, completeAfter, cancelAfter);
 
             // The TCS mechanism gives us an easy way to start (and complete) antecedent
-            TaskCompletionSource<bool> antecedentTcs = new TaskCompletionSource<bool>();
+            TaskCompletionSource antecedentTcs = new TaskCompletionSource();
             Task antecedent = antecedentTcs.Task;
 
             int normalCount = 0; // incremented by "normal" or "leftover" continuations
@@ -1311,9 +1311,9 @@ namespace System.Threading.Tasks.Tests
             CancellationTokenSource cts = new CancellationTokenSource(); // CTS to cancel
 
             // These TCS/continuation combos will serve to initiate antecedent completion or CTS signaling asynchronously
-            TaskCompletionSource<bool> completionTcs = new TaskCompletionSource<bool>();
-            completionTcs.Task.ContinueWith(_ => { antecedentTcs.TrySetResult(true); }, TaskContinuationOptions.PreferFairness);
-            TaskCompletionSource<bool> cancellationTcs = new TaskCompletionSource<bool>();
+            TaskCompletionSource completionTcs = new TaskCompletionSource();
+            completionTcs.Task.ContinueWith(_ => { antecedentTcs.TrySetResult(); }, TaskContinuationOptions.PreferFairness);
+            TaskCompletionSource cancellationTcs = new TaskCompletionSource();
             cancellationTcs.Task.ContinueWith(_ => { cts.Cancel(); }, TaskContinuationOptions.PreferFairness);
 
             // Keep track of continuations so that you can wait on them
@@ -1321,7 +1321,7 @@ namespace System.Threading.Tasks.Tests
             Task[] cancelContinuations = new Task[numCanceled];
 
             // Take early action if either threshold is set at 0
-            if (completeAfter == 0) antecedentTcs.TrySetResult(true);
+            if (completeAfter == 0) antecedentTcs.TrySetResult();
             if (cancelAfter == 0) cts.Cancel();
 
             // These are the actions to take in "to be run" and "to be canceled" continuations, respectively
@@ -1354,8 +1354,8 @@ namespace System.Threading.Tasks.Tests
                         normalContinuations[i] = antecedent.ContinueWith(normalAction, tco);
 
                         // If you've hit completeAfter or cancelAfter, take the appropriate action
-                        if ((i + 1) == completeAfter) completionTcs.TrySetResult(true); // Asynchronously completes the antecedent
-                        if ((i + 1) == cancelAfter) cancellationTcs.TrySetResult(true); // Asynchronously initiates cancellation of "to be canceled" tasks
+                        if ((i + 1) == completeAfter) completionTcs.TrySetResult(); // Asynchronously completes the antecedent
+                        if ((i + 1) == cancelAfter) cancellationTcs.TrySetResult(); // Asynchronously initiates cancellation of "to be canceled" tasks
                     }
                 });
 
@@ -1444,11 +1444,9 @@ namespace System.Threading.Tasks.Tests
             // Instead, directly return a canceled task
             if (cts.IsCancellationRequested)
             {
-                var canceledTaskSource = new TaskCompletionSource<object>();
-                canceledTaskSource.TrySetCanceled();
-                return canceledTaskSource.Task;
+                return Task.FromCanceled(cts.Token);
             }
-
+            else
             {
                 // WE ARE CREATING A BUNCH OF TASKS THAT SHARE THE SAME CANCELLATION TOKEN
                 var t = Task<T>.Factory.StartNew(() => { return default(T); }, cts.Token);

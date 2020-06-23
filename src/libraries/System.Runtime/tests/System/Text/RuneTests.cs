@@ -12,7 +12,7 @@ namespace System.Text.Tests
 {
     public static partial class RuneTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows8xOrLater))] // the localization tables used by our test data only exist on Win8+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows8xOrLater), nameof(PlatformDetection.IsNlsGlobalization))] // the localization tables used by our test data only exist on Win8+
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData('0', '0', '0', "en-US")]
         [InlineData('a', 'A', 'a', "en-US")]
@@ -38,7 +38,7 @@ namespace System.Text.Tests
         }
 
         // Invariant ToUpper / ToLower doesn't modify Turkish I or majuscule Eszett
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows8xOrLater))] // the localization tables used by our test data only exist on Win8+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows8xOrLater), nameof(PlatformDetection.IsNlsGlobalization))] // the localization tables used by our test data only exist on Win8+
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData('0', '0', '0')]
         [InlineData('a', 'A', 'a')]
@@ -139,7 +139,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(SurrogatePairTestData_InvalidOnly))]
-        public static void Ctor_SurrogatePair_Valid(char highSurrogate, char lowSurrogate)
+        public static void Ctor_SurrogatePair_Invalid(char highSurrogate, char lowSurrogate)
         {
             string expectedParamName = !char.IsHighSurrogate(highSurrogate) ? nameof(highSurrogate) : nameof(lowSurrogate);
             Assert.Throws<ArgumentOutOfRangeException>(expectedParamName, () => new Rune(highSurrogate, lowSurrogate));

@@ -10,7 +10,7 @@ namespace System.Reflection
     internal sealed class RuntimeExceptionHandlingClause : ExceptionHandlingClause
     {
         #region Keep in sync with MonoReflectionExceptionHandlingClause in object-internals.h
-        internal Type catch_type;
+        internal Type? catch_type;
         internal int filter_offset;
         internal ExceptionHandlingClauseOptions flags;
         internal int try_offset;

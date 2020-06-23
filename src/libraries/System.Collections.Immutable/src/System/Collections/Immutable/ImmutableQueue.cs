@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
@@ -19,7 +18,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <returns>The immutable collection.</returns>
-        [Pure]
         public static ImmutableQueue<T> Create<T>()
         {
             return ImmutableQueue<T>.Empty;
@@ -31,7 +29,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <param name="item">The item to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
-        [Pure]
         public static ImmutableQueue<T> Create<T>(T item) => ImmutableQueue<T>.Empty.Enqueue(item);
 
         /// <summary>
@@ -40,7 +37,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items to store in the queue.</typeparam>
         /// <param name="items">The enumerable to copy items from.</param>
         /// <returns>The new immutable queue.</returns>
-        [Pure]
         public static ImmutableQueue<T> CreateRange<T>(IEnumerable<T> items)
         {
             Requires.NotNull(items, nameof(items));
@@ -76,7 +72,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items to store in the queue.</typeparam>
         /// <param name="items">The array to copy items from.</param>
         /// <returns>The new immutable queue.</returns>
-        [Pure]
         public static ImmutableQueue<T> Create<T>(params T[] items)
         {
             Requires.NotNull(items, nameof(items));
@@ -104,7 +99,6 @@ namespace System.Collections.Immutable
         /// <param name="value">Receives the value from the head of the queue.</param>
         /// <returns>The new queue with the head element removed.</returns>
         /// <exception cref="InvalidOperationException">Thrown when the stack is empty.</exception>
-        [Pure]
         public static IImmutableQueue<T> Dequeue<T>(this IImmutableQueue<T> queue, out T value)
         {
             Requires.NotNull(queue, nameof(queue));

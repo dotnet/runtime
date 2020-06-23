@@ -44,11 +44,16 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        public static IEnumerable<object[]> LoopbackWithBool =>
+            from addr in Loopbacks
+            from b in new[] { false, true }
+            select new object[] { addr[0], b };
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1712")]
         [OuterLoop]
         [Theory]
-        [MemberData(nameof(Loopbacks))]
-        public async Task SendToRecvFrom_Datagram_UDP(IPAddress loopbackAddress)
+        [MemberData(nameof(LoopbackWithBool))]
+        public async Task SendToRecvFrom_Datagram_UDP(IPAddress loopbackAddress, bool useClone)
         {
             IPAddress leftAddress = loopbackAddress, rightAddress = loopbackAddress;
 
@@ -57,11 +62,13 @@ namespace System.Net.Sockets.Tests
             const int AckTimeout = 10000;
             const int TestTimeout = 30000;
 
-            var left = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-            left.BindToAnonymousPort(leftAddress);
+            using var origLeft = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using var origRight = new Socket(rightAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            origLeft.BindToAnonymousPort(leftAddress);
+            origRight.BindToAnonymousPort(rightAddress);
 
-            var right = new Socket(rightAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-            right.BindToAnonymousPort(rightAddress);
+            using var left = useClone ? new Socket(origLeft.SafeHandle) : origLeft;
+            using var right = useClone ? new Socket(origRight.SafeHandle) : origRight;
 
             var leftEndpoint = (IPEndPoint)left.LocalEndPoint;
             var rightEndpoint = (IPEndPoint)right.LocalEndPoint;
@@ -74,25 +81,22 @@ namespace System.Net.Sockets.Tests
             var receivedChecksums = new uint?[DatagramsToSend];
             Task leftThread = Task.Run(async () =>
             {
-                using (left)
+                EndPoint remote = leftEndpoint.Create(leftEndpoint.Serialize());
+                var recvBuffer = new byte[DatagramSize];
+                for (int i = 0; i < DatagramsToSend; i++)
                 {
-                    EndPoint remote = leftEndpoint.Create(leftEndpoint.Serialize());
-                    var recvBuffer = new byte[DatagramSize];
-                    for (int i = 0; i < DatagramsToSend; i++)
-                    {
-                        SocketReceiveFromResult result = await ReceiveFromAsync(
-                            left, new ArraySegment<byte>(recvBuffer), remote);
-                        Assert.Equal(DatagramSize, result.ReceivedBytes);
-                        Assert.Equal(rightEndpoint, result.RemoteEndPoint);
+                    SocketReceiveFromResult result = await ReceiveFromAsync(
+                        left, new ArraySegment<byte>(recvBuffer), remote);
+                    Assert.Equal(DatagramSize, result.ReceivedBytes);
+                    Assert.Equal(rightEndpoint, result.RemoteEndPoint);
 
-                        int datagramId = recvBuffer[0];
-                        Assert.Null(receivedChecksums[datagramId]);
-                        receivedChecksums[datagramId] = Fletcher32.Checksum(recvBuffer, 0, result.ReceivedBytes);
+                    int datagramId = recvBuffer[0];
+                    Assert.Null(receivedChecksums[datagramId]);
+                    receivedChecksums[datagramId] = Fletcher32.Checksum(recvBuffer, 0, result.ReceivedBytes);
 
-                        receiverAck.Release();
-                        bool gotAck = await senderAck.WaitAsync(TestTimeout);
-                        Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {TestTimeout} for senderAck in iteration {i}");
-                    }
+                    receiverAck.Release();
+                    bool gotAck = await senderAck.WaitAsync(TestTimeout);
+                    Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {TestTimeout} for senderAck in iteration {i}");
                 }
             });
 
@@ -1065,7 +1069,7 @@ namespace System.Net.Sockets.Tests
 
                     // On OSX, we're unable to unblock the on-going socket operations and
                     // perform an abortive close.
-                    if (!(UsesSync && PlatformDetection.IsOSX))
+                    if (!(UsesSync && PlatformDetection.IsOSXLike))
                     {
                         SocketError? peerSocketError = null;
                         var receiveBuffer = new ArraySegment<byte>(new byte[4096]);
@@ -1356,14 +1360,14 @@ namespace System.Net.Sockets.Tests
                 data[0] = data[499] = 2;
                 Assert.Equal(500, sender.Send(data));
 
-                var tcs = new TaskCompletionSource<bool>();
+                var tcs = new TaskCompletionSource();
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
 
                 var receiveBufer = new byte[600];
                 receiveBufer[0] = data[499] = 0;
 
                 args.SetBuffer(receiveBufer, 0, receiveBufer.Length);
-                args.Completed += delegate { tcs.SetResult(true); };
+                args.Completed += delegate { tcs.SetResult(); };
 
                 // First peek at the message.
                 args.SocketFlags = SocketFlags.Peek;
@@ -1377,7 +1381,7 @@ namespace System.Net.Sockets.Tests
                 receiveBufer[0] = receiveBufer[499] = 0;
 
                 // Now, we should be able to get same message again.
-                tcs = new TaskCompletionSource<bool>();
+                tcs = new TaskCompletionSource();
                 args.SocketFlags = SocketFlags.None;
                 if (receiver.ReceiveAsync(args))
                 {
@@ -1389,7 +1393,7 @@ namespace System.Net.Sockets.Tests
                 receiveBufer[0] = receiveBufer[499] = 0;
 
                 // Set buffer smaller than message.
-                tcs = new TaskCompletionSource<bool>();
+                tcs = new TaskCompletionSource();
                 args.SetBuffer(receiveBufer, 0, 100);
                 if (receiver.ReceiveAsync(args))
                 {
@@ -1563,7 +1567,7 @@ namespace System.Net.Sockets.Tests
         public SendReceiveSync(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void BlockingRead_DoesntRequireAnotherThreadPoolThread()
         {
             RemoteExecutor.Invoke(() =>
@@ -1760,6 +1764,7 @@ namespace System.Net.Sockets.Tests
         public async Task BlockingAsyncContinuations_OperationsStillCompleteSuccessfully()
         {
             if (UsesSync) return;
+            if (Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1") return;
 
             using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

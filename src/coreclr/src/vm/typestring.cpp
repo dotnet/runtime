@@ -28,138 +28,6 @@
 #include "ex.h"
 #include "typedesc.h"
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-TypeNameBuilder * QCALLTYPE TypeNameBuilder::_CreateTypeNameBuilder()
-{
-    QCALL_CONTRACT;
-
-    TypeNameBuilder * retVal = NULL;
-    BEGIN_QCALL;
-    retVal = new TypeNameBuilder();
-    END_QCALL;
-
-    return retVal;
-}
-
-void QCALLTYPE TypeNameBuilder::_ReleaseTypeNameBuilder(TypeNameBuilder * pTnb)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    delete pTnb;
-    END_QCALL;
-}
-
-void QCALLTYPE TypeNameBuilder::_ToString(TypeNameBuilder * pTnb, QCall::StringHandleOnStack retString)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    retString.Set(*pTnb->GetString());
-    END_QCALL;
-}
-
-void QCALLTYPE TypeNameBuilder::_AddName(TypeNameBuilder * pTnb, LPCWSTR wszName)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    pTnb->AddName(wszName);
-    END_QCALL;
-}
-
-void QCALLTYPE TypeNameBuilder::_AddAssemblySpec(TypeNameBuilder * pTnb, LPCWSTR wszAssemblySpec)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    pTnb->AddAssemblySpec(wszAssemblySpec);
-    END_QCALL;
-}
-
-void QCALLTYPE TypeNameBuilder::_OpenGenericArguments(TypeNameBuilder * pTnb)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    pTnb->OpenGenericArguments();
-    END_QCALL;
-}
-
-void QCALLTYPE TypeNameBuilder::_CloseGenericArguments(TypeNameBuilder * pTnb)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    pTnb->CloseGenericArguments();
-    END_QCALL;
-}
-
-void QCALLTYPE TypeNameBuilder::_OpenGenericArgument(TypeNameBuilder * pTnb)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    pTnb->OpenGenericArgument();
-    END_QCALL;
-}
-
-void QCALLTYPE TypeNameBuilder::_CloseGenericArgument(TypeNameBuilder * pTnb)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    pTnb->CloseGenericArgument();
-    END_QCALL;
-}
-
-void QCALLTYPE TypeNameBuilder::_AddPointer(TypeNameBuilder * pTnb)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    pTnb->AddPointer();
-    END_QCALL;
-}
-
-void QCALLTYPE TypeNameBuilder::_AddByRef(TypeNameBuilder * pTnb)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    pTnb->AddByRef();
-    END_QCALL;
-}
-
-void QCALLTYPE TypeNameBuilder::_AddSzArray(TypeNameBuilder * pTnb)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    pTnb->AddSzArray();
-    END_QCALL;
-}
-
-void QCALLTYPE TypeNameBuilder::_AddArray(TypeNameBuilder * pTnb, DWORD dwRank)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    pTnb->AddArray(dwRank);
-    END_QCALL;
-}
-
-void QCALLTYPE TypeNameBuilder::_Clear(TypeNameBuilder * pTnb)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    pTnb->Clear();
-    END_QCALL;
-}
-
-#endif
-
 //
 // TypeNameBuilder
 //
@@ -965,7 +833,7 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
             if (format & FormatDebug)
             {
                 WCHAR wzAddress[128];
-                _snwprintf_s(wzAddress, 128, _TRUNCATE, W("(%p)"), dac_cast<TADDR>(ty.AsPtr()));
+                _snwprintf_s(wzAddress, 128, _TRUNCATE, W("(%p)"), (VOID *)dac_cast<TADDR>(ty.AsPtr()));
                 tnb.AddName(wzAddress);
             }
 #endif

@@ -35,15 +35,15 @@ namespace System.Reflection
     {
         private class LazyCAttrData
         {
-            internal Assembly assembly;
+            internal Assembly assembly = null!; // only call site always sets it
             internal IntPtr data;
             internal uint data_length;
         }
 
-        private ConstructorInfo ctorInfo;
-        private IList<CustomAttributeTypedArgument> ctorArgs;
-        private IList<CustomAttributeNamedArgument> namedArgs;
-        private LazyCAttrData lazyData;
+        private ConstructorInfo ctorInfo = null!;
+        private IList<CustomAttributeTypedArgument> ctorArgs = null!;
+        private IList<CustomAttributeNamedArgument> namedArgs = null!;
+        private LazyCAttrData? lazyData;
 
         protected CustomAttributeData()
         {
@@ -149,7 +149,7 @@ namespace System.Reflection
 
         public virtual Type AttributeType
         {
-            get { return ctorInfo.DeclaringType; }
+            get { return ctorInfo.DeclaringType!; }
         }
 
         public override string ToString()
@@ -158,7 +158,7 @@ namespace System.Reflection
 
             StringBuilder sb = new StringBuilder();
 
-            sb.Append("[" + ctorInfo.DeclaringType.FullName + "(");
+            sb.Append('[').Append(ctorInfo.DeclaringType!.FullName).Append('(');
             for (int i = 0; i < ctorArgs.Count; i++)
             {
                 sb.Append(ctorArgs[i].ToString());
@@ -175,7 +175,7 @@ namespace System.Reflection
                 if (j + 1 < namedArgs.Count)
                     sb.Append(", ");
             }
-            sb.AppendFormat(")]");
+            sb.Append(")]");
 
             return sb.ToString();
         }

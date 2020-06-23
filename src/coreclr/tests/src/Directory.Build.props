@@ -91,7 +91,35 @@
         <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
+    <When Condition="'$(TargetOS)'=='NetBSD'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsNetBSD>true</TargetsNetBSD>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetOS)'=='illumos'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsIllumos>true</TargetsIllumos>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetOS)'=='Solaris'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsSolaris>true</TargetsSolaris>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
   </Choose>
+
+  <!-- Set arch specific properties -->
+  <PropertyGroup>
+    <TargetBits>32</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='x64'">64</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='arm64'">64</TargetBits>
+  </PropertyGroup>
 
   <PropertyGroup>
     <TargetRid>$(__RuntimeId)</TargetRid>
@@ -109,7 +137,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'FreeBSD' AND '$(TargetOS)' != 'Linux' AND '$(TargetOS)' != 'OSX'">true</TargetsUnknownUnix>
+    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'FreeBSD' AND '$(TargetOS)' != 'Linux' AND '$(TargetOS)' != 'NetBSD' AND '$(TargetOS)' != 'OSX' AND '$(TargetOS)' != 'illumos' AND '$(TargetOS)' != 'Solaris'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
   </PropertyGroup>

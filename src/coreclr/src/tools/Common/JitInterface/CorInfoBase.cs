@@ -214,7 +214,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getArgClass(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate CorInfoType __getHFAType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* hClass);
+        delegate CorInfoHFAElemType __getHFAType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* hClass);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate HRESULT __GetErrorHRESULT(IntPtr _this, IntPtr* ppException, _EXCEPTION_POINTERS* pExceptionPointers);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -314,7 +314,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __MethodCompileComplete(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* methHnd);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate void* __getTailCallCopyArgsThunk(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags);
+        [return: MarshalAs(UnmanagedType.I1)]delegate bool __getTailCallHelpers(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, ref CORINFO_TAILCALL_HELPERS pResult);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __convertPInvokeCalliToCall(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, [MarshalAs(UnmanagedType.I1)]bool mustConvert);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -1743,7 +1743,7 @@ namespace Internal.JitInterface
             }
         }
 
-        static CorInfoType _getHFAType(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* hClass)
+        static CorInfoHFAElemType _getHFAType(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* hClass)
         {
             var _this = GetThis(thisHandle);
             try
@@ -1753,7 +1753,7 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-                return default(CorInfoType);
+                return default(CorInfoHFAElemType);
             }
         }
 
@@ -2429,17 +2429,17 @@ namespace Internal.JitInterface
             }
         }
 
-        static void* _getTailCallCopyArgsThunk(IntPtr thisHandle, IntPtr* ppException, CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
+        [return: MarshalAs(UnmanagedType.I1)]static bool _getTailCallHelpers(IntPtr thisHandle, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, ref CORINFO_TAILCALL_HELPERS pResult)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getTailCallCopyArgsThunk(pSig, flags);
+                return _this.getTailCallHelpers(ref callToken, sig, flags, ref pResult);
             }
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-                return default(void*);
+                return default(bool);
             }
         }
 
@@ -3145,7 +3145,7 @@ namespace Internal.JitInterface
             var d150 = new __MethodCompileComplete(_MethodCompileComplete);
             callbacks[150] = Marshal.GetFunctionPointerForDelegate(d150);
             delegates[150] = d150;
-            var d151 = new __getTailCallCopyArgsThunk(_getTailCallCopyArgsThunk);
+            var d151 = new __getTailCallHelpers(_getTailCallHelpers);
             callbacks[151] = Marshal.GetFunctionPointerForDelegate(d151);
             delegates[151] = d151;
             var d152 = new __convertPInvokeCalliToCall(_convertPInvokeCalliToCall);

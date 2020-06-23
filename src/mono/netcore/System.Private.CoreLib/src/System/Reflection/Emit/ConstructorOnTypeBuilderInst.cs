@@ -27,7 +27,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -125,10 +124,10 @@ namespace System.Reflection.Emit
             ParameterInfo[] res;
             if (cb is ConstructorBuilder cbuilder)
             {
-                res = new ParameterInfo[cbuilder.parameters.Length];
+                res = new ParameterInfo[cbuilder.parameters!.Length];
                 for (int i = 0; i < cbuilder.parameters.Length; i++)
                 {
-                    Type type = instantiation.InflateType(cbuilder.parameters[i]);
+                    Type? type = instantiation.InflateType(cbuilder.parameters[i]);
                     res[i] = RuntimeParameterInfo.New(cbuilder.pinfo?[i], type, this, i + 1);
                 }
             }
@@ -138,7 +137,7 @@ namespace System.Reflection.Emit
                 res = new ParameterInfo[parms.Length];
                 for (int i = 0; i < parms.Length; i++)
                 {
-                    Type type = instantiation.InflateType(parms[i].ParameterType);
+                    Type? type = instantiation.InflateType(parms[i].ParameterType);
                     res[i] = RuntimeParameterInfo.New(parms[i], type, this, i + 1);
                 }
             }
@@ -147,9 +146,9 @@ namespace System.Reflection.Emit
 
         internal override Type[] GetParameterTypes()
         {
-            if (cb is ConstructorBuilder)
+            if (cb is ConstructorBuilder builder)
             {
-                return (cb as ConstructorBuilder).parameters;
+                return builder.parameters!;
             }
             else
             {
@@ -183,10 +182,9 @@ namespace System.Reflection.Emit
             return cb.GetParametersCount();
         }
 
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
-            return cb.Invoke(obj, invokeAttr, binder, parameters,
-                culture);
+            return cb.Invoke(obj, invokeAttr, binder, parameters, culture);
         }
 
         public override RuntimeMethodHandle MethodHandle
@@ -246,8 +244,8 @@ namespace System.Reflection.Emit
         // MethodBase members
         //
 
-        public override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters,
-                                       CultureInfo culture)
+        public override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters,
+                                       CultureInfo? culture)
         {
             throw new InvalidOperationException();
         }

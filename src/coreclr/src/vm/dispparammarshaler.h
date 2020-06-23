@@ -127,7 +127,6 @@ private:
     BOOL                    m_bClassIsHint;
 };
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
 class DispParamArrayMarshaler : public DispParamMarshaler
 {
 public:
@@ -151,7 +150,6 @@ private:
     VARTYPE                 m_ElementVT;
     MethodTable*            m_pElementMT;
 };
-#endif // FEATURE_CLASSIC_COMINTEROP
 
 
 class DispParamRecordMarshaler : public DispParamMarshaler

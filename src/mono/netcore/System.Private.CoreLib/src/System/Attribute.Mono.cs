@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable disable
 using System.Reflection;
 
 namespace System
@@ -13,7 +12,8 @@ namespace System
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
-            if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute) && attributeType != typeof(CustomAttribute))
+            if (!attributeType.IsSubclassOf(typeof(Attribute)) && !attributeType.IsInterface
+                && attributeType != typeof(Attribute) && attributeType != typeof(CustomAttribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
 
             object[] attrs = CustomAttribute.GetCustomAttributes(element, attributeType, inherit);
@@ -24,14 +24,14 @@ namespace System
             return (Attribute)(attrs[0]);
         }
 
-        public static Attribute GetCustomAttribute(Assembly element, Type attributeType) => GetAttr(element, attributeType, true);
-        public static Attribute GetCustomAttribute(Assembly element, Type attributeType, bool inherit) => GetAttr(element, attributeType, inherit);
-        public static Attribute GetCustomAttribute(MemberInfo element, Type attributeType) => GetAttr(element, attributeType, true);
-        public static Attribute GetCustomAttribute(MemberInfo element, Type attributeType, bool inherit) => GetAttr(element, attributeType, inherit);
-        public static Attribute GetCustomAttribute(Module element, Type attributeType) => GetAttr(element, attributeType, true);
-        public static Attribute GetCustomAttribute(Module element, Type attributeType, bool inherit) => GetAttr(element, attributeType, inherit);
-        public static Attribute GetCustomAttribute(ParameterInfo element, Type attributeType) => GetAttr(element, attributeType, true);
-        public static Attribute GetCustomAttribute(ParameterInfo element, Type attributeType, bool inherit) => GetAttr(element, attributeType, inherit);
+        public static Attribute? GetCustomAttribute(Assembly element, Type attributeType) => GetAttr(element, attributeType, true);
+        public static Attribute? GetCustomAttribute(Assembly element, Type attributeType, bool inherit) => GetAttr(element, attributeType, inherit);
+        public static Attribute? GetCustomAttribute(MemberInfo element, Type attributeType) => GetAttr(element, attributeType, true);
+        public static Attribute? GetCustomAttribute(MemberInfo element, Type attributeType, bool inherit) => GetAttr(element, attributeType, inherit);
+        public static Attribute? GetCustomAttribute(Module element, Type attributeType) => GetAttr(element, attributeType, true);
+        public static Attribute? GetCustomAttribute(Module element, Type attributeType, bool inherit) => GetAttr(element, attributeType, inherit);
+        public static Attribute? GetCustomAttribute(ParameterInfo element, Type attributeType) => GetAttr(element, attributeType, true);
+        public static Attribute? GetCustomAttribute(ParameterInfo element, Type attributeType, bool inherit) => GetAttr(element, attributeType, inherit);
 
         public static Attribute[] GetCustomAttributes(Assembly element) => (Attribute[])CustomAttribute.GetCustomAttributes(element, true);
         public static Attribute[] GetCustomAttributes(Assembly element, bool inherit) => (Attribute[])CustomAttribute.GetCustomAttributes(element, inherit);

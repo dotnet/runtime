@@ -37,5 +37,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             return key.ExportParameters(includePrivate);
         }
+
+        protected override void Exercise(ECDsa key) => key.Exercise();
     }
 }

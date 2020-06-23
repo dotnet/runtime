@@ -220,7 +220,7 @@ namespace System.Diagnostics
                                 StringBuilder installBuilder = new StringBuilder();
                                 installBuilder.Append(installRoot);
                                 if (!installRoot.EndsWith("\\", StringComparison.Ordinal))
-                                    installBuilder.Append("\\");
+                                    installBuilder.Append('\\');
                                 installBuilder.Append(version);
                                 dllDir = installBuilder.ToString();
                             }

@@ -18,6 +18,7 @@
 #include <corehost_context_contract.h>
 #include <hostpolicy.h>
 #include "hostpolicy_context.h"
+#include "bundle/runner.h"
 
 namespace
 {
@@ -354,7 +355,7 @@ int corehost_init(
 }
 
 int corehost_main_init(
-    hostpolicy_init_t &hostpolicy_init,
+    hostpolicy_init_t& hostpolicy_init,
     const int argc,
     const pal::char_t* argv[],
     const pal::string_t& location,
@@ -365,6 +366,15 @@ int corehost_main_init(
     {
         // For backwards compat (older hostfxr), default the host_info
         hostpolicy_init.host_info.parse(argc, argv);
+    }
+
+    if (bundle::info_t::is_single_file_bundle())
+    {
+        StatusCode status = bundle::runner_t::process_manifest_and_extract();
+        if (status != StatusCode::Success)
+        {
+            return status;
+        }
     }
 
     return corehost_init(hostpolicy_init, argc, argv, location, args);
@@ -434,6 +444,9 @@ int corehost_libhost_init(const hostpolicy_init_t &hostpolicy_init, const pal::s
     // Host info should always be valid in the delegate scenario
     assert(hostpolicy_init.host_info.is_valid(host_mode_t::libhost));
 
+    // Single-file bundle is only expected in apphost mode.
+    assert(!bundle::info_t::is_single_file_bundle());
+
     return corehost_init(hostpolicy_init, 0, nullptr, location, args);
 }
 
@@ -464,11 +477,7 @@ namespace
                 "LoadInMemoryAssembly",
                 delegate);
         case coreclr_delegate_type::winrt_activation:
-            return coreclr->create_delegate(
-                "System.Private.CoreLib",
-                "Internal.Runtime.InteropServices.WindowsRuntime.ActivationFactoryLoader",
-                "GetActivationFactory",
-                delegate);
+            return StatusCode::InvalidArgFailure;
         case coreclr_delegate_type::com_register:
             return coreclr->create_delegate(
                 "System.Private.CoreLib",
@@ -486,6 +495,12 @@ namespace
                 "System.Private.CoreLib",
                 "Internal.Runtime.InteropServices.ComponentActivator",
                 "LoadAssemblyAndGetFunctionPointer",
+                delegate);
+        case coreclr_delegate_type::get_function_pointer:
+            return coreclr->create_delegate(
+                "System.Private.CoreLib",
+                "Internal.Runtime.InteropServices.ComponentActivator",
+                "GetFunctionPointer",
                 delegate);
         default:
             return StatusCode::LibHostInvalidArgs;
@@ -621,13 +636,14 @@ namespace
 // initializations. In the case of Success_DifferentRuntimeProperties, it is left to the consumer to verify that
 // the difference in properties is acceptable.
 //
-SHARED_API int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize_request_t *init_request, int32_t options, /*out*/ corehost_context_contract *context_contract)
+SHARED_API int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize_request_t *init_request, uint32_t options, /*out*/ corehost_context_contract *context_contract)
 {
     if (context_contract == nullptr)
         return StatusCode::InvalidArgFailure;
 
-    bool wait_for_initialized = (options & intialization_options_t::wait_for_initialized) != 0;
-    bool get_contract = (options & intialization_options_t::get_contract) != 0;
+    bool version_set = (options & initialization_options_t::context_contract_version_set) != 0;
+    bool wait_for_initialized = (options & initialization_options_t::wait_for_initialized) != 0;
+    bool get_contract = (options & initialization_options_t::get_contract) != 0;
     if (wait_for_initialized && get_contract)
     {
         trace::error(_X("Specifying both initialization options for wait_for_initialized and get_contract is not allowed"));
@@ -735,6 +751,8 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize
             rc = StatusCode::Success_DifferentRuntimeProperties;
     }
 
+    // If version wasn't set, then it would have the original size of corehost_context_contract, which is 7 * sizeof(size_t).
+    size_t version_lo = version_set ? context_contract->version : 7 * sizeof(size_t);
     context_contract->version = sizeof(corehost_context_contract);
     context_contract->get_property_value = get_property;
     context_contract->set_property_value = set_property;
@@ -742,6 +760,14 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize
     context_contract->load_runtime = create_coreclr;
     context_contract->run_app = run_app;
     context_contract->get_runtime_delegate = get_delegate;
+
+    // An old hostfxr may not have provided enough space for these fields.
+    // The version_lo (sizeof) the old hostfxr saw at build time will be
+    // smaller and we should not attempt to write the fields in that case.
+    if (version_lo >= offsetof(corehost_context_contract, last_known_delegate_type) + sizeof(context_contract->last_known_delegate_type))
+    {
+        context_contract->last_known_delegate_type = (size_t)coreclr_delegate_type::__last - 1;
+    }
 
     return rc;
 }

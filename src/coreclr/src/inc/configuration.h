@@ -35,7 +35,7 @@ public:
     // in the traditional way separately if you need to.
     //
     // Returns value for name if found in config.
-    static ULONGLONG GetKnobULONGLONGValue(LPCWSTR name);
+    static ULONGLONG GetKnobULONGLONGValue(LPCWSTR name, ULONGLONG defaultValue);
 
     // Returns (in priority order):
     //    - The value of the ConfigStringInfo if it's set

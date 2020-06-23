@@ -36,6 +36,7 @@ void GlobalizationNative_ChangeCase(
     // improvement on longer strings.)
 
     UBool isError = FALSE;
+    (void)isError; // only used for assert
     int32_t srcIdx = 0, dstIdx = 0;
     UChar32 srcCodepoint, dstCodepoint;
 
@@ -75,6 +76,7 @@ void GlobalizationNative_ChangeCaseInvariant(
     // See algorithmic comment in ChangeCase.
 
     UBool isError = FALSE;
+    (void)isError; // only used for assert
     int32_t srcIdx = 0, dstIdx = 0;
     UChar32 srcCodepoint, dstCodepoint;
 
@@ -119,6 +121,7 @@ void GlobalizationNative_ChangeCaseTurkish(
     // See algorithmic comment in ChangeCase.
 
     UBool isError = FALSE;
+    (void)isError; // only used for assert
     int32_t srcIdx = 0, dstIdx = 0;
     UChar32 srcCodepoint, dstCodepoint;
 

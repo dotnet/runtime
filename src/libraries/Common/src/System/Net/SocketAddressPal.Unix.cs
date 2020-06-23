@@ -52,7 +52,7 @@ namespace System.Net
             }
         }
 
-        public static unsafe AddressFamily GetAddressFamily(byte[] buffer)
+        public static unsafe AddressFamily GetAddressFamily(ReadOnlySpan<byte> buffer)
         {
             AddressFamily family;
             Interop.Error err;
@@ -68,15 +68,19 @@ namespace System.Net
         public static unsafe void SetAddressFamily(byte[] buffer, AddressFamily family)
         {
             Interop.Error err;
-            fixed (byte* rawAddress = buffer)
-            {
-                err = Interop.Sys.SetAddressFamily(rawAddress, buffer.Length, (int)family);
-            }
 
-            ThrowOnFailure(err);
+            if (family != AddressFamily.Unknown)
+            {
+                fixed (byte* rawAddress = buffer)
+                {
+                    err = Interop.Sys.SetAddressFamily(rawAddress, buffer.Length, (int)family);
+                }
+
+                ThrowOnFailure(err);
+            }
         }
 
-        public static unsafe ushort GetPort(byte[] buffer)
+        public static unsafe ushort GetPort(ReadOnlySpan<byte> buffer)
         {
             ushort port;
             Interop.Error err;

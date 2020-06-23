@@ -151,6 +151,11 @@ public:
         instructionSetFlags.AddInstructionSet(instructionSet);
     }
 
+    bool IsSet(CORINFO_InstructionSet instructionSet) const
+    {
+        return instructionSetFlags.HasInstructionSet(instructionSet);
+    }
+
     void Clear(CORINFO_InstructionSet instructionSet)
     {
         instructionSetFlags.RemoveInstructionSet(instructionSet);

@@ -21,7 +21,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -43,8 +42,8 @@ namespace System.Reflection
 #pragma warning disable 649
         internal IntPtr klass;
         internal RuntimeFieldHandle fhandle;
-        private string name;
-        private Type type;
+        private string? name;
+        private Type? type;
         private FieldAttributes attrs;
 #pragma warning restore 649
 
@@ -66,7 +65,7 @@ namespace System.Reflection
 
         internal RuntimeType GetDeclaringTypeInternal()
         {
-            return (RuntimeType)DeclaringType;
+            return (RuntimeType)DeclaringType!;
         }
 
         private RuntimeType ReflectedTypeInternal
@@ -90,7 +89,7 @@ namespace System.Reflection
             // only test instance fields
             if ((Attributes & FieldAttributes.Static) != FieldAttributes.Static)
             {
-                if (!DeclaringType.IsInstanceOfType(target))
+                if (!DeclaringType!.IsInstanceOfType(target))
                 {
                     if (target == null)
                     {
@@ -108,7 +107,7 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        internal override void UnsafeSetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
+        internal override void UnsafeSetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
             bool domainInitialized = false;
             RuntimeFieldHandle.SetValue(this, obj, value, null, Attributes, null, ref domainInitialized);
@@ -124,7 +123,7 @@ namespace System.Reflection
             unsafe
             {
                 // Passing TypedReference by reference is easier to make correct in native code
-                RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, &obj, value, (RuntimeType)DeclaringType);
+                RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, &obj, value, (RuntimeType?)DeclaringType);
             }
         }
 
@@ -138,7 +137,7 @@ namespace System.Reflection
             unsafe
             {
                 // Passing TypedReference by reference is easier to make correct in native code
-                return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType)DeclaringType);
+                return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
             }
         }
 
@@ -180,7 +179,7 @@ namespace System.Reflection
                 return GetParentType(false);
             }
         }
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get
             {
@@ -192,7 +191,7 @@ namespace System.Reflection
         {
             get
             {
-                return name;
+                return name!;
             }
         }
 
@@ -214,15 +213,15 @@ namespace System.Reflection
         internal extern override int GetFieldOffset();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern object GetValueInternal(object obj);
+        private extern object? GetValueInternal(object? obj);
 
-        public override object GetValue(object obj)
+        public override object? GetValue(object? obj)
         {
             if (!IsStatic)
             {
                 if (obj == null)
                     throw new TargetException("Non-static field requires a target");
-                if (!DeclaringType.IsAssignableFrom(obj.GetType()))
+                if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
                     throw new ArgumentException(string.Format(
                         "Field {0} defined on type {1} is not a field on the target object which is of type {2}.",
                          Name, DeclaringType, obj.GetType()),
@@ -240,15 +239,15 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void SetValueInternal(FieldInfo fi, object obj, object value);
+        private static extern void SetValueInternal(FieldInfo fi, object? obj, object? value);
 
-        public override void SetValue(object obj, object val, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
+        public override void SetValue(object? obj, object? val, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
             if (!IsStatic)
             {
                 if (obj == null)
                     throw new TargetException("Non-static field requires a target");
-                if (!DeclaringType.IsAssignableFrom(obj.GetType()))
+                if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
                     throw new ArgumentException(string.Format(
                         "Field {0} defined on type {1} is not a field on the target object which is of type {2}.",
                          Name, DeclaringType, obj.GetType()),
@@ -288,7 +287,7 @@ namespace System.Reflection
 
         private void CheckGeneric()
         {
-            Type declaringType = DeclaringType;
+            Type? declaringType = DeclaringType;
             if (declaringType != null && declaringType.ContainsGenericParameters)
                 throw new InvalidOperationException("Late bound operations cannot be performed on fields with types for which Type.ContainsGenericParameters is true.");
         }

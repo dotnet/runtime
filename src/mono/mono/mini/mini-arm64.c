@@ -86,6 +86,20 @@ mono_arch_fregname (int reg)
 	return "unknown fp";
 }
 
+const char *
+mono_arch_xregname (int reg)
+{
+	static const char * rnames[] = {
+		"v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9",
+		"v10", "v11", "v12", "v13", "v14", "v15", "v16", "v17", "v18", "v19",
+		"v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28", "v29",
+		"v30", "v31"
+	};
+	if (reg >= 0 && reg < 32)
+		return rnames [reg];
+	return "unknown";
+}
+
 int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
@@ -1019,6 +1033,16 @@ MonoVTable*
 mono_arch_find_static_call_vtable (host_mgreg_t *regs, guint8 *code)
 {
 	return (MonoVTable*)regs [MONO_ARCH_RGCTX_REG];
+}
+
+GSList*
+mono_arch_get_cie_program (void)
+{
+	GSList *l = NULL;
+
+	mono_add_unwind_op_def_cfa (l, (guint8*)NULL, (guint8*)NULL, ARMREG_SP, 0);
+
+	return l;
 }
 
 host_mgreg_t

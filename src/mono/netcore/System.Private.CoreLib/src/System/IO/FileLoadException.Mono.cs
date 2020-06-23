@@ -6,7 +6,7 @@ namespace System.IO
 {
     public partial class FileLoadException
     {
-        internal static string FormatFileLoadExceptionMessage(string fileName, int hResult)
+        internal static string FormatFileLoadExceptionMessage(string? fileName, int hResult)
         {
             return "";
         }

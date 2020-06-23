@@ -313,7 +313,12 @@ enum {
 #define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
 #define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
 
+#ifdef TARGET_ARM64
+// FIXME: enable for Arm64
+#define MONO_CLASS_IS_SIMD(cfg, klass) (0)
+#else
 #define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass))
+#endif
 
 #else
 
@@ -1539,9 +1544,11 @@ typedef struct {
 
 	/* Used by AOT */
 	guint32 got_offset, ex_info_offset, method_info_offset, method_index;
+	guint32 aot_method_flags;
 	/* For llvm */
 	guint32 got_access_count;
 	gpointer llvmonly_init_cond;
+	gpointer llvm_dummy_info_var, llvm_info_var;
 	/* Symbol used to refer to this method in generated assembly */
 	char *asm_symbol;
 	char *asm_debug_symbol;
@@ -1936,8 +1943,8 @@ enum {
  /* 
   * Information about a trampoline function.
   */
- struct MonoTrampInfo
- {
+struct MonoTrampInfo
+{
 	/* 
 	 * The native code of the trampoline. Not owned by this structure.
 	 */
@@ -1958,6 +1965,11 @@ enum {
 	GSList *unwind_ops;
 
 	MonoJitICallInfo *jit_icall_info;
+
+	/*
+	 * The method the trampoline is associated with, if any.
+	 */
+	MonoMethod *method;
 
 	 /*
 	  * Encoded unwind info loaded from AOT images
@@ -2102,6 +2114,7 @@ guint     mono_type_to_load_membase         (MonoCompile *cfg, MonoType *type);
 guint     mono_type_to_store_membase        (MonoCompile *cfg, MonoType *type);
 guint32   mono_type_to_stloc_coerce         (MonoType *type);
 guint     mini_type_to_stind                (MonoCompile* cfg, MonoType *type);
+MonoStackType mini_type_to_stack_type       (MonoCompile *cfg, MonoType *t);
 MonoJitInfo* mini_lookup_method             (MonoDomain *domain, MonoMethod *method, MonoMethod *shared);
 guint32   mono_reverse_branch_op            (guint32 opcode);
 void      mono_disassemble_code             (MonoCompile *cfg, guint8 *code, int size, char *id);
@@ -2245,6 +2258,7 @@ void              mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, 
 void              mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, int align);
 void              mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native);
 void              mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass *klass);
+void              mini_emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype);
 int               mini_emit_sext_index_reg (MonoCompile *cfg, MonoInst *index);
 MonoInst*         mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck);
 MonoInst*         mini_emit_get_gsharedvt_info_klass (MonoCompile *cfg, MonoClass *klass, MonoRgctxInfoType rgctx_type);
@@ -2842,6 +2856,10 @@ typedef enum {
 #ifdef TARGET_WASM
 	MONO_CPU_WASM_SIMD = 1 << 1,
 #endif
+#ifdef TARGET_ARM64
+	MONO_CPU_ARM64_BASE   = 1 << 1,
+	MONO_CPU_ARM64_CRC    = 1 << 2,
+#endif
 } MonoCPUFeatures;
 
 G_ENUM_FUNCTIONS (MonoCPUFeatures)
@@ -2936,7 +2954,27 @@ typedef enum {
 	SIMD_OP_SSE_PSIGND,
 	SIMD_OP_SSE_PMADDUBSW,
 	SIMD_OP_SSE_PMULHRSW,
-	SIMD_OP_SSE_LDDQU
+	SIMD_OP_SSE_LDDQU,
+	SIMD_OP_SSE_TESTC,
+	SIMD_OP_SSE_TESTNZ,
+	SIMD_OP_SSE_TESTZ,
+	SIMD_OP_SSE_PACKUSDW,
+	SIMD_OP_SSE_PHMINPOSUW,
+	SIMD_OP_AES_IMC,
+	SIMD_OP_AES_ENC,
+	SIMD_OP_AES_ENCLAST,
+	SIMD_OP_AES_DEC,
+	SIMD_OP_AES_DECLAST,
+	SIMD_OP_ARM64_CRC32B,
+	SIMD_OP_ARM64_CRC32H,
+	SIMD_OP_ARM64_CRC32W,
+	SIMD_OP_ARM64_CRC32X,
+	SIMD_OP_ARM64_CRC32CB,
+	SIMD_OP_ARM64_CRC32CH,
+	SIMD_OP_ARM64_CRC32CW,
+	SIMD_OP_ARM64_CRC32CX,
+	SIMD_OP_ARM64_RBIT32,
+	SIMD_OP_ARM64_RBIT64
 } SimdOp;
 
 const char *mono_arch_xregname (int reg);

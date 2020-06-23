@@ -16,6 +16,9 @@ struct S16
 {
     public long A, B;
     public override string ToString() => $"{A}, {B}";
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public string InstanceMethod() => "Instance method";
 }
 struct S32
 {
@@ -38,6 +41,7 @@ struct SGC2
     public int D;
     public override string ToString() => $"{A}, ({B}), {C}, {D}";
 }
+
 class HeapInt
 {
     public int Value;
@@ -51,7 +55,9 @@ internal class Program
     private static readonly IntPtr s_calcStaticCalliOther;
     private static readonly IntPtr s_calcStaticCalliRetbuf;
     private static readonly IntPtr s_calcStaticCalliRetbufOther;
-    
+    private static readonly IntPtr s_emptyCalliOther;
+    private static readonly IntPtr s_instanceMethodOnValueType;
+
     static Program()
     {
         IL.Emit.Ldftn(new MethodRef(typeof(Program), nameof(CalcStaticCalli)));
@@ -62,11 +68,17 @@ internal class Program
         IL.Pop(out IntPtr calcStaticCalliRetbuf);
         IL.Emit.Ldftn(new MethodRef(typeof(Program), nameof(CalcStaticCalliRetbufOther)));
         IL.Pop(out IntPtr calcStaticCalliRetbufOther);
+        IL.Emit.Ldftn(new MethodRef(typeof(Program), nameof(EmptyCalliOther)));
+        IL.Pop(out IntPtr emptyCalliOther);
+        IL.Emit.Ldftn(new MethodRef(typeof(S16), nameof(S16.InstanceMethod)));
+        IL.Pop(out IntPtr instanceMethodOnValueType);
 
         s_calcStaticCalli = calcStaticCalli;
         s_calcStaticCalliOther = calcStaticCalliOther;
         s_calcStaticCalliRetbuf = calcStaticCalliRetbuf;
         s_calcStaticCalliRetbufOther = calcStaticCalliRetbufOther;
+        s_emptyCalliOther = emptyCalliOther;
+        s_instanceMethodOnValueType = instanceMethodOnValueType;
     }
 
     private static int Main()
@@ -77,7 +89,7 @@ internal class Program
         int x = numCalcIters;
         S32 s = default;
         int expected = 0;
-        
+
         while (x != 0)
         {
             if (x % 2 == 0)
@@ -115,6 +127,8 @@ internal class Program
         GenInstance<string, int> g = new GenInstance<string, int>();
         IGenInterface<string, int> ig = new GenInterfaceImpl<string, int>();
         IGenInterface<string, object> ig2 = new GenInterfaceImpl<string, object>();
+        GenAbstractImpl<string> ga1 = new GenAbstractImpl<string>();
+        GenAbstractImpl<int> ga2 = new GenAbstractImpl<int>();
 
         long expectedI8 = (long)(((ulong)(uint)expected << 32) | (uint)expected);
         S16 expectedS16 = new S16 { A = expected, B = expected, };
@@ -137,6 +151,9 @@ internal class Program
         TestCalc(CalcStaticCalliRetbuf, expectedS32, "Static calli retbuf");
         TestCalc(new Instance().CalcInstanceCalli, expected, "Instance calli");
         TestCalc(new Instance().CalcInstanceCalliRetbuf, expectedS32, "Instance calli retbuf");
+        Test(() => EmptyCalli(), "Empty calli", "Static calli without args");
+        Test(() => ValueTypeInstanceMethodCalli(), "Instance method", "calli to an instance method on a value type");
+        Test(() => ValueTypeExplicitThisInstanceMethodCalli(), "Instance method", "calli to an instance method on a value type with explicit this");
         Test(() => { var v = new InstanceValueType(); v.CountUp(countUpIters); return v.Count; }, countUpIters, "Value type instance call");
         Test(() => new Instance().GC("2", 3, "4", 5, "6", "7", "8", 9, ref ten), "2 3 4 5 6 7 8 9 10", "Instance with GC");
         Test(() => CountUpHeap(countUpIters, new HeapInt(0)), countUpIters, "Count up with heap int");
@@ -154,10 +171,18 @@ internal class Program
              "System.String System.Int32 System.Object System.String a 5 b c", "Instance generic 4");
         Test(() => g.VirtForward<object, string>("a", 5, "b", "c"),
              "System.String System.Int32 System.Object System.String a 5 b c", "Virtual instance generic 4");
-        Test(() => GenInterfaceForward<string, int, string, object>("a", 5, "c", "d", ig),
+        Test(() => GenInterfaceForwardF<string, int, string, object>("a", 5, "c", "d", ig),
             "System.String System.Int32 System.String System.Object a 5 c d", "Interface generic 4");
+        Test(() => GenInterfaceForwardG<string, int>("a", 5, ig),
+            "System.String System.Int32 a 5", "Interface generic forward G");
         Test(() => GenInterfaceForwardNone("a", "b", 5, "d", ig2),
              "System.String System.Object System.Int32 System.Object a b 5 d", "Interface generic 0");
+        Test(() => GenInterfaceForward2("a", "b", ig2),
+             "System.String System.Object a b", "Interface generic without generics on method");
+        Test(() => GenAbstractFString(ga1), "System.String System.Object", "Abstract generic with generic on method 1");
+        Test(() => GenAbstractFInt(ga2), "System.Int32 System.Object", "Abstract generic with generic on method 2");
+        Test(() => GenAbstractGString(ga1), "System.String", "Abstract generic without generic on method 1");
+        Test(() => GenAbstractGInt(ga2), "System.Int32", "Abstract generic without generic on method 2");
 
         if (result)
             Console.WriteLine("All tailcall-via-help succeeded");
@@ -358,6 +383,55 @@ internal class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string EmptyCalli()
+    {
+        // Force helper-based tailcall out of this function by stackallocing
+        Span<int> values = stackalloc int[Environment.TickCount < 0 ? 30 : 40];
+
+        IL.Push(s_emptyCalliOther);
+        IL.Emit.Tail();
+        IL.Emit.Calli(new StandAloneMethodSig(CallingConventions.Standard, typeof(string)));
+        return IL.Return<string>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string ValueTypeInstanceMethodCalli()
+    {
+        // Force helper-based tailcall out of this function by stackallocing
+        Span<int> values = stackalloc int[Environment.TickCount < 0 ? 30 : 40];
+
+        S16 s16 = new S16();
+
+        IL.Push(ref s16);
+        IL.Push(s_instanceMethodOnValueType);
+        IL.Emit.Tail();
+        IL.Emit.Calli(new StandAloneMethodSig(CallingConventions.Standard | CallingConventions.HasThis, typeof(string)));
+        return IL.Return<string>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string ValueTypeExplicitThisInstanceMethodCalli()
+    {
+        // Force helper-based tailcall out of this function by stackallocing
+        Span<int> values = stackalloc int[Environment.TickCount < 0 ? 30 : 40];
+
+        S16 s16 = new S16();
+
+        IL.Push(ref s16);
+        IL.Push(s_instanceMethodOnValueType);
+        IL.Emit.Tail();
+        IL.Emit.Calli(new StandAloneMethodSig(CallingConventions.Standard | CallingConventions.HasThis | CallingConventions.ExplicitThis,
+                      typeof(string), typeof(S16).MakeByRefType()));
+        return IL.Return<string>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string EmptyCalliOther()
+    {
+        return "Empty calli";
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static S32 CalcStaticCalliRetbuf(int x, int acc)
     {
         if (x == 0)
@@ -527,7 +601,7 @@ internal class Program
         => $"{typeof(T1).FullName} {typeof(T2).FullName} {a} {b}";
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static string GenInterfaceForward<T1, T2, T3, T4>(T1 a, T2 b, T3 c, T4 d, IGenInterface<T1, T2> igen)
+    private static string GenInterfaceForwardF<T1, T2, T3, T4>(T1 a, T2 b, T3 c, T4 d, IGenInterface<T1, T2> igen)
     {
         IL.Push(igen);
         IL.Push(new S32());
@@ -537,6 +611,18 @@ internal class Program
         IL.Push(d);
         IL.Emit.Tail();
         IL.Emit.Callvirt(new MethodRef(typeof(IGenInterface<T1, T2>), nameof(IGenInterface<T1, T2>.F)).MakeGenericMethod(typeof(T3), typeof(T4)));
+        return IL.Return<string>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string GenInterfaceForwardG<T1, T2>(T1 a, T2 b, IGenInterface<T1, T2> igen)
+    {
+        IL.Push(igen);
+        IL.Push(new S32());
+        IL.Push(a);
+        IL.Push(b);
+        IL.Emit.Tail();
+        IL.Emit.Callvirt(new MethodRef(typeof(IGenInterface<T1, T2>), nameof(IGenInterface<T1, T2>.G)));
         return IL.Return<string>();
     }
 
@@ -551,6 +637,54 @@ internal class Program
         IL.Push(d);
         IL.Emit.Tail();
         IL.Emit.Callvirt(new MethodRef(typeof(IGenInterface<string, object>), nameof(IGenInterface<string, object>.F)).MakeGenericMethod(typeof(int), typeof(object)));
+        return IL.Return<string>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string GenInterfaceForward2(string a, object b, IGenInterface<string, object> igen)
+    {
+        IL.Push(igen);
+        IL.Push(new S32());
+        IL.Push(a);
+        IL.Push(b);
+        IL.Emit.Tail();
+        IL.Emit.Callvirt(new MethodRef(typeof(IGenInterface<string, object>), nameof(IGenInterface<string, object>.G)));
+        return IL.Return<string>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string GenAbstractFString(GenAbstract<string> ga)
+    {
+        IL.Push(ga);
+        IL.Emit.Tail();
+        IL.Emit.Callvirt(new MethodRef(typeof(GenAbstract<string>), nameof(GenAbstract<string>.F)).MakeGenericMethod(typeof(object)));
+        return IL.Return<string>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string GenAbstractGString(GenAbstract<string> ga)
+    {
+        IL.Push(ga);
+        IL.Emit.Tail();
+        IL.Emit.Callvirt(new MethodRef(typeof(GenAbstract<string>), nameof(GenAbstract<string>.G)));
+        return IL.Return<string>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string GenAbstractFInt(GenAbstract<int> ga)
+    {
+        IL.Push(ga);
+        IL.Emit.Tail();
+        IL.Emit.Callvirt(new MethodRef(typeof(GenAbstract<int>), nameof(GenAbstract<int>.F)).MakeGenericMethod(typeof(object)));
+        return IL.Return<string>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string GenAbstractGInt(GenAbstract<int> ga)
+    {
+        IL.Push(ga);
+        IL.Emit.Tail();
+        IL.Emit.Callvirt(new MethodRef(typeof(GenAbstract<int>), nameof(GenAbstract<int>.G)));
         return IL.Return<string>();
     }
 }
@@ -992,11 +1126,30 @@ class GenInstance<T1, T2>
 
 interface IGenInterface<T1, T2>
 {
-    public string F<T3, T4>(S32 s, T1 a, T2 b, T3 c, T4 d);
+    string F<T3, T4>(S32 s, T1 a, T2 b, T3 c, T4 d);
+    string G(S32 s, T1 a, T2 b);
 }
 
 class GenInterfaceImpl<T1, T2> : IGenInterface<T1, T2>
 {
     public string F<T3, T4>(S32 s, T1 a, T2 b, T3 c, T4 d)
         => $"{typeof(T1).FullName} {typeof(T2).FullName} {typeof(T3).FullName} {typeof(T4).FullName} {a} {b} {c} {d}";
+
+    public string G(S32 s, T1 a, T2 b)
+        => $"{typeof(T1).FullName} {typeof(T2).FullName} {a} {b}";
+}
+
+abstract class GenAbstract<T1>
+{
+    public abstract string F<T2>();
+    public abstract string G();
+}
+
+class GenAbstractImpl<T1> : GenAbstract<T1>
+{
+    public override string F<T2>()
+        => $"{typeof(T1).FullName} {typeof(T2).FullName}";
+
+    public override string G()
+        => $"{typeof(T1).FullName}";
 }

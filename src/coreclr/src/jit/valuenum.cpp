@@ -3562,7 +3562,7 @@ ValueNum ValueNumStore::VNApplySelectors(ValueNumKind  vnk,
             structSize = m_pComp->info.compCompHnd->getClassSize(structHnd);
             // We do not normalize the type field accesses during importation unless they
             // are used in a call, return or assignment.
-            if ((fieldType == TYP_STRUCT) && (structSize <= m_pComp->largestEnregisterableStructSize()))
+            if ((fieldType == TYP_STRUCT) && m_pComp->structSizeMightRepresentSIMDType(structSize))
             {
                 fieldType = m_pComp->impNormStructType(structHnd);
             }
@@ -3612,15 +3612,7 @@ ValueNum ValueNumStore::VNApplySelectorsTypeCheck(ValueNum elem, var_types indTy
         size_t elemTypSize = (elemTyp == TYP_STRUCT) ? elemStructSize : genTypeSize(elemTyp);
         size_t indTypeSize = genTypeSize(indType);
 
-        if ((indType == TYP_REF) && (varTypeIsStruct(elemTyp)))
-        {
-            // indType is TYP_REF and elemTyp is TYP_STRUCT
-            //
-            // We have a pointer to a static that is a Boxed Struct
-            //
-            return elem;
-        }
-        else if (indTypeSize > elemTypSize)
+        if (indTypeSize > elemTypSize)
         {
             // Reading beyong the end of 'elem'
 
@@ -8575,20 +8567,45 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
         fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
     }
 
-    int      lookupNumArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId);
-    VNFunc   func          = GetVNFuncForNode(tree);
-    unsigned fixedArity    = vnStore->VNFuncArity(func);
+    int    lookupNumArgs    = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId);
+    bool   encodeResultType = vnEncodesResultTypeForHWIntrinsic(hwIntrinsicNode->gtHWIntrinsicId);
+    VNFunc func             = GetVNFuncForNode(tree);
 
     ValueNumPair excSetPair = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair normalPair;
+    ValueNumPair resvnp = ValueNumPair();
+
+    if (encodeResultType)
+    {
+        ValueNum vnSize     = vnStore->VNForIntCon(hwIntrinsicNode->gtSIMDSize);
+        ValueNum vnBaseType = vnStore->VNForIntCon(INT32(hwIntrinsicNode->gtSIMDBaseType));
+        ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
+        resvnp.SetBoth(simdTypeVN);
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("    simdTypeVN is ");
+            vnPrint(simdTypeVN, 1);
+            printf("\n");
+        }
+#endif
+    }
 
     // There are some HWINTRINSICS operations that have zero args, i.e.  NI_Vector128_Zero
     if (tree->AsOp()->gtOp1 == nullptr)
     {
-        assert(fixedArity == 0);
-
-        normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func);
-        assert(lookupNumArgs == 0);
+        if (encodeResultType)
+        {
+            // There are zero arg HWINTRINSICS operations that encode the result type, i.e.  Vector128_AllBitSet
+            normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, resvnp);
+            assert(vnStore->VNFuncArity(func) == 1);
+        }
+        else
+        {
+            normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func);
+            assert(vnStore->VNFuncArity(func) == 0);
+        }
     }
     else if (tree->AsOp()->gtOp1->OperIs(GT_LIST) || (lookupNumArgs == -1))
     {
@@ -8602,25 +8619,6 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
     }
     else // HWINTRINSIC unary or binary operator.
     {
-        ValueNumPair resvnp           = ValueNumPair();
-        bool         encodeResultType = vnEncodesResultTypeForHWIntrinsic(hwIntrinsicNode->gtHWIntrinsicId);
-
-        if (encodeResultType)
-        {
-            ValueNum vnSize     = vnStore->VNForIntCon(hwIntrinsicNode->gtSIMDSize);
-            ValueNum vnBaseType = vnStore->VNForIntCon(INT32(hwIntrinsicNode->gtSIMDBaseType));
-            ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
-            resvnp.SetBoth(simdTypeVN);
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("    simdTypeVN is ");
-                vnPrint(simdTypeVN, 1);
-                printf("\n");
-            }
-#endif
-        }
         ValueNumPair op1vnp;
         ValueNumPair op1Xvnp;
         vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);

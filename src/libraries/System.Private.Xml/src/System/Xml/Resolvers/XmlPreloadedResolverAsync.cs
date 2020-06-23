@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.IO;
 using System.Xml;
 using System.Threading.Tasks;
@@ -16,15 +17,15 @@ namespace System.Xml.Resolvers
     public partial class XmlPreloadedResolver : XmlResolver
     {
         public override Task<object> GetEntityAsync(Uri absoluteUri,
-                                             string role,
-                                             Type ofObjectToReturn)
+                                             string? role,
+                                             Type? ofObjectToReturn)
         {
             if (absoluteUri == null)
             {
                 throw new ArgumentNullException(nameof(absoluteUri));
             }
 
-            PreloadedData data;
+            PreloadedData? data;
             if (!_mappings.TryGetValue(absoluteUri, out data))
             {
                 if (_fallbackResolver != null)

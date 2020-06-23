@@ -431,12 +431,14 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PrinterSettingsTests), nameof(CanTestSetHdevmode_IntPtr_Success))]
         public void SupportsColor_ReturnsExpected()
         {
-            var printerSettings = new PrinterSettings();
-            bool supportsColor = printerSettings.SupportsColor;
+            // XPS and PDF printers support color.
+            // docs.microsoft.com/en-us/windows-hardware/drivers/print/improved-color-printing
+            var printerSettings = new PrinterSettings() { PrinterName = GetNameOfTestPrinterSuitableForDevModeTesting() };
+            Assert.True(printerSettings.SupportsColor);
         }
 
         [Theory]
@@ -608,7 +610,7 @@ namespace System.Drawing.Printing.Tests
 
         private static readonly string[] s_TestPrinterNames =
         {
-            // Our method of testing this api requires a printer that supports multi-copy printing, collating and duplex settings. Not all printers
+            // Our method of testing some apis requires a printer that supports multi-copy printing, collating, color and duplex settings. Not all printers
             // support these so rather than trust the machine running the test to have configured such a printer as the default, use the name of
             // a known compliant printer that ships with Windows 10.
             "Microsoft Print to PDF",

@@ -39,7 +39,7 @@ namespace System.Threading
             }
         }
 
-        private unsafe void CreateEventCore(bool initialState, EventResetMode mode, string name, out bool createdNew)
+        private unsafe void CreateEventCore(bool initialState, EventResetMode mode, string? name, out bool createdNew)
         {
             if (name != null)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);

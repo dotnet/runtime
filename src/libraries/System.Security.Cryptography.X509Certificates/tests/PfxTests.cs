@@ -249,9 +249,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
             catch (CryptographicException)
             {
-                // Windows 7, Windows 8, Ubuntu 14, CentOS, macOS can fail. Verify known good platforms don't fail.
+                // Windows 7, Windows 8, CentOS, macOS can fail. Verify known good platforms don't fail.
                 Assert.False(PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10, "Is Windows 10");
-                Assert.False(PlatformDetection.IsUbuntu && !PlatformDetection.IsUbuntu1404, "Is Ubuntu 16.04 or up");
+                Assert.False(PlatformDetection.IsUbuntu, "Is Ubuntu");
             }
         }
 

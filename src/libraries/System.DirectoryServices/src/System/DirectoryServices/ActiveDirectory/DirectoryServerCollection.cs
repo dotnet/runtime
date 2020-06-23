@@ -115,7 +115,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (s == null)
                 {
-                    throw new ArgumentException(nameof(servers));
+                    throw new ArgumentException(null, nameof(servers));
                 }
             }
 
@@ -386,7 +386,7 @@ namespace System.DirectoryServices.ActiveDirectory
             else
             {
                 if (!(value is DirectoryServer))
-                    throw new ArgumentException(nameof(value));
+                    throw new ArgumentException(null, nameof(value));
             }
         }
 

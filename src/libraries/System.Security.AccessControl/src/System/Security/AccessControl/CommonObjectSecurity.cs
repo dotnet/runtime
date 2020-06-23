@@ -336,7 +336,7 @@ namespace System.Security.AccessControl
                 else
                 {
                     Debug.Fail("rule.AccessControlType unrecognized");
-                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)rule.AccessControlType), "rule.AccessControlType");
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)rule.AccessControlType), nameof(rule));
                 }
 
                 modified = result;

@@ -93,7 +93,7 @@ namespace System.Net.Http.Headers
             return (ProductHeaderValue)GenericHeaderParser.SingleValueProductParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out ProductHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out ProductHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;

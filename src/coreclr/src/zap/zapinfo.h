@@ -351,9 +351,11 @@ public:
     void * getHelperFtn (CorInfoHelpFunc   ftnNum,
                                   void**            ppIndirection);
 
-    void* getTailCallCopyArgsThunk (
-                      CORINFO_SIG_INFO       *pSig,
-                      CorInfoHelperTailCallSpecialHandling flags);
+    virtual bool getTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult);
 
     bool convertPInvokeCalliToCall(
                       CORINFO_RESOLVED_TOKEN * pResolvedToken,
@@ -465,7 +467,7 @@ public:
                                      CORINFO_CLASS_HANDLE *vcTypeRet);
     CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO* sig,
                                                CORINFO_ARG_LIST_HANDLE args);
-    CorInfoType getHFAType(CORINFO_CLASS_HANDLE hClass);
+    CorInfoHFAElemType getHFAType(CORINFO_CLASS_HANDLE hClass);
 
     // ICorDebugInfo
 

@@ -21,7 +21,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
@@ -37,7 +36,7 @@ namespace System.Reflection
     {
         private sealed class ResolveEventHolder
         {
-            public event ModuleResolveEventHandler ModuleResolve;
+            public event ModuleResolveEventHandler? ModuleResolve;
         }
 
         private sealed class UnmanagedMemoryStreamForModule : UnmanagedMemoryStream
@@ -56,10 +55,12 @@ namespace System.Reflection
         //
         #region VM dependency
         private IntPtr _mono_assembly;
-        private object _evidence;       // Unused, kept for layout compatibility
+        private object? _evidence;       // Unused, kept for layout compatibility
         #endregion
 
-        private ResolveEventHolder resolve_event_holder;
+        internal IntPtr GetUnderlyingNativeHandle() { return _mono_assembly; }
+
+        private ResolveEventHolder? resolve_event_holder;
 
         public extern override MethodInfo? EntryPoint
         {
@@ -89,19 +90,19 @@ namespace System.Reflection
         // We can't store the event directly in this class, since the
         // compiler would silently insert the fields before _mono_assembly
         //
-        public override event ModuleResolveEventHandler ModuleResolve
+        public override event ModuleResolveEventHandler? ModuleResolve
         {
             add
             {
-                resolve_event_holder.ModuleResolve += value;
+                resolve_event_holder!.ModuleResolve += value;
             }
             remove
             {
-                resolve_event_holder.ModuleResolve -= value;
+                resolve_event_holder!.ModuleResolve -= value;
             }
         }
 
-        public override Module? ManifestModule => GetManifestModuleInternal();
+        public override Module ManifestModule => GetManifestModuleInternal();
 
         public override bool GlobalAssemblyCache => false;
 
@@ -118,9 +119,9 @@ namespace System.Reflection
         }
 
         // TODO: consider a dedicated icall instead
-        public override bool IsCollectible => AssemblyLoadContext.GetLoadContext((Assembly)this).IsCollectible;
+        public override bool IsCollectible => AssemblyLoadContext.GetLoadContext((Assembly)this)!.IsCollectible;
 
-        internal static AssemblyName CreateAssemblyName(string assemblyString, out RuntimeAssembly assemblyFromResolveEvent)
+        internal static AssemblyName? CreateAssemblyName(string assemblyString, out RuntimeAssembly? assemblyFromResolveEvent)
         {
             if (assemblyString == null)
                 throw new ArgumentNullException(nameof(assemblyString));
@@ -136,7 +137,7 @@ namespace System.Reflection
             }
             catch (Exception)
             {
-                assemblyFromResolveEvent = (RuntimeAssembly)AssemblyLoadContext.DoAssemblyResolve(assemblyString);
+                assemblyFromResolveEvent = (RuntimeAssembly?)AssemblyLoadContext.DoAssemblyResolve(assemblyString);
                 if (assemblyFromResolveEvent == null)
                     throw new FileLoadException(assemblyString);
                 return null;
@@ -192,7 +193,7 @@ namespace System.Reflection
             }
         }
 
-        public override ManifestResourceInfo GetManifestResourceInfo(string resourceName)
+        public override ManifestResourceInfo? GetManifestResourceInfo(string resourceName)
         {
             if (resourceName == null)
                 throw new ArgumentNullException(nameof(resourceName));
@@ -206,7 +207,7 @@ namespace System.Reflection
                 return null;
         }
 
-        public override Stream GetManifestResourceStream(string name)
+        public override Stream? GetManifestResourceStream(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -227,12 +228,12 @@ namespace System.Reflection
             }
         }
 
-        public override Stream GetManifestResourceStream(Type type, string name)
+        public override Stream? GetManifestResourceStream(Type type, string name)
         {
             if (type == null && name == null)
                 throw new ArgumentNullException(nameof(type));
 
-            string nameSpace = type?.Namespace;
+            string? nameSpace = type?.Namespace;
 
             string resourceName = nameSpace != null && name != null ?
                 nameSpace + Type.Delimiter + name :
@@ -277,7 +278,7 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
         }
 
-        public override Module GetModule(string name)
+        public override Module? GetModule(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -315,9 +316,9 @@ namespace System.Reflection
             return GetModules(getResourceModules);
         }
 
-        public override AssemblyName[] GetReferencedAssemblies()
+        internal static AssemblyName[] GetReferencedAssemblies(Assembly assembly)
         {
-            using (var nativeNames = new Mono.SafeGPtrArrayHandle(InternalGetReferencedAssemblies(this)))
+            using (var nativeNames = new Mono.SafeGPtrArrayHandle(InternalGetReferencedAssemblies(assembly)))
             {
                 int numAssemblies = nativeNames.Length;
                 try
@@ -352,23 +353,25 @@ namespace System.Reflection
             }
         }
 
+        public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies (this);
+
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {
             return GetSatelliteAssembly(culture, null);
         }
 
-        public override Assembly GetSatelliteAssembly(CultureInfo culture, Version version)
+        public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
         {
             if (culture == null)
                 throw new ArgumentNullException(nameof(culture));
 
-            return InternalGetSatelliteAssembly(culture, version, true);
+            return InternalGetSatelliteAssembly(this, culture, version, true)!;
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        internal Assembly InternalGetSatelliteAssembly(CultureInfo culture, Version version, bool throwOnFileNotFound)
+        internal static Assembly? InternalGetSatelliteAssembly(Assembly assembly, CultureInfo culture, Version? version, bool throwOnFileNotFound)
         {
-            AssemblyName aname = GetName();
+            AssemblyName aname = assembly.GetName();
 
             var an = new AssemblyName();
             if (version == null)
@@ -379,7 +382,7 @@ namespace System.Reflection
             an.CultureInfo = culture;
             an.Name = aname.Name + ".resources";
 
-            Assembly res = null;
+            Assembly? res = null;
             try
             {
                 StackCrawlMark unused = default;
@@ -389,14 +392,14 @@ namespace System.Reflection
             {
             }
 
-            if (res == this)
+            if (res == assembly)
                 res = null;
             if (res == null && throwOnFileNotFound)
                 throw new FileNotFoundException(string.Format(culture, SR.IO_FileNotFound_FileName, an.Name));
             return res;
         }
 
-        public override FileStream GetFile(string name)
+        public override FileStream? GetFile(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name), SR.ArgumentNull_FileName);
@@ -438,7 +441,7 @@ namespace System.Reflection
             return res;
         }
 
-        internal static RuntimeAssembly InternalLoad(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext assemblyLoadContext)
+        internal static RuntimeAssembly InternalLoad(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext)
         {
             var assembly = (RuntimeAssembly)InternalLoad(assemblyRef.FullName, ref stackMark, assemblyLoadContext != null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
             if (assembly == null)
@@ -476,7 +479,7 @@ namespace System.Reflection
         private static extern IntPtr InternalGetReferencedAssemblies(Assembly module);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern object GetFilesInternal(string name, bool getResourceModules);
+        private extern object GetFilesInternal(string? name, bool getResourceModules);
 
         internal string? GetSimpleName()
         {

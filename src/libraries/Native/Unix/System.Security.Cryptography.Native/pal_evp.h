@@ -52,6 +52,14 @@ PALEXPORT int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, ui
 
 /*
 Function:
+EvpDigestCurrent
+
+Shims EVP_DigestFinal_ex on a duplicated value of ctx.
+*/
+PALEXPORT int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s);
+
+/*
+Function:
 EvpMdSize
 
 Direct shim to EVP_MD_size.

@@ -535,7 +535,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(object obj1, object obj2, bool expected)
+        public static void EqualsTest(object obj1, object obj2, bool expected)
         {
             if (obj1 is decimal d1)
             {
@@ -1858,7 +1858,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static new void GetHashCode()
+        public static void GetHashCodeTest()
         {
             var dict = new Dictionary<string, (int hash, string value)>();
             foreach (decimal d in GetRandomData(out _, hash: true))

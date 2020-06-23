@@ -18,8 +18,6 @@
     <GenFacadesForceZeroVersionSeeds Condition="'$(MSBuildProjectName)' != 'netstandard'">true</GenFacadesForceZeroVersionSeeds>
     <IncludeDefaultReferences>false</IncludeDefaultReferences>
     <HasMatchingContract>true</HasMatchingContract>
-    <!-- Shims have no code in them. No point in running IL linker over them -->
-    <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'System.Runtime' or '$(MSBuildProjectName)' == 'mscorlib' or '$(MSBuildProjectName)' == 'netstandard'">

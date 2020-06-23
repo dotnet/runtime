@@ -453,6 +453,7 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_StubHelpers_GetStubContext,
         CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
         CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget,
+        CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
         CORINFO_INTRINSIC_InterlockedAdd32,
         CORINFO_INTRINSIC_InterlockedAdd64,
         CORINFO_INTRINSIC_InterlockedXAdd32,
@@ -462,6 +463,7 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_InterlockedCmpXchg32,
         CORINFO_INTRINSIC_InterlockedCmpXchg64,
         CORINFO_INTRINSIC_MemoryBarrier,
+        CORINFO_INTRINSIC_MemoryBarrierLoad,
         CORINFO_INTRINSIC_GetCurrentManagedThread,
         CORINFO_INTRINSIC_GetManagedThreadId,
         CORINFO_INTRINSIC_ByReference_Ctor,
@@ -632,7 +634,7 @@ namespace Internal.JitInterface
         CORINFO_FLG_ARRAY = 0x00080000, // class is an array class (initialized differently)
         CORINFO_FLG_OVERLAPPING_FIELDS = 0x00100000, // struct or class has fields that overlap (aka union)
         CORINFO_FLG_INTERFACE = 0x00200000, // it is an interface
-        // CORINFO_FLG_UNUSED = 0x00400000,
+        CORINFO_FLG_DONT_PROMOTE = 0x00400000, // don't try to promote fieds of types outside of AOT compilation version bubble
         CORINFO_FLG_CUSTOMLAYOUT = 0x00800000, // does this struct have custom layout?
         CORINFO_FLG_CONTAINS_GC_PTR = 0x01000000, // does the class contain a gc ptr ?
         CORINFO_FLG_DELEGATE = 0x02000000, // is this a subclass of delegate or multicast delegate ?
@@ -746,6 +748,17 @@ namespace Internal.JitInterface
         CORINFO_HANDLETYPE_FIELD
     }
 
+    // Enum used for HFA type recognition.
+    // Supported across architectures, so that it can be used in altjits and cross-compilation.
+    public enum CorInfoHFAElemType
+    {
+        CORINFO_HFA_ELEM_NONE,
+        CORINFO_HFA_ELEM_FLOAT,
+        CORINFO_HFA_ELEM_DOUBLE,
+        CORINFO_HFA_ELEM_VECTOR64,
+        CORINFO_HFA_ELEM_VECTOR128,
+    }
+
     /* data to optimize delegate construction */
     public unsafe struct DelegateCtorArgs
     {
@@ -753,14 +766,6 @@ namespace Internal.JitInterface
         public void* pArg3;
         public void* pArg4;
         public void* pArg5;
-    }
-
-    // When using CORINFO_HELPER_TAILCALL, the JIT needs to pass certain special
-    // calling convention/argument passing/handling details to the helper
-    public enum CorInfoHelperTailCallSpecialHandling
-    {
-        CORINFO_TAILCALL_NORMAL = 0x00000000,
-        CORINFO_TAILCALL_STUB_DISPATCH_ARG = 0x00000001,
     }
 
     /*****************************************************************************/
@@ -900,6 +905,30 @@ namespace Internal.JitInterface
 
         public CORINFO_OS osType;
     }
+
+    // Flags passed from JIT to runtime.
+    public enum CORINFO_GET_TAILCALL_HELPERS_FLAGS
+    {
+        // The callsite is a callvirt instruction.
+        CORINFO_TAILCALL_IS_CALLVIRT = 0x00000001,
+    }
+
+    // Flags passed from runtime to JIT.
+    public enum CORINFO_TAILCALL_HELPERS_FLAGS
+    {
+        // The StoreArgs stub needs to be passed the target function pointer as the
+        // first argument.
+        CORINFO_TAILCALL_STORE_TARGET = 0x00000001,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct CORINFO_TAILCALL_HELPERS
+    {
+        CORINFO_TAILCALL_HELPERS_FLAGS flags;
+        CORINFO_METHOD_STRUCT_*        hStoreArgs;
+        CORINFO_METHOD_STRUCT_*        hCallTarget;
+        CORINFO_METHOD_STRUCT_*        hDispatcher;
+    };
 
     public enum CORINFO_THIS_TRANSFORM
     {
@@ -1321,21 +1350,17 @@ namespace Internal.JitInterface
     public struct CORJIT_FLAGS
     {
         private UInt64 _corJitFlags;
-        InstructionSetFlags _instructionSetFlags;
+        public InstructionSetFlags InstructionSetFlags;
 
         public void Reset()
         {
             _corJitFlags = 0;
+            InstructionSetFlags = default(InstructionSetFlags);
         }
 
         public void Set(CorJitFlag flag)
         {
             _corJitFlags |= 1UL << (int)flag;
-        }
-
-        public void Set(InstructionSet instructionSet)
-        {
-            _instructionSetFlags.AddInstructionSet(instructionSet);
         }
 
         public void Clear(CorJitFlag flag)
@@ -1346,11 +1371,6 @@ namespace Internal.JitInterface
         public bool IsSet(CorJitFlag flag)
         {
             return (_corJitFlags & (1UL << (int)flag)) != 0;
-        }
-
-        public void Set64BitInstructionSetVariants(TargetArchitecture architecture)
-        {
-            _instructionSetFlags.Set64BitInstructionSetVariants(architecture);
         }
     }
 }

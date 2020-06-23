@@ -895,7 +895,7 @@ static void VerifyObject(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj)
     MethodTable* pMT = (MethodTable*)(obj->GetGCSafeMethodTable());
     pMT->SanityCheck();
 #else
-    obj->ValidateHeap(from);
+    obj->ValidateHeap();
 #endif // FEATURE_REDHAWK
 }
 

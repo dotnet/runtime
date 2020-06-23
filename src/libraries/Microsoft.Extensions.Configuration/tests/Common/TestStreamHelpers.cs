@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.Configuration.Test
             {
                 get
                 {
-                    throw new NotImplementedException();
+                    return 0;
                 }
             }
 
@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.Configuration.Test
             {
                 get
                 {
-                    throw new NotImplementedException();
+                    return null;
                 }
             }
 
@@ -72,7 +72,7 @@ namespace Microsoft.Extensions.Configuration.Test
             {
                 get
                 {
-                    throw new NotImplementedException();
+                    return null;
                 }
             }
 

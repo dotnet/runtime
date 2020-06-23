@@ -83,16 +83,8 @@ mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle);
 #include <zircon/syscalls.h>
 #endif
 
-#if defined(HOST_ANDROID) && !defined(TARGET_ARM64) && !defined(TARGET_AMD64)
-#define USE_TKILL_ON_ANDROID 1
-#endif
-
 #ifdef HOST_ANDROID
 #include <errno.h>
-
-#ifdef USE_TKILL_ON_ANDROID
-extern int tkill (pid_t tid, int signal);
-#endif
 #endif
 
 #include "icall-decl.h"
@@ -813,6 +805,15 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 			break;
 #ifdef SCHED_BATCH
 		case SCHED_BATCH:
+#endif
+#ifdef SCHED_IA
+		case SCHED_IA:
+#endif
+#ifdef SCHED_FSS
+		case SCHED_FSS:
+#endif
+#ifdef SCHED_FX
+		case SCHED_FX:
 #endif
 		case SCHED_OTHER:
 			param.sched_priority = 0;
@@ -1716,6 +1717,11 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThreadObjectHandle thread
 	gboolean res;
 	MonoThread *this_obj = MONO_HANDLE_RAW (thread_handle);
 	MonoObject *start = MONO_HANDLE_RAW (start_handle);
+
+#ifdef DISABLE_THREADS
+	mono_error_set_platform_not_supported (error, "Cannot start threads on this runtime.");
+	return FALSE;
+#endif
 
 	THREAD_DEBUG (g_message("%s: Trying to start a new thread: this (%p) start (%p)", __func__, this_obj, start));
 
@@ -6746,12 +6752,12 @@ ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_h
 	MonoThread *internal = MONO_HANDLE_RAW (thread_handle);
 	gboolean res;
 
-	THREAD_DEBUG (g_message("%s: Trying to start a new thread: this (%p)", __func__, internal));
-
 #ifdef DISABLE_THREADS
-	mono_error_set_not_supported (error, NULL);
+	mono_error_set_platform_not_supported (error, "Cannot start threads on this runtime.");
 	return;
 #endif
+
+	THREAD_DEBUG (g_message("%s: Trying to start a new thread: this (%p)", __func__, internal));
 
 	LOCK_THREAD (internal);
 

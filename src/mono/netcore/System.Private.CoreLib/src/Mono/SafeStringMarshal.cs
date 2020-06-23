@@ -16,7 +16,7 @@ namespace Mono
 {
     internal struct SafeStringMarshal : IDisposable
     {
-        private readonly string str;
+        private readonly string? str;
         private IntPtr marshaled_string;
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -30,7 +30,7 @@ namespace Mono
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void GFree(IntPtr ptr);
 
-        public SafeStringMarshal(string str)
+        public SafeStringMarshal(string? str)
         {
             this.str = str;
             this.marshaled_string = IntPtr.Zero;

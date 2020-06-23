@@ -15,9 +15,9 @@ namespace System
     {
         internal readonly struct DispatchState
         {
-            public readonly MonoStackFrame[] StackFrames;
+            public readonly MonoStackFrame[]? StackFrames;
 
-            public DispatchState(MonoStackFrame[] stackFrames)
+            public DispatchState(MonoStackFrame[]? stackFrames)
             {
                 StackFrames = stackFrames;
             }
@@ -25,20 +25,20 @@ namespace System
 
         #region Keep in sync with MonoException in object-internals.h
         private string? _unused1;
-        internal string _message;
-        private IDictionary _data;
-        private Exception _innerException;
-        private string _helpURL;
-        private object _traceIPs;
+        internal string? _message;
+        private IDictionary? _data;
+        private Exception? _innerException;
+        private string? _helpURL;
+        private object? _traceIPs;
         private string? _stackTraceString;
         private string? _remoteStackTraceString;
         private int _unused4;
-        private object _dynamicMethods; // Dynamic methods referenced by the stack trace
+        private object? _dynamicMethods; // Dynamic methods referenced by the stack trace
         private int _HResult;
-        private string _source;
+        private string? _source;
         private object? _unused6;
-        internal MonoStackFrame[] foreignExceptionsFrames;
-        private IntPtr[] native_trace_ips;
+        internal MonoStackFrame[]? foreignExceptionsFrames;
+        private IntPtr[]? native_trace_ips;
         private int caught_in_unmanaged;
         #endregion
 
@@ -71,7 +71,7 @@ namespace System
 
         internal DispatchState CaptureDispatchState()
         {
-            MonoStackFrame[] stackFrames;
+            MonoStackFrame[]? stackFrames;
 
             if (_traceIPs != null)
             {
@@ -126,10 +126,10 @@ namespace System
             if (st.FrameCount > 0)
             {
                 StackFrame sf = st.GetFrame(0)!;
-                MethodBase method = sf.GetMethod();
+                MethodBase? method = sf.GetMethod();
 
-                Module module = method.Module;
-                RuntimeModule rtModule = module as RuntimeModule;
+                Module? module = method?.Module;
+                RuntimeModule? rtModule = module as RuntimeModule;
 
                 if (rtModule == null)
                 {

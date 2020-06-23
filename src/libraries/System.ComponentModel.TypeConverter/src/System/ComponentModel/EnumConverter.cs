@@ -16,8 +16,6 @@ namespace System.ComponentModel
     /// </summary>
     public class EnumConverter : TypeConverter
     {
-        private static readonly char[] s_separators = { ',' };
-
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.EnumConverter'/> class for the given
         /// type.
@@ -83,7 +81,7 @@ namespace System.ComponentModel
                     {
                         bool isUnderlyingTypeUInt64 = Enum.GetUnderlyingType(EnumType) == typeof(ulong);
                         long convertedValue = 0;
-                        string[] values = strValue.Split(s_separators);
+                        string[] values = strValue.Split(',');
                         foreach (string v in values)
                         {
                             convertedValue |= GetEnumValue(isUnderlyingTypeUInt64, (Enum)Enum.Parse(EnumType, v, true), culture);

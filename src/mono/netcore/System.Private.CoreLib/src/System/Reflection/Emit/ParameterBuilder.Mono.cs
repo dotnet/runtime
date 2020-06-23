@@ -31,7 +31,6 @@
 // (C) 2001 Ximian, Inc.  http://www.ximian.com
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
 using System.Runtime.InteropServices;
 
@@ -42,16 +41,16 @@ namespace System.Reflection.Emit
     {
 #pragma warning disable 169, 414
         private MethodBase methodb; /* MethodBuilder, ConstructorBuilder or DynamicMethod */
-        private string name;
-        private CustomAttributeBuilder[] cattrs;
-        private UnmanagedMarshal marshal_info;
+        private string? name;
+        private CustomAttributeBuilder[]? cattrs;
+        private UnmanagedMarshal? marshal_info;
         private ParameterAttributes attrs;
         private int position;
         private int table_idx;
-        private object def_value;
+        private object? def_value;
 #pragma warning restore 169, 414
 
-        internal ParameterBuilder(MethodBase mb, int pos, ParameterAttributes attributes, string strParamName)
+        internal ParameterBuilder(MethodBase mb, int pos, ParameterAttributes attributes, string? strParamName)
         {
             name = strParamName;
             position = pos;
@@ -79,7 +78,7 @@ namespace System.Reflection.Emit
         {
             get { return ((int)attrs & (int)ParameterAttributes.Optional) != 0; }
         }
-        public virtual string Name
+        public virtual string? Name
         {
             get { return name; }
         }
@@ -93,7 +92,7 @@ namespace System.Reflection.Emit
             return new ParameterToken(0x08 | table_idx);
         }
 
-        public virtual void SetConstant(object defaultValue)
+        public virtual void SetConstant(object? defaultValue)
         {
             if (position > 0)
             {
@@ -107,7 +106,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            string attrname = customBuilder.Ctor.ReflectedType.FullName;
+            string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.InAttribute")
             {
                 attrs |= ParameterAttributes.In;

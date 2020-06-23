@@ -124,7 +124,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void Ctor_ThrownException_GetFramesReturnsExpected(bool fNeedFileInfo)
+        public void Ctor_Bool_ThrownException_GetFramesReturnsExpected(bool fNeedFileInfo)
         {
             var stackTrace = new StackTrace(InvokeException(), fNeedFileInfo);
             VerifyFrames(stackTrace, fNeedFileInfo);
@@ -313,7 +313,9 @@ namespace System.Diagnostics.Tests
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace Generic<T, U>() => new StackTrace();
 
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace InvokeIgnoredMethod() => Ignored.Method();
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace InvokeIgnoredMethodWithException() => Ignored.MethodWithException();
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
@@ -335,6 +337,8 @@ namespace System.Diagnostics.Tests
         private class ClassWithConstructor
         {
             public StackTrace StackTrace { get; }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public ClassWithConstructor() => StackTrace = new StackTrace();
         }
 

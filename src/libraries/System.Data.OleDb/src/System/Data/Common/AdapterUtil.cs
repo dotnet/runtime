@@ -1018,7 +1018,7 @@ namespace System.Data.Common
             {
                 if (specialCharacters.IndexOf(currentChar) >= 0)
                 {
-                    escapedString.Append("\\");
+                    escapedString.Append('\\');
                 }
                 escapedString.Append(currentChar);
             }

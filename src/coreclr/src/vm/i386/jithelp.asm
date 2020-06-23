@@ -453,16 +453,6 @@ ret
 _JIT_WriteBarrierGroup_End@0 ENDP
 
 ;*********************************************************************/
-; In cases where we support it we have an optimized GC Poll callback.  Normall (when we're not trying to
-; suspend for GC, the CORINFO_HELP_POLL_GC helper points to this nop routine.  When we're ready to suspend
-; for GC, we whack the Jit Helper table entry to point to the real helper.  When we're done with GC we
-; whack it back.
-PUBLIC @JIT_PollGC_Nop@0
-@JIT_PollGC_Nop@0 PROC
-ret
-@JIT_PollGC_Nop@0 ENDP
-
-;*********************************************************************/
 ;llshl - long shift left
 ;
 ;Purpose:

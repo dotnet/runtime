@@ -427,7 +427,7 @@ const WCHAR* JitInstance::getOption(const WCHAR* key, LightWeightMap<DWORD, DWOR
 void* JitInstance::allocateArray(size_t cBytes)
 {
     mc->cr->AddCall("allocateArray");
-    return new BYTE[cBytes];
+    return mc->cr->allocateMemory(cBytes);
 }
 
 // Used to allocate memory that needs to live as long as the jit
@@ -444,7 +444,7 @@ void* JitInstance::allocateLongLivedArray(size_t cBytes)
 void JitInstance::freeArray(void* array)
 {
     mc->cr->AddCall("freeArray");
-    delete [] (BYTE*)array;
+    // We don't bother freeing this until the mc->cr itself gets freed.
 }
 
 // Used to free memory allocated by JitInstance::allocateLongLivedArray.

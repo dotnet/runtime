@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using Xunit;
 
@@ -56,6 +57,9 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.Ordinal, true };
             yield return new object[] { s_invariantCompare, "o\u0000\u0308", "o", CompareOptions.None, true };
 
+            // Weightless comparisons
+            yield return new object[] { s_invariantCompare, "", "\u200d", CompareOptions.None, true };
+
             // Surrogates
             yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800\uDC00", CompareOptions.None, true };
             yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800\uDC00", CompareOptions.IgnoreCase, true };
@@ -71,15 +75,16 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.None, false };
 
             // Platform differences
-            yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
-            yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, PlatformDetection.IsWindows ? true : false };
-            yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
-            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
-            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.IgnoreCase, PlatformDetection.IsWindows ? true : false };
+            bool useNls = PlatformDetection.IsNlsGlobalization;
+            yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, useNls ? true : false };
+            yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, useNls ? true : false };
+            yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, useNls ? true : false };
+            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.None, useNls ? true : false };
+            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.IgnoreCase, useNls ? true : false };
 
             // ICU bugs
             // UInt16 overflow: https://unicode-org.atlassian.net/browse/ICU-20832 fixed in https://github.com/unicode-org/icu/pull/840 (ICU 65)
-            if (PlatformDetection.IsWindows || PlatformDetection.ICUVersion.Major >= 65)
+            if (useNls || PlatformDetection.ICUVersion.Major >= 65)
             {
                 yield return new object[] { s_frenchCompare, "b", new string('a', UInt16.MaxValue + 1), CompareOptions.None, false };
             }
@@ -101,12 +106,22 @@ namespace System.Globalization.Tests
                 Assert.Equal(expected, source.StartsWith(value, stringComparison));
                 Assert.Equal(expected, source.AsSpan().StartsWith(value.AsSpan(), stringComparison));
             }
+
+            // Now test the span version - use BoundedMemory to detect buffer overruns
+
+            using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(source);
+            sourceBoundedMemory.MakeReadonly();
+
+            using BoundedMemory<char> valueBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(value);
+            valueBoundedMemory.MakeReadonly();
+
+            Assert.Equal(expected, compareInfo.IsPrefix(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
         }
 
         [Fact]
         public void IsPrefix_UnassignedUnicode()
         {
-            bool result = PlatformDetection.IsWindows ? true : false;
+            bool result = PlatformDetection.IsNlsGlobalization ? true : false;
             IsPrefix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.None, result);
             IsPrefix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.IgnoreNonSpace, result);
         }

@@ -13,9 +13,9 @@ namespace System
 {
     public partial class Environment
     {
-        private static Dictionary<string, string> s_environment;
+        private static Dictionary<string, string>? s_environment;
 
-        private static string GetEnvironmentVariableCore(string variable)
+        private static string? GetEnvironmentVariableCore(string variable)
         {
             Debug.Assert(variable != null);
 
@@ -27,7 +27,7 @@ namespace System
             variable = TrimStringOnFirstZero(variable);
             lock (s_environment)
             {
-                s_environment.TryGetValue(variable, out string value);
+                s_environment.TryGetValue(variable, out string? value);
                 return value;
             }
         }
@@ -45,7 +45,7 @@ namespace System
             Debug.Assert(variable != null);
 
             EnsureEnvironmentCached();
-            lock (s_environment)
+            lock (s_environment!)
             {
                 variable = TrimStringOnFirstZero(variable);
                 value = value == null ? null : TrimStringOnFirstZero(value);
@@ -65,7 +65,7 @@ namespace System
             var results = new Hashtable();
 
             EnsureEnvironmentCached();
-            lock (s_environment)
+            lock (s_environment!)
             {
                 foreach (var keyValuePair in s_environment)
                 {

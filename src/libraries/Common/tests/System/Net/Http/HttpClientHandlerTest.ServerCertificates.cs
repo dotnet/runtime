@@ -409,9 +409,8 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33558")]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void HttpClientUsesSslCertEnvironmentVariables()
         {
             // We set SSL_CERT_DIR and SSL_CERT_FILE to empty locations.

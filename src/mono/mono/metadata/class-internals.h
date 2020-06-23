@@ -47,13 +47,6 @@ typedef enum {
 } MonoWrapperType;
 
 typedef enum {
-	MONO_TYPE_NAME_FORMAT_IL,
-	MONO_TYPE_NAME_FORMAT_REFLECTION,
-	MONO_TYPE_NAME_FORMAT_FULL_NAME,
-	MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED
-} MonoTypeNameFormat;
-
-typedef enum {
 	MONO_REMOTING_TARGET_UNKNOWN,
 	MONO_REMOTING_TARGET_APPDOMAIN,
 	MONO_REMOTING_TARGET_COMINTEROP
@@ -836,9 +829,6 @@ gpointer
 mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, gboolean check_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
 
 gpointer
-mono_runtime_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper, MonoError *error);
-
-gpointer
 mono_runtime_create_delegate_trampoline (MonoClass *klass);
 
 void
@@ -983,6 +973,10 @@ typedef struct {
 	MonoClass *critical_finalizer_object; /* MAYBE NULL */
 	MonoClass *generic_ireadonlylist_class;
 	MonoClass *generic_ienumerator_class;
+#ifdef ENABLE_NETCORE
+	MonoClass *alc_class;
+	MonoClass *appcontext_class;
+#endif
 #ifndef ENABLE_NETCORE
 	MonoMethod *threadpool_perform_wait_callback_method;
 #endif
@@ -1149,9 +1143,6 @@ mono_class_get_exception_for_failure (MonoClass *klass);
 
 char*
 mono_identifier_escape_type_name_chars (const char* identifier);
-
-char*
-mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format);
 
 char*
 mono_type_get_full_name (MonoClass *klass);

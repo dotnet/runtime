@@ -1,6 +1,6 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27213.1
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29923.206
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.Tests", "tests\System.Globalization.Tests.csproj", "{484C92C6-6D2C-45BC-A5E2-4A12BA228E1E}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -25,6 +25,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E89
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.Nls.Tests", "tests\NlsTests\System.Globalization.Nls.Tests.csproj", "{6B71E284-DA57-4657-9E08-A02BAFB877CC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2395E8CA-73CB-40DF-BE40-A60BC189B737} = {2395E8CA-73CB-40DF-BE40-A60BC189B737}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{443745F1-A200-432B-A666-3D0E9F938DED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtilities.Unicode", "..\Common\tests\TestUtilities.Unicode\TestUtilities.Unicode.csproj", "{E5ECA266-C7E9-4597-8FFA-095BD6890407}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +56,18 @@ Global
 		{E1E58C98-808F-4065-9C1D-E6411166AF6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E1E58C98-808F-4065-9C1D-E6411166AF6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E1E58C98-808F-4065-9C1D-E6411166AF6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B71E284-DA57-4657-9E08-A02BAFB877CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B71E284-DA57-4657-9E08-A02BAFB877CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B71E284-DA57-4657-9E08-A02BAFB877CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B71E284-DA57-4657-9E08-A02BAFB877CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{443745F1-A200-432B-A666-3D0E9F938DED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{443745F1-A200-432B-A666-3D0E9F938DED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{443745F1-A200-432B-A666-3D0E9F938DED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{443745F1-A200-432B-A666-3D0E9F938DED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E5ECA266-C7E9-4597-8FFA-095BD6890407}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E5ECA266-C7E9-4597-8FFA-095BD6890407}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E5ECA266-C7E9-4597-8FFA-095BD6890407}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E5ECA266-C7E9-4597-8FFA-095BD6890407}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -56,6 +77,9 @@ Global
 		{9A8926D9-1D4C-4069-8965-A626F6CA8C29} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{2395E8CA-73CB-40DF-BE40-A60BC189B737} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{E1E58C98-808F-4065-9C1D-E6411166AF6F} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+		{6B71E284-DA57-4657-9E08-A02BAFB877CC} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{443745F1-A200-432B-A666-3D0E9F938DED} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{E5ECA266-C7E9-4597-8FFA-095BD6890407} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F9EC6162-389C-4439-9EB6-B357237A1812}

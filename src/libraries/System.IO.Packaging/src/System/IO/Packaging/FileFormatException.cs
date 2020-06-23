@@ -33,7 +33,7 @@ namespace System.IO
         /// This constructor initializes the Message property of the new instance with a specified error message.
         /// </summary>
         /// <param name="message">The message that describes the error.</param>
-        public FileFormatException(string message)
+        public FileFormatException(string? message)
             : base(message)
         { }
 
@@ -44,7 +44,7 @@ namespace System.IO
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
-        public FileFormatException(string message, Exception innerException)
+        public FileFormatException(string? message, Exception? innerException)
             : base(message, innerException)
         { }
 
@@ -56,7 +56,7 @@ namespace System.IO
         /// The SourceUri property is initialized using the sourceUri parameter.
         /// </summary>
         /// <param name="sourceUri">The Uri of a file that caused this error.</param>
-        public FileFormatException(Uri sourceUri)
+        public FileFormatException(Uri? sourceUri)
             : base(
                 sourceUri == null
                 ? SR.FileFormatException
@@ -74,7 +74,7 @@ namespace System.IO
         /// </summary>
         /// <param name="sourceUri">The Uri of a file that caused this error.</param>
         /// <param name="message">The message that describes the error.</param>
-        public FileFormatException(Uri sourceUri, string message)
+        public FileFormatException(Uri? sourceUri, string? message)
             : base(message)
         {
             _sourceUri = sourceUri;
@@ -90,7 +90,7 @@ namespace System.IO
         /// </summary>
         /// <param name="sourceUri">The Uri of a file that caused this error.</param>
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
-        public FileFormatException(Uri sourceUri, Exception innerException)
+        public FileFormatException(Uri? sourceUri, Exception? innerException)
             : base(
                 sourceUri == null
                 ? SR.FileFormatException
@@ -111,7 +111,7 @@ namespace System.IO
         /// <param name="sourceUri">The Uri of a file that caused this error.</param>
         /// <param name="message">The message that describes the error.</param>
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
-        public FileFormatException(Uri sourceUri, string message, Exception innerException)
+        public FileFormatException(Uri? sourceUri, string? message, Exception? innerException)
             : base(message, innerException)
         {
             _sourceUri = sourceUri;
@@ -120,7 +120,7 @@ namespace System.IO
 #if FEATURE_SERIALIZATION
         protected FileFormatException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            string sourceUriString = info.GetString("SourceUri");
+            string? sourceUriString = info.GetString("SourceUri");
             if (sourceUriString != null)
                 _sourceUri = new Uri(sourceUriString, UriKind.RelativeOrAbsolute);
         }
@@ -146,7 +146,7 @@ namespace System.IO
         ///     Critical : Calls critical Demand for path discovery
         ///     Safe     : Path which could be leaked by an exception is already known to caller since it is supplied by the caller
         /// </SecurityNote>
-        public Uri SourceUri
+        public Uri? SourceUri
         {
             get
             {
@@ -154,6 +154,6 @@ namespace System.IO
             }
         }
 
-        private readonly Uri _sourceUri;
+        private readonly Uri? _sourceUri;
     }
 }

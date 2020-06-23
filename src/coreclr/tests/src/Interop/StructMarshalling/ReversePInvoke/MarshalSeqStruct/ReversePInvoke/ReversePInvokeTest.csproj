@@ -11,5 +11,4 @@
   <ItemGroup>
     <ProjectReference Include="..\CMakeLists.txt" />
   </ItemGroup>
-  <Import Project="../../../../Interop.settings.targets" />
 </Project>

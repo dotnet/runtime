@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class File_ReadWriteAllTextAsync : FileSystemTest
     {
         #region Utilities
@@ -35,7 +36,7 @@ namespace System.IO.Tests
         public Task NonExistentPathAsync() => Assert.ThrowsAsync<DirectoryNotFoundException>(
             async () => await WriteAsync(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), "Text"));
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task NullContent_CreatesFileAsync()
         {
             string path = GetTestFilePath();
@@ -146,6 +147,7 @@ namespace System.IO.Tests
         #endregion
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class File_ReadWriteAllText_EncodedAsync : File_ReadWriteAllTextAsync
     {
         protected override Task WriteAsync(string path, string content) =>

@@ -6,9 +6,9 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -404,14 +404,13 @@ namespace Internal.Cryptography.Pal
                         //
                         // Since Apple only reliably exports keys with encrypted PKCS#8 there's not a
                         // "so export it plaintext and only encrypt it once" option.
-                        using (AsnWriter writer = KeyFormatHelper.ReencryptPkcs8(
+                        AsnWriter writer = KeyFormatHelper.ReencryptPkcs8(
                             password,
                             manager.Memory,
                             password,
-                            UnixExportProvider.s_windowsPbe))
-                        {
-                            return writer.Encode();
-                        }
+                            UnixExportProvider.s_windowsPbe);
+
+                        return writer.Encode();
                     }
                 }
             }

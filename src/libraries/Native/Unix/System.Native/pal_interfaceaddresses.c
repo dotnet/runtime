@@ -20,6 +20,9 @@
 #if HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
 #endif
+#if HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
 #if HAVE_ETHTOOL_H
 #include <linux/ethtool.h>
 #include <linux/sockios.h>
@@ -28,11 +31,11 @@
 
 #if defined(AF_PACKET)
 #include <sys/ioctl.h>
-#if defined(_WASM_)
+#if HAVE_NETPACKET_PACKET_H
 #include <netpacket/packet.h>
-#else // _WASM_
+#else
 #include <linux/if_packet.h>
-#endif // _WASM_
+#endif
 #elif defined(AF_LINK)
 #include <net/if_dl.h>
 #include <net/if_types.h>
@@ -431,7 +434,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
 #endif
 }
 
-#if HAVE_RT_MSGHDR
+#if HAVE_RT_MSGHDR && defined(CTL_NET)
 int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound)
 {
     static struct in6_addr anyaddr = IN6ADDR_ANY_INIT;

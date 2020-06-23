@@ -25,6 +25,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hostin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hosting.Functional.Tests", "tests\FunctionalTests\Microsoft.Extensions.Hosting.Functional.Tests.csproj", "{49ED668A-7FCB-455B-B3B4-26C004172531}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{602F282E-2829-4C7D-B960-A8D31F326E9F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{49ED668A-7FCB-455B-B3B4-26C004172531}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{49ED668A-7FCB-455B-B3B4-26C004172531}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{49ED668A-7FCB-455B-B3B4-26C004172531}.Release|Any CPU.Build.0 = Release|Any CPU
+		{602F282E-2829-4C7D-B960-A8D31F326E9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{602F282E-2829-4C7D-B960-A8D31F326E9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{602F282E-2829-4C7D-B960-A8D31F326E9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{602F282E-2829-4C7D-B960-A8D31F326E9F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -64,6 +70,7 @@ Global
 		{FE4AAEDA-1D08-4C9A-B61C-8A7156000E43} = {635786A7-1A3B-46BB-9367-DE57F7032900}
 		{4E52FAB8-83A4-4F81-AFED-072BF13D0F46} = {FE4AAEDA-1D08-4C9A-B61C-8A7156000E43}
 		{49ED668A-7FCB-455B-B3B4-26C004172531} = {EB3CB906-BAB0-4A90-BE2F-BBFE47B036C3}
+		{602F282E-2829-4C7D-B960-A8D31F326E9F} = {635786A7-1A3B-46BB-9367-DE57F7032900}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {137EEE14-A353-4DA8-98CB-214FD8EBAF33}

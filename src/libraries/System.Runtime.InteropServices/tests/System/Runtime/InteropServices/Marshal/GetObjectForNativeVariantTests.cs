@@ -297,7 +297,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        public static IEnumerable<object[]> GetObjectForNativeVariant_CantMap_ThrowsArgumentException()
+        public static IEnumerable<object[]> GetObjectForNativeVariant_CantMap_ThrowsArgumentException_Data()
         {
             yield return new object[] { CreateVariant(VT_VARIANT, new UnionTypes()) };
             yield return new object[] { CreateVariant(15, new UnionTypes()) };
@@ -331,7 +331,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetObjectForNativeVariant_CantMap_ThrowsArgumentException))]
+        [MemberData(nameof(GetObjectForNativeVariant_CantMap_ThrowsArgumentException_Data))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_CantMap_ThrowsArgumentException(Variant variant)
         {
@@ -339,7 +339,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetObjectForNativeVariant_CantMap_ThrowsArgumentException))]
+        [MemberData(nameof(GetObjectForNativeVariant_CantMap_ThrowsArgumentException_Data))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_CantMapByRef_ThrowsArgumentException(Variant variant)
         {

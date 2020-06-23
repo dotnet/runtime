@@ -1,4 +1,4 @@
-<Project>
+<Project DefaultTargets="Build">
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(InstallerTasksAssemblyPath)" />

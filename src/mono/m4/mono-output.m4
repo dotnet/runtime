@@ -9,10 +9,11 @@ AC_DEFUN([AC_MONO_OUTPUT], [
 		Makefile
 		llvm/Makefile
 		mono/Makefile
-		mono/btls/Makefile
 		mono/utils/Makefile
 		mono/metadata/Makefile
 		mono/zlib/Makefile
+		mono/eventpipe/Makefile
+		mono/eventpipe/test/Makefile
 		mono/arch/Makefile
 		mono/arch/x86/Makefile
 		mono/arch/amd64/Makefile

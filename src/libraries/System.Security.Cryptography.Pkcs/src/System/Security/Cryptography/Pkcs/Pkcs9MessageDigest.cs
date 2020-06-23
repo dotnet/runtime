@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography.Asn1;
+using System.Formats.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
@@ -23,11 +21,9 @@ namespace System.Security.Cryptography.Pkcs
 
         internal Pkcs9MessageDigest(ReadOnlySpan<byte> signatureDigest)
         {
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.WriteOctetString(signatureDigest);
-                RawData = writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteOctetString(signatureDigest);
+            RawData = writer.Encode();
         }
 
         //

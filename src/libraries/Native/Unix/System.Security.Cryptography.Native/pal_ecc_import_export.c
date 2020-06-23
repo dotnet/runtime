@@ -56,21 +56,12 @@ int32_t CryptoNative_GetECKeyParameters(
     const BIGNUM** qy, int32_t* cbQy,
     const BIGNUM** d, int32_t* cbD)
 {
-    // Verify the out parameters. Note out parameters used to minimize pinvoke calls.
-    if (!key ||
-        !qx || !cbQx ||
-        !qy || !cbQy ||
-        (includePrivate && (!d  || !cbD)))
-    {
-        assert(false);
-
-        // Since these parameters are 'out' parameters in managed code, ensure they are initialized
-        if (qx) *qx = NULL; if (cbQx) *cbQx = 0;
-        if (qy) *qy = NULL; if (cbQy) *cbQy = 0;
-        if (d)  *d  = NULL; if (cbD) *cbD = 0;
-
-        return 0;
-    }
+    assert(qx != NULL);
+    assert(cbQx != NULL);
+    assert(qy != NULL);
+    assert(cbQy != NULL);
+    assert(d != NULL);
+    assert(cbD != NULL);
 
     // Get the public key and curve
     int rc = 0;
@@ -80,7 +71,7 @@ int32_t CryptoNative_GetECKeyParameters(
     ECCurveType curveType = EcKeyGetCurveType(key);
     const EC_POINT* Q = EC_KEY_get0_public_key(key);
     const EC_GROUP* group = EC_KEY_get0_group(key);
-    if (curveType == Unspecified || !Q || !group) 
+    if (curveType == Unspecified || !Q || !group)
         goto error;
 
     // Extract qx and qy
@@ -92,13 +83,13 @@ int32_t CryptoNative_GetECKeyParameters(
 #if HAVE_OPENSSL_EC2M
     if (API_EXISTS(EC_POINT_get_affine_coordinates_GF2m) && (curveType == Characteristic2))
     {
-        if (!EC_POINT_get_affine_coordinates_GF2m(group, Q, xBn, yBn, NULL)) 
+        if (!EC_POINT_get_affine_coordinates_GF2m(group, Q, xBn, yBn, NULL))
             goto error;
     }
     else
 #endif
     {
-        if (!EC_POINT_get_affine_coordinates_GFp(group, Q, xBn, yBn, NULL)) 
+        if (!EC_POINT_get_affine_coordinates_GFp(group, Q, xBn, yBn, NULL))
             goto error;
     }
 
@@ -158,33 +149,25 @@ int32_t CryptoNative_GetECCurveParameters(
     const BIGNUM** cofactor, int32_t* cbCofactor,
     const BIGNUM** seed, int32_t* cbSeed)
 {
+    assert(p != NULL);
+    assert(cbP != NULL);
+    assert(a != NULL);
+    assert(cbA != NULL);
+    assert(b != NULL);
+    assert(cbB != NULL);
+    assert(gx != NULL);
+    assert(cbGx != NULL);
+    assert(gy != NULL);
+    assert(cbGy != NULL);
+    assert(order != NULL);
+    assert(cbOrder != NULL);
+    assert(cofactor != NULL);
+    assert(cbCofactor != NULL);
+    assert(seed != NULL);
+    assert(cbSeed != NULL);
+
     // Get the public key parameters first in case any of its 'out' parameters are not initialized
     int32_t rc = CryptoNative_GetECKeyParameters(key, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
-
-    // Verify the out parameters. Note out parameters used to minimize pinvoke calls.
-    if (!p || !cbP ||
-        !a || !cbA ||
-        !b || !cbB ||
-        !gx || !cbGx ||
-        !gy || !cbGy ||
-        !order || !cbOrder ||
-        !cofactor || !cbCofactor ||
-        !seed || !cbSeed)
-    {
-        assert(false);
-
-        // Since these parameters are 'out' parameters in managed code, ensure they are initialized
-        if (p) *p = NULL; if (cbP) *cbP = 0;
-        if (a) *a = NULL; if (cbA) *cbA = 0;
-        if (b) *b = NULL; if (cbB) *cbB = 0;
-        if (gx) *gx = NULL; if (cbGx) *cbGx = 0;
-        if (gy) *gy = NULL; if (cbGy) *cbGy = 0;
-        if (order) *order = NULL; if (cbOrder) *cbOrder = 0;
-        if (cofactor) *cofactor = NULL; if (cbCofactor) *cbCofactor = 0;
-        if (seed) *seed = NULL; if (cbSeed) *cbSeed = 0;
-
-        return 0;
-    }
 
     const EC_GROUP* group = NULL;
     const EC_POINT* G = NULL;
@@ -199,7 +182,7 @@ int32_t CryptoNative_GetECCurveParameters(
     BIGNUM* seedBn = NULL;
 
     // Exit if CryptoNative_GetECKeyParameters failed
-    if (rc != 1) 
+    if (rc != 1)
         goto error;
 
     xBn = BN_new();
@@ -214,15 +197,15 @@ int32_t CryptoNative_GetECCurveParameters(
         goto error;
 
     group = EC_KEY_get0_group(key); // curve
-    if (!group) 
+    if (!group)
         goto error;
 
     curveMethod = EC_GROUP_method_of(group);
-    if (!curveMethod) 
+    if (!curveMethod)
         goto error;
 
     *curveType = MethodToCurveType(curveMethod);
-    if (*curveType == Unspecified) 
+    if (*curveType == Unspecified)
         goto error;
 
     // Extract p, a, b
@@ -230,7 +213,7 @@ int32_t CryptoNative_GetECCurveParameters(
     if (API_EXISTS(EC_GROUP_get_curve_GF2m) && (*curveType == Characteristic2))
     {
         // pBn represents the binary polynomial
-        if (!EC_GROUP_get_curve_GF2m(group, pBn, aBn, bBn, NULL)) 
+        if (!EC_GROUP_get_curve_GF2m(group, pBn, aBn, bBn, NULL))
             goto error;
     }
     else
@@ -246,13 +229,13 @@ int32_t CryptoNative_GetECCurveParameters(
 #if HAVE_OPENSSL_EC2M
     if (API_EXISTS(EC_POINT_get_affine_coordinates_GF2m) && (*curveType == Characteristic2))
     {
-        if (!EC_POINT_get_affine_coordinates_GF2m(group, G, xBn, yBn, NULL)) 
+        if (!EC_POINT_get_affine_coordinates_GF2m(group, G, xBn, yBn, NULL))
             goto error;
     }
     else
 #endif
     {
-        if (!EC_POINT_get_affine_coordinates_GFp(group, G, xBn, yBn, NULL)) 
+        if (!EC_POINT_get_affine_coordinates_GFp(group, G, xBn, yBn, NULL))
             goto error;
     }
 
@@ -267,9 +250,9 @@ int32_t CryptoNative_GetECCurveParameters(
     // Extract seed (optional)
     if (EC_GROUP_get0_seed(group))
     {
-        seedBn = BN_bin2bn(EC_GROUP_get0_seed(group), 
+        seedBn = BN_bin2bn(EC_GROUP_get0_seed(group),
             (int)EC_GROUP_get_seed_len(group), NULL);
-        
+
         *seed = seedBn;
         *cbSeed = BN_num_bytes(seedBn);
 
@@ -345,6 +328,7 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
     BIGNUM* dBn = NULL;
     BIGNUM* qxBn = NULL;
     BIGNUM* qyBn = NULL;
+    EC_POINT* pubG = NULL;
 
     // If key values specified, use them, otherwise a key will be generated later
     if (qx && qy)
@@ -373,13 +357,47 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
             goto error;
     }
 
+    // If we don't have the public key but we have the private key, we can
+    // re-derive the public key from d.
+    else if (qx == NULL && qy == NULL && qxLength == 0 && qyLength == 0 &&
+             d && dLength > 0)
+    {
+        dBn = BN_bin2bn(d, dLength, NULL);
+
+        if (!dBn)
+            goto error;
+
+        if (!EC_KEY_set_private_key(*key, dBn))
+            goto error;
+
+        const EC_GROUP* group = EC_KEY_get0_group(*key);
+
+        if (!group)
+            goto error;
+
+        pubG = EC_POINT_new(group);
+
+        if (!pubG)
+            goto error;
+
+        if (!EC_POINT_mul(group, pubG, dBn, NULL, NULL, NULL))
+            goto error;
+
+        if (!EC_KEY_set_public_key(*key, pubG))
+            goto error;
+
+        if (!EC_KEY_check_key(*key))
+            goto error;
+    }
+
     // Success
     return 1;
 
 error:
     if (qxBn) BN_free(qxBn);
     if (qyBn) BN_free(qyBn);
-    if (dBn) BN_free(dBn);
+    if (dBn) BN_clear_free(dBn);
+    if (pubG) EC_POINT_free(pubG);
     if (*key)
     {
         EC_KEY_free(*key);
@@ -411,6 +429,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
 
     EC_KEY* key = NULL;
     EC_POINT* G = NULL;
+    EC_POINT* pubG = NULL;
 
     BIGNUM* qxBn = NULL;
     BIGNUM* qyBn = NULL;
@@ -439,13 +458,13 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
 #if HAVE_OPENSSL_EC2M
     if (API_EXISTS(EC_GROUP_set_curve_GF2m) && (curveType == Characteristic2))
     {
-        if (!EC_GROUP_set_curve_GF2m(group, pBn, aBn, bBn, NULL)) 
+        if (!EC_GROUP_set_curve_GF2m(group, pBn, aBn, bBn, NULL))
             goto error;
     }
     else
 #endif
     {
-        if (!EC_GROUP_set_curve_GFp(group, pBn, aBn, bBn, NULL))    
+        if (!EC_GROUP_set_curve_GFp(group, pBn, aBn, bBn, NULL))
             goto error;
     }
 
@@ -514,6 +533,33 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
         if (!EC_KEY_check_key(key))
             goto error;
     }
+    // If we don't have the public key but we have the private key, we can
+    // re-derive the public key from d.
+    else if (qx == NULL && qy == NULL && qxLength == 0 && qyLength == 0 &&
+             d && dLength > 0)
+    {
+        dBn = BN_bin2bn(d, dLength, NULL);
+
+        if (!dBn)
+            goto error;
+
+        if (!EC_KEY_set_private_key(key, dBn))
+            goto error;
+
+        pubG = EC_POINT_new(group);
+
+        if (!pubG)
+            goto error;
+
+        if (!EC_POINT_mul(group, pubG, dBn, NULL, NULL, NULL))
+            goto error;
+
+        if (!EC_KEY_set_public_key(key, pubG))
+            goto error;
+
+        if (!EC_KEY_check_key(key))
+            goto error;
+    }
 
     // Success
     return key;
@@ -521,7 +567,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
 error:
     if (qxBn) BN_free(qxBn);
     if (qyBn) BN_free(qyBn);
-    if (dBn) BN_free(dBn);
+    if (dBn) BN_clear_free(dBn);
     if (pBn) BN_free(pBn);
     if (aBn) BN_free(aBn);
     if (bBn) BN_free(bBn);
@@ -530,6 +576,7 @@ error:
     if (orderBn) BN_free(orderBn);
     if (cofactorBn) BN_free(cofactorBn);
     if (G) EC_POINT_free(G);
+    if (pubG) EC_POINT_free(pubG);
     if (group) EC_GROUP_free(group);
     if (key) EC_KEY_free(key);
     return NULL;

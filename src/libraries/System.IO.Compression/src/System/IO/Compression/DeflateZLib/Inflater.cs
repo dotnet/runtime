@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -18,8 +19,8 @@ namespace System.IO.Compression
 
         private bool _finished;                             // Whether the end of the stream has been reached
         private bool _isDisposed;                           // Prevents multiple disposals
-        private readonly int _windowBits;                            // The WindowBits parameter passed to Inflater construction
-        private ZLibNative.ZLibStreamHandle _zlibStream = null!;    // The handle to the primary underlying zlib stream, initialized by a method that is called from the constructor
+        private readonly int _windowBits;                   // The WindowBits parameter passed to Inflater construction
+        private ZLibNative.ZLibStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
         private GCHandle _inputBufferHandle;                // The handle to the buffer that provides input to _zlibStream
         private readonly long _uncompressedSize;
         private long _currentInflatedCount;
@@ -222,6 +223,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Creates the ZStream that will handle inflation.
         /// </summary>
+        [MemberNotNull(nameof(_zlibStream))]
         private void InflateInit(int windowBits)
         {
             ZLibNative.ErrorCode error;

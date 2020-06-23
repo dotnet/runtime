@@ -4244,7 +4244,14 @@ mono_llvm_emit_aot_file_info (MonoAotFileInfo *info, gboolean has_jitted_code)
 	g_assert_not_reached ();
 }
 
-void mono_llvm_emit_aot_data (const char *symbol, guint8 *data, int data_len)
+gpointer
+mono_llvm_emit_aot_data (const char *symbol, guint8 *data, int data_len)
+{
+	g_assert_not_reached ();
+}
+
+gpointer
+mono_llvm_emit_aot_data_aligned (const char *symbol, guint8 *data, int data_len, int align)
 {
 	g_assert_not_reached ();
 }
@@ -4344,6 +4351,11 @@ mini_get_cpu_features (MonoCompile* cfg)
 		features = mono_arch_get_cpu_features ();
 #endif
 	}
+#endif
+
+#if defined(TARGET_ARM64)
+	// All Arm64 devices have this set
+	features |= MONO_CPU_ARM64_BASE; 
 #endif
 
 	// apply parameters passed via -mattr

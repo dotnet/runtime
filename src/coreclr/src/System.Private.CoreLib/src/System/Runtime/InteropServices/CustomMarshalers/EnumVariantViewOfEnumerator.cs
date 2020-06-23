@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Runtime.InteropServices.ComTypes;
+using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
-    internal class EnumVariantViewOfEnumerator : IEnumVARIANT, ICustomAdapter
+    internal class EnumVariantViewOfEnumerator : ComTypes.IEnumVARIANT, ICustomAdapter
     {
         public EnumVariantViewOfEnumerator(IEnumerator enumerator)
         {
@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
 
         public IEnumerator Enumerator { get; }
 
-        public IEnumVARIANT Clone()
+        public ComTypes.IEnumVARIANT Clone()
         {
             if (Enumerator is ICloneable clonable)
             {

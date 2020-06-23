@@ -42,7 +42,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
 
-    memset(szwReturnedPath, 0, _MAX_DIR+1);
+    memset(szwReturnedPath, 0, sizeof(szwReturnedPath));
     dwRc = GetFullPathNameW(szwFileName,
         _MAX_DIR,
         szwReturnedPath,

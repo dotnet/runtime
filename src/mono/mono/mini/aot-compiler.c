@@ -68,6 +68,7 @@
 #include "mini-gc.h"
 #include "mini-llvm.h"
 #include "mini-runtime.h"
+#include "interp/interp.h"
 
 static MonoMethod*
 try_get_method_nofail (MonoClass *klass, const char *method_name, int param_count, int flags)
@@ -6865,7 +6866,10 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		flags |= MONO_AOT_METHOD_FLAG_HAS_PATCHES;
 	if (needs_ctx && ctx)
 		flags |= MONO_AOT_METHOD_FLAG_HAS_CTX;
-	encode_value (flags, p, &p);
+	/* Saved into another table so it can be accessed without having access to this data */
+	cfg->aot_method_flags = flags;
+
+	encode_int (cfg->method_index, p, &p);
 	if (flags & MONO_AOT_METHOD_FLAG_HAS_CCTOR)
 		encode_klass_ref (acfg, method->klass, p, &p);
 	if (needs_ctx && ctx)
@@ -6884,7 +6888,15 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	g_assert (p - buf < buf_size);
 
-	cfg->method_info_offset = add_to_blob (acfg, buf, p - buf);
+	if (cfg->compile_llvm) {
+		char *symbol = g_strdup_printf ("info_%s", cfg->llvm_method_name);
+		cfg->llvm_info_var = mono_llvm_emit_aot_data_aligned (symbol, buf, p - buf, 1);
+		g_free (symbol);
+		/* aot-runtime.c will use this to check whenever this is an llvm method */
+		cfg->method_info_offset = 0;
+	} else {
+		cfg->method_info_offset = add_to_blob (acfg, buf, p - buf);
+	}
 	g_free (buf);
 }
 
@@ -8111,7 +8123,10 @@ parse_cpu_features (const gchar *attr)
 		feature = (MonoCPUFeatures) (MONO_CPU_X86_FULL_SSEAVX_COMBINED & ~feature);
 	
 #elif defined(TARGET_ARM64)
-	// TODO: neon, sha1, sha2, asimd, etc...
+	if (!strcmp (attr + prefix, "base"))
+		feature = MONO_CPU_ARM64_BASE;
+	else if (!strcmp (attr + prefix, "crc"))
+		feature = MONO_CPU_ARM64_CRC;
 #elif defined(TARGET_WASM)
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;
@@ -8594,7 +8609,7 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 	if (gsharedvt_out && g_hash_table_lookup (acfg->gsharedvt_out_signatures, sig))
 		add_out = FALSE;
 
-	if (!add_in && !add_out)
+	if (!add_in && !add_out && !interp_in)
 		return;
 
 	if (mini_is_gsharedvt_variable_signature (sig))
@@ -8623,7 +8638,6 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 	if (interp_in) {
 		wrapper = mini_get_interp_in_wrapper (sig);
 		add_extra_method (acfg, wrapper);
-		//printf ("X: %s\n", mono_method_full_name (wrapper, 1));
 	}
 #endif
 }
@@ -8951,7 +8965,16 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		for (l = cfg->interp_in_signatures; l; l = l->next) {
 			MonoMethodSignature *sig = mono_metadata_signature_dup ((MonoMethodSignature*)l->data);
 
-			add_gsharedvt_wrappers (acfg, sig, TRUE, FALSE, FALSE);
+			/*
+			 * Interpreter methods in llvmonly+interp mode are called using gsharedvt_in wrappers,
+			 * since we already generate those in llvmonly mode. But methods with a large
+			 * number of arguments need special processing (see interp_create_method_pointer_llvmonly),
+			 * which only interp_in wrappers do.
+			 */
+			if (sig->param_count > MAX_INTERP_ENTRY_ARGS)
+				add_gsharedvt_wrappers (acfg, sig, FALSE, FALSE, TRUE);
+			else
+				add_gsharedvt_wrappers (acfg, sig, TRUE, FALSE, FALSE);
 		}
 	} else if (mono_aot_mode_is_full (&acfg->aot_opts) && mono_aot_mode_is_interp (&acfg->aot_opts)) {
 		/* The interpreter uses these wrappers to call aot-ed code */
@@ -10356,10 +10379,11 @@ emit_code (MonoAotCompile *acfg)
 }
 
 static void
-emit_info (MonoAotCompile *acfg)
+emit_method_info_table (MonoAotCompile *acfg)
 {
 	int oindex, i;
 	gint32 *offsets;
+	guint8 *method_flags;
 
 	offsets = g_new0 (gint32, acfg->nmethods);
 
@@ -10377,6 +10401,14 @@ emit_info (MonoAotCompile *acfg)
 	acfg->stats.offsets_size += emit_offset_table (acfg, "method_info_offsets", MONO_AOT_TABLE_METHOD_INFO_OFFSETS, acfg->nmethods, 10, offsets);
 
 	g_free (offsets);
+
+	/* Emit a separate table for method flags, its needed at runtime */
+	method_flags = g_new0 (guint8, acfg->nmethods);
+	for (i = 0; i < acfg->nmethods; ++i) {
+		if (acfg->cfgs [i])
+			method_flags [acfg->cfgs [i]->method_index] = acfg->cfgs [i]->aot_method_flags;
+	}
+	emit_aot_data (acfg, MONO_AOT_TABLE_METHOD_FLAGS_TABLE, "method_flags_table", method_flags, acfg->nmethods);
 }
 
 #endif /* #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT) */
@@ -11303,6 +11335,7 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	info->plt_got_offset_base = acfg->plt_got_offset_base;
 	info->plt_got_info_offset_base = acfg->plt_got_info_offset_base;
 	info->got_size = acfg->got_offset * sizeof (target_mgreg_t);
+	info->llvm_got_size = acfg->llvm_got_offset * sizeof (target_mgreg_t);
 	info->plt_size = acfg->plt_offset;
 	info->nmethods = acfg->nmethods;
 	info->call_table_entry_size = acfg->call_table_entry_size;
@@ -11356,15 +11389,15 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	sindex = 0;
 	symbols [sindex ++] = acfg->got_symbol;
 	if (acfg->llvm) {
-		symbols [sindex ++] = g_strdup_printf ("%s%s", acfg->user_symbol_prefix, acfg->llvm_got_symbol);
 		symbols [sindex ++] = acfg->llvm_eh_frame_symbol;
 	} else {
-		symbols [sindex ++] = NULL;
 		symbols [sindex ++] = NULL;
 	}
 	/* llvm_get_method */
 	symbols [sindex ++] = NULL;
 	/* llvm_get_unbox_tramp */
+	symbols [sindex ++] = NULL;
+	/* llvm_init_aotconst */
 	symbols [sindex ++] = NULL;
 	if (!acfg->aot_opts.llvm_only) {
 		symbols [sindex ++] = "jit_code_start";
@@ -11396,6 +11429,7 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 			symbols [sindex ++] = NULL;
 		symbols [sindex ++] = "image_table";
 		symbols [sindex ++] = "weak_field_indexes";
+		symbols [sindex ++] = "method_flags_table";
 	}
 
 	symbols [sindex ++] = "mem_end";
@@ -11460,6 +11494,7 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	emit_int32 (acfg, info->plt_got_offset_base);
 	emit_int32 (acfg, info->plt_got_info_offset_base);
 	emit_int32 (acfg, info->got_size);
+	emit_int32 (acfg, info->llvm_got_size);
 	emit_int32 (acfg, info->plt_size);
 	emit_int32 (acfg, info->nmethods);
 	emit_int32 (acfg, info->nextra_methods);
@@ -14159,7 +14194,7 @@ emit_aot_image (MonoAotCompile *acfg)
 
 	emit_code (acfg);
 
-	emit_info (acfg);
+	emit_method_info_table (acfg);
 
 	emit_extra_methods (acfg);
 

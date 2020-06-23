@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Http.Logging
                     m.EventId == LoggingScopeHttpMessageHandler.Log.EventIds.RequestHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.LogicalHandler";
             }));
-            Assert.Equal(
+            Assert.StartsWith(
 @"Request Headers:
 Authorization: *
 Cache-Control: no-cache
@@ -63,7 +63,7 @@ Cache-Control: no-cache
                     m.EventId == LoggingHttpMessageHandler.Log.EventIds.RequestHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler";
             }));
-            Assert.Equal(
+            Assert.StartsWith(
 @"Request Headers:
 Authorization: *
 Cache-Control: no-cache
@@ -75,7 +75,7 @@ Cache-Control: no-cache
                     m.EventId == LoggingHttpMessageHandler.Log.EventIds.ResponseHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler";
             }));
-            Assert.Equal(
+            Assert.StartsWith(
 @"Response Headers:
 X-Sensitive: *
 Y-Non-Sensitive: innocuous value
@@ -87,7 +87,7 @@ Y-Non-Sensitive: innocuous value
                     m.EventId == LoggingScopeHttpMessageHandler.Log.EventIds.ResponseHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.LogicalHandler";
             }));
-            Assert.Equal(
+            Assert.StartsWith(
 @"Response Headers:
 X-Sensitive: *
 Y-Non-Sensitive: innocuous value
@@ -132,7 +132,7 @@ Y-Non-Sensitive: innocuous value
                     m.EventId == LoggingScopeHttpMessageHandler.Log.EventIds.RequestHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.LogicalHandler";
             }));
-            Assert.Equal(
+            Assert.StartsWith(
 @"Request Headers:
 Authorization: *
 Cache-Control: no-cache
@@ -144,7 +144,7 @@ Cache-Control: no-cache
                     m.EventId == LoggingHttpMessageHandler.Log.EventIds.RequestHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler";
             }));
-            Assert.Equal(
+            Assert.StartsWith(
 @"Request Headers:
 Authorization: *
 Cache-Control: no-cache
@@ -156,7 +156,7 @@ Cache-Control: no-cache
                     m.EventId == LoggingHttpMessageHandler.Log.EventIds.ResponseHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler";
             }));
-            Assert.Equal(
+            Assert.StartsWith(
 @"Response Headers:
 X-Sensitive: *
 Y-Non-Sensitive: innocuous value
@@ -168,7 +168,7 @@ Y-Non-Sensitive: innocuous value
                     m.EventId == LoggingScopeHttpMessageHandler.Log.EventIds.ResponseHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.LogicalHandler";
             }));
-            Assert.Equal(
+            Assert.StartsWith(
 @"Response Headers:
 X-Sensitive: *
 Y-Non-Sensitive: innocuous value

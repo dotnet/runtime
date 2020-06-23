@@ -19,6 +19,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Xml;                           // for XmlReader/Writer
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Packaging
 {
@@ -47,16 +48,7 @@ namespace System.IO.Packaging
         /// Returns an enumerator over all the relationships for a Package or a PackagePart
         /// </summary>
         /// <returns></returns>
-        IEnumerator<PackageRelationship> IEnumerable<PackageRelationship>.GetEnumerator()
-        {
-            return _relationships.GetEnumerator();
-        }
-
-        /// <summary>
-        /// Returns an enumerator over all the relationships for a Package or a PackagePart
-        /// </summary>
-        /// <returns></returns>
-        public List<PackageRelationship>.Enumerator GetEnumerator()
+        public IEnumerator<PackageRelationship> GetEnumerator()
         {
             return _relationships.GetEnumerator();
         }
@@ -88,7 +80,7 @@ namespace System.IO.Packaging
         /// <param name="relationshipType">relationship type that uniquely defines the role of the relationship</param>
         /// <param name="id">String that conforms to the xsd:ID datatype. Unique across the source's relationships.
         /// Null OK (ID will be generated).</param>
-        internal PackageRelationship Add(Uri targetUri, TargetMode targetMode, string relationshipType, string id)
+        internal PackageRelationship Add(Uri targetUri, TargetMode targetMode, string relationshipType, string? id)
         {
             return Add(targetUri, targetMode, relationshipType, id, parsing: false);
         }
@@ -96,13 +88,8 @@ namespace System.IO.Packaging
         /// <summary>
         /// Return the relationship whose id is 'id', and null if not found.
         /// </summary>
-        internal PackageRelationship GetRelationship(string id)
-        {
-            int index = GetRelationshipIndex(id);
-            if (index == -1)
-                return null;
-            return _relationships[index];
-        }
+        internal PackageRelationship? GetRelationship(string id)
+            => _relationships.TryGetValue(id, out var result) ? result : null;
 
         /// <summary>
         /// Delete relationship with ID 'id'
@@ -110,12 +97,7 @@ namespace System.IO.Packaging
         /// <param name="id">ID of the relationship to remove</param>
         internal void Delete(string id)
         {
-            int index = GetRelationshipIndex(id);
-            if (index == -1)
-                return;
-
-            _relationships.RemoveAt(index);
-            _dirty = true;
+            _dirty |= _relationships.Remove(id);
         }
 
         /// <summary>
@@ -161,7 +143,7 @@ namespace System.IO.Packaging
         internal static void ThrowIfInvalidRelationshipType(string relationshipType)
         {
             // Look for empty string or string with just spaces
-            if (relationshipType.Trim() == string.Empty)
+            if (string.IsNullOrWhiteSpace(relationshipType))
                 throw new ArgumentException(SR.InvalidRelationshipType);
         }
 
@@ -190,7 +172,7 @@ namespace System.IO.Packaging
         /// <param name="package">package</param>
         /// <param name="part">part will be null if package is the source of the relationships</param>
         /// <remarks>Shared constructor</remarks>
-        private InternalRelationshipCollection(Package package, PackagePart part)
+        private InternalRelationshipCollection(Package package, PackagePart? part)
         {
             Debug.Assert(package != null, "package parameter passed should never be null");
 
@@ -199,7 +181,7 @@ namespace System.IO.Packaging
 
             //_sourcePart may be null representing that the relationships are at the package level
             _uri = GetRelationshipPartUri(_sourcePart);
-            _relationships = new List<PackageRelationship>(4);
+            _relationships = new OrderedDictionary<string, PackageRelationship>(4);
 
             // Load if available (not applicable to write-only mode).
             if ((package.FileOpenAccess == FileAccess.Read ||
@@ -219,7 +201,7 @@ namespace System.IO.Packaging
         /// </summary>
         /// <param name="part">may be null</param>
         /// <returns>name of relationship part for the given part</returns>
-        private static Uri GetRelationshipPartUri(PackagePart part)
+        private static Uri GetRelationshipPartUri(PackagePart? part)
         {
             Uri sourceUri;
 
@@ -294,7 +276,7 @@ namespace System.IO.Packaging
 
                                     int expectedAttributesCount = 3;
 
-                                    string targetModeAttributeValue = reader.GetAttribute(TargetModeAttributeName);
+                                    string? targetModeAttributeValue = reader.GetAttribute(TargetModeAttributeName);
                                     if (targetModeAttributeValue != null)
                                         expectedAttributesCount++;
 
@@ -330,7 +312,7 @@ namespace System.IO.Packaging
         {
             // Attribute : TargetMode
 
-            string targetModeAttributeValue = reader.GetAttribute(TargetModeAttributeName);
+            string? targetModeAttributeValue = reader.GetAttribute(TargetModeAttributeName);
 
             //If the TargetMode attribute is missing in the underlying markup then we assume it to be internal
             TargetMode relationshipTargetMode = TargetMode.Internal;
@@ -354,20 +336,20 @@ namespace System.IO.Packaging
 
             // Attribute : Target
             // create a new PackageRelationship
-            string targetAttributeValue = reader.GetAttribute(TargetAttributeName);
+            string? targetAttributeValue = reader.GetAttribute(TargetAttributeName);
             if (string.IsNullOrEmpty(targetAttributeValue))
                 throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, TargetAttributeName), null, reader.LineNumber, reader.LinePosition);
 
             Uri targetUri = new Uri(targetAttributeValue, DotNetRelativeOrAbsolute);
 
             // Attribute : Type
-            string typeAttributeValue = reader.GetAttribute(TypeAttributeName);
+            string? typeAttributeValue = reader.GetAttribute(TypeAttributeName);
             if (string.IsNullOrEmpty(typeAttributeValue))
                 throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, TypeAttributeName), null, reader.LineNumber, reader.LinePosition);
 
             // Attribute : Id
             // Get the Id attribute (required attribute).
-            string idAttributeValue = reader.GetAttribute(IdAttributeName);
+            string? idAttributeValue = reader.GetAttribute(IdAttributeName);
             if (string.IsNullOrEmpty(idAttributeValue))
                 throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, IdAttributeName), null, reader.LineNumber, reader.LinePosition);
 
@@ -402,7 +384,7 @@ namespace System.IO.Packaging
         /// Null OK (ID will be generated).</param>
         /// <param name="parsing">Indicates whether the add call is made while parsing existing relationships
         /// from a relationship part, or we are adding a new relationship</param>
-        private PackageRelationship Add(Uri targetUri, TargetMode targetMode, string relationshipType, string id, bool parsing)
+        private PackageRelationship Add(Uri targetUri, TargetMode targetMode, string relationshipType, string? id, bool parsing)
         {
             if (targetUri == null)
                 throw new ArgumentNullException(nameof(targetUri));
@@ -448,7 +430,7 @@ namespace System.IO.Packaging
 
             // create and add
             PackageRelationship relationship = new PackageRelationship(_package, _sourcePart, targetUri, targetMode, relationshipType, id);
-            _relationships.Add(relationship);
+            _relationships.Add(id, relationship);
 
             //If we are adding relationships as a part of Parsing the underlying relationship part, we should not set
             //the dirty flag to false.
@@ -534,6 +516,7 @@ namespace System.IO.Packaging
         /// </summary>
         /// <remarks>
         /// </remarks>
+        [MemberNotNull(nameof(_relationshipPart))]
         private void EnsureRelationshipPart()
         {
             if (_relationshipPart == null || _relationshipPart.IsDeleted)
@@ -581,7 +564,7 @@ namespace System.IO.Packaging
         //Throws an exception if the xml:base attribute is present in the Relationships XML
         private void ThrowIfXmlBaseAttributeIsPresent(XmlCompatibilityReader reader)
         {
-            string xmlBaseAttributeValue = reader.GetAttribute(XmlBaseAttributeName);
+            string? xmlBaseAttributeValue = reader.GetAttribute(XmlBaseAttributeName);
 
             if (xmlBaseAttributeValue != null)
                 throw new XmlException(SR.Format(SR.InvalidXmlBaseAttributePresent, XmlBaseAttributeName), null, reader.LineNumber, reader.LinePosition);
@@ -600,7 +583,7 @@ namespace System.IO.Packaging
             do
             {
                 id = GenerateRelationshipId();
-            } while (GetRelationship(id) != null);
+            } while (_relationships.Contains(id));
             return id;
         }
 
@@ -619,20 +602,8 @@ namespace System.IO.Packaging
             ThrowIfInvalidXsdId(id);
 
             // Check for uniqueness.
-            if (GetRelationshipIndex(id) >= 0)
+            if (_relationships.Contains(id))
                 throw new XmlException(SR.Format(SR.NotAUniqueRelationshipId, id));
-        }
-
-
-        // Retrieve a relationship's index in _relationships given its id.
-        // Return a negative value if not found.
-        private int GetRelationshipIndex(string id)
-        {
-            for (int index = 0; index < _relationships.Count; ++index)
-                if (string.Equals(_relationships[index].Id, id, StringComparison.Ordinal))
-                    return index;
-
-            return -1;
         }
 
         #endregion
@@ -642,11 +613,11 @@ namespace System.IO.Packaging
         #endregion Private Properties
 
         #region Private Members
-        private readonly List<PackageRelationship> _relationships;
+        private readonly OrderedDictionary<string, PackageRelationship> _relationships;
         private bool _dirty;    // true if we have uncommitted changes to _relationships
         private readonly Package _package;     // our package - in case _sourcePart is null
-        private readonly PackagePart _sourcePart;      // owning part - null if package is the owner
-        private PackagePart _relationshipPart;  // where our relationships are persisted
+        private readonly PackagePart? _sourcePart;      // owning part - null if package is the owner
+        private PackagePart? _relationshipPart;  // where our relationships are persisted
         private readonly Uri _uri;           // the URI of our relationship part
 
         //------------------------------------------------------

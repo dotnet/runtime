@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -10,21 +11,21 @@ namespace System.Xml.Schema
 
     public class XmlSchemaIdentityConstraint : XmlSchemaAnnotated
     {
-        private string _name;
-        private XmlSchemaXPath _selector;
+        private string? _name;
+        private XmlSchemaXPath? _selector;
         private readonly XmlSchemaObjectCollection _fields = new XmlSchemaObjectCollection();
         private XmlQualifiedName _qualifiedName = XmlQualifiedName.Empty;
-        private CompiledIdentityConstraint _compiledConstraint = null;
+        private CompiledIdentityConstraint? _compiledConstraint = null;
 
         [XmlAttribute("name")]
-        public string Name
+        public string? Name
         {
             get { return _name; }
             set { _name = value; }
         }
 
         [XmlElement("selector", typeof(XmlSchemaXPath))]
-        public XmlSchemaXPath Selector
+        public XmlSchemaXPath? Selector
         {
             get { return _selector; }
             set { _selector = value; }
@@ -48,14 +49,14 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        internal CompiledIdentityConstraint CompiledConstraint
+        internal CompiledIdentityConstraint? CompiledConstraint
         {
             get { return _compiledConstraint; }
             set { _compiledConstraint = value; }
         }
 
         [XmlIgnore]
-        internal override string NameAttribute
+        internal override string? NameAttribute
         {
             get { return Name; }
             set { Name = value; }
@@ -64,10 +65,10 @@ namespace System.Xml.Schema
 
     public class XmlSchemaXPath : XmlSchemaAnnotated
     {
-        private string _xpath;
+        private string? _xpath;
 
         [XmlAttribute("xpath"), DefaultValue("")]
-        public string XPath
+        public string? XPath
         {
             get { return _xpath; }
             set { _xpath = value; }

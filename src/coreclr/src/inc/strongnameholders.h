@@ -18,6 +18,7 @@ void VoidStrongNameFreeBuffer(__in T *pBuffer)
 {
     StrongNameFreeBuffer(reinterpret_cast<BYTE *>(pBuffer));
 }
-NEW_WRAPPER_TEMPLATE1(StrongNameBufferHolder, VoidStrongNameFreeBuffer<_TYPE>);
+template<typename _TYPE>
+using StrongNameBufferHolder = SpecializedWrapper<_TYPE, VoidStrongNameFreeBuffer<_TYPE>>;
 
 #endif // !__STRONGNAME_HOLDERS_H__

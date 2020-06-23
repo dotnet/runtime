@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.False(compositeChangeToken.ActiveChangeCallbacks);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task RegisteredCallbackGetsInvokedExactlyOnce_WhenMultipleConcurrentChangeEventsOccur()
         {
             // Arrange

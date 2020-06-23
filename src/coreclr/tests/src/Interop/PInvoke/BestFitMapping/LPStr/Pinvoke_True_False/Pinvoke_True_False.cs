@@ -318,8 +318,7 @@ public class BFM_LPStrMarshaler
     {
         if (System.Globalization.CultureInfo.CurrentCulture.Name != "en-US")
         {
-            Console.WriteLine("Non english platforms are not supported");
-            Console.WriteLine("passing without running tests");
+            Console.WriteLine("Non-US English platforms are not supported.\nPassing without running tests");
 
             Console.WriteLine("--- Success");
             return 100;

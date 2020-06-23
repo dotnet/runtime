@@ -691,6 +691,8 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
     ENCODE_INDIRECT_PINVOKE_TARGET,                 /* For calling a pinvoke method ptr indirectly */
     ENCODE_PINVOKE_TARGET,                          /* For calling a pinvoke method ptr */
 
+    ENCODE_CHECK_INSTRUCTION_SET_SUPPORT,           /* Define the set of instruction sets that must be supported/unsupported to use the fixup */
+
     ENCODE_MODULE_HANDLE                = 0x50,     /* Module token */
     ENCODE_STATIC_FIELD_ADDRESS,                    /* For accessing a static field */
     ENCODE_MODULE_ID_FOR_STATICS,                   /* For accessing static fields */
@@ -1385,13 +1387,6 @@ class ICorCompilationDomain
             CORCOMPILE_DEPENDENCY   **ppDependencies,
             DWORD                   *cDependencies
             ) = 0;
-
-
-#ifdef CROSSGEN_COMPILE
-    virtual HRESULT SetPlatformWinmdPaths(
-            LPCWSTR                 pwzPlatformWinmdPaths
-            ) = 0;
-#endif
 };
 
 /*********************************************************************************
@@ -1453,19 +1448,6 @@ class ICorCompileInfo
             BOOL                     fExplicitBindToNativeImage,
             CORINFO_ASSEMBLY_HANDLE *pHandle
             ) = 0;
-
-
-#ifdef FEATURE_COMINTEROP
-    // Loads a WinRT typeref into the EE and returns
-    // a handle to it.  We have to load all typerefs
-    // during dependency computation since assemblyrefs
-    // are meaningless to WinRT.
-    virtual HRESULT LoadTypeRefWinRT(
-            IMDInternalImport       *pAssemblyImport,
-            mdTypeRef               ref,
-            CORINFO_ASSEMBLY_HANDLE *pHandle
-            ) = 0;
-#endif
 
     virtual BOOL IsInCurrentVersionBubble(CORINFO_MODULE_HANDLE hModule) = 0;
 
@@ -1726,8 +1708,8 @@ class ICorCompileInfo
     // to 1 on the clone. The buffer has to be large enough to hold the stub object and the code
     virtual HRESULT GetStubClone(void *pStub, BYTE *pBuffer, DWORD dwBufferSize) = 0;
 
-    // true if the method has [NativeCallableAttribute]
-    virtual BOOL IsNativeCallableMethod(CORINFO_METHOD_HANDLE handle) = 0;
+    // true if the method has [UnmanagedCallersOnlyAttribute]
+    virtual BOOL IsUnmanagedCallersOnlyMethod(CORINFO_METHOD_HANDLE handle) = 0;
 
     virtual BOOL GetIsGeneratingNgenPDB() = 0;
     virtual void SetIsGeneratingNgenPDB(BOOL fGeneratingNgenPDB) = 0;
@@ -1773,8 +1755,6 @@ extern "C" unsigned __stdcall PartialNGenStressPercentage();
 extern "C" HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath, LPCWSTR pDiasymreaderPath);
 
 extern bool g_fNGenMissingDependenciesOk;
-
-extern bool g_fNGenWinMDResilient;
 
 #ifdef FEATURE_READYTORUN_COMPILER
 extern bool g_fReadyToRunCompilation;

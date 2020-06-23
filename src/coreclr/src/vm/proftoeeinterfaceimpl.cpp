@@ -665,14 +665,14 @@ void __stdcall GarbageCollectionStartedCallback(int generation, BOOL induced)
     // Notify the profiler of start of the collection
     {
         BEGIN_PIN_PROFILER(CORProfilerTrackGC() || CORProfilerTrackBasicGC());
-        BOOL generationCollected[COR_PRF_GC_LARGE_OBJECT_HEAP+1];
+        BOOL generationCollected[COR_PRF_GC_PINNED_OBJECT_HEAP+1];
         if (generation == COR_PRF_GC_GEN_2)
-            generation = COR_PRF_GC_LARGE_OBJECT_HEAP;
-        for (int gen = 0; gen <= COR_PRF_GC_LARGE_OBJECT_HEAP; gen++)
+            generation = COR_PRF_GC_PINNED_OBJECT_HEAP;
+        for (int gen = 0; gen <= COR_PRF_GC_PINNED_OBJECT_HEAP; gen++)
             generationCollected[gen] = gen <= generation;
 
         g_profControlBlock.pProfInterface->GarbageCollectionStarted(
-            COR_PRF_GC_LARGE_OBJECT_HEAP+1,
+            COR_PRF_GC_PINNED_OBJECT_HEAP+1,
             generationCollected,
             induced ? COR_PRF_GC_INDUCED : COR_PRF_GC_OTHER);
         END_PIN_PROFILER();
@@ -726,7 +726,7 @@ struct GenerationTable
 {
     ULONG count;
     ULONG capacity;
-    static const ULONG defaultCapacity = 4; // that's the minimum for 3 generation plus the large object heap
+    static const ULONG defaultCapacity = 5; // that's the minimum for Gen0-2 + LOH + POH
     GenerationTable *prev;
     GenerationDesc *genDescTable;
 #ifdef  _DEBUG
@@ -765,7 +765,7 @@ static void GenWalkFunc(void * context,
         GC_NOTRIGGER;
         MODE_ANY; // can be called even on GC threads
         PRECONDITION(CheckPointer(context));
-        PRECONDITION(0 <= generation && generation <= 3);
+        PRECONDITION(0 <= generation && generation <= 4);
         PRECONDITION(CheckPointer(rangeStart));
         PRECONDITION(CheckPointer(rangeEnd));
         PRECONDITION(CheckPointer(rangeEndReserved));
@@ -3145,6 +3145,12 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
         return CORPROF_E_DATAINCOMPLETE;
     }
 
+    if (typeHandle.GetModule()->GetLoaderAllocator() == NULL ||
+        typeHandle.GetModule()->GetLoaderAllocator()->GetExposedObject() == NULL)
+    {
+        return CORPROF_E_DATAINCOMPLETE;
+    }
+
     //
     // Get the field descriptor object
     //
@@ -3911,7 +3917,7 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        CAN_TAKE_LOCK;     // IsWindowsRuntimeModule accesses metadata directly, which takes locks
+        CANNOT_TAKE_LOCK;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3975,11 +3981,6 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     if (pModule->IsResource())
     {
         dwRet |= COR_PRF_MODULE_RESOURCE;
-    }
-
-    if (pModule->IsWindowsRuntimeModule())
-    {
-        dwRet |= COR_PRF_MODULE_WINDOWS_RUNTIME;
     }
 
     return dwRet;
@@ -4633,8 +4634,7 @@ HRESULT ProfToEEInterfaceImpl::ForceGC()
 
 #ifdef FEATURE_EVENT_TRACE
     // This helper, used by ETW and profAPI ensures a managed thread gets created for
-    // this thread before forcing the GC (to work around Jupiter issues where it's
-    // expected this thread is already managed before starting the GC).
+    // this thread before forcing the GC.
     HRESULT hr = ETW::GCLog::ForceGCForDiagnostics();
 #else // !FEATURE_EVENT_TRACE
     HRESULT hr = E_FAIL;
@@ -6534,9 +6534,13 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
             NativeCodeVersionCollection nativeCodeVersions = ilCodeVersion.GetNativeCodeVersions(pMD);
             for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
             {
-                addresses.Append((*iter).GetNativeCode());
+                PCODE codeStart = (*iter).GetNativeCode();
 
-                ++trueLen;
+                if (codeStart != NULL)
+                {
+                    addresses.Append(codeStart);
+                    ++trueLen;
+                }
             }
         }
 
@@ -7074,6 +7078,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
     UINT64 keywords,
     UINT32 eventVersion,
     UINT32 level,
+    UINT8 opcode,
     BOOL needStack,
     UINT32 cParamDescs,
     COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
@@ -7104,10 +7109,21 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
         return E_INVALIDARG;
     }
 
+    for (UINT32 i = 0; i < cParamDescs; ++i)
+    {
+        if ((EventPipeParameterType)(pParamDescs[i].type) == EventPipeParameterType::Object)
+        {
+            // The native EventPipeMetadataGenerator only knows how to encode
+            // primitive types, it would not handle Object correctly
+            return E_INVALIDARG;
+        }
+    }
+
     HRESULT hr = S_OK;
     EX_TRY
     {
         static_assert(offsetof(EventPipeParameterDesc, Type) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, type)
+                      && offsetof(EventPipeParameterDesc, ElementType) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, elementType)
                       && offsetof(EventPipeParameterDesc, Name) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, name)
                       && sizeof(EventPipeParameterDesc) == sizeof(COR_PRF_EVENTPIPE_PARAM_DESC),
             "Layouts of EventPipeParameterDesc type and COR_PRF_EVENTPIPE_PARAM_DESC type do not match!");
@@ -7120,6 +7136,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
             keywords,
             eventVersion,
             (EventPipeEventLevel)level,
+            opcode,
             params,
             cParamDescs,
             &metadataLength);
@@ -7146,8 +7163,8 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
 
 HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
     EVENTPIPE_EVENT eventHandle,
-    COR_PRF_EVENT_DATA data[],
     UINT32 cData,
+    COR_PRF_EVENT_DATA data[],
     LPCGUID pActivityId,
     LPCGUID pRelatedActivityId)
 {
@@ -8821,15 +8838,15 @@ HRESULT ProfToEEInterfaceImpl::GetReJITIDs(
         // The rejit tables use a lock
         CAN_TAKE_LOCK;
 
-
         PRECONDITION(CheckPointer(pcReJitIds, NULL_OK));
         PRECONDITION(CheckPointer(reJitIds, NULL_OK));
+        PRECONDITION((cReJitIds == 0) == (reJitIds == NULL));
 
     }
     CONTRACTL_END;
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EEAllowableAfterAttach,
+        kP2EEAllowableAfterAttach | kP2EETriggers,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetReJITIDs 0x%p.\n",
@@ -8840,7 +8857,7 @@ HRESULT ProfToEEInterfaceImpl::GetReJITIDs(
         return E_INVALIDARG;
     }
 
-    if ((cReJitIds == 0) || (pcReJitIds == NULL) || (reJitIds == NULL))
+    if ((pcReJitIds == NULL) || ((cReJitIds != 0) && (reJitIds == NULL)))
     {
         return E_INVALIDARG;
     }
@@ -9211,30 +9228,44 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
 
     if (pcchVersionString != NULL)
     {
-        HRESULT hr = GetCORVersionInternal(szVersionString, (DWORD)cchVersionString, (DWORD *)pcchVersionString);
-        if (FAILED(hr))
-            return hr;
+        PCWSTR pczVersionString = CLR_PRODUCT_VERSION_L;
+
+        // Get the module file name
+        ULONG trueLen = (ULONG)(wcslen(pczVersionString) + 1);
+
+        // Return name of module as required.
+        if (szVersionString && cchVersionString > 0)
+        {
+            ULONG copyLen = trueLen;
+
+            if (copyLen >= cchVersionString)
+            {
+                copyLen = cchVersionString - 1;
+            }
+
+            wcsncpy_s(szVersionString, cchVersionString, pczVersionString, copyLen);
+        }
+
+        *pcchVersionString = trueLen;
     }
 
     if (pClrInstanceId != NULL)
         *pClrInstanceId = static_cast<USHORT>(GetClrInstanceId());
 
     if (pRuntimeType != NULL)
-    {
         *pRuntimeType = COR_PRF_CORE_CLR;
-    }
 
     if (pMajorVersion != NULL)
-        *pMajorVersion = CLR_MAJOR_VERSION;
+        *pMajorVersion = RuntimeProductMajorVersion;
 
     if (pMinorVersion != NULL)
-        *pMinorVersion = CLR_MINOR_VERSION;
+        *pMinorVersion = RuntimeProductMinorVersion;
 
     if (pBuildNumber != NULL)
-        *pBuildNumber = CLR_BUILD_VERSION;
+        *pBuildNumber = RuntimeProductPatchVersion;
 
     if (pQFEVersion != NULL)
-        *pQFEVersion = CLR_BUILD_VERSION_QFE;
+        *pQFEVersion = 0;
 
     return S_OK;
 }
@@ -10225,184 +10256,6 @@ void __stdcall ProfilerUnmanagedToManagedTransitionMD(MethodDesc *pMD,
 
 
 #endif // PROFILING_SUPPORTED
-
-
-FCIMPL0(FC_BOOL_RET, ProfilingFCallHelper::FC_TrackRemoting)
-{
-    FCALL_CONTRACT;
-
-#ifdef PROFILING_SUPPORTED
-    FC_RETURN_BOOL(CORProfilerTrackRemoting());
-#else // !PROFILING_SUPPORTED
-    FC_RETURN_BOOL(FALSE);
-#endif // !PROFILING_SUPPORTED
-}
-FCIMPLEND
-
-FCIMPL0(FC_BOOL_RET, ProfilingFCallHelper::FC_TrackRemotingCookie)
-{
-    FCALL_CONTRACT;
-
-#ifdef PROFILING_SUPPORTED
-    FC_RETURN_BOOL(CORProfilerTrackRemotingCookie());
-#else // !PROFILING_SUPPORTED
-    FC_RETURN_BOOL(FALSE);
-#endif // !PROFILING_SUPPORTED
-}
-FCIMPLEND
-
-FCIMPL0(FC_BOOL_RET, ProfilingFCallHelper::FC_TrackRemotingAsync)
-{
-    FCALL_CONTRACT;
-
-#ifdef PROFILING_SUPPORTED
-    FC_RETURN_BOOL(CORProfilerTrackRemotingAsync());
-#else // !PROFILING_SUPPORTED
-    FC_RETURN_BOOL(FALSE);
-#endif // !PROFILING_SUPPORTED
-}
-FCIMPLEND
-
-FCIMPL2(void, ProfilingFCallHelper::FC_RemotingClientSendingMessage, GUID *pId, CLR_BOOL fIsAsync)
-{
-    FCALL_CONTRACT;
-
-#ifdef PROFILING_SUPPORTED
-    // Need to erect a GC frame so that GCs can occur without a problem
-    // within the profiler code.
-
-    // Note that we don't need to worry about pId moving around since
-    // it is a value class declared on the stack and so GC doesn't
-    // know about it.
-
-    _ASSERTE (!GCHeapUtilities::GetGCHeap()->IsHeapPointer(pId));     // should be on the stack, not in the heap
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
-        GCX_PREEMP();
-        if (CORProfilerTrackRemotingCookie())
-        {
-            g_profControlBlock.pProfInterface->GetGUID(pId);
-            _ASSERTE(pId->Data1);
-
-            g_profControlBlock.pProfInterface->RemotingClientSendingMessage(pId, fIsAsync);
-        }
-        else
-        {
-            g_profControlBlock.pProfInterface->RemotingClientSendingMessage(NULL, fIsAsync);
-        }
-        END_PIN_PROFILER();
-    }
-    HELPER_METHOD_FRAME_END_POLL();
-#endif // PROFILING_SUPPORTED
-}
-FCIMPLEND
-
-
-FCIMPL2_VI(void, ProfilingFCallHelper::FC_RemotingClientReceivingReply, GUID id, CLR_BOOL fIsAsync)
-{
-    FCALL_CONTRACT;
-
-#ifdef PROFILING_SUPPORTED
-    // Need to erect a GC frame so that GCs can occur without a problem
-    // within the profiler code.
-
-    // Note that we don't need to worry about pId moving around since
-    // it is a value class declared on the stack and so GC doesn't
-    // know about it.
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-
-    {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
-        GCX_PREEMP();
-        if (CORProfilerTrackRemotingCookie())
-        {
-            g_profControlBlock.pProfInterface->RemotingClientReceivingReply(&id, fIsAsync);
-        }
-        else
-        {
-            g_profControlBlock.pProfInterface->RemotingClientReceivingReply(NULL, fIsAsync);
-        }
-        END_PIN_PROFILER();
-    }
-
-    HELPER_METHOD_FRAME_END_POLL();
-#endif // PROFILING_SUPPORTED
-}
-FCIMPLEND
-
-
-FCIMPL2_VI(void, ProfilingFCallHelper::FC_RemotingServerReceivingMessage, GUID id, CLR_BOOL fIsAsync)
-{
-    FCALL_CONTRACT;
-
-#ifdef PROFILING_SUPPORTED
-    // Need to erect a GC frame so that GCs can occur without a problem
-    // within the profiler code.
-
-    // Note that we don't need to worry about pId moving around since
-    // it is a value class declared on the stack and so GC doesn't
-    // know about it.
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
-        GCX_PREEMP();
-        if (CORProfilerTrackRemotingCookie())
-        {
-            g_profControlBlock.pProfInterface->RemotingServerReceivingMessage(&id, fIsAsync);
-        }
-        else
-        {
-            g_profControlBlock.pProfInterface->RemotingServerReceivingMessage(NULL, fIsAsync);
-        }
-        END_PIN_PROFILER();
-    }
-
-    HELPER_METHOD_FRAME_END_POLL();
-#endif // PROFILING_SUPPORTED
-}
-FCIMPLEND
-
-FCIMPL2(void, ProfilingFCallHelper::FC_RemotingServerSendingReply, GUID *pId, CLR_BOOL fIsAsync)
-{
-    FCALL_CONTRACT;
-
-#ifdef PROFILING_SUPPORTED
-    // Need to erect a GC frame so that GCs can occur without a problem
-    // within the profiler code.
-
-    // Note that we don't need to worry about pId moving around since
-    // it is a value class declared on the stack and so GC doesn't
-    // know about it.
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
-        GCX_PREEMP();
-        if (CORProfilerTrackRemotingCookie())
-        {
-            g_profControlBlock.pProfInterface->GetGUID(pId);
-            _ASSERTE(pId->Data1);
-
-            g_profControlBlock.pProfInterface->RemotingServerSendingReply(pId, fIsAsync);
-        }
-        else
-        {
-            g_profControlBlock.pProfInterface->RemotingServerSendingReply(NULL, fIsAsync);
-        }
-        END_PIN_PROFILER();
-    }
-
-    HELPER_METHOD_FRAME_END_POLL();
-#endif // PROFILING_SUPPORTED
-}
-FCIMPLEND
 
 
 //*******************************************************************************************

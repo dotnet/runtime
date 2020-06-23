@@ -121,7 +121,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(TaskStatus.Canceled)]
         public void NonGeneric_Completed_NotCompleted(TaskStatus innerStatus)
         {
-            var innerTcs = new TaskCompletionSource<bool>();
+            var innerTcs = new TaskCompletionSource();
             Task inner = innerTcs.Task;
 
             Task<Task> outer = Task.FromResult(inner);
@@ -131,7 +131,7 @@ namespace System.Threading.Tasks.Tests
             switch (innerStatus)
             {
                 case TaskStatus.RanToCompletion:
-                    innerTcs.SetResult(true);
+                    innerTcs.SetResult();
                     break;
                 case TaskStatus.Faulted:
                     innerTcs.SetException(new InvalidProgramException());
@@ -191,7 +191,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(false, TaskStatus.Faulted)]
         public void NonGeneric_NotCompleted_NotCompleted(bool outerCompletesFirst, TaskStatus innerStatus)
         {
-            var innerTcs = new TaskCompletionSource<bool>();
+            var innerTcs = new TaskCompletionSource();
             Task inner = innerTcs.Task;
 
             var outerTcs = new TaskCompletionSource<Task>();
@@ -209,7 +209,7 @@ namespace System.Threading.Tasks.Tests
             switch (innerStatus)
             {
                 case TaskStatus.RanToCompletion:
-                    innerTcs.SetResult(true);
+                    innerTcs.SetResult();
                     break;
                 case TaskStatus.Faulted:
                     innerTcs.SetException(new InvalidOperationException());

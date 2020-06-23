@@ -1,5 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">$(TargetFrameworks);net46</TargetFrameworks>
@@ -14,7 +13,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="$(MicrosoftExtensionsDependencyModelVersion)" />
-    <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="2.1.0" />
     <PackageReference Include="NuGet.ProjectModel" Version="$(RefOnlyNugetProjectModelVersion)" />
     <PackageReference Include="NuGet.Packaging" Version="$(RefOnlyNugetPackagingVersion)" />
     <PackageReference Include="System.Reflection.Metadata" Version="1.7.0" />
@@ -44,28 +42,4 @@
       </ItemGroup>
     </Otherwise>
   </Choose>
-
-  <UsingTask TaskName="GetTargetMachineInfo"
-             AssemblyFile="$(InstallerTasksAssemblyPath)" />
-  <Target Name="CreateHostMachineInfoFile"
-          AfterTargets="DispatchToInnerBuilds">
-    <GetTargetMachineInfo>
-      <Output PropertyName="HostMachineRid" TaskParameter="RuntimeIdentifier" />
-    </GetTargetMachineInfo>
-
-    <PropertyGroup>
-      <HostMachineInfoPropsContent>
-&lt;Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003"&gt;
-  &lt;PropertyGroup&gt;
-    &lt;HostMachineRid&gt;$(HostMachineRid)&lt;/HostMachineRid&gt;
-  &lt;/PropertyGroup&gt;
-&lt;/Project&gt;
-      </HostMachineInfoPropsContent>
-    </PropertyGroup>
-
-    <WriteLinesToFile File="$(HostMachineInfoProps)"
-                      Lines="$(HostMachineInfoPropsContent)"
-                      Overwrite="True" />
-  </Target>
-
 </Project>

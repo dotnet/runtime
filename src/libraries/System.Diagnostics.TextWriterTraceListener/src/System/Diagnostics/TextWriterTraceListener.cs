@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
 using System.Text;
-using System.Runtime.InteropServices;
 
 namespace System.Diagnostics
 {
@@ -16,8 +14,8 @@ namespace System.Diagnostics
     /// </devdoc>
     public class TextWriterTraceListener : TraceListener
     {
-        internal TextWriter _writer;
-        private string _fileName;
+        internal TextWriter? _writer;
+        private string? _fileName;
 
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with
@@ -41,7 +39,7 @@ namespace System.Diagnostics
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the
         ///    specified name and using the stream as the recipient of the debugging and tracing output.</para>
         /// </devdoc>
-        public TextWriterTraceListener(Stream stream, string name)
+        public TextWriterTraceListener(Stream stream, string? name)
             : base(name)
         {
             if (stream == null) throw new ArgumentNullException(nameof(stream));
@@ -63,7 +61,7 @@ namespace System.Diagnostics
         ///    debugging
         ///    output.</para>
         /// </devdoc>
-        public TextWriterTraceListener(TextWriter writer, string name)
+        public TextWriterTraceListener(TextWriter writer, string? name)
             : base(name)
         {
             if (writer == null) throw new ArgumentNullException(nameof(writer));
@@ -74,7 +72,7 @@ namespace System.Diagnostics
         ///    <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the
         ///    specified file name.</para>
         /// </devdoc>
-        public TextWriterTraceListener(string fileName)
+        public TextWriterTraceListener(string? fileName)
         {
             _fileName = fileName;
         }
@@ -83,7 +81,7 @@ namespace System.Diagnostics
         ///    <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the
         ///    specified name and the specified file name.</para>
         /// </devdoc>
-        public TextWriterTraceListener(string fileName, string name)
+        public TextWriterTraceListener(string? fileName, string? name)
             : base(name)
         {
             _fileName = fileName;
@@ -93,7 +91,7 @@ namespace System.Diagnostics
         ///    <para> Indicates the text writer that receives the tracing
         ///       or debugging output.</para>
         /// </devdoc>
-        public TextWriter Writer
+        public TextWriter? Writer
         {
             get
             {
@@ -163,7 +161,7 @@ namespace System.Diagnostics
         ///    <para>Writes a message
         ///       to this instance's <see cref='System.Diagnostics.TextWriterTraceListener.Writer'/>.</para>
         /// </devdoc>
-        public override void Write(string message)
+        public override void Write(string? message)
         {
             EnsureWriter();
             if (_writer != null)
@@ -182,7 +180,7 @@ namespace System.Diagnostics
         ///       to this instance's <see cref='System.Diagnostics.TextWriterTraceListener.Writer'/> followed by a line terminator. The
         ///       default line terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
-        public override void WriteLine(string message)
+        public override void WriteLine(string? message)
         {
             EnsureWriter();
             if (_writer != null)
@@ -209,11 +207,9 @@ namespace System.Diagnostics
 
         internal void EnsureWriter()
         {
-            bool success = true;
-
             if (_writer == null)
             {
-                success = false;
+                bool success = false;
 
                 if (_fileName == null)
                     return;
@@ -232,7 +228,7 @@ namespace System.Diagnostics
                 // IO errors, we will prefix the file name with a unique GUID value
                 // and try one more time
                 string fullPath = Path.GetFullPath(_fileName);
-                string dirPath = Path.GetDirectoryName(fullPath);
+                string dirPath = Path.GetDirectoryName(fullPath)!;
                 string fileNameOnly = Path.GetFileName(fullPath);
 
                 for (int i = 0; i < 2; i++)

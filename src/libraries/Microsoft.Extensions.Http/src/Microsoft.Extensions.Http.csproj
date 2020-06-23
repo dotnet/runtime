@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
@@ -7,15 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)Extensions\NonCapturingTimer\NonCapturingTimer.cs">
-      <Link>Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Extensions\TypeNameHelper\TypeNameHelper.cs">
-      <Link>Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Extensions\ValueStopwatch\ValueStopwatch.cs">
-      <Link>Common\src\Extensions\ValueStopwatch\ValueStopwatch.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Extensions\NonCapturingTimer\NonCapturingTimer.cs"
+             Link="Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs" />
+    <Compile Include="$(CommonPath)Extensions\TypeNameHelper\TypeNameHelper.cs"
+             Link="Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs" />
+    <Compile Include="$(CommonPath)Extensions\ValueStopwatch\ValueStopwatch.cs"
+             Link="Common\src\Extensions\ValueStopwatch\ValueStopwatch.cs" />
   </ItemGroup>
 
   <ItemGroup>

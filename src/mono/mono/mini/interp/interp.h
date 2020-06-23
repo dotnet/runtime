@@ -14,6 +14,8 @@
 #define INTERP_ICALL_TRAMP_FARGS 4
 #endif
 
+#define MAX_INTERP_ENTRY_ARGS 8
+
 struct _InterpMethodArguments {
 	size_t ilen;
 	gpointer *iargs;

@@ -29,7 +29,7 @@ G_EXTERN_C void mini_llvmonly_init_delegate (MonoDelegate *del);
 G_EXTERN_C void mini_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method);
 
 /* Used for regular llvm as well */
-G_EXTERN_C void mini_llvm_init_method          (MonoAotFileInfo *info, gpointer aot_module, guint32 method_index, MonoVTable *vtable);
+G_EXTERN_C void mini_llvm_init_method (MonoAotFileInfo *info, gpointer aot_module, gpointer method_info, MonoVTable *vtable);
 
 G_EXTERN_C void mini_llvmonly_throw_nullref_exception (void);
 
