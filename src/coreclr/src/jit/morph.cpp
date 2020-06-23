@@ -16311,6 +16311,17 @@ void Compiler::fgMorphBlocks()
     fgGlobalMorph = false;
     compCurBB     = nullptr;
 
+    // Under OSR, we no longer need to specially protect the original method entry
+    //
+    if (opts.IsOSR() && (fgEntryBB != nullptr) && (fgEntryBB->bbFlags & BBF_IMPORTED))
+    {
+        JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+        assert(fgEntryBB->bbRefs > 0);
+        fgEntryBB->bbRefs--;
+        // We don't need to remember this block anymore.
+        fgEntryBB = nullptr;
+    }
+
 #ifdef DEBUG
     if (verboseTrees)
     {

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -75,8 +74,6 @@ namespace System.Text.Json.Serialization
         /// Is the converter built-in.
         /// </summary>
         internal bool IsInternalConverter { get; set; }
-
-        internal readonly EqualityComparer<T> _defaultComparer = EqualityComparer<T>.Default;
 
         // This non-generic API is sealed as it just forwards to the generic version.
         internal sealed override bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)

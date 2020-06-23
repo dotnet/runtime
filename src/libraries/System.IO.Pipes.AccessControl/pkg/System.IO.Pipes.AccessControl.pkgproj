@@ -1,0 +1,14 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.IO.Pipes.AccessControl.csproj">
+      <SupportedFramework>$(NetCoreAppCurrent)</SupportedFramework>
+    </ProjectReference>
+    <HarvestIncludePaths Include="lib/net46;runtimes/win/lib/net46" />
+    <HarvestIncludePaths Include="lib/net461;runtimes/win/lib/net461" />
+    <HarvestIncludePaths Include="lib/netstandard1.3" />
+    <HarvestIncludePaths Include="lib/netstandard2.0" />
+    <HarvestIncludePaths Include="runtimes/win/lib/netcoreapp2.1" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

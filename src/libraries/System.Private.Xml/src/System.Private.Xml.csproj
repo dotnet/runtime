@@ -5,7 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);649;169;414</NoWarn>
     <DefineConstants>$(DefineConstants);FEATURE_COMPILED_XSL</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
@@ -799,7 +799,7 @@
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="System\Xml\Xsl\Runtime\XmlCollation.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+  <ItemGroup Condition="'$(TargetsAnyOS)'=='true'">
     <Compile Include="System\Xml\Xsl\Runtime\XmlCollation.Unix.cs" />
     <Compile Include="System\Xml\Core\XmlTextReaderImpl.Unix.cs" />
   </ItemGroup>

@@ -605,7 +605,7 @@ public class Program
         testNativeMethod();
     }
 
-    [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
     public static int CallbackViaUnmanagedCalli(int val)
     {
         return DoubleImpl(val);
@@ -653,7 +653,7 @@ public class Program
         Assert.AreEqual(expected, testNativeMethod());
     }
 
-    [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
     public static int CallbackViaUnmanagedCalliThrows(int val)
     {
         throw new Exception() { HResult = CallbackThrowsErrorCode };
