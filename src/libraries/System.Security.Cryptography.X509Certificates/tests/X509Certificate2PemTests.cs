@@ -270,6 +270,116 @@ MII
             }
         }
 
+        [Fact]
+        public static void CreateFromPemFile_NoKeyFile_Rsa_Success()
+        {
+            string pemAggregate = TestData.RsaCertificate + TestData.RsaPkcs1Key;
+
+            using (TempFileHolder certAndKey = new TempFileHolder(pemAggregate))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPemFile(certAndKey.FilePath))
+            {
+                Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
+                AssertKeysMatch(TestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
+            }
+        }
+
+        [Fact]
+        public static void CreateFromPemFile_SameFile_Rsa_Success()
+        {
+            using (TempFileHolder aggregatePem = new TempFileHolder(TestData.RsaCertificate + TestData.RsaPkcs1Key))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPemFile(aggregatePem.FilePath, aggregatePem.FilePath))
+            {
+                Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
+                AssertKeysMatch(TestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
+            }
+        }
+
+        [Fact]
+        public static void CreateFromPemFile_WithKeyFile_Rsa_Success()
+        {
+            using (TempFileHolder certPem = new TempFileHolder(TestData.RsaCertificate))
+            using (TempFileHolder keyPem = new TempFileHolder(TestData.RsaPkcs1Key))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPemFile(certPem.FilePath, keyPem.FilePath))
+            {
+                Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
+                AssertKeysMatch(TestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
+            }
+        }
+
+        [Fact]
+        public static void CreateFromPemFile_PrefersKeyFromKeyFile_Success()
+        {
+            using (TempFileHolder certPem = new TempFileHolder(TestData.RsaCertificate + TestData.OtherRsaPkcs1Key))
+            using (TempFileHolder keyPem = new TempFileHolder(TestData.RsaPkcs1Key))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPemFile(certPem.FilePath, keyPem.FilePath))
+            {
+                Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
+                AssertKeysMatch(TestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
+            }
+        }
+
+        [Fact]
+        public static void CreateFromPemFile_Null_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("certPemFilePath", () =>
+                X509Certificate2.CreateFromPemFile(null));
+        }
+
+        [Fact]
+        public static void CreateFromEncryptedPemFile_NoKeyFile_Rsa_Success()
+        {
+            string pemAggregate = TestData.RsaCertificate + TestData.RsaEncryptedPkcs8Key;
+
+            using (TempFileHolder certAndKey = new TempFileHolder(pemAggregate))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPemFile(certAndKey.FilePath, "test"))
+            {
+                Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
+                AssertKeysMatch(TestData.RsaEncryptedPkcs8Key, cert.GetRSAPrivateKey, "test");
+            }
+        }
+
+        [Fact]
+        public static void CreateFromEncryptedPemFile_SameFile_Rsa_Success()
+        {
+            using (TempFileHolder aggregatePem = new TempFileHolder(TestData.RsaCertificate + TestData.RsaEncryptedPkcs8Key))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPemFile(aggregatePem.FilePath, "test", aggregatePem.FilePath))
+            {
+                Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
+                AssertKeysMatch(TestData.RsaEncryptedPkcs8Key, cert.GetRSAPrivateKey, "test");
+            }
+        }
+
+        [Fact]
+        public static void CreateFromEncryptedPemFile_WithKeyFile_Rsa_Success()
+        {
+            using (TempFileHolder certPem = new TempFileHolder(TestData.RsaCertificate))
+            using (TempFileHolder keyPem = new TempFileHolder(TestData.RsaEncryptedPkcs8Key))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPemFile(certPem.FilePath, "test", keyPem.FilePath))
+            {
+                Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
+                AssertKeysMatch(TestData.RsaEncryptedPkcs8Key, cert.GetRSAPrivateKey, "test");
+            }
+        }
+
+        [Fact]
+        public static void CreateFromEncryptedPemFile_PrefersKeyFromKeyFile_Success()
+        {
+            using (TempFileHolder certPem = new TempFileHolder(TestData.RsaCertificate + TestData.OtherRsaPkcs1Key))
+            using (TempFileHolder keyPem = new TempFileHolder(TestData.RsaEncryptedPkcs8Key))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPemFile(certPem.FilePath, "test", keyPem.FilePath))
+            {
+                Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
+                AssertKeysMatch(TestData.RsaEncryptedPkcs8Key, cert.GetRSAPrivateKey, "test");
+            }
+        }
+
+        [Fact]
+        public static void CreateFromEncryptedPemFile_Null_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("certPemFilePath", () =>
+                X509Certificate2.CreateFromEncryptedPemFile(null, default));
+        }
+
         private static void AssertKeysMatch<T>(string keyPem, Func<T> keyLoader, string password = null) where T : AsymmetricAlgorithm
         {
             AsymmetricAlgorithm key = keyLoader();

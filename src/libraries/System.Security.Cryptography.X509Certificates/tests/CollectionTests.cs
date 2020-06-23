@@ -1463,6 +1463,29 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void ImportFromPemFile_MultiplePems_Success()
+        {
+            string pemAggregate = TestData.RsaCertificate + TestData.ECDsaCertificate;
+    
+            using (TempFileHolder aggregatePemFile = new TempFileHolder(pemAggregate))
+            using(ImportedCollection ic = Cert.ImportFromPemFile(aggregatePemFile.FilePath))
+            {
+                Assert.Equal(2, ic.Collection.Count);
+                Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", ic.Collection[0].Thumbprint);
+                Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", ic.Collection[1].Thumbprint);
+            }
+        }
+
+        [Fact]
+        public static void ImportFromPemFile_Null_Throws()
+        {
+            X509Certificate2Collection cc = new X509Certificate2Collection();
+
+            AssertExtensions.Throws<ArgumentNullException>("certPemFilePath", () =>
+                cc.ImportFromPemFile(null));
+        }
+
+        [Fact]
         public static void ImportFromPem_Exception_AllOrNothing()
         {
             using(ImportedCollection ic = Cert.ImportFromPem(TestData.DsaCertificate))

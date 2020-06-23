@@ -63,6 +63,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             collection.ImportFromPem(certPem);
             return new ImportedCollection(collection);
         }
+
+        public static ImportedCollection ImportFromPemFile(string certPemFilePath)
+        {
+            X509Certificate2Collection collection = new X509Certificate2Collection();
+            collection.ImportFromPemFile(certPemFilePath);
+            return new ImportedCollection(collection);
+        }
     }
 
     //
