@@ -1001,6 +1001,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/VectorABI/VectorMgdMgdStatic_r/*">
             <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd/AdvSimd_Part0_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd/AdvSimd_Part0_ro/*">
             <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
         </ExcludeList>
@@ -1010,13 +1013,46 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd/AdvSimd_Part1_ro/*">
             <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd/AdvSimd_Part2_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd/AdvSimd_Part2_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd/AdvSimd_Part3_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd/AdvSimd_Part3_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd/AdvSimd_Part4_r/*">
             <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd/AdvSimd_Part4_ro/*">
             <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd/AdvSimd_Part5_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd/AdvSimd_Part5_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd.Arm64/AdvSimd.Arm64_Part0_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd.Arm64/AdvSimd.Arm64_Part0_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd.Arm64/AdvSimd.Arm64_Part1_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd.Arm64/AdvSimd.Arm64_Part1_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Sha1/Sha1_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Sha1/Sha1_ro/*">
             <Issue>https://github.com/dotnet/runtime/issues/37883</Issue>
         </ExcludeList>
     </ItemGroup>
