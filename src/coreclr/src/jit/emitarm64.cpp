@@ -5602,14 +5602,7 @@ void emitter::emitIns_R_R_R(
                 assert(isVectorRegister(reg3));
                 assert(isValidArrangement(size, opt));
                 assert((opt != INS_OPTS_1D) && (opt != INS_OPTS_2D)); // The encoding size = 11, Q = x is reserved
-                if (ins == INS_mul)
-                {
-                    fmt = IF_DV_3A;
-                }
-                else
-                {
-                    fmt = IF_DV_3H;
-                }
+                fmt = IF_DV_3A;
                 break;
             }
             // Base instruction
@@ -6080,7 +6073,7 @@ void emitter::emitIns_R_R_R(
             assert(size == EA_8BYTE);
             assert(isValidArrangement(size, opt));
             assert(opt != INS_OPTS_1D); // The encoding size = 11, Q = x is reserved.
-            fmt = IF_DV_3H;
+            fmt = IF_DV_3A;
             break;
 
         case INS_addhn2:
@@ -6093,7 +6086,7 @@ void emitter::emitIns_R_R_R(
             assert(size == EA_16BYTE);
             assert(isValidArrangement(size, opt));
             assert(opt != INS_OPTS_2D); // The encoding size = 11, Q = x is reserved.
-            fmt = IF_DV_3H;
+            fmt = IF_DV_3A;
             break;
 
         case INS_sabal:
@@ -6117,7 +6110,7 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg3));
             assert(size == EA_8BYTE);
             assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
-            fmt = IF_DV_3H;
+            fmt = IF_DV_3A;
             break;
 
         case INS_sabal2:
@@ -6143,7 +6136,7 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg3));
             assert(size == EA_16BYTE);
             assert((opt == INS_OPTS_16B) || (opt == INS_OPTS_8H) || (opt == INS_OPTS_4S));
-            fmt = IF_DV_3H;
+            fmt = IF_DV_3A;
             break;
 
         case INS_pmul:
@@ -6161,7 +6154,7 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg3));
             assert(size == EA_8BYTE);
             assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_1D));
-            fmt = IF_DV_3H;
+            fmt = IF_DV_3A;
             break;
 
         case INS_pmull2:
@@ -6170,7 +6163,7 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg3));
             assert(size == EA_16BYTE);
             assert((opt == INS_OPTS_16B) || (opt == INS_OPTS_2D));
-            fmt = IF_DV_3H;
+            fmt = IF_DV_3A;
             break;
 
         default:
@@ -6396,7 +6389,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             {
                 assert(!"Invalid reg3");
             }
-            fmt = IF_DV_3HI;
+            fmt = IF_DV_3AI;
             break;
 
         case INS_smlal2:
@@ -6417,7 +6410,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             {
                 assert(!"Invalid reg3");
             }
-            fmt = IF_DV_3HI;
+            fmt = IF_DV_3AI;
             break;
 
         default:
