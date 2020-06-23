@@ -22,31 +22,54 @@ namespace Mono.Linker
 		{
 		}
 
-		public void VisitMethod (MethodDefinition method, StringBuilder builder)
+		public void VisitMember (IMemberDefinition member, StringBuilder builder)
+		{
+			switch (member.MetadataToken.TokenType) {
+			case TokenType.TypeDef:
+				VisitTypeDefinition (member as TypeDefinition, builder);
+				break;
+			case TokenType.Method:
+				VisitMethod (member as MethodDefinition, builder);
+				break;
+			case TokenType.Property:
+				VisitProperty (member as PropertyDefinition, builder);
+				break;
+			case TokenType.Field:
+				VisitField (member as FieldDefinition, builder);
+				break;
+			case TokenType.Event:
+				VisitEvent (member as EventDefinition, builder);
+				break;
+			default:
+				break;
+			}
+		}
+
+		private void VisitMethod (MethodDefinition method, StringBuilder builder)
 		{
 			builder.Append ("M:");
 			PartVisitor.Instance.VisitMethodDefinition (method, builder);
 		}
 
-		public void VisitField (FieldDefinition field, StringBuilder builder)
+		private void VisitField (FieldDefinition field, StringBuilder builder)
 		{
 			builder.Append ("F:");
 			PartVisitor.Instance.VisitField (field, builder);
 		}
 
-		public void VisitEvent (EventDefinition evt, StringBuilder builder)
+		private void VisitEvent (EventDefinition evt, StringBuilder builder)
 		{
 			builder.Append ("E:");
 			PartVisitor.Instance.VisitEvent (evt, builder);
 		}
 
-		public void VisitProperty (PropertyDefinition property, StringBuilder builder)
+		private void VisitProperty (PropertyDefinition property, StringBuilder builder)
 		{
 			builder.Append ("P:");
 			PartVisitor.Instance.VisitProperty (property, builder);
 		}
 
-		public void VisitTypeDefinition (TypeDefinition type, StringBuilder builder)
+		private void VisitTypeDefinition (TypeDefinition type, StringBuilder builder)
 		{
 			builder.Append ("T:");
 			PartVisitor.Instance.VisitTypeReference (type, builder);

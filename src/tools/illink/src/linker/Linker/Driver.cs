@@ -434,6 +434,10 @@ namespace Mono.Linker
 
 						continue;
 
+					case "--generate-warning-suppressions":
+						context.OutputWarningSuppressions = true;
+						continue;
+
 					case "--version":
 						Version ();
 						return 1;
