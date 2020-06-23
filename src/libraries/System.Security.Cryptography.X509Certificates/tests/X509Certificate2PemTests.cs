@@ -417,8 +417,8 @@ MII
                         Assert.True(ecdsaPem.VerifyData(data, ecdsaSignature, HashAlgorithmName.SHA256));
                         break;
                     case (DSA dsa, DSA dsaPem):
-                        byte[] dsaSignature = dsa.SignData(data, HashAlgorithmName.SHA256);
-                        Assert.True(dsaPem.VerifyData(data, dsaSignature, HashAlgorithmName.SHA256));
+                        byte[] dsaSignature = dsa.SignData(data, HashAlgorithmName.SHA1);
+                        Assert.True(dsaPem.VerifyData(data, dsaSignature, HashAlgorithmName.SHA1));
                         break;
                     default:
                         throw new CryptographicException("Unknown key algorithm");
