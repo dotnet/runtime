@@ -5920,7 +5920,6 @@ gboolean
 mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
 {
 	return signature_equiv (sig1, sig2, 0);
-
 }
 
 gboolean

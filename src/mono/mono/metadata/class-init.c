@@ -1465,7 +1465,6 @@ mono_class_create_ptr (MonoType *type)
 		result->cast_class = el_class;
 	class_composite_fixup_cast_class (result, TRUE);
 
-
 	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_PTR;
 	result->this_arg.data.type = result->_byval_arg.data.type = m_class_get_byval_arg (el_class);
 	result->this_arg.byref = TRUE;
@@ -3145,7 +3144,6 @@ static gboolean
 signature_is_subsumed (MonoMethod *impl_method, MonoMethod *decl_method, MonoError *error)
 {
 	MonoMethodSignature *impl_sig = mono_method_signature_internal (impl_method);
-
 	MonoMethodSignature *decl_sig = mono_method_signature_internal (decl_method);
 
 	if (mono_metadata_signature_equal (impl_sig, decl_sig))
