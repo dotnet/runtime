@@ -2084,7 +2084,7 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address);
 #ifdef USE_INTROSORT
 #define _sort introsort::sort
 #elif defined(USE_VXSORT)
-#define _sort vxsort
+#define _sort do_vxsort
 namespace std
 {
     template <class _Ty>
@@ -2116,13 +2116,15 @@ namespace std
     };
 }
 
+#include "machine_traits.avx2.h"
+#include "machine_traits.avx512.h"
 #include "vxsort.h"
 
 #ifdef USE_VXSORT
-void vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
+void do_vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
 {
-    //    auto sorter = gcsort::vxsort<int64_t, gcsort::AVX2>();
-    auto sorter = gcsort::vxsort<int64_t, gcsort::AVX2, 8>();
+//    auto sorter = vxsort::cvxsort<int64_t, vxsort::AVX2, 8>();
+    auto sorter = vxsort::cvxsort<int64_t, vxsort::AVX512, 8>();
     sorter.sort((int64_t*)low, (int64_t*)high);
 #ifdef _DEBUG
     for (uint8_t** p = low; p < high; p++)
@@ -2131,10 +2133,10 @@ void vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
     }
 #endif
 }
-void vxsort(uint32_t* low, uint32_t* high, unsigned int depth)
+void do_vxsort(uint32_t* low, uint32_t* high, unsigned int depth)
 {
-    //    auto sorter = gcsort::vxsort<uint32_t, gcsort::AVX2>();
-    auto sorter = gcsort::vxsort<uint32_t, gcsort::AVX2, 8>();
+//    auto sorter = vxsort::cvxsort<uint32_t, vxsort::AVX2, 8>();
+    auto sorter = vxsort::cvxsort<uint32_t, vxsort::AVX512, 8>();
     sorter.sort(low, high);
 #ifdef _DEBUG
     for (uint32_t* p = low; p < high; p++)
@@ -8809,19 +8811,19 @@ void gc_heap::combine_mark_lists()
 #endif // PARALLEL_MARK_LIST_SORT
 #endif //MULTIPLE_HEAPS
 
-void gc_heap::grow_mark_list()
+void gc_heap::grow_mark_list ()
 {
-    size_t new_mark_list_size = min(mark_list_size * 2, 1000 * 1024);
+    size_t new_mark_list_size = min (mark_list_size * 2, 1000 * 1024);
     if (new_mark_list_size == mark_list_size)
         return;
 
 #ifdef MULTIPLE_HEAPS
-    uint8_t** new_mark_list = make_mark_list(new_mark_list_size * n_heaps);
+    uint8_t** new_mark_list = make_mark_list (new_mark_list_size * n_heaps);
 
 #ifdef PARALLEL_MARK_LIST_SORT
-    uint8_t** new_mark_list_copy = make_mark_list(new_mark_list_size * n_heaps);
+    uint8_t** new_mark_list_copy = make_mark_list (new_mark_list_size * n_heaps);
 #ifdef BIT_MAP_SORT
-    memset(new_mark_list_copy, 0, new_mark_list_size * n_heaps * sizeof(new_mark_list_copy[0]));
+    memset (new_mark_list_copy, 0, new_mark_list_size * n_heaps * sizeof(new_mark_list_copy[0]));
 #endif //BIT_MAP_SORT
 #endif //PARALLEL_MARK_LIST_SORT
 
@@ -8848,7 +8850,7 @@ void gc_heap::grow_mark_list()
     }
 
 #else //MULTIPLE_HEAPS
-    uint8_t** new_mark_list = make_mark_list(new_mark_list_size);
+    uint8_t** new_mark_list = make_mark_list (new_mark_list_size);
     if (new_mark_list != nullptr)
     {
         delete[] mark_list;

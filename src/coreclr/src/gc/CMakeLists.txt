@@ -36,7 +36,8 @@ if(CLR_CMAKE_HOST_UNIX)
 else()
   set ( GC_SOURCES
     ${GC_SOURCES}
-    windows/gcenv.windows.cpp)
+    windows/gcenv.windows.cpp
+)
 endif(CLR_CMAKE_HOST_UNIX)
 
 if (CLR_CMAKE_TARGET_WIN32)
