@@ -37,21 +37,21 @@ namespace System.Net.Http
         public void RequestStart(string scheme, string host, int port, string pathAndQuery, int versionMajor, int versionMinor)
         {
             Interlocked.Increment(ref _startedRequests);
-            WriteEvent(1, scheme, host, port, pathAndQuery, versionMajor, versionMinor);
+            WriteEvent(eventId: 1, scheme, host, port, pathAndQuery, versionMajor, versionMinor);
         }
 
         [Event(2, Level = EventLevel.Informational)]
         public void RequestStop()
         {
             Interlocked.Increment(ref _stoppedRequests);
-            WriteEvent(2);
+            WriteEvent(eventId: 2);
         }
 
         [Event(3, Level = EventLevel.Error)]
         public void RequestAborted()
         {
             Interlocked.Increment(ref _abortedRequests);
-            WriteEvent(3);
+            WriteEvent(eventId: 3);
         }
 
         protected override void OnEventCommand(EventCommandEventArgs command)

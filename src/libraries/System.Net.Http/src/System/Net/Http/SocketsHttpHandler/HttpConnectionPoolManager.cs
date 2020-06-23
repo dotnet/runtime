@@ -365,7 +365,7 @@ namespace System.Net.Http
                 throw;
             }
 
-            bool LogException(Exception e)
+            static bool LogException(Exception e)
             {
                 HttpTelemetry.Log.RequestAborted();
                 HttpTelemetry.Log.RequestStop();
