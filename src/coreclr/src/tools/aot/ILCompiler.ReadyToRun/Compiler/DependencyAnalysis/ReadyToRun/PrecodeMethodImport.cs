@@ -67,6 +67,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (result != 0)
                     return result;
             }
+            else if (_localMethod != null)
+                return 1;
+            else if (((PrecodeMethodImport)other)._localMethod != null)
+                return -1;
 
             return base.CompareToImpl(other, comparer);
         }
