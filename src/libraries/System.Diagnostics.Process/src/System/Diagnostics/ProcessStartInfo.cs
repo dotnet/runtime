@@ -16,6 +16,7 @@ namespace System.Diagnostics
     ///     used in conjunction with the <see cref='System.Diagnostics.Process'/>
     ///     component.
     /// </devdoc>
+    [DebuggerDisplay("FileName={FileName}, Arguments={BuildArguments()}, WorkingDirectory={WorkingDirectory}")]
     public sealed partial class ProcessStartInfo
     {
         private string? _fileName;
@@ -165,6 +166,33 @@ namespace System.Diagnostics
                 }
 
                 _windowStyle = value;
+            }
+        }
+
+        internal string BuildArguments()
+        {
+            var stringBuilder = new StringBuilder();
+            AppendArguments(stringBuilder);
+            return stringBuilder.ToString();
+        }
+
+        internal void AppendArguments(StringBuilder stringBuilder)
+        {
+            if (ArgumentList.Count > 0)
+            {
+                foreach (string argument in ArgumentList)
+                {
+                    PasteArguments.AppendArgument(stringBuilder, argument);
+                }
+            }
+            else if (!string.IsNullOrEmpty(Arguments))
+            {
+                if (stringBuilder.Length > 0)
+                {
+                    stringBuilder.Append(' ');
+                }
+
+                stringBuilder.Append(Arguments);
             }
         }
     }

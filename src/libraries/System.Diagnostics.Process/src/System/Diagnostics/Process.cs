@@ -1610,17 +1610,6 @@ namespace System.Diagnostics
             }
         }
 
-        private static void AppendArguments(StringBuilder stringBuilder, Collection<string> argumentList)
-        {
-            if (argumentList.Count > 0)
-            {
-                foreach (string argument in argumentList)
-                {
-                    PasteArguments.AppendArgument(stringBuilder, argument);
-                }
-            }
-        }
-
         /// <summary>
         /// This enum defines the operation mode for redirected process stream.
         /// We don't support switching between synchronous mode and asynchronous mode.
