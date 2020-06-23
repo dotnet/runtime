@@ -266,7 +266,7 @@ namespace System.Tests
         [MemberData(nameof(CompareTo_ThrowsArgumentException_TestData))]
         public static void CompareTo_ThrowsArgumentException(object obj)
         {
-            Assert.Throws(typeof(ArgumentException), () => Half.MaxValue.CompareTo(obj));
+            Assert.Throws<ArgumentException>(() => Half.MaxValue.CompareTo(obj));
         }
 
         public static IEnumerable<object[]> CompareTo_TestData()
@@ -339,7 +339,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(Half value, object obj, bool expected)
+        public static void EqualsTest(Half value, object obj, bool expected)
         {
             Assert.Equal(expected, value.Equals(obj));
         }
@@ -363,7 +363,6 @@ namespace System.Tests
                 (UInt16BitsToHalf(0b0_11111_1010101010), BitConverter.Int32BitsToSingle(0x7FD54000)), // Positive Signalling NaN - Should preserve payload
                 (UInt16BitsToHalf(0b1_11111_1010101010), BitConverter.Int32BitsToSingle(unchecked((int)0xFFD54000))), // Negative Signalling NaN - Should preserve payload
                 (Half.Epsilon, 1/16777216f), // PosEpsilon = 0.000000059605...
-                (-Half.Epsilon, -1/16777216f), // NegEpsilon = 0.000000059605...
                 (UInt16BitsToHalf(0), 0), // 0
                 (UInt16BitsToHalf(0b1_00000_0000000000), -0f), // -0 
                 (UInt16BitsToHalf(0b0_10000_1001001000), 3.140625f), // 3.140625
@@ -409,7 +408,6 @@ namespace System.Tests
                 (UInt16BitsToHalf(0b0_11111_1010101010), BitConverter.Int64BitsToDouble(0x7FFAA800_00000000)), // Positive Signalling NaN - Should preserve payload
                 (UInt16BitsToHalf(0b1_11111_1010101010), BitConverter.Int64BitsToDouble(unchecked((long)0xFFFAA800_00000000))), // Negative Signalling NaN - Should preserve payload
                 (Half.Epsilon, 1/16777216d), // PosEpsilon = 0.000000059605...
-                (-Half.Epsilon, -1/16777216d), // NegEpsilon = 0.000000059605...
                 (UInt16BitsToHalf(0), 0d), // 0
                 (UInt16BitsToHalf(0b1_00000_0000000000), -0d), // -0 
                 (UInt16BitsToHalf(0b0_10000_1001001000), 3.140625d), // 3.140625
@@ -685,7 +683,7 @@ namespace System.Tests
 
             yield return new object[] { float.NaN, "G", null, "NaN" };
 
-            //yield return new object[] { 2468.0f, "N", null, "2,468.00" };
+            yield return new object[] { 2468.0f, "N", null, "2,468.00" };
 
             // Changing the negative pattern doesn't do anything without also passing in a format string
             var customNegativePattern = new NumberFormatInfo() { NumberNegativePattern = 0 };
@@ -697,8 +695,8 @@ namespace System.Tests
                 NumberDecimalSeparator = "~",
                 NumberGroupSeparator = "*"
             };
-            //yield return new object[] { -2468.0f, "N", customNegativeSignDecimalGroupSeparator, "#2*468~00" };
-            //yield return new object[] { 2468.0f, "N", customNegativeSignDecimalGroupSeparator, "2*468~00" };
+            yield return new object[] { -2468.0f, "N", customNegativeSignDecimalGroupSeparator, "#2*468~00" };
+            yield return new object[] { 2468.0f, "N", customNegativeSignDecimalGroupSeparator, "2*468~00" };
 
             var customNegativeSignGroupSeparatorNegativePattern = new NumberFormatInfo()
             {
@@ -706,7 +704,7 @@ namespace System.Tests
                 NumberGroupSeparator = "*",
                 NumberNegativePattern = 0
             };
-            //yield return new object[] { -2468.0f, "N", customNegativeSignGroupSeparatorNegativePattern, "(2*468.00)" };
+            yield return new object[] { -2468.0f, "N", customNegativeSignGroupSeparatorNegativePattern, "(2*468.00)" };
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
             yield return new object[] { float.NaN, "G", invariantFormat, "NaN" };
@@ -724,21 +722,20 @@ namespace System.Tests
             yield return new object[] { Half.MinValue, "G", null, "-65504" };
             yield return new object[] { Half.MaxValue, "G", null, "65504" };
 
-            //yield return new object[] { Half.Epsilon, "G", null, "5.9604645E-08" };
+            yield return new object[] { Half.Epsilon, "G", null, "5.9604645E-08" };
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
-            //yield return new object[] { Half.Epsilon, "G", invariantFormat, "5.9604645E-08" };
+            yield return new object[] { Half.Epsilon, "G", invariantFormat, "5.9604645E-08" };
         }
 
         [Fact]
         public static void Test_ToString_NotNetFramework()
         {
-            //using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
                 foreach (object[] testdata in ToString_TestData_NotNetFramework())
                 {
                     ToStringTest(testdata[0] is float floatData ? (Half)floatData : (Half)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
-                    //ToStringTest((Half)(float)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
                 }
             }
         }
@@ -827,7 +824,7 @@ namespace System.Tests
         [Fact]
         public static void TryFormat()
         {
-            //using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
                 foreach (object[] testdata in ToString_TestData())
                 {
@@ -875,7 +872,6 @@ namespace System.Tests
             yield return new object[] { Half.MinValue };
             yield return new object[] { -MathF.PI };
             yield return new object[] { -MathF.E };
-            yield return new object[] { -Half.Epsilon };
             yield return new object[] { -0.845512408f };
             yield return new object[] { -0.0f };
             yield return new object[] { Half.NaN };

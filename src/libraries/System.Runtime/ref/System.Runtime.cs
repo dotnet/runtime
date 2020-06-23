@@ -2221,8 +2221,8 @@ namespace System
         public static explicit operator System.Half (float value) { throw null; }
         public static bool operator >(System.Half left, System.Half right) { throw null; }
         public static bool operator >=(System.Half left, System.Half right) { throw null; }
-        public static implicit operator double (System.Half value) { throw null; }
-        public static implicit operator float (System.Half value) { throw null; }
+        public static explicit operator double (System.Half value) { throw null; }
+        public static explicit operator float (System.Half value) { throw null; }
         public static bool operator !=(System.Half left, System.Half right) { throw null; }
         public static bool operator <(System.Half left, System.Half right) { throw null; }
         public static bool operator <=(System.Half left, System.Half right) { throw null; }

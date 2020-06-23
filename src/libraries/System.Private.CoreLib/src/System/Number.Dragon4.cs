@@ -45,7 +45,7 @@ namespace System
         {
             Half v = Half.IsNegative(value) ? Half.Negate(value) : value;
 
-            Debug.Assert(v > 0);
+            Debug.Assert((double)v > 0.0);
             Debug.Assert(Half.IsFinite(v));
 
             ushort mantissa = ExtractFractionAndBiasedExponent(value, out int exponent);

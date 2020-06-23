@@ -360,7 +360,7 @@ namespace System
             {
                 Half v = Half.IsNegative(value) ? Half.Negate(value) : value;
 
-                Debug.Assert(v > 0);
+                Debug.Assert((double)v > 0);
                 Debug.Assert(Half.IsFinite(v));
 
                 int length;
