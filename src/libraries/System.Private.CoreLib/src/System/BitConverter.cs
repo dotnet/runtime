@@ -505,5 +505,9 @@ namespace System
         {
             return *((short*)&value);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe Half Int16BitsToHalf(short value)
+            => *(Half*)&value;
     }
 }

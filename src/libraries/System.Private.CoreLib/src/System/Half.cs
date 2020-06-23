@@ -55,7 +55,6 @@ namespace System
         private const ushort MinValueBits = 0xFBFF;
         private const ushort MaxValueBits = 0x7BFF;
 
-
         // Well-defined and commonly used values
 
         public static Half Epsilon =>  new Half(EpsilonBits);                        //  5.9604645E-08
@@ -477,7 +476,7 @@ namespace System
         {
             const int SingleMaxExponent = 0xFF;
 
-            uint floatInt = SingleToUInt32Bits(value);
+            uint floatInt = (uint)BitConverter.SingleToInt32Bits(value);
             bool sign = (floatInt & float.SignMask) >> float.SignShift != 0;
             int exp = (int)(floatInt & float.ExponentMask) >> float.ExponentShift;
             uint sig = floatInt & float.SignificandMask;
@@ -505,7 +504,7 @@ namespace System
         {
             const int DoubleMaxExponent = 0x7FF;
 
-            ulong doubleInt = DoubleToUInt64Bits(value);
+            ulong doubleInt = (ulong)BitConverter.DoubleToInt64Bits(value);
             bool sign = (doubleInt & double.SignMask) >> double.SignShift != 0;
             int exp = (int)((doubleInt & double.ExponentMask) >> double.ExponentShift);
             ulong sig = doubleInt & double.SignificandMask;
@@ -547,7 +546,7 @@ namespace System
             {
                 if (sig == 0)
                 {
-                    return CreateSingle(sign ? float.SignMask : 0); // Positive / Negative zero
+                    return BitConverter.Int32BitsToSingle((int)(sign ? float.SignMask : 0)); // Positive / Negative zero
                 }
                 (exp, sig) = NormSubnormalF16Sig(sig);
                 exp -= 1;
@@ -575,7 +574,7 @@ namespace System
             {
                 if (sig == 0)
                 {
-                    return CreateDouble(sign ? double.SignMask : 0); // Positive / Negative zero
+                    return BitConverter.Int64BitsToDouble((long)(sign ? double.SignMask : 0)); // Positive / Negative zero
                 }
                 (exp, sig) = NormSubnormalF16Sig(sig);
                 exp -= 1;
@@ -598,9 +597,6 @@ namespace System
 
         #region Utilities
 
-        private static uint SingleToUInt32Bits(float value)
-            => (uint)BitConverter.SingleToInt32Bits(value);
-
         // Significand bits should be shifted towards to the left end before calling these methods
         // Creates Quiet NaN if significand == 0
         private static Half CreateHalfNaN(bool sign, ulong significand)
@@ -610,11 +606,8 @@ namespace System
             uint signInt = (sign ? 1U : 0U) << SignShift;
             uint sigInt = (uint)(significand >> 54);
 
-            return UInt16BitsToHalf((ushort)(signInt | NaNBits | sigInt));
+            return BitConverter.Int16BitsToHalf((short)(signInt | NaNBits | sigInt));
         }
-
-        private static unsafe Half UInt16BitsToHalf(ushort value)
-            => *(Half*)&value;
 
         private static ushort RoundPackToHalf(bool sign, short exp, ushort sig)
         {
@@ -654,9 +647,6 @@ namespace System
         private static ulong ShiftRightJam(ulong l, int dist)
             => dist < 63 ? (l >> dist) | (l << (-dist & 63) != 0 ? 1UL : 0UL) : (l != 0 ? 1UL : 0UL);
 
-        private static ulong DoubleToUInt64Bits(double value)
-            => (ulong)BitConverter.DoubleToInt64Bits(value);
-
         private static float CreateSingleNaN(bool sign, ulong significand)
         {
             const uint NaNBits = float.ExponentMask | 0x400000; // Most significant significand bit
@@ -664,7 +654,7 @@ namespace System
             uint signInt = (sign ? 1U : 0U) << float.SignShift;
             uint sigInt = (uint)(significand >> 41);
 
-            return CreateSingle(signInt | NaNBits | sigInt);
+            return BitConverter.Int32BitsToSingle((int)(signInt | NaNBits | sigInt));
         }
 
         private static double CreateDoubleNaN(bool sign, ulong significand)
@@ -674,14 +664,8 @@ namespace System
             ulong signInt = (sign ? 1UL : 0UL) << double.SignShift;
             ulong sigInt = significand >> 12;
 
-            return CreateDouble(signInt | NaNBits | sigInt);
+            return BitConverter.Int64BitsToDouble((long)(signInt | NaNBits | sigInt));
         }
-
-        private static double CreateDouble(ulong value)
-            => BitConverter.Int64BitsToDouble((long)value);
-
-        private static float CreateSingle(uint value)
-            => BitConverter.Int32BitsToSingle((int)value);
 
         private static float CreateSingle(bool sign, byte exp, uint sig)
             => BitConverter.Int32BitsToSingle((int)(((sign ? 1U : 0U) << float.SignShift) | ((uint)exp << float.ExponentShift) | sig));

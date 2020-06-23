@@ -633,7 +633,7 @@ namespace System
             // accept values like 0 and others may require additional fixups.
             int nMaxDigits = GetFloatingPointMaxDigitsAndPrecision(fmt, ref precision, info, out bool isSignificantDigits);
 
-            if ((value != 0.0f) && (!isSignificantDigits || !Grisu3.TryRunSingle(value, precision, ref number)))
+            if ((value != default) && (!isSignificantDigits || !Grisu3.TryRunSingle(value, precision, ref number)))
             {
                 Dragon4Single(value, precision, isSignificantDigits, ref number);
             }
@@ -708,7 +708,7 @@ namespace System
             // accept values like 0 and others may require additional fixups.
             int nMaxDigits = GetFloatingPointMaxDigitsAndPrecision(fmt, ref precision, info, out bool isSignificantDigits);
 
-            if (((double)value != 0.0) && (!isSignificantDigits || !Grisu3.TryRunHalf(value, precision, ref number)))
+            if ((value != default) && (!isSignificantDigits || !Grisu3.TryRunHalf(value, precision, ref number)))
             {
                 Dragon4Half(value, precision, isSignificantDigits, ref number);
             }
@@ -2654,7 +2654,7 @@ namespace System
         {
             ushort bits = (ushort)BitConverter.HalfToInt16Bits(value);
             ushort fraction = (ushort)(bits & 0x3FF);
-            exponent = ((int)(bits >> 10) & 0xFF);
+            exponent = ((int)(bits >> 10) & 0x1F);
 
             if (exponent != 0)
             {

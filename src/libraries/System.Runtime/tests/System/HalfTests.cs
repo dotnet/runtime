@@ -350,8 +350,8 @@ namespace System.Tests
             {
                 (UInt16BitsToHalf(0b0_01111_0000000000), 1f), // 1
                 (UInt16BitsToHalf(0b1_01111_0000000000), -1f), // -1
-                (Half.MaxValue, 65504f), // 65504
-                (Half.MinValue, -65504f), // -65504
+                (Half.MaxValue, 65504f), // 65500
+                (Half.MinValue, -65504f), // -65500
                 (UInt16BitsToHalf(0b0_01011_1001100110), 0.0999755859375f), // 0.1ish
                 (UInt16BitsToHalf(0b1_01011_1001100110), -0.0999755859375f), // -0.1ish
                 (UInt16BitsToHalf(0b0_10100_0101000000), 42f), // 42
@@ -395,8 +395,8 @@ namespace System.Tests
             {
                 (UInt16BitsToHalf(0b0_01111_0000000000), 1d), // 1
                 (UInt16BitsToHalf(0b1_01111_0000000000), -1d), // -1
-                (Half.MaxValue, 65504d), // 65504
-                (Half.MinValue, -65504d), // -65504
+                (Half.MaxValue, 65504d), // 65500
+                (Half.MinValue, -65504d), // -65500
                 (UInt16BitsToHalf(0b0_01011_1001100110), 0.0999755859375d), // 0.1ish
                 (UInt16BitsToHalf(0b1_01011_1001100110), -0.0999755859375d), // -0.1ish
                 (UInt16BitsToHalf(0b0_10100_0101000000), 42d), // 42
@@ -677,9 +677,9 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToString_TestData()
         {
-            yield return new object[] { -4568.0f, "G", null, "-4568" };
+            yield return new object[] { -4570.0f, "G", null, "-4570" };
             yield return new object[] { 0.0f, "G", null, "0" };
-            yield return new object[] { 4568.0f, "G", null, "4568" };
+            yield return new object[] { 4570.0f, "G", null, "4570" };
 
             yield return new object[] { float.NaN, "G", null, "NaN" };
 
@@ -687,7 +687,7 @@ namespace System.Tests
 
             // Changing the negative pattern doesn't do anything without also passing in a format string
             var customNegativePattern = new NumberFormatInfo() { NumberNegativePattern = 0 };
-            yield return new object[] { -6312.0f, "G", customNegativePattern, "-6312" };
+            yield return new object[] { -6310.0f, "G", customNegativePattern, "-6310" };
 
             var customNegativeSignDecimalGroupSeparator = new NumberFormatInfo()
             {
@@ -719,13 +719,13 @@ namespace System.Tests
                 yield return testData;
             }
 
-            yield return new object[] { Half.MinValue, "G", null, "-65504" };
-            yield return new object[] { Half.MaxValue, "G", null, "65504" };
+            yield return new object[] { Half.MinValue, "G", null, "-65500" };
+            yield return new object[] { Half.MaxValue, "G", null, "65500" };
 
-            yield return new object[] { Half.Epsilon, "G", null, "5.9604645E-08" };
+            yield return new object[] { Half.Epsilon, "G", null, "6E-08" };
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
-            yield return new object[] { Half.Epsilon, "G", invariantFormat, "5.9604645E-08" };
+            yield return new object[] { Half.Epsilon, "G", invariantFormat, "6E-08" };
         }
 
         [Fact]
