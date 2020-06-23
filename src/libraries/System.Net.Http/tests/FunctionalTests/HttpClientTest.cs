@@ -872,12 +872,12 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    try
-                    {
-                        var sendTask = Task.Run(() => {
-                            using HttpClient httpClient = CreateHttpClient();
-                            httpClient.Timeout = TimeSpan.FromSeconds(0.5);
+                    var sendTask = Task.Run(() => {
+                        using HttpClient httpClient = CreateHttpClient();
+                        httpClient.Timeout = TimeSpan.FromSeconds(0.5);
 
+                        try 
+                        {
                             HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
                                 Content = new CustomContent(new Action<Stream>(stream =>
                                 {
@@ -888,15 +888,15 @@ namespace System.Net.Http.Functional.Tests
                                     }
                                 }))
                             });
-                        });
+                        }
+                        finally
+                        {
+                            mres.Set();
+                        }
+                    });
 
-                        TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
-                        Assert.IsType<TimeoutException>(ex.InnerException);
-                    }
-                    finally
-                    {
-                        mres.Set();
-                    }
+                    TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
+                    Assert.IsType<TimeoutException>(ex.InnerException);
                 },
                 async server =>
                 { 
@@ -966,22 +966,21 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    try
-                    {
-                        var sendTask = Task.Run(() => {
-                            using HttpClient httpClient = CreateHttpClient();
-                            httpClient.Timeout = TimeSpan.FromSeconds(0.5);
-
+                    var sendTask = Task.Run(() => {
+                        using HttpClient httpClient = CreateHttpClient();
+                        httpClient.Timeout = TimeSpan.FromSeconds(0.5);
+                        try
+                        {
                             HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri));
-                        });
+                        }
+                        finally
+                        {
+                            mres.Set();
+                        }
+                    });
 
-                        TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
-                        Assert.IsType<TimeoutException>(ex.InnerException);
-                    }
-                    finally
-                    {
-                        mres.Set();
-                    }
+                    TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
+                    Assert.IsType<TimeoutException>(ex.InnerException);
                 },
                 async server =>
                 {
