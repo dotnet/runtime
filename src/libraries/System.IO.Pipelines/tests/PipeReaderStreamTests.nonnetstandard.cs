@@ -16,7 +16,7 @@ namespace System.IO.Pipelines.Tests
     {
         public delegate Task<int> ReadAsyncDelegate(Stream stream, byte[] data);
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task DisposingPipeReaderStreamCompletesPipeReader(bool dataInPipe)
@@ -171,7 +171,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Writer.Complete();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancellingPendingReadThrowsOperationCancelledException()
         {
             var pipe = new Pipe();
@@ -187,7 +187,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CanReadAfterCancellingPendingRead()
         {
             var pipe = new Pipe();
@@ -245,7 +245,7 @@ namespace System.IO.Pipelines.Tests
             Assert.Same(stream, pipeReader.AsStream());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task PipeWriterStreamProducesToConsumingPipeReaderStream()
         {
             var pipe = new Pipe();
@@ -403,7 +403,10 @@ namespace System.IO.Pipelines.Tests
 
                 yield return new object[] { readArrayAsync };
                 yield return new object[] { readMemoryAsync };
-                yield return new object[] { readMemoryAsyncWithThreadHop };
+                if (PlatformDetection.IsThreadingSupported)
+                {
+                    yield return new object[] { readMemoryAsyncWithThreadHop };
+                }
                 yield return new object[] { readArraySync };
                 yield return new object[] { readSpanSync };
             }
