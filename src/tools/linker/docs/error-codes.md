@@ -229,3 +229,7 @@ error and warning codes.
 #### `IL2043`: Trying to propagate DynamicallyAccessedMemberAttribute from property 'property' to its getter 'method', but it already has such attribute.
 
 - Propagating DynamicallyAccessedMembersAttribute from property 'property' to its getter 'method' found that the getter already has such an attribute. The existing attribute will be used.
+
+#### `IL2044`: Custom Attribute 'type' is being instanciated after LinkerRemovableAttribute was used on the Custom Attribute type
+
+- CustomAttribute 'type' is being instanciated with reflection but the 'type' has been removed from non reflection calls using the LinkerRemovableAttribute
