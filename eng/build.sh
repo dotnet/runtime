@@ -73,6 +73,7 @@ usage()
   echo "  --cmakeargs                User-settable additional arguments passed to CMake."
   echo "  --gcc                      Optional argument to build using gcc in PATH (default)."
   echo "  --gccx.y                   Optional argument to build using gcc version x.y."
+  echo "  --portablebuild            Optional argument: set to false to force a non-portable build."
   echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
@@ -121,9 +122,7 @@ initDistroRid()
     local targetOs="$1"
     local buildArch="$2"
     local isCrossBuild="$3"
-    # For RID calculation purposes, say we are always a portable build
-    # All of our packages that use the distro rid (CoreCLR packages) are portable.
-    local isPortableBuild=1
+    local isPortableBuild="$4"
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified.
     if (( isCrossBuild == 1 )); then
@@ -141,6 +140,7 @@ arguments=''
 cmakeargs=''
 extraargs=''
 crossBuild=0
+portableBuild=1
 
 source $scriptroot/native/init-os-and-arch.sh
 
@@ -361,6 +361,19 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
 
+     -portablebuild)
+      if [ -z ${2+x} ]; then
+        echo "No value for portablebuild is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      passedPortable="$(echo "$2" | awk '{print tolower($0)}')"
+      if [ "$passedPortable" = false ]; then
+        portableBuild=0
+        arguments="$arguments /p:PortableBuild=false"
+      fi
+      shift 2
+      ;;
+
       *)
       extraargs="$extraargs $1"
       shift 1
@@ -372,7 +385,7 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
-initDistroRid $os $arch $crossBuild
+initDistroRid $os $arch $crossBuild $portableBuild
 
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.

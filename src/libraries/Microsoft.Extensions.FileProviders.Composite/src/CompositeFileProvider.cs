@@ -46,9 +46,9 @@ namespace Microsoft.Extensions.FileProviders
         /// <returns>The file information. Caller must check Exists property. This will be the first existing <see cref="IFileInfo"/> returned by the provided <see cref="IFileProvider"/> or a not found <see cref="IFileInfo"/> if no existing files is found.</returns>
         public IFileInfo GetFileInfo(string subpath)
         {
-            foreach (var fileProvider in _fileProviders)
+            foreach (IFileProvider fileProvider in _fileProviders)
             {
-                var fileInfo = fileProvider.GetFileInfo(subpath);
+                IFileInfo fileInfo = fileProvider.GetFileInfo(subpath);
                 if (fileInfo != null && fileInfo.Exists)
                 {
                     return fileInfo;
@@ -80,9 +80,9 @@ namespace Microsoft.Extensions.FileProviders
         {
             // Watch all file providers
             var changeTokens = new List<IChangeToken>();
-            foreach (var fileProvider in _fileProviders)
+            foreach (IFileProvider fileProvider in _fileProviders)
             {
-                var changeToken = fileProvider.Watch(pattern);
+                IChangeToken changeToken = fileProvider.Watch(pattern);
                 if (changeToken != null)
                 {
                     changeTokens.Add(changeToken);
@@ -94,7 +94,7 @@ namespace Microsoft.Extensions.FileProviders
             {
                 return NullChangeToken.Singleton;
             }
-            
+
             return new CompositeChangeToken(changeTokens);
         }
 

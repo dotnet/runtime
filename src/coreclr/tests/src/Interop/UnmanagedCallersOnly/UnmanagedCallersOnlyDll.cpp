@@ -6,11 +6,25 @@
 
 #include <thread>
 
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE DoubleImplNative(int n)
+{
+    return 2 * n;
+}
+
 typedef int (STDMETHODCALLTYPE *CALLBACKPROC)(int n);
+
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProcMultipleTimes(int m, CALLBACKPROC pCallbackProc, int n)
+{
+    int acc = 0;
+    for (int i = 0; i < m; ++i)
+        acc += pCallbackProc(n);
+
+    return acc;
+}
 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc(CALLBACKPROC pCallbackProc, int n)
 {
-    return pCallbackProc(n);
+    return CallManagedProcMultipleTimes(1, pCallbackProc, n);
 }
 
 namespace

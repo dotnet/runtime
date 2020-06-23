@@ -9,7 +9,6 @@ namespace Microsoft.Extensions.Logging.Configuration
     /// <inheritdoc />
     public class LoggerProviderOptionsChangeTokenSource<TOptions, TProvider> : ConfigurationChangeTokenSource<TOptions>
     {
-        /// <inheritdoc />
         public LoggerProviderOptionsChangeTokenSource(ILoggerProviderConfiguration<TProvider> providerConfiguration) : base(providerConfiguration.Configuration)
         {
         }

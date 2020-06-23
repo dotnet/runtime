@@ -2036,7 +2036,7 @@ public:
         return m_tpIndex;
     }
 
-    IUnknown *CreateBinderContext();
+    CLRPrivBinderCoreCLR *CreateBinderContext();
 
     void SetIgnoreUnhandledExceptions()
     {
@@ -2290,11 +2290,9 @@ private:
     // by one. For it to hit zero an explicit close must have happened.
     LONG        m_cRef;                    // Ref count.
 
-#ifndef DACCESS_COMPILE
     // Map of loaded composite native images indexed by base load addresses
     CrstExplicitInit m_nativeImageLoadCrst;
     MapSHash<LPCUTF8, PTR_NativeImage, NativeImageIndexTraits> m_nativeImageMap;
-#endif
 
 #ifdef FEATURE_COMINTEROP
     // this cache stores the RCWs in this domain

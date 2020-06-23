@@ -44,7 +44,7 @@ namespace MonoTests.System.Runtime.Caching
 {
     public class MemoryCacheTest
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ConstructorParameters()
         {
             MemoryCache mc;
@@ -156,7 +156,7 @@ namespace MonoTests.System.Runtime.Caching
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Defaults()
         {
             var mc = new MemoryCache("MyCache");
@@ -172,7 +172,7 @@ namespace MonoTests.System.Runtime.Caching
                 mc.DefaultCacheCapabilities);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void DefaultInstanceDefaults()
         {
             var mc = MemoryCache.Default;
@@ -211,7 +211,7 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal(TimeSpan.FromMinutes(70), mc.PollingInterval);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Indexer()
         {
             var mc = new PokerMemoryCache("MyCache");
@@ -278,7 +278,7 @@ namespace MonoTests.System.Runtime.Caching
             Assert.False(mc.Contains("key"));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void CreateCacheEntryChangeMonitor()
         {
             var mc = new PokerMemoryCache("MyCache");
@@ -328,7 +328,7 @@ namespace MonoTests.System.Runtime.Caching
             Assert.True (monitor.HasChanged);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void AddOrGetExisting_String_Object_DateTimeOffset_String()
         {
             var mc = new PokerMemoryCache("MyCache");
@@ -365,7 +365,7 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Null(value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void AddOrGetExisting_String_Object_CacheItemPolicy_String()
         {
             var mc = new PokerMemoryCache("MyCache");
@@ -446,7 +446,7 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Null(value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void AddOrGetExisting_CacheItem_CacheItemPolicy()
         {
             var mc = new PokerMemoryCache("MyCache");
@@ -585,7 +585,7 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal("AddOrGetExisting (CacheItem item, CacheItemPolicy policy)", mc.Calls[0]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Set_String_Object_CacheItemPolicy_String()
         {
             var mc = new PokerMemoryCache("MyCache");
@@ -668,7 +668,7 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal("Set (string key, object value, CacheItemPolicy policy, string regionName = null)", mc.Calls[0]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Set_String_Object_DateTimeOffset_String()
         {
             var mc = new PokerMemoryCache("MyCache");
@@ -700,7 +700,7 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal("Set (string key, object value, CacheItemPolicy policy, string regionName = null)", mc.Calls[1]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Set_CacheItem_CacheItemPolicy()
         {
             var mc = new PokerMemoryCache("MyCache");
@@ -795,7 +795,7 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal("Set (string key, object value, CacheItemPolicy policy, string regionName = null)", mc.Calls[1]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Remove()
         {
             var mc = new PokerMemoryCache("MyCache");
@@ -881,7 +881,7 @@ namespace MonoTests.System.Runtime.Caching
             Assert.False(callbackInvoked);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void GetValues()
         {
             var mc = new PokerMemoryCache("MyCache");
@@ -930,7 +930,7 @@ namespace MonoTests.System.Runtime.Caching
             Assert.False(value.ContainsKey("Key1"));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ChangeMonitors()
         {
             bool removed = false;
@@ -970,7 +970,7 @@ namespace MonoTests.System.Runtime.Caching
 
         // Due to internal implementation details Trim has very few easily verifiable scenarios
         // ActiveIssue: https://github.com/dotnet/runtime/issues/36488
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))]
         public void Trim()
         {
             var config = new NameValueCollection();

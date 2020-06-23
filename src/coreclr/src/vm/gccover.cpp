@@ -1425,6 +1425,18 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         return TRUE;
     }
 
+    // If we're in cooperative mode, we're supposed to stop for GC,
+    // and there's an active ICF, don't initiate a stress GC.
+    if (g_TrapReturningThreads && pThread->PreemptiveGCDisabled())
+    {
+        Frame* pFrame = pThread->GetFrame();
+        if (InlinedCallFrame::FrameHasActiveCall(pFrame))
+        {
+            RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
+            return TRUE;
+        }
+    }
+
 #if defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX)
     // If we're unable to redirect, then we simply won't test GC at this
     // location.

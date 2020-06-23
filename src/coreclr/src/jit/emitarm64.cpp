@@ -12549,7 +12549,7 @@ void emitter::emitDispIns(
                 emitDispVectorReg(id->idReg1(), optWidenElemsize(id->idInsOpt()), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
-            else if ((ins == INS_fcvtn) || (ins == INS_fcvtn2))
+            else if ((ins == INS_fcvtn) || (ins == INS_fcvtn2) || (ins == INS_fcvtxn) || (ins == INS_fcvtxn2))
             {
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg2(), optWidenElemsize(id->idInsOpt()), false);
@@ -12678,6 +12678,10 @@ void emitter::emitDispIns(
             {
                 emitDispReg(id->idReg2(), elemsize, true);
                 emitDispImm(0, false);
+            }
+            else if (ins == INS_fcvtxn)
+            {
+                emitDispReg(id->idReg2(), EA_8BYTE, false);
             }
             else
             {

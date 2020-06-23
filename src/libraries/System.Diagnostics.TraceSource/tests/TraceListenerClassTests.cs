@@ -313,7 +313,7 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.Equal(expected, listener.WriteCount);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void WriteFooterTest_Callstack()
         {

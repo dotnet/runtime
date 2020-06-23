@@ -1072,12 +1072,11 @@ namespace System.Net.Http
             {
                 Debug.Assert(_requestBodyCancellationSource != null);
 
-                // Deal with [ActiveIssue("https://github.com/dotnet/runtime/issues/17492")]
-                // Custom HttpContent classes do not get passed the cancellationToken.
-                // So, inject the expected CancellationToken here, to ensure we can cancel the request body send if needed.
+                // Cancel the request body sending if cancellation is requested on the supplied cancellation token.
                 CancellationTokenRegistration linkedRegistration = cancellationToken.CanBeCanceled && cancellationToken != _requestBodyCancellationSource.Token ?
                     RegisterRequestBodyCancellation(cancellationToken) :
                     default;
+
                 try
                 {
                     while (buffer.Length > 0)

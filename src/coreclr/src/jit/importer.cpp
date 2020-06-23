@@ -8670,12 +8670,6 @@ DONE:
             JITDUMP("\nOSR: found tail recursive call in the method, scheduling " FMT_BB " for importation\n",
                     fgEntryBB->bbNum);
             impImportBlockPending(fgEntryBB);
-
-            // Note there is no explicit flow to this block yet,
-            // make sure it stays around until we actually try
-            // the optimization.
-            fgEntryBB->bbFlags |= BBF_DONT_REMOVE;
-
             loopHead = fgEntryBB;
         }
         else
