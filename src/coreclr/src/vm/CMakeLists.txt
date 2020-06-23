@@ -912,9 +912,16 @@ if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND VM_SOURCES_DAC ${VM_HEADERS_DAC})
 endif(CLR_CMAKE_TARGET_WIN32)
 
+#these two files we need to compile differently for standalone and mergeable flavors of WKS
+set (VM_SOURCES_WKS_SPECIAL
+    codeman.cpp
+    ceemain.cpp
+)
+
 convert_to_absolute_path(VM_SOURCES_WKS ${VM_SOURCES_WKS})
 convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
 convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
+convert_to_absolute_path(VM_SOURCES_WKS_SPECIAL ${VM_SOURCES_WKS_SPECIAL})
 
 add_library_clr(cee_dac ${VM_SOURCES_DAC})
 add_dependencies(cee_dac eventing_headers)
