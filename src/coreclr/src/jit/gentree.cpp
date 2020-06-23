@@ -6836,8 +6836,8 @@ bool GenTreeOp::usesMagicNumberDivision(Compiler* comp)
 #endif // TARGET_ARM64
 
     bool     isSignedDivide = OperIs(GT_DIV, GT_MOD);
-    GenTree* dividend       = gtGetOp1();
-    GenTree* divisor        = gtGetOp2();
+    GenTree* dividend       = gtGetOp1()->gtEffectiveVal(/*commaOnly*/ true);
+    GenTree* divisor        = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
 
 #if !defined(TARGET_64BIT)
     if (dividend->OperIs(GT_LONG))
@@ -6951,7 +6951,7 @@ void GenTreeOp::checkMagicNumberDivision(Compiler* comp)
         gtFlags |= GTF_DIV_USE_MAGIC;
 
         // Now set DONT_CSE on the GT_CNS_INT divisor
-        GenTree* divisor = gtGetOp2();
+        GenTree* divisor = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
         divisor->gtFlags |= GTF_DONT_CSE;
     }
 }
