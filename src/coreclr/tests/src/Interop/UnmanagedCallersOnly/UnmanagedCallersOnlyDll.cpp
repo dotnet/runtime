@@ -36,37 +36,19 @@ namespace
         int Result;
     };
 
-    void* ProxyCall(void* cxtRaw)
+    void ProxyCall(ProxyCallContext* cxt)
     {
-        auto cxt = (ProxyCallContext*)cxtRaw;
         cxt->Result = CallManagedProc(cxt->CallbackProc, cxt->N);
-        return NULL;
     }
 }
 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProcOnNewThread(CALLBACKPROC pCallbackProc, int n)
 {
     ProxyCallContext cxt{ pCallbackProc, n, 0 };
-
-#ifdef _WIN32
     std::thread newThreadToRuntime{ ProxyCall, &cxt };
 
     // Wait for new thread to complete
     newThreadToRuntime.join();
-
-#else // _WIN32
-    pthread_t newThreadToRuntime;
-    int ret = pthread_create(&newThreadToRuntime, NULL, ProxyCall, &cxt);
-    if (ret != 0)
-    {
-        printf("Failed to create thread: %d\n", ret);
-        std::abort();
-    }
-
-    // Wait for new thread to complete
-    pthread_join(newThreadToRuntime, NULL);
-
-#endif // _WIN32
 
     return cxt.Result;
 }
