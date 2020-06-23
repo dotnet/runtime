@@ -1338,6 +1338,10 @@ namespace Mono.Linker.Steps
 			if (type.HasMethods && ShouldMarkTypeStaticConstructor (type) && reason.Kind == DependencyKind.DeclaringTypeOfCalledMethod)
 				MarkStaticConstructor (type, new DependencyInfo (DependencyKind.TriggersCctorForCalledMethod, reason.Source), type);
 
+			// Check type being used was not removed by the LinkerRemovableAttribute
+			if (_context.Annotations.HasLinkerAttribute<LinkerRemovableAttribute> (type))
+				_context.LogWarning ($"Custom Attribute {type} is being instanciated after LinkerRemovableAttribute was used on the Custom Attribute type", 2044, sourceLocationMember);
+
 			if (CheckProcessed (type))
 				return null;
 
