@@ -28,11 +28,11 @@ namespace System.Net.Sockets
     public partial class Socket
     {
         /// <summary>Handler for completed AcceptAsync operations.</summary>
-        private static readonly EventHandler<SocketAsyncEventArgs> AcceptCompletedHandler = (s, e) => CompleteAccept((Socket)s!, (TaskSocketAsyncEventArgs<Socket>)e);
+        private static readonly EventHandler<SocketAsyncEventArgs> s_acceptCompletedHandler = (s, e) => CompleteAccept((Socket)s!, (TaskSocketAsyncEventArgs<Socket>)e);
         /// <summary>Handler for completed ReceiveAsync operations.</summary>
-        private static readonly EventHandler<SocketAsyncEventArgs> ReceiveCompletedHandler = (s, e) => CompleteSendReceive((Socket)s!, (Int32TaskSocketAsyncEventArgs)e, isReceive: true);
+        private static readonly EventHandler<SocketAsyncEventArgs> s_receiveCompletedHandler = (s, e) => CompleteSendReceive((Socket)s!, (Int32TaskSocketAsyncEventArgs)e, isReceive: true);
         /// <summary>Handler for completed SendAsync operations.</summary>
-        private static readonly EventHandler<SocketAsyncEventArgs> SendCompletedHandler = (s, e) => CompleteSendReceive((Socket)s!, (Int32TaskSocketAsyncEventArgs)e, isReceive: false);
+        private static readonly EventHandler<SocketAsyncEventArgs> s_sendCompletedHandler = (s, e) => CompleteSendReceive((Socket)s!, (Int32TaskSocketAsyncEventArgs)e, isReceive: false);
         /// <summary>
         /// Sentinel that can be stored into one of the Socket cached fields to indicate that an instance
         /// was previously created but is currently being used by another concurrent operation.
@@ -67,7 +67,7 @@ namespace System.Net.Sockets
             {
                 // No instance has been created yet, so create one.
                 saea = new TaskSocketAsyncEventArgs<Socket>();
-                saea.Completed += AcceptCompletedHandler;
+                saea.Completed += s_acceptCompletedHandler;
             }
 
             // Configure the SAEA.
@@ -665,7 +665,7 @@ namespace System.Net.Sockets
             {
                 // No instance has been created yet, so create one.
                 saea = new Int32TaskSocketAsyncEventArgs();
-                saea.Completed += isReceive ? ReceiveCompletedHandler : SendCompletedHandler;
+                saea.Completed += isReceive ? s_receiveCompletedHandler : s_sendCompletedHandler;
             }
 
             return saea;
