@@ -115,7 +115,7 @@ static void ConvertConfigPropertiesToUnicode(
     LPCWSTR** propertyKeysWRef,
     LPCWSTR** propertyValuesWRef,
     BundleProbe** bundleProbe,
-    bool* running_in_exe)
+    bool* runningInExe)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
     ASSERTE_ALL_BUILDS(propertyKeysW != nullptr);
@@ -137,7 +137,7 @@ static void ConvertConfigPropertiesToUnicode(
 
         if (strcmp(propertyKeys[propertyIndex], "EMBEDDED_RUNTIME") == 0)
         {
-            *running_in_exe = true;
+            *runningInExe = true;
         }
     }
 
@@ -181,7 +181,7 @@ int coreclr_initialize(
     LPCWSTR* propertyKeysW;
     LPCWSTR* propertyValuesW;
     BundleProbe* bundleProbe = nullptr;
-    bool running_in_exe = false;
+    bool runningInExe = false;
 
     ConvertConfigPropertiesToUnicode(
         propertyKeys,
@@ -190,10 +190,10 @@ int coreclr_initialize(
         &propertyKeysW,
         &propertyValuesW,
         &bundleProbe,
-        &running_in_exe);
+        &runningInExe);
 
 #ifdef TARGET_UNIX
-    DWORD error = PAL_InitializeCoreCLR(exePath, running_in_exe);
+    DWORD error = PAL_InitializeCoreCLR(exePath, runningInExe);
     hr = HRESULT_FROM_WIN32(error);
 
     // If PAL initialization failed, then we should return right away and avoid

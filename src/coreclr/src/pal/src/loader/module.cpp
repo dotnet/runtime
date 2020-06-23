@@ -1784,7 +1784,7 @@ MODSTRUCT *LOADGetPalLibrary()
             }
         }
 
-        if (g_running_in_exe == true)
+        if (g_running_in_exe)
         {
             pal_module = (MODSTRUCT*)LOADLoadLibrary(nullptr, FALSE);
         }

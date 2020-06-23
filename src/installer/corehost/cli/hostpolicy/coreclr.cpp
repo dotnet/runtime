@@ -42,7 +42,7 @@ pal::hresult_t coreclr_t::create(
     coreclr_property_bag_t final_properties = properties;
     if (coreclr_contract.coreclr == nullptr)
     {
-        final_properties.add(common_property::EmbeddedRuntime, "1");
+        final_properties.add(common_property::EmbeddedRuntime, _X(""));
     }
 
     int propertyCount = final_properties.count();

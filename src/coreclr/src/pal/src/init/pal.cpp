@@ -788,9 +788,9 @@ Return:
 --*/
 PAL_ERROR
 PALAPI
-PAL_InitializeCoreCLR(const char *szExePath, bool running_in_exe)
+PAL_InitializeCoreCLR(const char *szExePath, bool runningInExe)
 {
-    g_running_in_exe = running_in_exe;
+    g_running_in_exe = runningInExe;
 
     // Fake up a command line to call PAL initialization with.
     int result = Initialize(1, &szExePath, PAL_INITIALIZE_CORECLR);
