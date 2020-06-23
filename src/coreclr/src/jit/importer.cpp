@@ -8803,7 +8803,7 @@ DONE_CALL:
                 impAppendTree(call, (unsigned)CHECK_SPILL_ALL, impCurStmtOffs);
 
                 // TODO: Still using the widened type.
-                GenTree* retExpr = gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp));
+                GenTree* retExpr = gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp), compCurBB->bbFlags);
 
                 // Link the retExpr to the call so if necessary we can manipulate it later.
                 origCall->gtInlineCandidateInfo->retExpr = retExpr;
