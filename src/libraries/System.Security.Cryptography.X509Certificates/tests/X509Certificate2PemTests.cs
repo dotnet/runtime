@@ -33,7 +33,7 @@ MII
         public static void CreateFromPem_CryptographicException_InvalidKeyAlgorithm()
         {
             CryptographicException ce = Assert.Throws<CryptographicException>(() =>
-                X509Certificate2.CreateFromPem(PemTestData.Ed25519Certificate, default));
+                X509Certificate2.CreateFromPem(TestData.Ed25519Certificate, default));
 
             Assert.Contains("'1.3.101.112'", ce.Message);
         }
@@ -42,7 +42,7 @@ MII
         public static void CreateFromPem_ArgumentException_NoKey()
         {
             AssertExtensions.Throws<ArgumentException>("keyPem", () =>
-                X509Certificate2.CreateFromPem(PemTestData.RsaCertificate, default));
+                X509Certificate2.CreateFromPem(TestData.RsaCertificate, default));
         }
 
         [Fact]
@@ -54,92 +54,92 @@ MII
 -----END RSA PRIVATE KEY-----
 ";
             AssertExtensions.Throws<ArgumentException>("keyPem", () =>
-                X509Certificate2.CreateFromPem(PemTestData.RsaCertificate, CertContents));
+                X509Certificate2.CreateFromPem(TestData.RsaCertificate, CertContents));
         }
 
         [Fact]
         public static void CreateFromPem_Rsa_Pkcs1_Success()
         {
-            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(PemTestData.RsaCertificate, PemTestData.RsaPkcs1Key))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaCertificate, TestData.RsaPkcs1Key))
             {
                 Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
-                AssertKeysMatch(PemTestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
+                AssertKeysMatch(TestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
             }
         }
 
         [Fact]
         public static void CreateFromPem_Rsa_Pkcs8_Success()
         {
-            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(PemTestData.RsaCertificate, PemTestData.RsaPkcs8Key))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaCertificate, TestData.RsaPkcs8Key))
             {
                 Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
-                AssertKeysMatch(PemTestData.RsaPkcs8Key, cert.GetRSAPrivateKey);
+                AssertKeysMatch(TestData.RsaPkcs8Key, cert.GetRSAPrivateKey);
             }
         }
 
         [Fact]
         public static void CreateFromPem_Rsa_Aggregate_Pkcs8_Success()
         {
-            string pemAggregate = PemTestData.RsaCertificate + PemTestData.RsaPkcs8Key;
+            string pemAggregate = TestData.RsaCertificate + TestData.RsaPkcs8Key;
             using (X509Certificate2 cert = X509Certificate2.CreateFromPem(pemAggregate, pemAggregate))
             {
                 Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
-                AssertKeysMatch(PemTestData.RsaPkcs8Key, cert.GetRSAPrivateKey);
+                AssertKeysMatch(TestData.RsaPkcs8Key, cert.GetRSAPrivateKey);
             }
         }
 
         [Fact]
         public static void CreateFromPem_Rsa_Aggregate_Pkcs1_Success()
         {
-            string pemAggregate = PemTestData.RsaCertificate + PemTestData.RsaPkcs1Key;
+            string pemAggregate = TestData.RsaCertificate + TestData.RsaPkcs1Key;
             using (X509Certificate2 cert = X509Certificate2.CreateFromPem(pemAggregate, pemAggregate))
             {
                 Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
-                AssertKeysMatch(PemTestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
+                AssertKeysMatch(TestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
             }
         }
 
         [Fact]
         public static void CreateFromPem_Rsa_LoadsFirstCertificate_Success()
         {
-            string certAggregate = PemTestData.RsaCertificate + PemTestData.ECDsaCertificate;
-            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(certAggregate, PemTestData.RsaPkcs1Key))
+            string certAggregate = TestData.RsaCertificate + TestData.ECDsaCertificate;
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(certAggregate, TestData.RsaPkcs1Key))
             {
                 Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
-                AssertKeysMatch(PemTestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
+                AssertKeysMatch(TestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
             }
         }
 
         [Fact]
         public static void CreateFromPem_Rsa_IgnoresNonMatchingAlgorithmKeys_Success()
         {
-            string keyAggregate = PemTestData.ECDsaECPrivateKey + PemTestData.RsaPkcs1Key;
-            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(PemTestData.RsaCertificate, keyAggregate))
+            string keyAggregate = TestData.ECDsaECPrivateKey + TestData.RsaPkcs1Key;
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaCertificate, keyAggregate))
             {
                 Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
-                AssertKeysMatch(PemTestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
+                AssertKeysMatch(TestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
             }
         }
 
         [Fact]
         public static void CreateFromPem_Rsa_IgnoresPkcs1PublicKey_Success()
         {
-            string keyAggregate = PemTestData.RsaPkcs1PublicKey + PemTestData.RsaPkcs1Key;
-            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(PemTestData.RsaCertificate, keyAggregate))
+            string keyAggregate = TestData.RsaPkcs1PublicKey + TestData.RsaPkcs1Key;
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaCertificate, keyAggregate))
             {
                 Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
-                AssertKeysMatch(PemTestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
+                AssertKeysMatch(TestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
             }
         }
 
         [Fact]
         public static void CreateFromPem_Rsa_IgnoresPkcs8PublicKey_Success()
         {
-            string keyAggregate = PemTestData.RsaPkcs8PublicKey + PemTestData.RsaPkcs1Key;
-            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(PemTestData.RsaCertificate, keyAggregate))
+            string keyAggregate = TestData.RsaPkcs8PublicKey + TestData.RsaPkcs1Key;
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaCertificate, keyAggregate))
             {
                 Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
-                AssertKeysMatch(PemTestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
+                AssertKeysMatch(TestData.RsaPkcs1Key, cert.GetRSAPrivateKey);
             }
         }
 
@@ -147,21 +147,21 @@ MII
         public static void CreateFromPem_Rsa_KeyMismatch_Fail()
         {
             AssertExtensions.Throws<ArgumentException>("privateKey", () =>
-                X509Certificate2.CreateFromPem(PemTestData.RsaCertificate, PemTestData.OtherRsaPkcs1Key));
+                X509Certificate2.CreateFromPem(TestData.RsaCertificate, TestData.OtherRsaPkcs1Key));
         }
 
         [Fact]
         public static void CreateFromEncryptedPem_Rsa_Success()
         {
             X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
-                PemTestData.RsaCertificate,
-                PemTestData.RsaEncryptedPkcs8Key, 
+                TestData.RsaCertificate,
+                TestData.RsaEncryptedPkcs8Key, 
                 "test");
 
             using (cert)
             {
                 Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
-                AssertKeysMatch(PemTestData.RsaEncryptedPkcs8Key, cert.GetRSAPrivateKey, "test");
+                AssertKeysMatch(TestData.RsaEncryptedPkcs8Key, cert.GetRSAPrivateKey, "test");
             }
         }
 
@@ -169,7 +169,7 @@ MII
         public static void CreateFromEncryptedPem_Rsa_InvalidPassword_Fail()
         {
             CryptographicException ce = Assert.Throws<CryptographicException>(() =>
-                X509Certificate2.CreateFromEncryptedPem(PemTestData.RsaCertificate, PemTestData.RsaEncryptedPkcs8Key, "florp"));
+                X509Certificate2.CreateFromEncryptedPem(TestData.RsaCertificate, TestData.RsaEncryptedPkcs8Key, "florp"));
 
             Assert.Contains("password may be incorrect", ce.Message);
         }
@@ -178,26 +178,26 @@ MII
         public static void CreateFromEncryptedPem_Rsa_IgnoresUnencryptedPem_Fail()
         {
             AssertExtensions.Throws<ArgumentException>("keyPem", () =>
-                X509Certificate2.CreateFromEncryptedPem(PemTestData.RsaCertificate, PemTestData.RsaPkcs8Key, "test"));
+                X509Certificate2.CreateFromEncryptedPem(TestData.RsaCertificate, TestData.RsaPkcs8Key, "test"));
         }
 
         [Fact]
         public static void CreateFromPem_ECDsa_ECPrivateKey_Success()
         {
-            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(PemTestData.ECDsaCertificate, PemTestData.ECDsaECPrivateKey))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.ECDsaCertificate, TestData.ECDsaECPrivateKey))
             {
                 Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", cert.Thumbprint);
-                AssertKeysMatch(PemTestData.ECDsaECPrivateKey, cert.GetECDsaPrivateKey);
+                AssertKeysMatch(TestData.ECDsaECPrivateKey, cert.GetECDsaPrivateKey);
             }
         }
 
         [Fact]
         public static void CreateFromPem_ECDsa_Pkcs8_Success()
         {
-            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(PemTestData.ECDsaCertificate, PemTestData.ECDsaPkcs8Key))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.ECDsaCertificate, TestData.ECDsaPkcs8Key))
             {
                 Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", cert.Thumbprint);
-                AssertKeysMatch(PemTestData.ECDsaPkcs8Key, cert.GetECDsaPrivateKey);
+                AssertKeysMatch(TestData.ECDsaPkcs8Key, cert.GetECDsaPrivateKey);
             }
         }
 
@@ -205,24 +205,24 @@ MII
         public static void CreateFromPem_ECDsa_EncryptedPkcs8_Success()
         {
             X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
-                PemTestData.ECDsaCertificate,
-                PemTestData.ECDsaEncryptedPkcs8Key,
+                TestData.ECDsaCertificate,
+                TestData.ECDsaEncryptedPkcs8Key,
                 "test");
 
             using (cert)
             {
                 Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", cert.Thumbprint);
-                AssertKeysMatch(PemTestData.ECDsaEncryptedPkcs8Key, cert.GetECDsaPrivateKey, "test");
+                AssertKeysMatch(TestData.ECDsaEncryptedPkcs8Key, cert.GetECDsaPrivateKey, "test");
             }
         }
 
         [Fact]
         public static void CreateFromPem_Dsa_Pkcs8_Success()
         {
-            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(PemTestData.DsaCertificate, PemTestData.DsaPkcs8Key))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.DsaCertificate, TestData.DsaPkcs8Key))
             {
                 Assert.Equal("35052C549E4E7805E4EA204C2BE7F4BC19B88EC8", cert.Thumbprint);
-                AssertKeysMatch(PemTestData.DsaPkcs8Key, cert.GetDSAPrivateKey);
+                AssertKeysMatch(TestData.DsaPkcs8Key, cert.GetDSAPrivateKey);
             }
         }
 
@@ -230,14 +230,14 @@ MII
         public static void CreateFromPem_Dsa_EncryptedPkcs8_Success()
         {
             X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
-                PemTestData.DsaCertificate,
-                PemTestData.DsaEncryptedPkcs8Key,
+                TestData.DsaCertificate,
+                TestData.DsaEncryptedPkcs8Key,
                 "test");
 
             using (cert)
             {
                 Assert.Equal("35052C549E4E7805E4EA204C2BE7F4BC19B88EC8", cert.Thumbprint);
-                AssertKeysMatch(PemTestData.DsaEncryptedPkcs8Key, cert.GetDSAPrivateKey, "test");
+                AssertKeysMatch(TestData.DsaEncryptedPkcs8Key, cert.GetDSAPrivateKey, "test");
             }
         }
 

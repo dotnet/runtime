@@ -27,7 +27,6 @@
     <Compile Include="InteropTests.cs" />
     <Compile Include="LoadFromFileTests.cs" />
     <Compile Include="NameTests.cs" />
-    <Compile Include="PemTestData.cs" />
     <Compile Include="PfxFormatTests.cs" />
     <Compile Include="PfxFormatTests.SingleCertGenerator.cs" />
     <Compile Include="PfxFormatTests_Collection.cs" />

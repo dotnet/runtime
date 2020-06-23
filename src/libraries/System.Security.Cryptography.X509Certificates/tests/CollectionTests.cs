@@ -1431,7 +1431,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void ImportFromPem_SingleCertificate_Success()
         {
             X509Certificate2Collection cc = new X509Certificate2Collection();
-            cc.ImportFromPem(PemTestData.ECDsaCertificate);
+            cc.ImportFromPem(TestData.ECDsaCertificate);
             Assert.Single(cc);
             Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", cc[0].Thumbprint);
         }
@@ -1439,7 +1439,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ImportFromPem_SingleCertificate_IgnoresUnrelatedPems_Success()
         {
-            string pemAggregate = PemTestData.ECDsaPkcs8Key + PemTestData.ECDsaCertificate;
+            string pemAggregate = TestData.ECDsaPkcs8Key + TestData.ECDsaCertificate;
             X509Certificate2Collection cc = new X509Certificate2Collection();
             cc.ImportFromPem(pemAggregate);
             Assert.Single(cc);
@@ -1449,7 +1449,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ImportFromPem_MultiplePems_Success()
         {
-            string pemAggregate = PemTestData.RsaCertificate + PemTestData.ECDsaCertificate;
+            string pemAggregate = TestData.RsaCertificate + TestData.ECDsaCertificate;
             X509Certificate2Collection cc = new X509Certificate2Collection();
             cc.ImportFromPem(pemAggregate);
             Assert.Equal(2, cc.Count);
@@ -1461,15 +1461,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void ImportFromPem_Exception_AllOrNothing()
         {
             X509Certificate2Collection cc = new X509Certificate2Collection();
-            cc.ImportFromPem(PemTestData.DsaCertificate);
+            cc.ImportFromPem(TestData.DsaCertificate);
 
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine(PemTestData.RsaCertificate);
+            builder.AppendLine(TestData.RsaCertificate);
             builder.AppendLine(@"
 -----BEGIN CERTIFICATE-----
 MIII
 -----END CERTIFICATE-----");
-            builder.AppendLine(PemTestData.ECDsaCertificate);
+            builder.AppendLine(TestData.ECDsaCertificate);
 
             Assert.ThrowsAny<CryptographicException>(() => cc.ImportFromPem(builder.ToString()));
             Assert.Single(cc);
