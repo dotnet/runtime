@@ -164,9 +164,17 @@ namespace BinderTracingTests
 
         private readonly object eventsLock = new object();
         private readonly Dictionary<Guid, BindOperation> bindOperations = new Dictionary<Guid, BindOperation>();
+        private readonly string[] loadsToTrack;
+
+        public BinderEventListener(string[] loadsToTrack, bool log = false)
+        {
+            this.loadsToTrack = loadsToTrack;
+        }
 
         public BindOperation[] WaitAndGetEventsForAssembly(AssemblyName assemblyName)
         {
+            Assert.IsTrue(IsLoadToTrack(assemblyName.Name), $"Waiting for load for untracked name: {assemblyName.Name}. Tracking loads for: {string.Join(", ", loadsToTrack)}");
+
             const int waitIntervalInMs = 50;
             int waitTimeoutInMs = Environment.GetEnvironmentVariable("COMPlus_GCStress") == null
                 ? 30 * 1000
@@ -225,6 +233,9 @@ namespace BinderTracingTests
                 case "AssemblyLoadStart":
                 {
                     BindOperation bindOperation = ParseAssemblyLoadStartEvent(data, GetDataString);
+                    if (!IsLoadToTrack(bindOperation.AssemblyName.Name))
+                        return;
+
                     lock (eventsLock)
                     {
                         Assert.IsTrue(!bindOperations.ContainsKey(data.ActivityId), "AssemblyLoadStart should not exist for same activity ID ");
@@ -239,6 +250,10 @@ namespace BinderTracingTests
                 }
                 case "AssemblyLoadStop":
                 {
+                    string assemblyName = GetDataString("AssemblyName");
+                    if (!IsLoadToTrack(new AssemblyName(assemblyName).Name))
+                        return;
+
                     bool success = (bool)GetData("Success");
                     string resultName = GetDataString("ResultAssemblyName");
                     lock (eventsLock)
@@ -261,6 +276,9 @@ namespace BinderTracingTests
                 case "ResolutionAttempted":
                 {
                     ResolutionAttempt attempt = ParseResolutionAttemptedEvent(GetData, GetDataString);
+                    if (!IsLoadToTrack(attempt.AssemblyName.Name))
+                        return;
+
                     lock (eventsLock)
                     {
                         if (!bindOperations.ContainsKey(data.ActivityId))
@@ -274,6 +292,9 @@ namespace BinderTracingTests
                 case "AssemblyLoadContextResolvingHandlerInvoked":
                 {
                     HandlerInvocation handlerInvocation = ParseHandlerInvokedEvent(GetDataString);
+                    if (!IsLoadToTrack(handlerInvocation.AssemblyName.Name))
+                        return;
+
                     lock (eventsLock)
                     {
                         if (!bindOperations.ContainsKey(data.ActivityId))
@@ -287,6 +308,9 @@ namespace BinderTracingTests
                 case "AppDomainAssemblyResolveHandlerInvoked":
                 {
                     HandlerInvocation handlerInvocation = ParseHandlerInvokedEvent(GetDataString);
+                    if (!IsLoadToTrack(handlerInvocation.AssemblyName.Name))
+                        return;
+
                     lock (eventsLock)
                     {
                         if (!bindOperations.ContainsKey(data.ActivityId))
@@ -300,6 +324,9 @@ namespace BinderTracingTests
                 case "AssemblyLoadFromResolveHandlerInvoked":
                 {
                     LoadFromHandlerInvocation loadFrom = ParseLoadFromHandlerInvokedEvent(GetData, GetDataString);
+                    if (!IsLoadToTrack(loadFrom.AssemblyName.Name))
+                        return;
+
                     lock (eventsLock)
                     {
                         if (!bindOperations.ContainsKey(data.ActivityId))
@@ -313,6 +340,10 @@ namespace BinderTracingTests
                 case "KnownPathProbed":
                 {
                     ProbedPath probedPath = ParseKnownPathProbedEvent(GetData, GetDataString);
+                    string name = System.IO.Path.GetFileNameWithoutExtension(probedPath.FilePath);
+                    if (!IsLoadToTrack(name.EndsWith(".ni") ? name.Remove(name.Length - 3) : name))
+                        return;
+
                     lock (eventsLock)
                     {
                         if (!bindOperations.ContainsKey(data.ActivityId))
@@ -324,6 +355,11 @@ namespace BinderTracingTests
                     break;
                 }
             }
+        }
+
+        private bool IsLoadToTrack(string name)
+        {
+            return this.loadsToTrack.Any(n => n.Equals(name, StringComparison.InvariantCultureIgnoreCase));
         }
 
         private string GetMisssingAssemblyBindStartMessage(EventWrittenEventArgs data, string parsedEventAsString)
