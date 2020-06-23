@@ -391,7 +391,6 @@ bool EventPipe::EnableInternal(
     s_config.Enable(*pSession, pEventPipeProviderCallbackDataQueue);
 
     // Find out if the session requested samples
-    bool enableSampleProfiler = false;
     EventPipeSessionProviderIterator providerList = pSession->GetProviders();
     EventPipeSessionProvider *pProvider = nullptr;
     while (providerList.Next(&pProvider))

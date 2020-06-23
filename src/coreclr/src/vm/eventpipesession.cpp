@@ -422,6 +422,8 @@ EventPipeEventInstance *EventPipeSession::GetNextEvent()
 
     if (m_pBufferManager == nullptr)
     {
+        // Shouldn't call GetNextEvent on a synchronous session
+        _ASSERTE(false);
         return nullptr;
     }
 
@@ -434,6 +436,8 @@ CLREvent *EventPipeSession::GetWaitEvent()
 
     if (m_pBufferManager == nullptr)
     {
+        // Shouldn't call GetWaitEvent on a synchronous session
+        _ASSERTE(false);
         return nullptr;
     }
 
