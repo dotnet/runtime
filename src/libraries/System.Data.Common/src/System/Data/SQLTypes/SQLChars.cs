@@ -34,12 +34,12 @@ namespace System.Data.SqlTypes
         //        - m_lCurLen must be x_lNull.
         // 5) SqlChars contains a Lazy Materialized Blob (ie, StorageState.Delayed)
         //
-        internal char[] _rgchBuf;  // Data buffer
+        internal char[]? _rgchBuf;  // Data buffer
         private long _lCurLen; // Current data length
-        internal SqlStreamChars _stream;
+        internal SqlStreamChars? _stream;
         private SqlBytesCharsState _state;
 
-        private char[] _rgchWorkBuf;   // A 1-char work buffer.
+        private char[]? _rgchWorkBuf;   // A 1-char work buffer.
 
         // The max data length that we support at this time.
         private const long x_lMaxLen = int.MaxValue;
@@ -57,7 +57,7 @@ namespace System.Data.SqlTypes
         }
 
         // Create a SqlChars with an in-memory buffer
-        public SqlChars(char[] buffer)
+        public SqlChars(char[]? buffer)
         {
             _rgchBuf = buffer;
             _stream = null;
@@ -111,7 +111,7 @@ namespace System.Data.SqlTypes
         // Property: the in-memory buffer of SqlChars
         //        Return Buffer even if SqlChars is Null.
 
-        public char[] Buffer
+        public char[]? Buffer
         {
             get
             {
@@ -131,7 +131,7 @@ namespace System.Data.SqlTypes
                 return _state switch
                 {
                     SqlBytesCharsState.Null => throw new SqlNullValueException(),
-                    SqlBytesCharsState.Stream => _stream.Length,
+                    SqlBytesCharsState.Stream => _stream!.Length,
                     _ => _lCurLen,
                 };
             }
@@ -168,7 +168,7 @@ namespace System.Data.SqlTypes
                         throw new SqlNullValueException();
 
                     case SqlBytesCharsState.Stream:
-                        if (_stream.Length > x_lMaxLen)
+                        if (_stream!.Length > x_lMaxLen)
                             throw new SqlTypeException(SR.SqlMisc_BufferInsufficientMessage);
                         buffer = new char[_stream.Length];
                         if (_stream.Position != 0)
@@ -178,7 +178,7 @@ namespace System.Data.SqlTypes
 
                     default:
                         buffer = new char[_lCurLen];
-                        Array.Copy(_rgchBuf, buffer, (int)_lCurLen);
+                        Array.Copy(_rgchBuf!, buffer, (int)_lCurLen);
                         break;
                 }
 
@@ -214,7 +214,7 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                return FStream() ? _stream : new SqlStreamChars(this);
+                return FStream() ? _stream! : new SqlStreamChars(this);
             }
             set
             {
@@ -262,7 +262,7 @@ namespace System.Data.SqlTypes
 
             if (FStream())
             {
-                _stream.SetLength(value);
+                _stream!.SetLength(value);
             }
             else
             {
@@ -316,13 +316,13 @@ namespace System.Data.SqlTypes
                 switch (_state)
                 {
                     case SqlBytesCharsState.Stream:
-                        if (_stream.Position != offset)
+                        if (_stream!.Position != offset)
                             _stream.Seek(offset, SeekOrigin.Begin);
                         _stream.Read(buffer, offsetInBuffer, count);
                         break;
 
                     default:
-                        Array.Copy(_rgchBuf, offset, buffer, offsetInBuffer, count);
+                        Array.Copy(_rgchBuf!, offset, buffer, offsetInBuffer, count);
                         break;
                 }
             }
@@ -335,7 +335,7 @@ namespace System.Data.SqlTypes
         {
             if (FStream())
             {
-                if (_stream.Position != offset)
+                if (_stream!.Position != offset)
                     _stream.Seek(offset, SeekOrigin.Begin);
                 _stream.Write(buffer, offsetInBuffer, count);
             }
@@ -454,7 +454,7 @@ namespace System.Data.SqlTypes
         {
             Debug.Assert(FStream());
 
-            long lStreamLen = _stream.Length;
+            long lStreamLen = _stream!.Length;
             if (lStreamLen >= x_lMaxLen)
                 throw new SqlTypeException(SR.SqlMisc_BufferInsufficientMessage);
 
@@ -487,14 +487,14 @@ namespace System.Data.SqlTypes
         // --------------------------------------------------------------
 
 
-        XmlSchema IXmlSerializable.GetSchema()
+        XmlSchema? IXmlSerializable.GetSchema()
         {
             return null;
         }
 
         void IXmlSerializable.ReadXml(XmlReader r)
         {
-            char[] value = null;
+            char[]? value = null;
 
             string isNull = r.GetAttribute("nil", XmlSchema.InstanceNamespace);
 
@@ -519,7 +519,7 @@ namespace System.Data.SqlTypes
             }
             else
             {
-                char[] value = Buffer;
+                char[] value = Buffer!;
                 writer.WriteString(new string(value, 0, (int)(Length)));
             }
         }
@@ -550,7 +550,7 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                return new SqlChars((char[])null);
+                return new SqlChars((char[]?)null);
             }
         }
     } // class SqlChars

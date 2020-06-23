@@ -6,8 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
-#nullable enable
-
 namespace System.Data.Common
 {
     public abstract class DbConnection : Component, IDbConnection, IAsyncDisposable

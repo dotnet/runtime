@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -14,7 +15,7 @@ namespace System.Data
 
         // column-level errors
         private int _count;
-        private ColumnError[] _errorList;
+        private ColumnError[]? _errorList;
         internal const int initialCapacity = 1;
 
         internal DataError() { }
@@ -24,6 +25,7 @@ namespace System.Data
             SetText(rowError);
         }
 
+        [AllowNull]
         internal string Text
         {
             get { return _rowError; }
@@ -33,7 +35,7 @@ namespace System.Data
         internal bool HasErrors => _rowError.Length != 0 || _count != 0;
 
         // this method resets the error to the new value.
-        internal void SetColumnError(DataColumn column, string error)
+        internal void SetColumnError(DataColumn column, string? error)
         {
             Debug.Assert(column != null, "Invalid (null) argument");
             Debug.Assert(column.Table != null, "Invalid (loose) column");
@@ -63,7 +65,7 @@ namespace System.Data
         {
             for (int i = 0; i < _count; i++)
             {
-                if (_errorList[i]._column == column)
+                if (_errorList![i]._column == column)
                 {
                     return _errorList[i]._error;
                 }
@@ -81,7 +83,7 @@ namespace System.Data
 
             for (int i = 0; i < _count; i++)
             {
-                if (_errorList[i]._column == column)
+                if (_errorList![i]._column == column)
                 {
                     Array.Copy(_errorList, i + 1, _errorList, i, _count - i - 1);
                     _count--;
@@ -95,7 +97,7 @@ namespace System.Data
         {
             for (int i = 0; i < _count; i++)
             {
-                _errorList[i]._column._errors--;
+                _errorList![i]._column._errors--;
                 Debug.Assert(_errorList[i]._column._errors >= 0, "missing error counts");
             }
             _count = 0;
@@ -108,7 +110,7 @@ namespace System.Data
 
             for (int i = 0; i < _count; i++)
             {
-                cols[i] = _errorList[i]._column;
+                cols[i] = _errorList![i]._column;
             }
 
             return cols;
@@ -117,7 +119,7 @@ namespace System.Data
         /// <summary>
         /// Sets the error message for the <see cref='System.Data.DataError'/>.
         /// </summary>
-        private void SetText(string errorText)
+        private void SetText(string? errorText)
         {
             if (null == errorText)
             {
@@ -131,15 +133,15 @@ namespace System.Data
             // try to find the column
             for (int i = 0; i < _count; i++)
             {
-                if (_errorList[i]._column == column)
+                if (_errorList![i]._column == column)
                 {
                     return i;
                 }
             }
 
-            if (_count >= _errorList.Length)
+            if (_count >= _errorList!.Length)
             {
-                int newCapacity = Math.Min(_count * 2, column.Table.Columns.Count);
+                int newCapacity = Math.Min(_count * 2, column.Table!.Columns.Count);
                 var biggerList = new ColumnError[newCapacity];
                 Array.Copy(_errorList, biggerList, _count);
                 _errorList = biggerList;

@@ -12,7 +12,7 @@ namespace System.Data.Common
 {
     internal sealed class SqlInt16Storage : DataStorage
     {
-        private SqlInt16[] _values;
+        private SqlInt16[] _values = default!; // Late-initialized
 
         public SqlInt16Storage(DataColumn column)
         : base(column, typeof(SqlInt16), SqlInt16.Null, SqlInt16.Null, StorageType.SqlInt16)
@@ -133,12 +133,12 @@ namespace System.Data.Common
                         }
                         return _nullValue;
 
-                    case AggregateType.First:
+                    case AggregateType.First: // Does not seem to be implemented
                         if (records.Length > 0)
                         {
                             return _values[records[0]];
                         }
-                        return null; // no data => null
+                        return null!; // no data => null
 
                     case AggregateType.Count:
                         count = 0;
@@ -162,12 +162,13 @@ namespace System.Data.Common
             return _values[recordNo1].CompareTo(_values[recordNo2]);
         }
 
-        public override int CompareValueTo(int recordNo, object value)
+        public override int CompareValueTo(int recordNo, object? value)
         {
+            Debug.Assert(null != value, "null value");
             return _values[recordNo].CompareTo((SqlInt16)value);
         }
 
-        public override object ConvertValue(object value)
+        public override object ConvertValue(object? value)
         {
             if (null != value)
             {
