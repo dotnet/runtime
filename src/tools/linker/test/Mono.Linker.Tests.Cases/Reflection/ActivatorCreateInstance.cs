@@ -47,6 +47,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			TestCreateInstanceOfTWithNewConstraint<TestCreateInstanceOfTWithNewConstraintType> ();
 			TestCreateInstanceOfTWithNoConstraint<TestCreateInstanceOfTWithNoConstraintType> ();
+
+			TestCreateInstanceOfTWithDataflow<TestCreateInstanceOfTWithDataflowType> ();
 		}
 
 		[Kept]
@@ -403,6 +405,28 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance) + "<T>", new Type[0])]
 		private static void TestCreateInstanceOfTWithNoConstraint<T> ()
+		{
+			Activator.CreateInstance<T> ();
+		}
+
+		[Kept]
+		class TestCreateInstanceOfTWithDataflowType
+		{
+			[Kept]
+			public TestCreateInstanceOfTWithDataflowType ()
+			{
+			}
+
+			public TestCreateInstanceOfTWithDataflowType (int i)
+			{
+			}
+		}
+
+		[Kept]
+		[RecognizedReflectionAccessPattern]
+		private static void TestCreateInstanceOfTWithDataflow<
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor),
+			KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))] T> ()
 		{
 			Activator.CreateInstance<T> ();
 		}

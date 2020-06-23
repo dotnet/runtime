@@ -1125,6 +1125,12 @@ namespace Mono.Linker.Dataflow
 								reflectionContext.RecordHandledPattern ();
 								break;
 							}
+
+							if ((_flowAnnotations.GetGenericParameterAnnotation (genericParameter) & DynamicallyAccessedMemberTypes.DefaultConstructor) != 0) {
+								// Also safe, the linker would have marked the default .ctor already
+								reflectionContext.RecordHandledPattern ();
+								break;
+							}
 						}
 
 						// Not yet supported in any combination
