@@ -3982,6 +3982,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     if (call->gtCallType == CT_INDIRECT)
     {
         call->gtCallAddr = fgMorphTree(call->gtCallAddr);
+        // Const CSE may create an assignment node here
+        flagsSummary |= call->gtCallAddr->gtFlags;
     }
 
 #if FEATURE_FIXED_OUT_ARGS
