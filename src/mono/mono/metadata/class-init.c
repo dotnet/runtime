@@ -3079,7 +3079,7 @@ is_ok_for_covariant_ret (MonoType *type_impl, MonoType *type_decl)
 		return FALSE;
 
 	if (type_impl->byref) {
-		return mono_type_byref_is_assignable_from (type_decl, type_impl, TRUE);
+		return mono_byref_type_is_assignable_from (type_decl, type_impl, TRUE);
 	}
 	/* method declared to return an interface, impl returns a value type that implements the interface */
 	if (!mono_type_is_reference (type_impl) && mono_type_is_reference (type_decl))

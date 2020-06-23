@@ -3625,7 +3625,7 @@ mono_type_get_underlying_type_ignore_byref (MonoType *type)
 }
 
 /**
- * mono_type_byref_is_assignable_from:
+ * mono_byref_type_is_assignable_from:
  * \param type The type assignee
  * \param ctype The type being assigned
  * \param signature_assignment whether this is a signature assginment check according to ECMA rules, or reflection
@@ -3637,7 +3637,7 @@ mono_type_get_underlying_type_ignore_byref (MonoType *type)
  * identical. If \p signature_assignment is \c TRUE we do an ECMA check, otherwise, reflection.
  */
 gboolean
-mono_type_byref_is_assignable_from (MonoType *type, MonoType *ctype, gboolean signature_assignment)
+mono_byref_type_is_assignable_from (MonoType *type, MonoType *ctype, gboolean signature_assignment)
 {
 	g_assert (type->byref);
 	g_assert (ctype->byref);

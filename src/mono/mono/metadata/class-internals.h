@@ -1268,7 +1268,7 @@ mono_bool
 mono_class_is_assignable_from_internal (MonoClass *klass, MonoClass *oklass);
 
 gboolean
-mono_type_byref_is_assignable_from (MonoType *type, MonoType *ctype, gboolean signature_assignment);
+mono_byref_type_is_assignable_from (MonoType *type, MonoType *ctype, gboolean signature_assignment);
 
 gboolean mono_is_corlib_image (MonoImage *image);
 
