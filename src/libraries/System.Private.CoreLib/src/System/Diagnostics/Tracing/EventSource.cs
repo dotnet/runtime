@@ -405,7 +405,7 @@ namespace System.Diagnostics.Tracing
         /// <returns></returns>
         public static IEnumerable<EventSource> GetSources()
         {
-            if (IsSupported)
+            if (!IsSupported)
             {
                 return Array.Empty<EventSource>();
             }
@@ -1779,7 +1779,7 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(m_eventData != null);
             Type dataType = GetDataType(m_eventData[eventId], parameterId);
 
-        Again:
+            Again:
             if (dataType == typeof(IntPtr))
             {
                 return *((IntPtr*)dataPointer);
@@ -2903,7 +2903,7 @@ namespace System.Diagnostics.Tracing
                 dataDescrs[1].Reserved = 0;
 
                 int chunkSize = ManifestEnvelope.MaxChunkSize;
-            TRY_AGAIN_WITH_SMALLER_CHUNK_SIZE:
+                TRY_AGAIN_WITH_SMALLER_CHUNK_SIZE:
                 envelope.TotalChunks = (ushort)((dataLeft + (chunkSize - 1)) / chunkSize);
                 while (dataLeft > 0)
                 {
@@ -3442,7 +3442,7 @@ namespace System.Diagnostics.Tracing
             }
 #endif
             return;
-        Error:
+            Error:
             manifest.ManifestError(SR.Format(SR.EventSource_EnumKindMismatch, staticField.Name, staticField.FieldType.Name, providerEnumKind));
         }
 
