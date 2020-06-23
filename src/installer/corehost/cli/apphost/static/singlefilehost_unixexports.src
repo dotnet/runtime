@@ -3,5 +3,7 @@
 ; See the LICENSE file in the project root for more information.
 
 DllMain
+
+; the following two exports are needed for FreeBSD where overwise they will be implicitly hidden and cause linker issues.
 __progname
 environ
