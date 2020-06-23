@@ -1632,6 +1632,51 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        [OuterLoop]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Pops UI
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Responding_GetWithGui_ShouldRefresh_Windows()
+        {
+            const string ExePath = @"C:\Program Files\Windows NT\Accessories\wordpad.exe";
+            Assert.True(IsProgramInstalled(ExePath));
+
+            string dummyFilePath = $@"{Path.GetTempPath()}dummy_file";
+
+            var dummyFile = new FileStream(dummyFilePath, System.IO.FileMode.Create);
+            _ = dummyFile.Seek(2048L * 1024 * 1024, SeekOrigin.Begin);
+            dummyFile.WriteByte(0);
+            dummyFile.Close();
+
+            using (Process process = Process.Start(ExePath, dummyFilePath))
+            {
+                try
+                {
+                    Assert.True(process.Responding);
+
+                    for (int attempt = 0; attempt < 100; ++attempt)
+                    {
+                        process.Refresh();
+                        if (!process.Responding)
+                        {
+                            break;
+                        }
+
+                        Thread.Sleep(100);
+                    }
+
+                    Assert.False(process.Responding);
+                }
+                finally
+                {
+                    process.Kill();
+                    Assert.True(process.WaitForExit(WaitInMS));
+                }
+            }
+
+            File.Delete(dummyFilePath);
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MainWindowTitle_NoWindow_ReturnsEmpty()
         {
