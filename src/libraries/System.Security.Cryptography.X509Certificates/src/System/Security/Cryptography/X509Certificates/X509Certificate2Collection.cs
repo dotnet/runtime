@@ -303,7 +303,7 @@ namespace System.Security.Cryptography.X509Certificates
                             || bytesWritten != fields.DecodedDataLength)
                         {
                             Debug.Fail("The contents should have already been validated by the PEM reader.");
-                            throw new ArgumentException(SR.Cryptography_X509_NoPemCertificate, nameof(certPem));
+                            throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
                         }
 
                         Import(certBytes);

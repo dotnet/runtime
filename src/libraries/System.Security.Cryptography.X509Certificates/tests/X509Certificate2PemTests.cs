@@ -11,21 +11,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class X509Certificate2PemTests
     {
         [Fact]
-        public static void CreateFromPem_ArgumentException_NoCertificate()
+        public static void CreateFromPem_CryptographicException_NoCertificate()
         {
-            AssertExtensions.Throws<ArgumentException>("certPem", () =>
+            Assert.Throws<CryptographicException>(() =>
                 X509Certificate2.CreateFromPem(default, default));
         }
 
         [Fact]
-        public static void CreateFromPem_ArgumentException_MalformedCertificate()
+        public static void CreateFromPem_CryptographicException_MalformedCertificate()
         {
             const string CertContents = @"
 -----BEGIN CERTIFICATE-----
 MII
 -----END CERTIFICATE-----
 ";
-            AssertExtensions.Throws<ArgumentException>("certPem", () =>
+            Assert.Throws<CryptographicException>(() =>
                 X509Certificate2.CreateFromPem(CertContents, default));
         }
 
@@ -39,21 +39,21 @@ MII
         }
 
         [Fact]
-        public static void CreateFromPem_ArgumentException_NoKey()
+        public static void CreateFromPem_CryptographicException_NoKey()
         {
-            AssertExtensions.Throws<ArgumentException>("keyPem", () =>
+            Assert.Throws<CryptographicException>(() =>
                 X509Certificate2.CreateFromPem(TestData.RsaCertificate, default));
         }
 
         [Fact]
-        public static void CreateFromPem_ArgumentException_MalformedKey()
+        public static void CreateFromPem_CryptographicException_MalformedKey()
         {
             const string CertContents = @"
 -----BEGIN RSA PRIVATE KEY-----
 MII
 -----END RSA PRIVATE KEY-----
 ";
-            AssertExtensions.Throws<ArgumentException>("keyPem", () =>
+            Assert.Throws<CryptographicException>(() =>
                 X509Certificate2.CreateFromPem(TestData.RsaCertificate, CertContents));
         }
 
@@ -177,7 +177,7 @@ MII
         [Fact]
         public static void CreateFromEncryptedPem_Rsa_IgnoresUnencryptedPem_Fail()
         {
-            AssertExtensions.Throws<ArgumentException>("keyPem", () =>
+            Assert.Throws<CryptographicException>(() =>
                 X509Certificate2.CreateFromEncryptedPem(TestData.RsaCertificate, TestData.RsaPkcs8Key, "test"));
         }
 

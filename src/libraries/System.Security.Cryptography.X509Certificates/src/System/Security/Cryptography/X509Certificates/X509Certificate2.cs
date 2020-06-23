@@ -658,12 +658,11 @@ namespace System.Security.Cryptography.X509Certificates
         ///   The contents of the file path in <paramref name="keyPemFilePath" /> contains
         ///   a key that does not match the public key in the certificate.
         /// </para>
+        /// <para>-or-</para>
+        /// <para>The certificate uses an unknown public key algorithm.</para>
         /// </exception>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="certPemFilePath" /> is <see langword="null" />.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        /// The certificate uses an unknown public key algorithm.
         /// </exception>
         /// <remarks>
         /// <para>
@@ -711,7 +710,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </param>
         /// <param name="password">The password for the encrypted PEM.</param>
         /// <returns>A new certificate with the private key.</returns>
-        /// <exception cref="ArgumentException">
+        /// <exception cref="CryptographicException">
         /// <para>
         ///   The contents of the file path in <paramref name="certPemFilePath" /> do not contain
         ///   a PEM-encoded certificate, or it is malformed.
@@ -726,14 +725,13 @@ namespace System.Security.Cryptography.X509Certificates
         ///   The contents of the file path in <paramref name="keyPemFilePath" /> contains
         ///   a key that does not match the public key in the certificate.
         /// </para>
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="certPemFilePath" /> is <see langword="null" />.
-        /// </exception>
-        /// <exception cref="CryptographicException">
+        /// <para>-or-</para>
         /// <para>The certificate uses an unknown public key algorithm.</para>
         /// <para>-or-</para>
         /// <para>The password specified for the private key is incorrect.</para>
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="certPemFilePath" /> is <see langword="null" />.
         /// </exception>
         /// <remarks>
         /// <para>
@@ -772,15 +770,14 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="certPem">The text of the PEM-encoded X509 certificate.</param>
         /// <param name="keyPem">The text of the PEM-encoded private key.</param>
         /// <returns>A new certificate with the private key.</returns>
-        /// <exception cref="ArgumentException">
+        /// <exception cref="CryptographicException">
         /// <para>The contents of <paramref name="certPem" /> do not contain a PEM-encoded certificate, or it is malformed.</para>
         /// <para>-or-</para>
         /// <para>The contents of <paramref name="keyPem" /> do not contain a PEM-encoded private key, or it is malformed.</para>
         /// <para>-or-</para>
         /// <para>The contents of <paramref name="keyPem" /> contains a key that does not match the public key in the certificate.</para>
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        /// The certificate uses an unknown public key algorithm.
+        /// <para>-or-</para>
+        /// <para>The certificate uses an unknown public key algorithm.</para>
         /// </exception>
         /// <remarks>
         /// <para>
@@ -843,7 +840,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="keyPem">The text of the password protected PEM-encoded private key.</param>
         /// <param name="password">The password for the encrypted PEM.</param>
         /// <returns>A new certificate with the private key.</returns>
-        /// <exception cref="ArgumentException">
+        /// <exception cref="CryptographicException">
         /// <para>The contents of <paramref name="certPem" /> do not contain a PEM-encoded certificate, or it is malformed.</para>
         /// <para>-or-</para>
         /// <para>
@@ -852,8 +849,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </para>
         /// <para>-or-</para>
         /// <para>The contents of <paramref name="keyPem" /> contains a key that does not match the public key in the certificate.</para>
-        /// </exception>
-        /// <exception cref="CryptographicException">
+        /// <para>-or-</para>
         /// <para>The certificate uses an unknown public key algorithm.</para>
         /// <para>-or-</para>
         /// <para>The password specified for the private key is incorrect.</para>
@@ -923,14 +919,14 @@ namespace System.Security.Cryptography.X509Certificates
                         || bytesWritten != fields.DecodedDataLength)
                     {
                         Debug.Fail("The contents should have already been validated by the PEM reader.");
-                        throw new ArgumentException(SR.Cryptography_X509_NoPemCertificate, nameof(certPem));
+                        throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
                     }
 
                     return new X509Certificate2(certBytes);
                 }
             }
 
-            throw new ArgumentException(SR.Cryptography_X509_NoPemCertificate, nameof(certPem));
+            throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
         }
 
         private static TAlg ExtractKeyFromPem<TAlg>(ReadOnlySpan<char> keyPem, string[] labels, Func<TAlg> factory) where TAlg : AsymmetricAlgorithm
@@ -950,7 +946,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            throw new ArgumentException(SR.Cryptography_X509_NoOrMismatchedPemKey, nameof(keyPem));
+            throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey);
         }
 
         private static TAlg ExtractKeyFromEncryptedPem<TAlg>(
@@ -970,7 +966,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            throw new ArgumentException(SR.Cryptography_X509_NoOrMismatchedPemKey, nameof(keyPem));
+            throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey);
         }
 
         private static X509Extension? CreateCustomExtensionIfAny(Oid oid) =>
