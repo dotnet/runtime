@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.CSharp.cs" />
