@@ -3752,7 +3752,7 @@ mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboo
 }
 
 void
-mono_class_signature_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error)
+mono_class_signature_is_assignable_from (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error)
 {
 	const gboolean for_sig = TRUE;
 	mono_class_is_assignable_from_general (klass, oklass, for_sig, result, error);

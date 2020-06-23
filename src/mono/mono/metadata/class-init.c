@@ -3106,7 +3106,7 @@ is_ok_for_covariant_ret (MonoType *type_impl, MonoType *type_decl)
 
 	ERROR_DECL (local_error);
 	gboolean result = FALSE;
-	mono_class_signature_is_assignable_from_checked (class_decl, class_impl, &result, local_error);
+	mono_class_signature_is_assignable_from (class_decl, class_impl, &result, local_error);
 	mono_error_cleanup (local_error);
 	return result;
 }
