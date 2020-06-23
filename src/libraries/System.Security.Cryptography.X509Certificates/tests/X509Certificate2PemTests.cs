@@ -294,9 +294,25 @@ MII
                     alg.ImportFromEncryptedPem(keyPem, password);
                 }
 
-                ReadOnlySpan<byte> pemPkcs8 = alg.ExportPkcs8PrivateKey();
-                ReadOnlySpan<byte> keyPkcs8 = key.ExportPkcs8PrivateKey();
-                Assert.True(pemPkcs8.SequenceEqual(keyPkcs8));
+                byte[] data = alg.ExportPkcs8PrivateKey();
+
+                switch ((alg, key))
+                {
+                    case (RSA rsa, RSA rsaPem):
+                        byte[] rsaSignature = rsa.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                        Assert.True(rsaPem.VerifyData(data, rsaSignature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+                        break;
+                    case (ECDsa ecdsa, ECDsa ecdsaPem):
+                        byte[] ecdsaSignature = ecdsa.SignData(data, HashAlgorithmName.SHA256);
+                        Assert.True(ecdsaPem.VerifyData(data, ecdsaSignature, HashAlgorithmName.SHA256));
+                        break;
+                    case (DSA dsa, DSA dsaPem):
+                        byte[] dsaSignature = dsa.SignData(data, HashAlgorithmName.SHA256);
+                        Assert.True(dsaPem.VerifyData(data, dsaSignature, HashAlgorithmName.SHA256));
+                        break;
+                    default:
+                        throw new CryptographicException("Unknown key algorithm");
+                }
             }
         }
     }
