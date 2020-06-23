@@ -1641,14 +1641,14 @@ namespace System.Diagnostics.Tests
             const string ExePath = @"C:\Program Files\Windows NT\Accessories\wordpad.exe";
             Assert.True(IsProgramInstalled(ExePath));
 
-            string dummyFilePath = $@"{Path.GetTempPath()}dummy_file";
+            const string DummyFilePath = $@"{Path.GetTempPath()}dummy_file";
 
-            var dummyFile = new FileStream(dummyFilePath, System.IO.FileMode.Create);
+            var dummyFile = new FileStream(DummyFilePath, System.IO.FileMode.Create);
             _ = dummyFile.Seek(2048L * 1024 * 1024, SeekOrigin.Begin);
             dummyFile.WriteByte(0);
             dummyFile.Close();
 
-            using (Process process = Process.Start(ExePath, dummyFilePath))
+            using (Process process = Process.Start(ExePath, DummyFilePath))
             {
                 try
                 {
@@ -1674,7 +1674,7 @@ namespace System.Diagnostics.Tests
                 }
             }
 
-            File.Delete(dummyFilePath);
+            File.Delete(DummyFilePath);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
