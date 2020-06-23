@@ -290,6 +290,7 @@ namespace System.Net.Http
         public bool UseProxy { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public int MaxHttp2ConnectionsPerServer { get { throw null; } set { } }
     }
     public partial class StreamContent : System.Net.Http.HttpContent
     {

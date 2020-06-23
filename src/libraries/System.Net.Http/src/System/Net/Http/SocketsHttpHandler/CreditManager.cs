@@ -36,6 +36,28 @@ namespace System.Net.Http
             get => this;
         }
 
+        public bool TryRequestCreditNoWait(int amount)
+        {
+            lock (SyncObject)
+            {
+                if (_disposed)
+                {
+                    throw new ObjectDisposedException($"{nameof(CreditManager)}:{_owner.GetType().Name}:{_name}");
+                }
+
+                if (_current > 0)
+                {
+                    Debug.Assert(_waitersTail is null, "Shouldn't have waiters when credit is available");
+
+                    int granted = Math.Min(amount, _current);
+                    if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, current={_current}, granted={granted}");
+                    _current -= granted;
+                    return true;
+                }
+                return false;
+            }
+        }
+
         public ValueTask<int> RequestCreditAsync(int amount, CancellationToken cancellationToken)
         {
             lock (SyncObject)

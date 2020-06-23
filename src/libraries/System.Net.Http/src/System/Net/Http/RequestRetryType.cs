@@ -27,6 +27,12 @@ namespace System.Net.Http
         /// <summary>
         /// The proxy failed, so the request should be retried on the next proxy.
         /// </summary>
-        RetryOnNextProxy
+        RetryOnNextProxy,
+
+        /// <summary>
+        /// HTTP/2 connection reached the maximum number of streams and
+        /// a new HTTP/2 connection must be created to server the request.
+        /// </summary>
+        RetryOnNewConnection
     }
 }

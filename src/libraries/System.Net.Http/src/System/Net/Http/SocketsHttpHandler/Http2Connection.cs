@@ -46,6 +46,7 @@ namespace System.Net.Http
         private long _idleSinceTickCount;
         private int _pendingWriters;
         private bool _lastPendingWriterShouldFlush;
+        private volatile bool _canAddNewStream = true;
 
         // This means that the pool has disposed us, but there may still be
         // requests in flight that will continue to be processed.
@@ -121,6 +122,8 @@ namespace System.Net.Http
         }
 
         private object SyncObject => _httpStreams;
+
+        public bool CanAddNewStream => _canAddNewStream;
 
         public async ValueTask SetupAsync()
         {
@@ -1163,7 +1166,19 @@ namespace System.Net.Http
             // in order to avoid consuming resources in potentially many requests waiting for access.
             try
             {
-                await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                if (_pool.ThrowOnStreamLimitReached)
+                {
+                    if (!_concurrentStreams.TryRequestCreditNoWait(1))
+                    {
+                        // Maximum number of streams reached
+                        _canAddNewStream = false;
+                        throw new HttpRequestException("Reached the maximum number of streams on the HTTP/2 connection.", null, RequestRetryType.RetryOnNewConnection);
+                    }
+                }
+                else
+                {
+                    await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                }
             }
             catch (ObjectDisposedException)
             {
@@ -1765,6 +1780,7 @@ namespace System.Net.Http
             }
 
             _concurrentStreams.AdjustCredit(1);
+            _canAddNewStream = true;
         }
 
         public sealed override string ToString() => $"{nameof(Http2Connection)}({_pool})"; // Description for diagnostic purposes

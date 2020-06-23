@@ -273,6 +273,22 @@ namespace System.Net.Http
             }
         }
 
+        public int MaxHttp2ConnectionsPerServer
+        {
+            get => _settings._maxHttp2ConnectionsPerServer;
+            set
+            {
+                CheckDisposedOrStarted();
+
+                if (value < 1)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                _settings._maxHttp2ConnectionsPerServer = value;
+            }
+        }
+
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
 
