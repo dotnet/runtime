@@ -537,18 +537,18 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
     }
 
     s_allowWrite &= ~(pSession->GetMask());
+
+    // Remove the session from the array before calling SuspendWriteEvent. This way
+    // we can guarantee that either the event write got the pointer and will complete
+    // the write successfully, or it gets null and will bail.
+    _ASSERTE(s_pSessions[pSession->GetIndex()] == pSession);
+    s_pSessions[pSession->GetIndex()].Store(nullptr);
+
     pSession->SuspendWriteEvent();
     bool ignored;
     pSession->WriteAllBuffersToFile(&ignored); // Flush the buffers to the stream/file
 
     --s_numberOfSessions;
-
-    // At this point, we should not be writing events to this session anymore
-    // This is a good time to remove the session from the array.
-    _ASSERTE(s_pSessions[pSession->GetIndex()] == pSession);
-
-    // Remove the session from the array, and mask.
-    s_pSessions[pSession->GetIndex()].Store(nullptr);
 
     // Write a final sequence point to the file now that all events have
     // been emitted.
