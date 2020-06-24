@@ -3192,6 +3192,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             __fallthrough;
         case GT_IND:
             retVal->ChangeType(nativeReturnType);
+            LowerIndir(retVal->AsIndir());
             break;
 
         case GT_LCL_VAR:
@@ -3422,7 +3423,8 @@ void Lowering::LowerStoreCallStruct(GenTreeBlk* store)
     {
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
-        LowerStoreIndir(store->AsIndir());
+        LowerStoreIndirCommon(store);
+        return;
     }
     else
     {
@@ -6334,7 +6336,7 @@ void Lowering::LowerStoreIndirCommon(GenTreeIndir* ind)
 // LowerIndir: a common logic to lower IND load or NullCheck.
 //
 // Arguments:
-//    node - the ind node we are lowering.
+//    ind - the ind node we are lowering.
 //
 void Lowering::LowerIndir(GenTreeIndir* ind)
 {
