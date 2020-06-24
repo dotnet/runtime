@@ -806,7 +806,7 @@ namespace System.Diagnostics
                 return false;
             }
 
-            context = new ActivityContext(ActivityTraceId.CreateFromString(traceIdSpan), ActivitySpanId.CreateFromString(spanIdSpan), (ActivityTraceFlags) ActivityTraceId.HexByteFromChars(id[53], id[54]));
+            context = new ActivityContext(new ActivityTraceId(traceIdSpan.ToString()), new ActivitySpanId(spanIdSpan.ToString()), (ActivityTraceFlags) ActivityTraceId.HexByteFromChars(id[53], id[54]));
             return true;
         }
 

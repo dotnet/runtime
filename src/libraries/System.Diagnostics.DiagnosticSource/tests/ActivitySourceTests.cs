@@ -408,8 +408,13 @@ namespace System.Diagnostics.Tests
                 const string w3cId = "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-00";
                 const string hierarchicalId = "SomeId";
 
-                using Activity a = aSource.StartActivity("a", ActivityKind.Client, w3cId);
-                using Activity b = aSource.StartActivity("b", ActivityKind.Client, hierarchicalId);
+                using Activity a = aSource.StartActivity("a", ActivityKind.Client, hierarchicalId);
+                using Activity b = aSource.StartActivity("b", ActivityKind.Client, w3cId);
+
+                ActivityTraceId traceId = ActivityTraceId.CreateFromString("99d43cb30a4cdb4fbeee3a19c29201b0");
+
+                Assert.NotEqual(traceId, a.TraceId);
+                Assert.Equal(traceId, b.TraceId);
 
                 Assert.Equal(1, callingByParentId);
                 Assert.Equal(1, callingByContext);
