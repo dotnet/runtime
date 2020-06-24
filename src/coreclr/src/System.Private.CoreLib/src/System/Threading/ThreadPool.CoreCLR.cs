@@ -168,12 +168,16 @@ namespace System.Threading
         // SOS's ThreadPool command depends on this name
         internal static readonly bool UsePortableThreadPool = InitializeConfigAndDetermineUsePortableThreadPool();
 
+        // Time-senstiive work items are those that may need to run ahead of normal work items at least periodically. For a
+        // runtime that does not support time-sensitive work items on the managed side, the thread pool yields the thread to the
+        // runtime periodically (by exiting the dispatch loop) so that the runtime may use that thread for processing
+        // any time-sensitive work. For a runtime that supports time-sensitive work items on the managed side, the thread pool
+        // does not yield the thread and instead processes time-sensitive work items queued by specific APIs periodically.
         internal static bool SupportsTimeSensitiveWorkItems => UsePortableThreadPool;
 
         // This needs to be initialized after UsePortableThreadPool above, as it may depend on UsePortableThreadPool and the
         // config initialization
         internal static readonly bool EnableWorkerTracking = GetEnableWorkerTracking();
-
 
         private static unsafe bool InitializeConfigAndDetermineUsePortableThreadPool()
         {

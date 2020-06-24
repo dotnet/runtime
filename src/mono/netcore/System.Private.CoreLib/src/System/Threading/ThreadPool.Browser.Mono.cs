@@ -9,21 +9,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-    public sealed partial class Thread
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void ResetThreadPoolThread()
-        {
-            Debug.Assert(this == CurrentThread);
-            Debug.Assert(IsThreadPoolThread);
-
-            if (_mayNeedResetForThreadPool)
-            {
-                ResetThreadPoolThreadSlow();
-            }
-        }
-    }
-
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
         public bool Unregister(WaitHandle? waitObject)
@@ -42,16 +27,16 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
-        internal const bool SupportsTimeSensitiveWorkItems = true;
+        // Time-senstiive work items are those that may need to run ahead of normal work items at least periodically. For a
+        // runtime that does not support time-sensitive work items on the managed side, the thread pool yields the thread to the
+        // runtime periodically (by exiting the dispatch loop) so that the runtime may use that thread for processing
+        // any time-sensitive work. For a runtime that supports time-sensitive work items on the managed side, the thread pool
+        // does not yield the thread and instead processes time-sensitive work items queued by specific APIs periodically.
+        internal const bool SupportsTimeSensitiveWorkItems = false; // the timer currently doesn't queue time-sensitive work
+
         internal const bool EnableWorkerTracking = false;
 
         private static bool _callbackQueued;
-
-        internal static bool CanSetMinIOCompletionThreads(int ioCompletionThreads) => true;
-        internal static void SetMinIOCompletionThreads(int ioCompletionThreads) { }
-
-        internal static bool CanSetMaxIOCompletionThreads(int ioCompletionThreads) => true;
-        internal static void SetMaxIOCompletionThreads(int ioCompletionThreads) { }
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
@@ -97,14 +82,6 @@ namespace System.Threading
             QueueCallback();
         }
 
-
-        /// <summary>
-        /// Called from the gate thread periodically to perform runtime-specific gate activities
-        /// </summary>
-        /// <param name="cpuUtilization">CPU utilization as a percentage since the last call</param>
-        /// <returns>True if the runtime still needs to perform gate activities, false otherwise</returns>
-        internal static bool PerformRuntimeSpecificGateActivities(int cpuUtilization) => false;
-
         internal static void NotifyWorkItemProgress()
         {
         }
@@ -119,9 +96,6 @@ namespace System.Threading
 
         private static void RegisterWaitForSingleObjectCore(WaitHandle? waitObject, RegisteredWaitHandle registeredWaitHandle) =>
             throw new PlatformNotSupportedException();
-
-        internal static void UnsafeQueueWaitCompletion(CompleteWaitThreadPoolWorkItem completeWaitWorkItem) =>
-            UnsafeQueueUserWorkItemInternal(completeWaitWorkItem, preferLocal: false);
 
         [DynamicDependency("Callback")]
         [DynamicDependency("PumpThreadPool")]

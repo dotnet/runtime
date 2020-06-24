@@ -567,11 +567,13 @@ namespace System.Threading
 
                 Debug.Assert(callback == null);
 
+#pragma warning disable CS0162 // Unreachable code detected. SupportsTimeSensitiveWorkItems may be a constant in some runtimes.
                 // No work in the normal queues, check for time-sensitive work items
                 if (ThreadPool.SupportsTimeSensitiveWorkItems)
                 {
                     callback = TryDequeueTimeSensitiveWorkItem();
                 }
+#pragma warning restore CS0162
             }
 
             return callback;
@@ -689,12 +691,11 @@ namespace System.Threading
                     //
                     // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
                     //
-#pragma warning disable CS0162 // Unreachable code detected. EnableWorkerTracking may be constant false in some runtimes.
+#pragma warning disable CS0162 // Unreachable code detected. EnableWorkerTracking may be a constant in some runtimes.
                     if (ThreadPool.EnableWorkerTracking)
                     {
                         DispatchWorkItemWithWorkerTracking(workItem, currentThread);
                     }
-#pragma warning restore CS0162
                     else if (workItem is Task task)
                     {
                         // Check for Task first as it's currently faster to type check
@@ -708,6 +709,7 @@ namespace System.Threading
                         Debug.Assert(workItem is IThreadPoolWorkItem);
                         Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
                     }
+#pragma warning restore CS0162
 
                     // Release refs
                     workItem = null;
@@ -735,14 +737,13 @@ namespace System.Threading
 
                     // The quantum expired, do any necessary periodic activities
 
-#pragma warning disable CS0162 // Unreachable code detected. SupportsTimeSensitiveWorkItems may be constant true in some runtimes.
+#pragma warning disable CS0162 // Unreachable code detected. SupportsTimeSensitiveWorkItems may be a constant in some runtimes.
                     if (!ThreadPool.SupportsTimeSensitiveWorkItems)
                     {
                         // The runtime-specific thread pool implementation does not support managed time-sensitive work, need to
                         // return to the VM to let it perform its own time-sensitive work. Tell the VM we're returning normally.
                         return true;
                     }
-#pragma warning restore CS0162
 
                     // This method will continue to dispatch work items. Refresh the start tick count for the next dispatch
                     // quantum and do some periodic activities.
@@ -755,6 +756,7 @@ namespace System.Threading
                     // of time spent running work items in the normal thread pool queues, until the normal queues are depleted.
                     // These are basically lower-priority but time-sensitive work items.
                     workItem = workQueue.TryDequeueTimeSensitiveWorkItem();
+#pragma warning restore CS0162
                 }
             }
             finally
@@ -1604,6 +1606,7 @@ namespace System.Threading
         // Get all workitems.  Called by TaskScheduler in its debugger hooks.
         internal static IEnumerable<object> GetQueuedWorkItems()
         {
+#pragma warning disable CS0162 // Unreachable code detected. SupportsTimeSensitiveWorkItems may be a constant in some runtimes.
             if (ThreadPool.SupportsTimeSensitiveWorkItems)
             {
                 // Enumerate time-sensitive work item queue
@@ -1612,6 +1615,7 @@ namespace System.Threading
                     yield return workItem;
                 }
             }
+#pragma warning restore CS0162
 
             // Enumerate global queue
             foreach (object workItem in s_workQueue.workItems)
@@ -1654,6 +1658,7 @@ namespace System.Threading
 
         internal static IEnumerable<object> GetGloballyQueuedWorkItems()
         {
+#pragma warning disable CS0162 // Unreachable code detected. SupportsTimeSensitiveWorkItems may be a constant in some runtimes.
             if (ThreadPool.SupportsTimeSensitiveWorkItems)
             {
                 // Enumerate time-sensitive work item queue
@@ -1662,6 +1667,7 @@ namespace System.Threading
                     yield return workItem;
                 }
             }
+#pragma warning restore CS0162
 
             // Enumerate global queue
             foreach (object workItem in s_workQueue.workItems)

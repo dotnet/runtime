@@ -130,9 +130,7 @@ namespace System.Diagnostics.Tracing
             WriteEvent(150, id, kind, info, multiDequeues, intInfo1, intInfo2);
         }
 
-        // id - is a managed object. it gets translated to the object's address. ETW listeners must
-        //      keep track of GC movements in order to correlate the value passed to XyzSend with the
-        //      (possibly changed) value passed to XyzReceive
+        // id - is a managed object's hash code
         [NonEvent]
         public void ThreadTransferSendObj(object id, int kind, string info, bool multiDequeues, int intInfo1, int intInfo2) =>
             ThreadTransferSend(id.GetHashCode(), kind, info, multiDequeues, intInfo1, intInfo2);

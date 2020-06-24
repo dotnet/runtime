@@ -60,14 +60,16 @@ namespace System.Threading
             GC.SuppressFinalize(this);
         }
 
+        [Conditional("DEBUG")]
         public void VerifyIsLocked()
         {
 #if DEBUG
             Debug.Assert(_ownerThread == Thread.CurrentThread);
-            Debug.Assert((_state & LockedMask) != 0);
 #endif
+            Debug.Assert((_state & LockedMask) != 0);
         }
 
+        [Conditional("DEBUG")]
         public void VerifyIsNotLocked()
         {
 #if DEBUG
@@ -75,6 +77,7 @@ namespace System.Threading
 #endif
         }
 
+        [Conditional("DEBUG")]
         private void VerifyIsNotLockedByAnyThread()
         {
 #if DEBUG
@@ -82,18 +85,20 @@ namespace System.Threading
 #endif
         }
 
+        [Conditional("DEBUG")]
         private void ResetOwnerThread()
         {
-#if DEBUG
             VerifyIsLocked();
+#if DEBUG
             _ownerThread = null;
 #endif
         }
 
+        [Conditional("DEBUG")]
         private void SetOwnerThreadToCurrent()
         {
-#if DEBUG
             VerifyIsNotLockedByAnyThread();
+#if DEBUG
             _ownerThread = Thread.CurrentThread;
 #endif
         }
