@@ -909,7 +909,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34030", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37871", TestRuntimes.Mono)]
         public void AssemblyResolve_FirstChanceException()
         {
             RemoteExecutor.Invoke(() => {

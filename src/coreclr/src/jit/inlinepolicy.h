@@ -89,6 +89,7 @@ public:
         , m_Multiplier(0.0)
         , m_CodeSize(0)
         , m_CallsiteFrequency(InlineCallsiteFrequency::UNUSED)
+        , m_CallsiteDepth(0)
         , m_InstructionCount(0)
         , m_LoadStoreCount(0)
         , m_ArgFeedsTest(0)
@@ -154,6 +155,7 @@ protected:
     double                  m_Multiplier;
     unsigned                m_CodeSize;
     InlineCallsiteFrequency m_CallsiteFrequency;
+    unsigned                m_CallsiteDepth;
     unsigned                m_InstructionCount;
     unsigned                m_LoadStoreCount;
     unsigned                m_ArgFeedsTest;

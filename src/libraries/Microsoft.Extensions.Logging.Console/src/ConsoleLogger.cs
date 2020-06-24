@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.Logging.Console
         private LogMessageEntry CreateDefaultLogMessage(StringBuilder logBuilder, LogLevel logLevel, string logName, int eventId, string message, Exception exception)
         {
             // Example:
-            // INFO: ConsoleApp.Program[10]
+            // info: ConsoleApp.Program[10]
             //       Request received
 
             ConsoleColors logLevelColors = GetLogLevelConsoleColors(logLevel);

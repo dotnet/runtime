@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -34,6 +35,7 @@ namespace System
             }
         }
 
+        [RequiresUnreferencedCode("The type might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(string typeName, bool throwOnError, bool ignoreCase)
         {
@@ -41,6 +43,7 @@ namespace System
             return RuntimeType.GetType(typeName, throwOnError, ignoreCase, false, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("The type might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(string typeName, bool throwOnError)
         {
@@ -48,6 +51,7 @@ namespace System
             return RuntimeType.GetType(typeName, throwOnError, false, false, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("The type might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(string typeName)
         {
@@ -55,6 +59,7 @@ namespace System
             return RuntimeType.GetType(typeName, false, false, false, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("The type might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(string typeName, Func<AssemblyName, Assembly?>? assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver)
         {
@@ -62,6 +67,7 @@ namespace System
             return GetType(typeName, assemblyResolver, typeResolver, false, false, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("The type might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(string typeName, Func<AssemblyName, Assembly?>? assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError)
         {
@@ -69,6 +75,7 @@ namespace System
             return GetType(typeName, assemblyResolver, typeResolver, throwOnError, false, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("The type might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(string typeName, Func<AssemblyName, Assembly?>? assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase)
         {
@@ -76,6 +83,7 @@ namespace System
             return GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("The type might be removed")]
         private static Type? GetType(string typeName, Func<AssemblyName, Assembly?>? assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);

@@ -369,14 +369,33 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 // the candidate IL size during the inlining pass it
                 // "reestablishes" candidacy rather than alters
                 // candidacy ... so instead we bail out here.
-
+                //
                 if (!m_IsPrejitRoot)
                 {
                     InlineStrategy* strategy   = m_RootCompiler->m_inlineStrategy;
-                    bool            overBudget = strategy->BudgetCheck(m_CodeSize);
+                    const bool      overBudget = strategy->BudgetCheck(m_CodeSize);
+
                     if (overBudget)
                     {
-                        SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
+                        // If the candidate is a forceinline and the callsite is
+                        // not too deep, allow the inline even if it goes over budget.
+                        //
+                        // For now, "not too deep" means a top-level inline. Note
+                        // depth 0 is used for the root method, so inline candidate depth
+                        // will be 1 or more.
+                        //
+                        assert(m_IsForceInlineKnown);
+                        assert(m_CallsiteDepth > 0);
+                        const bool allowOverBudget = m_IsForceInline && (m_CallsiteDepth == 1);
+
+                        if (allowOverBudget)
+                        {
+                            JITDUMP("Allowing over-budget top-level forceinline\n");
+                        }
+                        else
+                        {
+                            SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
+                        }
                     }
                 }
 
@@ -531,9 +550,9 @@ void DefaultPolicy::NoteInt(InlineObservation obs, int value)
 
         case InlineObservation::CALLSITE_DEPTH:
         {
-            unsigned depth = static_cast<unsigned>(value);
+            m_CallsiteDepth = static_cast<unsigned>(value);
 
-            if (depth > m_RootCompiler->m_inlineStrategy->GetMaxInlineDepth())
+            if (m_CallsiteDepth > m_RootCompiler->m_inlineStrategy->GetMaxInlineDepth())
             {
                 SetFailure(InlineObservation::CALLSITE_IS_TOO_DEEP);
             }
@@ -1858,6 +1877,7 @@ void DiscretionaryPolicy::DumpSchema(FILE* file) const
     fprintf(file, ",CallerHasNewObj");
     fprintf(file, ",CalleeDoesNotReturn");
     fprintf(file, ",CalleeHasGCStruct");
+    fprintf(file, ",CallsiteDepth");
 }
 
 //------------------------------------------------------------------------
@@ -1940,6 +1960,7 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_CallerHasNewObj ? 1 : 0);
     fprintf(file, ",%u", m_IsNoReturn ? 1 : 0);
     fprintf(file, ",%u", m_CalleeHasGCStruct ? 1 : 0);
+    fprintf(file, ",%u", m_CallsiteDepth);
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)

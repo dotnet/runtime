@@ -152,7 +152,7 @@ if (typeof window == "undefined")
 var Module = { 
 	mainScriptUrlOrBlob: "dotnet.js",
 
-	print: function(x) { print ("WASM: " + x) },
+	print: print,
 	printErr: function(x) { print ("WASM-ERR: " + x) },
 
 	onAbort: function(x) {
@@ -378,6 +378,20 @@ var App = {
 				print (ex.stack);
 				test_exit (1);
 			}
+
+/*
+			// For testing tp/timers etc.
+			while (true) {
+				// Sleep by busy waiting
+				var start = performance.now ();
+				useconds = 1e6 / 10;
+				while (performance.now() - start < useconds / 1000) {
+					// Do nothing.
+				}
+
+				Module.pump_message ();
+			}
+*/
 
 			if (is_browser)
 				test_exit (0);
