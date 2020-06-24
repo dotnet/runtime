@@ -56,7 +56,8 @@ namespace System.Reflection.Metadata
             {
                 int callingConventionOrKind = _rawValue & CallingConventionOrKindMask;
 
-                if (callingConventionOrKind <= maxCallingConvention)
+                if (callingConventionOrKind <= maxCallingConvention
+                    && callingConventionOrKind != (int)SignatureCallingConvention.Unmanaged)
                 {
                     return SignatureKind.Method;
                 }

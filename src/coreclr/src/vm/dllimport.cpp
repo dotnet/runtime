@@ -6797,7 +6797,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
             case IMAGE_CEE_CS_CALLCONV_FASTCALL:
                 unmgdCallConv = pmCallConvFastcall;
                 break;
-            case IMAGE_CEE_CS_CALLCONV_UNMGD:
+            case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
                 COMPlusThrow(kNotImplementedException);
             default:
                 COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
