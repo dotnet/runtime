@@ -250,7 +250,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             }
             __fallthrough;
         case GT_STORE_DYN_BLK:
-            LowerBlockStore(node->AsBlk());
+            LowerBlockStoreCommon(node->AsBlk());
             break;
 
         case GT_LCLHEAP:
@@ -3115,7 +3115,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             objStore->SetAddr(addr);
             objStore->SetData(src);
             BlockRange().InsertBefore(objStore, addr);
-            LowerBlockStore(objStore);
+            LowerBlockStoreCommon(objStore);
             return;
         }
     }
@@ -3441,7 +3441,7 @@ void Lowering::LowerStoreCallStruct(GenTreeBlk* store)
 
         GenTreeLclVar* spilledCall = SpillStructCallResult(call);
         store->SetData(spilledCall);
-        LowerBlockStore(store);
+        LowerBlockStoreCommon(store);
 #endif // WINDOWS_AMD64_ABI
     }
 }
@@ -6396,4 +6396,16 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         // is a complex one it could benefit from a not contained `LEA`.
         TryCreateAddrMode(ind->Addr(), false);
     }
+}
+
+//------------------------------------------------------------------------
+// LowerBlockStoreCommon: a common logic to lower STORE_OBJ/BLK/DYN_BLK.
+//
+// Arguments:
+//    blkNode - the store blk/obj node we are lowering.
+//
+void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
+{
+    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
+    LowerBlockStore(blkNode);
 }
