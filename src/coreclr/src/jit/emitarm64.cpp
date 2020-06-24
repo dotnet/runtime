@@ -12670,10 +12670,21 @@ void emitter::emitDispIns(
             break;
 
         case IF_DR_4A: // DR_4A   X..........mmmmm .aaaaannnnnmmmmm      Rd Rn Rm Ra
-            emitDispReg(id->idReg1(), size, true);
-            emitDispReg(id->idReg2(), size, true);
-            emitDispReg(id->idReg3(), size, true);
-            emitDispReg(id->idReg4(), size, false);
+            if ((ins == INS_smaddl) || (ins == INS_smsubl) || (ins == INS_umaddl) || (ins == INS_umsubl))
+            {
+                // smaddl Xd, Wn, Wm, Xa
+                emitDispReg(id->idReg1(), EA_8BYTE, true);
+                emitDispReg(id->idReg2(), EA_4BYTE, true);
+                emitDispReg(id->idReg3(), EA_4BYTE, true);
+                emitDispReg(id->idReg4(), EA_8BYTE, false);
+            }
+            else
+            {
+                emitDispReg(id->idReg1(), size, true);
+                emitDispReg(id->idReg2(), size, true);
+                emitDispReg(id->idReg3(), size, true);
+                emitDispReg(id->idReg4(), size, false);
+            }
             break;
 
         case IF_DV_1A: // DV_1A   .........X.iiiii iii........ddddd      Vd imm8 (fmov - immediate scalar)
