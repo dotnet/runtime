@@ -675,8 +675,8 @@ namespace System.Diagnostics
             // problems (it specifies exactly which part of the string
             // is the file to execute).
             StringBuilder commandLine = new StringBuilder();
-            string fileName = startInfo.FileName.Trim();
-            bool fileNameIsQuoted = fileName.StartsWith('\"') && fileName.EndsWith('\"');
+            ReadOnlySpan<char> fileName = startInfo.FileName.AsSpan().Trim();
+            bool fileNameIsQuoted = fileName.Length > 0 && fileName[0] == '\"' && fileName[fileName.Length - 1] == '\"';
             if (!fileNameIsQuoted)
             {
                 commandLine.Append('"');
