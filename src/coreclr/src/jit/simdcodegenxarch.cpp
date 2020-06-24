@@ -2194,6 +2194,10 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
         noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
         bool      isEBPbased;
         unsigned  offs     = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
+
+        // Adjust the offset with stack level, if any.
+        offs += genStackLevel;
+
         regNumber indexReg = op2->GetRegNum();
 
         // Store the vector to the temp location.
