@@ -334,7 +334,7 @@ namespace System.Net.Http
         private object SyncObj => _idleConnections;
 
         private ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
-            GetConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            GetConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             if (_http3Enabled && request.Version.Major >= 3)
             {
@@ -347,13 +347,13 @@ namespace System.Net.Http
 
             if (_http2Enabled && request.Version.Major >= 2)
             {
-                return GetHttp2ConnectionAsync(request, cancellationToken);
+                return GetHttp2ConnectionAsync(request, async, cancellationToken);
             }
 
-            return GetHttpConnectionAsync(request, cancellationToken);
+            return GetHttpConnectionAsync(request, async, cancellationToken);
         }
 
-        private ValueTask<HttpConnection?> GetOrReserveHttp11ConnectionAsync(CancellationToken cancellationToken)
+        private ValueTask<HttpConnection?> GetOrReserveHttp11ConnectionAsync(bool async, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -412,12 +412,27 @@ namespace System.Net.Http
                 }
 
                 HttpConnection conn = cachedConnection._connection;
-                if (!conn.LifetimeExpired(nowTicks, pooledConnectionLifetime) &&
-                    !conn.EnsureReadAheadAndPollRead())
+                if (!conn.LifetimeExpired(nowTicks, pooledConnectionLifetime))
                 {
-                    // We found a valid connection.  Return it.
-                    if (NetEventSource.IsEnabled) conn.Trace("Found usable connection in pool.");
-                    return new ValueTask<HttpConnection?>(conn);
+                    // Check to see if we've received anything on the connection; if we have, that's
+                    // either erroneous data (we shouldn't have received anything yet) or the connection
+                    // has been closed; either way, we can't use it.  If this is an async request, we
+                    // perform an async read on the stream, since we're going to need to read from it
+                    // anyway, and in doing so we can avoid the extra syscall.  For sync requests, we
+                    // try to directly poll the socket rather than doing an async read, so that we can
+                    // issue an appropriate sync read when we actually need it.  We don't have the
+                    // underlying socket in all cases, though, so PollRead may fall back to an async
+                    // read in some cases.
+                    bool validConnection = async ?
+                        !conn.EnsureReadAheadAndPollRead() :
+                        !conn.PollRead();
+
+                    if (validConnection)
+                    {
+                        // We found a valid connection.  Return it.
+                        if (NetEventSource.IsEnabled) conn.Trace("Found usable connection in pool.");
+                        return new ValueTask<HttpConnection?>(conn);
+                    }
                 }
 
                 // We got a connection, but it was already closed by the server or the
@@ -429,13 +444,15 @@ namespace System.Net.Http
 
             // We are at the connection limit. Wait for an available connection or connection count (indicated by null).
             if (NetEventSource.IsEnabled) Trace("Connection limit reached, waiting for available connection.");
-            return waiter.WaitWithCancellationAsync(cancellationToken);
+            return async ?
+                waiter.WaitWithCancellationAsync(cancellationToken) :
+                new ValueTask<HttpConnection?>(waiter.Task.GetAwaiter().GetResult());
         }
 
         private async ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
-            GetHttpConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            GetHttpConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            HttpConnection? connection = await GetOrReserveHttp11ConnectionAsync(cancellationToken).ConfigureAwait(false);
+            HttpConnection? connection = await GetOrReserveHttp11ConnectionAsync(async, cancellationToken).ConfigureAwait(false);
             if (connection != null)
             {
                 return (connection, false, null);
@@ -446,7 +463,7 @@ namespace System.Net.Http
             try
             {
                 HttpResponseMessage? failureResponse;
-                (connection, failureResponse) = await CreateHttp11ConnectionAsync(request, cancellationToken).ConfigureAwait(false);
+                (connection, failureResponse) = await CreateHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
                 if (connection == null)
                 {
                     Debug.Assert(failureResponse != null);
@@ -462,7 +479,7 @@ namespace System.Net.Http
         }
 
         private async ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
-            GetHttp2ConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            GetHttp2ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http);
 
@@ -531,7 +548,7 @@ namespace System.Net.Http
                     Stream? stream;
                     HttpResponseMessage? failureResponse;
                     (socket, stream, transportContext, failureResponse) =
-                        await ConnectAsync(request, true, cancellationToken).ConfigureAwait(false);
+                        await ConnectAsync(request, async, true, cancellationToken).ConfigureAwait(false);
                     if (failureResponse != null)
                     {
                         return (null, true, failureResponse);
@@ -629,7 +646,7 @@ namespace System.Net.Http
             }
 
             // If we reach this point, it means we need to fall back to a (new or existing) HTTP/1.1 connection.
-            return await GetHttpConnectionAsync(request, cancellationToken).ConfigureAwait(false);
+            return await GetHttpConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
         }
 
         private async ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
@@ -717,13 +734,13 @@ namespace System.Net.Http
             }
         }
 
-        public async Task<HttpResponseMessage> SendWithRetryAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        public async ValueTask<HttpResponseMessage> SendWithRetryAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             while (true)
             {
                 // Loop on connection failures and retry if possible.
 
-                (HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse) = await GetConnectionAsync(request, cancellationToken).ConfigureAwait(false);
+                (HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse) = await GetConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
                 if (failureResponse != null)
                 {
                     // Proxy tunnel failure; return proxy response
@@ -742,8 +759,8 @@ namespace System.Net.Http
                         try
                         {
                             response = await (doRequestAuth && Settings._credentials != null ?
-                                AuthenticationHelper.SendWithNtConnectionAuthAsync(request, Settings._credentials, (HttpConnection)connection, this, cancellationToken) :
-                                SendWithNtProxyAuthAsync((HttpConnection)connection, request, cancellationToken)).ConfigureAwait(false);
+                                AuthenticationHelper.SendWithNtConnectionAuthAsync(request, async, Settings._credentials, (HttpConnection)connection, this, cancellationToken) :
+                                SendWithNtProxyAuthAsync((HttpConnection)connection, request, async, cancellationToken)).ConfigureAwait(false);
                         }
                         finally
                         {
@@ -752,7 +769,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        response = await connection!.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                        response = await connection!.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
                     }
                 }
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnLowerHttpVersion)
@@ -1016,17 +1033,17 @@ namespace System.Net.Http
             }
         }
 
-        public async Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpConnection connection, HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             connection.Acquire();
             try
             {
                 if (doRequestAuth && Settings._credentials != null)
                 {
-                    return await AuthenticationHelper.SendWithNtConnectionAuthAsync(request, Settings._credentials, connection, this, cancellationToken).ConfigureAwait(false);
+                    return await AuthenticationHelper.SendWithNtConnectionAuthAsync(request, async, Settings._credentials, connection, this, cancellationToken).ConfigureAwait(false);
                 }
 
-                return await SendWithNtProxyAuthAsync(connection, request, cancellationToken).ConfigureAwait(false);
+                return await SendWithNtProxyAuthAsync(connection, request, async, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -1034,41 +1051,41 @@ namespace System.Net.Http
             }
         }
 
-        public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpConnection connection, HttpRequestMessage request, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             if (AnyProxyKind && ProxyCredentials != null)
             {
-                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, ProxyCredentials, connection, this, cancellationToken);
+                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, async, ProxyCredentials, connection, this, cancellationToken);
             }
 
-            return connection.SendAsync(request, cancellationToken);
+            return connection.SendAsync(request, async, cancellationToken);
         }
 
 
-        public Task<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        public ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             if ((_kind == HttpConnectionKind.Proxy || _kind == HttpConnectionKind.ProxyConnect) &&
                 _poolManager.ProxyCredentials != null)
             {
-                return AuthenticationHelper.SendWithProxyAuthAsync(request, _proxyUri!, _poolManager.ProxyCredentials, doRequestAuth, this, cancellationToken);
+                return AuthenticationHelper.SendWithProxyAuthAsync(request, _proxyUri!, async, _poolManager.ProxyCredentials, doRequestAuth, this, cancellationToken);
             }
 
-            return SendWithRetryAsync(request, doRequestAuth, cancellationToken);
+            return SendWithRetryAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             if (doRequestAuth && Settings._credentials != null)
             {
-                return AuthenticationHelper.SendWithRequestAuthAsync(request, Settings._credentials, Settings._preAuthenticate, this, cancellationToken);
+                return AuthenticationHelper.SendWithRequestAuthAsync(request, async, Settings._credentials, Settings._preAuthenticate, this, cancellationToken);
             }
 
-            return SendWithProxyAuthAsync(request, doRequestAuth, cancellationToken);
+            return SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        private async ValueTask<(Socket?, Stream?, TransportContext?, HttpResponseMessage?)> ConnectAsync(HttpRequestMessage request, bool allowHttp2, CancellationToken cancellationToken)
+        private async ValueTask<(Socket?, Stream?, TransportContext?, HttpResponseMessage?)> ConnectAsync(HttpRequestMessage request, bool async, bool allowHttp2, CancellationToken cancellationToken)
         {
-            // If a non-infinite connect timeout has been set, create and use a new CancellationToken that'll be canceled
+            // If a non-infinite connect timeout has been set, create and use a new CancellationToken that will be canceled
             // when either the original token is canceled or a connect timeout occurs.
             CancellationTokenSource? cancellationWithConnectTimeout = null;
             if (Settings._connectTimeout != Timeout.InfiniteTimeSpan)
@@ -1087,17 +1104,17 @@ namespace System.Net.Http
                     case HttpConnectionKind.Https:
                     case HttpConnectionKind.ProxyConnect:
                         Debug.Assert(_originAuthority != null);
-                        stream = await ConnectHelper.ConnectAsync(_originAuthority.IdnHost, _originAuthority.Port, cancellationToken).ConfigureAwait(false);
+                        stream = await ConnectHelper.ConnectAsync(_originAuthority.IdnHost, _originAuthority.Port, async, cancellationToken).ConfigureAwait(false);
                         break;
 
                     case HttpConnectionKind.Proxy:
-                        stream = await ConnectHelper.ConnectAsync(_proxyUri!.IdnHost, _proxyUri.Port, cancellationToken).ConfigureAwait(false);
+                        stream = await ConnectHelper.ConnectAsync(_proxyUri!.IdnHost, _proxyUri.Port, async, cancellationToken).ConfigureAwait(false);
                         break;
 
                     case HttpConnectionKind.ProxyTunnel:
                     case HttpConnectionKind.SslProxyTunnel:
                         HttpResponseMessage? response;
-                        (stream, response) = await EstablishProxyTunnel(request.HasHeaders ? request.Headers : null, cancellationToken).ConfigureAwait(false);
+                        (stream, response) = await EstablishProxyTunnel(async, request.HasHeaders ? request.Headers : null, cancellationToken).ConfigureAwait(false);
                         if (response != null)
                         {
                             // Return non-success response from proxy.
@@ -1112,7 +1129,7 @@ namespace System.Net.Http
                 TransportContext? transportContext = null;
                 if (_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel)
                 {
-                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(allowHttp2 ? _sslOptionsHttp2! : _sslOptionsHttp11!, request, stream!, cancellationToken).ConfigureAwait(false);
+                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(allowHttp2 ? _sslOptionsHttp2! : _sslOptionsHttp11!, request, async, stream!, cancellationToken).ConfigureAwait(false);
                     stream = sslStream;
                     transportContext = sslStream.TransportContext;
                 }
@@ -1125,10 +1142,10 @@ namespace System.Net.Http
             }
         }
 
-        internal async ValueTask<(HttpConnection?, HttpResponseMessage?)> CreateHttp11ConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        internal async ValueTask<(HttpConnection?, HttpResponseMessage?)> CreateHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             (Socket? socket, Stream? stream, TransportContext? transportContext, HttpResponseMessage? failureResponse) =
-                await ConnectAsync(request, false, cancellationToken).ConfigureAwait(false);
+                await ConnectAsync(request, async, false, cancellationToken).ConfigureAwait(false);
 
             if (failureResponse != null)
             {
@@ -1146,7 +1163,7 @@ namespace System.Net.Http
         }
 
         // Returns the established stream or an HttpResponseMessage from the proxy indicating failure.
-        private async ValueTask<(Stream?, HttpResponseMessage?)> EstablishProxyTunnel(HttpRequestHeaders? headers, CancellationToken cancellationToken)
+        private async ValueTask<(Stream?, HttpResponseMessage?)> EstablishProxyTunnel(bool async, HttpRequestHeaders? headers, CancellationToken cancellationToken)
         {
             Debug.Assert(_originAuthority != null);
             // Send a CONNECT request to the proxy server to establish a tunnel.
@@ -1158,7 +1175,7 @@ namespace System.Net.Http
                 tunnelRequest.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.UserAgent, values);
             }
 
-            HttpResponseMessage tunnelResponse = await _poolManager.SendProxyConnectAsync(tunnelRequest, _proxyUri!, cancellationToken).ConfigureAwait(false);
+            HttpResponseMessage tunnelResponse = await _poolManager.SendProxyConnectAsync(tunnelRequest, _proxyUri!, async, cancellationToken).ConfigureAwait(false);
 
             if (tunnelResponse.StatusCode != HttpStatusCode.OK)
             {

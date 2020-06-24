@@ -19,6 +19,7 @@
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="System\Net\Http\ByteArrayHelpers.cs" />
+    <Compile Include="System\Net\Http\CancellationHelper.cs" />
     <Compile Include="System\Net\Http\ClientCertificateOption.cs" />
     <Compile Include="System\Net\Http\DelegatingHandler.cs" />
     <Compile Include="System\Net\Http\EmptyContent.cs" />
@@ -51,6 +52,7 @@
     <Compile Include="System\Net\Http\NetEventSource.Http.cs" />
     <Compile Include="System\Net\Http\ReadOnlyMemoryContent.cs" />
     <Compile Include="System\Net\Http\RequestRetryType.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpMessageHandlerStage.cs" />
     <Compile Include="System\Net\Http\StreamContent.cs" />
     <Compile Include="System\Net\Http\StreamToStreamCopy.cs" />
     <Compile Include="System\Net\Http\StringContent.cs" />
@@ -115,16 +117,14 @@
              Link="Common\System\Text\SimpleRegex.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
-    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs">
-       <Link>Common\System\Net\ArrayBuffer.cs</Link>
-     </Compile>
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
+             Link="Common\System\Net\ArrayBuffer.cs"/>
   </ItemGroup>
   <!-- SocketsHttpHandler implementation -->
   <ItemGroup Condition=" '$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.NtAuth.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\CancellationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingWriteStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectHelper.cs" />
@@ -702,7 +702,6 @@
   </ItemGroup>
   <!-- Browser specific implementation -->
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
-
     <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs"
              Link="Common\System\CharArrayHelpers.cs" />
     <Compile Include="$(CommonPath)\System\StringExtensions.cs"
@@ -727,12 +726,10 @@
              Link="Common\System\Net\Security\CertificateHelper.Unix.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="System\System\Threading\Tasks\TaskToApm.cs" />
-    
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\SystemProxyInfo.Browser.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
-
     <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">

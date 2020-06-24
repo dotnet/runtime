@@ -47,15 +47,14 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task SetAfterUse_Throws()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClientHandler handler = CreateHttpClientHandler();
