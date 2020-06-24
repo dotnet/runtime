@@ -792,7 +792,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             }
             break;
 
-        case IF_DV_3AI: // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
+        case IF_DV_3AI: // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by element)
             assert(isValidVectorDatasize(id->idOpSize()));
             assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
@@ -812,7 +812,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg3()));
             break;
 
-        case IF_DV_3BI: // DV_3BI  .Q.......XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
+        case IF_DV_3BI: // DV_3BI  .Q.......XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by element)
             assert(isValidVectorDatasize(id->idOpSize()));
             assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
@@ -985,10 +985,10 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DV_3A:  // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
         case IF_DV_3AI: // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector)
         case IF_DV_3B:  // DV_3B   .Q.......X.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
-        case IF_DV_3BI: // DV_3BI  .Q.......XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
+        case IF_DV_3BI: // DV_3BI  .Q.......XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by element)
         case IF_DV_3C:  // DV_3C   .Q.........mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
         case IF_DV_3D:  // DV_3D   .........X.mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
-        case IF_DV_3DI: // DV_3DI  .........XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by elem)
+        case IF_DV_3DI: // DV_3DI  .........XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by element)
         case IF_DV_3E:  // DV_3E   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
         case IF_DV_3EI: // DV_3EI  ........XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by element)
         case IF_DV_3F:  // DV_3F   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
@@ -9080,7 +9080,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns the encoding to select the 'index' for an Arm64 'mul' by elem instruction
+ *  Returns the encoding to select the 'index' for an Arm64 'mul' by element instruction
  */
 /*static*/ emitter::code_t emitter::insEncodeVectorIndexLMH(emitAttr elemsize, ssize_t index)
 {
@@ -9189,7 +9189,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     return 0x00000000;
 }
 
-// Returns the encoding to select the index for an Arm64 float vector by elem instruction
+// Returns the encoding to select the index for an Arm64 float vector by element instruction
 /*static*/ emitter::code_t emitter::insEncodeFloatIndex(emitAttr elemsize, ssize_t index)
 {
     code_t result = 0x00000000;
@@ -9264,7 +9264,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns the encoding to select the index for an Arm64 ld/st# vector by elem instruction
+ *  Returns the encoding to select the index for an Arm64 ld/st# vector by element instruction
  */
 
 /*static*/ emitter::code_t emitter::insEncodeVLSIndex(emitAttr size, ssize_t index)
@@ -11227,7 +11227,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_DV_3BI: // DV_3BI  .Q.......XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
+        case IF_DV_3BI: // DV_3BI  .Q.......XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by element)
             code     = emitInsCode(ins, fmt);
             imm      = emitGetInsSC(id);
             elemsize = optGetElemsize(id->idInsOpt());
@@ -11259,7 +11259,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_DV_3DI: // DV_3DI  .........XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by elem)
+        case IF_DV_3DI: // DV_3DI  .........XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by element)
             code     = emitInsCode(ins, fmt);
             imm      = emitGetInsSC(id);
             elemsize = id->idOpSize();
@@ -13054,7 +13054,7 @@ void emitter::emitDispIns(
             emitDispVectorReg(id->idReg3(), id->idInsOpt(), false);
             break;
 
-        case IF_DV_3BI: // DV_3BI  .Q........Lmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
+        case IF_DV_3BI: // DV_3BI  .Q........Lmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by element)
             emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
             emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
             elemsize = optGetElemsize(id->idInsOpt());
@@ -13122,7 +13122,7 @@ void emitter::emitDispIns(
             }
             break;
 
-        case IF_DV_3DI: // DV_3DI  .........XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by elem)
+        case IF_DV_3DI: // DV_3DI  .........XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by element)
             emitDispReg(id->idReg1(), size, true);
             emitDispReg(id->idReg2(), size, true);
             elemsize = size;
@@ -14629,8 +14629,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_DV_3AI: // mul, mla, mls (vector by elem)
-        case IF_DV_3BI: // fmul, fmulx, fmla, fmls (vector by elem)
+        case IF_DV_3AI: // mul, mla, mls (vector by element)
+        case IF_DV_3BI: // fmul, fmulx, fmla, fmls (vector by element)
         case IF_DV_3EI: // sqdmlal, sqdmlsl, sqdmulh, sqdmull (scalar by element)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_4C;
@@ -14982,7 +14982,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_DV_3DI: // fmul, fmulx, fmla, fmls (scalar by elem)
+        case IF_DV_3DI: // fmul, fmulx, fmla, fmls (scalar by element)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_4C;
             break;
