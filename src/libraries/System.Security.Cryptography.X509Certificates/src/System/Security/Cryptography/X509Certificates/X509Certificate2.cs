@@ -645,7 +645,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// the private key.
         /// </param>
         /// <returns>A new certificate with the private key.</returns>
-        /// <exception cref="ArgumentException">
+        /// <exception cref="CryptographicException">
         /// <para>
         ///   The contents of the file path in <paramref name="certPemFilePath" /> do not contain
         ///   a PEM-encoded certificate, or it is malformed.
