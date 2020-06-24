@@ -1,0 +1,81 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
+    <PlatformPackageType>RuntimePack</PlatformPackageType>
+    <SharedFrameworkArchiveName>dotnet-runtime</SharedFrameworkArchiveName>
+    <VSInsertionShortComponentName>NetCore.SharedFramework</VSInsertionShortComponentName>
+    <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
+    <GetSharedFrameworkFilesForReadyToRunDependsOn>
+        AddRuntimeFilesToPackage;
+        AddFrameworkFilesToPackage
+    </GetSharedFrameworkFilesForReadyToRunDependsOn>
+    <PublishReadyToRun Condition="'$(RuntimeFlavor)' != 'Mono'">true</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(RuntimeFlavor)' == 'Mono'">false</PublishReadyToRun>
+    <!-- Disable crossgen on FreeBSD, NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
+    <PublishReadyToRun Condition="'$(TargetOS)'=='FreeBSD' Or '$(TargetOS)'=='NetBSD' Or '$(TargetOS)'=='illumos' Or '$(TargetOS)'=='Solaris'">false</PublishReadyToRun>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
+    <RuntimeSpecificFrameworkSuffix>Mono</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MonoEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
+    <RuntimeSpecificFrameworkSuffix>Mono.LLVM</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MonoBundleLLVMOptimizer)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
+    <RuntimeSpecificFrameworkSuffix>Mono.LLVM.AOT</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeSpecificFrameworkSuffix)' != ''">
+    <PackageId>$(SharedFrameworkName).Runtime.$(RuntimeSpecificFrameworkSuffix)</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(Version)" />
+  </ItemGroup>
+
+  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
+    <ItemGroup>
+      <RuntimeFiles>
+        <TargetPath>runtimes/$(PackageRID)/native</TargetPath>
+      </RuntimeFiles>
+
+      <RuntimeFiles Condition="'%(FileName)' == 'crossgen'">
+        <TargetPath>tools</TargetPath>
+      </RuntimeFiles>
+
+      <RuntimeFiles Condition="'%(FileName)' == 'System.Private.CoreLib'" ReferenceOnly="true" />
+
+
+      <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
+        Include="@(MonoCrossFiles)">
+        <TargetPath>runtimes/$(PackageRID)/native/cross</TargetPath>
+      </RuntimeFiles>
+      <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
+        Include="@(MonoIncludeFiles)">
+        <TargetPath>runtimes/$(PackageRID)/native/include/%(RecursiveDir)</TargetPath>
+      </RuntimeFiles>
+
+      <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'clrjit' or '%(FileName)' == 'libclrjit'">
+        <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
+      </CoreCLRCrossTargetFiles>
+      <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'crossgen'">
+        <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
+      </CoreCLRCrossTargetFiles>
+      <CoreCLRCrossTargetFiles Condition="$([System.String]::new('%(FileName)').StartsWith('mscordaccore')) and '$(TargetsWindows)' == 'true'">
+        <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
+      </CoreCLRCrossTargetFiles>
+      <CoreCLRCrossTargetFiles Condition="'%(FileName)%(Extension)' == 'mscordbi.dll' and '$(TargetsWindows)' == 'true'">
+        <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
+      </CoreCLRCrossTargetFiles>
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles);@(CoreCLRCrossTargetFiles);" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild">
+    <ItemGroup>
+      <LibrariesRuntimeFiles Condition="'%(IsNative)' != 'true'" TargetPath="runtimes/$(PackageRID)/lib/$(NetCoreAppCurrent)" />
+      <LibrariesRuntimeFiles Condition="'%(IsNative)' == 'true'" TargetPath="runtimes/$(PackageRID)/native/%(LibrariesRuntimeFiles.NativeSubDirectory)%(RecursiveDir)" />
+      <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -105,12 +105,13 @@
     <SubsetName Include="Installer" Description="The .NET Core hosts, hosting libraries, bundles, and installers. Includes these projects' tests." />
     <SubsetName Include="CoreHost" Description="The .NET Core hosts." />
     <SubsetName Include="Installer.Managed" Description="The managed .NET hosting projects. This includes HostModel." />
-    <SubsetName Include="Installer.DepProjs" Description="The dependency projects. These gather shared framework files and run crossgen on them to turn them into ready-to-run (R2R) assemblies for the current platform." />
+    <SubsetName Include="nstaller.DepProjs" Description="The dependency projects. These gather shared framework files and run crossgen on them to turn them into ready-to-run (R2R) assemblies for the current platform." />
     <SubsetName Include="Installer.PkgProjs" Description="The packaging projects. These produce NETCoreApp assets: NuGet packages, installers, zips, and Linux packages." />
     <SubsetName Include="Bundles" Description="The shared framework bundle installer projects. Produces .exe installers for Windows." />
     <SubsetName Include="Installers" Description="Generates additional installers. This produces the shared frameworks and their installers." />
     <SubsetName Include="Installer.Tests" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
     <SubsetName Include="Installer.Publish" OnDemand="true" Description="Builds the installer publish infrastructure." />
+    <SubsetName Include="NewSFX" OnDemand="true" Description="Builds the shared frameworks, bundles, installers with the new shared framework SDK." />
   </ItemGroup>
 
   <!-- Default targets, parallelization and configurations. -->
@@ -236,6 +237,11 @@
     <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\installers.proj" BuildInParallel="false" />
     <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\vs-insertion-packages.proj" BuildInParallel="false" />
     <ProjectToBuild Include="@(InstallerProjectToBuild)" Pack="true" Category="installer" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+newsfx+'))">
+    <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\newsfx\**\*.*proj" />
+    <ProjectToBuild Include="@(InstallerProjectToBuild)" Category="installer" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+installer.tests+'))">

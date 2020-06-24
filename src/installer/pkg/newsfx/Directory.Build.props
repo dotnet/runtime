@@ -1,0 +1,24 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- The built-in packaging targets make PackageLicenseFile and PackageLicenseExpression
+         mututally exclusive. Use PackageLicenseExpression if it's available. -->
+    <PackageLicenseFile Condition="'$(PackageLicenseExpression)' != ''"></PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+    <!-- This link should be updated for each release milestone, currently this points to 1.0.0 -->
+    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799417</ReleaseNotes>
+    <ProjectUrl>https://dot.net</ProjectUrl>
+    <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
+    <GenerateInstallers>true</GenerateInstallers>
+    <GenerateVSInsertionPackages>true</GenerateVSInsertionPackages>
+  </PropertyGroup>
+
+  <Import Project="$(RepoRoot)eng\native\naming.props" />
+
+  <PropertyGroup>
+    <DotNetSharedFrameworkTaskDir>D:\source\arcade\artifacts\bin\Microsoft.DotNet.SharedFramework.Sdk\Debug\netcoreapp2.1\publish\</DotNetSharedFrameworkTaskDir>
+    <DotNetSharedFrameworkMSBuildDir>D:\source\arcade\src\Microsoft.DotNet.SharedFramework.Sdk\targets\</DotNetSharedFrameworkMSBuildDir>
+  </PropertyGroup>
+</Project>

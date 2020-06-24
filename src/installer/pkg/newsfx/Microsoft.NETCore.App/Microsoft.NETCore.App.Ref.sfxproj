@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
+    <PlatformPackageType>TargetingPack</PlatformPackageType>
+    <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
+    <SharedFrameworkArchiveName>dotnet-targeting-pack</SharedFrameworkArchiveName>
+    <VSInsertionShortComponentName>NetCore.TargetingPack</VSInsertionShortComponentName>
+  </PropertyGroup>
+
+  <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild" BeforeTargets="GetFilesToPackage">
+    <ItemGroup>
+      <ReferencePath Include="@(LibrariesRefAssemblies)" />
+      <DocFilesToPackage Include="$(ArtifactsBinDir)/docs/%(LibrariesRefAssemblies.FileName).xml" Condition="Exists('$(ArtifactsBinDir)/docs/%(LibrariesRefAssemblies.FileName).xml')"/>
+    </ItemGroup>
+  </Target>
+</Project>
