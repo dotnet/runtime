@@ -44,7 +44,15 @@ namespace System
 
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream(SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read);
+            Interop.Sys.InitializeConsoleBeforeRead();
+            try
+            {
+                return new UnixConsoleStream(SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read);
+            }
+            finally
+            {
+                Interop.Sys.UninitializeConsoleAfterRead();
+            }
         }
 
         public static Stream OpenStandardOutput()
