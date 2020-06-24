@@ -1106,22 +1106,22 @@ mono_dump_native_crash_info (const char *signal, MonoContext *mctx, MONO_SIG_HAN
 	dump_memory_around_ip (mctx);
 }
 
+#ifdef HAVE_UCONTEXT_H
+#include <ucontext.h>
+#endif
+
 void
 mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining, void *context)
 {
-	if (!crash_chaining) {
-		/*Android abort is a fluke, it doesn't abort, it triggers another segv. */
-#if defined (HOST_ANDROID)
-		exit (-1);
-#else
-		abort ();
-#endif
-	}
-	mono_chain_signal (info->si_signo, info, context);
+	if (crash_chaining)
+		mono_chain_signal (info->si_signo, info, context);
 
-	// we remove Mono's signal handlers from crashing signals in mono_handle_native_crash(), so re-raising will now allow the OS to handle the crash
-	// TODO: perhaps we can always use this to abort, instead of explicit exit()/abort() as we do above
+	// we remove Mono's signal handlers from crashing signals in mono_handle_native_crash(), so restoring the context or re-raising will now allow the OS to handle the crash
+#ifdef HAVE_UCONTEXT_H
+	setcontext((ucontext_t *) context);
+#else
 	raise (info->si_signo);
+#endif
 }
 #endif /* !MONO_CROSS_COMPILE */
 
