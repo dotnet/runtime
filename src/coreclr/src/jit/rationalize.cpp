@@ -700,10 +700,14 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         case GT_BLK:
             // We should only see GT_BLK for TYP_STRUCT or for InitBlocks.
             assert((node->TypeGet() == TYP_STRUCT) || use.User()->OperIsInitBlkOp());
+            // Clear the `GTF_IND_ASG_LHS` flag, which overlaps with `GTF_IND_REQ_ADDR_IN_REG`.
+            node->gtFlags &= ~GTF_IND_ASG_LHS;
             break;
 
         case GT_OBJ:
             assert((node->TypeGet() == TYP_STRUCT) || !use.User()->OperIsInitBlkOp());
+            // Clear the `GTF_IND_ASG_LHS` flag, which overlaps with `GTF_IND_REQ_ADDR_IN_REG`.
+            node->gtFlags &= ~GTF_IND_ASG_LHS;
             if (varTypeIsSIMD(node->TypeGet()))
             {
                 node->SetOper(GT_IND);
