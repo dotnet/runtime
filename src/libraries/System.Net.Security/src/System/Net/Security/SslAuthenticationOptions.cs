@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
@@ -12,6 +13,8 @@ namespace System.Net.Security
     {
         internal SslAuthenticationOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback? localCallback)
         {
+            Debug.Assert(sslClientAuthenticationOptions.TargetHost != null);
+
             // Common options.
             AllowRenegotiation = sslClientAuthenticationOptions.AllowRenegotiation;
             ApplicationProtocols = sslClientAuthenticationOptions.ApplicationProtocols;

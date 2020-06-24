@@ -196,7 +196,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task SslStreag_TargetHostName_Succeeds(bool useEmptyName)
+        public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName)
         {
             string tagetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
 
@@ -207,6 +207,10 @@ namespace System.Net.Security.Tests
             using (var server = new SslStream(serverStream))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
+                // It should be empty before handshake.
+                Assert.Equal(string.Empty, client.TargetHostName);
+                Assert.Equal(string.Empty, server.TargetHostName);
+
                 SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions() { TargetHost = tagetName };
                 clientOptions.RemoteCertificateValidationCallback =
                     (sender, certificate, chain, sslPolicyErrors) =>
