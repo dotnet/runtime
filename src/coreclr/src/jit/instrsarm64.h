@@ -1658,10 +1658,10 @@ INST1(sqxtun2,     "sqxtun2",      NRW,    IF_DV_2M,  0x2E212800)
 INST1(uqxtn2,      "uqxtn2",       NRW,    IF_DV_2M,  0x2E214800)
                                    //  uqxtn2  Vd,Vn                DV_2M  0Q101110XX100001 010010nnnnnddddd   2E21 4800   Vd,Vn      (vector)
 
-INST1(xtn,         "xtn",          0,      IF_DV_2M,  0x0E212800)
+INST1(xtn,         "xtn",          NRW,    IF_DV_2M,  0x0E212800)
                                    //  xtn     Vd,Vn                DV_2M  00101110XX110000 001110nnnnnddddd   0E21 2800   Vd,Vn      (vector)
 
-INST1(xtn2,        "xtn2",         0,      IF_DV_2M,  0x4E212800)
+INST1(xtn2,        "xtn2",         NRW,    IF_DV_2M,  0x4E212800)
                                    //  xtn2    Vd,Vn                DV_2M  01101110XX110000 001110nnnnnddddd   4E21 2800   Vd,Vn      (vector)
 
 INST1(fnmul,       "fnmul",        0,      IF_DV_3D,  0x1E208800)
