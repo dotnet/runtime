@@ -27,7 +27,9 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
 {
     CONTRACTL
     {
+#ifndef DEBUG
         NOTHROW;
+#endif
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(s_shuttingDown || IpcStreamFactory::HasActiveConnections());
