@@ -110,7 +110,7 @@ namespace System.Text
             // to account for the skipped EncodingInfo element.
 
             ushort[] mappedCodePages = s_mappedCodePages;
-            EncodingInfo[] arrayEncodingInfo = new EncodingInfo[(Encoding.IsUTF7EncodingEnabled) ? mappedCodePages.Length : (mappedCodePages.Length - 1)];
+            EncodingInfo[] arrayEncodingInfo = new EncodingInfo[(LocalAppContextSwitches.EnableUnsafeUTF7Encoding) ? mappedCodePages.Length : (mappedCodePages.Length - 1)];
             string webNames = s_webNames;
             int[] webNameIndices = s_webNameIndices;
             int arrayEncodingInfoIdx = 0;
@@ -118,7 +118,7 @@ namespace System.Text
             for (int i = 0; i < mappedCodePages.Length; i++)
             {
                 int codePage = mappedCodePages[i];
-                if (codePage == Encoding.CodePageUTF7 && !Encoding.IsUTF7EncodingEnabled)
+                if (codePage == Encoding.CodePageUTF7 && !LocalAppContextSwitches.EnableUnsafeUTF7Encoding)
                 {
                     continue; // skip this entry; UTF-7 is disabled
                 }
@@ -150,7 +150,7 @@ namespace System.Text
                     // Exception: If somebody already registered a custom UTF-7 provider, the dictionary
                     // will already contain an entry for the UTF-7 code page key, and we'll let it go through.
 
-                    if (codePage != Encoding.CodePageUTF7 || Encoding.IsUTF7EncodingEnabled)
+                    if (codePage != Encoding.CodePageUTF7 || LocalAppContextSwitches.EnableUnsafeUTF7Encoding)
                     {
                         encodingInfoList[codePage] = new EncodingInfo(codePage, webNames[webNameIndices[i]..webNameIndices[i + 1]],
                                                                                 GetDisplayName(codePage, i));

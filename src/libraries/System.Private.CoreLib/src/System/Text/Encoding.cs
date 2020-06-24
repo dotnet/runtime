@@ -77,8 +77,6 @@ namespace System.Text
 
     public abstract partial class Encoding : ICloneable
     {
-        private const string ENABLEUTF7_APPCONTEXT_SWITCH_NAME = "System.Text.Encoding.EnableUnsafeUTF7Encoding";
-
         // For netcore we use UTF8 as default encoding since ANSI isn't available
         private static readonly UTF8Encoding.UTF8EncodingSealed s_defaultEncoding = new UTF8Encoding.UTF8EncodingSealed(encoderShouldEmitUTF8Identifier: false);
 
@@ -246,7 +244,7 @@ namespace System.Text
                         // AppContext. If support is not enabled, we'll provide a friendly error message stating
                         // how the developer can re-enable it in their application.
 
-                        if (IsUTF7EncodingEnabled)
+                        if (LocalAppContextSwitches.EnableUnsafeUTF7Encoding)
                         {
 #pragma warning disable BCL0001 // Encoding.UTF7 property getter is obsolete
                             return UTF7;
@@ -1045,15 +1043,6 @@ namespace System.Text
 
         [Obsolete(Obsoletions.SYSTEM_TEXT_ENCODING_UTF7_MESSAGE, DiagnosticId = Obsoletions.SYSTEM_TEXT_ENCODING_UTF7_DIAGID, UrlFormat = Obsoletions.SHARED_URL_FORMAT)]
         public static Encoding UTF7 => UTF7Encoding.s_default;
-
-        internal static bool IsUTF7EncodingEnabled
-        {
-            get
-            {
-                AppContext.TryGetSwitch(ENABLEUTF7_APPCONTEXT_SWITCH_NAME, out bool isEnabled);
-                return isEnabled;
-            }
-        }
 
         // Returns an encoding for the UTF-8 format. The returned encoding will be
         // an instance of the UTF8Encoding class.
