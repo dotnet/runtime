@@ -411,7 +411,7 @@ namespace System.Diagnostics.Tests
                 using Activity a = aSource.StartActivity("a", ActivityKind.Client, hierarchicalId);
                 using Activity b = aSource.StartActivity("b", ActivityKind.Client, w3cId);
 
-                ActivityTraceId traceId = ActivityTraceId.CreateFromString("99d43cb30a4cdb4fbeee3a19c29201b0");
+                ActivityTraceId traceId = ActivityTraceId.CreateFromString("99d43cb30a4cdb4fbeee3a19c29201b0".AsSpan());
 
                 Assert.NotEqual(traceId, a.TraceId);
                 Assert.Equal(traceId, b.TraceId);
