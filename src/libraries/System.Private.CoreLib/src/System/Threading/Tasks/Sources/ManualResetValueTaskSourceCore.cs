@@ -270,6 +270,10 @@ namespace System.Threading.Tasks.Sources
         /// </summary>
         private ExceptionDispatchInfo? InvokeInlineContinuation()
         {
+            // This is in a helper as the error handling causes the generated asm
+            // for the surrounding code to become less efficent (stack spills etc)
+            // and it is an uncommon path.
+
             Debug.Assert(_continuation != null);
             Debug.Assert(_capturedContext == null);
             Debug.Assert(!RunContinuationsAsynchronously);
