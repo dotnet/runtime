@@ -29,8 +29,7 @@ namespace System.Threading.Tasks
         {
             try
             {
-                if (LoggingOn)
-                    TplEventSource.Log.TraceOperationBegin(task.Id, operationName, RelatedContext: 0);
+                TplEventSource.Log.TraceOperationBegin(task.Id, operationName, RelatedContext: 0);
             }
             catch (Exception ex)
             {
@@ -43,8 +42,7 @@ namespace System.Threading.Tasks
         {
             try
             {
-                if (LoggingOn)
-                    TplEventSource.Log.TraceOperationEnd(task.Id, status);
+                TplEventSource.Log.TraceOperationEnd(task.Id, status);
             }
             catch (Exception ex)
             {
@@ -57,8 +55,7 @@ namespace System.Threading.Tasks
         {
             try
             {
-                if (LoggingOn)
-                    TplEventSource.Log.TraceOperationRelation(task.Id, relation);
+                TplEventSource.Log.TraceOperationRelation(task.Id, relation);
             }
             catch (Exception ex)
             {
@@ -71,8 +68,7 @@ namespace System.Threading.Tasks
         {
             try
             {
-                if (LoggingOn)
-                    TplEventSource.Log.TraceSynchronousWorkBegin(task.Id, work);
+                TplEventSource.Log.TraceSynchronousWorkBegin(task.Id, work);
             }
             catch (Exception ex)
             {
@@ -85,8 +81,7 @@ namespace System.Threading.Tasks
         {
             try
             {
-                if (LoggingOn)
-                    TplEventSource.Log.TraceSynchronousWorkEnd(work);
+                TplEventSource.Log.TraceSynchronousWorkEnd(work);
             }
             catch (Exception ex)
             {
@@ -94,7 +89,6 @@ namespace System.Threading.Tasks
             }
         }
 
-        // fix for 796185: leaking internal exceptions to customers,
         // we should catch and log exceptions but never propagate them.
         private static void LogAndDisable(Exception ex)
         {
