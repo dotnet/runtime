@@ -42,7 +42,6 @@ T max(T a, T b)
 #endif
 #include "vxsort.h"
 #include "machine_traits.avx2.h"
-#include "smallsort/bitonic_sort.AVX2.int32_t.generated.h"
 
 void do_vxsort_avx2(uint8_t** low, uint8_t** high)
 {
