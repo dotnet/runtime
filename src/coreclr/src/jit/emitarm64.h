@@ -313,13 +313,13 @@ static code_t insEncodeElemsize(emitAttr size);
 // Returns the encoding to select the 4/8 byte elemsize for an Arm64 float vector instruction
 static code_t insEncodeFloatElemsize(emitAttr size);
 
-// Returns the encoding to select the index for an Arm64 float vector by elem instruction
+// Returns the encoding to select the index for an Arm64 float vector by element instruction
 static code_t insEncodeFloatIndex(emitAttr elemsize, ssize_t index);
 
 // Returns the encoding to select the vector elemsize for an Arm64 ld/st# vector instruction
 static code_t insEncodeVLSElemsize(emitAttr size);
 
-// Returns the encoding to select the index for an Arm64 ld/st# vector by elem instruction
+// Returns the encoding to select the index for an Arm64 ld/st# vector by element instruction
 static code_t insEncodeVLSIndex(emitAttr elemsize, ssize_t index);
 
 // Returns the encoding to select the 'conversion' operation for a type 'fmt' Arm64 instruction

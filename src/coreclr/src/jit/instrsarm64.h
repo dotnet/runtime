@@ -68,7 +68,7 @@ INST9(mov,         "mov",          0,      IF_EN9,    0x2A0003E0,  0x11000000,  
                                    //  mov     Vd,Vn                DV_3C  0Q001110101nnnnn 000111nnnnnddddd   0EA0 1C00   Vd,Vn
                                    //  mov     Rd,Vn[0]             DV_2B  0Q001110000iiiii 001111nnnnnddddd   0E00 3C00   Rd,Vn[]   (to general)
                                    //  mov     Vd[],Rn              DV_2C  01001110000iiiii 000111nnnnnddddd   4E00 1C00   Vd[],Rn   (from general)
-                                   //  mov     Vd,Vn[]              DV_2E  01011110000iiiii 000001nnnnnddddd   5E00 0400   Vd,Vn[] (scalar by elem)
+                                   //  mov     Vd,Vn[]              DV_2E  01011110000iiiii 000001nnnnnddddd   5E00 0400   Vd,Vn[]   (scalar by element)
                                    //  mov     Vd[],Vn[]            DV_2F  01101110000iiiii 0jjjj1nnnnnddddd   6E00 0400   Vd[],Vn[] (from/to elem)
 
 //    enum         name            info               DR_3A        DR_3B        DR_3C        DI_2A        DV_3A        DV_3E
@@ -273,14 +273,14 @@ INST4(cmn,         "cmn",          CMP,    IF_EN4C,   0x2B00001F,  0x2B00001F,  
 INST4(fmul,        "fmul",         0,      IF_EN4D,   0x2E20DC00,  0x1E200800,  0x0F809000,  0x5F809000)
                                    //  fmul    Vd,Vn,Vm             DV_3B  0Q1011100X1mmmmm 110111nnnnnddddd   2E20 DC00   Vd,Vn,Vm   (vector)
                                    //  fmul    Vd,Vn,Vm             DV_3D  000111100X1mmmmm 000010nnnnnddddd   1E20 0800   Vd,Vn,Vm   (scalar)
-                                   //  fmul    Vd,Vn,Vm[]           DV_3BI 0Q0011111XLmmmmm 1001H0nnnnnddddd   0F80 9000   Vd,Vn,Vm[] (vector by elem)
-                                   //  fmul    Vd,Vn,Vm[]           DV_3DI 010111111XLmmmmm 1001H0nnnnnddddd   5F80 9000   Vd,Vn,Vm[] (scalar by elem)
+                                   //  fmul    Vd,Vn,Vm[]           DV_3BI 0Q0011111XLmmmmm 1001H0nnnnnddddd   0F80 9000   Vd,Vn,Vm[] (vector by element)
+                                   //  fmul    Vd,Vn,Vm[]           DV_3DI 010111111XLmmmmm 1001H0nnnnnddddd   5F80 9000   Vd,Vn,Vm[] (scalar by element)
 
 INST4(fmulx,       "fmulx",        0,      IF_EN4D,   0x0E20DC00,  0x5E20DC00,  0x2F809000,  0x7F809000)
                                    //  fmulx   Vd,Vn,Vm             DV_3B  0Q0011100X1mmmmm 110111nnnnnddddd   0E20 DC00   Vd,Vn,Vm   (vector)
                                    //  fmulx   Vd,Vn,Vm             DV_3D  010111100X1mmmmm 110111nnnnnddddd   5E20 DC00   Vd,Vn,Vm   (scalar)
-                                   //  fmulx   Vd,Vn,Vm[]           DV_3BI 0Q1011111XLmmmmm 1001H0nnnnnddddd   2F80 9000   Vd,Vn,Vm[] (vector by elem)
-                                   //  fmulx   Vd,Vn,Vm[]           DV_3DI 011111111XLmmmmm 1001H0nnnnnddddd   7F80 9000   Vd,Vn,Vm[] (scalar by elem)
+                                   //  fmulx   Vd,Vn,Vm[]           DV_3BI 0Q1011111XLmmmmm 1001H0nnnnnddddd   2F80 9000   Vd,Vn,Vm[] (vector by element)
+                                   //  fmulx   Vd,Vn,Vm[]           DV_3DI 011111111XLmmmmm 1001H0nnnnnddddd   7F80 9000   Vd,Vn,Vm[] (scalar by element)
 
 //    enum         name            info               DR_3A        DR_3B        DI_2C        DV_3C
 INST4(and,         "and",          0,      IF_EN4E,   0x0A000000,  0x0A000000,  0x12000000,  0x0E201C00)
@@ -364,44 +364,44 @@ INST4(uqshl,       "uqshl",        0,      IF_EN4J,   0x7F007400,  0x2F007400,  
 INST4(sqdmlal,     "sqdmlal",      LNG,    IF_EN4K,   0x5E209000,  0x0E209000,  0x5F003000,  0x0F003000)
                                    //  sqdmlal Vd,Vn,Vm             DV_3E  01011110XX1mmmmm 100100nnnnnddddd   5E20 9000   Vd,Vn,Vm   (scalar)
                                    //  sqdmlal Vd,Vn,Vm             DV_3A  00001110XX1mmmmm 100100nnnnnddddd   0E20 9000   Vd,Vn,Vm   (vector)
-                                   //  sqdmlal Vd,Vn,Vm[]           DV_3EI 01011111XXLMmmmm 0011H0nnnnnddddd   5F00 3000   Vd,Vn,Vm[] (scalar by elem)
-                                   //  sqdmlal Vd,Vn,Vm[]           DV_3AI 00001111XXLMmmmm 0011H0nnnnnddddd   0F00 3000   Vd,Vn,Vm[] (vector by elem)
+                                   //  sqdmlal Vd,Vn,Vm[]           DV_3EI 01011111XXLMmmmm 0011H0nnnnnddddd   5F00 3000   Vd,Vn,Vm[] (scalar by element)
+                                   //  sqdmlal Vd,Vn,Vm[]           DV_3AI 00001111XXLMmmmm 0011H0nnnnnddddd   0F00 3000   Vd,Vn,Vm[] (vector by element)
 
 INST4(sqdmlsl,     "sqdmlsl",      LNG,    IF_EN4K,   0x5E20B000,  0x0E20B000,  0x5F007000,  0x0F007000)
                                    //  sqdmlsl Vd,Vn,Vm             DV_3E  01011110XX1mmmmm 101100nnnnnddddd   5E20 B000   Vd,Vn,Vm   (scalar)
                                    //  sqdmlsl Vd,Vn,Vm             DV_3A  00001110XX1mmmmm 101100nnnnnddddd   0E20 B000   Vd,Vn,Vm   (vector)
-                                   //  sqdmlsl Vd,Vn,Vm[]           DV_3EI 01011111XXLMmmmm 0111H0nnnnnddddd   5F00 7000   Vd,Vn,Vm[] (scalar by elem)
-                                   //  sqdmlsl Vd,Vn,Vm[]           DV_3AI 00001111XXLMmmmm 0111H0nnnnnddddd   0F00 7000   Vd,Vn,Vm[] (vector by elem)
+                                   //  sqdmlsl Vd,Vn,Vm[]           DV_3EI 01011111XXLMmmmm 0111H0nnnnnddddd   5F00 7000   Vd,Vn,Vm[] (scalar by element)
+                                   //  sqdmlsl Vd,Vn,Vm[]           DV_3AI 00001111XXLMmmmm 0111H0nnnnnddddd   0F00 7000   Vd,Vn,Vm[] (vector by element)
 
 INST4(sqdmulh,     "sqdmulh",      0,      IF_EN4K,   0x5E20B400,  0x0E20B400,  0x5F00C000,  0x0F00C000)
                                    //  sqdmulh Vd,Vn,Vm             DV_3E  01011110XX1mmmmm 101101nnnnnddddd   5E20 B400   Vd,Vn,Vm   (scalar)
                                    //  sqdmulh Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 101101nnnnnddddd   0E20 B400   Vd,Vn,Vm   (vector)
-                                   //  sqdmulh Vd,Vn,Vm[]           DV_3EI 01011111XXLMmmmm 1100H0nnnnnddddd   5F00 C000   Vd,Vn,Vm[] (scalar by elem)
-                                   //  sqdmulh Vd,Vn,Vm[]           DV_3AI 0Q001111XXLMmmmm 1100H0nnnnnddddd   0F00 C000   Vd,Vn,Vm[] (vector by elem)
+                                   //  sqdmulh Vd,Vn,Vm[]           DV_3EI 01011111XXLMmmmm 1100H0nnnnnddddd   5F00 C000   Vd,Vn,Vm[] (scalar by element)
+                                   //  sqdmulh Vd,Vn,Vm[]           DV_3AI 0Q001111XXLMmmmm 1100H0nnnnnddddd   0F00 C000   Vd,Vn,Vm[] (vector by element)
 
 INST4(sqdmull,     "sqdmull",      LNG,    IF_EN4K,   0x5E20D000,  0x0E20D000,  0x5F00B000,  0x0F00B000)
                                    //  sqdmull Vd,Vn,Vm             DV_3E  01011110XX1mmmmm 110100nnnnnddddd   5E20 D000   Vd,Vn,Vm   (scalar)
                                    //  sqdmull Vd,Vn,Vm             DV_3A  00001110XX1mmmmm 110100nnnnnddddd   0E20 D000   Vd,Vn,Vm   (vector)
-                                   //  sqdmull Vd,Vn,Vm[]           DV_3EI 01011111XXLMmmmm 1011H0nnnnnddddd   5F00 B000   Vd,Vn,Vm[] (scalar by elem)
-                                   //  sqdmull Vd,Vn,Vm[]           DV_3AI 00001111XXLMmmmm 1011H0nnnnnddddd   0F00 B000   Vd,Vn,Vm[] (vector by elem)
+                                   //  sqdmull Vd,Vn,Vm[]           DV_3EI 01011111XXLMmmmm 1011H0nnnnnddddd   5F00 B000   Vd,Vn,Vm[] (scalar by element)
+                                   //  sqdmull Vd,Vn,Vm[]           DV_3AI 00001111XXLMmmmm 1011H0nnnnnddddd   0F00 B000   Vd,Vn,Vm[] (vector by element)
 
 INST4(sqrdmlah,    "sqrdmlah",     0,      IF_EN4K,   0x7E008400,  0x2E008400,  0x7F00D000,  0x2F00D000)
                                    //  sqrdmlah Vd,Vn,Vm            DV_3E  01111110XX0mmmmm 100001nnnnnddddd   7E00 8400   Vd,Vn,Vm   (scalar)
                                    //  sqrdmlah Vd,Vn,Vm            DV_3A  0Q101110XX0mmmmm 100001nnnnnddddd   2E00 8400   Vd,Vn,Vm   (vector)
-                                   //  sqrdmlah Vd,Vn,Vm[]          DV_3EI 01111111XXLMmmmm 1101H0nnnnnddddd   7F00 D000   Vd,Vn,Vm[] (scalar by elem)
-                                   //  sqrdmlah Vd,Vn,Vm[]          DV_3AI 0Q101111XXLMmmmm 1101H0nnnnnddddd   2F00 D000   Vd,Vn,Vm[] (vector by elem)
+                                   //  sqrdmlah Vd,Vn,Vm[]          DV_3EI 01111111XXLMmmmm 1101H0nnnnnddddd   7F00 D000   Vd,Vn,Vm[] (scalar by element)
+                                   //  sqrdmlah Vd,Vn,Vm[]          DV_3AI 0Q101111XXLMmmmm 1101H0nnnnnddddd   2F00 D000   Vd,Vn,Vm[] (vector by element)
 
 INST4(sqrdmlsh,    "sqrdmlsh",     0,      IF_EN4K,   0x7E008C00,  0x2E008C00,  0x7F00F000,  0x2F00F000)
                                    //  sqrdmlsh Vd,Vn,Vm            DV_3E  01111110XX0mmmmm 100011nnnnnddddd   7E00 8C00   Vd,Vn,Vm   (scalar)
                                    //  sqrdmlsh Vd,Vn,Vm            DV_3A  0Q101110XX0mmmmm 100011nnnnnddddd   2E00 8C00   Vd,Vn,Vm   (vector)
-                                   //  sqrdmlsh Vd,Vn,Vm[]          DV_3EI 01111111XXLMmmmm 1111H0nnnnnddddd   7F00 F000   Vd,Vn,Vm[] (scalar by elem)
-                                   //  sqrdmlsh Vd,Vn,Vm[]          DV_3AI 0Q101111XXLMmmmm 1111H0nnnnnddddd   2F00 F000   Vd,Vn,Vm[] (vector by elem)
+                                   //  sqrdmlsh Vd,Vn,Vm[]          DV_3EI 01111111XXLMmmmm 1111H0nnnnnddddd   7F00 F000   Vd,Vn,Vm[] (scalar by element)
+                                   //  sqrdmlsh Vd,Vn,Vm[]          DV_3AI 0Q101111XXLMmmmm 1111H0nnnnnddddd   2F00 F000   Vd,Vn,Vm[] (vector by element)
 
 INST4(sqrdmulh,    "sqrdmulh",     0,      IF_EN4K,   0x7E20B400,  0x2E20B400,  0x5F00D000,  0x0F00D000)
                                    //  sqrdmulh Vd,Vn,Vm            DV_3E  01111110XX1mmmmm 101101nnnnnddddd   7E20 B400   Vd,Vn,Vm   (scalar)
                                    //  sqrdmulh Vd,Vn,Vm            DV_3A  0Q101110XX1mmmmm 101101nnnnnddddd   2E20 B400   Vd,Vn,Vm   (vector)
-                                   //  sqrdmulh Vd,Vn,Vm[]          DV_3EI 01011111XXLMmmmm 1101H0nnnnnddddd   5F00 D000   Vd,Vn,Vm[] (scalar by elem)
-                                   //  sqrdmulh Vd,Vn,Vm[]          DV_3AI 0Q001111XXLMmmmm 1101H0nnnnnddddd   0F00 D000   Vd,Vn,Vm[] (vector by elem)
+                                   //  sqrdmulh Vd,Vn,Vm[]          DV_3EI 01011111XXLMmmmm 1101H0nnnnnddddd   5F00 D000   Vd,Vn,Vm[] (scalar by element)
+                                   //  sqrdmulh Vd,Vn,Vm[]          DV_3AI 0Q001111XXLMmmmm 1101H0nnnnnddddd   0F00 D000   Vd,Vn,Vm[] (vector by element)
 
 //    enum         name            info               DR_3A        DR_3B        DI_2C
 INST3(ands,        "ands",         0,      IF_EN3A,   0x6A000000,  0x6A000000,  0x72000000)
@@ -424,19 +424,19 @@ INST3(orn,         "orn",          0,      IF_EN3C,   0x2A200000,  0x2A200000,  
 //    enum         name            info               DV_2C        DV_2D       DV_2E
 INST3(dup,         "dup",          0,      IF_EN3D,   0x0E000C00,  0x0E000400,  0x5E000400)
                                    //  dup     Vd,Rn                DV_2C  0Q001110000iiiii 000011nnnnnddddd   0E00 0C00   Vd,Rn   (vector from general)
-                                   //  dup     Vd,Vn[]              DV_2D  0Q001110000iiiii 000001nnnnnddddd   0E00 0400   Vd,Vn[] (vector by elem)
-                                   //  dup     Vd,Vn[]              DV_2E  01011110000iiiii 000001nnnnnddddd   5E00 0400   Vd,Vn[] (scalar by elem)
+                                   //  dup     Vd,Vn[]              DV_2D  0Q001110000iiiii 000001nnnnnddddd   0E00 0400   Vd,Vn[] (vector by element)
+                                   //  dup     Vd,Vn[]              DV_2E  01011110000iiiii 000001nnnnnddddd   5E00 0400   Vd,Vn[] (scalar by element)
 
 //    enum         name            info               DV_3B        DV_3BI       DV_3DI
 INST3(fmla,        "fmla",         0,      IF_EN3E,   0x0E20CC00,  0x0F801000,  0x5F801000)
                                    //  fmla    Vd,Vn,Vm             DV_3B  0Q0011100X1mmmmm 110011nnnnnddddd   0E20 CC00   Vd,Vn,Vm   (vector)
-                                   //  fmla    Vd,Vn,Vm[]           DV_3BI 0Q0011111XLmmmmm 0001H0nnnnnddddd   0F80 1000   Vd,Vn,Vm[] (vector by elem)
-                                   //  fmla    Vd,Vn,Vm[]           DV_3DI 010111111XLmmmmm 0001H0nnnnnddddd   5F80 1000   Vd,Vn,Vm[] (scalar by elem)
+                                   //  fmla    Vd,Vn,Vm[]           DV_3BI 0Q0011111XLmmmmm 0001H0nnnnnddddd   0F80 1000   Vd,Vn,Vm[] (vector by element)
+                                   //  fmla    Vd,Vn,Vm[]           DV_3DI 010111111XLmmmmm 0001H0nnnnnddddd   5F80 1000   Vd,Vn,Vm[] (scalar by element)
 
 INST3(fmls,        "fmls",         0,      IF_EN3E,   0x0EA0CC00,  0x0F805000,  0x5F805000)
                                    //  fmls    Vd,Vn,Vm             DV_3B  0Q0011101X1mmmmm 110011nnnnnddddd   0EA0 CC00   Vd,Vn,Vm   (vector)
-                                   //  fmls    Vd,Vn,Vm[]           DV_3BI 0Q0011111XLmmmmm 0101H0nnnnnddddd   0F80 5000   Vd,Vn,Vm[] (vector by elem)
-                                   //  fmls    Vd,Vn,Vm[]           DV_3DI 010111111XLmmmmm 0101H0nnnnnddddd   5F80 5000   Vd,Vn,Vm[] (scalar by elem)
+                                   //  fmls    Vd,Vn,Vm[]           DV_3BI 0Q0011111XLmmmmm 0101H0nnnnnddddd   0F80 5000   Vd,Vn,Vm[] (vector by element)
+                                   //  fmls    Vd,Vn,Vm[]           DV_3DI 010111111XLmmmmm 0101H0nnnnnddddd   5F80 5000   Vd,Vn,Vm[] (scalar by element)
 
 //    enum         name            info               DV_2A        DV_2G        DV_2H
 INST3(fcvtas,      "fcvtas",       0,      IF_EN3F,   0x0E21C800,  0x5E21C800,  0x1E240000)
@@ -503,17 +503,17 @@ INST3(ucvtf,       "ucvtf",        0,      IF_EN3G,   0x2E21D800,  0x7E21D800,  
 INST3(mul,         "mul",          0,      IF_EN3H,   0x1B007C00,  0x0E209C00,  0x0F008000)
                                    //  mul     Rd,Rn,Rm             DR_3A  X0011011000mmmmm 011111nnnnnddddd   1B00 7C00
                                    //  mul     Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 100111nnnnnddddd   0E20 9C00   Vd,Vn,Vm   (vector)
-                                   //  mul     Vd,Vn,Vm[]           DV_3AI 0Q001111XXLMmmmm 1000H0nnnnnddddd   0F00 8000   Vd,Vn,Vm[] (vector by elem)
+                                   //  mul     Vd,Vn,Vm[]           DV_3AI 0Q001111XXLMmmmm 1000H0nnnnnddddd   0F00 8000   Vd,Vn,Vm[] (vector by element)
 
 INST3(smull,       "smull",        LNG,    IF_EN3H,   0x9B207C00,  0x0E20C000,  0x0F00A000)
                                    //  smull   Rd,Rn,Rm             DR_3A  10011011001mmmmm 011111nnnnnddddd   9B20 7C00
                                    //  smull   Vd,Vn,Vm             DV_3A  0000111000100000 1100000000000000   0E20 C000   Vd,Vn,Vm   (vector)
-                                   //  smull   Vd,Vn,Vm[]           DV_3AI 00001111XXLMmmmm 1010H0nnnnnddddd   0F00 A000   Vd,Vn,Vm[] (vector by elem)
+                                   //  smull   Vd,Vn,Vm[]           DV_3AI 00001111XXLMmmmm 1010H0nnnnnddddd   0F00 A000   Vd,Vn,Vm[] (vector by element)
 
 INST3(umull,       "umull",        LNG,    IF_EN3H,   0x9BA07C00,  0x2E20C000,  0x2F00A000)
                                    //  umull   Rd,Rn,Rm             DR_3A  10011011101mmmmm 011111nnnnnddddd   9BA0 7C00
                                    //  umull   Vd,Vn,Vm             DV_3A  00101110XX1mmmmm 110000nnnnnddddd   2E20 C000   Vd,Vn,Vm   (vector)
-                                   //  umull   Vd,Vn,Vm[]           DV_3AI 00101111XXLMmmmm 1010H0nnnnnddddd   2F00 A000   Vd,Vn,Vm[] (vector by elem)
+                                   //  umull   Vd,Vn,Vm[]           DV_3AI 00101111XXLMmmmm 1010H0nnnnnddddd   2F00 A000   Vd,Vn,Vm[] (vector by element)
 
 //    enum         name            info               DR_2E        DR_2F        DV_2M
 INST3(mvn,         "mvn",          0,      IF_EN3I,   0x2A2003E0,  0x2A2003E0,  0x2E205800)
@@ -828,43 +828,43 @@ INST2(rev32,       "rev32",        0,      IF_EN2L,   0xDAC00800,  0x2E200800)
 //    enum         name            info               DV_3A        DV_3AI
 INST2(mla,         "mla",          0,      IF_EN2M,   0x0E209400,  0x2F000000)
                                    //  mla     Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 100101nnnnnddddd   0E20 9400   Vd,Vn,Vm   (vector)
-                                   //  mla     Vd,Vn,Vm[]           DV_3AI 0Q101111XXLMmmmm 0000H0nnnnnddddd   2F00 0000   Vd,Vn,Vm[] (vector by elem)
+                                   //  mla     Vd,Vn,Vm[]           DV_3AI 0Q101111XXLMmmmm 0000H0nnnnnddddd   2F00 0000   Vd,Vn,Vm[] (vector by element)
 
 INST2(mls,         "mls",          0,      IF_EN2M,   0x2E209400,  0x2F004000)
                                    //  mls     Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 100101nnnnnddddd   2E20 9400   Vd,Vn,Vm   (vector)
-                                   //  mls     Vd,Vn,Vm[]           DV_3AI 0Q101111XXLMmmmm 0100H0nnnnnddddd   2F00 4000   Vd,Vn,Vm[] (vector by elem)
+                                   //  mls     Vd,Vn,Vm[]           DV_3AI 0Q101111XXLMmmmm 0100H0nnnnnddddd   2F00 4000   Vd,Vn,Vm[] (vector by element)
 
 INST2(smlal,       "smlal",        LNG,    IF_EN2M,   0x0E208000,  0x0F002000)
                                    //  smlal     Vd,Vn,Vm           DV_3A  00001110XX1mmmmm 100000nnnnnddddd   0E20 8000   Vd,Vn,Vm   (vector)
-                                   //  smlal     Vd,Vn,Vm[]         DV_3AI 00001111XXLMmmmm 0010H0nnnnnddddd   0F00 2000   Vd,Vn,Vm[] (vector by elem)
+                                   //  smlal     Vd,Vn,Vm[]         DV_3AI 00001111XXLMmmmm 0010H0nnnnnddddd   0F00 2000   Vd,Vn,Vm[] (vector by element)
 
 INST2(smlal2,      "smlal2",       LNG,    IF_EN2M,   0x4E208000,  0x4F002000)
                                    //  smlal2     Vd,Vn,Vm          DV_3A  01001110XX1mmmmm 100000nnnnnddddd   4E20 8000   Vd,Vn,Vm   (vector)
-                                   //  smlal2     Vd,Vn,Vm[]        DV_3AI 01001111XXLMmmmm 0010H0nnnnnddddd   4F00 2000   Vd,Vn,Vm[] (vector by elem)
+                                   //  smlal2     Vd,Vn,Vm[]        DV_3AI 01001111XXLMmmmm 0010H0nnnnnddddd   4F00 2000   Vd,Vn,Vm[] (vector by element)
 
 INST2(smlsl,       "smlsl",        LNG,    IF_EN2M,   0x0E20A000,  0x0F006000)
                                    //  smlsl     Vd,Vn,Vm           DV_3A  00001110XX1mmmmm 101000nnnnnddddd   0E20 A000   Vd,Vn,Vm   (vector)
-                                   //  smlsl     Vd,Vn,Vm[]         DV_3AI 00001111XXLMmmmm 0110H0nnnnnddddd   0F00 6000   Vd,Vn,Vm[] (vector by elem)
+                                   //  smlsl     Vd,Vn,Vm[]         DV_3AI 00001111XXLMmmmm 0110H0nnnnnddddd   0F00 6000   Vd,Vn,Vm[] (vector by element)
 
 INST2(smlsl2,      "smlsl2",       LNG,    IF_EN2M,   0x4E20A000,  0x4F006000)
                                    //  smlsl2     Vd,Vn,Vm          DV_3A  01001110XX1mmmmm 101000nnnnnddddd   4E20 A000   Vd,Vn,Vm   (vector)
-                                   //  smlsl2     Vd,Vn,Vm[]        DV_3AI 01001111XXLMmmmm 0110H0nnnnnddddd   4F00 6000   Vd,Vn,Vm[] (vector by elem)
+                                   //  smlsl2     Vd,Vn,Vm[]        DV_3AI 01001111XXLMmmmm 0110H0nnnnnddddd   4F00 6000   Vd,Vn,Vm[] (vector by element)
 
 INST2(smull2,      "smull2",       LNG,    IF_EN2M,   0x4E20C000,  0x4F00A000)
                                    //  smull2     Vd,Vn,Vm          DV_3A  01001110XX1mmmmm 110000nnnnnddddd   4E20 C000   Vd,Vn,Vm   (vector)
-                                   //  smull2     Vd,Vn,Vm[]        DV_3AI 01001111XXLMmmmm 1010H0nnnnnddddd   4F00 A000   Vd,Vn,Vm[] (vector by elem)
+                                   //  smull2     Vd,Vn,Vm[]        DV_3AI 01001111XXLMmmmm 1010H0nnnnnddddd   4F00 A000   Vd,Vn,Vm[] (vector by element)
 
 INST2(sqdmlal2,    "sqdmlal2",     LNG,    IF_EN2M,   0x4E209000,  0x4F003000)
                                    // sqdmlal2    Vd,Vn,Vm          DV_3A  01001110XX1mmmmm 100100nnnnnddddd   4E20 9000   Vd,Vn,Vm   (vector)
-                                   // sqdmlal2    Vd,Vn,Vm[]        DV_3AI 01001111XXLMmmmm 0011H0nnnnnddddd   4F00 3000   Vd,Vn,Vm[] (vector by elem)
+                                   // sqdmlal2    Vd,Vn,Vm[]        DV_3AI 01001111XXLMmmmm 0011H0nnnnnddddd   4F00 3000   Vd,Vn,Vm[] (vector by element)
 
 INST2(sqdmlsl2,    "sqdmlsl2",     LNG,    IF_EN2M,   0x4E20B000,  0x4F007000)
                                    // sqdmlsl2    Vd,Vn,Vm          DV_3A  01001110XX1mmmmm 101100nnnnnddddd   4E20 B000   Vd,Vn,Vm   (vector)
-                                   // sqdmlsl2    Vd,Vn,Vm[]        DV_3AI 01001111XXLMmmmm 0111H0nnnnnddddd   4F00 7000   Vd,Vn,Vm[] (vector by elem)
+                                   // sqdmlsl2    Vd,Vn,Vm[]        DV_3AI 01001111XXLMmmmm 0111H0nnnnnddddd   4F00 7000   Vd,Vn,Vm[] (vector by element)
 
 INST2(sqdmull2,    "sqdmull2",     LNG,    IF_EN2M,   0x4E20D000,  0x4F00B000)
                                    // sqdmull2    Vd,Vn,Vm          DV_3A  01001110XX1mmmmm 110100nnnnnddddd   4E20 D000   Vd,Vn,Vm   (vector)
-                                   // sqdmull2    Vd,Vn,Vm[]        DV_3AI 01001111XXLMmmmm 1011H0nnnnnddddd   4F00 B000   Vd,Vn,Vm[] (vector by elem)
+                                   // sqdmull2    Vd,Vn,Vm[]        DV_3AI 01001111XXLMmmmm 1011H0nnnnnddddd   4F00 B000   Vd,Vn,Vm[] (vector by element)
 
 INST2(sdot,        "sdot",         0,      IF_EN2M,   0x0E009400,  0x0F00E000)
                                    //  sdot       Vd,Vn,Vm          DV_3A  0Q001110XX0mmmmm 100101nnnnnddddd   0E00 9400   Vd,Vn,Vm   (vector)
@@ -876,23 +876,23 @@ INST2(udot,        "udot",         0,      IF_EN2M,   0x2E009400,  0x2F00E000)
 
 INST2(umlal,       "umlal",        LNG,    IF_EN2M,   0x2E208000,  0x2F002000)
                                    //  umlal     Vd,Vn,Vm           DV_3A  00101110XX1mmmmm 100000nnnnnddddd   2E20 8000   Vd,Vn,Vm   (vector)
-                                   //  umlal     Vd,Vn,Vm[]         DV_3AI 00101111XXLMmmmm 0010H0nnnnnddddd   2F00 2000   Vd,Vn,Vm[] (vector by elem)
+                                   //  umlal     Vd,Vn,Vm[]         DV_3AI 00101111XXLMmmmm 0010H0nnnnnddddd   2F00 2000   Vd,Vn,Vm[] (vector by element)
 
 INST2(umlal2,      "umlal2",       LNG,    IF_EN2M,   0x6E208000,  0x6F002000)
                                    //  umlal2     Vd,Vn,Vm          DV_3A  01101110XX1mmmmm 100000nnnnnddddd   6E20 8000   Vd,Vn,Vm   (vector)
-                                   //  umlal2     Vd,Vn,Vm[]        DV_3AI 01101111XXLMmmmm 0010H0nnnnnddddd   6F00 2000   Vd,Vn,Vm[] (vector by elem)
+                                   //  umlal2     Vd,Vn,Vm[]        DV_3AI 01101111XXLMmmmm 0010H0nnnnnddddd   6F00 2000   Vd,Vn,Vm[] (vector by element)
 
 INST2(umlsl,       "umlsl",        LNG,    IF_EN2M,   0x2E20A000,  0x2F006000)
                                    //  umlsl     Vd,Vn,Vm           DV_3A  00101110XX1mmmmm 101000nnnnnddddd   2E20 A000   Vd,Vn,Vm   (vector)
-                                   //  umlsl     Vd,Vn,Vm[]         DV_3AI 00101111XXLMmmmm 0110H0nnnnnddddd   2F00 6000   Vd,Vn,Vm[] (vector by elem)
+                                   //  umlsl     Vd,Vn,Vm[]         DV_3AI 00101111XXLMmmmm 0110H0nnnnnddddd   2F00 6000   Vd,Vn,Vm[] (vector by element)
 
 INST2(umlsl2,      "umlsl2",       LNG,    IF_EN2M,   0x6E20A000,  0x6F006000)
                                    //  umlsl2     Vd,Vn,Vm          DV_3A  01101110XX1mmmmm 101000nnnnnddddd   6E20 A000   Vd,Vn,Vm   (vector)
-                                   //  umlsl2     Vd,Vn,Vm[]        DV_3AI 01101111XXLMmmmm 0110H0nnnnnddddd   6F00 6000   Vd,Vn,Vm[] (vector by elem)
+                                   //  umlsl2     Vd,Vn,Vm[]        DV_3AI 01101111XXLMmmmm 0110H0nnnnnddddd   6F00 6000   Vd,Vn,Vm[] (vector by element)
 
 INST2(umull2,      "umull2",       LNG,    IF_EN2M,   0x6E20C000,  0x6F00A000)
                                    //  umull2     Vd,Vn,Vm          DV_3A  01101110XX1mmmmm 110000nnnnnddddd   6E20 C000   Vd,Vn,Vm   (vector)
-                                   //  umull2     Vd,Vn,Vm[]        DV_3AI 01101111XXLMmmmm 1010H0nnnnnddddd   6F00 A000   Vd,Vn,Vm[] (vector by elem)
+                                   //  umull2     Vd,Vn,Vm[]        DV_3AI 01101111XXLMmmmm 1010H0nnnnnddddd   6F00 A000   Vd,Vn,Vm[] (vector by element)
 
 //    enum         name            info               DV_2N        DV_2O
 INST2(sshr,        "sshr",         RSH,    IF_EN2N,   0x5F000400,  0x0F000400)
