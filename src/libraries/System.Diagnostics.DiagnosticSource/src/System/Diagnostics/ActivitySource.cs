@@ -117,7 +117,7 @@ namespace System.Diagnostics
 
             ActivityDataRequest dataRequest = ActivityDataRequest.None;
 
-            if (parentId != null)
+            if (parentId != null && !Activity.TryConvertIdToContext(parentId, out context))
             {
                 var aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links);
                 listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<string> data, ref ActivityDataRequest request) => {

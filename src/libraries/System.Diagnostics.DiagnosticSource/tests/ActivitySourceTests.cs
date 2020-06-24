@@ -380,6 +380,42 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestCreatingActivityUsingDifferentParentIds()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource aSource = new ActivitySource("ParentIdsTest");
+                using ActivityListener listener = new ActivityListener();
+
+                int callingByParentId = 0;
+                int callingByContext = 0;
+
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "ParentIdsTest";
+
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => {
+                    callingByContext++;
+                    return ActivityDataRequest.AllDataAndRecorded;
+                };
+
+                listener.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => {
+                    callingByParentId++;
+                    return ActivityDataRequest.AllDataAndRecorded;
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                const string w3cId = "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-00";
+                const string hierarchicalId = "SomeId";
+
+                using Activity a = aSource.StartActivity("a", ActivityKind.Client, w3cId);
+                using Activity b = aSource.StartActivity("b", ActivityKind.Client, hierarchicalId);
+
+                Assert.Equal(1, callingByParentId);
+                Assert.Equal(1, callingByContext);
+            }).Dispose();
+        }
+
         public void Dispose() => Activity.Current = null;
     }
 }
