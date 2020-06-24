@@ -12610,13 +12610,18 @@ void emitter::emitDispIns(
                 emitDispReg(encodingZRtoSP(id->idReg1()), size, true);
                 emitDispReg(encodingZRtoSP(id->idReg2()), size, true);
             }
-            else if ((ins == INS_smull) || (ins == INS_smulh))
+            else if ((ins == INS_smulh) || (ins == INS_umulh))
             {
-                // Rd is always 8 bytes
+                size = EA_8BYTE;
+                // smulh Xd, Xn, Xm
+                emitDispReg(id->idReg1(), size, true);
+                emitDispReg(id->idReg2(), size, true);
+            }
+            else if ((ins == INS_smull) || (ins == INS_umull) || (ins == INS_smnegl) || (ins == INS_umnegl))
+            {
+                // smull Xd, Wn, Wm
                 emitDispReg(id->idReg1(), EA_8BYTE, true);
-
-                // Rn, Rm effective size depends on instruction type
-                size = (ins == INS_smulh) ? EA_8BYTE : EA_4BYTE;
+                size = EA_4BYTE;
                 emitDispReg(id->idReg2(), size, true);
             }
             else
@@ -12624,6 +12629,7 @@ void emitter::emitDispIns(
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, true);
             }
+
             if (id->idIsLclVar())
             {
                 emitDispReg(codeGen->rsGetRsvdReg(), size, false);
