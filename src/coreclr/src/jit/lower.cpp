@@ -6407,5 +6407,81 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
 void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
+    if (TryTransformStoreObjAsStoreInd(blkNode))
+    {
+        return;
+    }
+
     LowerBlockStore(blkNode);
+}
+
+//------------------------------------------------------------------------
+// TryTransformStoreObjAsStoreInd: try to replace STORE_OBJ/BLK as STOREIND.
+//
+// Arguments:
+//    blkNode - the store node.
+//
+// Return value:
+//    true if the replacement was made, false otherwise.
+//
+// Notes:
+//    TODO: that method should do the transformation when possible
+//    and STOREIND should always generate better or the same code as
+//    STORE_OBJ/BLK for the same copy.
+//
+bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
+{
+    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
+    if (blkNode->OperIs(GT_STORE_DYN_BLK))
+    {
+        return false;
+    }
+
+    ClassLayout* layout = blkNode->GetLayout();
+    if (layout == nullptr)
+    {
+        return false;
+    }
+
+    var_types regType = layout->GetRegisterType();
+    if (regType == TYP_UNDEF)
+    {
+        return false;
+    }
+    if (varTypeIsSIMD(regType))
+    {
+        // TODO: support STORE_IND SIMD16(SIMD16, CNT_INT 0).
+        return false;
+    }
+
+    GenTree* src = blkNode->Data();
+    if (src->OperIsInitVal() && !src->IsConstInitVal())
+    {
+        return false;
+    }
+
+    blkNode->ChangeOper(GT_STOREIND);
+    blkNode->ChangeType(regType);
+
+    if ((blkNode->gtFlags & GTF_IND_TGT_NOT_HEAP) == 0)
+    {
+        blkNode->gtFlags |= GTF_IND_TGTANYWHERE;
+    }
+
+    if (varTypeIsStruct(src))
+    {
+        src->ChangeType(regType);
+        LowerNode(blkNode->Data());
+    }
+    else if (src->OperIsInitVal())
+    {
+        GenTreeUnOp* initVal = src->AsUnOp();
+        src                  = src->gtGetOp1();
+        assert(src->IsCnsIntOrI());
+        src->AsIntCon()->FixupInitBlkValue(regType);
+        blkNode->SetData(src);
+        BlockRange().Remove(initVal);
+    }
+    LowerStoreIndirCommon(blkNode);
+    return true;
 }

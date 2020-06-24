@@ -297,6 +297,8 @@ private:
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable);
 
+    bool TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode);
+
     GenTree* LowerSwitch(GenTree* node);
     bool TryLowerSwitchToBitTest(
         BasicBlock* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue);
