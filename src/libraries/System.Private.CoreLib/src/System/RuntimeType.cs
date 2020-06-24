@@ -72,7 +72,14 @@ namespace System
 
         // GetDefaultMembers
         // This will return a MemberInfo that has been marked with the [DefaultMemberAttribute]
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.PublicMethods
+            | DynamicallyAccessedMemberTypes.PublicEvents
+            | DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors
+            | DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public override MemberInfo[] GetDefaultMembers()
         {
             // See if we have cached the default member name
