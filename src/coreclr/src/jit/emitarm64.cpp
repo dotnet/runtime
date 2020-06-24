@@ -12845,8 +12845,22 @@ void emitter::emitDispIns(
             break;
 
         case IF_DV_3D: // DV_3D   .........X.mmmmm ......nnnnnddddd      Vd Vn Vm  (scalar)
-        case IF_DV_3E: // DV_3E   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm  (scalar)
             emitDispReg(id->idReg1(), size, true);
+            emitDispReg(id->idReg2(), size, true);
+            emitDispReg(id->idReg3(), size, false);
+            break;
+
+        case IF_DV_3E: // DV_3E   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm  (scalar)
+            if (emitInsIsVectorLong(ins))
+            {
+                emitDispReg(id->idReg1(), widenDatasize(size), true);
+            }
+            else
+            {
+                assert(!emitInsIsVectorNarrow(ins) && !emitInsIsVectorWide(ins));
+                emitDispReg(id->idReg1(), size, true);
+            }
+
             emitDispReg(id->idReg2(), size, true);
             emitDispReg(id->idReg3(), size, false);
             break;
