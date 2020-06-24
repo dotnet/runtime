@@ -2192,8 +2192,8 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
     {
         unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
         noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
-        bool      isEBPbased;
-        unsigned  offs     = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
+        bool     isEBPbased;
+        unsigned offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
 
         // Adjust the offset with stack level, if any.
         offs += genStackLevel;
