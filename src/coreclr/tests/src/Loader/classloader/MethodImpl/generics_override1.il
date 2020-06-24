@@ -296,6 +296,247 @@
 
 } // end of class DerivedGenericsShapeInvalidSubstitutedOverride
 
+
+// Types for Test4
+.class interface private abstract auto ansi IMultiGeneric`2<T,U>
+{
+  .method public hidebysig newslot abstract virtual 
+          instance string  Func(!T t1,
+                                !U u2) cil managed
+  {
+  } // end of method IMultiGeneric`2::Func
+
+  .method public hidebysig newslot abstract virtual 
+          instance string  Func(!U u1,
+                                !T t2) cil managed
+  {
+  } // end of method IMultiGeneric`2::Func
+
+} // end of class IMultiGeneric`2
+
+.class private auto ansi beforefieldinit Implementor`2<A,B>
+       extends [mscorlib]System.Object
+       implements class IMultiGeneric`2<!A,!B>
+{
+  .method private hidebysig newslot virtual final 
+          instance string  'IMultiGeneric<A,B>.Func'(!A t1,
+                                                     !B u2) cil managed
+  {
+    .override  method instance string class IMultiGeneric`2<!A,!B>::Func(!0,
+                                                                         !1)
+    // Code size       11 (0xb)
+    .maxstack  1
+    .locals init (string V_0)
+    IL_0000:  nop
+    IL_0001:  ldstr      "Implementor<A,B>.IMultiGeneric<A, B>.Func(A t1, B "
+    + "u2)"
+    IL_0006:  stloc.0
+    IL_0007:  br.s       IL_0009
+
+    IL_0009:  ldloc.0
+    IL_000a:  ret
+  } // end of method Implementor`2::'IMultiGeneric<A,B>.Func'
+
+  .method private hidebysig newslot virtual final 
+          instance string  'IMultiGeneric<A,B>.Func'(!B u1,
+                                                     !A t2) cil managed
+  {
+    .override  method instance string class IMultiGeneric`2<!A,!B>::Func(!1,
+                                                                         !0)
+    // Code size       11 (0xb)
+    .maxstack  1
+    .locals init (string V_0)
+    IL_0000:  nop
+    IL_0001:  ldstr      "Implementor<A,B>.IMultiGeneric<A, B>.Func(B u1, A "
+    + "t2)"
+    IL_0006:  stloc.0
+    IL_0007:  br.s       IL_0009
+
+    IL_0009:  ldloc.0
+    IL_000a:  ret
+  } // end of method Implementor`2::'IMultiGeneric<A,B>.Func'
+
+  .method public hidebysig specialname rtspecialname 
+          instance void  .ctor() cil managed
+  {
+    // Code size       8 (0x8)
+    .maxstack  8
+    IL_0000:  ldarg.0
+    IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
+    IL_0006:  nop
+    IL_0007:  ret
+  } // end of method Implementor`2::.ctor
+
+} // end of class Implementor`2
+
+.class private auto ansi beforefieldinit PartialIntImplementor`1<C>
+       extends [mscorlib]System.Object
+       implements class IMultiGeneric`2<!C,int32>
+{
+  .method private hidebysig newslot virtual final 
+          instance string  'IMultiGeneric<C,System.Int32>.Func'(!C t1,
+                                                                int32 u2) cil managed
+  {
+    .override  method instance string class IMultiGeneric`2<!C,int32>::Func(!0,
+                                                                            !1)
+    // Code size       11 (0xb)
+    .maxstack  1
+    .locals init (string V_0)
+    IL_0000:  nop
+    IL_0001:  ldstr      "PartialIntImplementor<C>.IMultiGeneric<C, int>.Fun"
+    + "c(C t1, int u2)"
+    IL_0006:  stloc.0
+    IL_0007:  br.s       IL_0009
+
+    IL_0009:  ldloc.0
+    IL_000a:  ret
+  } // end of method PartialIntImplementor`1::'IMultiGeneric<C,System.Int32>.Func'
+
+  .method private hidebysig newslot virtual final 
+          instance string  'IMultiGeneric<C,System.Int32>.Func'(int32 u1,
+                                                                !C t2) cil managed
+  {
+    .override  method instance string class IMultiGeneric`2<!C,int32>::Func(!1,
+                                                                            !0)
+    // Code size       11 (0xb)
+    .maxstack  1
+    .locals init (string V_0)
+    IL_0000:  nop
+    IL_0001:  ldstr      "PartialIntImplementor<C>.IMultiGeneric<C, int>.Fun"
+    + "c(int u1, C t2)"
+    IL_0006:  stloc.0
+    IL_0007:  br.s       IL_0009
+
+    IL_0009:  ldloc.0
+    IL_000a:  ret
+  } // end of method PartialIntImplementor`1::'IMultiGeneric<C,System.Int32>.Func'
+
+  .method public hidebysig specialname rtspecialname 
+          instance void  .ctor() cil managed
+  {
+    // Code size       8 (0x8)
+    .maxstack  8
+    IL_0000:  ldarg.0
+    IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
+    IL_0006:  nop
+    IL_0007:  ret
+  } // end of method PartialIntImplementor`1::.ctor
+
+} // end of class PartialIntImplementor`1
+
+.class private auto ansi beforefieldinit IntImplementor
+       extends [mscorlib]System.Object
+       implements class IMultiGeneric`2<int32,int32>
+{
+  .method public hidebysig newslot virtual final 
+          instance string  Func(int32 x,
+                                int32 y) cil managed
+  {
+    // Code size       11 (0xb)
+    .maxstack  1
+    .locals init (string V_0)
+    IL_0000:  nop
+    IL_0001:  ldstr      "IntImplementor.Func(int x, int y)"
+    IL_0006:  stloc.0
+    IL_0007:  br.s       IL_0009
+
+    IL_0009:  ldloc.0
+    IL_000a:  ret
+  } // end of method IntImplementor::Func
+
+  .method private hidebysig newslot virtual final 
+          instance string  'IMultiGeneric<System.Int32,System.Int32>.Func(!0,!1)'(int32 u1,
+                                                                           int32 t2) cil managed
+  {
+    .override  method instance string class IMultiGeneric`2<int32,int32>::Func(!0,
+                                                                               !1)
+    // Code size       11 (0xb)
+    .maxstack  1
+    .locals init (string V_0)
+    IL_0000:  nop
+    IL_0001:  ldstr      "IntImplementor.IMultiGeneric<int, int>.Func(!0, !1)"
+    IL_0006:  stloc.0
+    IL_0007:  br.s       IL_0009
+
+    IL_0009:  ldloc.0
+    IL_000a:  ret
+  } // end of method IntImplementor::'IMultiGeneric<System.Int32,System.Int32>.Func(!0,!1)'
+
+  .method private hidebysig newslot virtual final 
+          instance string  'IMultiGeneric<System.Int32,System.Int32>.Func(!1,!0)'(int32 u1,
+                                                                           int32 t2) cil managed
+  {
+    .override  method instance string class IMultiGeneric`2<int32,int32>::Func(!1,
+                                                                               !0)
+    // Code size       11 (0xb)
+    .maxstack  1
+    .locals init (string V_0)
+    IL_0000:  nop
+    IL_0001:  ldstr      "IntImplementor.IMultiGeneric<int, int>.Func(!1, !0)"
+    IL_0006:  stloc.0
+    IL_0007:  br.s       IL_0009
+
+    IL_0009:  ldloc.0
+    IL_000a:  ret
+  } // end of method IntImplementor::'IMultiGeneric<System.Int32,System.Int32>.Func(!1,!0)'
+
+  .method public hidebysig specialname rtspecialname 
+          instance void  .ctor() cil managed
+  {
+    // Code size       8 (0x8)
+    .maxstack  8
+    IL_0000:  ldarg.0
+    IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
+    IL_0006:  nop
+    IL_0007:  ret
+  } // end of method IntImplementor::.ctor
+
+} // end of class IntImplementor
+
+// Types for Test5
+.class interface private abstract auto ansi ISingleGeneric`1<T>
+{
+  .method public hidebysig newslot abstract virtual 
+          instance string  Method(!T t) cil managed
+  {
+  } // end of method ISingleGeneric`1::Method
+
+} // end of class ISingleGeneric`1
+
+.class private auto ansi beforefieldinit InvalidOverride
+       extends [mscorlib]System.Object
+       implements class ISingleGeneric`1<int32>
+{
+  .method private hidebysig newslot virtual final 
+          instance string  'ISingleGeneric<System.Int32>.Method'(int32 t) cil managed
+  {
+    .override  method instance string class ISingleGeneric`1<int32>::Method(int32)
+    // Code size       11 (0xb)
+    .maxstack  1
+    .locals init (string V_0)
+    IL_0000:  nop
+    IL_0001:  ldstr      "InvalidOverride.ISingleGeneric<int>.Method(int t)"
+    IL_0006:  stloc.0
+    IL_0007:  br.s       IL_0009
+
+    IL_0009:  ldloc.0
+    IL_000a:  ret
+  } // end of method InvalidOverride::'ISingleGeneric<System.Int32>.Method'
+
+  .method public hidebysig specialname rtspecialname 
+          instance void  .ctor() cil managed
+  {
+    // Code size       8 (0x8)
+    .maxstack  8
+    IL_0000:  ldarg.0
+    IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
+    IL_0006:  nop
+    IL_0007:  ret
+  } // end of method InvalidOverride::.ctor
+
+} // end of class InvalidOverride
+
+
 .class private auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
 {
@@ -572,6 +813,180 @@
     IL_0015:  ret
   } // end of method Program::Test3
 
+  .method private hidebysig static void  CallSpecificInterfaceFuncs<X,Y>(class IMultiGeneric`2<!!X,!!Y> interf,
+                                                                         !!X x,
+                                                                         !!Y y,
+                                                                         string expected1,
+                                                                         string expected2,
+                                                                         int32& failCount) cil managed
+  {
+    // Code size       37 (0x25)
+    .maxstack  8
+    IL_0000:  nop
+    IL_0001:  ldarg.0
+    IL_0002:  ldarg.1
+    IL_0003:  ldarg.2
+    IL_0004:  callvirt   instance string class IMultiGeneric`2<!!X,!!Y>::Func(!0,
+                                                                              !1)
+    IL_0009:  ldarg.3
+    IL_000a:  ldarg.s    failCount
+    IL_000c:  call       void Program::Assert(string,
+                                              string,
+                                              int32&)
+    IL_0011:  nop
+    IL_0012:  ldarg.0
+    IL_0013:  ldarg.2
+    IL_0014:  ldarg.1
+    IL_0015:  callvirt   instance string class IMultiGeneric`2<!!X,!!Y>::Func(!1,
+                                                                              !0)
+    IL_001a:  ldarg.s    expected2
+    IL_001c:  ldarg.s    failCount
+    IL_001e:  call       void Program::Assert(string,
+                                              string,
+                                              int32&)
+    IL_0023:  nop
+    IL_0024:  ret
+  } // end of method Program::CallSpecificInterfaceFuncs
+
+  .method private hidebysig static int32 
+          Test4() cil managed
+  {
+    // Code size       120 (0x78)
+    .maxstack  6
+    .locals init (int32 V_0,
+             int32 V_1)
+    IL_0000:  nop
+    IL_0001:  ldstr      "---"
+    IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_000b:  nop
+    IL_000c:  ldstr      "Test4 - Test exact method impl generic decl resolu"
+    + "tion on interfaces."
+    IL_0011:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0016:  nop
+    IL_0017:  ldstr      "---"
+    IL_001c:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0021:  nop
+    IL_0022:  ldc.i4.0
+    IL_0023:  stloc.0
+    IL_0024:  newobj     instance void class Implementor`2<int32,int32>::.ctor()
+    IL_0029:  ldc.i4.3
+    IL_002a:  ldc.i4.4
+    IL_002b:  ldstr      "Implementor<A,B>.IMultiGeneric<A, B>.Func(A t1, B "
+    + "u2)"
+    IL_0030:  ldstr      "Implementor<A,B>.IMultiGeneric<A, B>.Func(B u1, A "
+    + "t2)"
+    IL_0035:  ldloca.s   V_0
+    IL_0037:  call       void Program::CallSpecificInterfaceFuncs<int32,int32>(class IMultiGeneric`2<!!0,!!1>,
+                                                                               !!0,
+                                                                               !!1,
+                                                                               string,
+                                                                               string,
+                                                                               int32&)
+    IL_003c:  nop
+    IL_003d:  newobj     instance void class PartialIntImplementor`1<int32>::.ctor()
+    IL_0042:  ldc.i4.3
+    IL_0043:  ldc.i4.4
+    IL_0044:  ldstr      "PartialIntImplementor<C>.IMultiGeneric<C, int>.Fun"
+    + "c(C t1, int u2)"
+    IL_0049:  ldstr      "PartialIntImplementor<C>.IMultiGeneric<C, int>.Fun"
+    + "c(int u1, C t2)"
+    IL_004e:  ldloca.s   V_0
+    IL_0050:  call       void Program::CallSpecificInterfaceFuncs<int32,int32>(class IMultiGeneric`2<!!0,!!1>,
+                                                                               !!0,
+                                                                               !!1,
+                                                                               string,
+                                                                               string,
+                                                                               int32&)
+    IL_0055:  nop
+    IL_0056:  newobj     instance void IntImplementor::.ctor()
+    IL_005b:  ldc.i4.3
+    IL_005c:  ldc.i4.4
+    IL_005d:  ldstr      "IntImplementor.IMultiGeneric<int, int>.Func(!0, !1)"
+    IL_0062:  ldstr      "IntImplementor.IMultiGeneric<int, int>.Func(!1, !0)"
+    IL_0067:  ldloca.s   V_0
+    IL_0069:  call       void Program::CallSpecificInterfaceFuncs<int32,int32>(class IMultiGeneric`2<!!0,!!1>,
+                                                                               !!0,
+                                                                               !!1,
+                                                                               string,
+                                                                               string,
+                                                                               int32&)
+    IL_006e:  nop
+    IL_006f:  ldc.i4.s   100
+    IL_0071:  ldloc.0
+    IL_0072:  add
+    IL_0073:  stloc.1
+    IL_0074:  br.s       IL_0076
+
+    IL_0076:  ldloc.1
+    IL_0077:  ret
+  } // end of method Program::Test4
+
+  .method private hidebysig static void  Test5Internal() cil managed
+  {
+    // Code size       30 (0x1e)
+    .maxstack  3
+    .locals init (int32 V_0,
+             class ISingleGeneric`1<int32> V_1)
+    IL_0000:  nop
+    IL_0001:  ldc.i4.0
+    IL_0002:  stloc.0
+    IL_0003:  newobj     instance void InvalidOverride::.ctor()
+    IL_0008:  stloc.1
+    IL_0009:  ldloc.1
+    IL_000a:  ldc.i4.3
+    IL_000b:  callvirt   instance string class ISingleGeneric`1<int32>::Method(!0)
+    IL_0010:  ldstr      "InvalidOverride.ISingleGeneric<int>.Method(int t)"
+    IL_0015:  ldloca.s   V_0
+    IL_0017:  call       void Program::Assert(string,
+                                              string,
+                                              int32&)
+    IL_001c:  nop
+    IL_001d:  ret
+  } // end of method Program::Test5Internal
+
+  .method private hidebysig static int32 
+          Test5() cil managed
+  {
+    // Code size       55 (0x37)
+    .maxstack  1
+    .locals init (int32 V_0)
+    IL_0000:  nop
+    IL_0001:  ldstr      "---"
+    IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_000b:  nop
+    IL_000c:  ldstr      "Test5 - Test generics interface override of method"
+    + " with signature that is pre-substituted"
+    IL_0011:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0016:  nop
+    IL_0017:  ldstr      "---"
+    IL_001c:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0021:  nop
+    .try
+    {
+      IL_0022:  nop
+      IL_0023:  call       void Program::Test5Internal()
+      IL_0028:  nop
+      IL_0029:  ldc.i4.s   101
+      IL_002b:  stloc.0
+                ldstr "DID NOT Catch expected MissingMethodException"
+                call       void [mscorlib]System.Console::WriteLine(string)
+      IL_002c:  leave.s    IL_0035
+
+    }  // end .try
+    catch [mscorlib]System.MissingMethodException 
+    {
+      IL_002e:  pop
+                ldstr "Caught expected MissingMethodException"
+                call       void [mscorlib]System.Console::WriteLine(string)
+      IL_002f:  nop
+      IL_0030:  ldc.i4.s   100
+      IL_0032:  stloc.0
+      IL_0033:  leave.s    IL_0035
+
+    }  // end handler
+    IL_0035:  ldloc.0
+    IL_0036:  ret
+  } // end of method Program::Test5
 
   .method private hidebysig static int32  Main() cil managed
   {
@@ -586,6 +1001,10 @@
             class [mscorlib]System.Exception V_5,
             bool V_6,
             class [mscorlib]System.Exception V_7,
+            bool V_9,
+            class [mscorlib]System.Exception V_10,
+            bool V_11,
+            class [mscorlib]System.Exception V_12,
             int32 V_8)
     IL_0000:  nop
     IL_0001:  ldc.i4.0
@@ -703,7 +1122,85 @@
       IL_00a0:  nop
       IL_00a1:  leave.s    IL_00a3
     }  // end handler
-    IL_00a3:  ldloc.0
+    IL_00a3:  nop
+    .try
+    {
+        nop
+        call       int32 Program::Test4()
+        stloc.1
+        ldloc.1
+        ldc.i4.s   100
+        ceq
+        ldc.i4.0
+        ceq
+        stloc.s    V_9
+        ldloc.s    V_9
+        brfalse.s  Test4Done
+        ldloc.0
+        ldloc.1
+        ldc.i4.s   100
+        sub
+        add
+        stloc.0
+      Test4Done:  nop
+        leave.s    Test4PostTryCatch
+    }  // end .try
+    catch [mscorlib]System.Exception 
+    {
+        stloc.s    V_10
+        nop
+        ldloc.s    V_10
+        callvirt   instance string [mscorlib]System.Object::ToString()
+        call       void [mscorlib]System.Console::WriteLine(string)
+        nop
+        ldloc.0
+        ldc.i4.1
+        add
+        stloc.0
+        nop
+        leave.s    Test4PostTryCatch
+    }  // end handler
+    Test4PostTryCatch:  nop
+
+    .try
+    {
+        nop
+        call       int32 Program::Test5()
+        stloc.1
+        ldloc.1
+        ldc.i4.s   100
+        ceq
+        ldc.i4.0
+        ceq
+        stloc.s    V_11
+        ldloc.s    V_11
+        brfalse.s  Test5Done
+        ldloc.0
+        ldloc.1
+        ldc.i4.s   100
+        sub
+        add
+        stloc.0
+      Test5Done:  nop
+        leave.s    Test5PostTryCatch
+    }  // end .try
+    catch [mscorlib]System.Exception 
+    {
+        stloc.s    V_12
+        nop
+        ldloc.s    V_12
+        callvirt   instance string [mscorlib]System.Object::ToString()
+        call       void [mscorlib]System.Console::WriteLine(string)
+        nop
+        ldloc.0
+        ldc.i4.1
+        add
+        stloc.0
+        nop
+        leave.s    Test5PostTryCatch
+    }  // end handler
+    Test5PostTryCatch:  nop
+              ldloc.0
     IL_00a4:  ldc.i4.s   100
     IL_00a6:  add
     IL_00a7:  stloc.s    V_8
