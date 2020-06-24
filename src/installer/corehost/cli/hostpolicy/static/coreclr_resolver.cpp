@@ -5,7 +5,7 @@
 #include <cassert>
 #include <error_codes.h>
 #include <utils.h>
-#include "coreclr_resolver_t.h"
+#include "coreclr_resolver.h"
 #include <pal.h>
 #include <trace.h>
 

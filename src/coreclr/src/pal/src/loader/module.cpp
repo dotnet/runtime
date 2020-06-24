@@ -1684,7 +1684,8 @@ Function :
     implementation of LoadLibrary (for use by the A/W variants)
 
 Parameters :
-    LPSTR shortAsciiName : name of module as specified to LoadLibrary
+    LPSTR shortAsciiName : name of module as specified to LoadLibrary.
+                           Could be nullptr if loading containing executable.
 
     BOOL fDynamic : TRUE if dynamic load through LoadLibrary, FALSE if static load through RegisterLibrary
 

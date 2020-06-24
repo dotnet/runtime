@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#ifndef __CORECLR_RESOLVER_T_H__
-#define __CORECLR_RESOLVER_T_H__
+#ifndef __CORECLR_RESOLVER_H__
+#define __CORECLR_RESOLVER_H__
 
 #include "pal.h"
 #include "error_codes.h"
@@ -59,4 +59,4 @@ class coreclr_resolver_t
         static bool resolve_coreclr(const pal::string_t& libcoreclr_path, coreclr_resolver_contract_t& coreclr_resolver_contract);
 };
 
-#endif // __CORECLR_RESOLVER_T_H__
+#endif // __CORECLR_RESOLVER_H__

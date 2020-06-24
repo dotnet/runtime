@@ -148,28 +148,12 @@ if(CLR_CMAKE_TARGET_NETBSD)
   )
 endif(CLR_CMAKE_TARGET_NETBSD)
 
-if(CLR_CMAKE_TARGET_WIN32)
-    list(APPEND SOURCES
-        singlefilehost.def)
-else(CLR_CMAKE_TARGET_WIN32)
+if(NOT CLR_CMAKE_TARGET_WIN32)
     set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/singlefilehost.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
-        # Add linker exports file option
-        set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
-    endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
-
-    if(CLR_CMAKE_HOST_OSX)
-        # Add linker exports file option
-        set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-    endif(CLR_CMAKE_HOST_OSX)
-
-    if(CLR_CMAKE_HOST_SUNOS)
-        # Add linker exports file option
-        set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
-    endif(CLR_CMAKE_HOST_SUNOS)
+    set_exports_linker_option(${EXPORTS_FILE})
 endif(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_HOST_UNIX)
