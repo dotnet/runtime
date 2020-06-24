@@ -44,15 +44,7 @@ namespace System
 
         public static Stream OpenStandardInput()
         {
-            Interop.Sys.InitializeConsoleBeforeRead();
-            try
-            {
-                return new UnixConsoleStream(SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read);
-            }
-            finally
-            {
-                Interop.Sys.UninitializeConsoleAfterRead();
-            }
+            return new UnixConsoleStream(SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read);
         }
 
         public static Stream OpenStandardOutput()
@@ -485,7 +477,7 @@ namespace System
                 // involved in reading/writing, such as when accessing a remote system. We also extend
                 // the timeout on the very first request to 15 seconds, to account for potential latency
                 // before we know if we will receive a response.
-                Interop.Sys.InitializeConsoleBeforeRead(minChars: (byte)(s_everReceivedCursorPositionResponse ? 1 : 0), decisecondsTimeout: (byte)(s_firstCursorPositionRequest ? 100 : 10));
+                Interop.Sys.InitializeConsoleBeforeRead(enableCrNl: false, minChars: (byte)(s_everReceivedCursorPositionResponse ? 1 : 0), decisecondsTimeout: (byte)(s_firstCursorPositionRequest ? 100 : 10));
                 try
                 {
                     // Write out the cursor position report request.
@@ -560,7 +552,7 @@ namespace System
                 {
                     if (reinitializeForRead)
                     {
-                        Interop.Sys.InitializeConsoleBeforeRead();
+                        Interop.Sys.InitializeConsoleBeforeRead(enableCrNl: false);
                     }
                     else
                     {
@@ -1218,11 +1210,19 @@ namespace System
         /// <returns>The number of bytes read, or a negative value if there's an error.</returns>
         internal static unsafe int Read(SafeFileHandle fd, byte[] buffer, int offset, int count)
         {
-            fixed (byte* bufPtr = buffer)
+            Interop.Sys.InitializeConsoleBeforeRead(enableCrNl: true);
+            try
             {
-                int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
-                Debug.Assert(result <= count);
-                return result;
+                fixed (byte* bufPtr = buffer)
+                {
+                    int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
+                    Debug.Assert(result <= count);
+                    return result;
+                }
+            }
+            finally
+            {
+                Interop.Sys.UninitializeConsoleAfterRead();
             }
         }
 
