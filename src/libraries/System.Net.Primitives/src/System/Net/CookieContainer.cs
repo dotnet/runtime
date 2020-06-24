@@ -396,9 +396,9 @@ namespace System.Net
             }
             lock (m_domainTable.SyncRoot)
             {
-                foreach (object? item in m_domainTable)
+                foreach (object item in m_domainTable)
                 {
-                    DictionaryEntry entry = (DictionaryEntry)item!;
+                    DictionaryEntry entry = (DictionaryEntry)item;
                     if (domain == null)
                     {
                         tempDomain = (string)entry.Key;
@@ -691,9 +691,9 @@ namespace System.Net
             }
 
             bool isLocalDomain = IsLocalDomain(uri.Host);
-            foreach (Cookie? c in cookies)
+            foreach (Cookie c in cookies)
             {
-                Cookie new_cookie = c!.Clone();
+                Cookie new_cookie = c.Clone();
                 new_cookie.VerifySetDefaults(new_cookie.Variant, uri, isLocalDomain, m_fqdnMyDomain, true, true);
                 Add(new_cookie, true);
             }

@@ -139,6 +139,7 @@ platform_ios=no
 host_darwin=no
 host_linux=no
 build_darwin=no
+host_sunos=no
 
 case "$host" in
 	wasm32*)
@@ -320,6 +321,11 @@ case "$host" in
                 	# available during cross-compilation
                 	mono_cv_uscore=no
                 fi
+                case "$host" in
+                *-musl)
+                        AC_DEFINE(MUSL, 1, [musl libc])
+                        ;;
+                esac
 		case "$host" in
 		*-tizen-linux-*)
 			platform_tizen=yes
@@ -392,13 +398,14 @@ case "$host" in
 		use_sigposix=yes
 		;;
 	*-*-solaris*)
-		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DHOST_SOLARIS"
+		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DHOST_SOLARIS -D__EXTENSIONS__ -D_XPG4_2"
 		need_link_unlink=yes
 		libmono_cflags="-D_REENTRANT"
 		libgc_threads=pthreads
 		has_dtrace=yes
 		use_sigposix=yes
 		enable_solaris_tar_check=yes
+		host_sunos=yes
 		;;
 	*-*-darwin*)
 		parallel_mark="Disabled_Currently_Hangs_On_MacOSX"
@@ -758,7 +765,7 @@ AC_CHECK_HEADERS(elf.h)
 # for perf jit dump support
 AC_CHECK_HEADERS(sys/mman.h)
 if test "x$host_linux" = "xyes" -a x$ac_cv_header_sys_mman_h = xyes -a  x$ac_cv_header_elf_h = xyes -a x$ac_cv_header_sys_syscall_h = xyes; then
-   AC_DEFINE(ENABLE_JIT_DUMP, 1, [Enable jit dump support on Linux])
+	AC_DEFINE(ENABLE_JIT_DUMP, 1, [Enable jit dump support on Linux])
 fi
 
 # for support
@@ -2208,6 +2215,9 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNC(futimes,            [AC_DEFINE(HAVE_FUTIMES, 1, [futimes])])
 	AC_CHECK_FUNC(futimens,           [AC_DEFINE(HAVE_FUTIMENS, 1, [futimens])])
 
+	AC_CHECK_TYPES([clockid_t], [AC_DEFINE(HAVE_CLOCKID_T)], [],
+		[#include <sys/types.h>])
+
 	dnl hires monotonic clock support
 	AC_SEARCH_LIBS(clock_gettime, rt)
 	AC_CHECK_FUNCS(clock_nanosleep)
@@ -2266,14 +2276,13 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNCS(getresuid)
 	AC_CHECK_FUNCS(setresuid)
 	AC_CHECK_FUNCS(kqueue)
-	# IBM provides a compatibility library for i offering this function.
+	# IBM provides a compatibility library for offering this function.
 	# BSDs and others, have execinfo in base or packages.
 	AC_SEARCH_LIBS(backtrace_symbols, execinfo util)
 	# Two-step so it sets it in config.h
 	AC_CHECK_FUNCS(backtrace_symbols)
 	AC_CHECK_FUNCS(mkstemp)
 	AC_CHECK_FUNCS(mmap)
-	AC_CHECK_FUNCS(madvise)
 	AC_CHECK_FUNCS(getrusage)
 	AC_CHECK_FUNCS(getpriority)
 	AC_CHECK_FUNCS(setpriority)
@@ -2739,7 +2748,7 @@ if test x$host_win32 = xno; then
 	dnl *** Checks for libxnet    ***
 	dnl *****************************
 	case "${host}" in
-		*solaris* )
+		*solaris*)
 			AC_MSG_CHECKING(for Solaris XPG4 support)
 			if test -f /usr/lib/libxnet.so; then
 				CPPFLAGS="$CPPFLAGS -D_XOPEN_SOURCE=500"
@@ -3207,7 +3216,6 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNCS(remap_file_pages)
 	AC_CHECK_FUNCS(posix_fadvise)
 	AC_CHECK_FUNCS(posix_fallocate)
-	AC_CHECK_FUNCS(posix_madvise)
 	AC_CHECK_FUNCS(vsnprintf)
 	AC_CHECK_FUNCS(sendfile)
 	AC_CHECK_FUNCS(gethostid sethostid)
@@ -3912,6 +3920,19 @@ if test x$host_win32 = xno; then
 	])
 
 	AC_CHECK_DECL(IN_EXCL_UNLINK, [AC_DEFINE(HAVE_IN_EXCL_UNLINK, 1, [IN_EXCL_UNLINK])], [], [[#include <sys/inotify.h>]])
+
+	if test x$host_sunos = xyes; then
+		# set -Werror=strict-prototypes, to match the flags used during the compilation.
+		ORIG_CFLAGS="$CFLAGS"
+		CFLAGS="$CFLAGS -Werror=strict-prototypes"
+	fi
+
+	AC_CHECK_FUNCS(madvise)
+	AC_CHECK_FUNCS(posix_madvise)
+
+	if test x$host_sunos = xyes; then
+		CFLAGS="$ORIG_CFLAGS"
+	fi
 
 	# *** End of Mono.Native checks ***
 else
@@ -6145,8 +6166,8 @@ fi
 AC_SUBST(mono_runtime)
 AC_SUBST(mono_runtime_wrapper)
 
-CSC_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/3.5.0/csc.exe
-VBCS_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/3.5.0/VBCSCompiler.exe
+CSC_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/3.7.0/csc.exe
+VBCS_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/3.7.0/VBCSCompiler.exe
 
 if test $csc_compiler = mcs; then
   CSC=$mcs_topdir/class/lib/build/mcs.exe
@@ -6825,12 +6846,12 @@ if test x$with_core = xonly; then
 				[AC_MSG_ERROR([Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.])])
 			AC_CHECK_HEADER(unicode/utypes.h, [have_sys_icu=yes], [have_sys_icu=no])
 			if test x$have_sys_icu = xyes; then
-				ICU_CFLAGS="$CPPFLAGS -DOSX_ICU_LIBRARY_PATH=AS_ESCAPE(\"/usr/lib/libicucore.dylib\", '\"') -DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"
+				ICU_CFLAGS="$CPPFLAGS -DPALEXPORT="" -DOSX_ICU_LIBRARY_PATH=AS_ESCAPE(\"/usr/lib/libicucore.dylib\", '\"') -DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"
 			fi
 			CPPFLAGS=$ORIG_CPPFLAGS
-		elif test x$platform_android = xyes; then 
-			ICU_CFLAGS="-DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -DTARGET_ANDROID -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
-			have_sys_icu=yes 
+		elif test x$platform_android = xyes; then
+			ICU_CFLAGS="-DPALEXPORT="" -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -DTARGET_ANDROID -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
+			have_sys_icu=yes
 		elif test x$host_linux = xyes; then
 			AC_CHECK_LIB(icuuc, main, LIBS=$LIBS,
 				[AC_MSG_ERROR([Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform).])])
@@ -6838,12 +6859,23 @@ if test x$with_core = xonly; then
 				[AC_MSG_ERROR([Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform).])])
 			AC_CHECK_HEADER(unicode/utypes.h, [have_sys_icu=yes], [have_sys_icu=no])
 			if test x$have_sys_icu = xyes; then
-				ICU_CFLAGS="-DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
+				ICU_CFLAGS="-DPALEXPORT="" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
 			fi
+		elif test x$host_sunos = xyes; then
+			ICU_CFLAGS="-DPALEXPORT="" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
+			have_sys_icu=yes
+		else
+			GLOBALIZATION_SHIM_DEFINES="-DNO_GLOBALIZATION_SHIM"
 		fi
 		AC_SUBST(ICU_CFLAGS)
+	else
+		GLOBALIZATION_SHIM_DEFINES="-DNO_GLOBALIZATION_SHIM"
 	fi
+else
+	GLOBALIZATION_SHIM_DEFINES="-DNO_GLOBALIZATION_SHIM"
 fi
+
+AC_SUBST(GLOBALIZATION_SHIM_DEFINES)
 AC_SUBST(ICU_SHIM_PATH)
 AM_CONDITIONAL(HAVE_SYS_ICU, test x$have_sys_icu = xyes)
 

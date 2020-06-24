@@ -4,9 +4,8 @@
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.Asn1
 {
@@ -56,51 +55,42 @@ namespace System.Security.Cryptography.Asn1
 
             // DEFAULT value handler for HashFunc.
             {
-                using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    HashFunc.Encode(tmp);
-                    ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                HashFunc.Encode(tmp);
 
-                    if (!encoded.SequenceEqual(DefaultHashFunc))
-                    {
-                        writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-                        writer.WriteEncodedValue(encoded);
-                        writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-                    }
+                if (!tmp.EncodedValueEquals(DefaultHashFunc))
+                {
+                    writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+                    tmp.CopyTo(writer);
+                    writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                 }
             }
 
 
             // DEFAULT value handler for MaskGenFunc.
             {
-                using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    MaskGenFunc.Encode(tmp);
-                    ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                MaskGenFunc.Encode(tmp);
 
-                    if (!encoded.SequenceEqual(DefaultMaskGenFunc))
-                    {
-                        writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
-                        writer.WriteEncodedValue(encoded);
-                        writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
-                    }
+                if (!tmp.EncodedValueEquals(DefaultMaskGenFunc))
+                {
+                    writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
+                    tmp.CopyTo(writer);
+                    writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
                 }
             }
 
 
             // DEFAULT value handler for PSourceFunc.
             {
-                using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    PSourceFunc.Encode(tmp);
-                    ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                PSourceFunc.Encode(tmp);
 
-                    if (!encoded.SequenceEqual(DefaultPSourceFunc))
-                    {
-                        writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 2));
-                        writer.WriteEncodedValue(encoded);
-                        writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 2));
-                    }
+                if (!tmp.EncodedValueEquals(DefaultPSourceFunc))
+                {
+                    writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 2));
+                    tmp.CopyTo(writer);
+                    writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 2));
                 }
             }
 
@@ -114,11 +104,18 @@ namespace System.Security.Cryptography.Asn1
 
         internal static OaepParamsAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, expectedTag, encoded, out OaepParamsAsn decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                Decode(ref reader, expectedTag, encoded, out OaepParamsAsn decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out OaepParamsAsn decoded)
@@ -127,6 +124,18 @@ namespace System.Security.Cryptography.Asn1
         }
 
         internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out OaepParamsAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out OaepParamsAsn decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);

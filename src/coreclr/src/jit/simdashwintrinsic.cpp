@@ -207,6 +207,13 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     // if it isn't the basis for anything carried on the node.
     baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
 
+    if ((clsHnd != m_simdHandleCache->SIMDVectorHandle) && !varTypeIsArithmetic(baseType))
+    {
+        // We want to exit early if the clsHnd should have a base type and it isn't one
+        // of the supported types. This handles cases like op_Explicit which take a Vector<T>
+        return nullptr;
+    }
+
     if (retType == TYP_STRUCT)
     {
         baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &simdSize);

@@ -576,7 +576,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void DroppedIncompleteStateMachine_RaisesIncompleteAsyncMethodEvent()
         {
             RemoteExecutor.Invoke(() =>

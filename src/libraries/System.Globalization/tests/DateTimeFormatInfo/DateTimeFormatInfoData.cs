@@ -29,19 +29,11 @@ namespace System.Globalization.Tests
 
         public static string[] FrFRDayNames()
         {
-            if (PlatformDetection.IsOSX && Environment.OSVersion.Version < new Version(10, 12))
-            {
-                return new string[] { "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi" };
-            }
             return new string[] { "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi" };
         }
 
         public static string[] FrFRAbbreviatedDayNames()
         {
-            if (PlatformDetection.IsOSX  && Environment.OSVersion.Version < new Version(10, 12))
-            {
-                return new string[] { "Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam." };
-            }
             return new string[] { "dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam." };
         }
 

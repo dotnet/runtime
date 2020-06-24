@@ -235,6 +235,14 @@ namespace System.Net.Http
 
         public IDictionary<string, object?> Properties => _underlyingHandler.Properties;
 
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            return DiagnosticsHandler.IsEnabled() ?
+                _diagnosticsHandler.Send(request, cancellationToken) :
+                _underlyingHandler.Send(request, cancellationToken);
+        }
+
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
@@ -243,7 +251,12 @@ namespace System.Net.Http
                 _underlyingHandler.SendAsync(request, cancellationToken);
         }
 
-        public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator { get; } = delegate { return true; };
+        // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
+        private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
+        public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
+            Volatile.Read(ref s_dangerousAcceptAnyServerCertificateValidator) ??
+            Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
+            s_dangerousAcceptAnyServerCertificateValidator;
 
         private void ThrowForModifiedManagedSslOptionsIfStarted()
         {

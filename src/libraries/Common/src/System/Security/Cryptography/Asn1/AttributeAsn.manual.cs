@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Asn1
                 throw new ArgumentNullException(nameof(attribute));
             }
 
-            AttrType = new Oid(attribute.Oid!);
+            AttrType = attribute.Oid!.Value!;
             AttrValues = new[] { new ReadOnlyMemory<byte>(attribute.RawData) };
         }
     }

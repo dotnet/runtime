@@ -58,7 +58,7 @@ namespace System.Xml
         /// </summary>
         /// <param name="name">The name of the entity to look for</param>
         /// <returns>Interface representing an entity or null if none was found.</returns>
-        IDtdEntityInfo LookupEntity(string name);
+        IDtdEntityInfo? LookupEntity(string name);
     };
 
     //
@@ -90,7 +90,7 @@ namespace System.Xml
         /// <param name="prefix">The prefix of the attribute to look for</param>
         /// <param name="localName">The local name of the attribute to look for</param>
         /// <returns>Interface representing an attribute or null is none was found</returns>
-        IDtdAttributeInfo LookupAttribute(string prefix, string localName);
+        IDtdAttributeInfo? LookupAttribute(string prefix, string localName);
         /// <summary>
         /// Returns enumeration of all default attributes
         /// defined in this attribute list.
@@ -101,7 +101,7 @@ namespace System.Xml
         /// Looks up a ID attribute defined in the attribute list. Returns
         /// null if the attribute list does define an ID attribute.
         /// </summary>
-        IDtdAttributeInfo LookupIdAttribute();
+        IDtdAttributeInfo? LookupIdAttribute();
     }
 
     //
@@ -162,13 +162,17 @@ namespace System.Xml
         /// is correctly normalized.
         /// </summary>
         string DefaultValueExpanded { get; }
+
         /// <summary>
         /// The typed default value of the attribute.
         /// </summary>
-        object DefaultValueTyped { get; }        /// <summary>
-                                                 /// The line number of the default value (in the DTD)
-                                                 /// </summary>
+        object? DefaultValueTyped { get; }
+
+        /// <summary>
+        /// The line number of the default value (in the DTD)
+        /// </summary>
         int ValueLineNumber { get; }
+
         /// <summary>
         /// The line position of the default value (in the DTD)
         /// </summary>

@@ -10,7 +10,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.ComponentModel
@@ -87,7 +86,8 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Type InterfaceType
         {
-            [PreserveDependency(".ctor", "System.ComponentModel.TypeDescriptor/TypeDescriptorInterface")]
+            // TODO: replace this with DynamicallyAccessedMembersAttribute (https://github.com/dotnet/runtime/issues/37837)
+            [DynamicDependency("#ctor", typeof(TypeDescriptorInterface))]
             get => typeof(TypeDescriptorInterface);
         }
 

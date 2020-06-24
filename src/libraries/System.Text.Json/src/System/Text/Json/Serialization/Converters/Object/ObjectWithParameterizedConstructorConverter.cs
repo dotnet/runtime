@@ -188,10 +188,10 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
+                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
                     JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                         obj: null!,
-                        ref reader,
-                        options,
+                        unescapedPropertyName,
                         ref state,
                         out _,
                         createExtensionProperty: false);
@@ -273,10 +273,10 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj: null!,
-                            ref reader,
-                            options,
+                            unescapedPropertyName,
                             ref state,
                             out bool useExtensionProperty,
                             createExtensionProperty: false);

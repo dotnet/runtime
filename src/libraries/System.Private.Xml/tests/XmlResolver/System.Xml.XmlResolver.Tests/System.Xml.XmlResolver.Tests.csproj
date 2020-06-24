@@ -3,34 +3,34 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\XHTML10\no_comments\xhtml1-frameset.dtd">
+    <Content Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\XHTML10\no_comments\xhtml1-frameset.dtd">
       <Link>Utils\DTDs\XHTML10\no_comments\xhtml1-frameset.dtd</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\XHTML10\no_comments\xhtml1-strict.dtd">
+    </Content>
+    <Content Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\XHTML10\no_comments\xhtml1-strict.dtd">
       <Link>Utils\DTDs\XHTML10\no_comments\xhtml1-strict.dtd</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\XHTML10\no_comments\xhtml1-transitional.dtd">
+    </Content>
+    <Content Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\XHTML10\no_comments\xhtml1-transitional.dtd">
       <Link>Utils\DTDs\XHTML10\no_comments\xhtml1-transitional.dtd</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\XHTML10\no_comments\xhtml-lat1.ent">
+    </Content>
+    <Content Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\XHTML10\no_comments\xhtml-lat1.ent">
       <Link>Utils\DTDs\XHTML10\no_comments\xhtml-lat1.ent</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\XHTML10\no_comments\xhtml-special.ent">
+    </Content>
+    <Content Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\XHTML10\no_comments\xhtml-special.ent">
       <Link>Utils\DTDs\XHTML10\no_comments\xhtml-special.ent</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\XHTML10\no_comments\xhtml-symbol.ent">
+    </Content>
+    <Content Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\XHTML10\no_comments\xhtml-symbol.ent">
       <Link>Utils\DTDs\XHTML10\no_comments\xhtml-symbol.ent</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\RSS091\no_comments\rss-0.91.dtd">
+    </Content>
+    <Content Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\RSS091\no_comments\rss-0.91.dtd">
       <Link>Utils\DTDs\RSS091\no_comments\rss-0.91.dtd</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
     <Compile Include="DummyStream.cs" />
     <Compile Include="XmlPreloadedResolverAddRemoveTests.cs" />
     <Compile Include="XmlPreloadedResolverConstructionTests.cs" />

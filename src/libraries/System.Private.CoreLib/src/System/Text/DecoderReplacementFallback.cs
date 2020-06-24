@@ -8,6 +8,8 @@ namespace System.Text
 {
     public sealed class DecoderReplacementFallback : DecoderFallback
     {
+        internal static readonly DecoderReplacementFallback s_default = new DecoderReplacementFallback();
+
         // Our variables
         private readonly string _strDefault;
 

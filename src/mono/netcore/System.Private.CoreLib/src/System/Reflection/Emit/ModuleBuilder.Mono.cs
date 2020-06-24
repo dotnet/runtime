@@ -563,8 +563,7 @@ namespace System.Reflection.Emit
             if (field == null)
                 throw new ArgumentNullException(nameof(field));
 
-            throw new NotImplementedException();
-            //return new FieldToken (GetToken (field));
+            return new FieldToken(GetToken (field), field.GetType());
         }
 
         // FIXME:
@@ -840,6 +839,10 @@ namespace System.Reflection.Emit
         {
             return false;
         }
+
+        internal ModuleBuilder GetNativeHandle() => this;
+
+        internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
 
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {

@@ -52,11 +52,8 @@ namespace System.Net
             // characters need to be encoded.
             // For larger string we rent the input string's length plus a fixed
             // conservative amount of chars from the ArrayPool.
-            Span<char> buffer = value.Length < 80 ?
-                stackalloc char[256] :
-                null;
-            ValueStringBuilder sb = buffer != null ?
-                new ValueStringBuilder(buffer) :
+            ValueStringBuilder sb = value.Length < 80 ?
+                new ValueStringBuilder(stackalloc char[256]) :
                 new ValueStringBuilder(value.Length + 200);
 
             sb.Append(valueSpan.Slice(0, index));
@@ -92,11 +89,8 @@ namespace System.Net
             // characters need to be encoded.
             // For larger string we rent the input string's length plus a fixed
             // conservative amount of chars from the ArrayPool.
-            Span<char> buffer = value.Length < 80 ?
-                stackalloc char[256] :
-                null;
-            ValueStringBuilder sb = buffer != null ?
-                new ValueStringBuilder(buffer) :
+            ValueStringBuilder sb = value.Length < 80 ?
+                new ValueStringBuilder(stackalloc char[256]) :
                 new ValueStringBuilder(value.Length + 200);
 
             sb.Append(valueSpan.Slice(0, index));
@@ -201,11 +195,8 @@ namespace System.Net
 
             // In the worst case the decoded string has the same length.
             // For small inputs we use stack allocation.
-            Span<char> buffer = value.Length <= 256 ?
-                stackalloc char[256] :
-                null;
-            ValueStringBuilder sb = buffer != null ?
-                new ValueStringBuilder(buffer) :
+            ValueStringBuilder sb = value.Length <= 256 ?
+                new ValueStringBuilder(stackalloc char[256]) :
                 new ValueStringBuilder(value.Length);
 
             sb.Append(valueSpan.Slice(0, index));
@@ -238,11 +229,8 @@ namespace System.Net
 
             // In the worst case the decoded string has the same length.
             // For small inputs we use stack allocation.
-            Span<char> buffer = value.Length <= 256 ?
-                stackalloc char[256] :
-                null;
-            ValueStringBuilder sb = buffer != null ?
-                new ValueStringBuilder(buffer) :
+            ValueStringBuilder sb = value.Length <= 256 ?
+                new ValueStringBuilder(stackalloc char[256]) :
                 new ValueStringBuilder(value.Length);
 
             sb.Append(valueSpan.Slice(0, index));

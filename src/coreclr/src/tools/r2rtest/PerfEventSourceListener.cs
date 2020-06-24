@@ -17,9 +17,11 @@ public sealed class PerfEventSourceListener
     private ManualResetEvent _doneWarmup = new ManualResetEvent(false);
     private ManualResetEvent _doneCompilation = new ManualResetEvent(false);
     private const string providerName = "Microsoft-ILCompiler-Perf";
+    private const string graphProviderName = "Microsoft-ILCompiler-Graph-Perf";
     private readonly int _totalRealRuns;
     private int _doneCompilationCount = 0;
     private int _doneWarmupCount = 0;
+    private double _commandlineParseMsec = 0;
     private double _compilationMsec = 0;
     private double _loadingMsec = 0;
     private double _graphProcessingMsec = 0;
@@ -34,6 +36,7 @@ public sealed class PerfEventSourceListener
     {
         _totalRealRuns = totalRealRuns;
         traceEventSession.EnableProvider(providerName, TraceEventLevel.Verbose);
+        traceEventSession.EnableProvider(graphProviderName, TraceEventLevel.Verbose);
 
         traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(providerName, "Compilation/Start", delegate (TraceEvent traceEvent)
         {
@@ -65,6 +68,16 @@ public sealed class PerfEventSourceListener
         // For all of the events below, we only want to process them after the warmup is complete. We can't just start this listener after
         // we have started the warmup because those runs might take some time, and we don't want to erroneously process warmup events when
         // trying to measure the real runs.
+        traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(providerName, "CommandLineProcessing/Start", delegate (TraceEvent traceEvent)
+        {
+            if (_doneWarmup.WaitOne(0))
+                _commandlineParseMsec -= traceEvent.TimeStampRelativeMSec;
+        });
+        traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(providerName, "CommandLineProcessing/Stop", delegate (TraceEvent traceEvent)
+        {
+            if (_doneWarmup.WaitOne(0))
+                _commandlineParseMsec += traceEvent.TimeStampRelativeMSec;
+        });
         traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(providerName, "Loading/Start", delegate (TraceEvent traceEvent)
         {
             if (_doneWarmup.WaitOne(0))
@@ -76,12 +89,12 @@ public sealed class PerfEventSourceListener
                 _loadingMsec += traceEvent.TimeStampRelativeMSec;
         });
 
-        traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(providerName, "GraphProcessing/Start", delegate (TraceEvent traceEvent)
+        traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(graphProviderName, "GraphProcessing/Start", delegate (TraceEvent traceEvent)
         {
             if (_doneWarmup.WaitOne(0))
                 _graphProcessingMsec -= traceEvent.TimeStampRelativeMSec;
         });
-        traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(providerName, "GraphProcessing/Stop", delegate (TraceEvent traceEvent)
+        traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(graphProviderName, "GraphProcessing/Stop", delegate (TraceEvent traceEvent)
         {
             if (_doneWarmup.WaitOne(0))
                 _graphProcessingMsec += traceEvent.TimeStampRelativeMSec;
@@ -124,18 +137,18 @@ public sealed class PerfEventSourceListener
         });
 
 
-        traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(providerName, "DependencyAnalysis/Start", delegate (TraceEvent traceEvent)
+        traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(graphProviderName, "DependencyAnalysis/Start", delegate (TraceEvent traceEvent)
         {
             if (_doneWarmup.WaitOne(0))
                 _dependencyAnalysisMsec -= traceEvent.TimeStampRelativeMSec;
         });
-        traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(providerName, "DependencyAnalysis/Stop", delegate (TraceEvent traceEvent)
+        traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(graphProviderName, "DependencyAnalysis/Stop", delegate (TraceEvent traceEvent)
         {
             if (_doneWarmup.WaitOne(0))
                 _dependencyAnalysisMsec += traceEvent.TimeStampRelativeMSec;
         });
 
-        traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(providerName, "AddedNodeToMarkStack", delegate (TraceEvent traceEvent)
+        traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(graphProviderName, "AddedNodeToMarkStack", delegate (TraceEvent traceEvent)
         {
             if (_doneWarmup.WaitOne(0))
                 nodesAddedToMarkStack++;
@@ -149,6 +162,7 @@ public sealed class PerfEventSourceListener
     {
         _doneCompilation.WaitOne();
         IndentedTextWriter writer = new IndentedTextWriter(Console.Out);
+        writer.WriteLine($"Command line processing time: {_commandlineParseMsec / _totalRealRuns:F2} ms");
         writer.WriteLine($"Total average compilation time: {_compilationMsec / _totalRealRuns:F2} ms");
         writer.WriteLine($"Phase breakdown (average):");
         writer.Indent++;

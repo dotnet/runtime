@@ -428,6 +428,11 @@ DEFINE_METHOD(ICUSTOM_MARSHALER,    CLEANUP_NATIVE_DATA,    CleanUpNativeData,  
 DEFINE_METHOD(ICUSTOM_MARSHALER,    CLEANUP_MANAGED_DATA,   CleanUpManagedData,         IM_Obj_RetVoid)
 DEFINE_METHOD(ICUSTOM_MARSHALER,    GET_NATIVE_DATA_SIZE,   GetNativeDataSize,          IM_RetInt)
 
+DEFINE_CLASS(IDYNAMICINTERFACECASTABLE,         Interop,   IDynamicInterfaceCastable)
+DEFINE_CLASS(DYNAMICINTERFACECASTABLEHELPERS,   Interop,   DynamicInterfaceCastableHelpers)
+DEFINE_METHOD(DYNAMICINTERFACECASTABLEHELPERS,  IS_INTERFACE_IMPLEMENTED,       IsInterfaceImplemented,     SM_IDynamicInterfaceCastable_RuntimeType_Bool_RetBool)
+DEFINE_METHOD(DYNAMICINTERFACECASTABLEHELPERS,  GET_INTERFACE_IMPLEMENTATION,   GetInterfaceImplementation, SM_IDynamicInterfaceCastable_RuntimeType_RetRtType)
+
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(ICUSTOM_QUERYINTERFACE,      Interop,          ICustomQueryInterface)
 DEFINE_METHOD(ICUSTOM_QUERYINTERFACE,     GET_INTERFACE,    GetInterface,               IM_RefGuid_OutIntPtr_RetCustomQueryInterfaceResult)
@@ -1176,7 +1181,7 @@ DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
 #ifdef FEATURE_ICASTABLE
 DEFINE_CLASS(ICASTABLE,         CompilerServices,   ICastable)
 
-DEFINE_CLASS(ICASTABLEHELPERS,         CompilerServices,   ICastableHelpers)
+DEFINE_CLASS(ICASTABLEHELPERS,  CompilerServices,   ICastableHelpers)
 DEFINE_METHOD(ICASTABLEHELPERS,        ISINSTANCEOF,       IsInstanceOfInterface, SM_ICastable_RtType_RefException_RetBool)
 DEFINE_METHOD(ICASTABLEHELPERS,        GETIMPLTYPE,        GetImplType, SM_ICastable_RtType_RetRtType)
 
@@ -1235,6 +1240,30 @@ DEFINE_FIELD_U(_trackerOrTrackerSet,       LAHashKeyToTrackersObject,       _tra
 DEFINE_FIELD_U(_laLocalKeyValueStore,      LAHashKeyToTrackersObject,       _laLocalKeyValueStore)
 
 DEFINE_CLASS(LAHASHKEYTOTRACKERS, CompilerServices, LAHashKeyToTrackers)
+
+DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
+DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)
+DEFINE_FIELD_U(_totalAvailableMemoryBytes, GCMemoryInfoData, totalAvailableMemoryBytes)
+DEFINE_FIELD_U(_memoryLoadBytes, GCMemoryInfoData, lastRecordedMemLoadBytes)
+DEFINE_FIELD_U(_heapSizeBytes, GCMemoryInfoData, lastRecordedHeapSizeBytes)
+DEFINE_FIELD_U(_fragmentedBytes, GCMemoryInfoData, lastRecordedFragmentationBytes)
+DEFINE_FIELD_U(_totalCommittedBytes, GCMemoryInfoData, totalCommittedBytes)
+DEFINE_FIELD_U(_promotedBytes, GCMemoryInfoData, promotedBytes)
+DEFINE_FIELD_U(_pinnedObjectsCount, GCMemoryInfoData, pinnedObjectCount)
+DEFINE_FIELD_U(_finalizationPendingCount, GCMemoryInfoData, finalizationPendingCount)
+DEFINE_FIELD_U(_index, GCMemoryInfoData, index)
+DEFINE_FIELD_U(_generation, GCMemoryInfoData, generation)
+DEFINE_FIELD_U(_pauseTimePercentage, GCMemoryInfoData, pauseTimePercent)
+DEFINE_FIELD_U(_compacted, GCMemoryInfoData, isCompaction)
+DEFINE_FIELD_U(_concurrent, GCMemoryInfoData, isConcurrent)
+DEFINE_FIELD_U(_pauseDuration0, GCMemoryInfoData, pauseDuration0)
+DEFINE_FIELD_U(_pauseDuration1, GCMemoryInfoData, pauseDuration1)
+DEFINE_FIELD_U(_generationInfo0, GCMemoryInfoData, generationInfo0)
+DEFINE_FIELD_U(_generationInfo1, GCMemoryInfoData, generationInfo1)
+DEFINE_FIELD_U(_generationInfo2, GCMemoryInfoData, generationInfo2)
+DEFINE_FIELD_U(_generationInfo3, GCMemoryInfoData, generationInfo3)
+DEFINE_FIELD_U(_generationInfo4, GCMemoryInfoData, generationInfo4)
+
 
 #undef DEFINE_CLASS
 #undef DEFINE_METHOD

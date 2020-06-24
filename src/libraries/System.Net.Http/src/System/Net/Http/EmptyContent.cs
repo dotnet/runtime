@@ -17,6 +17,9 @@ namespace System.Net.Http
             return true;
         }
 
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        { }
+
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             Task.CompletedTask;
 

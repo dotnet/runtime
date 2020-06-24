@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace System.Runtime.InteropServices.JavaScript
 {
-
     /// <summary>
     /// Core objects are the standard built-in objects and functions.
     /// </summary>
@@ -22,14 +19,14 @@ namespace System.Runtime.InteropServices.JavaScript
     /// </remarks>
     public abstract class CoreObject : JSObject
     {
-        protected CoreObject(int jsHandle) : base(jsHandle)
+        protected CoreObject(int jsHandle) : base(jsHandle, true)
         {
-            object result = Interop.Runtime.BindCoreObject(jsHandle, (int)(IntPtr)Handle, out int exception);
+            object result = Interop.Runtime.BindCoreObject(jsHandle, Int32Handle, out int exception);
             if (exception != 0)
                 throw new JSException($"CoreObject Error binding: {result}");
         }
 
-        internal CoreObject(IntPtr js_handle) : base(js_handle)
+        internal CoreObject(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
         { }
     }
 }

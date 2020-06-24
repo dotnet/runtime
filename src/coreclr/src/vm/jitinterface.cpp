@@ -4501,8 +4501,8 @@ TypeCompareState CEEInfo::compareTypesForCast(
     else
 #endif // FEATURE_COMINTEROP
 
-    // If casting from ICastable, don't try to optimize
-    if (fromHnd.GetMethodTable()->IsICastable())
+    // If casting from ICastable or IDynamicInterfaceCastable, don't try to optimize
+    if (fromHnd.GetMethodTable()->IsICastable() || fromHnd.GetMethodTable()->IsIDynamicInterfaceCastable())
     {
         result = TypeCompareState::May;
     }
@@ -9724,7 +9724,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getArgClass (
 
 /*********************************************************************/
 
-CorInfoType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
+CorInfoHFAElemType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 {
     CONTRACTL {
         THROWS;
@@ -9732,13 +9732,13 @@ CorInfoType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    CorInfoType result = CORINFO_TYPE_UNDEF;
+    CorInfoHFAElemType result = CORINFO_HFA_ELEM_NONE;
 
     JIT_TO_EE_TRANSITION();
 
     TypeHandle VMClsHnd(hClass);
 
-    result = asCorInfoType(VMClsHnd.GetHFAType());
+    result = VMClsHnd.GetHFAType();
 
     EE_TO_JIT_TRANSITION();
 
@@ -12248,15 +12248,19 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 
 #ifdef FEATURE_INTERPRETER
     static ConfigDWORD s_InterpreterFallback;
+    static ConfigDWORD s_ForceInterpreter;
 
     bool isInterpreterStub   = false;
     bool interpreterFallback = (s_InterpreterFallback.val(CLRConfig::INTERNAL_InterpreterFallback) != 0);
+    bool forceInterpreter    = (s_ForceInterpreter.val(CLRConfig::INTERNAL_ForceInterpreter) != 0);
 
     if (interpreterFallback == false)
     {
         // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
-        if (FAILED(ret) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE))
+        if (FAILED(ret) &&
+            !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
+            (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
         {
             if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
             {
@@ -12279,7 +12283,9 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     {
         // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
-        if (FAILED(ret) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE))
+        if (FAILED(ret) &&
+            !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
+            (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
         {
             if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
             {

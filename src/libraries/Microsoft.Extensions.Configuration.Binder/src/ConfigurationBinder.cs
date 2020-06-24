@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Configuration
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            var result = configuration.Get(typeof(T), configureOptions);
+            object result = configuration.Get(typeof(T), configureOptions);
             if (result == null)
             {
                 return default(T);
@@ -167,8 +167,8 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The converted value.</returns>
         public static object GetValue(this IConfiguration configuration, Type type, string key, object defaultValue)
         {
-            var section = configuration.GetSection(key);
-            var value = section.Value;
+            IConfigurationSection section = configuration.GetSection(key);
+            string value = section.Value;
             if (value != null)
             {
                 return ConvertValue(type, value, section.Path);
@@ -180,7 +180,7 @@ namespace Microsoft.Extensions.Configuration
         {
             if (instance != null)
             {
-                foreach (var property in GetAllProperties(instance.GetType().GetTypeInfo()))
+                foreach (PropertyInfo property in GetAllProperties(instance.GetType().GetTypeInfo()))
                 {
                     BindProperty(property, instance, configuration, options);
                 }
@@ -197,8 +197,8 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            var propertyValue = property.GetValue(instance);
-            var hasSetter = property.SetMethod != null && (property.SetMethod.IsPublic || options.BindNonPublicProperties);
+            object propertyValue = property.GetValue(instance);
+            bool hasSetter = property.SetMethod != null && (property.SetMethod.IsPublic || options.BindNonPublicProperties);
 
             if (propertyValue == null && !hasSetter)
             {
@@ -217,8 +217,8 @@ namespace Microsoft.Extensions.Configuration
 
         private static object BindToCollection(TypeInfo typeInfo, IConfiguration config, BinderOptions options)
         {
-            var type = typeof(List<>).MakeGenericType(typeInfo.GenericTypeArguments[0]);
-            var instance = Activator.CreateInstance(type);
+            Type type = typeof(List<>).MakeGenericType(typeInfo.GenericTypeArguments[0]);
+            object instance = Activator.CreateInstance(type);
             BindCollection(instance, type, config, options);
             return instance;
         }
@@ -226,14 +226,14 @@ namespace Microsoft.Extensions.Configuration
         // Try to create an array/dictionary instance to back various collection interfaces
         private static object AttemptBindToCollectionInterfaces(Type type, IConfiguration config, BinderOptions options)
         {
-            var typeInfo = type.GetTypeInfo();
+            TypeInfo typeInfo = type.GetTypeInfo();
 
             if (!typeInfo.IsInterface)
             {
                 return null;
             }
 
-            var collectionInterface = FindOpenGenericInterface(typeof(IReadOnlyList<>), type);
+            Type collectionInterface = FindOpenGenericInterface(typeof(IReadOnlyList<>), type);
             if (collectionInterface != null)
             {
                 // IEnumerable<T> is guaranteed to have exactly one parameter
@@ -243,8 +243,8 @@ namespace Microsoft.Extensions.Configuration
             collectionInterface = FindOpenGenericInterface(typeof(IReadOnlyDictionary<,>), type);
             if (collectionInterface != null)
             {
-                var dictionaryType = typeof(Dictionary<,>).MakeGenericType(typeInfo.GenericTypeArguments[0], typeInfo.GenericTypeArguments[1]);
-                var instance = Activator.CreateInstance(dictionaryType);
+                Type dictionaryType = typeof(Dictionary<,>).MakeGenericType(typeInfo.GenericTypeArguments[0], typeInfo.GenericTypeArguments[1]);
+                object instance = Activator.CreateInstance(dictionaryType);
                 BindDictionary(instance, dictionaryType, config, options);
                 return instance;
             }
@@ -252,7 +252,7 @@ namespace Microsoft.Extensions.Configuration
             collectionInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
             if (collectionInterface != null)
             {
-                var instance = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(typeInfo.GenericTypeArguments[0], typeInfo.GenericTypeArguments[1]));
+                object instance = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(typeInfo.GenericTypeArguments[0], typeInfo.GenericTypeArguments[1]));
                 BindDictionary(instance, collectionInterface, config, options);
                 return instance;
             }
@@ -290,7 +290,7 @@ namespace Microsoft.Extensions.Configuration
             }
 
             var section = config as IConfigurationSection;
-            var configValue = section?.Value;
+            string configValue = section?.Value;
             object convertedValue;
             Exception error;
             if (configValue != null && TryConvertValue(type, configValue, section.Path, out convertedValue, out error))
@@ -320,7 +320,7 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 // See if its a Dictionary
-                var collectionInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
+                Type collectionInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
                 if (collectionInterface != null)
                 {
                     BindDictionary(instance, collectionInterface, config, options);
@@ -350,7 +350,7 @@ namespace Microsoft.Extensions.Configuration
 
         private static object CreateInstance(Type type)
         {
-            var typeInfo = type.GetTypeInfo();
+            TypeInfo typeInfo = type.GetTypeInfo();
 
             if (typeInfo.IsInterface || typeInfo.IsAbstract)
             {
@@ -367,7 +367,7 @@ namespace Microsoft.Extensions.Configuration
                 return Array.CreateInstance(typeInfo.GetElementType(), 0);
             }
 
-            var hasDefaultConstructor = typeInfo.DeclaredConstructors.Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
+            bool hasDefaultConstructor = typeInfo.DeclaredConstructors.Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
             if (!hasDefaultConstructor)
             {
                 throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
@@ -385,12 +385,12 @@ namespace Microsoft.Extensions.Configuration
 
         private static void BindDictionary(object dictionary, Type dictionaryType, IConfiguration config, BinderOptions options)
         {
-            var typeInfo = dictionaryType.GetTypeInfo();
+            TypeInfo typeInfo = dictionaryType.GetTypeInfo();
 
             // IDictionary<K,V> is guaranteed to have exactly two parameters
-            var keyType = typeInfo.GenericTypeArguments[0];
-            var valueType = typeInfo.GenericTypeArguments[1];
-            var keyTypeIsEnum = keyType.GetTypeInfo().IsEnum;
+            Type keyType = typeInfo.GenericTypeArguments[0];
+            Type valueType = typeInfo.GenericTypeArguments[1];
+            bool keyTypeIsEnum = keyType.GetTypeInfo().IsEnum;
 
             if (keyType != typeof(string) && !keyTypeIsEnum)
             {
@@ -398,10 +398,10 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            var setter = typeInfo.GetDeclaredProperty("Item");
-            foreach (var child in config.GetChildren())
+            PropertyInfo setter = typeInfo.GetDeclaredProperty("Item");
+            foreach (IConfigurationSection child in config.GetChildren())
             {
-                var item = BindInstance(
+                object item = BindInstance(
                     type: valueType,
                     instance: null,
                     config: child,
@@ -410,12 +410,12 @@ namespace Microsoft.Extensions.Configuration
                 {
                     if (keyType == typeof(string))
                     {
-                        var key = child.Key;
+                        string key = child.Key;
                         setter.SetValue(dictionary, item, new object[] { key });
                     }
                     else if (keyTypeIsEnum)
                     {
-                        var key = Enum.Parse(keyType, child.Key);
+                        object key = Enum.Parse(keyType, child.Key);
                         setter.SetValue(dictionary, item, new object[] { key });
                     }
                 }
@@ -424,17 +424,17 @@ namespace Microsoft.Extensions.Configuration
 
         private static void BindCollection(object collection, Type collectionType, IConfiguration config, BinderOptions options)
         {
-            var typeInfo = collectionType.GetTypeInfo();
+            TypeInfo typeInfo = collectionType.GetTypeInfo();
 
             // ICollection<T> is guaranteed to have exactly one parameter
-            var itemType = typeInfo.GenericTypeArguments[0];
-            var addMethod = typeInfo.GetDeclaredMethod("Add");
+            Type itemType = typeInfo.GenericTypeArguments[0];
+            MethodInfo addMethod = typeInfo.GetDeclaredMethod("Add");
 
-            foreach (var section in config.GetChildren())
+            foreach (IConfigurationSection section in config.GetChildren())
             {
                 try
                 {
-                    var item = BindInstance(
+                    object item = BindInstance(
                         type: itemType,
                         instance: null,
                         config: section,
@@ -452,9 +452,9 @@ namespace Microsoft.Extensions.Configuration
 
         private static Array BindArray(Array source, IConfiguration config, BinderOptions options)
         {
-            var children = config.GetChildren().ToArray();
-            var arrayLength = source.Length;
-            var elementType = source.GetType().GetElementType();
+            IConfigurationSection[] children = config.GetChildren().ToArray();
+            int arrayLength = source.Length;
+            Type elementType = source.GetType().GetElementType();
             var newArray = Array.CreateInstance(elementType, arrayLength + children.Length);
 
             // binding to array has to preserve already initialized arrays with values
@@ -467,7 +467,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 try
                 {
-                    var item = BindInstance(
+                    object item = BindInstance(
                         type: elementType,
                         instance: null,
                         config: children[i],
@@ -504,7 +504,7 @@ namespace Microsoft.Extensions.Configuration
                 return TryConvertValue(Nullable.GetUnderlyingType(type), value, path, out result, out error);
             }
 
-            var converter = TypeDescriptor.GetConverter(type);
+            TypeConverter converter = TypeDescriptor.GetConverter(type);
             if (converter.CanConvertFrom(typeof(string)))
             {
                 try
@@ -535,15 +535,15 @@ namespace Microsoft.Extensions.Configuration
 
         private static Type FindOpenGenericInterface(Type expected, Type actual)
         {
-            var actualTypeInfo = actual.GetTypeInfo();
-            if(actualTypeInfo.IsGenericType &&
+            TypeInfo actualTypeInfo = actual.GetTypeInfo();
+            if (actualTypeInfo.IsGenericType &&
                 actual.GetGenericTypeDefinition() == expected)
             {
                 return actual;
             }
 
-            var interfaces = actualTypeInfo.ImplementedInterfaces;
-            foreach (var interfaceType in interfaces)
+            IEnumerable<Type> interfaces = actualTypeInfo.ImplementedInterfaces;
+            foreach (Type interfaceType in interfaces)
             {
                 if (interfaceType.GetTypeInfo().IsGenericType &&
                     interfaceType.GetGenericTypeDefinition() == expected)

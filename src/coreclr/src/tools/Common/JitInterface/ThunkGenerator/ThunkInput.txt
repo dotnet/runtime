@@ -121,6 +121,7 @@ CorInfoIsAccessAllowedResult,,int
 CorInfoMethodRuntimeFlags,,int
 CorInfoTailCall,,int
 CorInfoType,,int
+CorInfoHFAElemType,,int
 CorInfoTypeWithMod,,int
 CorInfoUnmanagedCallConv,,int
 InfoAccessType,,int
@@ -263,7 +264,7 @@ FUNCTIONS
     CORINFO_ARG_LIST_HANDLE getArgNext(CORINFO_ARG_LIST_HANDLE args);
     CorInfoTypeWithMod getArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet);
     CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
-    CorInfoType getHFAType(CORINFO_CLASS_HANDLE hClass);
+    CorInfoHFAElemType getHFAType(CORINFO_CLASS_HANDLE hClass);
     HRESULT GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers);
     ULONG GetErrorMessage(LPWSTR buffer, ULONG bufferLength);
     [ManualNativeWrapper] int FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers);

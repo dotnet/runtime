@@ -37,7 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 #include "compiler.h"
 
-#if defined(HAVE___THREAD) && HAVE___THREAD
+#if defined(HAVE___CACHE_PER_THREAD) && HAVE___CACHE_PER_THREAD
 #define UNWI_DEFAULT_CACHING_POLICY UNW_CACHE_PER_THREAD
 #else
 #define UNWI_DEFAULT_CACHING_POLICY UNW_CACHE_GLOBAL
@@ -122,57 +122,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
         (pthread_mutex_lock != NULL ? pthread_mutex_lock (l) : 0)
 #define mutex_unlock(l)                                                 \
         (pthread_mutex_unlock != NULL ? pthread_mutex_unlock (l) : 0)
-
-#ifdef HAVE_ATOMIC_OPS_H
-# include <atomic_ops.h>
-static inline int
-cmpxchg_ptr (void *addr, void *old, void *new)
-{
-  union
-    {
-      void *vp;
-      AO_t *aop;
-    }
-  u;
-
-  u.vp = addr;
-  return AO_compare_and_swap(u.aop, (AO_t) old, (AO_t) new);
-}
-# define fetch_and_add1(_ptr)           AO_fetch_and_add1(_ptr)
-# define fetch_and_add(_ptr, value)     AO_fetch_and_add(_ptr, value)
-# define atomic_read(ptr) (AO_load(ptr))
-   /* GCC 3.2.0 on HP-UX crashes on cmpxchg_ptr() */
-#  if !(defined(__hpux) && __GNUC__ == 3 && __GNUC_MINOR__ == 2)
-#   define HAVE_CMPXCHG
-#  endif
-# define HAVE_FETCH_AND_ADD
-#elif defined(HAVE_SYNC_ATOMICS) || defined(HAVE_IA64INTRIN_H)
-# ifdef HAVE_IA64INTRIN_H
-#  include <ia64intrin.h>
-# endif
-static inline int
-cmpxchg_ptr (void *addr, void *old, void *new)
-{
-  union
-    {
-      void *vp;
-      long *vlp;
-    }
-  u;
-
-  u.vp = addr;
-  return __sync_bool_compare_and_swap(u.vlp, (long) old, (long) new);
-}
-# define fetch_and_add1(_ptr)           __sync_fetch_and_add(_ptr, 1)
-# define fetch_and_add(_ptr, value)     __sync_fetch_and_add(_ptr, value)
-# define atomic_read(ptr) (__atomic_load_n(ptr,__ATOMIC_RELAXED))
-# define HAVE_CMPXCHG
-# define HAVE_FETCH_AND_ADD
-#endif
-
-#ifndef atomic_read
-#define atomic_read(ptr)        (*(ptr))
-#endif
 
 #define UNWI_OBJ(fn)      UNW_PASTE(UNW_PREFIX,UNW_PASTE(I,fn))
 #define UNWI_ARCH_OBJ(fn) UNW_PASTE(UNW_PASTE(UNW_PASTE(_UI,UNW_TARGET),_), fn)
@@ -275,7 +224,7 @@ extern pthread_mutex_t _U_dyn_info_list_lock;
 extern long unwi_debug_level;
 
 # include <stdio.h>
-# define Debug(level,format...)                                         \
+# define Debug(level, /* format */ ...)                                 \
 do {                                                                    \
   if (unwi_debug_level >= level)                                        \
     {                                                                   \
@@ -283,13 +232,14 @@ do {                                                                    \
       if (_n > 16)                                                      \
         _n = 16;                                                        \
       fprintf (stderr, "%*c>%s: ", _n, ' ', __FUNCTION__);              \
-      fprintf (stderr, format);                                         \
+      fprintf (stderr, /* format */ __VA_ARGS__);                       \
     }                                                                   \
 } while (0)
-# define Dprintf(format...)         fprintf (stderr, format)
+# define Dprintf(/* format */ ...)                                      \
+  fprintf (stderr, /* format */ __VA_ARGS__)
 #else
-# define Debug(level,format...)
-# define Dprintf(format...)
+# define Debug(level, /* format */ ...)
+# define Dprintf( /* format */ ...)
 #endif
 
 static ALWAYS_INLINE int

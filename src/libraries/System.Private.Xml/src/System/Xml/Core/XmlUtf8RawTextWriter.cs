@@ -39,7 +39,7 @@ namespace System.Xml
 
         // buffer positions
         protected int _bufPos = 1;     // buffer position starts at 1, because we need to be able to safely step back -1 in case we need to
-                                       // close an empty element or in CDATA section detection of double ]; bufBytes[0] will always be 0
+                                       // close an empty element or in CDATA section detection of double ]; _bufBytes[0] will always be 0
         protected int _textPos = 1;    // text end position; don't indent first element, pi, or comment
         protected int _contentPos;     // element content end position
         protected int _cdataPos;       // cdata end position
@@ -50,7 +50,6 @@ namespace System.Xml
         protected bool _writeToNull;
         protected bool _hadDoubleBracket;
         protected bool _inAttributeValue;
-
 
         // writer settings
         protected NewLineHandling _newLineHandling;
@@ -653,6 +652,7 @@ namespace System.Xml
         {
             FlushBuffer();
             FlushEncoder();
+
             if (_stream != null)
             {
                 _stream.Flush();
@@ -687,6 +687,7 @@ namespace System.Xml
             {
                 // Move last buffer character to the beginning of the buffer (so that previous character can always be determined)
                 _bufBytes[0] = _bufBytes[_bufPos - 1];
+
                 if (IsSurrogateByte(_bufBytes[0]))
                 {
                     // Last character was the first byte in a surrogate encoding, so move last three
@@ -702,7 +703,7 @@ namespace System.Xml
                 _contentPos = 0;    // Needs to be zero, since overwriting '>' character is no longer possible
                 _cdataPos = 0;      // Needs to be zero, since overwriting ']]>' characters is no longer possible
                 _bufPos = 1;        // Buffer position starts at 1, because we need to be able to safely step back -1 in case we need to
-                                   // close an empty element or in CDATA section detection of double ]; bufBytes[0] will always be 0
+                                   // close an empty element or in CDATA section detection of double ]; _bufBytes[0] will always be 0
             }
         }
 
@@ -735,6 +736,7 @@ namespace System.Xml
                         pDst++;
                         pSrc++;
                     }
+
                     Debug.Assert(pSrc <= pSrcEnd);
 
                     // end of value
@@ -1342,7 +1344,7 @@ namespace System.Xml
                     {
                         case '>':
                             if (_hadDoubleBracket && pDst[-1] == (byte)']')
-                            {   // pDst[-1] will always correct - there is a padding character at bufBytes[0]
+                            {   // pDst[-1] will always correct - there is a padding character at _bufBytes[0]
                                 // The characters "]]>" were found within the CData text
                                 pDst = RawEndCData(pDst);
                                 pDst = RawStartCData(pDst);
@@ -1352,7 +1354,7 @@ namespace System.Xml
                             break;
                         case ']':
                             if (pDst[-1] == (byte)']')
-                            {   // pDst[-1] will always correct - there is a padding character at bufBytes[0]
+                            {   // pDst[-1] will always correct - there is a padding character at _bufBytes[0]
                                 _hadDoubleBracket = true;
                             }
                             else
@@ -1492,6 +1494,7 @@ namespace System.Xml
                     {
                         pDst = EncodeMultibyteUTF8(ch, pDst);
                     }
+
                     return pDst;
                 }
             }
@@ -1787,7 +1790,6 @@ namespace System.Xml
         //
         // Constructors
         //
-
         public XmlUtf8RawTextWriterIndent(Stream stream, XmlWriterSettings settings) : base(stream, settings)
         {
             Init(settings);

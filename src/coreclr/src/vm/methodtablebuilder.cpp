@@ -1481,10 +1481,10 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #endif
         {
 #if defined(CROSSGEN_COMPILE)
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
             if ((!IsNgenPDBCompilationProcess()
                 && GetAppDomain()->ToCompilationDomain()->GetTargetModule() != g_pObjectClass->GetModule()))
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
             {
                 // Disable AOT compiling for managed implementation of hardware intrinsics.
                 // We specially treat them here to ensure correct ISA features are set during compilation
@@ -1959,12 +1959,20 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
-#ifdef FEATURE_ICASTABLE
-    if (!IsValueClass() && g_pICastableInterface != NULL && pMT->CanCastToInterface(g_pICastableInterface))
+    if (!IsValueClass())
     {
-        pMT->SetICastable();
-    }
+#ifdef FEATURE_ICASTABLE
+        if (g_pICastableInterface != NULL && pMT->CanCastToInterface(g_pICastableInterface))
+        {
+            pMT->SetICastable();
+        }
 #endif // FEATURE_ICASTABLE
+
+        if (g_pIDynamicInterfaceCastableInterface != NULL && pMT->CanCastToInterface(g_pIDynamicInterfaceCastableInterface))
+        {
+            pMT->SetIDynamicInterfaceCastable();
+        }
+    }
 
     // Grow the typedef ridmap in advance as we can't afford to
     // fail once we set the resolve bit

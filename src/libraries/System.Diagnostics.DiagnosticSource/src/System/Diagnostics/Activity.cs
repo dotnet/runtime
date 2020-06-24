@@ -51,7 +51,7 @@ namespace System.Diagnostics
         private static ActivityIdFormat s_defaultIdFormat;
         /// <summary>
         /// Normally if the ParentID is defined, the format of that is used to determine the
-        /// format used by the Activity.   However if ForceDefaultFormat is set to true, the
+        /// format used by the Activity. However if ForceDefaultFormat is set to true, the
         /// ID format will always be the DefaultIdFormat even if the ParentID is define and is
         /// a different format.
         /// </summary>
@@ -92,7 +92,7 @@ namespace System.Diagnostics
         /// reasonable, but arguments (e.g. specific accounts etc), should not be in
         /// the name but rather in the tags.
         /// </summary>
-        public string OperationName { get; } = null!;
+        public string OperationName { get; }
 
         /// <summary>Gets or sets the display name of the Activity</summary>
         /// <remarks>
@@ -334,7 +334,6 @@ namespace System.Diagnostics
             if (string.IsNullOrEmpty(operationName))
             {
                 NotifyError(new ArgumentException(SR.OperationNameInvalid));
-                return;
             }
 
             OperationName = operationName;
@@ -736,7 +735,13 @@ namespace System.Diagnostics
             get
             {
                 if (s_defaultIdFormat == ActivityIdFormat.Unknown)
+                {
+#if W3C_DEFAULT_ID_FORMAT
+                    s_defaultIdFormat = LocalAppContextSwitches.DefaultActivityIdFormatIsHierarchial ? ActivityIdFormat.Hierarchical : ActivityIdFormat.W3C;
+#else
                     s_defaultIdFormat = ActivityIdFormat.Hierarchical;
+#endif // W3C_DEFAULT_ID_FORMAT
+                }
                 return s_defaultIdFormat;
             }
             set

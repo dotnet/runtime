@@ -637,6 +637,22 @@ namespace System.Globalization.Tests
             Assert.True(cultureName.Equals(ci.CompareInfo.Name, StringComparison.OrdinalIgnoreCase));
         }
 
+        [Theory]
+        [MemberData(nameof(Cultures_TestData))]
+        public void SetCultureData(string cultureName)
+        {
+            CultureInfo ci = new CultureInfo(cultureName);
+
+            //
+            // DateTimeInfo
+            //
+            var calendar = new GregorianCalendar();
+            ci.DateTimeFormat.Calendar = calendar;
+            Assert.Equal(calendar, ci.DateTimeFormat.Calendar);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => ci.DateTimeFormat.Calendar = new TaiwanCalendar());
+        }
+
         [Fact]
         public void TestEnum()
         {

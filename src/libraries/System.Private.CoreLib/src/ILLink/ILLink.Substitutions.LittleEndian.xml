@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.BitConverter">
+      <field name="IsLittleEndian" value="true" />
+    </type>
+  </assembly>
+</linker>

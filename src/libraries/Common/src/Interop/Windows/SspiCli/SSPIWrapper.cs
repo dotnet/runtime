@@ -214,87 +214,97 @@ namespace System.Net
             VerifySignature
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        private ref struct ThreeByteArrays
+        {
+            public const int NumItems = 3;
+            internal byte[] _item0;
+            private byte[] _item1;
+            private byte[] _item2;
+        }
+
         private static unsafe int EncryptDecryptHelper(OP op, ISSPIInterface secModule, SafeDeleteContext context, Span<SecurityBuffer> input, uint sequenceNumber)
         {
+            Debug.Assert(input.Length <= 3, "The below logic only works for 3 or fewer buffers.");
+
             Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(input.Length);
             Span<Interop.SspiCli.SecBuffer> unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[input.Length];
             unmanagedBuffer.Clear();
 
             fixed (Interop.SspiCli.SecBuffer* unmanagedBufferPtr = unmanagedBuffer)
+            fixed (byte* pinnedBuffer0 = input.Length > 0 ? input[0].token : null)
+            fixed (byte* pinnedBuffer1 = input.Length > 1 ? input[1].token : null)
+            fixed (byte* pinnedBuffer2 = input.Length > 2 ? input[2].token : null)
             {
                 sdcInOut.pBuffers = unmanagedBufferPtr;
-                Span<GCHandle> pinnedBuffers = stackalloc GCHandle[input.Length];
-                pinnedBuffers.Clear();
-                byte[][] buffers = new byte[input.Length][];
-                try
+
+                ThreeByteArrays byteArrayStruct = default;
+                Span<byte[]> buffers = MemoryMarshal.CreateSpan(ref byteArrayStruct._item0!, ThreeByteArrays.NumItems).Slice(0, input.Length);
+
+                for (int i = 0; i < input.Length; i++)
                 {
-                    for (int i = 0; i < input.Length; i++)
+                    ref readonly SecurityBuffer iBuffer = ref input[i];
+                    unmanagedBuffer[i].cbBuffer = iBuffer.size;
+                    unmanagedBuffer[i].BufferType = iBuffer.type;
+                    if (iBuffer.token == null || iBuffer.token.Length == 0)
                     {
-                        ref readonly SecurityBuffer iBuffer = ref input[i];
-                        unmanagedBuffer[i].cbBuffer = iBuffer.size;
-                        unmanagedBuffer[i].BufferType = iBuffer.type;
-                        if (iBuffer.token == null || iBuffer.token.Length == 0)
-                        {
-                            unmanagedBuffer[i].pvBuffer = IntPtr.Zero;
-                        }
-                        else
-                        {
-                            pinnedBuffers[i] = GCHandle.Alloc(iBuffer.token, GCHandleType.Pinned);
-                            unmanagedBuffer[i].pvBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(iBuffer.token, iBuffer.offset);
-                            buffers[i] = iBuffer.token;
-                        }
+                        unmanagedBuffer[i].pvBuffer = IntPtr.Zero;
                     }
-
-                    // The result is written in the input Buffer passed as type=BufferType.Data.
-                    int errorCode;
-                    switch (op)
+                    else
                     {
-                        case OP.Encrypt:
-                            errorCode = secModule.EncryptMessage(context, ref sdcInOut, sequenceNumber);
-                            break;
-
-                        case OP.Decrypt:
-                            errorCode = secModule.DecryptMessage(context, ref sdcInOut, sequenceNumber);
-                            break;
-
-                        case OP.MakeSignature:
-                            errorCode = secModule.MakeSignature(context, ref sdcInOut, sequenceNumber);
-                            break;
-
-                        case OP.VerifySignature:
-                            errorCode = secModule.VerifySignature(context, ref sdcInOut, sequenceNumber);
-                            break;
-
-                        default:
-                            NetEventSource.Fail(null, $"Unknown OP: {op}");
-                            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+                        unmanagedBuffer[i].pvBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(iBuffer.token, iBuffer.offset);
+                        buffers[i] = iBuffer.token;
                     }
+                }
 
-                    // Marshalling back returned sizes / data.
-                    for (int i = 0; i < input.Length; i++)
+                // The result is written in the input Buffer passed as type=BufferType.Data.
+                int errorCode;
+                switch (op)
+                {
+                    case OP.Encrypt:
+                        errorCode = secModule.EncryptMessage(context, ref sdcInOut, sequenceNumber);
+                        break;
+
+                    case OP.Decrypt:
+                        errorCode = secModule.DecryptMessage(context, ref sdcInOut, sequenceNumber);
+                        break;
+
+                    case OP.MakeSignature:
+                        errorCode = secModule.MakeSignature(context, ref sdcInOut, sequenceNumber);
+                        break;
+
+                    case OP.VerifySignature:
+                        errorCode = secModule.VerifySignature(context, ref sdcInOut, sequenceNumber);
+                        break;
+
+                    default:
+                        NetEventSource.Fail(null, $"Unknown OP: {op}");
+                        throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+                }
+
+                // Marshalling back returned sizes / data.
+                for (int i = 0; i < input.Length; i++)
+                {
+                    ref SecurityBuffer iBuffer = ref input[i];
+                    iBuffer.size = unmanagedBuffer[i].cbBuffer;
+                    iBuffer.type = unmanagedBuffer[i].BufferType;
+
+                    if (iBuffer.size == 0)
                     {
-                        ref SecurityBuffer iBuffer = ref input[i];
-                        iBuffer.size = unmanagedBuffer[i].cbBuffer;
-                        iBuffer.type = unmanagedBuffer[i].BufferType;
+                        iBuffer.offset = 0;
+                        iBuffer.token = null;
+                    }
+                    else
+                    {
 
-                        if (iBuffer.size == 0)
+                        // Find the buffer this is inside of.  Usually they all point inside buffer 0.
+                        int j;
+                        for (j = 0; j < input.Length; j++)
                         {
-                            iBuffer.offset = 0;
-                            iBuffer.token = null;
-                        }
-                        else
-                        {
-                            checked
+                            if (buffers[j] != null)
                             {
-                                // Find the buffer this is inside of.  Usually they all point inside buffer 0.
-                                int j;
-                                for (j = 0; j < input.Length; j++)
+                                checked
                                 {
-                                    if (buffers[j] == null)
-                                    {
-                                        continue;
-                                    }
-
                                     byte* bufferAddress = (byte*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers[j], 0);
                                     if ((byte*)unmanagedBuffer[i].pvBuffer >= bufferAddress &&
                                         (byte*)unmanagedBuffer[i].pvBuffer + iBuffer.size <= bufferAddress + buffers[j].Length)
@@ -304,53 +314,43 @@ namespace System.Net
                                         break;
                                     }
                                 }
-
-                                if (j >= input.Length)
-                                {
-                                    NetEventSource.Fail(null, "Output buffer out of range.");
-                                    iBuffer.size = 0;
-                                    iBuffer.offset = 0;
-                                    iBuffer.token = null;
-                                }
                             }
                         }
 
-                        // Backup validate the new sizes.
-                        if (iBuffer.offset < 0 || iBuffer.offset > (iBuffer.token == null ? 0 : iBuffer.token.Length))
+                        if (j >= input.Length)
                         {
-                            NetEventSource.Fail(null, $"'offset' out of range.  [{iBuffer.offset}]");
-                        }
-
-                        if (iBuffer.size < 0 || iBuffer.size > (iBuffer.token == null ? 0 : iBuffer.token.Length - iBuffer.offset))
-                        {
-                            NetEventSource.Fail(null, $"'size' out of range.  [{iBuffer.size}]");
+                            NetEventSource.Fail(null, "Output buffer out of range.");
+                            iBuffer.size = 0;
+                            iBuffer.offset = 0;
+                            iBuffer.token = null;
                         }
                     }
 
-                    if (NetEventSource.IsEnabled && errorCode != 0)
+                    // Backup validate the new sizes.
+                    if (iBuffer.offset < 0 || iBuffer.offset > (iBuffer.token == null ? 0 : iBuffer.token.Length))
                     {
-                        if (errorCode == Interop.SspiCli.SEC_I_RENEGOTIATE)
-                        {
-                            NetEventSource.Error(null, SR.Format(SR.event_OperationReturnedSomething, op, "SEC_I_RENEGOTIATE"));
-                        }
-                        else
-                        {
-                            NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, op, $"0x{0:X}"));
-                        }
+                        NetEventSource.Fail(null, $"'offset' out of range.  [{iBuffer.offset}]");
                     }
 
-                    return errorCode;
+                    if (iBuffer.size < 0 || iBuffer.size > (iBuffer.token == null ? 0 : iBuffer.token.Length - iBuffer.offset))
+                    {
+                        NetEventSource.Fail(null, $"'size' out of range.  [{iBuffer.size}]");
+                    }
                 }
-                finally
+
+                if (NetEventSource.IsEnabled && errorCode != 0)
                 {
-                    for (int i = 0; i < pinnedBuffers.Length; ++i)
+                    if (errorCode == Interop.SspiCli.SEC_I_RENEGOTIATE)
                     {
-                        if (pinnedBuffers[i].IsAllocated)
-                        {
-                            pinnedBuffers[i].Free();
-                        }
+                        NetEventSource.Error(null, SR.Format(SR.event_OperationReturnedSomething, op, "SEC_I_RENEGOTIATE"));
+                    }
+                    else
+                    {
+                        NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, op, $"0x{0:X}"));
                     }
                 }
+
+                return errorCode;
             }
         }
 

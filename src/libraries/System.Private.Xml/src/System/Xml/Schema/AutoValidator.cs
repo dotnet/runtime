@@ -57,8 +57,8 @@ namespace System.Xml.Schema
                 XmlSchemaCollectionEnumerator enumerator = reader.Schemas.GetEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    XmlSchemaCollectionNode node = enumerator.CurrentNode;
-                    SchemaInfo schemaInfo = node.SchemaInfo;
+                    XmlSchemaCollectionNode node = enumerator.CurrentNode!;
+                    SchemaInfo schemaInfo = node.SchemaInfo!;
                     if (schemaInfo.SchemaType == SchemaType.XSD)
                         return ValidationType.Schema;
                     else if (schemaInfo.SchemaType == SchemaType.XDR)

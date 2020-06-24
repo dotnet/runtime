@@ -22,7 +22,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Initializes a new instance of the Array/> class.
         /// </summary>
         /// <param name="jsHandle">Js handle.</param>
-        internal Array(IntPtr jsHandle) : base(jsHandle)
+        /// <param name="ownsHandle">Whether or not the handle is owned by the clr or not.</param>
+        internal Array(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
         { }
 
         /// <summary>

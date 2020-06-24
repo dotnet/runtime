@@ -2314,6 +2314,11 @@ namespace System
 
         #region Private\Internal Members
 
+        internal IntPtr GetUnderlyingNativeHandle()
+        {
+            return m_handle;
+        }
+
         internal override bool CacheEquals(object? o)
         {
             return (o is RuntimeType t) && (t.m_handle == m_handle);
@@ -3779,6 +3784,8 @@ namespace System
                 throw new NotSupportedException(SR.Acc_CreateVoid);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         internal object? CreateInstanceImpl(
             BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture)
         {

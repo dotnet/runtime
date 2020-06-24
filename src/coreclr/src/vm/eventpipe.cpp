@@ -40,6 +40,8 @@ unsigned int * EventPipe::s_pProcGroupOffsets = nullptr;
 #endif
 Volatile<uint32_t> EventPipe::s_numberOfSessions(0);
 bool EventPipe::s_enableSampleProfilerAtStartup = false;
+CQuickArrayList<EventPipeSessionID> EventPipe::s_rgDeferredEventPipeSessionIds = CQuickArrayList<EventPipeSessionID>();
+bool EventPipe::s_CanStartThreads = false;
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
 #ifdef TARGET_UNIX
@@ -108,6 +110,20 @@ void EventPipe::Initialize()
 void EventPipe::FinishInitialize()
 {
     STANDARD_VM_CONTRACT;
+
+    CrstHolder _crst(GetLock());
+
+    s_CanStartThreads = true;
+
+    while (s_rgDeferredEventPipeSessionIds.Size() > 0)
+    {
+        EventPipeSessionID id = s_rgDeferredEventPipeSessionIds.Pop();
+        if (IsSessionIdInCollection(id))
+        {
+            EventPipeSession *pSession = reinterpret_cast<EventPipeSession*>(id);
+            pSession->StartStreaming();
+        }
+    }
 
     if (s_enableSampleProfilerAtStartup)
     {
@@ -383,10 +399,14 @@ bool EventPipe::EnableInternal(
     // Enable tracing.
     s_config.Enable(*pSession, pEventPipeProviderCallbackDataQueue);
 
-    // Enable the sample profiler
-    if (enableSampleProfiler)
+    // Enable the sample profiler or defer until we can create threads
+    if (enableSampleProfiler && s_CanStartThreads)
     {
         SampleProfiler::Enable();
+    }
+    else if (enableSampleProfiler && !s_CanStartThreads)
+    {
+        s_enableSampleProfilerAtStartup = true;
     }
 
     return true;
@@ -409,7 +429,15 @@ void EventPipe::StartStreaming(EventPipeSessionID id)
 
     EventPipeSession *const pSession = reinterpret_cast<EventPipeSession *>(id);
 
-    pSession->StartStreaming();
+    if (s_CanStartThreads)
+    {
+        pSession->StartStreaming();
+    }
+    else
+    {
+        s_rgDeferredEventPipeSessionIds.Push(id);
+    }
+    
 }
 
 void EventPipe::Disable(EventPipeSessionID id)
@@ -422,7 +450,8 @@ void EventPipe::Disable(EventPipeSessionID id)
     }
     CONTRACTL_END;
 
-    SetupThread();
+    if (s_CanStartThreads)
+        SetupThread();
 
     if (id == 0)
         return;
@@ -492,7 +521,7 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
     pSession->Disable(); // WriteAllBuffersToFile, and remove providers.
 
     // Do rundown before fully stopping the session unless rundown wasn't requested
-    if (pSession->RundownRequested())
+    if (pSession->RundownRequested() && s_CanStartThreads)
     {
         pSession->EnableRundown(); // Set Rundown provider.
 

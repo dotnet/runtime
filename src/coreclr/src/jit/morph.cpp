@@ -773,6 +773,7 @@ void fgArgTabEntry::Dump()
     printf("fgArgTabEntry[arg %u", argNum);
     printf(" %d.%s", GetNode()->gtTreeID, GenTree::OpName(GetNode()->OperGet()));
     printf(" %s", varTypeName(argType));
+    printf(" (%s)", passedByRef ? "By ref" : "By value");
     if (GetRegNum() != REG_STK)
     {
         printf(", %u reg%s:", numRegs, numRegs == 1 ? "" : "s");
@@ -1005,7 +1006,7 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     curArgTabEntry->needPlace = false;
     curArgTabEntry->processed = false;
 #ifdef FEATURE_HFA
-    curArgTabEntry->_hfaElemKind = HFA_ELEM_NONE;
+    curArgTabEntry->_hfaElemKind = CORINFO_HFA_ELEM_NONE;
 #endif
     curArgTabEntry->isBackFilled  = false;
     curArgTabEntry->isNonStandard = false;
@@ -1087,7 +1088,7 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     curArgTabEntry->needPlace = false;
     curArgTabEntry->processed = false;
 #ifdef FEATURE_HFA
-    curArgTabEntry->_hfaElemKind = HFA_ELEM_NONE;
+    curArgTabEntry->_hfaElemKind = CORINFO_HFA_ELEM_NONE;
 #endif
     curArgTabEntry->isBackFilled  = false;
     curArgTabEntry->isNonStandard = false;
@@ -3672,7 +3673,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // actually passed in registers.
                     if (argEntry->isPassedInRegisters())
                     {
-                        assert(argEntry->structDesc.passedInRegisters);
                         if (argObj->OperIs(GT_OBJ))
                         {
                             if (passingSize != structSize)
@@ -4423,12 +4423,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 )
         {
             // We have a HFA struct.
-            // Note that GetHfaType may not be the same as elemType, since TYP_SIMD8 is handled the same as TYP_DOUBLE.
-            var_types useElemType = elemType;
-#if defined(TARGET_ARM64) & defined(FEATURE_SIMD)
-            useElemType = (elemType == TYP_SIMD8) ? TYP_DOUBLE : useElemType;
-#endif // TARGET_ARM64 && FEATURE_SIMD
-            noway_assert(useElemType == varDsc->GetHfaType());
+            noway_assert(elemType == varDsc->GetHfaType());
             noway_assert(elemSize == genTypeSize(elemType));
             noway_assert(elemCount == (varDsc->lvExactSize / elemSize));
             noway_assert(elemSize * elemCount == varDsc->lvExactSize);
@@ -10191,8 +10186,19 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
         }
         else if (effectiveVal->TypeGet() != asgType)
         {
-            GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
-            effectiveVal  = gtNewIndir(asgType, addr);
+            if (effectiveVal->IsCall())
+            {
+#ifdef DEBUG
+                GenTreeCall* call = effectiveVal->AsCall();
+                assert(call->TypeGet() == TYP_STRUCT);
+                assert(blockWidth == info.compCompHnd->getClassSize(call->gtRetClsHnd));
+#endif
+            }
+            else
+            {
+                GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
+                effectiveVal  = gtNewIndir(asgType, addr);
+            }
         }
     }
     else
@@ -10594,8 +10600,20 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         // If we passed the above checks, then we will check these two
         if (!requiresCopyBlock)
         {
+            // It is not always profitable to do field by field init for structs that are allocated to memory.
+            // A struct with 8 bool fields will require 8 moves instead of one if we do this transformation.
+            // A simple heuristic when field by field copy is prefered:
+            // - if fields can be enregistered;
+            // - if the struct has GCPtrs (block copy would be done via helper that is expensive);
+            // - if the struct has only one field.
+            bool dstFldIsProfitable =
+                ((destLclVar != nullptr) &&
+                 (!destLclVar->lvDoNotEnregister || destLclVar->HasGCPtr() || (destLclVar->lvFieldCnt == 1)));
+            bool srcFldIsProfitable =
+                ((srcLclVar != nullptr) &&
+                 (!srcLclVar->lvDoNotEnregister || srcLclVar->HasGCPtr() || (srcLclVar->lvFieldCnt == 1)));
             // Are both dest and src promoted structs?
-            if (destDoFldAsg && srcDoFldAsg)
+            if (destDoFldAsg && srcDoFldAsg && (dstFldIsProfitable || srcFldIsProfitable))
             {
                 // Both structs should be of the same type, or have the same number of fields of the same type.
                 // If not we will use a copy block.
@@ -10627,13 +10645,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     }
                 }
             }
-            // Are neither dest or src promoted structs?
-            else if (!destDoFldAsg && !srcDoFldAsg)
-            {
-                requiresCopyBlock = true; // Leave as a CopyBlock
-                JITDUMP(" with no promoted structs");
-            }
-            else if (destDoFldAsg)
+            else if (destDoFldAsg && dstFldIsProfitable)
             {
                 // Match the following kinds of trees:
                 //  fgMorphTree BB01, stmt 9 (before)
@@ -10677,9 +10689,8 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     }
                 }
             }
-            else
+            else if (srcDoFldAsg && srcFldIsProfitable)
             {
-                assert(srcDoFldAsg);
                 // Check for the symmetric case (which happens for the _pointer field of promoted spans):
                 //
                 //               [000240] -----+------             /--*  lclVar    struct(P) V18 tmp9
@@ -10701,6 +10712,13 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     }
                 }
             }
+            // Are neither dest or src promoted structs?
+            else
+            {
+                assert(!(destDoFldAsg && dstFldIsProfitable) && !(srcDoFldAsg && srcFldIsProfitable));
+                requiresCopyBlock = true; // Leave as a CopyBlock
+                JITDUMP(" with no promoted structs");
+            }
         }
 
         // If we require a copy block the set both of the field assign bools to false
@@ -10719,8 +10737,18 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         {
             if (!destLclVar->lvRegStruct || (destLclVar->lvType != dest->TypeGet()))
             {
-                // Mark it as DoNotEnregister.
-                lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_BlockOp));
+                if (!dest->IsMultiRegLclVar() || (blockWidth != destLclVar->lvExactSize) ||
+                    (destLclVar->lvCustomLayout && destLclVar->lvContainsHoles))
+                {
+                    // Mark it as DoNotEnregister.
+                    lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_BlockOp));
+                }
+                else if (dest->IsMultiRegLclVar())
+                {
+                    // Handle this as lvIsMultiRegRet; this signals to SSA that it can't consider these fields
+                    // SSA candidates (we don't have a way to represent multiple SSANums on MultiRegLclVar nodes).
+                    destLclVar->lvIsMultiRegRet = true;
+                }
             }
         }
 
@@ -11941,7 +11969,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
                 return tree;
             }
-            if (tree->TypeIs(TYP_STRUCT) && op1->OperIs(GT_OBJ, GT_BLK))
+            if (varTypeIsStruct(tree) && op1->OperIs(GT_OBJ, GT_BLK))
             {
                 assert(!compDoOldStructRetyping());
                 GenTree* addr = op1->AsBlk()->Addr();
@@ -16282,6 +16310,17 @@ void Compiler::fgMorphBlocks()
     // We are done with the global morphing phase
     fgGlobalMorph = false;
     compCurBB     = nullptr;
+
+    // Under OSR, we no longer need to specially protect the original method entry
+    //
+    if (opts.IsOSR() && (fgEntryBB != nullptr) && (fgEntryBB->bbFlags & BBF_IMPORTED))
+    {
+        JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+        assert(fgEntryBB->bbRefs > 0);
+        fgEntryBB->bbRefs--;
+        // We don't need to remember this block anymore.
+        fgEntryBB = nullptr;
+    }
 
 #ifdef DEBUG
     if (verboseTrees)

@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : ICollection<TElement>
     {
-        protected override void Add(TElement value, ref ReadStack state)
+        protected override void Add(in TElement value, ref ReadStack state)
         {
             ((ICollection<TElement>)state.Current.ReturnValue!).Add(value);
         }

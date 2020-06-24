@@ -617,7 +617,7 @@ namespace System.Drawing.Tests
                 }
             }
 
-            if (!AppContext.TryGetSwitch(DontSupportPngFramesInIcons, out bool isEnabled) || isEnabled)
+            if (RemoteExecutor.IsSupported && (!AppContext.TryGetSwitch(DontSupportPngFramesInIcons, out bool isEnabled) || isEnabled))
             {
                 RemoteExecutor.Invoke(() =>
                 {
@@ -643,7 +643,7 @@ namespace System.Drawing.Tests
                 }
             }
 
-            if (!AppContext.TryGetSwitch(DontSupportPngFramesInIcons, out bool isEnabled) || !isEnabled)
+            if (RemoteExecutor.IsSupported && (!AppContext.TryGetSwitch(DontSupportPngFramesInIcons, out bool isEnabled) || !isEnabled))
             {
                 RemoteExecutor.Invoke(() =>
                 {

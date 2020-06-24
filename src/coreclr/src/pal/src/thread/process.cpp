@@ -60,6 +60,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <semaphore.h>
 #include <stdint.h>
 #include <dlfcn.h>
+#include <limits.h>
 
 #ifdef __linux__
 #include <sys/syscall.h> // __NR_membarrier
@@ -3316,7 +3317,7 @@ PROCCreateCrashDump(char** argv)
         // Child process
         if (execve(argv[0], argv, palEnvironment) == -1)
         {
-            ERROR("PPROCCreateCrashDump: execve FAILED %d (%s)\n", errno, strerror(errno));
+            ERROR("PROCCreateCrashDump: execve() FAILED %d (%s)\n", errno, strerror(errno));
             return false;
         }
     }
@@ -3328,7 +3329,7 @@ PROCCreateCrashDump(char** argv)
         {
             // Ignore any error because on some CentOS and OpenSUSE distros, it isn't
             // supported but createdump works just fine.
-            ERROR("PPROCCreateCrashDump: prctl() FAILED %d (%s)\n", errno, strerror(errno));
+            ERROR("PROCCreateCrashDump: prctl() FAILED %d (%s)\n", errno, strerror(errno));
         }
 #endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
         // Parent waits until the child process is done
@@ -3336,7 +3337,7 @@ PROCCreateCrashDump(char** argv)
         int result = waitpid(childpid, &wstatus, 0);
         if (result != childpid)
         {
-            ERROR("PPROCCreateCrashDump: waitpid FAILED result %d wstatus %d errno %d (%s)\n",
+            ERROR("PROCCreateCrashDump: waitpid() FAILED result %d wstatus %d errno %d (%s)\n",
                 result, wstatus, errno, strerror(errno));
             return false;
         }

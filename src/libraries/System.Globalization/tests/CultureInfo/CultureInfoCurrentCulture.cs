@@ -54,7 +54,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DefaultThreadCurrentCulture()
         {
             RemoteExecutor.Invoke(() =>
@@ -71,7 +71,7 @@ namespace System.Globalization.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DefaultThreadCurrentUICulture()
         {
             RemoteExecutor.Invoke(() =>
@@ -95,7 +95,7 @@ namespace System.Globalization.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Windows locale support doesn't rely on LANG variable
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("en-US.UTF-8", "en-US")]
         [InlineData("en-US", "en-US")]
         [InlineData("en_GB", "en-GB")]
@@ -121,7 +121,7 @@ namespace System.Globalization.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // When LANG is empty or unset, should default to the invariant culture on Unix.
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("")]
         [InlineData(null)]
         public void CurrentCulture_DefaultWithNoLang(string langEnvVar)

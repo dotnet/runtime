@@ -16,7 +16,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         internal override bool CanHaveIdMetadata => false;
 
-        protected override void Add(TElement value, ref ReadStack state)
+        protected override void Add(in TElement value, ref ReadStack state)
         {
             ((List<TElement>)state.Current.ReturnValue!).Add(value);
         }

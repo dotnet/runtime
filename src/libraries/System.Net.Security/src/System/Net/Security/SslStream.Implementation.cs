@@ -34,8 +34,7 @@ namespace System.Net.Security
         // This is set on the first packet to figure out the framing style.
         private Framing _framing = Framing.Unknown;
 
-        private TlsAlertDescription _lastAlertDescription;
-        private TlsFrameHandshakeInfo _lastFrame;
+        private TlsFrameHelper.TlsFrameInfo _lastFrame;
 
         private readonly object _handshakeLock = new object();
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
@@ -72,7 +71,7 @@ namespace System.Net.Security
                 {
                     _sslAuthenticationOptions.TargetHost = "?" + Interlocked.Increment(ref s_uniqueNameInteger).ToString(NumberFormatInfo.InvariantInfo);
                 }
-                _context = new SecureChannel(_sslAuthenticationOptions);
+                _context = new SecureChannel(_sslAuthenticationOptions, this);
             }
             catch (Win32Exception e)
             {
@@ -99,7 +98,7 @@ namespace System.Net.Security
 
             try
             {
-                _context = new SecureChannel(_sslAuthenticationOptions);
+                _context = new SecureChannel(_sslAuthenticationOptions, this);
             }
             catch (Win32Exception e)
             {
@@ -130,6 +129,8 @@ namespace System.Net.Security
         //
         private void CloseInternal()
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             _exception = s_disposedSentinel;
             _context?.Close();
 
@@ -154,6 +155,8 @@ namespace System.Net.Security
                 // Suppress finalizer if the read buffer was returned.
                 GC.SuppressFinalize(this);
             }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         private SecurityStatusPal EncryptData(ReadOnlyMemory<byte> buffer, ref byte[] outBuffer, out int outSize)
@@ -249,6 +252,9 @@ namespace System.Net.Security
                     if (message.Size > 0)
                     {
                         await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
+                        await adapter.FlushAsync().ConfigureAwait(false);
+                        if (NetEventSource.IsEnabled)
+                            NetEventSource.Log.SentFrame(this, message.Payload);
                     }
 
                     if (message.Failed)
@@ -256,8 +262,7 @@ namespace System.Net.Security
                         // tracing done in NextMessage()
                         throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
                     }
-
-                    if (message.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                    else if (message.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
                     {
                         // We can finish renegotiation without doing any read.
                         handshakeCompleted = true;
@@ -273,25 +278,40 @@ namespace System.Net.Security
                 while (!handshakeCompleted)
                 {
                     message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
+
+                    byte[]? payload = null;
+                    int size = 0;
                     if (message.Size > 0)
                     {
+                        payload = message.Payload;
+                        size = message.Size;
+                    }
+                    else if (message.Failed && _lastFrame.Header.Type == TlsContentType.Handshake)
+                    {
+                        // If we failed without OS sending out alert, inject one here to be consistent across platforms.
+                        payload = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, TlsAlertDescription.ProtocolVersion);
+                        size = payload.Length;
+                    }
+
+                    if (payload != null && size > 0)
+                    {
                         // If there is message send it out even if call failed. It may contain TLS Alert.
-                        await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
+                        await adapter.WriteAsync(payload!, 0, size).ConfigureAwait(false);
+                        await adapter.FlushAsync().ConfigureAwait(false);
+
+                        if (NetEventSource.IsEnabled)
+                            NetEventSource.Log.SentFrame(this, payload);
                     }
 
                     if (message.Failed)
                     {
-                        if (_lastFrame.Header.Type == TlsContentType.Handshake && message.Size == 0)
-                        {
-                            // If we failed without OS sending out alert, inject one here to be consistent across platforms.
-                            byte[] alert = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, TlsAlertDescription.ProtocolVersion);
-                            await adapter.WriteAsync(alert, 0, alert.Length).ConfigureAwait(false);
-                        }
-                        else if (_lastFrame.Header.Type == TlsContentType.Alert && _lastAlertDescription != TlsAlertDescription.CloseNotify &&
+                        if (NetEventSource.IsEnabled) NetEventSource.Error(this, message.Status);
+
+                        if (_lastFrame.Header.Type == TlsContentType.Alert && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify &&
                                  message.Status.ErrorCode == SecurityStatusPalErrorCode.IllegalMessage)
                         {
                             // Improve generic message and show details if we failed because of TLS Alert.
-                            throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastAlertDescription.ToString()), message.GetException());
+                            throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastFrame.AlertDescription.ToString()), message.GetException());
                         }
 
                         throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
@@ -366,11 +386,13 @@ namespace System.Net.Security
 
             if (_lastFrame.Header.Length < 0)
             {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, "invalid TLS frame size");
                 throw new IOException(SR.net_frame_read_size);
             }
 
             // Header length is content only so we must add header size as well.
             int frameSize = _lastFrame.Header.Length + TlsFrameHelper.HeaderSize;
+
             if (_handshakeBuffer.ActiveLength < frameSize)
             {
                 await FillHandshakeBufferAsync(adapter, frameSize).ConfigureAwait(false);
@@ -379,20 +401,37 @@ namespace System.Net.Security
             // At this point, we have at least one TLS frame.
             if (_lastFrame.Header.Type == TlsContentType.Alert)
             {
-                TlsAlertLevel level = 0;
-                if (TlsFrameHelper.TryGetAlertInfo(_handshakeBuffer.ActiveReadOnlySpan, ref level, ref _lastAlertDescription))
+                if (TlsFrameHelper.TryGetFrameInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame))
                 {
-                    if (NetEventSource.IsEnabled && _lastAlertDescription != TlsAlertDescription.CloseNotify) NetEventSource.Fail(this, $"Received TLS alert {_lastAlertDescription}");
+                    if (NetEventSource.IsEnabled && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify) NetEventSource.Error(this, $"Received TLS alert {_lastFrame.AlertDescription}");
                 }
             }
             else if (_lastFrame.Header.Type == TlsContentType.Handshake)
             {
-                if (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
-                    _sslAuthenticationOptions!.ServerCertSelectionDelegate != null)
+                if ((_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
+                    _sslAuthenticationOptions!.ServerCertSelectionDelegate != null) ||
+                     NetEventSource.IsEnabled)
                 {
+                    TlsFrameHelper.ProcessingOptions options = NetEventSource.IsEnabled ?
+                                                                TlsFrameHelper.ProcessingOptions.All :
+                                                                TlsFrameHelper.ProcessingOptions.ServerName;
+
                     // Process SNI from Client Hello message
-                    TlsFrameHelper.TryGetHandshakeInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame);
-                    _sslAuthenticationOptions.TargetHost = _lastFrame.TargetName;
+                    if (!TlsFrameHelper.TryGetFrameInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame, options))
+                    {
+                        if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Failed to parse TLS hello.");
+                    }
+
+                    if (_lastFrame.HandshakeType == TlsHandshakeType.ClientHello)
+                    {
+                        // SNI if it exist. Even if we could not parse the hello, we can fall-back to default certificate.
+                        _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
+                    }
+
+                    if (NetEventSource.IsEnabled)
+                    {
+                        NetEventSource.Log.ReceivedFrame(this, _lastFrame);
+                    }
                 }
             }
 
@@ -535,7 +574,7 @@ namespace System.Net.Security
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
-                return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status)))));
+                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status))));
             }
 
             ValueTask t = writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes);
@@ -1054,13 +1093,6 @@ namespace System.Net.Security
                     return Framing.Invalid;
                 }
 
-#if TRACE_VERBOSE
-                if (bytes[1] != 3 && NetEventSource.IsEnabled)
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"WARNING: SslState::DetectFraming() SSL protocol is > 3, trying SSL3 framing in retail = {bytes[1]:x}");
-                }
-#endif
-
                 version = (bytes[1] << 8) | bytes[2];
                 if (version < 0x300 || version >= 0x500)
                 {
@@ -1072,14 +1104,6 @@ namespace System.Net.Security
                 //
                 return Framing.SinceSSL3;
             }
-
-#if TRACE_VERBOSE
-            if ((bytes[0] & 0x80) == 0 && NetEventSource.IsEnabled)
-            {
-                // We have a three-byte header format
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"WARNING: SslState::DetectFraming() SSL v <=2 HELLO has no high bit set for 3 bytes header, we are broken, received byte = {bytes[0]:x}");
-            }
-#endif
 
             if (bytes.Length < 3)
             {

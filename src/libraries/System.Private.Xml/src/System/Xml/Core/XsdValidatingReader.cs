@@ -243,7 +243,7 @@ namespace System.Xml
                 if (_validationState == ValidatingReaderState.OnDefaultAttribute)
                 {
                     Debug.Assert(_cachedNode != null);
-                    string prefix = _validator.GetDefaultAttributePrefix(_cachedNode.Namespace);
+                    string? prefix = _validator.GetDefaultAttributePrefix(_cachedNode.Namespace);
                     if (prefix != null && prefix.Length != 0)
                     {
                         return prefix + ":" + _cachedNode.LocalName;
@@ -424,7 +424,7 @@ namespace System.Xml
                     case XmlNodeType.EndElement:
                         if (_xmlSchemaInfo.ContentType == XmlSchemaContentType.TextOnly)
                         {
-                            Debug.Assert(_xmlSchemaInfo.SchemaType.Datatype != null);
+                            Debug.Assert(_xmlSchemaInfo.SchemaType!.Datatype != null);
                             return _xmlSchemaInfo.SchemaType.Datatype.ValueType;
                         }
 
@@ -433,7 +433,7 @@ namespace System.Xml
                     case XmlNodeType.Attribute:
                         if (_attributePSVI != null && AttributeSchemaInfo.ContentType == XmlSchemaContentType.TextOnly)
                         {
-                            Debug.Assert(AttributeSchemaInfo.SchemaType.Datatype != null);
+                            Debug.Assert(AttributeSchemaInfo.SchemaType!.Datatype != null);
                             return AttributeSchemaInfo.SchemaType.Datatype.ValueType;
                         }
 
@@ -796,11 +796,11 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    return xmlType.ValueConverter.ToBoolean(typedValue);
+                    return xmlType.ValueConverter.ToBoolean(typedValue!);
                 }
                 else
                 {
-                    return XmlUntypedConverter.Untyped.ToBoolean(typedValue);
+                    return XmlUntypedConverter.Untyped.ToBoolean(typedValue!);
                 }
             }
             catch (FormatException e)
@@ -831,11 +831,11 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    return xmlType.ValueConverter.ToDateTime(typedValue);
+                    return xmlType.ValueConverter.ToDateTime(typedValue!);
                 }
                 else
                 {
-                    return XmlUntypedConverter.Untyped.ToDateTime(typedValue);
+                    return XmlUntypedConverter.Untyped.ToDateTime(typedValue!);
                 }
             }
             catch (FormatException e)
@@ -866,11 +866,11 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    return xmlType.ValueConverter.ToDouble(typedValue);
+                    return xmlType.ValueConverter.ToDouble(typedValue!);
                 }
                 else
                 {
-                    return XmlUntypedConverter.Untyped.ToDouble(typedValue);
+                    return XmlUntypedConverter.Untyped.ToDouble(typedValue!);
                 }
             }
             catch (FormatException e)
@@ -901,11 +901,11 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    return xmlType.ValueConverter.ToSingle(typedValue);
+                    return xmlType.ValueConverter.ToSingle(typedValue!);
                 }
                 else
                 {
-                    return XmlUntypedConverter.Untyped.ToSingle(typedValue);
+                    return XmlUntypedConverter.Untyped.ToSingle(typedValue!);
                 }
             }
             catch (FormatException e)
@@ -936,11 +936,11 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    return xmlType.ValueConverter.ToDecimal(typedValue);
+                    return xmlType.ValueConverter.ToDecimal(typedValue!);
                 }
                 else
                 {
-                    return XmlUntypedConverter.Untyped.ToDecimal(typedValue);
+                    return XmlUntypedConverter.Untyped.ToDecimal(typedValue!);
                 }
             }
             catch (FormatException e)
@@ -971,11 +971,11 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    return xmlType.ValueConverter.ToInt32(typedValue);
+                    return xmlType.ValueConverter.ToInt32(typedValue!);
                 }
                 else
                 {
-                    return XmlUntypedConverter.Untyped.ToInt32(typedValue);
+                    return XmlUntypedConverter.Untyped.ToInt32(typedValue!);
                 }
             }
             catch (FormatException e)
@@ -1006,11 +1006,11 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    return xmlType.ValueConverter.ToInt64(typedValue);
+                    return xmlType.ValueConverter.ToInt64(typedValue!);
                 }
                 else
                 {
-                    return XmlUntypedConverter.Untyped.ToInt64(typedValue);
+                    return XmlUntypedConverter.Untyped.ToInt64(typedValue!);
                 }
             }
             catch (FormatException e)
@@ -1084,11 +1084,11 @@ namespace System.Xml
                         typedValue = originalStringValue;
                     }
 
-                    return xmlType.ValueConverter.ChangeType(typedValue, returnType, namespaceResolver);
+                    return xmlType.ValueConverter.ChangeType(typedValue!, returnType, namespaceResolver);
                 }
                 else
                 {
-                    return XmlUntypedConverter.Untyped.ChangeType(typedValue, returnType, namespaceResolver);
+                    return XmlUntypedConverter.Untyped.ChangeType(typedValue!, returnType, namespaceResolver);
                 }
             }
             catch (FormatException e)
@@ -1969,7 +1969,7 @@ namespace System.Xml
             return _coreReader.Value;
         }
 
-        private XmlSchemaType ElementXmlType
+        private XmlSchemaType? ElementXmlType
         {
             get
             {
@@ -2145,7 +2145,7 @@ namespace System.Xml
                 int depth = _coreReader.Depth;
                 _coreReader = GetCachingReader();
                 Debug.Assert(_cachingReader != null);
-                _cachingReader.RecordTextNode(_xmlSchemaInfo.XmlType.ValueConverter.ToString(_atomicValue), _originalAtomicValueString, depth + 1, 0, 0);
+                _cachingReader.RecordTextNode(_xmlSchemaInfo.XmlType!.ValueConverter.ToString(_atomicValue), _originalAtomicValueString, depth + 1, 0, 0);
                 _cachingReader.RecordEndElementNode();
                 _cachingReader.SetToReplayMode();
                 _replayCache = true;
@@ -2357,7 +2357,7 @@ namespace System.Xml
                 if (!_inlineSchemaParser.ParseReaderNode())
                 {
                     _inlineSchemaParser.FinishParsing();
-                    XmlSchema schema = _inlineSchemaParser.XmlSchema;
+                    XmlSchema schema = _inlineSchemaParser.XmlSchema!;
                     _validator.AddSchema(schema);
                     _inlineSchemaParser = null;
                     _validationState = ValidatingReaderState.Read;
@@ -2385,11 +2385,11 @@ namespace System.Xml
                 {
                     if (_validationState == ValidatingReaderState.OnDefaultAttribute)
                     {
-                        XmlSchemaAttribute schemaAttr = _attributePSVI.attributeSchemaInfo.SchemaAttribute;
+                        XmlSchemaAttribute schemaAttr = _attributePSVI.attributeSchemaInfo.SchemaAttribute!;
                         originalStringValue = (schemaAttr.DefaultValue != null) ? schemaAttr.DefaultValue : schemaAttr.FixedValue!;
                     }
 
-                    return ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType, unwrapTypedValue)!;
+                    return ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType!, unwrapTypedValue);
                 }
                 else
                 {
@@ -2418,7 +2418,7 @@ namespace System.Xml
                 if (_validator.CurrentContentType == XmlSchemaContentType.TextOnly)
                 {
                     // if current element is of simple type
-                    object? value = ReturnBoxedValue(ReadTillEndElement(), _xmlSchemaInfo.XmlType, unwrapTypedValue)!;
+                    object? value = ReturnBoxedValue(ReadTillEndElement(), _xmlSchemaInfo.XmlType!, unwrapTypedValue);
                     originalStringValue = _originalAtomicValueString!;
 
                     return value;
@@ -2457,10 +2457,11 @@ namespace System.Xml
 
             // If its an empty element, can have default/fixed value
             if (this.IsEmptyElement)
+
             {
                 if (_xmlSchemaInfo.ContentType == XmlSchemaContentType.TextOnly)
                 {
-                    typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType, unwrapTypedValue);
+                    typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType!, unwrapTypedValue);
                 }
                 else
                 {
@@ -2484,7 +2485,7 @@ namespace System.Xml
                 {
                     if (_xmlSchemaInfo.ContentType == XmlSchemaContentType.TextOnly)
                     {
-                        typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType, unwrapTypedValue);
+                        typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType!, unwrapTypedValue);
                     }
                     else
                     {
@@ -2637,7 +2638,7 @@ namespace System.Xml
                         {
                             // The atomicValue returned is a default value
                             Debug.Assert(_cachingReader != null);
-                            _cachingReader.SwitchTextNodeAndEndElement(_xmlSchemaInfo.XmlType.ValueConverter.ToString(_atomicValue), _originalAtomicValueString);
+                            _cachingReader.SwitchTextNodeAndEndElement(_xmlSchemaInfo.XmlType!.ValueConverter.ToString(_atomicValue), _originalAtomicValueString);
                         }
 
                         goto breakWhile;
@@ -2692,7 +2693,7 @@ namespace System.Xml
                                 if (_xmlSchemaInfo.IsDefault)
                                 {
                                     // The atomicValue returned is a default value
-                                    _cachingReader.SwitchTextNodeAndEndElement(_xmlSchemaInfo.XmlType.ValueConverter.ToString(_atomicValue), _originalAtomicValueString);
+                                    _cachingReader.SwitchTextNodeAndEndElement(_xmlSchemaInfo.XmlType!.ValueConverter.ToString(_atomicValue!), _originalAtomicValueString);
                                 }
 
                                 break;
@@ -2726,7 +2727,7 @@ namespace System.Xml
             }
         }
 
-        private object? ReturnBoxedValue(object? typedValue, XmlSchemaType xmlType, bool unWrap)
+        private object ReturnBoxedValue(object? typedValue, XmlSchemaType xmlType, bool unWrap)
         {
             if (typedValue != null)
             {
@@ -2791,11 +2792,11 @@ namespace System.Xml
             _replayCache = false;
         }
 
-        private string GetOriginalAtomicValueStringOfElement()
+        private string? GetOriginalAtomicValueStringOfElement()
         {
             if (_xmlSchemaInfo.IsDefault)
             {
-                XmlSchemaElement schemaElem = _xmlSchemaInfo.SchemaElement;
+                XmlSchemaElement? schemaElem = _xmlSchemaInfo.SchemaElement;
                 if (schemaElem != null)
                 {
                     return (schemaElem.DefaultValue != null) ? schemaElem.DefaultValue : schemaElem.FixedValue;

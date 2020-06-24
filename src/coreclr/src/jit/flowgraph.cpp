@@ -3070,6 +3070,14 @@ void Compiler::fgComputePreds()
     // Treat the initial block as a jump target
     fgFirstBB->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
 
+    // Under OSR, we may need to specially protect the original method entry.
+    //
+    if (opts.IsOSR() && (fgEntryBB != nullptr) && (fgEntryBB->bbFlags & BBF_IMPORTED))
+    {
+        JITDUMP("OSR: protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+        fgEntryBB->bbRefs = 1;
+    }
+
     for (block = fgFirstBB; block; block = block->bbNext)
     {
         switch (block->bbJumpKind)
@@ -21272,6 +21280,13 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             blockRefs += 1;
         }
 
+        // Under OSR, if we also are keeping the original method entry around,
+        // mark that as implicitly referenced as well.
+        if (opts.IsOSR() && (block == fgEntryBB))
+        {
+            blockRefs += 1;
+        }
+
         /* Check the bbRefs */
         if (checkBBRefs)
         {
@@ -23643,6 +23658,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
             const InlArgInfo& argInfo        = inlArgInfo[argNum];
             const bool        argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
             GenTree* const    argNode        = inlArgInfo[argNum].argNode;
+            unsigned __int64  bbFlags        = inlArgInfo[argNum].bbFlags;
 
             if (argInfo.argHasTmp)
             {
@@ -23705,6 +23721,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     }
 #endif // DEBUG
                 }
+                block->bbFlags |= (bbFlags & BBF_SPLIT_GAINED);
             }
             else if (argInfo.argIsByRefToStructLocal)
             {
@@ -23758,7 +23775,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                         //
                         // Chase through any GT_RET_EXPRs to find the actual argument
                         // expression.
-                        GenTree* actualArgNode = argNode->gtRetExprVal();
+                        GenTree* actualArgNode = argNode->gtRetExprVal(&bbFlags);
 
                         // For case (1)
                         //
@@ -23834,6 +23851,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     // since the box itself will be ignored.
                     gtTryRemoveBoxUpstreamEffects(argNode);
                 }
+
+                block->bbFlags |= (bbFlags & BBF_SPLIT_GAINED);
             }
         }
     }

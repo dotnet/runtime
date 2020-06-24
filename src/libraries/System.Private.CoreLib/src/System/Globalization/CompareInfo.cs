@@ -585,12 +585,10 @@ namespace System.Globalization
                 }
             }
 
-            if (length == 0)
+            if (length == 0 || GlobalizationMode.Invariant)
             {
                 return lengthA - lengthB;
             }
-
-            Debug.Assert(!GlobalizationMode.Invariant);
 
             range -= length;
 

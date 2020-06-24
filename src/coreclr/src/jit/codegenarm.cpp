@@ -1048,7 +1048,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
     // var = call, where call returns a multi-reg return value
     // case is handled separately.
-    if (data->gtSkipReloadOrCopy()->IsMultiRegCall())
+    if (data->gtSkipReloadOrCopy()->IsMultiRegNode())
     {
         genMultiRegStoreToLocal(tree);
     }

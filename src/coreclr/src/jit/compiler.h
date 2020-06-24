@@ -139,53 +139,50 @@ const int BAD_STK_OFFS = 0xBAADF00D; // for LclVarDsc::lvStkOffs
 // HFA info shared by LclVarDsc and fgArgTabEntry
 //------------------------------------------------------------------------
 #ifdef FEATURE_HFA
-enum HfaElemKind : unsigned int
+inline bool IsHfa(CorInfoHFAElemType kind)
 {
-    HFA_ELEM_NONE,
-    HFA_ELEM_FLOAT,
-    HFA_ELEM_DOUBLE,
-    HFA_ELEM_SIMD16
-};
-inline bool IsHfa(HfaElemKind kind)
-{
-    return kind != HFA_ELEM_NONE;
+    return kind != CORINFO_HFA_ELEM_NONE;
 }
-inline var_types HfaTypeFromElemKind(HfaElemKind kind)
+inline var_types HfaTypeFromElemKind(CorInfoHFAElemType kind)
 {
     switch (kind)
     {
-        case HFA_ELEM_FLOAT:
+        case CORINFO_HFA_ELEM_FLOAT:
             return TYP_FLOAT;
-        case HFA_ELEM_DOUBLE:
+        case CORINFO_HFA_ELEM_DOUBLE:
             return TYP_DOUBLE;
 #ifdef FEATURE_SIMD
-        case HFA_ELEM_SIMD16:
+        case CORINFO_HFA_ELEM_VECTOR64:
+            return TYP_SIMD8;
+        case CORINFO_HFA_ELEM_VECTOR128:
             return TYP_SIMD16;
 #endif
-        case HFA_ELEM_NONE:
+        case CORINFO_HFA_ELEM_NONE:
             return TYP_UNDEF;
         default:
             assert(!"Invalid HfaElemKind");
             return TYP_UNDEF;
     }
 }
-inline HfaElemKind HfaElemKindFromType(var_types type)
+inline CorInfoHFAElemType HfaElemKindFromType(var_types type)
 {
     switch (type)
     {
         case TYP_FLOAT:
-            return HFA_ELEM_FLOAT;
+            return CORINFO_HFA_ELEM_FLOAT;
         case TYP_DOUBLE:
-            return HFA_ELEM_DOUBLE;
+            return CORINFO_HFA_ELEM_DOUBLE;
 #ifdef FEATURE_SIMD
+        case TYP_SIMD8:
+            return CORINFO_HFA_ELEM_VECTOR64;
         case TYP_SIMD16:
-            return HFA_ELEM_SIMD16;
+            return CORINFO_HFA_ELEM_VECTOR128;
 #endif
         case TYP_UNDEF:
-            return HFA_ELEM_NONE;
+            return CORINFO_HFA_ELEM_NONE;
         default:
             assert(!"Invalid HFA Type");
-            return HFA_ELEM_NONE;
+            return CORINFO_HFA_ELEM_NONE;
     }
 }
 #endif // FEATURE_HFA
@@ -484,8 +481,8 @@ public:
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
 
 #ifdef FEATURE_HFA
-    HfaElemKind _lvHfaElemKind : 2; // What kind of an HFA this is (HFA_ELEM_NONE if it is not an HFA).
-#endif                              // FEATURE_HFA
+    CorInfoHFAElemType _lvHfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
+#endif                                     // FEATURE_HFA
 
 #ifdef DEBUG
     // TODO-Cleanup: See the note on lvSize() - this flag is only in use by asserts that are checking for struct
@@ -591,18 +588,19 @@ public:
 #elif defined(TARGET_ARM64)
         switch (_lvHfaElemKind)
         {
-            case HFA_ELEM_NONE:
+            case CORINFO_HFA_ELEM_NONE:
                 assert(!"lvHfaSlots called for non-HFA");
                 break;
-            case HFA_ELEM_FLOAT:
+            case CORINFO_HFA_ELEM_FLOAT:
                 assert((lvExactSize % 4) == 0);
                 slots = lvExactSize >> 2;
                 break;
-            case HFA_ELEM_DOUBLE:
+            case CORINFO_HFA_ELEM_DOUBLE:
+            case CORINFO_HFA_ELEM_VECTOR64:
                 assert((lvExactSize % 8) == 0);
                 slots = lvExactSize >> 3;
                 break;
-            case HFA_ELEM_SIMD16:
+            case CORINFO_HFA_ELEM_VECTOR128:
                 assert((lvExactSize % 16) == 0);
                 slots = lvExactSize >> 4;
                 break;
@@ -919,7 +917,10 @@ public:
     void SetHfaType(var_types type)
     {
 #ifdef FEATURE_HFA
-        _lvHfaElemKind = HfaElemKindFromType(type);
+        CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
+        _lvHfaElemKind              = elemKind;
+        // Ensure we've allocated enough bits.
+        assert(_lvHfaElemKind == elemKind);
 #endif // FEATURE_HFA
     }
 
@@ -1447,7 +1448,7 @@ public:
     bool _isSplit : 1; // True when this argument is split between the registers and OutArg area
 #endif                 // FEATURE_ARG_SPLIT
 #ifdef FEATURE_HFA
-    HfaElemKind _hfaElemKind : 2; // What kind of an HFA this is (HFA_ELEM_NONE if it is not an HFA).
+    CorInfoHFAElemType _hfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
 #endif
 
     bool isLateArg()
@@ -1610,7 +1611,10 @@ public:
             if (!IsHfaArg())
             {
                 // We haven't previously set this; do so now.
-                _hfaElemKind = HfaElemKindFromType(type);
+                CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
+                _hfaElemKind                = elemKind;
+                // Ensure we've allocated enough bits.
+                assert(_hfaElemKind == elemKind);
                 if (isPassedInRegisters())
                 {
                     numRegs = numHfaRegs;
@@ -2126,10 +2130,11 @@ public:
 #endif // ARM_SOFTFP
 
     //-------------------------------------------------------------------------
-    // Functions to handle homogeneous floating-point aggregates (HFAs) in ARM.
+    // Functions to handle homogeneous floating-point aggregates (HFAs) in ARM/ARM64.
     // HFAs are one to four element structs where each element is the same
-    // type, either all float or all double. They are treated specially
-    // in the ARM Procedure Call Standard, specifically, they are passed in
+    // type, either all float or all double. We handle HVAs (one to four elements of
+    // vector types) uniformly with HFAs. HFAs are treated specially
+    // in the ARM/ARM64 Procedure Call Standards, specifically, they are passed in
     // floating-point registers instead of the general purpose registers.
     //
 
@@ -2681,7 +2686,7 @@ public:
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
-    GenTree* gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type);
+    GenTree* gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, unsigned __int64 bbFlags);
 
     GenTree* gtNewFieldRef(var_types typ, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
@@ -2910,7 +2915,7 @@ public:
     // Get the element handle for an array of ref type.
     CORINFO_CLASS_HANDLE gtGetArrayElementClassHandle(GenTree* array);
     // Get a class handle from a helper call argument
-    CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array, GenTree** handleTree = nullptr);
+    CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array);
     // Get the class handle for a field
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
     // Check if this tree is a gc static base helper call
@@ -3108,6 +3113,7 @@ public:
     bool lvaVarDoNotEnregister(unsigned varNum);
 
     bool lvaEnregEHVars;
+    bool lvaEnregMultiRegVars;
 
 #ifdef DEBUG
     // Reasons why we can't enregister.  Some of these correspond to debug properties of local vars.
@@ -3776,7 +3782,7 @@ protected:
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr = false);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
     GenTree* addRangeCheckIfNeeded(
-        NamedIntrinsic intrinsic, GenTree* lastOp, bool mustExpand, int immLowerBound, int immUpperBound);
+        NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
 
 #ifdef TARGET_XARCH
     GenTree* impBaseIntrinsic(NamedIntrinsic        intrinsic,
@@ -4192,10 +4198,11 @@ private:
                            InlineCandidateInfo**  ppInlineCandidateInfo,
                            InlineResult*          inlineResult);
 
-    void impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
-                                GenTree*      curArgVal,
-                                unsigned      argNum,
-                                InlineResult* inlineResult);
+    void impInlineRecordArgInfo(InlineInfo*      pInlineInfo,
+                                GenTree*         curArgVal,
+                                unsigned         argNum,
+                                unsigned __int64 bbFlags,
+                                InlineResult*    inlineResult);
 
     void impInlineInitVars(InlineInfo* pInlineInfo);
 
@@ -4600,7 +4607,7 @@ public:
                                       VARSET_VALARG_TP     keepAliveVars,
                                       LclVarDsc&           varDsc,
                                       GenTreeLclVarCommon* node);
-    void fgComputeLifeUntrackedLocal(VARSET_TP&           life,
+    bool fgComputeLifeUntrackedLocal(VARSET_TP&           life,
                                      VARSET_VALARG_TP     keepAliveVars,
                                      LclVarDsc&           varDsc,
                                      GenTreeLclVarCommon* lclVarNode);
@@ -9169,6 +9176,38 @@ public:
 #endif // FEATURE_MULTIREG_RET
     }
 
+    // Returns true if the method returns a value in more than one return register,
+    // it should replace/be  merged with compMethodReturnsMultiRegRetType when #36868 is fixed.
+    // The difference from original `compMethodReturnsMultiRegRetType` is in ARM64 SIMD16 handling,
+    // this method correctly returns false for it (it is passed as HVA), when the original returns true.
+    bool compMethodReturnsMultiRegRegTypeAlternate()
+    {
+#if FEATURE_MULTIREG_RET
+#if defined(TARGET_X86)
+        // On x86 only 64-bit longs are returned in multiple registers
+        return varTypeIsLong(info.compRetNativeType);
+#else // targets: X64-UNIX, ARM64 or ARM32
+#if defined(TARGET_ARM64)
+        // TYP_SIMD16 is returned in one register.
+        if (info.compRetNativeType == TYP_SIMD16)
+        {
+            return false;
+        }
+#endif
+        // On all other targets that support multireg return values:
+        // Methods returning a struct in multiple registers have a return value of TYP_STRUCT.
+        // Such method's compRetNativeType is TYP_STRUCT without a hidden RetBufArg
+        return varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM);
+#endif // TARGET_XXX
+
+#else // not FEATURE_MULTIREG_RET
+
+        // For this architecture there are no multireg returns
+        return false;
+
+#endif // FEATURE_MULTIREG_RET
+    }
+
     // Returns true if the method being compiled returns a value
     bool compMethodHasRetVal()
     {
@@ -9282,7 +9321,11 @@ public:
     static void compStartup();  // One-time initialization
     static void compShutdown(); // One-time finalization
 
-    void compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo);
+    void compInit(ArenaAllocator*       pAlloc,
+                  CORINFO_METHOD_HANDLE methodHnd,
+                  COMP_HANDLE           compHnd,
+                  CORINFO_METHOD_INFO*  methodInfo,
+                  InlineInfo*           inlineInfo);
     void compDone();
 
     static void compDisplayStaticSizes(FILE* fout);
@@ -9305,10 +9348,7 @@ public:
     void compDoComponentUnitTestsOnce();
 #endif // DEBUG
 
-    int compCompile(CORINFO_METHOD_HANDLE methodHnd,
-                    CORINFO_MODULE_HANDLE classPtr,
-                    COMP_HANDLE           compHnd,
-                    CORINFO_METHOD_INFO*  methodInfo,
+    int compCompile(CORINFO_MODULE_HANDLE classPtr,
                     void**                methodCodePtr,
                     ULONG*                methodCodeSize,
                     JitFlags*             compileFlags);

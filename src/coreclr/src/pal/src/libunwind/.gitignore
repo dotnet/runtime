@@ -4,6 +4,7 @@
 *.lo
 *~
 *.pc
+bin
 
 .libs/
 .deps/
@@ -15,6 +16,7 @@ Makefile.in
 INSTALL
 aclocal.m4
 autom4te.cache/
+aux
 config.log
 config.status
 config/

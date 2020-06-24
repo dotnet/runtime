@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
 {
     public class ParentPathSegment : IPathSegment
     {
-        private static readonly string LiteralParent = "..";
+        private const string LiteralParent = "..";
 
         public bool CanProduceStem { get { return false; } }
 

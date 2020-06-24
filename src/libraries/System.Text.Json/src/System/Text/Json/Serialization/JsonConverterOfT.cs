@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization
 {
@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization
         {
             // Today only typeof(object) can have polymorphic writes.
             // In the future, this will be check for !IsSealed (and excluding value types).
-            CanBePolymorphic = TypeToConvert == typeof(object);
+            CanBePolymorphic = TypeToConvert == JsonClassInfo.ObjectType;
             IsValueType = TypeToConvert.IsValueType;
             HandleNull = IsValueType;
             CanBeNull = !IsValueType || Nullable.GetUnderlyingType(TypeToConvert) != null;
@@ -74,8 +74,6 @@ namespace System.Text.Json.Serialization
         /// Is the converter built-in.
         /// </summary>
         internal bool IsInternalConverter { get; set; }
-
-        internal readonly EqualityComparer<T> _defaultComparer = EqualityComparer<T>.Default;
 
         // This non-generic API is sealed as it just forwards to the generic version.
         internal sealed override bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
@@ -219,7 +217,7 @@ namespace System.Text.Json.Serialization
                     VerifyRead(
                         state.Current.OriginalTokenType,
                         state.Current.OriginalDepth,
-                        bytesConsumed : 0,
+                        bytesConsumed: 0,
                         isValueConverter: false,
                         ref reader);
 
@@ -231,7 +229,14 @@ namespace System.Text.Json.Serialization
             return success;
         }
 
-        internal bool TryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        internal override sealed bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
+        {
+            bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T typedValue);
+            value = typedValue;
+            return success;
+        }
+
+        internal bool TryWrite(Utf8JsonWriter writer, in T value, JsonSerializerOptions options, ref WriteStack state)
         {
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
@@ -260,7 +265,7 @@ namespace System.Text.Json.Serialization
                 }
 
                 Type type = value.GetType();
-                if (type == typeof(object))
+                if (type == JsonClassInfo.ObjectType)
                 {
                     writer.WriteStartObject();
                     writer.WriteEndObject();
