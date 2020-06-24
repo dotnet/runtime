@@ -171,9 +171,16 @@ namespace System.Diagnostics
 
         internal string BuildArguments()
         {
-            var stringBuilder = new StringBuilder();
-            AppendArguments(stringBuilder);
-            return stringBuilder.ToString();
+            if (_argumentList == null || ArgumentList.Count == 0)
+            {
+                return Arguments;
+            }
+            else
+            {
+                var stringBuilder = new StringBuilder();
+                AppendArguments(stringBuilder);
+                return stringBuilder.ToString();
+            }
         }
 
         internal void AppendArguments(StringBuilder stringBuilder)
