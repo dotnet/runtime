@@ -1,32 +1,4 @@
 <Project>
-  <ItemGroup>
-    <!-- Add a reference to Microsoft.DiaSymReader.Native if one does not already exist. -->
-    <PackageReference Include="Microsoft.DiaSymReader.Native"
-                      Exclude="@(PackageReference)"
-                      Version="$(MicrosoftDiaSymReaderNativeVersion)"
-                      IsImplicitlyDefined="true"
-                      ExcludeAssets="all" />
-    <!-- Generate the PkgMicrosoft_DiaSymReader_Native property no matter who added the reference. -->
-    <PackageReference Update="Microsoft.DiaSymReader.Native"
-                      GeneratePathProperty="true" />
-  </ItemGroup>
-
-  <PropertyGroup>
-    <_hostArch>$(TargetArchitecture)</_hostArch>
-    <_longNameTargetArch>$(TargetArchitecture)</_longNameTargetArch>
-    <_hostArch Condition="'$(_hostArch)' == 'x64'">amd64</_hostArch>
-    <_longNameTargetArch Condition="'$(_longNameTargetArch)' == 'x64'">amd64</_longNameTargetArch>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' == 'Windows_NT'">
-    <_hostArch>x86</_hostArch>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' != 'Windows_NT'">
-    <_hostArch>amd64</_hostArch>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm64' AND '$(BuildArchitecture)' != 'arm64'">
-    <_hostArch>amd64</_hostArch>
-  </PropertyGroup>
-
   <Target Name="AddLongNameDacToPlatformManifest" DependsOnTargets="GetAssemblyVersion" BeforeTargets="GetFilesToPackage">
     <ItemGroup>
       <PlatformManifestFileEntry Include="mscordaccore_$(_hostArch)_$(_longNameTargetArch)_$(FileVersion).dll" />

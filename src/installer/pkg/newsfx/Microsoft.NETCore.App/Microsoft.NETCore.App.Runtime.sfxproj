@@ -4,7 +4,9 @@
 
   <PropertyGroup>
     <PlatformPackageType>RuntimePack</PlatformPackageType>
-    <SharedFrameworkArchiveName>dotnet-runtime</SharedFrameworkArchiveName>
+    <SharedFrameworkArchiveName>dotnet-runtime-internal</SharedFrameworkArchiveName>
+    <SharedFrameworkInstallerName>dotnet-runtime</SharedFrameworkInstallerName>
+    <SharedFrameworkSymbolsArchiveName>dotnet-runtime-symbols</SharedFrameworkSymbolsArchiveName>
     <VSInsertionShortComponentName>NetCore.SharedFramework</VSInsertionShortComponentName>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <GetSharedFrameworkFilesForReadyToRunDependsOn>
@@ -32,6 +34,11 @@
 
   <ItemGroup>
     <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(Version)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)" PackOnly="true" />
   </ItemGroup>
 
   <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
@@ -75,16 +82,20 @@
     </ItemGroup>
   </Target>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'Windows_NT'">
+    <_diaSymArch Condition="'$(_hostArch)' != ''">$(_hostArch)</_diaSymArch>
+    <_diaSymReaderPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymArch).dll</_diaSymReaderPath>
+    <_diaSymReaderPathIfExists Condition="Exists('$(_diaSymReaderPath)')">$(_diaSymReaderPath)</_diaSymReaderPathIfExists>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(_diaSymReaderPathIfExists)' != ''">
+    <NativeRuntimeAsset Include="$(_diaSymReaderPathIfExists)" />
+  </ItemGroup>
+
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
-    <PropertyGroup>
-      <_diaSymArch Condition="'$(_hostArch)' != ''">$(_hostArch)</_diaSymArch>
-      <_diaSymReaderPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymArch).dll</_diaSymReaderPath>
-      <_diaSymReaderPathIfExists Condition="Exists('$(_diaSymReaderPath)')">$(_diaSymReaderPath)</_diaSymReaderPathIfExists>
-    </PropertyGroup>
-
     <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
       <_crossTargetJit Include="@(CoreCLRCrossTargetFiles)" Condition="'%(FileName)' == '$(LibraryFilePrefix)clrjit' and '%(Extension)' == '$(LibraryFileExtension)'" />
       <_clrjit Include="@(RuntimeFiles)" Condition="'%(FileName)' == '$(LibraryFilePrefix)clrjit' and '%(Extension)' == '$(LibraryFileExtension)'" />
