@@ -178,7 +178,7 @@ namespace System.Diagnostics
 
         internal void AppendArguments(StringBuilder stringBuilder)
         {
-            if (ArgumentList.Count > 0)
+            if (_argumentList != null && ArgumentList.Count > 0)
             {
                 foreach (string argument in ArgumentList)
                 {
