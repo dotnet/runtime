@@ -105,35 +105,7 @@ endif(CLR_CMAKE_TARGET_OSX)
 
 # On OSX and *BSD, we use the libunwind that's part of the OS
 if(CLR_CMAKE_TARGET_FREEBSD)
-    if(CLR_CMAKE_HOST_ARCH_ARM)
-      find_library(UNWIND_ARCH NAMES unwind-arm)
-    endif()
-
-    if(CLR_CMAKE_HOST_ARCH_ARM64)
-      find_library(UNWIND_ARCH NAMES unwind-aarch64)
-    endif()
-
-    if(CLR_CMAKE_HOST_ARCH_AMD64)
-      find_library(UNWIND_ARCH NAMES unwind-x86_64)
-    endif()
-
-    if(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
-       set(UNWIND_LIBS ${UNWIND_ARCH})
-    endif()
-
-    find_library(UNWIND_GENERIC NAMES unwind-generic)
-
-    if(NOT UNWIND_GENERIC STREQUAL UNWIND_GENERIC-NOTFOUND)
-      set(UNWIND_LIBS ${UNWIND_LIBS} ${UNWIND_GENERIC})
-    endif()
-
-    find_library(UNWIND NAMES unwind)
-
-    if(UNWIND STREQUAL UNWIND-NOTFOUND)
-      message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8-dev or libunwind-devel.")
-    endif()
-
-    set(UNWIND_LIBS ${UNWIND_LIBS} ${UNWIND})
+    find_unwind_libs(UNWIND_LIBS)
 
     LIST(APPEND CORECLR_LIBRARIES
       ${UNWIND_LIBS}
@@ -141,11 +113,11 @@ if(CLR_CMAKE_TARGET_FREEBSD)
 endif(CLR_CMAKE_TARGET_FREEBSD)
 
 if(CLR_CMAKE_TARGET_NETBSD)
-  find_library(KVM kvm)
+    find_library(KVM kvm)
 
-  LIST(APPEND CORECLR_LIBRARIES
-    ${KVM}
-  )
+    LIST(APPEND CORECLR_LIBRARIES
+      ${KVM}
+    )
 endif(CLR_CMAKE_TARGET_NETBSD)
 
 if(NOT CLR_CMAKE_TARGET_WIN32)

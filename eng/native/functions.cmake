@@ -75,6 +75,39 @@ function(get_include_directories_asm IncludeDirectories)
     set(${IncludeDirectories} ${INC_DIRECTORIES} PARENT_SCOPE)
 endfunction(get_include_directories_asm)
 
+# Finds and returns unwind libs
+function(find_unwind_libs UnwindLibs)
+    if(CLR_CMAKE_HOST_ARCH_ARM)
+      find_library(UNWIND_ARCH NAMES unwind-arm)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_ARM64)
+      find_library(UNWIND_ARCH NAMES unwind-aarch64)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_AMD64)
+      find_library(UNWIND_ARCH NAMES unwind-x86_64)
+    endif()
+
+    if(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
+       set(UNWIND_LIBS ${UNWIND_ARCH})
+    endif()
+
+    find_library(UNWIND_GENERIC NAMES unwind-generic)
+
+    if(NOT UNWIND_GENERIC STREQUAL UNWIND_GENERIC-NOTFOUND)
+      set(UNWIND_LIBS ${UNWIND_LIBS} ${UNWIND_GENERIC})
+    endif()
+
+    find_library(UNWIND NAMES unwind)
+
+    if(UNWIND STREQUAL UNWIND-NOTFOUND)
+      message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8-dev or libunwind-devel.")
+    endif()
+
+    set(${UnwindLibs} ${UNWIND_LIBS} ${UNWIND} PARENT_SCOPE)
+endfunction(get_include_directories_asm)
+
 # Set the passed in RetSources variable to the list of sources with added current source directory
 # to form absolute paths.
 # The parameters after the RetSources are the input files.
