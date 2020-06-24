@@ -6219,6 +6219,63 @@ void emitter::emitIns_R_R_R(
             fmt = IF_DV_3A;
             break;
 
+        case INS_sqdmlal:
+        case INS_sqdmlsl:
+        case INS_sqdmull:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            if (insOptsAnyArrangement(opt))
+            {
+                // Vector operation
+                assert(size == EA_8BYTE);
+                assert((opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
+                fmt = IF_DV_3A;
+            }
+            else
+            {
+                // Scalar operation
+                assert(insOptsNone(opt));
+                assert((size == EA_2BYTE) || (size == EA_4BYTE));
+                fmt = IF_DV_3E;
+            }
+            break;
+
+        case INS_sqdmulh:
+        case INS_sqrdmlah:
+        case INS_sqrdmlsh:
+        case INS_sqrdmulh:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            if (insOptsAnyArrangement(opt))
+            {
+                // Vector operation
+                assert(isValidVectorDatasize(size));
+                elemsize = optGetElemsize(opt);
+                assert((elemsize == EA_2BYTE) || (elemsize == EA_4BYTE));
+                fmt = IF_DV_3A;
+            }
+            else
+            {
+                // Scalar operation
+                assert(insOptsNone(opt));
+                assert((size == EA_2BYTE) || (size == EA_4BYTE));
+                fmt = IF_DV_3E;
+            }
+            break;
+
+        case INS_sqdmlal2:
+        case INS_sqdmlsl2:
+        case INS_sqdmull2:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_16BYTE);
+            assert((opt == INS_OPTS_8H) || (opt == INS_OPTS_4S));
+            fmt = IF_DV_3A;
+            break;
+
         case INS_pmul:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
@@ -6463,18 +6520,82 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert(size == EA_8BYTE);
             assert((opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
             elemsize = optGetElemsize(opt);
-            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
-            // Restricted to V0-V15 when element size is H
+            // Restricted to V0-V15 when element size is H.
             if ((elemsize == EA_2BYTE) && ((genRegMask(reg3) & RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
             {
                 assert(!"Invalid reg3");
             }
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
             fmt = IF_DV_3AI;
+            break;
+
+        case INS_sqdmlal:
+        case INS_sqdmlsl:
+        case INS_sqdmull:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            if (insOptsAnyArrangement(opt))
+            {
+                // Vector operation
+                assert(size == EA_8BYTE);
+                assert((opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
+                elemsize = optGetElemsize(opt);
+                fmt      = IF_DV_3AI;
+            }
+            else
+            {
+                // Scalar operation
+                assert(insOptsNone(opt));
+                assert((size == EA_2BYTE) || (size == EA_4BYTE));
+                elemsize = size;
+                fmt      = IF_DV_3EI;
+            }
+            // Restricted to V0-V15 when element size is H.
+            if ((elemsize == EA_2BYTE) && ((genRegMask(reg3) & RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
+            {
+                assert(!"Invalid reg3");
+            }
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+            break;
+
+        case INS_sqdmulh:
+        case INS_sqrdmlah:
+        case INS_sqrdmlsh:
+        case INS_sqrdmulh:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            if (insOptsAnyArrangement(opt))
+            {
+                // Vector operation
+                assert(isValidVectorDatasize(size));
+                elemsize = optGetElemsize(opt);
+                assert((elemsize == EA_2BYTE) || (elemsize == EA_4BYTE));
+                fmt = IF_DV_3AI;
+            }
+            else
+            {
+                // Scalar operation
+                assert(insOptsNone(opt));
+                assert((size == EA_2BYTE) || (size == EA_4BYTE));
+                elemsize = size;
+                fmt      = IF_DV_3EI;
+            }
+            // Restricted to V0-V15 when element size is H.
+            if ((elemsize == EA_2BYTE) && ((genRegMask(reg3) & RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
+            {
+                assert(!"Invalid reg3");
+            }
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
             break;
 
         case INS_smlal2:
         case INS_smlsl2:
         case INS_smull2:
+        case INS_sqdmlal2:
+        case INS_sqdmlsl2:
+        case INS_sqdmull2:
         case INS_umlal2:
         case INS_umlsl2:
         case INS_umull2:
