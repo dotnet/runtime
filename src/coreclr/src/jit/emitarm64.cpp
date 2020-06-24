@@ -865,10 +865,25 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_3E: // DV_3E   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm  (scalar)
+            assert(isValidVectorElemsize(id->idOpSize()));
             assert(insOptsNone(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
+            elemsize = id->idOpSize();
+            index    = emitGetInsSC(id);
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, index));
+            break;
+
+        case IF_DV_3EI: // DV_3EI ........XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by element)
+            assert(isValidVectorElemsize(id->idOpSize()));
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            assert(isVectorRegister(id->idReg3()));
+            elemsize = id->idOpSize();
+            index    = emitGetInsSC(id);
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, index));
             break;
 
         case IF_DV_3F: // DV_3F   ...........mmmmm ......nnnnnddddd      Vd Vn Vm
