@@ -630,6 +630,22 @@ mono_wasm_current_bp_id (void)
 	return evt->id;
 }
 
+static MonoObject*
+get_object_from_id (int objectId)
+{
+	ObjRef *ref = (ObjRef *)g_hash_table_lookup (objrefs, GINT_TO_POINTER (objectId));
+	if (!ref) {
+		DEBUG_PRINTF (2, "get_object_from_id !ref: %d\n", objectId);
+		return NULL;
+	}
+
+	MonoObject *obj = mono_gchandle_get_target_internal (ref->handle);
+	if (!obj)
+		DEBUG_PRINTF (2, "get_object_from_id !obj: %d\n", objectId);
+
+	return obj;
+}
+
 static gboolean
 list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 {
@@ -1131,17 +1147,10 @@ static gboolean
 describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis, gboolean expandValueType)
 {
 	DEBUG_PRINTF (2, "describe_object_properties %llu\n", objectId);
-	ObjRef *ref = (ObjRef *)g_hash_table_lookup (objrefs, GINT_TO_POINTER (objectId));
-	if (!ref) {
-		DEBUG_PRINTF (2, "describe_object_properties !ref\n");
-		return FALSE;
-	}
 
-	MonoObject *obj = mono_gchandle_get_target_internal (ref->handle);
-	if (!obj) {
-		DEBUG_PRINTF (2, "describe_object_properties !obj\n");
+	MonoObject *obj = get_object_from_id (objectId);
+	if (!obj)
 		return FALSE;
-	}
 
 	if (m_class_is_delegate (mono_object_class (obj))) {
 		// delegates get the same id format as regular objects
@@ -1156,17 +1165,9 @@ describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis, gboolea
 static gboolean
 invoke_getter_on_object (guint64 objectId, const char *name)
 {
-	ObjRef *ref = (ObjRef *)g_hash_table_lookup (objrefs, GINT_TO_POINTER (objectId));
-	if (!ref) {
-		DEBUG_PRINTF (1, "invoke_getter_on_object no objRef found for id %llu\n", objectId);
+	MonoObject *obj = get_object_from_id (objectId);
+	if (!obj)
 		return FALSE;
-	}
-
-	MonoObject *obj = mono_gchandle_get_target_internal (ref->handle);
-	if (!obj) {
-		DEBUG_PRINTF (1, "invoke_getter_on_object !obj\n");
-		return FALSE;
-	}
 
 	MonoClass *klass = mono_object_class (obj);
 	gpointer iter = NULL;
@@ -1191,17 +1192,11 @@ describe_array_values (guint64 objectId, int startIdx, int count, gboolean expan
 
 	int esize;
 	gpointer elem;
-	ObjRef *ref = (ObjRef *)g_hash_table_lookup (objrefs, GINT_TO_POINTER (objectId));
-	if (!ref) {
+	MonoArray *arr = (MonoArray*) get_object_from_id (objectId);
+	if (!arr)
 		return FALSE;
-	}
-	MonoArray *arr = (MonoArray *)mono_gchandle_get_target_internal (ref->handle);
-	MonoObject *obj = &arr->obj;
-	if (!obj) {
-		return FALSE;
-	}
 
-	MonoClass *klass = mono_object_class (obj);
+	MonoClass *klass = mono_object_class (arr);
 	MonoTypeEnum type = m_class_get_byval_arg (klass)->type;
 	if (type != MONO_TYPE_SZARRAY && type != MONO_TYPE_ARRAY) {
 		DEBUG_PRINTF (1, "describe_array_values: object is not an array. type: 0x%x\n", type);
