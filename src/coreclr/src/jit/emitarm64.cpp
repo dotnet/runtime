@@ -4269,23 +4269,40 @@ void emitter::emitIns_R_R(
             fmt = IF_DV_2M;
             break;
 
+        case INS_sqxtn:
+        case INS_sqxtun:
+        case INS_uqxtn:
+            if (insOptsNone(opt))
+            {
+                // Scalar operation
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                assert(isValidVectorElemsize(size));
+                assert(size != EA_8BYTE); // The encoding size = 11 is reserved.
+                fmt = IF_DV_2L;
+                break;
+            }
+            __fallthrough;
+
         case INS_xtn:
+            // Vector operation
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(size == EA_8BYTE);
+            assert(isValidArrangement(size, opt));
+            assert(opt != INS_OPTS_1D); // The encoding size = 11, Q = x is reserved
+            fmt = IF_DV_2M;
+            break;
+
+        case INS_sqxtn2:
+        case INS_sqxtun2:
+        case INS_uqxtn2:
         case INS_xtn2:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
-            assert(isValidVectorDatasize(size));
+            assert(size == EA_16BYTE);
             assert(isValidArrangement(size, opt));
-            elemsize = optGetElemsize(opt);
-            // size is determined by instruction
-            if (ins == INS_xtn)
-            {
-                assert(size == EA_8BYTE);
-            }
-            else // ins == INS_xtn2
-            {
-                assert(size == EA_16BYTE);
-            }
-            assert(elemsize != EA_8BYTE); // Narrowing must not end with 8 byte data
+            assert(opt != INS_OPTS_2D); // The encoding size = 11, Q = x is reserved
             fmt = IF_DV_2M;
             break;
 
