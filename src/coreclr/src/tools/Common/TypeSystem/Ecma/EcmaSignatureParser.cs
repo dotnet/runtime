@@ -268,6 +268,8 @@ namespace Internal.TypeSystem.Ecma
                 Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)SignatureCallingConvention.StdCall);
                 Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)SignatureCallingConvention.ThisCall);
                 Debug.Assert((int)MethodSignatureFlags.CallingConventionVarargs == (int)SignatureCallingConvention.VarArgs);
+                // [TODO] Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionAsModOpt == (int)SignatureCallingConvention.Unmanaged);
+                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionAsModOpt == 9);
 
                 flags = (MethodSignatureFlags)signatureCallConv;
             }

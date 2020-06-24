@@ -2234,6 +2234,7 @@ namespace System.Reflection.Metadata
         ThisCall = (byte)3,
         FastCall = (byte)4,
         VarArgs = (byte)5,
+        Unmanaged = (byte)9,
     }
     public partial struct SignatureHeader : System.IEquatable<System.Reflection.Metadata.SignatureHeader>
     {

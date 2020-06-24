@@ -7550,6 +7550,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         /* Get the call site sig */
         eeGetSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, &calliSig);
 
+        if (calliSig.callConv == CORINFO_CALLCONV_UNMANAGED)
+        {
+            BADCODE("'Unmanaged' calling convention not supported");
+        }
+
         callRetTyp = JITtype2varType(calliSig.retType);
 
         call = impImportIndirectCall(&calliSig, ilOffset);
