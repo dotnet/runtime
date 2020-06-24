@@ -294,7 +294,7 @@ namespace System.Net.Http
             }
         }
 
-        public Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Uri? proxyUri, bool doRequestAuth, bool isProxyConnect, CancellationToken cancellationToken)
+        public ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Uri? proxyUri, bool async, bool doRequestAuth, bool isProxyConnect, CancellationToken cancellationToken)
         {
             HttpConnectionKey key = GetConnectionKey(request, proxyUri, isProxyConnect);
 
@@ -330,19 +330,19 @@ namespace System.Net.Http
                 // that need to be closed.
             }
 
-            return pool.SendAsync(request, doRequestAuth, cancellationToken);
+            return pool.SendAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> SendProxyConnectAsync(HttpRequestMessage request, Uri proxyUri, CancellationToken cancellationToken)
+        public ValueTask<HttpResponseMessage> SendProxyConnectAsync(HttpRequestMessage request, Uri proxyUri, bool async, CancellationToken cancellationToken)
         {
-            return SendAsyncCore(request, proxyUri, doRequestAuth: false, isProxyConnect: true, cancellationToken);
+            return SendAsyncCore(request, proxyUri, async, doRequestAuth: false, isProxyConnect: true, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             if (_proxy == null)
             {
-                return SendAsyncCore(request, null, doRequestAuth, isProxyConnect: false, cancellationToken);
+                return SendAsyncCore(request, null, async, doRequestAuth, isProxyConnect: false, cancellationToken);
             }
 
             // Do proxy lookup.
@@ -358,7 +358,7 @@ namespace System.Net.Http
 
                         if (multiProxy.ReadNext(out proxyUri, out bool isFinalProxy) && !isFinalProxy)
                         {
-                            return SendAsyncMultiProxy(request, doRequestAuth, multiProxy, proxyUri, cancellationToken);
+                            return SendAsyncMultiProxy(request, async, doRequestAuth, multiProxy, proxyUri, cancellationToken);
                         }
                     }
                     else
@@ -379,18 +379,19 @@ namespace System.Net.Http
                 throw new NotSupportedException(SR.net_http_invalid_proxy_scheme);
             }
 
-            return SendAsyncCore(request, proxyUri, doRequestAuth, isProxyConnect: false, cancellationToken);
+            return SendAsyncCore(request, proxyUri, async, doRequestAuth, isProxyConnect: false, cancellationToken);
         }
 
         /// <summary>
         /// Iterates a request over a set of proxies until one works, or all proxies have failed.
         /// </summary>
         /// <param name="request">The request message.</param>
+        /// <param name="async">Whether to execute the request synchronously or asynchronously.</param>
         /// <param name="doRequestAuth">Whether to perform request authentication.</param>
         /// <param name="multiProxy">The set of proxies to use.</param>
         /// <param name="firstProxy">The first proxy try.</param>
         /// <param name="cancellationToken">The cancellation token to use for the operation.</param>
-        private async Task<HttpResponseMessage> SendAsyncMultiProxy(HttpRequestMessage request, bool doRequestAuth, MultiProxy multiProxy, Uri? firstProxy, CancellationToken cancellationToken)
+        private async ValueTask<HttpResponseMessage> SendAsyncMultiProxy(HttpRequestMessage request, bool async, bool doRequestAuth, MultiProxy multiProxy, Uri? firstProxy, CancellationToken cancellationToken)
         {
             HttpRequestException rethrowException;
 
@@ -398,7 +399,7 @@ namespace System.Net.Http
             {
                 try
                 {
-                    return await SendAsyncCore(request, firstProxy, doRequestAuth, isProxyConnect: false, cancellationToken).ConfigureAwait(false);
+                    return await SendAsyncCore(request, firstProxy, async, doRequestAuth, isProxyConnect: false, cancellationToken).ConfigureAwait(false);
                 }
                 catch (HttpRequestException ex) when (ex.AllowRetry != RequestRetryType.NoRetry)
                 {

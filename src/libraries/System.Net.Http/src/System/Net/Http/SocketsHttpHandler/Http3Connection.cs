@@ -163,7 +163,7 @@ namespace System.Net.Http
             }
         }
 
-        public override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
 
