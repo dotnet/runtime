@@ -135,7 +135,6 @@ namespace System.Security.Cryptography.Encoding.Tests
         [Fact]
         public static void TestFriendlyNameProperty()
         {
-
             // Setting the FriendlyName can be initialized once, and may update
             // the value as well. If the value updates, it must match the current
             // value, if any.
@@ -163,6 +162,19 @@ namespace System.Security.Cryptography.Encoding.Tests
             // FriendlyName will attempt to set the Value if the FriendlyName is known.
             // If the new Value does not match, do not permit mutating the value.
             Assert.Throws<PlatformNotSupportedException>(() => oid.FriendlyName = SHA256_Name);
+            Assert.Equal(SHA1_Oid, oid.Value);
+            Assert.Equal(SHA1_Name, oid.FriendlyName);
+        }
+
+        [Fact]
+        public static void TestFriendlyNameWithMismatchedValue()
+        {
+            Oid oid = new Oid(SHA1_Oid, SHA256_Name);
+            Assert.Equal(SHA1_Oid, oid.Value);
+            
+            oid.FriendlyName = SHA256_Name;
+            
+            Assert.Equal(SHA256_Name, oid.FriendlyName);
             Assert.Equal(SHA1_Oid, oid.Value);
         }
 

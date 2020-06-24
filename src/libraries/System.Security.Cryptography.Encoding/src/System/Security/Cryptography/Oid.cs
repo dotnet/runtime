@@ -104,10 +104,11 @@ namespace System.Security.Cryptography
                 }
 
                 // If we can find the matching OID value, then update it as well
-                if (value != null)
+                if (_friendlyName == null && value != null)
                 {
                     // If FindOidInfo fails, we return a null String
                     string? oidValue = OidLookup.ToOid(value, _group, fallBackToAllGroups: true);
+
                     if (oidValue != null)
                     {
                         // If the OID value has not been initialized, set it
@@ -125,11 +126,11 @@ namespace System.Security.Cryptography
                             throw new PlatformNotSupportedException(SR.Cryptography_Oid_SetOnceValue);
                         }
                     }
-                }
 
-                // Ensure we don't mutate _friendlyName until we are sure we can
-                // set _value if we are going to.
-                _friendlyName = value;
+                    // Ensure we don't mutate _friendlyName until we are sure we can
+                    // set _value if we are going to.
+                    _friendlyName = value;
+                }
             }
         }
 
