@@ -320,7 +320,7 @@ namespace System
 
             if (s == null)
             {
-                result = 0;
+                result = default;
                 return false;
             }
 
