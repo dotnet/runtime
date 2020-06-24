@@ -2085,54 +2085,17 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address);
 #define _sort introsort::sort
 #elif defined(USE_VXSORT)
 #define _sort do_vxsort
-namespace std
-{
-    template <class _Ty>
-    class numeric_limits
-    {
-    public:
-        static _Ty Max()
-        {
-            return _Ty();
-        }
-    };
-    template <>
-    class numeric_limits<uint32_t>
-    {
-    public:
-        static uint32_t Max()
-        {
-            return 0xffffffff;
-        }
-    };
-    template <>
-    class numeric_limits<int64_t>
-    {
-    public:
-        static int64_t Max()
-        {
-            return 0x7fffffffffffffff;
-        }
-    };
-}
-
-#include "machine_traits.avx2.h"
-#include "machine_traits.avx512.h"
-#include "vxsort.h"
-
 #ifdef USE_VXSORT
 void do_vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
 {
     assert(GCToEEInterface::HasInstructionSet(kInstructionSetAVX2));
     if (GCToEEInterface::HasInstructionSet(kInstructionSetAVX512))
     {
-        auto sorter = vxsort::cvxsort<int64_t, vxsort::AVX512, 8>();
-        sorter.sort((int64_t*)low, (int64_t*)high);
+        do_vxsort_avx512(low, high);
     }
     else
     {
-        auto sorter = vxsort::cvxsort<int64_t, vxsort::AVX2, 8>();
-        sorter.sort((int64_t*)low, (int64_t*)high);
+        do_vxsort_avx2(low, high);
     }
 #ifdef _DEBUG
     for (uint8_t** p = low; p < high; p++)
@@ -2141,18 +2104,17 @@ void do_vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
     }
 #endif
 }
+
 void do_vxsort(uint32_t* low, uint32_t* high, unsigned int depth)
 {
     assert(GCToEEInterface::HasInstructionSet(kInstructionSetAVX2));
     if (GCToEEInterface::HasInstructionSet(kInstructionSetAVX512))
     {
-        auto sorter = vxsort::cvxsort<uint32_t, vxsort::AVX512, 8>();
-        sorter.sort(low, high);
+        do_vxsort_avx512(low, high);
     }
     else
     {
-        auto sorter = vxsort::cvxsort<uint32_t, vxsort::AVX2, 8>();
-        sorter.sort(low, high);
+        do_vxsort_avx2(low, high);
     }
 #ifdef _DEBUG
     for (uint32_t* p = low; p < high; p++)

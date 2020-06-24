@@ -21,15 +21,12 @@
 #undef SERVER_GC
 #endif
 
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+#include "vxsort/do_vxsort.h"
+#endif
+
 namespace WKS {
 #include "gcimpl.h"
 #include "gc.cpp"
-#ifdef USE_VXSORT
-#include "machine_traits.avx2.cpp"
-#include "smallsort/bitonic_sort.AVX2.uint32_t.generated.cpp"
-#include "smallsort/bitonic_sort.AVX2.int64_t.generated.cpp"
-#include "smallsort/bitonic_sort.AVX512.uint32_t.generated.cpp"
-#include "smallsort/bitonic_sort.AVX512.int64_t.generated.cpp"
-#endif //USE_VXSORT
 }
 

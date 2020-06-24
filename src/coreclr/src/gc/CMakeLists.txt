@@ -37,6 +37,13 @@ else()
   set ( GC_SOURCES
     ${GC_SOURCES}
     windows/gcenv.windows.cpp
+    vxsort/do_vxsort_avx2.cpp
+    vxsort/do_vxsort_avx512.cpp
+    vxsort/machine_traits.avx2.cpp
+    vxsort/smallsort/bitonic_sort.AVX2.int64_t.generated.cpp
+    vxsort/smallsort/bitonic_sort.AVX2.uint32_t.generated.cpp
+    vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
+    vxsort/smallsort/bitonic_sort.AVX512.uint32_t.generated.cpp
 )
 endif(CLR_CMAKE_HOST_UNIX)
 
@@ -76,7 +83,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     handletablepriv.h
     objecthandle.h
     softwarewritewatch.h
-    vxsort.h)
+    vxsort/do_vxsort.h)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_HOST_WIN32)

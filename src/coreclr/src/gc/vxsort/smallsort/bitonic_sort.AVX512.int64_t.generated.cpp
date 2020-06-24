@@ -1,9 +1,10 @@
-#include "bitonic_sort.AVX512.uint32_t.generated.h"
+#include "common.h"
+#include "bitonic_sort.AVX512.int64_t.generated.h"
 
 using namespace vxsort;
 
-void vxsort::smallsort::bitonic<uint32_t, vector_machine::AVX512 >::sort(uint32_t *ptr, size_t length) {
-    const int N = 16;
+void vxsort::smallsort::bitonic<int64_t, vector_machine::AVX512 >::sort(int64_t *ptr, size_t length) {
+    const int N = 8;
 
     switch(length / N) {
         case 1: sort_01v(ptr); break;

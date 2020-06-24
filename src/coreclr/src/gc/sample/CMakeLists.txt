@@ -22,6 +22,13 @@ set(SOURCES
     ../handletablescan.cpp
     ../objecthandle.cpp
     ../softwarewritewatch.cpp
+    ../vxsort/do_vxsort_avx2.cpp
+    ../vxsort/do_vxsort_avx512.cpp
+    ../vxsort/machine_traits.avx2.cpp
+    ../vxsort/smallsort/bitonic_sort.AVX2.int64_t.generated.cpp
+    ../vxsort/smallsort/bitonic_sort.AVX2.uint32_t.generated.cpp
+    ../vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
+    ../vxsort/smallsort/bitonic_sort.AVX512.uint32_t.generated.cpp
 )
 
 if(CLR_CMAKE_TARGET_WIN32)

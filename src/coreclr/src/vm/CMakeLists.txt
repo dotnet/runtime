@@ -540,7 +540,15 @@ set(GC_SOURCES_WKS
     ../gc/gceewks.cpp
     ../gc/gcload.cpp
     ../gc/softwarewritewatch.cpp
-    ../gc/handletablecache.cpp)
+    ../gc/handletablecache.cpp
+    ../gc/vxsort/do_vxsort_avx2.cpp
+    ../gc/vxsort/do_vxsort_avx512.cpp
+    ../gc/vxsort/machine_traits.avx2.cpp
+    ../gc/vxsort/smallsort/bitonic_sort.AVX2.int64_t.generated.cpp
+    ../gc/vxsort/smallsort/bitonic_sort.AVX2.uint32_t.generated.cpp
+    ../gc/vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
+    ../gc/vxsort/smallsort/bitonic_sort.AVX512.uint32_t.generated.cpp
+)
 
 set(GC_HEADERS_WKS
     ${GC_HEADERS_DAC_AND_WKS_COMMON}

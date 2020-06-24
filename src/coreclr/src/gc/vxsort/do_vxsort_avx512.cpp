@@ -1,0 +1,60 @@
+#include "common.h"
+
+#include "vxsort_targets_enable_avx512.h"
+
+namespace std
+{
+    template <class _Ty>
+    class numeric_limits
+    {
+    public:
+        static _Ty Max()
+        {
+            return _Ty();
+        }
+    };
+    template <>
+    class numeric_limits<uint32_t>
+    {
+    public:
+        static uint32_t Max()
+        {
+            return 0xffffffff;
+        }
+    };
+    template <>
+    class numeric_limits<int64_t>
+    {
+    public:
+        static int64_t Max()
+        {
+            return 0x7fffffffffffffff;
+        }
+    };
+}
+
+#ifndef max
+template <typename T>
+T max(T a, T b)
+{
+    if (a > b) return a; else return b;
+}
+#endif
+
+#include "vxsort.h"
+#include "machine_traits.avx512.h"
+#include "smallsort/bitonic_sort.AVX2.int32_t.generated.h"
+
+void do_vxsort_avx512(uint8_t** low, uint8_t** high)
+{
+  auto sorter = vxsort::vxsort<int64_t, vxsort::vector_machine::AVX512, 8>();
+  sorter.sort((int64_t*)low, (int64_t*)high);
+}
+
+void do_vxsort_avx512(uint32_t* low, uint32_t* high)
+{
+  auto sorter = vxsort::vxsort<uint32_t, vxsort::vector_machine::AVX512, 8>();
+  sorter.sort(low, high);
+}
+
+#include "vxsort_targets_disable.h"

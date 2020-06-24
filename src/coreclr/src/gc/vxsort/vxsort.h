@@ -55,7 +55,7 @@ public:
 };
 
 template <typename T, vector_machine M, int Unroll=1>
-class cvxsort {
+class vxsort {
     static_assert(Unroll >= 1, "Unroll can be in the range 1..12");
     static_assert(Unroll <= 12, "Unroll can be in the range 1..12");
 
@@ -152,8 +152,8 @@ private:
 
     T* _startPtr = nullptr;
     T* _endPtr = nullptr;
-    T _temp[PARTITION_TMP_SIZE_IN_ELEMENTS];
 
+    T _temp[PARTITION_TMP_SIZE_IN_ELEMENTS];
     int _depth = 0;
 
     NOINLINE
@@ -611,7 +611,6 @@ private:
 
    public:
     NOINLINE void sort(T* left, T* right) {
-//        init_isa_detection();
         reset(left, right);
         auto depthLimit = 2 * floor_log2_plus_one(right + 1 - left);
         sort(left, right, AH(), depthLimit);

@@ -25,10 +25,9 @@ namespace vxsort {
 extern const int8_t perm_table_64[128];
 extern const int8_t perm_table_32[2048];
 
-void unsupported_operation()
+static void not_supported()
 {
     assert(!"operation is unsupported");
-    GCToOSInterface::DebugBreak();
 }
 
 template <>
@@ -47,7 +46,7 @@ class vxsort_machine_traits<int32_t, AVX2> {
     _mm256_storeu_si256(ptr, v);
   }
 
-  static void store_compress_vec(TV* ptr, TV v, TMASK mask) { unsupported_operation(); }
+  static void store_compress_vec(TV* ptr, TV v, TMASK mask) { not_supported(); }
 
   static INLINE TV partition_vector(TV v, int mask) {
     assert(mask >= 0);
@@ -79,7 +78,7 @@ class vxsort_machine_traits<uint32_t, AVX2> {
     _mm256_storeu_si256(ptr, v);
   }
 
-  static void store_compress_vec(TV* ptr, TV v, TMASK mask) { unsupported_operation(); }
+  static void store_compress_vec(TV* ptr, TV v, TMASK mask) { not_supported(); }
 
   static INLINE TV partition_vector(TV v, int mask) {
     assert(mask >= 0);
@@ -112,7 +111,7 @@ class vxsort_machine_traits<float, AVX2> {
     _mm256_storeu_ps((float *) ptr, v);
   }
 
-  static void store_compress_vec(TV* ptr, TV v, TMASK mask) { unsupported_operation(); }
+  static void store_compress_vec(TV* ptr, TV v, TMASK mask) { not_supported(); }
 
   static INLINE TV partition_vector(TV v, int mask) {
     assert(mask >= 0);
@@ -147,7 +146,7 @@ class vxsort_machine_traits<int64_t, AVX2> {
     _mm256_storeu_si256(ptr, v);
   }
 
-  static void store_compress_vec(TV* ptr, TV v, TMASK mask) { unsupported_operation(); }
+  static void store_compress_vec(TV* ptr, TV v, TMASK mask) { not_supported(); }
 
   static INLINE TV partition_vector(TV v, int mask) {
     assert(mask >= 0);
@@ -179,7 +178,7 @@ class vxsort_machine_traits<uint64_t, AVX2> {
     _mm256_storeu_si256(ptr, v);
   }
 
-  static void store_compress_vec(TV* ptr, TV v, TMASK mask) { unsupported_operation(); }
+  static void store_compress_vec(TV* ptr, TV v, TMASK mask) { not_supported(); }
 
   static INLINE TV partition_vector(TV v, int mask) {
     assert(mask >= 0);
@@ -211,7 +210,7 @@ class vxsort_machine_traits<double, AVX2> {
     _mm256_storeu_pd((double *) ptr, v);
   }
 
-  static void store_compress_vec(TV* ptr, TV v, TMASK mask) { unsupported_operation(); }
+  static void store_compress_vec(TV* ptr, TV v, TMASK mask) { not_supported(); }
 
   static INLINE TV partition_vector(TV v, int mask) {
     assert(mask >= 0);

@@ -1,3 +1,4 @@
+#include "common.h"
 //#include <cstdint>
 
 #include "machine_traits.avx2.h"
