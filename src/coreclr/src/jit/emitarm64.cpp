@@ -14629,8 +14629,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_DV_3BI: // fmul, fmulx, fmla, fmls (vector by elem)
         case IF_DV_3AI: // mul, mla, mls (vector by elem)
+        case IF_DV_3BI: // fmul, fmulx, fmla, fmls (vector by elem)
+        case IF_DV_3EI: // sqdmlal, sqdmlsl, sqdmulh, sqdmull (scalar by element)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_4C;
             break;
