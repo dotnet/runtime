@@ -22,11 +22,8 @@
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true'">
     <!-- Builds and runs but fails hard enough to not produce any output XML -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.EventSource\tests\Microsoft.Extensions.Logging.EventSource.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging\tests\Common\Microsoft.Extensions.Logging.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Configuration.ConfigurationManager\tests\System.Configuration.ConfigurationManager.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipelines\tests\System.IO.Pipelines.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO\tests\System.IO.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Parallel\tests\System.Linq.Parallel.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http.Json\tests\FunctionalTests\System.Net.Http.Json.Functional.Tests.csproj" />
