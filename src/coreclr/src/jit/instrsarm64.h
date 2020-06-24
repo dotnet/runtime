@@ -866,6 +866,14 @@ INST2(sqdmull2,    "sqdmull2",     LNG,    IF_EN2M,   0x4E20D000,  0x4F00B000)
                                    // sqdmull2    Vd,Vn,Vm          DV_3A  01001110XX1mmmmm 110100nnnnnddddd   4E20 D000   Vd,Vn,Vm   (vector)
                                    // sqdmull2    Vd,Vn,Vm[]        DV_3AI 01001111XXLMmmmm 1011H0nnnnnddddd   4F00 B000   Vd,Vn,Vm[] (vector by elem)
 
+INST2(sdot,        "sdot",         0,      IF_EN2M,   0x0E009400,  0x0F00E000)
+                                   //  sdot       Vd,Vn,Vm          DV_3A  0Q001110XX0mmmmm 100101nnnnnddddd   0E00 9400   Vd,Vn,Vm   (vector)
+                                   //  sdot       Vd,Vn,Vm[]        DV_3AI 0Q001111XXLMmmmm 1110H0nnnnnddddd   0F00 E000   Vd,Vn,Vm[] (vector by element)
+
+INST2(udot,        "udot",         0,      IF_EN2M,   0x2E009400,  0x2F00E000)
+                                   //  udot       Vd,Vn,Vm          DV_3A  0Q101110XX0mmmmm 100101nnnnnddddd   2E00 9400   Vd,Vn,Vm   (vector)
+                                   //  udot       Vd,Vn,Vm[]        DV_3AI 0Q101111XXLMmmmm 1110H0nnnnnddddd   2F00 E000   Vd,Vn,Vm[] (vector by element)
+
 INST2(umlal,       "umlal",        LNG,    IF_EN2M,   0x2E208000,  0x2F002000)
                                    //  umlal     Vd,Vn,Vm           DV_3A  00101110XX1mmmmm 100000nnnnnddddd   2E20 8000   Vd,Vn,Vm   (vector)
                                    //  umlal     Vd,Vn,Vm[]         DV_3AI 00101111XXLMmmmm 0010H0nnnnnddddd   2F00 2000   Vd,Vn,Vm[] (vector by elem)
