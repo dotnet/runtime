@@ -1578,7 +1578,7 @@ namespace System
                 sep1 = separators.Length > 1 ? separators[1] : sep0;
                 sep2 = separators.Length > 2 ? separators[2] : sep1;
 
-                if (Length >= 16 && Avx2.IsSupported)
+                if (Length >= 16 && Sse41.IsSupported)
                 {
                     MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1, sep2);
                     return;
@@ -1620,40 +1620,51 @@ namespace System
         private void MakeSeparatorListVectorized(ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
         {
             // Constant that allows for the truncation of 16-bit (FFFF/0000) values within a register to 4-bit (F/0)
-            Vector256<byte> shuffleConstant = Vector256.Create(0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                                               0xFF, 0xFF, 0xFF, 0xFF, 0x02, 0x06, 0x0A, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
+            Vector128<byte> shuffleConstant = Vector128.Create(0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
 
-            Vector256<ushort> v1 = Vector256.Create(c);
-            Vector256<ushort> v2 = Vector256.Create(c2);
-            Vector256<ushort> v3 = Vector256.Create(c3);
+            Vector128<ushort> v1 = Vector128.Create(c);
+            Vector128<ushort> v2 = Vector128.Create(c2);
+            Vector128<ushort> v3 = Vector128.Create(c3);
 
             ref char c0 = ref MemoryMarshal.GetReference(this.AsSpan());
-            int cond = Length & -Vector256<ushort>.Count;
+            int cond = Length & -Vector128<ushort>.Count;
             int i = 0;
 
-            for (; i < cond; i += Vector256<ushort>.Count)
+            for (; i < cond; i += Vector128<ushort>.Count)
             {
-                Vector256<ushort> charVector = ReadVector(ref c0, i);
-                Vector256<ushort> cmp = Avx2.CompareEqual(charVector, v1);
+                Vector128<ushort> charVector = ReadVector(ref c0, i);
+                Vector128<ushort> cmp = Sse2.CompareEqual(charVector, v1);
 
-                cmp = Avx2.Or(Avx2.CompareEqual(charVector, v2), cmp);
-                cmp = Avx2.Or(Avx2.CompareEqual(charVector, v3), cmp);
+                cmp = Sse2.Or(Sse2.CompareEqual(charVector, v2), cmp);
+                cmp = Sse2.Or(Sse2.CompareEqual(charVector, v3), cmp);
 
-                if (Avx.TestZ(cmp, cmp)) { continue; }
+                if (Sse41.TestZ(cmp, cmp)) { continue; }
 
-                Vector256<byte> mask = Avx2.ShiftLeftLogical(cmp.AsUInt64(), 4).AsByte();
-                mask = Avx2.Shuffle(mask, shuffleConstant);
+                Vector128<byte> mask = Sse2.ShiftRightLogical(cmp.AsUInt64(), 4).AsByte();
+                mask = Ssse3.Shuffle(mask, shuffleConstant);
 
-                Vector128<byte> res = Sse2.Or(mask.GetLower(), mask.GetUpper());
-                ulong extractedBits = Sse2.X64.ConvertToUInt64(res.AsUInt64());
+                uint lowBits = Sse2.ConvertToUInt32(mask.AsUInt32());
+                mask = Sse2.ShiftRightLogical(mask.AsUInt64(), 16).AsByte();
+                uint highBits = Sse2.ConvertToUInt32(mask.AsUInt32());
 
-                for (int idx = i; idx < Vector256<ushort>.Count; idx++)
+                for (int idx = i; lowBits != 0; idx++)
                 {
-                    if ((extractedBits & 0xF) != 0)
+                    if ((lowBits & 0xF) != 0)
                     {
                         sepListBuilder.Append(idx);
                     }
-                    extractedBits >>= 4;
+
+                    lowBits >>= 8;
+                }
+
+                for (int idx = i + 4; highBits != 0; idx++)
+                {
+                    if ((highBits & 0xF) != 0)
+                    {
+                        sepListBuilder.Append(idx);
+                    }
+
+                    highBits >>= 8;
                 }
             }
 
@@ -1666,11 +1677,11 @@ namespace System
                 }
             }
 
-            static Vector256<ushort> ReadVector(ref char c0, int offset)
+            static Vector128<ushort> ReadVector(ref char c0, int offset)
             {
                 ref char ci = ref Unsafe.Add(ref c0, (IntPtr)(uint)offset);
                 ref byte b = ref Unsafe.As<char, byte>(ref ci);
-                return Unsafe.ReadUnaligned<Vector256<ushort>>(ref b);
+                return Unsafe.ReadUnaligned<Vector128<ushort>>(ref b);
             }
         }
 
