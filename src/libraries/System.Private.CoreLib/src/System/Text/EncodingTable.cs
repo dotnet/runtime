@@ -106,20 +106,31 @@ namespace System.Text
         // Return a list of all EncodingInfo objects describing all of our encodings
         internal static EncodingInfo[] GetEncodings()
         {
+            // If UTF-7 encoding is not enabled, we adjust the return array length by -1
+            // to account for the skipped EncodingInfo element.
+
             ushort[] mappedCodePages = s_mappedCodePages;
-            EncodingInfo[] arrayEncodingInfo = new EncodingInfo[mappedCodePages.Length];
+            EncodingInfo[] arrayEncodingInfo = new EncodingInfo[(Encoding.IsUTF7EncodingEnabled) ? mappedCodePages.Length : (mappedCodePages.Length - 1)];
             string webNames = s_webNames;
             int[] webNameIndices = s_webNameIndices;
+            int arrayEncodingInfoIdx = 0;
 
             for (int i = 0; i < mappedCodePages.Length; i++)
             {
-                arrayEncodingInfo[i] = new EncodingInfo(
-                    mappedCodePages[i],
+                int codePage = mappedCodePages[i];
+                if (codePage == Encoding.CodePageUTF7 && !Encoding.IsUTF7EncodingEnabled)
+                {
+                    continue; // skip this entry; UTF-7 is disabled
+                }
+
+                arrayEncodingInfo[arrayEncodingInfoIdx++] = new EncodingInfo(
+                    codePage,
                     webNames[webNameIndices[i]..webNameIndices[i + 1]],
-                    GetDisplayName(mappedCodePages[i], i)
+                    GetDisplayName(codePage, i)
                     );
             }
 
+            Debug.Assert(arrayEncodingInfoIdx == arrayEncodingInfo.Length);
             return arrayEncodingInfo;
         }
 
@@ -132,10 +143,18 @@ namespace System.Text
 
             for (int i = 0; i < mappedCodePages.Length; i++)
             {
-                if (!encodingInfoList.ContainsKey(mappedCodePages[i]))
+                int codePage = mappedCodePages[i];
+                if (!encodingInfoList.ContainsKey(codePage))
                 {
-                    encodingInfoList[mappedCodePages[i]] = new EncodingInfo(mappedCodePages[i], webNames[webNameIndices[i]..webNameIndices[i + 1]],
-                                                                            GetDisplayName(mappedCodePages[i], i));
+                    // If UTF-7 encoding is not enabled, don't add it to the provided dictionary instance.
+                    // Exception: If somebody already registered a custom UTF-7 provider, the dictionary
+                    // will already contain an entry for the UTF-7 code page key, and we'll let it go through.
+
+                    if (codePage != Encoding.CodePageUTF7 || Encoding.IsUTF7EncodingEnabled)
+                    {
+                        encodingInfoList[codePage] = new EncodingInfo(codePage, webNames[webNameIndices[i]..webNameIndices[i + 1]],
+                                                                                GetDisplayName(codePage, i));
+                    }
                 }
             }
 
