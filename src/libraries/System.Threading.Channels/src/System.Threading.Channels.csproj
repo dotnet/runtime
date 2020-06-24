@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.3;netstandard2.0;netcoreapp3.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.3;netstandard2.0;netstandard2.1;netcoreapp3.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -14,10 +14,10 @@
     <Compile Include="System\Threading\Channels\BoundedChannelFullMode.cs" />
     <Compile Include="System\Threading\Channels\Channel.cs" />
     <Compile Include="System\Threading\Channels\ChannelClosedException.cs" />
-    <Compile Include="System\Threading\Channels\ChannelClosedException.netcoreapp.cs" Condition="!$(TargetFramework.StartsWith('netstandard'))" />
+    <Compile Include="System\Threading\Channels\ChannelClosedException.netstandard21.cs" Condition="'$(TargetFramework)' != 'netstandard1.3' AND '$(TargetFramework)' != 'netstandard2.0'" />
     <Compile Include="System\Threading\Channels\ChannelOptions.cs" />
     <Compile Include="System\Threading\Channels\ChannelReader.cs" />
-    <Compile Include="System\Threading\Channels\ChannelReader.netcoreapp.cs" Condition="!$(TargetFramework.StartsWith('netstandard'))" />
+    <Compile Include="System\Threading\Channels\ChannelReader.netstandard21.cs" Condition="'$(TargetFramework)' != 'netstandard1.3' AND '$(TargetFramework)' != 'netstandard2.0'" />
     <Compile Include="System\Threading\Channels\ChannelUtilities.cs" />
     <Compile Include="System\Threading\Channels\ChannelWriter.cs" />
     <Compile Include="System\Threading\Channels\Channel_1.cs" />
