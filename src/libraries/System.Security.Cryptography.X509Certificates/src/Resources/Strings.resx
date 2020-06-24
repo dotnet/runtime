@@ -296,7 +296,7 @@
     <value>The certificate contents do not contain a PEM with a CERTIFICATE label, or the content is malformed.</value>
   </data>
   <data name="Cryptography_X509_NoOrMismatchedPemKey" xml:space="preserve">
-    <value>The key contents do not contain a PEM, the content is malformed, or the key does not match the certificate algorithm.</value>
+    <value>The key contents do not contain a PEM, the content is malformed, or the key does not match the certificate.</value>
   </data>
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started. Call MoveNext.</value>

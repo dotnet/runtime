@@ -175,8 +175,10 @@ MII
         [Fact]
         public static void CreateFromPem_Rsa_KeyMismatch_Fail()
         {
-            AssertExtensions.Throws<ArgumentException>("privateKey", () =>
+            CryptographicException ce = AssertExtensions.Throws<CryptographicException>(() =>
                 X509Certificate2.CreateFromPem(TestData.RsaCertificate, TestData.OtherRsaPkcs1Key));
+
+            Assert.IsType<ArgumentException>(ce.InnerException);
         }
 
         [Fact]
@@ -192,6 +194,15 @@ MII
                 Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
                 AssertKeysMatch(TestData.RsaEncryptedPkcs8Key, cert.GetRSAPrivateKey, "test");
             }
+        }
+
+        [Fact]
+        public static void CreateFromEncryptedPem_Rsa_KeyMismatch_Fail()
+        {
+            CryptographicException ce = AssertExtensions.Throws<CryptographicException>(() =>
+                X509Certificate2.CreateFromEncryptedPem(TestData.RsaCertificate, TestData.OtherRsaPkcs8EncryptedKey, "test"));
+
+            Assert.IsType<ArgumentException>(ce.InnerException);
         }
 
         [Fact]

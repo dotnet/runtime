@@ -811,26 +811,13 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 string keyAlgorithm = certificate.GetKeyAlgorithm();
 
-                switch (keyAlgorithm)
+                return keyAlgorithm switch
                 {
-                    case Oids.Rsa:
-                        using (RSA key = ExtractKeyFromPem<RSA>(keyPem, s_RsaPublicKeyPrivateKeyLabels, RSA.Create))
-                        {
-                            return certificate.CopyWithPrivateKey(key);
-                        }
-                    case Oids.EcPublicKey:
-                        using (ECDsa key = ExtractKeyFromPem<ECDsa>(keyPem, s_EcPublicKeyPrivateKeyLabels, ECDsa.Create))
-                        {
-                            return certificate.CopyWithPrivateKey(key);
-                        }
-                    case Oids.Dsa:
-                        using (DSA key = ExtractKeyFromPem<DSA>(keyPem, s_DsaPublicKeyPrivateKeyLabels, DSA.Create))
-                        {
-                            return certificate.CopyWithPrivateKey(key);
-                        }
-                    default:
-                        throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm));
-                }
+                    Oids.Rsa => ExtractKeyFromPem<RSA>(keyPem, s_RsaPublicKeyPrivateKeyLabels, RSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.Dsa => ExtractKeyFromPem<DSA>(keyPem, s_DsaPublicKeyPrivateKeyLabels, DSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey => ExtractKeyFromPem<ECDsa>(keyPem, s_EcPublicKeyPrivateKeyLabels, ECDsa.Create, certificate.CopyWithPrivateKey),
+                    _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm)),
+                };
             }
         }
 
@@ -883,26 +870,13 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 string keyAlgorithm = certificate.GetKeyAlgorithm();
 
-                switch (keyAlgorithm)
+                return keyAlgorithm switch
                 {
-                    case Oids.Rsa:
-                        using (RSA key = ExtractKeyFromEncryptedPem<RSA>(keyPem, password, RSA.Create))
-                        {
-                            return certificate.CopyWithPrivateKey(key);
-                        }
-                    case Oids.EcPublicKey:
-                        using (ECDsa key = ExtractKeyFromEncryptedPem<ECDsa>(keyPem, password, ECDsa.Create))
-                        {
-                            return certificate.CopyWithPrivateKey(key);
-                        }
-                    case Oids.Dsa:
-                        using (DSA key = ExtractKeyFromEncryptedPem<DSA>(keyPem, password, DSA.Create))
-                        {
-                            return certificate.CopyWithPrivateKey(key);
-                        }
-                    default:
-                        throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm));
-                }
+                    Oids.Rsa => ExtractKeyFromEncryptedPem<RSA>(keyPem, password, RSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.Dsa => ExtractKeyFromEncryptedPem<DSA>(keyPem, password, DSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey => ExtractKeyFromEncryptedPem<ECDsa>(keyPem, password, ECDsa.Create, certificate.CopyWithPrivateKey),
+                    _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm)),
+                };
             }
         }
 
@@ -943,7 +917,11 @@ namespace System.Security.Cryptography.X509Certificates
             throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
         }
 
-        private static TAlg ExtractKeyFromPem<TAlg>(ReadOnlySpan<char> keyPem, string[] labels, Func<TAlg> factory) where TAlg : AsymmetricAlgorithm
+        private static X509Certificate2 ExtractKeyFromPem<TAlg>(
+            ReadOnlySpan<char> keyPem,
+            string[] labels,
+            Func<TAlg> factory,
+            Func<TAlg, X509Certificate2> import) where TAlg : AsymmetricAlgorithm
         {
             foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(keyPem))
             {
@@ -955,7 +933,15 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         TAlg key = factory();
                         key.ImportFromPem(contents[fields.Location]);
-                        return key;
+
+                        try
+                        {
+                            return import(key);
+                        }
+                        catch (ArgumentException ae)
+                        {
+                            throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                        }
                     }
                 }
             }
@@ -963,10 +949,11 @@ namespace System.Security.Cryptography.X509Certificates
             throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey);
         }
 
-        private static TAlg ExtractKeyFromEncryptedPem<TAlg>(
+        private static X509Certificate2 ExtractKeyFromEncryptedPem<TAlg>(
             ReadOnlySpan<char> keyPem,
             ReadOnlySpan<char> password,
-            Func<TAlg> factory) where TAlg : AsymmetricAlgorithm
+            Func<TAlg> factory,
+            Func<TAlg, X509Certificate2> import) where TAlg : AsymmetricAlgorithm
         {
             foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(keyPem))
             {
@@ -976,7 +963,16 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     TAlg key = factory();
                     key.ImportFromEncryptedPem(contents[fields.Location], password);
-                    return key;
+
+                    try
+                    {
+                        return import(key);
+                    }
+                    catch (ArgumentException ae)
+                    {
+                        throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                    }
+
                 }
             }
 
