@@ -78,7 +78,6 @@ namespace System
             | DynamicallyAccessedMemberTypes.PublicEvents
             | DynamicallyAccessedMemberTypes.PublicProperties
             | DynamicallyAccessedMemberTypes.PublicConstructors
-            | DynamicallyAccessedMemberTypes.PublicFields
             | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public override MemberInfo[] GetDefaultMembers()
         {
