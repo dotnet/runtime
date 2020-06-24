@@ -78,7 +78,6 @@
     </When>
     <When Condition="'$(TargetFrameworkSuffix)' == 'Browser'">
       <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
         <TargetsBrowser>true</TargetsBrowser>
       </PropertyGroup>
     </When>
@@ -88,4 +87,8 @@
       </PropertyGroup>
     </When>
   </Choose>
+
+  <PropertyGroup>
+    <EnablePInvokeAnalyzer Condition="'$(TargetsBrowser)' == 'true'">false</EnablePInvokeAnalyzer>
+  </PropertyGroup>
 </Project>
