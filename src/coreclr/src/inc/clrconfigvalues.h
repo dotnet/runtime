@@ -619,6 +619,11 @@ CONFIG_DWORD_INFO(INTERNAL_OSR_HighId, W("OSR_HighId"), 10000000, "High end of e
 #endif
 
 ///
+/// Hack
+///
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_ExpectedExitCode, W("ExpectedExitCode"), 0, "expected process exit code");
+
+///
 /// Profile Guided Opts
 ///
 #ifdef FEATURE_PGO

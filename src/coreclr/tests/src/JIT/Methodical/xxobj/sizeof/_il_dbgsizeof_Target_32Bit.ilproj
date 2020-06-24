@@ -10,4 +10,14 @@
   <ItemGroup>
     <Compile Include="sizeof.il" />
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+set COMPlus_ExpectedExitCode=64
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+export COMPlus_ExpectedExitCode=64
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
 </Project>

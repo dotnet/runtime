@@ -389,6 +389,19 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
             }
         }
 
+#if _DEBUG
+        if (pReturnValue)
+        {
+            // Hack, reusing existing config value
+            DWORD expectedValue = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ExpectedExitCode);
+
+            if (expectedValue != 16)
+            {
+                _ASSERTE(*pReturnValue == expectedValue);
+            }
+        }
+#endif
+
         GCPROTECT_END();
     }
 
