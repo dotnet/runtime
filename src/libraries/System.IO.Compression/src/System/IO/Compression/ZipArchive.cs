@@ -369,11 +369,7 @@ namespace System.IO.Compression
 
                 if (value != null &&
                         (value.Equals(Encoding.BigEndianUnicode)
-                        || value.Equals(Encoding.Unicode)
-#if FEATURE_UTF32
-                        || value.Equals(Encoding.UTF32)
-#endif // FEATURE_UTF32
-                        ))
+                        || value.Equals(Encoding.Unicode)))
                 {
                     throw new ArgumentException(SR.EntryNameEncodingNotSupported, nameof(EntryNameEncoding));
                 }
