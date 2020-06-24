@@ -5866,11 +5866,11 @@ MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInH
         // Update the substitution in use for matching the method. If the substitution length is greater
         // than the previously processed data, add onto the end of the chain.
         {
-            DWORD declTypeSubstitionLength = pDeclType->GetSubstitution().GetLength();
+            DWORD declTypeSubstitionLength = pCurDeclType->GetSubstitution().GetLength();
             if (declTypeSubstitionLength > lengthOfSubstitutionChainHandled)
             {
                 void *pNewSubstitutionMem = _alloca(sizeof(Substitution));
-                Substitution substitutionToClone = pDeclType->GetSubstitution();
+                Substitution substitutionToClone = pCurDeclType->GetSubstitution();
 
                 Substitution *pNewSubstitution = new(pNewSubstitutionMem) Substitution(substitutionToClone.GetModule(), substitutionToClone.GetInst(), pDeclTypeSubstitution);
                 pDeclTypeSubstitution = pNewSubstitution;
