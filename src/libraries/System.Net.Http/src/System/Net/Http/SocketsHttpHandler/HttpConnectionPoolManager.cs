@@ -340,6 +340,44 @@ namespace System.Net.Http
 
         public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
         {
+            return HttpTelemetry.IsEnabled && request.RequestUri != null ?
+                SendAsyncWithLogging(request, doRequestAuth, cancellationToken) :
+                SendAsyncHelper(request, doRequestAuth, cancellationToken);
+        }
+
+        private async Task<HttpResponseMessage> SendAsyncWithLogging(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        {
+            Debug.Assert(request.RequestUri != null);
+            HttpTelemetry.Log.RequestStart(
+                request.RequestUri.Scheme,
+                request.RequestUri.IdnHost,
+                request.RequestUri.Port,
+                request.RequestUri.PathAndQuery,
+                request.Version.Major,
+                request.Version.Minor);
+            try
+            {
+                return await SendAsyncHelper(request, doRequestAuth, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e) when (LogException(e))
+            {
+                // This code should never run.
+                throw;
+            }
+
+            static bool LogException(Exception e)
+            {
+                HttpTelemetry.Log.RequestAborted();
+                HttpTelemetry.Log.RequestStop();
+
+                // Returning false means the catch handler isn't run.
+                // So the exception isn't considered to be caught so it will now propagate up the stack.
+                return false;
+            }
+        }
+
+        private Task<HttpResponseMessage> SendAsyncHelper(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        {
             if (_proxy == null)
             {
                 return SendAsyncCore(request, null, doRequestAuth, isProxyConnect: false, cancellationToken);
