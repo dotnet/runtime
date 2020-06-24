@@ -11,15 +11,16 @@ namespace System.Threading.Tasks
     {
         internal static void Enable()
         {
-            LoggingOn = true;
+            Interlocked.Increment(ref listenerCnt);
         }
 
         internal static void Disable()
         {
-            LoggingOn = false;
+            Interlocked.Decrement(ref listenerCnt);
         }
 
-        internal static bool LoggingOn = false;
+        internal static bool LoggingOn => listenerCnt > 0;
+        private static int listenerCnt = 0;
 
         // The TraceXXX methods should be called only if LoggingOn property returned true
         //
