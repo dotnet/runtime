@@ -14862,11 +14862,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_3C;
                     break;
 
-                case INS_mul:
                 case INS_mla:
                 case INS_mls:
-                case INS_sqshl:
+                case INS_mul:
+                case INS_sqdmulh:
+                case INS_sqrdmulh:
                 case INS_sqrshl:
+                case INS_sqshl:
                 case INS_uqrshl:
                 case INS_uqshl:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -14877,6 +14879,99 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_uaba:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_sdot:
+                case INS_udot:
+                    result.insLatency = PERFSCORE_LATENCY_4C;
+                    if (id->idOpSize() == EA_16BYTE)
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    }
+                    else
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    }
+                    break;
+
+                case INS_addhn:
+                case INS_addhn2:
+                case INS_sabdl:
+                case INS_sabdl2:
+                case INS_saddl2:
+                case INS_saddl:
+                case INS_saddw:
+                case INS_saddw2:
+                case INS_ssubl:
+                case INS_ssubl2:
+                case INS_ssubw:
+                case INS_ssubw2:
+                case INS_subhn:
+                case INS_subhn2:
+                case INS_uabdl:
+                case INS_uabdl2:
+                case INS_uaddl:
+                case INS_uaddl2:
+                case INS_uaddw:
+                case INS_uaddw2:
+                case INS_usubl:
+                case INS_usubl2:
+                case INS_usubw:
+                case INS_usubw2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_raddhn:
+                case INS_raddhn2:
+                case INS_rsubhn:
+                case INS_rsubhn2:
+                case INS_sabal:
+                case INS_sabal2:
+                case INS_uabal:
+                case INS_uabal2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_smlal:
+                case INS_smlal2:
+                case INS_smlsl:
+                case INS_smlsl2:
+                case INS_smull:
+                case INS_smull2:
+                case INS_sqdmlal:
+                case INS_sqdmlal2:
+                case INS_sqdmlsl:
+                case INS_sqdmlsl2:
+                case INS_sqdmull:
+                case INS_sqdmull2:
+                case INS_sqrdmlah:
+                case INS_sqrdmlsh:
+                case INS_umlal:
+                case INS_umlal2:
+                case INS_umlsl:
+                case INS_umlsl2:
+                case INS_umull:
+                case INS_umull2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_pmull:
+                case INS_pmull2:
+                    if ((id->idInsOpt() == INS_OPTS_8B) || (id->idInsOpt() == INS_OPTS_16B))
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    else
+                    {
+                        // Crypto polynomial (64x64) multiply long
+                        assert((id->idInsOpt() == INS_OPTS_1D) || (id->idInsOpt() == INS_OPTS_2D));
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
                     break;
 
                 default:
@@ -14969,6 +15064,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
 
                 case INS_sqabs:
+                case INS_sqxtn:
+                case INS_sqxtn2:
+                case INS_sqxtun:
+                case INS_sqxtun2:
+                case INS_uqxtn:
+                case INS_uqxtn2:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
