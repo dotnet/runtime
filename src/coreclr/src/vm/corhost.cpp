@@ -395,7 +395,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
             // Hack, reusing existing config value
             DWORD expectedValue = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ExpectedExitCode);
 
-            if (expectedValue != 16)
+            if (expectedValue != 0)
             {
                 _ASSERTE(*pReturnValue == expectedValue);
             }
