@@ -5807,10 +5807,10 @@ namespace System.Text.Json.Tests
         [InlineData(true, false, "message", true)]
         [InlineData(false, true, "message", true)]
         [InlineData(false, false, "message", true)]
-        [InlineData(true, true, "mess><age", true)]
-        [InlineData(true, false, "mess><age", true)]
-        [InlineData(false, true, "mess><age", true)]
-        [InlineData(false, false, "mess><age", true)]
+        [InlineData(true, true, "mess><age", false)]
+        [InlineData(true, false, "mess><age", false)]
+        [InlineData(false, true, "mess><age", false)]
+        [InlineData(false, false, "mess><age", false)]
         [InlineData(true, true, ">><++>>>\">>\\>>&>>>\u6f22\u5B57>>>", false)]
         [InlineData(true, false, ">><++>>>\">>\\>>&>>>\u6f22\u5B57>>>", false)]
         [InlineData(false, true, ">><++>>>\">>\\>>&>>>\u6f22\u5B57>>>", false)]
@@ -7690,7 +7690,7 @@ namespace System.Text.Json.Tests
     {
         // Normalize comparisons against Json.NET.
         // Includes uppercasing the \u escaped hex characters and escaping forward slash to "\/" instead of "\u002f".
-        public static string NormalizeToJsonNetFormat(this string json)
+        public static string NormalizeToJsonNetFormat(this string json, bool relaxedEscaping = true)
         {
             var sb = new StringBuilder(json.Length);
             int i = 0;
@@ -7718,22 +7718,27 @@ namespace System.Text.Json.Tests
                         sb.Append("u002f");
                     }
                 }
-                // Convert > to \u003e
-                else if (json[i] == '>')
+                else if (!relaxedEscaping)
                 {
-                    i++;
-                    sb.Append("\\u003e");
-                }
-                // Convert < to \u003c
-                else if (json[i] == '<')
-                {
-                    i++;
-                    sb.Append("\\u003c");
+                    // Convert > to \u003e
+                    if (json[i] == '>')
+                    {
+                        i++;
+                        sb.Append("\\u003e");
+                    }
+                    // Convert < to \u003c
+                    else if (json[i] == '<')
+                    {
+                        i++;
+                        sb.Append("\\u003c");
+                    }
                 }
                 // Remove .0
-                else if (json[i] == '.' && json[i+1] == '0')
+                else if (json[i] == '.' && json[i + 1] == '0' &&
+                    (json[i + 2] == ',' || json[i + 2] == '\n' ||
+                    json[i + 2] == ']' || json[i + 2] == '}'))
                 {
-                    i+=2;
+                    i += 2;
                 }
                 else
                 {
