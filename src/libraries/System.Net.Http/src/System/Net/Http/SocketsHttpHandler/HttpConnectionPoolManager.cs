@@ -341,11 +341,11 @@ namespace System.Net.Http
         public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             return HttpTelemetry.IsEnabled && request.RequestUri != null ?
-                SendAsyncWithLogging(request, doRequestAuth, cancellationToken) :
-                SendAsyncHelper(request, doRequestAuth, cancellationToken);
+                SendAsyncWithLogging(request, async, doRequestAuth, cancellationToken) :
+                SendAsyncHelper(request, async, doRequestAuth, cancellationToken);
         }
 
-        private async Task<HttpResponseMessage> SendAsyncWithLogging(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        private async ValueTask<HttpResponseMessage> SendAsyncWithLogging(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             Debug.Assert(request.RequestUri != null);
             HttpTelemetry.Log.RequestStart(
@@ -357,7 +357,7 @@ namespace System.Net.Http
                 request.Version.Minor);
             try
             {
-                return await SendAsyncHelper(request, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                return await SendAsyncHelper(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception e) when (LogException(e))
             {
@@ -376,7 +376,7 @@ namespace System.Net.Http
             }
         }
 
-        private Task<HttpResponseMessage> SendAsyncHelper(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        private ValueTask<HttpResponseMessage> SendAsyncHelper(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             if (_proxy == null)
             {
