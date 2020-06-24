@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -284,8 +285,13 @@ namespace System
         /// <param name="s">The input to be parsed.</param>
         /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
-        public static bool TryParse(string s, out Half result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out Half result)
         {
+            if (s == null)
+            {
+                result = default;
+                return false;
+            }
             return TryParse(s, DefaultParseStyle, provider: null, out result);
         }
 
@@ -308,8 +314,16 @@ namespace System
         /// <param name="provider">A format provider. </param>
         /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
-        public static bool TryParse(string s, NumberStyles style, IFormatProvider? provider, out Half result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Half result)
         {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+
             return TryParse(s.AsSpan(), style, provider, out result);
         }
 
