@@ -689,7 +689,7 @@ namespace System.Diagnostics
                 commandLine.Append('"');
             }
 
-            startInfo.AppendArguments(commandLine);
+            startInfo.AppendArgumentsTo(commandLine);
 
             return commandLine;
         }

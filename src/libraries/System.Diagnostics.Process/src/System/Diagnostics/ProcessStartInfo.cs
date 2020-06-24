@@ -178,12 +178,12 @@ namespace System.Diagnostics
             else
             {
                 var stringBuilder = new StringBuilder();
-                AppendArguments(stringBuilder);
+                AppendArgumentsTo(stringBuilder);
                 return stringBuilder.ToString();
             }
         }
 
-        internal void AppendArguments(StringBuilder stringBuilder)
+        internal void AppendArgumentsTo(StringBuilder stringBuilder)
         {
             if (_argumentList != null && ArgumentList.Count > 0)
             {
