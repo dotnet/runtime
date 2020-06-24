@@ -3382,7 +3382,6 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
 }
 
 #ifndef MONO_CROSS_COMPILE
-static gboolean handle_crash_loop = FALSE;
 
 /*
  * mono_handle_native_crash:
@@ -3394,9 +3393,6 @@ void
 mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 {
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
-
-	if (handle_crash_loop)
-		return;
 
 #ifdef MONO_ARCH_USE_SIGACTION
 	struct sigaction sa;
@@ -3427,11 +3423,8 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 		}
 	}
 
-	/* prevent infinite loops in crash handling */
-	handle_crash_loop = TRUE;
-
 	/*
-	 * A SIGSEGV indicates something went very wrong so we can no longer depend
+	 * A crash indicates something went very wrong so we can no longer depend
 	 * on anything working. So try to print out lots of diagnostics, starting 
 	 * with ones which have a greater chance of working.
 	 */
