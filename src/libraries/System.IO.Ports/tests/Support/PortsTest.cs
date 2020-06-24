@@ -41,5 +41,16 @@ namespace System.IO.PortsTests
 #pragma warning disable MSLIB0001 // Encoding.UTF7 property is obsolete
         protected static Encoding LegacyUTF7Encoding => Encoding.UTF7;
 #pragma warning restore MSLIB0001
+
+        /// <summary>
+        /// Returns a value stating whether <paramref name="encoding"/> is UTF-7.
+        /// </summary>
+        /// <remarks>
+        /// This method checks only for the code page 65000.
+        /// </remarks>
+        internal static bool IsUTF7Encoding(Encoding encoding)
+        {
+            return (encoding.CodePage == LegacyUTF7Encoding.CodePage);
+        }
     }
 }

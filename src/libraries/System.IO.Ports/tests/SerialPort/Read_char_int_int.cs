@@ -950,7 +950,7 @@ namespace System.IO.Ports.Tests
                     Fail("ERROR!!!: Expected to read {0} chars actually read {1}", xmitCharBuffer.Length, numRead);
                 }
 
-                if (encoding.IsUTF7Encoding())
+                if (IsUTF7Encoding(encoding))
                 {
                     Fail("UTF-7 encoding not expected to be passed to this test.");
                 }
