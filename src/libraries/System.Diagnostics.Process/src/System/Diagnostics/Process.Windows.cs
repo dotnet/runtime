@@ -460,8 +460,7 @@ namespace System.Diagnostics
             //    * CreateProcess allows you to redirect all or none of the standard IO handles, so we use
             //      GetStdHandle for the handles that are not being redirected
 
-            StringBuilder commandLine = BuildCommandLine(startInfo.FileName);
-            startInfo.AppendArguments(commandLine);
+            StringBuilder commandLine = BuildCommandLine(startInfo);
 
             Interop.Kernel32.STARTUPINFO startupInfo = default;
             Interop.Kernel32.PROCESS_INFORMATION processInfo = default;
@@ -668,7 +667,7 @@ namespace System.Diagnostics
 
         private bool _signaled;
 
-        private static StringBuilder BuildCommandLine(string executableFileName)
+        private static StringBuilder BuildCommandLine(ProcessStartInfo startInfo)
         {
             // Construct a StringBuilder with the appropriate command line
             // to pass to CreateProcess.  If the filename isn't already
@@ -676,7 +675,7 @@ namespace System.Diagnostics
             // problems (it specifies exactly which part of the string
             // is the file to execute).
             StringBuilder commandLine = new StringBuilder();
-            string fileName = executableFileName.Trim();
+            string fileName = startInfo.FileName.Trim();
             bool fileNameIsQuoted = fileName.StartsWith('\"') && fileName.EndsWith('\"');
             if (!fileNameIsQuoted)
             {
@@ -689,6 +688,8 @@ namespace System.Diagnostics
             {
                 commandLine.Append('"');
             }
+
+            startInfo.AppendArguments(commandLine);
 
             return commandLine;
         }
