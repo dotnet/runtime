@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS3016;CA5379</NoWarn>
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetFramework)' == 'net461'">true</GenFacadesIgnoreMissingTypes>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;net461-Windows_NT;netcoreapp3.0-Windows_NT;netcoreapp3.0;net462-Windows_NT;net47-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>

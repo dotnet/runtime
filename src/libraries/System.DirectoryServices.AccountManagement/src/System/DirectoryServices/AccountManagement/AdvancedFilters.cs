@@ -25,22 +25,16 @@ namespace System.DirectoryServices.AccountManagement
 
         public void LastBadPasswordAttempt(DateTime lastAttempt, MatchType match)
         {
-            if (lastAttempt == null)
+            if (null == _badPasswordAttemptVal)
             {
-                _expirationTimeChanged = false;
-                _expirationTimeVal = null;
+                _badPasswordAttemptVal = new QbeMatchType(lastAttempt, match);
             }
             else
             {
-                if (null == _badPasswordAttemptVal)
-                    _badPasswordAttemptVal = new QbeMatchType(lastAttempt, match);
-                else
-                {
-                    _badPasswordAttemptVal.Match = match;
-                    _badPasswordAttemptVal.Value = lastAttempt;
-                }
-                _badPasswordAttemptChanged = true;
+                _badPasswordAttemptVal.Match = match;
+                _badPasswordAttemptVal.Value = lastAttempt;
             }
+            _badPasswordAttemptChanged = true;
         }
 
         private bool _expirationTimeChanged = false;
@@ -48,22 +42,16 @@ namespace System.DirectoryServices.AccountManagement
 
         public void AccountExpirationDate(DateTime expirationTime, MatchType match)
         {
-            if (expirationTime == null)
+            if (null == _expirationTimeVal)
             {
-                _expirationTimeChanged = false;
-                _expirationTimeVal = null;
+                _expirationTimeVal = new QbeMatchType(expirationTime, match);
             }
             else
             {
-                if (null == _expirationTimeVal)
-                    _expirationTimeVal = new QbeMatchType(expirationTime, match);
-                else
-                {
-                    _expirationTimeVal.Match = match;
-                    _expirationTimeVal.Value = expirationTime;
-                }
-                _expirationTimeChanged = true;
+                _expirationTimeVal.Match = match;
+                _expirationTimeVal.Value = expirationTime;
             }
+            _expirationTimeChanged = true;
         }
 
         private bool _lockoutTimeChanged = false;
@@ -71,22 +59,16 @@ namespace System.DirectoryServices.AccountManagement
 
         public void AccountLockoutTime(DateTime lockoutTime, MatchType match)
         {
-            if (lockoutTime == null)
+            if (null == _lockoutTimeVal)
             {
-                _lockoutTimeChanged = false;
-                _lockoutTimeVal = null;
+                _lockoutTimeVal = new QbeMatchType(lockoutTime, match);
             }
             else
             {
-                if (null == _lockoutTimeVal)
-                    _lockoutTimeVal = new QbeMatchType(lockoutTime, match);
-                else
-                {
-                    _lockoutTimeVal.Match = match;
-                    _lockoutTimeVal.Value = lockoutTime;
-                }
-                _lockoutTimeChanged = true;
+                _lockoutTimeVal.Match = match;
+                _lockoutTimeVal.Value = lockoutTime;
             }
+            _lockoutTimeChanged = true;
         }
 
         private bool _badLogonCountChanged = false;
@@ -111,22 +93,16 @@ namespace System.DirectoryServices.AccountManagement
 
         public void LastLogonTime(DateTime logonTime, MatchType match)
         {
-            if (logonTime == null)
+            if (null == _logonTimeVal)
             {
-                _logonTimeChanged = false;
-                _logonTimeVal = null;
+                _logonTimeVal = new QbeMatchType(logonTime, match);
             }
             else
             {
-                if (null == _logonTimeVal)
-                    _logonTimeVal = new QbeMatchType(logonTime, match);
-                else
-                {
-                    _logonTimeVal.Match = match;
-                    _logonTimeVal.Value = logonTime;
-                }
-                _logonTimeChanged = true;
+                _logonTimeVal.Match = match;
+                _logonTimeVal.Value = logonTime;
             }
+            _logonTimeChanged = true;
         }
 
         private bool _passwordSetTimeChanged = false;
@@ -134,22 +110,16 @@ namespace System.DirectoryServices.AccountManagement
 
         public void LastPasswordSetTime(DateTime passwordSetTime, MatchType match)
         {
-            if (passwordSetTime == null)
+            if (null == _passwordSetTimeVal)
             {
-                _passwordSetTimeChanged = false;
-                _passwordSetTimeVal = null;
+                _passwordSetTimeVal = new QbeMatchType(passwordSetTime, match);
             }
             else
             {
-                if (null == _passwordSetTimeVal)
-                    _passwordSetTimeVal = new QbeMatchType(passwordSetTime, match);
-                else
-                {
-                    _passwordSetTimeVal.Match = match;
-                    _passwordSetTimeVal.Value = passwordSetTime;
-                }
-                _passwordSetTimeChanged = true;
+                _passwordSetTimeVal.Match = match;
+                _passwordSetTimeVal.Value = passwordSetTime;
             }
+            _passwordSetTimeChanged = true;
         }
 
         protected void AdvancedFilterSet(string attribute, object value, Type objectType, MatchType mt)

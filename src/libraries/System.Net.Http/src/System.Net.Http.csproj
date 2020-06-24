@@ -3,8 +3,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http</AssemblyName>
     <WindowsRID>win</WindowsRID>
-    <!-- Suppress warnings for type conflicts between SR in partial facade and mscorlib -->
-    <NoWarn>$(NoWarn);0436</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Browser</TargetFrameworks>

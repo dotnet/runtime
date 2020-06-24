@@ -931,14 +931,11 @@ namespace System.DirectoryServices.AccountManagement
             bool defaultNeeded = false;
 
             ldapSearchValue = ADUtils.DateTimeToADString(searchValue);
-            if (defaultValue != null)
-            {
-                ldapDefaultValue = ADUtils.DateTimeToADString(defaultValue);
-            }
+            ldapDefaultValue = ADUtils.DateTimeToADString(defaultValue);
 
             StringBuilder ldapFilter = new StringBuilder("(");
 
-            if (defaultValue != null && (mt != MatchType.Equals && mt != MatchType.NotEquals))
+            if (mt != MatchType.Equals && mt != MatchType.NotEquals)
             {
                 defaultNeeded = true;
             }

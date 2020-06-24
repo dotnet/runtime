@@ -31,7 +31,9 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Static constructor: used for initializing static tables
         //
+#pragma warning disable CA1810 // Initialize reference type static fields inline
         static ADAMStoreCtx()
+#pragma warning restore CA1810
         {
             LoadFilterMappingTable(mappingIndex, s_filterPropertiesTableRaw);
             LoadPropertyMappingTable(mappingIndex, s_propertyMappingTableRaw);
