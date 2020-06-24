@@ -13,6 +13,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageOverridesFile Include="$(MSBuildThisFileDirectory)PackageOverrides.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- UNIX -->
     <SingleFileHostIncludeFilename Include="libSystem.IO.Compression.Native.so" />
     <SingleFileHostIncludeFilename Include="libSystem.Native.so" />
