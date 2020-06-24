@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -15,7 +16,7 @@ namespace System.Text.Json.Serialization.Converters
         : DictionaryDefaultConverter<TCollection, string, object?>
         where TCollection : IDictionary
     {
-        protected override void Add(string key, in object? value, JsonSerializerOptions options, ref ReadStack state)
+        protected override void Add(in string key, in object? value, JsonSerializerOptions options, ref ReadStack state)
         {
             ((IDictionary)state.Current.ReturnValue!)[key] = value;
         }
@@ -83,15 +84,17 @@ namespace System.Text.Json.Serialization.Converters
                     // Optimize for string since that's the hot path.
                     if (key is string keyString)
                     {
-                        JsonConverter<string> stringKeyConverter = GetKeyConverter(state.Current.JsonClassInfo);
+                        JsonConverter<string> stringKeyConverter = GetKeyConverter(options);
                         stringKeyConverter.WriteWithQuotes(writer, keyString, options, ref state);
                     }
                     else
                     {
                         // IDictionary is a spacial case since it has polymorphic object semantics on serialization
                         // but needs to use JsonConverter<string> on deserialization.
-                        JsonClassInfo classInfo = options.GetOrAddClass(typeof(object));
-                        JsonConverter<object> objectKeyConverter = (JsonConverter<object>)classInfo.PropertyInfoForClassInfo.ConverterBase;
+                        JsonConverter? keyConverter = options.GetDictionaryKeyConverter(typeof(object));
+                        Debug.Assert(keyConverter != null);
+
+                        JsonConverter<object> objectKeyConverter = (JsonConverter<object>)keyConverter;
                         objectKeyConverter.WriteWithQuotes(writer, key, options, ref state);
                     }
                 }

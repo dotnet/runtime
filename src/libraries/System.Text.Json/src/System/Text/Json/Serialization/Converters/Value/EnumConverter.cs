@@ -334,6 +334,11 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
+            // An EnumConverter that invokes this method
+            // can only be created by JsonSerializerOptions.GetDictionaryKeyConverter
+            // hence no naming policy is expected.
+            Debug.Assert(_namingPolicy == null);
+
             ulong key = ConvertToUInt64(value);
 
             if (_nameCache.TryGetValue(key, out JsonEncodedText formatted))
@@ -351,9 +356,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (_nameCache.Count < NameCacheSizeSoftLimit)
                 {
-                    formatted = _namingPolicy == null
-                        ? JsonEncodedText.Encode(original, encoder)
-                        : FormatEnumValue(original, encoder);
+                    formatted = JsonEncodedText.Encode(original, encoder);
 
                     writer.WritePropertyName(formatted);
 
@@ -363,10 +366,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     // We also do not create a JsonEncodedText instance here because passing the string
                     // directly to the writer is cheaper than creating one and not caching it for reuse.
-                    writer.WritePropertyName(
-                        _namingPolicy == null
-                        ? original
-                        : FormatEnumValueToString(original, encoder));
+                    writer.WritePropertyName(original);
                 }
 
                 return;
@@ -403,7 +403,5 @@ namespace System.Text.Json.Serialization.Converters
                     break;
             }
         }
-
-        internal override bool CanBeDictionaryKey => true;
     }
 }

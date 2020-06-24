@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers.Text;
-
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class Int32Converter : JsonConverter<int>
@@ -32,7 +30,5 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WritePropertyName(value);
         }
-
-        internal override bool CanBeDictionaryKey => true;
     }
 }

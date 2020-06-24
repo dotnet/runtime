@@ -32,8 +32,6 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal virtual bool CanHaveIdMetadata => true;
 
-        internal abstract bool CanBeDictionaryKey { get; }
-
         internal bool CanBePolymorphic { get; set; }
 
         internal abstract JsonPropertyInfo CreateJsonPropertyInfo();
@@ -41,8 +39,6 @@ namespace System.Text.Json.Serialization
         internal abstract JsonParameterInfo CreateJsonParameterInfo();
 
         internal abstract Type? ElementType { get; }
-
-        internal abstract Type? KeyType { get; }
 
         /// <summary>
         /// Cached value of TypeToConvert.IsValueType, which is an expensive call.

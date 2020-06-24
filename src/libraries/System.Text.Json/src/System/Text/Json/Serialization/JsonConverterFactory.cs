@@ -53,8 +53,6 @@ namespace System.Text.Json.Serialization
         }
 
         internal sealed override Type? ElementType => null;
-        internal sealed override Type? KeyType => null;
-        internal sealed override bool CanBeDictionaryKey => false;
 
         internal JsonConverter GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
         {

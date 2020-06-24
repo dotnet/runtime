@@ -56,8 +56,6 @@ namespace System.Text.Json.Serialization
         }
 
         internal override Type? ElementType => null;
-        internal override Type? KeyType => null;
-        internal override bool CanBeDictionaryKey => false;
 
         /// <summary>
         /// Indicates whether <see langword="null"/> should be passed to the converter on serialization,

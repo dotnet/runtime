@@ -465,11 +465,6 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
             }
 
-            return TryGetBytesFromBase64Core(out value);
-        }
-
-        internal bool TryGetBytesFromBase64Core([NotNullWhen(true)] out byte[]? value)
-        {
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
 
             if (_stringHasEscaping)

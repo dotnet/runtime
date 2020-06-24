@@ -24,22 +24,19 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
         {
-            JsonConverter runtimeConverter = GetRuntimeConverter(value.GetType(), state.Current.JsonClassInfo.Type, options);
+            JsonConverter runtimeConverter = GetRuntimeConverter(value.GetType(), options);
             runtimeConverter.WriteWithQuotesAsObject(writer, value, options, ref state);
         }
 
-        private JsonConverter GetRuntimeConverter(Type runtimeType, Type parentType, JsonSerializerOptions options)
+        private JsonConverter GetRuntimeConverter(Type runtimeType, JsonSerializerOptions options)
         {
-            JsonConverter runtimeConverter = options.GetOrAddClass(runtimeType).PropertyInfoForClassInfo.ConverterBase;
-
-            if (runtimeConverter == this || !runtimeConverter.CanBeDictionaryKey)
+            JsonConverter runtimeConverter = options.GetDictionaryKeyConverter(runtimeType);
+            if (runtimeConverter == this)
             {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(parentType);
+                ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(runtimeType);
             }
 
             return runtimeConverter;
         }
-
-        internal override bool CanBeDictionaryKey => true;
     }
 }

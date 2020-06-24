@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class SByteConverter : JsonConverter<sbyte>
@@ -28,11 +26,9 @@ namespace System.Text.Json.Serialization.Converters
             return value;
         }
 
-        internal override void WriteWithQuotes(Utf8JsonWriter writer, [DisallowNull] sbyte value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, sbyte value, JsonSerializerOptions options, ref WriteStack state)
         {
             writer.WritePropertyName(value);
         }
-
-        internal override bool CanBeDictionaryKey => true;
     }
 }

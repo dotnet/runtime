@@ -37,7 +37,5 @@ namespace System.Text.Json.Serialization.Converters
 
             writer.WritePropertyName(value);
         }
-
-        internal override bool CanBeDictionaryKey => true;
     }
 }

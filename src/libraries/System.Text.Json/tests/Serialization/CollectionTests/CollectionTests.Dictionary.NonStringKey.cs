@@ -518,25 +518,6 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             [Fact]
-            public void TestEnumKeyWithNamingPolicy()
-            {
-                var opts = new JsonSerializerOptions();
-                opts.Converters.Add(new JsonStringEnumConverter(new SuffixNamingPolicy()));
-
-                var myEnumIntDictionary = new Dictionary<MyEnum, int>();
-                myEnumIntDictionary.Add(MyEnum.Foo, 1);
-
-                string json = JsonSerializer.Serialize(myEnumIntDictionary, opts);
-                Assert.Equal(@"{""Foo_Suffix"":1}", json);
-
-                var myEnumFlagsIntDictionary = new Dictionary<MyEnumFlags, int>();
-                myEnumFlagsIntDictionary.Add(MyEnumFlags.Foo | MyEnumFlags.Bar, 1);
-
-                json = JsonSerializer.Serialize(myEnumFlagsIntDictionary, opts);
-                Assert.Equal(@"{""Foo_Suffix, Bar_Suffix"":1}", json);
-            }
-
-            [Fact]
             public void TestEnumKeyWithNotValidIdentifier()
             {
                 var myEnumIntDictionary = new Dictionary<MyEnum, int>();

@@ -71,7 +71,67 @@ namespace System.Text.Json
             return converters;
 
             void Add(JsonConverter converter) =>
-                converters.Add(converter.TypeToConvert!, converter);
+                converters.Add(converter.TypeToConvert, converter);
+        }
+
+        internal JsonConverter GetDictionaryKeyConverter(Type keyType)
+        {
+            if (!_dictionaryKeyConverters.TryGetValue(keyType, out JsonConverter? converter)){
+                if (keyType.IsEnum)
+                {
+                    converter = GetEnumConverter();
+                    _dictionaryKeyConverters.Add(keyType, converter);
+                }
+                else
+                {
+                    ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(keyType);
+                }
+            }
+
+            return converter!;
+
+            JsonConverter GetEnumConverter()
+                => (JsonConverter)Activator.CreateInstance(
+                        typeof(EnumConverter<>).MakeGenericType(keyType),
+                        BindingFlags.Instance | BindingFlags.Public,
+                        binder: null,
+                        new object[] { EnumConverterOptions.AllowStrings | EnumConverterOptions.AllowNumbers, this },
+                        culture: null)!;
+        }
+
+        private readonly Dictionary<Type, JsonConverter> _dictionaryKeyConverters = GetDictionaryKeyConverters();
+
+        private static Dictionary<Type, JsonConverter> GetDictionaryKeyConverters()
+        {
+            const int NumberOfConverters = 18;
+            var converters = new Dictionary<Type, JsonConverter>(NumberOfConverters);
+
+            // When adding to this, update NumberOfConverters above.
+            Add(new BooleanConverter());
+            Add(new ByteConverter());
+            Add(new CharConverter());
+            Add(new DateTimeConverter());
+            Add(new DateTimeOffsetConverter());
+            Add(new DoubleConverter());
+            Add(new DecimalConverter());
+            Add(new GuidConverter());
+            Add(new Int16Converter());
+            Add(new Int32Converter());
+            Add(new Int64Converter());
+            Add(new ObjectConverter());
+            Add(new SByteConverter());
+            Add(new SingleConverter());
+            Add(new StringConverter());
+            Add(new UInt16Converter());
+            Add(new UInt32Converter());
+            Add(new UInt64Converter());
+
+            Debug.Assert(NumberOfConverters == converters.Count);
+
+            return converters;
+
+            void Add(JsonConverter converter) =>
+                converters.Add(converter.TypeToConvert, converter);
         }
 
         /// <summary>

@@ -29,9 +29,6 @@ namespace System.Text.Json
         // If enumerable, the JsonClassInfo for the element type.
         private JsonClassInfo? _elementClassInfo;
 
-        // If dictionary, the JsonClassInfo for the key type.
-        private JsonClassInfo? _keyClassInfo;
-
         /// <summary>
         /// Return the JsonClassInfo for the element type, or null if the type is not an enumerable or dictionary.
         /// </summary>
@@ -55,24 +52,7 @@ namespace System.Text.Json
             }
         }
 
-        public JsonClassInfo? KeyClassInfo
-        {
-            get
-            {
-                if (_keyClassInfo == null && KeyType != null)
-                {
-                    Debug.Assert(ClassType == ClassType.Dictionary);
-                    // TODO: When looking for the key converter, only consider types with an internal converter.
-                    _keyClassInfo = Options.GetOrAddClass(KeyType);
-                }
-
-                return _keyClassInfo;
-            }
-        }
-
         public Type? ElementType { get; set; }
-
-        public Type? KeyType { get; set; }
 
         public JsonSerializerOptions Options { get; private set; }
 
@@ -226,7 +206,6 @@ namespace System.Text.Json
                 case ClassType.Enumerable:
                 case ClassType.Dictionary:
                     {
-                        KeyType = converter.KeyType;
                         ElementType = converter.ElementType;
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(runtimeType);
                     }

@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Converters
         where TCollection : Dictionary<TKey, TValue>
         where TKey : notnull
     {
-        protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
+        protected override void Add(in TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
             ((TCollection)state.Current.ReturnValue!)[key] = value;
         }
@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (Dictionary<TKey, TValue>.Enumerator)state.Current.CollectionEnumerator;
             }
 
-            JsonConverter<TKey> keyConverter = GetKeyConverter(state.Current.JsonClassInfo);
+            JsonConverter<TKey> keyConverter = GetKeyConverter(options);
             JsonConverter<TValue> converter = GetValueConverter(ref state);
             if (!state.SupportContinuation && converter.CanUseDirectReadOrWrite)
             {

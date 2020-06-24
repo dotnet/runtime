@@ -49,7 +49,5 @@ namespace System.Text.Json.Serialization.Converters
 #endif
                 );
         }
-
-        internal override bool CanBeDictionaryKey => true;
     }
 }
