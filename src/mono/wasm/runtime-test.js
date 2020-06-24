@@ -107,7 +107,7 @@ print("Arguments: " + testArguments);
 profilers = [];
 setenv = {};
 runtime_args = [];
-enable_gc = false;
+enable_gc = 1;
 enable_zoneinfo = false;
 while (true) {
 	if (args [0].startsWith ("--profile=")) {
@@ -127,8 +127,8 @@ while (true) {
 		var arg = args [0].substring ("--runtime-arg=".length);
 		runtime_args.push (arg);
 		args = args.slice (1);
-	} else if (args [0] == "--enable-gc") {
-		enable_gc = true;
+	} else if (args [0] == "--disable-gc") {
+		enable_gc = 0;
 		args = args.slice (1);
 	} else if (args [0] == "--enable-zoneinfo") {
 		enable_zoneinfo = true;
@@ -202,8 +202,8 @@ var Module = {
 		}
 
 		if (enable_gc) {
-			var f = Module.cwrap ('mono_wasm_enable_on_demand_gc', 'void', []);
-			f ();
+			var f = Module.cwrap ('mono_wasm_enable_on_demand_gc', 'void', ['number']);
+			f (enable_gc);
 		}
 		if (enable_zoneinfo) {
 			// Load the zoneinfo data into the VFS rooted at /zoneinfo
