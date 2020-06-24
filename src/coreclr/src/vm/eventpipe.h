@@ -73,6 +73,8 @@ public:
     // Get the session for the specified session ID.
     static EventPipeSession *GetSession(EventPipeSessionID id);
 
+    static bool IsSessionEnabled(EventPipeSessionID id);
+
     // start sending the required events down the pipe
     // starting with file header info and then buffered events
     static void StartStreaming(EventPipeSessionID id);
@@ -227,6 +229,8 @@ private:
 #endif // DACCESS_COMPILE
     }
 
+    static bool SessionRequestedSampling(EventPipeSession *pSession);
+    
     static CrstStatic s_configCrst;
     static Volatile<EventPipeState> s_state;
     static EventPipeConfiguration s_config;

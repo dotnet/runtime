@@ -267,36 +267,6 @@ bool EventPipeSession::IsValid() const
     return !m_pProviderList->IsEmpty();
 }
 
-bool EventPipeSession::HasOnlyRundownProviders() const
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
-    }
-    CONTRACTL_END;
-
-    if (m_pProviderList->IsEmpty())
-    {
-        return true;
-    }
-
-    EventPipeSessionProviderIterator providers = m_pProviderList->GetProviders();
-    EventPipeSessionProvider *pProvider;
-    while (providers.Next(&pProvider))
-    {
-        if (wcscmp(pProvider->GetProviderName(), W("Microsoft-Windows-DotNETRuntime")) != 0
-            && wcscmp(pProvider->GetProviderName(), W("Microsoft-Windows-DotNETRuntimePrivate")) != 0)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 void EventPipeSession::AddSessionProvider(EventPipeSessionProvider *pProvider)
 {
     CONTRACTL
@@ -568,7 +538,7 @@ void EventPipeSession::SuspendWriteEvent()
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         // Need to disable the session before calling this method
-        PRECONDITION(HasOnlyRundownProviders());
+        PRECONDITION(!EventPipe::IsSessionEnabled(reinterpret_cast<EventPipeSessionID>(this)));
     }
     CONTRACTL_END;
 

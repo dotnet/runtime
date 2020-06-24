@@ -1019,8 +1019,13 @@ void EventPipeBufferManager::SuspendWriteEvent(uint32_t sessionIndex)
         SListElem<EventPipeThreadSessionState *> *pElem = m_pThreadSessionStateList->GetHead();
         while (pElem != NULL)
         {
-            threadList.Push(pElem->GetValue()->GetThread());
+            EventPipeThread *pThread = pElem->GetValue()->GetThread();
+            threadList.Push(pThread);
             pElem = m_pThreadSessionStateList->GetNext(pElem);
+
+            // Once EventPipeSession::SuspendWriteEvent completes, we shouldn't have any
+            // in progress writes left.
+            _ASSERTE(pThread->GetSessionWriteInProgress() != sessionIndex);
         }
     }
 
@@ -1044,29 +1049,6 @@ void EventPipeBufferManager::SuspendWriteEvent(uint32_t sessionIndex)
             //                              lock and we already set it TRUE.
         }
     }
-
-#ifdef _DEBUG
-    // Sanity check that we don't have any straggler threads. They should have been taken care of in 
-    // EventPipeSession::SuspendWriteEvent already.
-    {
-        SpinLockHolder _slh(&m_lock);
-        SListElem<EventPipeThreadSessionState *> *pElem = m_pThreadSessionStateList->GetHead();
-        while (pElem != NULL)
-        {
-            // Get the list and remove it from the thread.
-            EventPipeBufferList *const pBufferList = pElem->GetValue()->GetBufferList();
-            if (pBufferList != nullptr)
-            {
-                EventPipeThread *const pEventPipeThread = pBufferList->GetThread();
-                if (pEventPipeThread != nullptr)
-                {
-                    _ASSERTE(pEventPipeThread->GetSessionWriteInProgress() != sessionIndex);
-                }
-            }
-            pElem = m_pThreadSessionStateList->GetNext(pElem);
-        }
-    }
-#endif // _DEBUG
 }
 
 void EventPipeBufferManager::DeAllocateBuffers()

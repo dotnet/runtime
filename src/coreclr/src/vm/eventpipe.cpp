@@ -390,15 +390,9 @@ bool EventPipe::EnableInternal(
     // Enable tracing.
     s_config.Enable(*pSession, pEventPipeProviderCallbackDataQueue);
 
-    // Find out if the session requested samples
-    EventPipeSessionProviderIterator providerList = pSession->GetProviders();
-    EventPipeSessionProvider *pProvider = nullptr;
-    while (providerList.Next(&pProvider))
+    if (SessionRequestedSampling(pSession))
     {
-        if (wcscmp(pProvider->GetProviderName(), W("Microsoft-DotNETCore-SampleProfiler")) == 0)
-        {
-            SampleProfiler::Enable();
-        }
+        SampleProfiler::Enable();
     }
 
     return true;
@@ -501,8 +495,11 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
     // If the session was not found, then there is nothing else to do.
     EventPipeSession *const pSession = reinterpret_cast<EventPipeSession *>(id);
 
-    // Disable the profiler.
-    SampleProfiler::Disable();
+    if (SessionRequestedSampling(pSession))
+    {
+        // Disable the profiler.
+        SampleProfiler::Disable();
+    }
 
     // Log the process information event.
     LogProcessInformationEvent(*s_pEventSource);
@@ -578,6 +575,14 @@ EventPipeSession *EventPipe::GetSession(EventPipeSessionID id)
     }
 }
 
+bool EventPipe::IsSessionEnabled(EventPipeSessionID id)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    const EventPipeSession *const pSession = reinterpret_cast<EventPipeSession *>(id);
+    return s_pSessions[pSession->GetIndex()].Load() != nullptr;
+}
+
 EventPipeProvider *EventPipe::CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData)
 {
     CONTRACTL
@@ -609,13 +614,10 @@ EventPipeProvider *EventPipe::CreateProvider(const SString &providerName, EventP
     }
     CONTRACTL_END;
 
-    EventPipeProvider *pProvider = s_config.CreateProvider(providerName,
+    return s_config.CreateProvider(providerName,
                                                            pCallbackFunction,
                                                            pCallbackData,
                                                            pEventPipeProviderCallbackDataQueue);
-
-    NotifyProfilerProviderCreated(pProvider);
-    return pProvider;
 }
 
 EventPipeProvider *EventPipe::GetProvider(const SString &providerName)
@@ -965,6 +967,23 @@ bool EventPipe::IsSessionIdInCollection(EventPipeSessionID id)
             return true;
         }
     }
+    return false;
+}
+
+bool EventPipe::SessionRequestedSampling(EventPipeSession *pSession)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    EventPipeSessionProviderIterator providerList = pSession->GetProviders();
+    EventPipeSessionProvider *pProvider = nullptr;
+    while (providerList.Next(&pProvider))
+    {
+        if (wcscmp(pProvider->GetProviderName(), W("Microsoft-DotNETCore-SampleProfiler")) == 0)
+        {
+            return true;
+        }
+    }
+
     return false;
 }
 
