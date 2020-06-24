@@ -12558,18 +12558,19 @@ void emitter::emitDispIns(
             break;
 
         case IF_DV_2A: // DV_2A   .Q.......X...... ......nnnnnddddd      Vd Vn   (fabs, fcvt - vector)
-            if ((ins == INS_fcvtl) || (ins == INS_fcvtl2))
+            if (emitInsIsVectorLong(ins))
             {
-                emitDispVectorReg(id->idReg1(), optWidenElemsize(id->idInsOpt()), true);
+                emitDispVectorReg(id->idReg1(), optWidenElemsizeArrangement(id->idInsOpt()), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
-            else if ((ins == INS_fcvtn) || (ins == INS_fcvtn2) || (ins == INS_fcvtxn) || (ins == INS_fcvtxn2))
+            else if (emitInsIsVectorNarrow(ins))
             {
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
-                emitDispVectorReg(id->idReg2(), optWidenElemsize(id->idInsOpt()), false);
+                emitDispVectorReg(id->idReg2(), optWidenElemsizeArrangement(id->idInsOpt()), false);
             }
             else
             {
+                assert(!emitInsIsVectorWide(ins));
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
@@ -12581,15 +12582,39 @@ void emitter::emitDispIns(
             break;
 
         case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn   (abs, neg - vector)
-            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
-            emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            if (emitInsIsVectorNarrow(ins))
+            {
+                emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                emitDispVectorReg(id->idReg2(), optWidenElemsizeArrangement(id->idInsOpt()), false);
+            }
+            else
+            {
+                assert(!emitInsIsVectorLong(ins) && !emitInsIsVectorWide(ins));
+                emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            }
             break;
 
         case IF_DV_2N: // DV_2N   .........iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - scalar)
             elemsize = id->idOpSize();
-            emitDispReg(id->idReg1(), elemsize, true);
-            emitDispReg(id->idReg2(), elemsize, true);
-            emitDispImm(emitGetInsSC(id), false);
+            if (emitInsIsVectorLong(ins))
+            {
+                emitDispReg(id->idReg1(), widenDatasize(elemsize), true);
+                emitDispReg(id->idReg2(), elemsize, true);
+            }
+            else if (emitInsIsVectorNarrow(ins))
+            {
+                emitDispReg(id->idReg1(), elemsize, true);
+                emitDispReg(id->idReg2(), widenDatasize(elemsize), true);
+            }
+            else
+            {
+                assert(!emitInsIsVectorWide(ins));
+                emitDispReg(id->idReg1(), elemsize, true);
+                emitDispReg(id->idReg2(), elemsize, true);
+            }
+            imm = emitGetInsSC(id);
+            emitDispImm(imm, false);
             break;
 
         case IF_DV_2O: // DV_2O   .Q.......iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - vector)
@@ -12685,21 +12710,23 @@ void emitter::emitDispIns(
         case IF_DV_2G: // DV_2G   .........X...... ......nnnnnddddd      Vd Vn      (fmov, fcvtXX - register)
         case IF_DV_2K: // DV_2K   .........X.mmmmm ......nnnnn.....      Vn Vm      (fcmp)
         case IF_DV_2L: // DV_2L   ........XX...... ......nnnnnddddd      Vd Vn      (abs, neg - scalar)
-            elemsize = id->idOpSize();
-            emitDispReg(id->idReg1(), elemsize, true);
+            size = id->idOpSize();
             if ((ins == INS_fcmeq) || (ins == INS_fcmge) || (ins == INS_fcmgt) || (ins == INS_fcmle) ||
                 (ins == INS_fcmlt))
             {
-                emitDispReg(id->idReg2(), elemsize, true);
+                emitDispReg(id->idReg1(), size, true);
+                emitDispReg(id->idReg2(), size, true);
                 emitDispImm(0, false);
             }
-            else if (ins == INS_fcvtxn)
+            else if (emitInsIsVectorNarrow(ins))
             {
-                emitDispReg(id->idReg2(), EA_8BYTE, false);
+                emitDispReg(id->idReg1(), size, true);
+                emitDispReg(id->idReg2(), widenDatasize(size), false);
             }
             else
             {
-                emitDispReg(id->idReg2(), elemsize, false);
+                emitDispReg(id->idReg1(), size, true);
+                emitDispReg(id->idReg2(), size, false);
             }
             break;
 
