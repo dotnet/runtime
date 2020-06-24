@@ -439,8 +439,11 @@ static emitAttr optGetDatasize(insOpts arrangement);
 //  For the given 'arrangement' returns the 'elemsize' specified by the vector register arrangement
 static emitAttr optGetElemsize(insOpts arrangement);
 
-//  For the given 'arrangement' returns the 'widen-arrangement' specified by the vector register arrangement
-static insOpts optWidenElemsize(insOpts arrangement);
+//  For the given 'arrangement' returns the one with the element width that is double that of the 'arrangement' element.
+static insOpts optWidenElemsizeArrangement(insOpts arrangement);
+
+//  For the given 'datasize' returns the one that is double that of the 'datasize'.
+static emitAttr widenDatasize(emitAttr datasize);
 
 //  For the given 'srcArrangement' returns the "widen" 'dstArrangement' specifying the destination vector register
 //  arrangement

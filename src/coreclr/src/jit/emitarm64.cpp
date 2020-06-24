@@ -3397,10 +3397,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     }
 }
 
-//  For the given 'arrangement' returns the 'widen-arrangement' specified by the vector register arrangement
-//  asserts and returns INS_OPTS_NONE if an invalid 'arrangement' value is passed
-//
-/*static*/ insOpts emitter::optWidenElemsize(insOpts arrangement)
+/*static*/ insOpts emitter::optWidenElemsizeArrangement(insOpts arrangement)
 {
     if ((arrangement == INS_OPTS_8B) || (arrangement == INS_OPTS_16B))
     {
@@ -3418,6 +3415,27 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     {
         assert(!" invalid 'arrangement' value");
         return INS_OPTS_NONE;
+    }
+}
+
+/*static*/ emitAttr emitter::widenDatasize(emitAttr datasize)
+{
+    if (datasize == EA_1BYTE)
+    {
+        return EA_2BYTE;
+    }
+    else if (datasize == EA_2BYTE)
+    {
+        return EA_4BYTE;
+    }
+    else if (datasize == EA_4BYTE)
+    {
+        return EA_8BYTE;
+    }
+    else
+    {
+        assert(!" invalid 'datasize' value");
+        return EA_UNKNOWN;
     }
 }
 
