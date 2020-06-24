@@ -66,6 +66,8 @@ namespace System.Text.Json
 
                 case FieldInfo fieldInfo:
                     {
+                        Debug.Assert(fieldInfo.IsPublic);
+
                         HasGetter = true;
                         Get = options.MemberAccessorStrategy.CreateFieldGetter<T>(fieldInfo);
 
