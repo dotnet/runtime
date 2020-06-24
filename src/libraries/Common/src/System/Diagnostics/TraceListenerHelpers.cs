@@ -13,5 +13,29 @@ namespace System.Diagnostics
         {
             return Environment.CurrentManagedThreadId;
         }
+
+        internal static int GetProcessId()
+        {
+            int id;
+            using (var process = Process.GetCurrentProcess())
+            {
+                id = process.Id;
+            }
+
+            return id;
+        }
+
+        internal static string GetProcessName()
+        {
+            if (s_processName == null)
+            {
+                using (var process = Process.GetCurrentProcess())
+                {
+                    s_processName = process.ProcessName;
+                }
+            }
+
+            return s_processName;
+        }
     }
 }
