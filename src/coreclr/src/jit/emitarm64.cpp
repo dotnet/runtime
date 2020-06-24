@@ -6303,6 +6303,15 @@ void emitter::emitIns_R_R_R(
             fmt = IF_DV_3A;
             break;
 
+        case INS_sdot:
+        case INS_udot:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(((size == EA_8BYTE) && (opt == INS_OPTS_2S)) || ((size == EA_16BYTE) && (opt == INS_OPTS_4S)));
+            fmt = IF_DV_3A;
+            break;
+
         default:
             unreached();
             break;
@@ -6611,6 +6620,16 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             {
                 assert(!"Invalid reg3");
             }
+            fmt = IF_DV_3AI;
+            break;
+
+        case INS_sdot:
+        case INS_udot:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(((size == EA_8BYTE) && (opt == INS_OPTS_2S)) || ((size == EA_16BYTE) && (opt == INS_OPTS_4S)));
+            assert(isValidVectorIndex(EA_16BYTE, EA_4BYTE, imm));
             fmt = IF_DV_3AI;
             break;
 
