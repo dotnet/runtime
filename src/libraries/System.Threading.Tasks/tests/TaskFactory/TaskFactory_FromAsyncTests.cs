@@ -12,7 +12,7 @@ namespace System.Threading.Tasks.Tests
     public class TaskFactory_FromAsyncTests
     {
         // Exercise the FromAsync() methods in Task and Task<TResult>.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunAPMFactoryTests()
         {
             FakeAsyncClass fac = new FakeAsyncClass();
