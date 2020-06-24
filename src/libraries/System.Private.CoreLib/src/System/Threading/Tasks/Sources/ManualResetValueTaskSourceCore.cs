@@ -224,13 +224,26 @@ namespace System.Threading.Tasks.Sources
                     {
                         _continuation(_continuationState);
                     }
-
-                    return;
                 }
-
-                InvokeSchedulerContinuation();
-                return;
+                else
+                {
+                    InvokeSchedulerContinuation();
+                }
             }
+            else
+            {
+                InvokeContinuationWithContext();
+            }
+        }
+
+        private void InvokeContinuationWithContext()
+        {
+            // This is in a helper as the error handling causes the generated asm
+            // for the surrounding code to become less efficent (stack spills etc)
+            // and it is an uncommon path.
+
+            Debug.Assert(_continuation != null);
+            Debug.Assert(_executionContext != null);
 
             ExecutionContext? currentContext = ExecutionContext.Capture();
             // Restore the captured ExecutionContext before executing anything.
@@ -240,17 +253,41 @@ namespace System.Threading.Tasks.Sources
             {
                 if (RunContinuationsAsynchronously)
                 {
-                    ThreadPool.QueueUserWorkItem(_continuation, _continuationState, preferLocal: true);
-                    // Restore the current ExecutionContext.
-                    ExecutionContext.Restore(currentContext);
+                    try
+                    {
+                        ThreadPool.QueueUserWorkItem(_continuation, _continuationState, preferLocal: true);
+                    }
+                    finally
+                    {
+                        // Restore the current ExecutionContext.
+                        ExecutionContext.Restore(currentContext);
+                    }
                 }
                 else
                 {
                     // Running inline may throw; capture the edi if it does as we changed the ExecutionContext,
                     // so need to restore it back before propagating the throw.
-                    ExceptionDispatchInfo? edi = InvokeInlineContinuation();
-                    // Restore the current ExecutionContext.
-                    ExecutionContext.Restore(currentContext);
+                    ExceptionDispatchInfo? edi = null;
+                    SynchronizationContext? syncContext = SynchronizationContext.Current;
+                    try
+                    {
+                        _continuation(_continuationState);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Note: we have a "catch" rather than a "finally" because we want
+                        // to stop the first pass of EH here.  That way we can restore the previous
+                        // context before any of our callers' EH filters run.
+                        edi = ExceptionDispatchInfo.Capture(ex);
+                    }
+                    finally
+                    {
+                        // Set sync context back to what it was prior to coming in
+                        SynchronizationContext.SetSynchronizationContext(syncContext);
+                        // Restore the current ExecutionContext.
+                        ExecutionContext.Restore(currentContext);
+                    }
+
                     // Now rethrow the exception; if there is one.
                     edi?.Throw();
                 }
@@ -258,43 +295,15 @@ namespace System.Threading.Tasks.Sources
                 return;
             }
 
-            InvokeSchedulerContinuation();
-            // Restore the current ExecutionContext.
-            ExecutionContext.Restore(currentContext);
-        }
-
-        /// <summary>
-        /// Invokes the continuation inline and captures any exception thrown.
-        /// This assumes that if <see cref="_continuation"/> is not null we're already
-        /// running within that <see cref="ExecutionContext"/>.
-        /// </summary>
-        private ExceptionDispatchInfo? InvokeInlineContinuation()
-        {
-            // This is in a helper as the error handling causes the generated asm
-            // for the surrounding code to become less efficent (stack spills etc)
-            // and it is an uncommon path.
-
-            Debug.Assert(_continuation != null);
-            Debug.Assert(_capturedContext == null);
-            Debug.Assert(!RunContinuationsAsynchronously);
-
-            ExceptionDispatchInfo? edi = null;
-            SynchronizationContext? syncContext = SynchronizationContext.Current;
             try
             {
-                _continuation(_continuationState);
+                InvokeSchedulerContinuation();
             }
-            catch (Exception ex)
+            finally
             {
-                // Note: we have a "catch" rather than a "finally" because we want
-                // to stop the first pass of EH here.  That way we can restore the previous
-                // context before any of our callers' EH filters run.
-                edi = ExceptionDispatchInfo.Capture(ex);
+                // Restore the current ExecutionContext.
+                ExecutionContext.Restore(currentContext);
             }
-
-            // Set sync context back to what it was prior to coming in
-            SynchronizationContext.SetSynchronizationContext(syncContext);
-            return edi;
         }
 
         /// <summary>
