@@ -252,7 +252,7 @@ namespace System.Text
                         }
                         else
                         {
-                            string moreInfoUrl = string.Format(CultureInfo.InvariantCulture, Obsoletions.SHARED_URL_FORMAT, Obsoletions.SYSTEM_TEXT_ENCODING_UTF7_DIAGID);
+                            string moreInfoUrl = string.Format(CultureInfo.InvariantCulture, Obsoletions.SharedUrlFormat, Obsoletions.SystemTextEncodingUTF7DiagId);
                             string exceptionMessage = SR.Format(SR.Encoding_UTF7_Disabled, moreInfoUrl);
                             throw new NotSupportedException(exceptionMessage); // matches generic "unknown code page" exception type
                         }
@@ -1041,7 +1041,7 @@ namespace System.Text
         // Returns an encoding for the UTF-7 format. The returned encoding will be
         // an instance of the UTF7Encoding class.
 
-        [Obsolete(Obsoletions.SYSTEM_TEXT_ENCODING_UTF7_MESSAGE, DiagnosticId = Obsoletions.SYSTEM_TEXT_ENCODING_UTF7_DIAGID, UrlFormat = Obsoletions.SHARED_URL_FORMAT)]
+        [Obsolete(Obsoletions.SystemTextEncodingUTF7Message, DiagnosticId = Obsoletions.SystemTextEncodingUTF7DiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Encoding UTF7 => UTF7Encoding.s_default;
 
         // Returns an encoding for the UTF-8 format. The returned encoding will be

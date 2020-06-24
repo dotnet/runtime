@@ -6,9 +6,9 @@ namespace System
 {
     internal static class Obsoletions
     {
-        internal const string SHARED_URL_FORMAT = "https://aka.ms/dotnet-warnings/{0}";
+        internal const string SharedUrlFormat = "https://aka.ms/dotnet-warnings/{0}";
 
-        internal const string SYSTEM_TEXT_ENCODING_UTF7_MESSAGE = "The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.";
-        internal const string SYSTEM_TEXT_ENCODING_UTF7_DIAGID = "MSLIB0001";
+        internal const string SystemTextEncodingUTF7Message = "The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.";
+        internal const string SystemTextEncodingUTF7DiagId = "MSLIB0001";
     }
 }

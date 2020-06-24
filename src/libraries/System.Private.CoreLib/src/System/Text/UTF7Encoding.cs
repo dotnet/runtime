@@ -48,13 +48,13 @@ namespace System.Text
 
         private const int UTF7_CODEPAGE = 65000;
 
-        [Obsolete(Obsoletions.SYSTEM_TEXT_ENCODING_UTF7_MESSAGE, DiagnosticId = Obsoletions.SYSTEM_TEXT_ENCODING_UTF7_DIAGID, UrlFormat = Obsoletions.SHARED_URL_FORMAT)]
+        [Obsolete(Obsoletions.SystemTextEncodingUTF7Message, DiagnosticId = Obsoletions.SystemTextEncodingUTF7DiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public UTF7Encoding()
             : this(false)
         {
         }
 
-        [Obsolete(Obsoletions.SYSTEM_TEXT_ENCODING_UTF7_MESSAGE, DiagnosticId = Obsoletions.SYSTEM_TEXT_ENCODING_UTF7_DIAGID, UrlFormat = Obsoletions.SHARED_URL_FORMAT)]
+        [Obsolete(Obsoletions.SystemTextEncodingUTF7Message, DiagnosticId = Obsoletions.SystemTextEncodingUTF7DiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public UTF7Encoding(bool allowOptionals)
             : base(UTF7_CODEPAGE) // Set the data item.
         {
