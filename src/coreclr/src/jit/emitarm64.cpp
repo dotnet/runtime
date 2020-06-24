@@ -12724,7 +12724,89 @@ void emitter::emitDispIns(
             }
             break;
 
-        case IF_DV_3A: // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm  (vector)
+        case IF_DV_3A: // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
+            if ((ins == INS_sdot) || (ins == INS_udot))
+            {
+                // sdot/udot Vd.2s, Vn.8b, Vm.8b
+                // sdot/udot Vd.4s, Vn.16b, Vm.16b
+                emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                size = id->idOpSize();
+                emitDispVectorReg(id->idReg2(), (size == EA_8BYTE) ? INS_OPTS_8B : INS_OPTS_16B, true);
+                emitDispVectorReg(id->idReg3(), (size == EA_8BYTE) ? INS_OPTS_8B : INS_OPTS_16B, false);
+            }
+            else if (((ins == INS_pmull) && (id->idInsOpt() == INS_OPTS_1D)) ||
+                     ((ins == INS_pmull2) && (id->idInsOpt() == INS_OPTS_2D)))
+            {
+                // pmull Vd.1q, Vn.1d, Vm.1d
+                // pmull2 Vd.1q, Vn.2d, Vm.2d
+                printf("%s.1q, ", emitVectorRegName(id->idReg1()));
+                emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+                emitDispVectorReg(id->idReg3(), id->idInsOpt(), false);
+            }
+            else if (emitInsIsVectorNarrow(ins))
+            {
+                emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                emitDispVectorReg(id->idReg2(), optWidenElemsizeArrangement(id->idInsOpt()), true);
+                emitDispVectorReg(id->idReg3(), optWidenElemsizeArrangement(id->idInsOpt()), false);
+            }
+            else
+            {
+                if (emitInsIsVectorLong(ins))
+                {
+                    emitDispVectorReg(id->idReg1(), optWidenElemsizeArrangement(id->idInsOpt()), true);
+                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+                }
+                else if (emitInsIsVectorWide(ins))
+                {
+                    emitDispVectorReg(id->idReg1(), optWidenElemsizeArrangement(id->idInsOpt()), true);
+                    emitDispVectorReg(id->idReg2(), optWidenElemsizeArrangement(id->idInsOpt()), true);
+                }
+                else
+                {
+                    emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+                }
+
+                emitDispVectorReg(id->idReg3(), id->idInsOpt(), false);
+            }
+            break;
+
+        case IF_DV_3AI: // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by element)
+            if ((ins == INS_sdot) || (ins == INS_udot))
+            {
+                // sdot/udot Vd.2s, Vn.8b, Vm.4b[index]
+                // sdot/udot Vd.4s, Vn.16b, Vm.4b[index]
+                emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                size = id->idOpSize();
+                emitDispVectorReg(id->idReg2(), (size == EA_8BYTE) ? INS_OPTS_8B : INS_OPTS_16B, true);
+                index = emitGetInsSC(id);
+                printf("%s.4b[%d]", emitVectorRegName(id->idReg3()), index);
+            }
+            else
+            {
+                if (emitInsIsVectorLong(ins))
+                {
+                    emitDispVectorReg(id->idReg1(), optWidenElemsizeArrangement(id->idInsOpt()), true);
+                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+                }
+                else if (emitInsIsVectorWide(ins))
+                {
+                    emitDispVectorReg(id->idReg1(), optWidenElemsizeArrangement(id->idInsOpt()), true);
+                    emitDispVectorReg(id->idReg2(), optWidenElemsizeArrangement(id->idInsOpt()), true);
+                }
+                else
+                {
+                    assert(!emitInsIsVectorNarrow(ins));
+                    emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+                }
+
+                elemsize = optGetElemsize(id->idInsOpt());
+                index    = emitGetInsSC(id);
+                emitDispVectorRegIndex(id->idReg3(), elemsize, index, false);
+            }
+            break;
+
         case IF_DV_3B: // DV_3B   .Q.........mmmmm ......nnnnnddddd      Vd Vn Vm  (vector)
             emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
             emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
@@ -12755,7 +12837,6 @@ void emitter::emitDispIns(
             emitDispVectorReg(id->idReg3(), id->idInsOpt(), false);
             break;
 
-        case IF_DV_3AI: // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
         case IF_DV_3BI: // DV_3BI  .Q........Lmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
             emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
             emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
