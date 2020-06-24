@@ -25,6 +25,9 @@
 // Holder for const wide strings
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
 
+// Specifies whether coreclr is embedded or standalone
+extern const bool g_coreclr_embedded;
+
 // Holder for array of wide strings
 class ConstWStringArrayHolder : public NewArrayHolder<LPCWSTR>
 {
@@ -114,8 +117,7 @@ static void ConvertConfigPropertiesToUnicode(
     int propertyCount,
     LPCWSTR** propertyKeysWRef,
     LPCWSTR** propertyValuesWRef,
-    BundleProbe** bundleProbe,
-    bool* runningInExe)
+    BundleProbe** bundleProbe)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
     ASSERTE_ALL_BUILDS(propertyKeysW != nullptr);
@@ -133,11 +135,6 @@ static void ConvertConfigPropertiesToUnicode(
             // If this application is a single-file bundle, the bundle-probe callback 
             // is passed in as the value of "BUNDLE_PROBE" property (encoded as a string).
             *bundleProbe = (BundleProbe*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
-        }
-
-        if (strcmp(propertyKeys[propertyIndex], "EMBEDDED_RUNTIME") == 0)
-        {
-            *runningInExe = true;
         }
     }
 
@@ -181,7 +178,6 @@ int coreclr_initialize(
     LPCWSTR* propertyKeysW;
     LPCWSTR* propertyValuesW;
     BundleProbe* bundleProbe = nullptr;
-    bool runningInExe = false;
 
     ConvertConfigPropertiesToUnicode(
         propertyKeys,
@@ -189,11 +185,10 @@ int coreclr_initialize(
         propertyCount,
         &propertyKeysW,
         &propertyValuesW,
-        &bundleProbe,
-        &runningInExe);
+        &bundleProbe);
 
 #ifdef TARGET_UNIX
-    DWORD error = PAL_InitializeCoreCLR(exePath, runningInExe);
+    DWORD error = PAL_InitializeCoreCLR(exePath, g_coreclr_embedded);
     hr = HRESULT_FROM_WIN32(error);
 
     // If PAL initialization failed, then we should return right away and avoid

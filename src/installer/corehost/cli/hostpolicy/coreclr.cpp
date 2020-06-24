@@ -39,13 +39,7 @@ pal::hresult_t coreclr_t::create(
     host_handle_t host_handle;
     domain_id_t domain_id;
 
-    coreclr_property_bag_t final_properties = properties;
-    if (coreclr_contract.coreclr == nullptr)
-    {
-        final_properties.add(common_property::EmbeddedRuntime, _X(""));
-    }
-
-    int propertyCount = final_properties.count();
+    int propertyCount = properties.count();
     std::vector<std::vector<char>> keys_strs(propertyCount);
     std::vector<const char*> keys(propertyCount);
     std::vector<std::vector<char>> values_strs(propertyCount);
@@ -59,7 +53,7 @@ pal::hresult_t coreclr_t::create(
         values[index] = values_strs[index].data();
         ++index;
     };
-    final_properties.enumerate(callback);
+    properties.enumerate(callback);
 
     pal::hresult_t hr;
     hr = coreclr_contract.coreclr_initialize(
@@ -154,8 +148,7 @@ namespace
         _X("APP_PATHS"),
         _X("APP_NI_PATHS"),
         _X("RUNTIME_IDENTIFIER"),
-        _X("BUNDLE_PROBE"),
-        _X("EMBEDDED_RUNTIME")
+        _X("BUNDLE_PROBE")
     };
 
     static_assert((sizeof(PropertyNameMapping) / sizeof(*PropertyNameMapping)) == static_cast<size_t>(common_property::Last), "Invalid property count");
