@@ -202,39 +202,50 @@ internal static partial class Interop
                     if (hasCertificateAndKey)
                     {
                         bool hasCertReference = false;
-                        try
+                        if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.CertificateContext.IntermediateCertificates != null)
                         {
-                            certHandle!.DangerousAddRef(ref hasCertReference);
-                            using (X509Certificate2 cert = new X509Certificate2(certHandle.DangerousGetHandle()))
+                            // We got chain already built. Use it instead of building one here.
+                            if (!Ssl.AddExtraChainCertificates(context, sslAuthenticationOptions.CertificateContext.IntermediateCertificates))
                             {
-                                X509Chain? chain = null;
-                                try
+                                throw CreateSslException(SR.net_ssl_use_cert_failed);
+                            }
+                        }
+                        else
+                        {
+                            try
+                            {
+                                certHandle!.DangerousAddRef(ref hasCertReference);
+                                using (X509Certificate2 cert = new X509Certificate2(certHandle.DangerousGetHandle()))
                                 {
-                                    chain = TLSCertificateExtensions.BuildNewChain(cert, includeClientApplicationPolicy: false);
-                                    if (chain != null && !Ssl.AddExtraChainCertificates(context, chain))
+                                    X509Chain? chain = null;
+                                    try
                                     {
-                                        throw CreateSslException(SR.net_ssl_use_cert_failed);
-                                    }
-                                }
-                                finally
-                                {
-                                    if (chain != null)
-                                    {
-                                        int elementsCount = chain.ChainElements.Count;
-                                        for (int i = 0; i < elementsCount; i++)
+                                        chain = TLSCertificateExtensions.BuildNewChain(cert, includeClientApplicationPolicy: false);
+                                        if (chain != null && !Ssl.AddExtraChainCertificates(context, chain))
                                         {
-                                            chain.ChainElements[i].Certificate!.Dispose();
+                                            throw CreateSslException(SR.net_ssl_use_cert_failed);
                                         }
+                                    }
+                                    finally
+                                    {
+                                        if (chain != null)
+                                        {
+                                            int elementsCount = chain.ChainElements.Count;
+                                            for (int i = 0; i < elementsCount; i++)
+                                            {
+                                             chain.ChainElements[i].Certificate!.Dispose();
+                                            }
 
-                                        chain.Dispose();
+                                            chain.Dispose();
+                                        }
                                     }
                                 }
                             }
-                        }
-                        finally
-                        {
-                            if (hasCertReference)
-                                certHandle!.DangerousRelease();
+                            finally
+                            {
+                                if (hasCertReference)
+                                    certHandle!.DangerousRelease();
+                            }
                         }
                     }
 
