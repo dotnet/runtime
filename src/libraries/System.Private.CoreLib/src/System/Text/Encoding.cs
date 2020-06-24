@@ -246,9 +246,9 @@ namespace System.Text
 
                         if (LocalAppContextSwitches.EnableUnsafeUTF7Encoding)
                         {
-#pragma warning disable BCL0001 // Encoding.UTF7 property getter is obsolete
+#pragma warning disable MSLIB0001 // Encoding.UTF7 property getter is obsolete
                             return UTF7;
-#pragma warning restore BCL0001
+#pragma warning restore MSLIB0001
                         }
                         else
                         {

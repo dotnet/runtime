@@ -27,11 +27,11 @@ namespace System.Text
         private const string optionalChars =
             "!\"#$%&*;<=>@[]^_`{|}";
 
-#pragma warning disable BCL0001
+#pragma warning disable MSLIB0001
         // Used by Encoding.UTF7 for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
         internal static readonly UTF7Encoding s_default = new UTF7Encoding();
-#pragma warning restore BCL0001
+#pragma warning restore MSLIB0001
 
         // The set of base 64 characters.
         private byte[] _base64Bytes;

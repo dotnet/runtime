@@ -96,9 +96,9 @@ namespace System.Text
     }
     public partial class UTF7Encoding : System.Text.Encoding
     {
-        [System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.", DiagnosticId = "BCL0001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.", DiagnosticId = "MSLIB0001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public UTF7Encoding() { }
-        [System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.", DiagnosticId = "BCL0001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.", DiagnosticId = "MSLIB0001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public UTF7Encoding(bool allowOptionals) { }
         public override bool Equals(object? value) { throw null; }
         [System.CLSCompliantAttribute(false)]

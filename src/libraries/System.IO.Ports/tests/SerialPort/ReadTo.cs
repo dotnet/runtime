@@ -864,9 +864,9 @@ namespace System.IO.Ports.Tests
 
         private int GetUTF7EncodingBytes(char[] chars, int index, int count)
         {
-#pragma warning disable BCL0001 // Encoding.UTF7 property is obsolete
+#pragma warning disable MSLIB0001 // Encoding.UTF7 property is obsolete
             Encoding utf7Encoding = Encoding.UTF7;
-#pragma warning restore BCL0001
+#pragma warning restore MSLIB0001
 
             byte[] bytes = utf7Encoding.GetBytes(chars, index, count);
             int byteCount = bytes.Length;
