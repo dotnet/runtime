@@ -56,25 +56,25 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             var arr10 = new Uint8Array(sharedArr50);
             Assert.Equal(50, arr10.Length);
-            
+
             var arr11 = new Uint16Array(sharedArr50);
             Assert.Equal(25, arr11.Length);
-            
+
             var arr12 = new Uint32Array(sharedArr40);
             Assert.Equal(10, arr12.Length);
-            
+
             var arr13 = new Int8Array(sharedArr50);
             Assert.Equal(50, arr13.Length);
-            
+
             var arr14 = new Int16Array(sharedArr40);
             Assert.Equal(20, arr14.Length);
-            
+
             var arr15 = new Int32Array(sharedArr40);
             Assert.Equal(10, arr15.Length);
-            
+
             var arr16 = new Float32Array(sharedArr40);
             Assert.Equal(10, arr16.Length);
-            
+
             var arr17 = new Float64Array(sharedArr40);
             Assert.Equal(5, arr17.Length);
         }
@@ -96,24 +96,24 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void FunctionMath()
         {
             JSObject math = (JSObject)Runtime.GetGlobalObject("Math");
-            Assert.NotNull (math);
-            
+            Assert.NotNull(math);
+
             Function mathMax = (Function)math.GetObjectProperty("max");
-            Assert.NotNull (mathMax);
+            Assert.NotNull(mathMax);
 
             var maxValue = (int)mathMax.Apply(null, new object[] { 5, 6, 2, 3, 7 });
             Assert.Equal(7, maxValue);
-            
-            maxValue = (int)mathMax.Call(null, 5, 6, 2, 3, 7 );
+
+            maxValue = (int)mathMax.Call(null, 5, 6, 2, 3, 7);
             Assert.Equal(7, maxValue);
 
             Function mathMin = (Function)((JSObject)Runtime.GetGlobalObject("Math")).GetObjectProperty("min");
-            Assert.NotNull (mathMin);
+            Assert.NotNull(mathMin);
 
             var minValue = (int)mathMin.Apply(null, new object[] { 5, 6, 2, 3, 7 });
             Assert.Equal(2, minValue);
-            
-            minValue = (int)mathMin.Call(null, 5, 6, 2, 3, 7 );
+
+            minValue = (int)mathMin.Call(null, 5, 6, 2, 3, 7);
             Assert.Equal(2, minValue);
         }
     }
