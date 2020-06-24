@@ -2089,7 +2089,7 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address);
 void do_vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
 {
     assert(GCToEEInterface::HasInstructionSet(kInstructionSetAVX2));
-    if (GCToEEInterface::HasInstructionSet(kInstructionSetAVX512))
+    if (GCToEEInterface::HasInstructionSet(kInstructionSetAVX512F))
     {
         do_vxsort_avx512(low, high);
     }
@@ -2108,7 +2108,7 @@ void do_vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
 void do_vxsort(uint32_t* low, uint32_t* high, unsigned int depth)
 {
     assert(GCToEEInterface::HasInstructionSet(kInstructionSetAVX2));
-    if (GCToEEInterface::HasInstructionSet(kInstructionSetAVX512))
+    if (GCToEEInterface::HasInstructionSet(kInstructionSetAVX512F))
     {
         do_vxsort_avx512(low, high);
     }

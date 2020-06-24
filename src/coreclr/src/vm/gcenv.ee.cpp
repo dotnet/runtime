@@ -1662,7 +1662,7 @@ bool GCToEEInterface::HasInstructionSet(InstructionSet requestedInstructionSet)
     switch (requestedInstructionSet)
     {
     case kInstructionSetAVX2:       return cpuCompileFlags.IsSet(InstructionSet_AVX2);
-    case kInstructionSetAVX512:     return cpuCompileFlags.IsSet(InstructionSet_AVX512);
+    case kInstructionSetAVX512F:    return cpuCompileFlags.IsSet(InstructionSet_AVX512F);
     default:                        return false;
     }
 #else

@@ -1450,7 +1450,7 @@ void EEJitManager::SetCpuInfo()
 
                                         if (DoesOSSupportAVX512() && zmmStateSupport() == 1 && (buffer[6] & 0x01) != 0)
                                         {
-                                            CPUCompileFlags.Set(InstructionSet_AVX512);
+                                            CPUCompileFlags.Set(InstructionSet_AVX512F);
                                         }
                                     }
                                 }

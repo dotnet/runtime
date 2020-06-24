@@ -25,7 +25,7 @@ enum InstructionSet
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     kInstructionSetAVX2 =               0,
-    kInstructionSetAVX512 =             1,
+    kInstructionSetAVX512F =            1,
 #endif //defined(TARGET_X86) || defined(TARGET_AMD64)
 };
 
