@@ -13063,6 +13063,22 @@ void emitter::emitDispIns(
             emitDispReg(id->idReg3(), size, false);
             break;
 
+        case IF_DV_3EI: // DV_3EI ........XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by element)
+            if (emitInsIsVectorLong(ins))
+            {
+                emitDispReg(id->idReg1(), widenDatasize(size), true);
+            }
+            else
+            {
+                assert(!emitInsIsVectorNarrow(ins) && !emitInsIsVectorWide(ins));
+                emitDispReg(id->idReg1(), size, true);
+            }
+            emitDispReg(id->idReg2(), size, true);
+            elemsize = id->idOpSize();
+            index    = emitGetInsSC(id);
+            emitDispVectorRegIndex(id->idReg3(), elemsize, index, false);
+            break;
+
         case IF_DV_3F: // DV_3F   ..........mmmmm ......nnnnnddddd       Vd Vn Vm (vector)
             if ((ins == INS_sha1c) || (ins == INS_sha1m) || (ins == INS_sha1p))
             {
