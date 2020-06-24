@@ -80,10 +80,41 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void FunctionSumCall()
+        public static void FunctionSum()
         {
+            // The Difference Between call() and apply()
+            // The difference is:
+            //      The call() method takes arguments separately.
+            //      The apply() method takes arguments as an array.
             var sum = new Function("a", "b", "return a + b");
             Assert.Equal(8, (int)sum.Call(null, 3, 5));
+
+            Assert.Equal(13, (int)sum.Apply(null, new object[] { 6, 7 }));
+        }
+
+        [Fact]
+        public static void FunctionMath()
+        {
+            JSObject math = (JSObject)Runtime.GetGlobalObject("Math");
+            Assert.NotNull (math);
+            
+            Function mathMax = (Function)math.GetObjectProperty("max");
+            Assert.NotNull (mathMax);
+
+            var maxValue = (int)mathMax.Apply(null, new object[] { 5, 6, 2, 3, 7 });
+            Assert.Equal(7, maxValue);
+            
+            maxValue = (int)mathMax.Call(null, 5, 6, 2, 3, 7 );
+            Assert.Equal(7, maxValue);
+
+            Function mathMin = (Function)((JSObject)Runtime.GetGlobalObject("Math")).GetObjectProperty("min");
+            Assert.NotNull (mathMin);
+
+            var minValue = (int)mathMin.Apply(null, new object[] { 5, 6, 2, 3, 7 });
+            Assert.Equal(2, minValue);
+            
+            minValue = (int)mathMin.Call(null, 5, 6, 2, 3, 7 );
+            Assert.Equal(2, minValue);
         }
     }
 }
