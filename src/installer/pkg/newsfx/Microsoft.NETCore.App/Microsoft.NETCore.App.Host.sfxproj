@@ -29,13 +29,16 @@
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/ijwhost.lib" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/libnethost.lib" />
   </ItemGroup>
+
   <ItemGroup>
     <_SymbolFiles Condition="'$(TargetOS)' == 'Windows_NT'"
                     Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)PDB/%(Filename).pdb')"
-                    IsSymbolFile="true" />
+                    IsSymbolFile="true"
+                    IsNative="true" />
     <_SymbolFiles Condition="'$(TargetOS)' != 'Windows_NT'"
                     Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)PDB/%(Filename)%(Extension)%(SymbolFileExtension)')"
-                    IsSymbolFile="true" />
+                    IsSymbolFile="true"
+                    IsNative="true" />
   </ItemGroup>
 
   <Target Name="AddSymbolFiles" BeforeTargets="GetFilesToPackage">

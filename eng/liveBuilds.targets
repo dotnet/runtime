@@ -113,11 +113,11 @@
         Include="
           $(CoreCLRSharedFrameworkDir)PDB/*.pdb;
           $(CoreCLRSharedFrameworkDir)PDB/*.dbg;
-          $(CoreCLRSharedFrameworkDir)PDB/*.dwarf" />
+          $(CoreCLRSharedFrameworkDir)PDB/*.dwarf" IsNative="true" />
       <RuntimeFiles
-        Include="$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.pdb;" />
+        Include="$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.pdb'))" />
       <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.ni.pdb')"
-        Include="$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.ni.pdb" />
+        Include="$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.ni.pdb'))" />
       <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''"
         Include="
           $(CoreCLRCrossTargetComponentDir)PDB/*.pdb;
@@ -126,6 +126,7 @@
 
       <CoreCLRCrossTargetFiles>
         <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
+        <IsNative>true</IsNative>
       </CoreCLRCrossTargetFiles>
     </ItemGroup>
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
