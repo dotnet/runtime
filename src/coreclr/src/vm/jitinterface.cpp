@@ -569,7 +569,7 @@ CEEInfo::ConvToJitSig(
 
     if (sigRet->callConv == CORINFO_CALLCONV_UNMANAGED)
     {
-        COMPlusThrowHR(COR_E_NOTSUPPORTED);
+        COMPlusThrowHR(E_NOTIMPL);
     }
 
     // Set computed flags

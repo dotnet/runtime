@@ -1189,7 +1189,7 @@ namespace Internal.JitInterface
 
             if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED)
             {
-                throw new NotSupportedException();
+                throw new NotImplementedException();
             }
 
 #if !READYTORUN
