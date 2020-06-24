@@ -11941,10 +11941,8 @@ void emitter::emitDispIns(
 
     switch (fmt)
     {
-        code_t       code;
         ssize_t      imm;
         int          doffs;
-        bool         isExtendAlias;
         bitMaskImm   bmi;
         halfwordImm  hwi;
         condFlagsImm cfi;
@@ -12618,31 +12616,32 @@ void emitter::emitDispIns(
             break;
 
         case IF_DV_2O: // DV_2O   .Q.......iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - vector)
-            imm = emitGetInsSC(id);
-            // Do we have a sxtl or uxtl instruction?
-            isExtendAlias = ((ins == INS_sxtl) || (ins == INS_sxtl2) || (ins == INS_uxtl) || (ins == INS_uxtl2));
-            code          = emitInsCode(ins, fmt);
-            if (code & 0x00008000) // widen/narrow opcodes
+            if ((ins == INS_sxtl) || (ins == INS_sxtl2) || (ins == INS_uxtl) || (ins == INS_uxtl2))
             {
-                if (code & 0x00002000) // SHL opcodes
-                {
-                    emitDispVectorReg(id->idReg1(), optWidenElemsize(id->idInsOpt()), true);
-                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), !isExtendAlias);
-                }
-                else // SHR opcodes
-                {
-                    emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
-                    emitDispVectorReg(id->idReg2(), optWidenElemsize(id->idInsOpt()), !isExtendAlias);
-                }
+                assert((emitInsIsVectorLong(ins)));
+                emitDispVectorReg(id->idReg1(), optWidenElemsizeArrangement(id->idInsOpt()), true);
+                emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
             else
             {
-                emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
-                emitDispVectorReg(id->idReg2(), id->idInsOpt(), !isExtendAlias);
-            }
-            // Print the immediate unless we have a sxtl or uxtl instruction
-            if (!isExtendAlias)
-            {
+                if (emitInsIsVectorLong(ins))
+                {
+                    emitDispVectorReg(id->idReg1(), optWidenElemsizeArrangement(id->idInsOpt()), true);
+                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+                }
+                else if (emitInsIsVectorNarrow(ins))
+                {
+                    emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                    emitDispVectorReg(id->idReg2(), optWidenElemsizeArrangement(id->idInsOpt()), true);
+                }
+                else
+                {
+                    assert(!emitInsIsVectorWide(ins));
+                    emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+                }
+
+                imm = emitGetInsSC(id);
                 emitDispImm(imm, false);
             }
             break;
