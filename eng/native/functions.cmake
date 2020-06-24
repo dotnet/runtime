@@ -106,7 +106,7 @@ function(find_unwind_libs UnwindLibs)
     endif()
 
     set(${UnwindLibs} ${UNWIND_LIBS} ${UNWIND} PARENT_SCOPE)
-endfunction(get_include_directories_asm)
+endfunction(find_unwind_libs)
 
 # Set the passed in RetSources variable to the list of sources with added current source directory
 # to form absolute paths.

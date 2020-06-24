@@ -126,7 +126,7 @@ if(NOT CLR_CMAKE_TARGET_WIN32)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
     set_exports_linker_option(${EXPORTS_FILE})
-endif(CLR_CMAKE_TARGET_WIN32)
+endif(NOT CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_custom_target(singlefilehost_exports DEPENDS ${EXPORTS_FILE})

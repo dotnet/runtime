@@ -26,7 +26,7 @@
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
 
 // Specifies whether coreclr is embedded or standalone
-extern const bool g_coreclr_embedded;
+extern bool g_coreclr_embedded;
 
 // Holder for array of wide strings
 class ConstWStringArrayHolder : public NewArrayHolder<LPCWSTR>

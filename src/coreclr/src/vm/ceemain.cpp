@@ -242,9 +242,9 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 
 // g_coreclr_embedded indicates that coreclr is linked directly into the program
 #ifdef CORECLR_EMBEDDED
-const bool g_coreclr_embedded = true;
+bool g_coreclr_embedded = true;
 #else
-const bool g_coreclr_embedded = false;
+bool g_coreclr_embedded = false;
 #endif
 
 // Remember how the last startup of EE went.
