@@ -1638,6 +1638,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode4H[4] = {IF_DV_3E, IF_DV_3A, IF_DV_2L, IF_DV_2M};
     const static insFormat formatEncode4I[4] = {IF_DV_3D, IF_DV_3B, IF_DV_2G, IF_DV_2A};
     const static insFormat formatEncode4J[4] = {IF_DV_2N, IF_DV_2O, IF_DV_3E, IF_DV_3A};
+    const static insFormat formatEncode4K[4] = {IF_DV_3E, IF_DV_3A, IF_DV_3EI, IF_DV_3AI};
     const static insFormat formatEncode3A[3] = {IF_DR_3A, IF_DR_3B, IF_DI_2C};
     const static insFormat formatEncode3B[3] = {IF_DR_2A, IF_DR_2B, IF_DI_1C};
     const static insFormat formatEncode3C[3] = {IF_DR_3A, IF_DR_3B, IF_DV_3C};
@@ -1842,6 +1843,17 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             for (index = 0; index < 4; index++)
             {
                 if (fmt == formatEncode4J[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
+            break;
+
+        case IF_EN4K:
+            for (index = 0; index < 4; index++)
+            {
+                if (fmt == formatEncode4K[index])
                 {
                     encoding_found = true;
                     break;
