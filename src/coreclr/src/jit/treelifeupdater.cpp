@@ -221,7 +221,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
     bool isBorn;
     bool isDying;
     // GTF_SPILL will be set on a MultiRegLclVar if any registers need to be spilled.
-    bool spill = ((lclVarTree->gtFlags & GTF_SPILL) != 0);
+    bool spill           = ((lclVarTree->gtFlags & GTF_SPILL) != 0);
     bool isMultiRegLocal = lclVarTree->IsMultiRegLclVar();
     if (isMultiRegLocal)
     {
@@ -276,8 +276,8 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
             unsigned firstFieldVarNum = varDsc->lvFieldLclStart;
             for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
             {
-                bool fieldIsSpilled = spill && ((lclVarTree->GetRegSpillFlagByIdx(i) & GTF_SPILL) != 0);
-                LclVarDsc* fldVarDsc = &(compiler->lvaTable[firstFieldVarNum + i]);
+                bool       fieldIsSpilled = spill && ((lclVarTree->GetRegSpillFlagByIdx(i) & GTF_SPILL) != 0);
+                LclVarDsc* fldVarDsc      = &(compiler->lvaTable[firstFieldVarNum + i]);
                 noway_assert(fldVarDsc->lvIsStructField);
                 assert(fldVarDsc->lvTracked);
                 unsigned  fldVarIndex  = fldVarDsc->lvVarIndex;
