@@ -201,7 +201,7 @@ var Module = {
 			}
 		}
 
-		if (enable_gc) {
+		if (!enable_gc) {
 			var f = Module.cwrap ('mono_wasm_enable_on_demand_gc', 'void', ['number']);
 			f (enable_gc);
 		}
