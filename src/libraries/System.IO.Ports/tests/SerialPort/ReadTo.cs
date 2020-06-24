@@ -25,9 +25,6 @@ namespace System.IO.Ports.Tests
         private const int MIN_NUM_NEWLINE_CHARS = 1;
         private const int MAX_NUM_NEWLINE_CHARS = 5;
 
-        // The web name of Encoding.UTF7
-        private const string UTF7_WEBNAME = "utf-7";
-
         private enum ReadDataFromEnum { NonBuffered, Buffered, BufferedAndNonBuffered };
 
         #region Test Cases
@@ -694,7 +691,7 @@ namespace System.IO.Ports.Tests
             int totalCharsRead;
             int lastIndexOfNewLine = -newLineStringLength;
             string expectedString;
-            bool isUTF7Encoding = com1.Encoding.WebName == UTF7_WEBNAME;
+            bool isUTF7Encoding = com1.Encoding.IsUTF7Encoding();
 
             char[] charsToWrite = strToWrite.ToCharArray();
             byte[] bytesToWrite = com1.Encoding.GetBytes(charsToWrite);
@@ -808,7 +805,7 @@ namespace System.IO.Ports.Tests
                 Random rndGen = new Random(-55);
                 StringBuilder strBldrToWrite;
                 string strExpected;
-                bool isUTF7Encoding = encoding.WebName == UTF7_WEBNAME;
+                bool isUTF7Encoding = encoding.IsUTF7Encoding();
 
                 Debug.WriteLine("Verifying ReadTo with WriteLine encoding={0}, newLine={1}", encoding, newLine);
 
@@ -864,14 +861,10 @@ namespace System.IO.Ports.Tests
 
         private int GetUTF7EncodingBytes(char[] chars, int index, int count)
         {
-#pragma warning disable MSLIB0001 // Encoding.UTF7 property is obsolete
-            Encoding utf7Encoding = Encoding.UTF7;
-#pragma warning restore MSLIB0001
-
-            byte[] bytes = utf7Encoding.GetBytes(chars, index, count);
+            byte[] bytes = LegacyUTF7Encoding.GetBytes(chars, index, count);
             int byteCount = bytes.Length;
 
-            while (utf7Encoding.GetCharCount(bytes, 0, byteCount) == count)
+            while (LegacyUTF7Encoding.GetCharCount(bytes, 0, byteCount) == count)
             {
                 --byteCount;
             }

@@ -111,9 +111,7 @@ namespace System.IO.Ports.Tests
         public void Encoding_UTF7()
         {
             Debug.WriteLine("Verifying UTF7Encoding Encoding");
-#pragma warning disable MSLIB0001 // Encoding.UTF7 property is obsolete
-            VerifyException(Encoding.UTF7, ThrowAt.Set, typeof(ArgumentException));
-#pragma warning restore MSLIB0001
+            VerifyException(LegacyUTF7Encoding, ThrowAt.Set, typeof(ArgumentException));
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
