@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System;
@@ -10,35 +11,36 @@ namespace System.Xml.Schema
     using System.Text;
     using System.IO;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
 
     internal sealed partial class Parser
     {
         private SchemaType _schemaType;
         private readonly XmlNameTable _nameTable;
         private readonly SchemaNames _schemaNames;
-        private readonly ValidationEventHandler _eventHandler;
-        private XmlNamespaceManager _namespaceManager;
-        private XmlReader _reader;
-        private PositionInfo _positionInfo;
+        private readonly ValidationEventHandler? _eventHandler;
+        private XmlNamespaceManager? _namespaceManager;
+        private XmlReader? _reader;
+        private PositionInfo? _positionInfo;
         private bool _isProcessNamespaces;
         private int _schemaXmlDepth = 0;
         private int _markupDepth;
-        private SchemaBuilder _builder;
-        private XmlSchema _schema;
-        private SchemaInfo _xdrSchema;
-        private XmlResolver _xmlResolver = null; //to be used only by XDRBuilder
+        private SchemaBuilder? _builder;
+        private XmlSchema? _schema;
+        private SchemaInfo? _xdrSchema;
+        private XmlResolver? _xmlResolver = null; //to be used only by XDRBuilder
 
         //xs:Annotation perf fix
         private readonly XmlDocument _dummyDocument;
         private bool _processMarkup;
-        private XmlNode _parentNode;
-        private XmlNamespaceManager _annotationNSManager;
-        private string _xmlns;
+        private XmlNode? _parentNode;
+        private XmlNamespaceManager? _annotationNSManager;
+        private string? _xmlns;
 
         //Whitespace check for text nodes
         private XmlCharType _xmlCharType = XmlCharType.Instance;
 
-        public Parser(SchemaType schemaType, XmlNameTable nameTable, SchemaNames schemaNames, ValidationEventHandler eventHandler)
+        public Parser(SchemaType schemaType, XmlNameTable nameTable, SchemaNames schemaNames, ValidationEventHandler? eventHandler)
         {
             _schemaType = schemaType;
             _nameTable = nameTable;
@@ -49,14 +51,14 @@ namespace System.Xml.Schema
             _dummyDocument = new XmlDocument();
         }
 
-        public SchemaType Parse(XmlReader reader, string targetNamespace)
+        public SchemaType Parse(XmlReader reader, string? targetNamespace)
         {
             StartParsing(reader, targetNamespace);
             while (ParseReaderNode() && reader.Read()) { }
             return FinishParsing();
         }
 
-        public void StartParsing(XmlReader reader, string targetNamespace)
+        public void StartParsing(XmlReader reader, string? targetNamespace)
         {
             _reader = reader;
             _positionInfo = PositionInfo.GetPositionInfo(reader);
@@ -76,8 +78,7 @@ namespace System.Xml.Schema
             _schemaXmlDepth = reader.Depth;
             SchemaType rootType = _schemaNames.SchemaTypeFromRoot(reader.LocalName, reader.NamespaceURI);
 
-            string code;
-            if (!CheckSchemaRoot(rootType, out code))
+            if (!CheckSchemaRoot(rootType, out string? code))
             {
                 throw new XmlSchemaException(code, reader.BaseURI, _positionInfo.LineNumber, _positionInfo.LinePosition);
             }
@@ -85,7 +86,7 @@ namespace System.Xml.Schema
             if (_schemaType == SchemaType.XSD)
             {
                 _schema = new XmlSchema();
-                _schema.BaseUri = new Uri(reader.BaseURI, UriKind.RelativeOrAbsolute);
+                _schema.BaseUri = new Uri(reader.BaseURI!, UriKind.RelativeOrAbsolute);
                 _builder = new XsdBuilder(reader, _namespaceManager, _schema, _nameTable, _schemaNames, _eventHandler);
             }
             else
@@ -98,7 +99,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private bool CheckSchemaRoot(SchemaType rootType, out string code)
+        private bool CheckSchemaRoot(SchemaType rootType, [NotNullWhen(false)] out string? code)
         {
             code = null;
             if (_schemaType == SchemaType.None)
@@ -149,12 +150,12 @@ namespace System.Xml.Schema
             return _schemaType;
         }
 
-        public XmlSchema XmlSchema
+        public XmlSchema? XmlSchema
         {
             get { return _schema; }
         }
 
-        internal XmlResolver XmlResolver
+        internal XmlResolver? XmlResolver
         {
             set
             {
@@ -162,14 +163,14 @@ namespace System.Xml.Schema
             }
         }
 
-        public SchemaInfo XdrSchema
+        public SchemaInfo? XdrSchema
         {
             get { return _xdrSchema; }
         }
 
         public bool ParseReaderNode()
         {
-            if (_reader.Depth > _markupDepth)
+            if (_reader!.Depth > _markupDepth)
             {
                 if (_processMarkup)
                 {
@@ -179,9 +180,9 @@ namespace System.Xml.Schema
             }
             else if (_reader.NodeType == XmlNodeType.Element)
             {
-                if (_builder.ProcessElement(_reader.Prefix, _reader.LocalName, _reader.NamespaceURI))
+                if (_builder!.ProcessElement(_reader.Prefix, _reader.LocalName, _reader.NamespaceURI))
                 {
-                    _namespaceManager.PushScope();
+                    _namespaceManager!.PushScope();
                     if (_reader.MoveToFirstAttribute())
                     {
                         do
@@ -227,14 +228,14 @@ namespace System.Xml.Schema
             { //Check for whitespace
                 if (!_xmlCharType.IsOnlyWhitespace(_reader.Value))
                 {
-                    _builder.ProcessCData(_reader.Value);
+                    _builder!.ProcessCData(_reader.Value);
                 }
             }
             else if (_reader.NodeType == XmlNodeType.EntityReference ||
                 _reader.NodeType == XmlNodeType.SignificantWhitespace ||
                 _reader.NodeType == XmlNodeType.CDATA)
             {
-                _builder.ProcessCData(_reader.Value);
+                _builder!.ProcessCData(_reader.Value);
             }
             else if (_reader.NodeType == XmlNodeType.EndElement)
             {
@@ -249,16 +250,17 @@ namespace System.Xml.Schema
                         {
                             markup[i] = list[i];
                         }
-                        _builder.ProcessMarkup(markup);
-                        _namespaceManager.PopScope();
+
+                        _builder!.ProcessMarkup(markup);
+                        _namespaceManager!.PopScope();
                         _builder.EndChildren();
                     }
                     _markupDepth = int.MaxValue;
                 }
                 else
                 {
-                    _namespaceManager.PopScope();
-                    _builder.EndChildren();
+                    _namespaceManager!.PopScope();
+                    _builder!.EndChildren();
                 }
                 if (_reader.Depth == _schemaXmlDepth)
                 {
@@ -271,12 +273,12 @@ namespace System.Xml.Schema
         private void ProcessAppInfoDocMarkup(bool root)
         {
             //First time reader is positioned on AppInfo or Documentation element
-            XmlNode currentNode = null;
+            XmlNode? currentNode = null;
 
-            switch (_reader.NodeType)
+            switch (_reader!.NodeType)
             {
                 case XmlNodeType.Element:
-                    _annotationNSManager.PushScope();
+                    _annotationNSManager!.PushScope();
                     currentNode = LoadElementNode(root);
                     //  Dev10 (TFS) #479761: The following code was to address the issue of where an in-scope namespace delaration attribute
                     //      was not added when an element follows an empty element. This fix will result in persisting schema in a consistent form
@@ -318,8 +320,8 @@ namespace System.Xml.Schema
                     break;
 
                 case XmlNodeType.EndElement:
-                    _annotationNSManager.PopScope();
-                    _parentNode = _parentNode.ParentNode;
+                    _annotationNSManager!.PopScope();
+                    _parentNode = _parentNode!.ParentNode;
                     break;
 
                 default: //other possible node types: Document/DocType/DocumentFrag/Entity/Notation/Xmldecl cannot appear as children of xs:appInfo or xs:doc
@@ -332,7 +334,7 @@ namespace System.Xml.Schema
 
         private XmlElement LoadElementNode(bool root)
         {
-            Debug.Assert(_reader.NodeType == XmlNodeType.Element);
+            Debug.Assert(_reader!.NodeType == XmlNodeType.Element);
 
             XmlReader r = _reader;
             bool fEmptyElement = r.IsEmptyElement;
@@ -353,22 +355,22 @@ namespace System.Xml.Schema
                     {
                         if (Ref.Equal(r.NamespaceURI, _schemaNames.NsXmlNs))
                         { //Namespace Attribute
-                            _annotationNSManager.AddNamespace(r.Prefix.Length == 0 ? string.Empty : _reader.LocalName, _reader.Value);
+                            _annotationNSManager!.AddNamespace(r.Prefix.Length == 0 ? string.Empty : _reader.LocalName, _reader.Value);
                         }
                         XmlAttribute attr = LoadAttributeNode();
                         attributes.Append(attr);
                     } while (r.MoveToNextAttribute());
                 }
                 r.MoveToElement();
-                string ns = _annotationNSManager.LookupNamespace(r.Prefix);
+                string? ns = _annotationNSManager!.LookupNamespace(r.Prefix);
                 if (ns == null)
                 {
-                    XmlAttribute attr = CreateXmlNsAttribute(r.Prefix, _namespaceManager.LookupNamespace(r.Prefix));
+                    XmlAttribute attr = CreateXmlNsAttribute(r.Prefix, _namespaceManager!.LookupNamespace(r.Prefix)!);
                     attributes.Append(attr);
                 }
                 else if (ns.Length == 0)
                 { //string.Empty prefix is mapped to string.Empty NS by default
-                    string elemNS = _namespaceManager.LookupNamespace(r.Prefix);
+                    string elemNS = _namespaceManager!.LookupNamespace(r.Prefix)!;
                     if (elemNS != string.Empty)
                     {
                         XmlAttribute attr = CreateXmlNsAttribute(r.Prefix, elemNS);
@@ -380,17 +382,17 @@ namespace System.Xml.Schema
                 {
                     if (r.Prefix.Length != 0)
                     {
-                        string attNS = _annotationNSManager.LookupNamespace(r.Prefix);
+                        string? attNS = _annotationNSManager.LookupNamespace(r.Prefix);
                         if (attNS == null)
                         {
-                            XmlAttribute attr = CreateXmlNsAttribute(r.Prefix, _namespaceManager.LookupNamespace(r.Prefix));
+                            XmlAttribute attr = CreateXmlNsAttribute(r.Prefix, _namespaceManager!.LookupNamespace(r.Prefix)!);
                             attributes.Append(attr);
                         }
                     }
                 }
                 r.MoveToElement();
 
-                _parentNode.AppendChild(element);
+                _parentNode!.AppendChild(element);
                 if (!r.IsEmptyElement)
                 {
                     _parentNode = element;
@@ -411,13 +413,13 @@ namespace System.Xml.Schema
                 attr = _dummyDocument.CreateAttribute(_xmlns, prefix, XmlReservedNs.NsXmlNs);
             }
             attr.AppendChild(_dummyDocument.CreateTextNode(value));
-            _annotationNSManager.AddNamespace(prefix, value);
+            _annotationNSManager!.AddNamespace(prefix, value);
             return attr;
         }
 
         private XmlAttribute LoadAttributeNode()
         {
-            Debug.Assert(_reader.NodeType == XmlNodeType.Attribute);
+            Debug.Assert(_reader!.NodeType == XmlNodeType.Attribute);
 
             XmlReader r = _reader;
 
@@ -443,7 +445,7 @@ namespace System.Xml.Schema
 
         private XmlEntityReference LoadEntityReferenceInAttribute()
         {
-            Debug.Assert(_reader.NodeType == XmlNodeType.EntityReference);
+            Debug.Assert(_reader!.NodeType == XmlNodeType.EntityReference);
 
             XmlEntityReference eref = _dummyDocument.CreateEntityReference(_reader.LocalName);
             if (!_reader.CanResolveEntity)

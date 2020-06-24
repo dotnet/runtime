@@ -181,7 +181,7 @@ namespace BinderTracingTests
         //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [MismatchedAssemblyName]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (DefaultALC)    [AssemblyNotFound]
-        [BinderTest(isolate: true)]
+        [BinderTest(isolate: true, additionalLoadsToTrack: new string[] { DependentAssemblyName + "_Copy" } )]
         public static BindOperation ApplicationAssemblies_MismatchedAssemblyName()
         {
             var assemblyName = new AssemblyName($"{DependentAssemblyName}_Copy, Culture=neutral, PublicKeyToken=null");
@@ -273,7 +273,7 @@ namespace BinderTracingTests
         //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [Success]
         //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [Success]
-        [BinderTest(isolate: true)]
+        [BinderTest(isolate: true, additionalLoadsToTrack: new string[] { "System.Xml" })]
         public static BindOperation DefaultAssemblyLoadContextFallback()
         {
             var assemblyName = new AssemblyName("System.Xml");

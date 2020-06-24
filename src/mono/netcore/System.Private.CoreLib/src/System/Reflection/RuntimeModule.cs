@@ -372,6 +372,8 @@ namespace System.Reflection
             }
         }
 
+        internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
+
         // This calls ves_icall_reflection_get_token, so needs a Module argument
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int get_MetadataToken(Module module);

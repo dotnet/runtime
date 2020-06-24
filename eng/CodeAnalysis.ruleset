@@ -126,7 +126,8 @@
       <Rule Id="CA2237" Action="None" />             <!-- Mark ISerializable types with serializable -->
       <Rule Id="CA2241" Action="Warning" />          <!-- Provide correct arguments to formatting methods -->
       <Rule Id="CA2242" Action="Warning" />          <!-- Test for NaN correctly -->
-      <Rule Id="CA2243" Action="Warning" />          <!-- Attribute string literals should parse correctly -->
+      <!-- CA2243 temporarily disabled: https://github.com/dotnet/roslyn-analyzers/issues/3635 -->
+      <Rule Id="CA2243" Action="None" />             <!-- Attribute string literals should parse correctly -->
       <Rule Id="CA2244" Action="None" />             <!-- Do not duplicate indexed element initializations -->
       <Rule Id="CA2245" Action="Warning" />          <!-- Do not assign a property to itself. -->
       <Rule Id="CA2246" Action="None" />             <!-- Assigning symbol and its member in the same statement. -->

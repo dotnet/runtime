@@ -620,8 +620,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_NULLCHECK:
         {
             assert(dstCount == 0);
-            regMaskTP indirCandidates = RBM_NONE;
-            BuildUse(tree->gtGetOp1(), indirCandidates);
+            // If we have a contained address on a nullcheck, we transform it to
+            // an unused GT_IND, since we require a target register.
+            BuildUse(tree->gtGetOp1());
             srcCount = 1;
             break;
         }

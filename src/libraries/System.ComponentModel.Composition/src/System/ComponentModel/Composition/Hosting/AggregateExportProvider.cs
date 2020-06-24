@@ -139,6 +139,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </summary>
         /// <param name="definition">The <see cref="ImportDefinition"/> that defines the conditions of the
         /// <see cref="Export"/> to get.</param>
+        /// <param name="atomicComposition">The transactional container for the composition.</param>
         /// <returns></returns>
         /// <result>
         /// An <see cref="IEnumerable{T}"/> of <see cref="Export"/> objects that match

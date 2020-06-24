@@ -8670,12 +8670,6 @@ DONE:
             JITDUMP("\nOSR: found tail recursive call in the method, scheduling " FMT_BB " for importation\n",
                     fgEntryBB->bbNum);
             impImportBlockPending(fgEntryBB);
-
-            // Note there is no explicit flow to this block yet,
-            // make sure it stays around until we actually try
-            // the optimization.
-            fgEntryBB->bbFlags |= BBF_DONT_REMOVE;
-
             loopHead = fgEntryBB;
         }
         else
@@ -8809,7 +8803,7 @@ DONE_CALL:
                 impAppendTree(call, (unsigned)CHECK_SPILL_ALL, impCurStmtOffs);
 
                 // TODO: Still using the widened type.
-                GenTree* retExpr = gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp));
+                GenTree* retExpr = gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp), compCurBB->bbFlags);
 
                 // Link the retExpr to the call so if necessary we can manipulate it later.
                 origCall->gtInlineCandidateInfo->retExpr = retExpr;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Xml;
 using System.Collections;
 
@@ -15,12 +16,12 @@ namespace System.Xml.Schema
 
         bool IsNil { get; }
 
-        XmlSchemaSimpleType MemberType { get; }
+        XmlSchemaSimpleType? MemberType { get; }
 
-        XmlSchemaType SchemaType { get; }
+        XmlSchemaType? SchemaType { get; }
 
-        XmlSchemaElement SchemaElement { get; }
+        XmlSchemaElement? SchemaElement { get; }
 
-        XmlSchemaAttribute SchemaAttribute { get; }
+        XmlSchemaAttribute? SchemaAttribute { get; }
     }
 }

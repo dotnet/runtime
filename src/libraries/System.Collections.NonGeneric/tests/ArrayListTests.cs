@@ -2552,7 +2552,7 @@ namespace System.Collections.Tests
         private ArrayList _arrDaughter;
         private ArrayList _arrGrandDaughter;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void GetSyncRoot()
         {
             const int NumberOfElements = 100;
@@ -2842,7 +2842,7 @@ namespace System.Collections.Tests
         public ArrayList _arrList;
         public Hashtable _hash; // This will verify that threads will only add elements the num of times they are specified to
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Synchronized_ArrayList()
         {
             // Make 40 threads which add strHeroes to an ArrayList
@@ -2864,7 +2864,7 @@ namespace System.Collections.Tests
             Assert.Equal(workers.Length * s_synchronizedTestData.Length, _arrList.Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Synchronized_IList()
         {
             int iNumberOfWorkers = 10;

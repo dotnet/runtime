@@ -138,6 +138,15 @@ wasm_invoke_viiiiiiiiiiiiii (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_viiiiiiiiiiiiiii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, int arg_2, int arg_3, int arg_4, int arg_5, int arg_6, int arg_7, int arg_8, int arg_9, int arg_10, int arg_11, int arg_12, int arg_13, int arg_14);
+	T func = (T)target_func;
+	func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], (int)(gssize)margs->iargs [2], (int)(gssize)margs->iargs [3], (int)(gssize)margs->iargs [4], (int)(gssize)margs->iargs [5], (int)(gssize)margs->iargs [6], (int)(gssize)margs->iargs [7], (int)(gssize)margs->iargs [8], (int)(gssize)margs->iargs [9], (int)(gssize)margs->iargs [10], (int)(gssize)margs->iargs [11], (int)(gssize)margs->iargs [12], (int)(gssize)margs->iargs [13], (int)(gssize)margs->iargs [14]);
+
+}
+
+static void
 wasm_invoke_i (void *target_func, InterpMethodArguments *margs)
 {
 	typedef int (*T)(void);
@@ -283,6 +292,16 @@ wasm_invoke_iiliiii (void *target_func, InterpMethodArguments *margs)
 	typedef int (*T)(int arg_0, gint64 arg_1, int arg_2, int arg_3, int arg_4, int arg_5);
 	T func = (T)target_func;
 	int res = func ((int)(gssize)margs->iargs [0], get_long_arg (margs, 1), (int)(gssize)margs->iargs [3], (int)(gssize)margs->iargs [4], (int)(gssize)margs->iargs [5], (int)(gssize)margs->iargs [6]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_iiil (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(int arg_0, int arg_1, gint64 arg_2);
+	T func = (T)target_func;
+	int res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], get_long_arg (margs, 2));
 	*(int*)margs->retval = res;
 
 }
@@ -758,6 +777,87 @@ wasm_invoke_dddd (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_vf (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)]);
+
+}
+
+static void
+wasm_invoke_vff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, float arg_1);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)]);
+
+}
+
+static void
+wasm_invoke_vfff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, float arg_1, float arg_2);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)]);
+
+}
+
+static void
+wasm_invoke_vffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, float arg_1, float arg_2, float arg_3);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)]);
+
+}
+
+static void
+wasm_invoke_vfffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, float arg_1, float arg_2, float arg_3, float arg_4);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)], *(float*)&margs->fargs [FIDX (4)]);
+
+}
+
+static void
+wasm_invoke_vffffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, float arg_1, float arg_2, float arg_3, float arg_4, float arg_5);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)], *(float*)&margs->fargs [FIDX (4)], *(float*)&margs->fargs [FIDX (5)]);
+
+}
+
+static void
+wasm_invoke_vfffffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, float arg_1, float arg_2, float arg_3, float arg_4, float arg_5, float arg_6);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)], *(float*)&margs->fargs [FIDX (4)], *(float*)&margs->fargs [FIDX (5)], *(float*)&margs->fargs [FIDX (6)]);
+
+}
+
+static void
+wasm_invoke_vffffffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, float arg_1, float arg_2, float arg_3, float arg_4, float arg_5, float arg_6, float arg_7);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)], *(float*)&margs->fargs [FIDX (4)], *(float*)&margs->fargs [FIDX (5)], *(float*)&margs->fargs [FIDX (6)], *(float*)&margs->fargs [FIDX (7)]);
+
+}
+
+static void
+wasm_invoke_vfi (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, int arg_1);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], (int)(gssize)margs->iargs [0]);
+
+}
+
+static void
 wasm_invoke_vif (void *target_func, InterpMethodArguments *margs)
 {
 	typedef void (*T)(int arg_0, float arg_1);
@@ -817,6 +917,33 @@ wasm_invoke_viiffi (void *target_func, InterpMethodArguments *margs)
 	typedef void (*T)(int arg_0, int arg_1, float arg_2, float arg_3, int arg_4);
 	T func = (T)target_func;
 	func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], *(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], (int)(gssize)margs->iargs [2]);
+
+}
+
+static void
+wasm_invoke_viif (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, float arg_2);
+	T func = (T)target_func;
+	func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], *(float*)&margs->fargs [FIDX (0)]);
+
+}
+
+static void
+wasm_invoke_viifff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, float arg_2, float arg_3, float arg_4);
+	T func = (T)target_func;
+	func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], *(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)]);
+
+}
+
+static void
+wasm_invoke_viifi (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, float arg_2, int arg_3);
+	T func = (T)target_func;
+	func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], *(float*)&margs->fargs [FIDX (0)], (int)(gssize)margs->iargs [2]);
 
 }
 
@@ -1014,6 +1141,15 @@ wasm_invoke_vil (void *target_func, InterpMethodArguments *margs)
 	typedef void (*T)(int arg_0, gint64 arg_1);
 	T func = (T)target_func;
 	func ((int)(gssize)margs->iargs [0], get_long_arg (margs, 1));
+
+}
+
+static void
+wasm_invoke_viil (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, gint64 arg_2);
+	T func = (T)target_func;
+	func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], get_long_arg (margs, 2));
 
 }
 
@@ -1400,8 +1536,15 @@ icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodAr
 													if (cookie[12] == 'I') {
 														if (cookie[13] == 'I') {
 															if (cookie[14] == 'I') {
-																if (cookie[15] == '\0') {
-																	// found: VIIIIIIIIIIIIII depth 16
+																if (cookie[15] == 'I') {
+																	if (cookie[16] == '\0') {
+																		// found: VIIIIIIIIIIIIIII depth 17
+																		wasm_invoke_viiiiiiiiiiiiiii (target_func, margs);
+																		return;
+																	}
+																}
+																else if (cookie[15] == '\0') {
+																	// found: VIIIIIIIIIIIIII depth 17
 																	wasm_invoke_viiiiiiiiiiiiii (target_func, margs);
 																	return;
 																}
@@ -1530,6 +1673,11 @@ icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodAr
 									return;
 								}
 							}
+							else if (cookie[6] == '\0') {
+								// found: VIIFFF depth 9
+								wasm_invoke_viifff (target_func, margs);
+								return;
+							}
 						}
 						else if (cookie[5] == 'I') {
 							if (cookie[6] == 'I') {
@@ -1551,9 +1699,28 @@ icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodAr
 							return;
 						}
 					}
+					else if (cookie[4] == 'I') {
+						if (cookie[5] == '\0') {
+							// found: VIIFI depth 8
+							wasm_invoke_viifi (target_func, margs);
+							return;
+						}
+					}
+					else if (cookie[4] == '\0') {
+						// found: VIIF depth 8
+						wasm_invoke_viif (target_func, margs);
+						return;
+					}
+				}
+				else if (cookie[3] == 'L') {
+					if (cookie[4] == '\0') {
+						// found: VIIL depth 7
+						wasm_invoke_viil (target_func, margs);
+						return;
+					}
 				}
 				else if (cookie[3] == '\0') {
-					// found: VII depth 6
+					// found: VII depth 7
 					wasm_invoke_vii (target_func, margs);
 					return;
 				}
@@ -1675,8 +1842,71 @@ icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodAr
 				return;
 			}
 		}
+		else if (cookie[1] == 'F') {
+			if (cookie[2] == 'F') {
+				if (cookie[3] == 'F') {
+					if (cookie[4] == 'F') {
+						if (cookie[5] == 'F') {
+							if (cookie[6] == 'F') {
+								if (cookie[7] == 'F') {
+									if (cookie[8] == 'F') {
+										if (cookie[9] == '\0') {
+											// found: VFFFFFFFF depth 11
+											wasm_invoke_vffffffff (target_func, margs);
+											return;
+										}
+									}
+									else if (cookie[8] == '\0') {
+										// found: VFFFFFFF depth 11
+										wasm_invoke_vfffffff (target_func, margs);
+										return;
+									}
+								}
+								else if (cookie[7] == '\0') {
+									// found: VFFFFFF depth 10
+									wasm_invoke_vffffff (target_func, margs);
+									return;
+								}
+							}
+							else if (cookie[6] == '\0') {
+								// found: VFFFFF depth 9
+								wasm_invoke_vfffff (target_func, margs);
+								return;
+							}
+						}
+						else if (cookie[5] == '\0') {
+							// found: VFFFF depth 8
+							wasm_invoke_vffff (target_func, margs);
+							return;
+						}
+					}
+					else if (cookie[4] == '\0') {
+						// found: VFFF depth 7
+						wasm_invoke_vfff (target_func, margs);
+						return;
+					}
+				}
+				else if (cookie[3] == '\0') {
+					// found: VFF depth 6
+					wasm_invoke_vff (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == 'I') {
+				if (cookie[3] == '\0') {
+					// found: VFI depth 6
+					wasm_invoke_vfi (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == '\0') {
+				// found: VF depth 6
+				wasm_invoke_vf (target_func, margs);
+				return;
+			}
+		}
 		else if (cookie[1] == '\0') {
-			// found: V depth 3
+			// found: V depth 4
 			wasm_invoke_v (target_func, margs);
 			return;
 		}
@@ -1991,8 +2221,15 @@ icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodAr
 						return;
 					}
 				}
+				else if (cookie[3] == 'L') {
+					if (cookie[4] == '\0') {
+						// found: IIIL depth 8
+						wasm_invoke_iiil (target_func, margs);
+						return;
+					}
+				}
 				else if (cookie[3] == '\0') {
-					// found: III depth 7
+					// found: III depth 8
 					wasm_invoke_iii (target_func, margs);
 					return;
 				}

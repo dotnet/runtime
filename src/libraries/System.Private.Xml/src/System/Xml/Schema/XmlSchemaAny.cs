@@ -69,7 +69,7 @@ namespace System.Xml.Schema
                     case NamespaceList.ListType.Set:
                         StringBuilder sb = new StringBuilder();
                         int i = 1;
-                        foreach (string? wildcardNS in _namespaceList.Enumerate)
+                        foreach (string wildcardNS in _namespaceList.Enumerate)
                         {
                             sb.Append(wildcardNS + ":*");
                             if (i < _namespaceList.Enumerate.Count)
@@ -86,11 +86,11 @@ namespace System.Xml.Schema
             }
         }
 
-        internal void BuildNamespaceList(string targetNamespace)
+        internal void BuildNamespaceList(string? targetNamespace)
         {
             if (_ns != null)
             { //If namespace="" default to namespace="##any"
-                _namespaceList = new NamespaceList(_ns, targetNamespace);
+                _namespaceList = new NamespaceList(_ns, targetNamespace!);
             }
             else
             {

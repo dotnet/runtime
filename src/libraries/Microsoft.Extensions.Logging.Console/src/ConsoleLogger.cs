@@ -10,9 +10,9 @@ namespace Microsoft.Extensions.Logging.Console
 {
     internal class ConsoleLogger : ILogger
     {
-        private static readonly string _loglevelPadding = ": ";
-        private static readonly string _messagePadding;
-        private static readonly string _newLineWithMessagePadding;
+        private const string LoglevelPadding = ": ";
+        private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + LoglevelPadding.Length);
+        private static readonly string _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
 
         // ConsoleColor does not have a value to specify the 'Default' color
         private readonly ConsoleColor? DefaultConsoleColor = null;
@@ -22,13 +22,6 @@ namespace Microsoft.Extensions.Logging.Console
 
         [ThreadStatic]
         private static StringBuilder _logBuilder;
-
-        static ConsoleLogger()
-        {
-            var logLevelString = GetLogLevelString(LogLevel.Information);
-            _messagePadding = new string(' ', logLevelString.Length + _loglevelPadding.Length);
-            _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
-        }
 
         internal ConsoleLogger(string name, ConsoleLoggerProcessor loggerProcessor)
         {
@@ -57,7 +50,7 @@ namespace Microsoft.Extensions.Logging.Console
                 throw new ArgumentNullException(nameof(formatter));
             }
 
-            var message = formatter(state, exception);
+            string message = formatter(state, exception);
 
             if (!string.IsNullOrEmpty(message) || exception != null)
             {
@@ -67,10 +60,10 @@ namespace Microsoft.Extensions.Logging.Console
 
         public virtual void WriteMessage(LogLevel logLevel, string logName, int eventId, string message, Exception exception)
         {
-            var format = Options.Format;
+            ConsoleLoggerFormat format = Options.Format;
             Debug.Assert(format >= ConsoleLoggerFormat.Default && format <= ConsoleLoggerFormat.Systemd);
 
-            var logBuilder = _logBuilder;
+            StringBuilder logBuilder = _logBuilder;
             _logBuilder = null;
 
             if (logBuilder == null)
@@ -107,10 +100,10 @@ namespace Microsoft.Extensions.Logging.Console
             // INFO: ConsoleApp.Program[10]
             //       Request received
 
-            var logLevelColors = GetLogLevelConsoleColors(logLevel);
-            var logLevelString = GetLogLevelString(logLevel);
+            ConsoleColors logLevelColors = GetLogLevelConsoleColors(logLevel);
+            string logLevelString = GetLogLevelString(logLevel);
             // category and event id
-            logBuilder.Append(_loglevelPadding);
+            logBuilder.Append(LoglevelPadding);
             logBuilder.Append(logName);
             logBuilder.Append('[');
             logBuilder.Append(eventId);
@@ -124,7 +117,7 @@ namespace Microsoft.Extensions.Logging.Console
                 // message
                 logBuilder.Append(_messagePadding);
 
-                var len = logBuilder.Length;
+                int len = logBuilder.Length;
                 logBuilder.AppendLine(message);
                 logBuilder.Replace(Environment.NewLine, _newLineWithMessagePadding, len, message.Length);
             }
@@ -139,10 +132,10 @@ namespace Microsoft.Extensions.Logging.Console
             }
 
             string timestamp = null;
-            var timestampFormat = Options.TimestampFormat;
+            string timestampFormat = Options.TimestampFormat;
             if (timestampFormat != null)
             {
-                var dateTime = GetCurrentDateTime();
+                DateTime dateTime = GetCurrentDateTime();
                 timestamp = dateTime.ToString(timestampFormat);
             }
 
@@ -166,14 +159,14 @@ namespace Microsoft.Extensions.Logging.Console
             // <6>ConsoleApp.Program[10] Request received
 
             // loglevel
-            var logLevelString = GetSyslogSeverityString(logLevel);
+            string logLevelString = GetSyslogSeverityString(logLevel);
             logBuilder.Append(logLevelString);
 
             // timestamp
-            var timestampFormat = Options.TimestampFormat;
+            string timestampFormat = Options.TimestampFormat;
             if (timestampFormat != null)
             {
-                var dateTime = GetCurrentDateTime();
+                DateTime dateTime = GetCurrentDateTime();
                 logBuilder.Append(dateTime.ToString(timestampFormat));
             }
 
@@ -212,7 +205,7 @@ namespace Microsoft.Extensions.Logging.Console
 
             static void AppendAndReplaceNewLine(StringBuilder sb, string message)
             {
-                var len = sb.Length;
+                int len = sb.Length;
                 sb.Append(message);
                 sb.Replace(Environment.NewLine, " ", len, message.Length);
             }
@@ -302,15 +295,15 @@ namespace Microsoft.Extensions.Logging.Console
 
         private void GetScopeInformation(StringBuilder stringBuilder, bool multiLine)
         {
-            var scopeProvider = ScopeProvider;
+            IExternalScopeProvider scopeProvider = ScopeProvider;
             if (Options.IncludeScopes && scopeProvider != null)
             {
-                var initialLength = stringBuilder.Length;
+                int initialLength = stringBuilder.Length;
 
                 scopeProvider.ForEachScope((scope, state) =>
                 {
-                    var (builder, paddAt) = state;
-                    var padd = paddAt == builder.Length;
+                    (StringBuilder builder, int paddAt) = state;
+                    bool padd = paddAt == builder.Length;
                     if (padd)
                     {
                         builder.Append(_messagePadding);

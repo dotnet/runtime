@@ -1532,9 +1532,6 @@ NDirectStubLinker::NDirectStubLinker(
     m_pCleanupFinallyBeginLabel(NULL),
     m_pCleanupFinallyEndLabel(NULL),
     m_pSkipExceptionCleanupLabel(NULL),
-#ifdef FEATURE_COMINTEROP
-    m_dwWinRTFactoryObjectLocalNum(-1),
-#endif // FEATURE_COMINTEROP
     m_fHasCleanupCode(FALSE),
     m_fHasExceptionCleanupCode(FALSE),
     m_fCleanupWorkListIsSetup(FALSE),

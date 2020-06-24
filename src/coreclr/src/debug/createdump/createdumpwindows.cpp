@@ -4,8 +4,6 @@
 
 #include "createdump.h"
 
-bool g_diagnostics = false;
-
 //
 // The Windows create dump code
 //

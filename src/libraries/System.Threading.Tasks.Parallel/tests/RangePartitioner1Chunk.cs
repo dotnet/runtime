@@ -101,7 +101,7 @@ namespace System.Threading.Tasks.Tests
         /// Test that in a parallel Foreach loop can be dependencies between iterations if a partitioner of chunk size 1 is used
         /// </summary>
         /// <param name="length"></param>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void IterationsWithDependency()
         {
             static void iterationsWithDependency(int length, int dependencyIndex)
@@ -141,7 +141,7 @@ namespace System.Threading.Tasks.Tests
         /// Verify that the enumerators used while executing the ParalleForEach over the partitioner are disposed
         /// </summary>
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void PFEDisposeEnum()
         {
             List<int> ds = new List<int>();
@@ -166,7 +166,7 @@ namespace System.Threading.Tasks.Tests
         /// Partitioner is used in ParallelForEach
         /// Exception is expected and the enumerators are disposed
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ExceptionOnMoveNext()
         {
             static void exceptionOnMoveNext(int length, int indexToThrow, bool isOrderable)

@@ -175,23 +175,23 @@ namespace System.Xml.Schema
             {
                 if (context.IsNill)
                 {
-                    SendValidationEvent(SR.Sch_ContentInNill, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
+                    SendValidationEvent(SR.Sch_ContentInNill, XmlSchemaValidator.QNameString(context.LocalName!, context.Namespace!));
                     return;
                 }
 
-                ContentValidator contentValidator = context.ElementDecl!.ContentValidator;
+                ContentValidator contentValidator = context.ElementDecl!.ContentValidator!;
                 XmlSchemaContentType contentType = contentValidator.ContentType;
                 if (contentType == XmlSchemaContentType.ElementOnly)
                 {
                     ArrayList? names = contentValidator.ExpectedElements(context, false);
                     if (names == null)
                     {
-                        SendValidationEvent(SR.Sch_InvalidTextInElement, XmlSchemaValidator.BuildElementName(context.LocalName, context.Namespace));
+                        SendValidationEvent(SR.Sch_InvalidTextInElement, XmlSchemaValidator.BuildElementName(context.LocalName!, context.Namespace!));
                     }
                     else
                     {
                         Debug.Assert(names.Count > 0);
-                        SendValidationEvent(SR.Sch_InvalidTextInElementExpecting, new string[] { XmlSchemaValidator.BuildElementName(context.LocalName, context.Namespace), XmlSchemaValidator.PrintExpectedElements(names, false) });
+                        SendValidationEvent(SR.Sch_InvalidTextInElementExpecting, new string[] { XmlSchemaValidator.BuildElementName(context.LocalName!, context.Namespace!), XmlSchemaValidator.PrintExpectedElements(names, false) });
                     }
                 }
                 else if (contentType == XmlSchemaContentType.Empty)
@@ -211,10 +211,10 @@ namespace System.Xml.Schema
             Debug.Assert(context != null);
             if (context.NeedValidateChildren)
             {
-                XmlSchemaContentType contentType = context.ElementDecl!.ContentValidator.ContentType;
+                XmlSchemaContentType contentType = context.ElementDecl!.ContentValidator!.ContentType;
                 if (context.IsNill)
                 {
-                    SendValidationEvent(SR.Sch_ContentInNill, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
+                    SendValidationEvent(SR.Sch_ContentInNill, XmlSchemaValidator.QNameString(context.LocalName!, context.Namespace!));
                 }
 
                 if (contentType == XmlSchemaContentType.Empty)
@@ -254,12 +254,12 @@ namespace System.Xml.Schema
             SendValidationEvent(code, string.Empty);
         }
 
-        protected void SendValidationEvent(string code, string[] args)
+        protected void SendValidationEvent(string code, string?[]? args)
         {
             SendValidationEvent(new XmlSchemaException(code, args, reader.BaseURI, _positionInfo.LineNumber, _positionInfo.LinePosition));
         }
 
-        protected void SendValidationEvent(string code, string arg)
+        protected void SendValidationEvent(string code, string? arg)
         {
             SendValidationEvent(new XmlSchemaException(code, arg, reader.BaseURI, _positionInfo.LineNumber, _positionInfo.LinePosition));
         }
@@ -269,12 +269,12 @@ namespace System.Xml.Schema
             SendValidationEvent(e, XmlSeverityType.Error);
         }
 
-        protected void SendValidationEvent(string code, string msg, XmlSeverityType severity)
+        protected void SendValidationEvent(string code, string? msg, XmlSeverityType severity)
         {
             SendValidationEvent(new XmlSchemaException(code, msg, reader.BaseURI, _positionInfo.LineNumber, _positionInfo.LinePosition), severity);
         }
 
-        protected void SendValidationEvent(string code, string[] args, XmlSeverityType severity)
+        protected void SendValidationEvent(string code, string?[]? args, XmlSeverityType severity)
         {
             SendValidationEvent(new XmlSchemaException(code, args, reader.BaseURI, _positionInfo.LineNumber, _positionInfo.LinePosition), severity);
         }
@@ -291,7 +291,7 @@ namespace System.Xml.Schema
             }
         }
 
-        protected static void ProcessEntity(SchemaInfo sinfo, string name, object sender, ValidationEventHandler eventhandler, string baseUri, int lineNumber, int linePosition)
+        protected static void ProcessEntity(SchemaInfo sinfo, string name, object? sender, ValidationEventHandler? eventhandler, string? baseUri, int lineNumber, int linePosition)
         {
             SchemaEntity? en;
             XmlSchemaException? e = null;

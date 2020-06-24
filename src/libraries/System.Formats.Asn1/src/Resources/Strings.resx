@@ -57,8 +57,8 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
-    <value>The destination is too small to hold the encoded value.</value>
+  <data name="Argument_DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
   </data>
   <data name="Argument_EnumeratedValueRequiresNonFlagsEnum" xml:space="preserve">
     <value>ASN.1 Enumerated values only apply to enum types without the [Flags] attribute.</value>

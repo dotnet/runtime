@@ -362,16 +362,23 @@ namespace System.Net.Http
             int streamId = frameHeader.StreamId;
             Http2Stream? http2Stream = GetStream(streamId);
 
-            // Note, http2Stream will be null if this is a closed stream.
-            // We will still process the headers, to ensure the header decoding state is up-to-date,
-            // but we will discard the decoded headers.
-
-            http2Stream?.OnHeadersStart();
+            IHttpHeadersHandler headersHandler;
+            if (http2Stream != null)
+            {
+                http2Stream.OnHeadersStart();
+                headersHandler = http2Stream;
+            }
+            else
+            {
+                // http2Stream will be null if this is a closed stream. We will still process the headers,
+                // to ensure the header decoding state is up-to-date, but we will discard the decoded headers.
+                headersHandler = NopHeadersHandler.Instance;
+            }
 
             _hpackDecoder.Decode(
                 GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength), frameHeader.PaddedFlag, frameHeader.PriorityFlag),
                 frameHeader.EndHeadersFlag,
-                http2Stream);
+                headersHandler);
             _incomingBuffer.Discard(frameHeader.PayloadLength);
 
             while (!frameHeader.EndHeadersFlag)
@@ -386,16 +393,23 @@ namespace System.Net.Http
                 _hpackDecoder.Decode(
                     _incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength),
                     frameHeader.EndHeadersFlag,
-                    http2Stream);
+                    headersHandler);
                 _incomingBuffer.Discard(frameHeader.PayloadLength);
             }
 
             _hpackDecoder.CompleteDecode();
 
-            if (http2Stream != null)
-            {
-                http2Stream.OnHeadersComplete(endStream);
-            }
+            http2Stream?.OnHeadersComplete(endStream);
+        }
+
+        /// <summary>Nop implementation of <see cref="IHttpHeadersHandler"/> used by <see cref="ProcessHeadersFrame"/>.</summary>
+        private sealed class NopHeadersHandler : IHttpHeadersHandler
+        {
+            public static readonly NopHeadersHandler Instance = new NopHeadersHandler();
+            void IHttpHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value) { }
+            void IHttpHeadersHandler.OnHeadersComplete(bool endStream) { }
+            void IHttpHeadersHandler.OnStaticIndexedHeader(int index) { }
+            void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value) { }
         }
 
         private ReadOnlySpan<byte> GetFrameData(ReadOnlySpan<byte> frameData, bool hasPad, bool hasPriority)
@@ -1210,7 +1224,7 @@ namespace System.Net.Http
                 // Construct and initialize the new Http2Stream instance.  It's stream ID must be set below
                 // before the instance is used and stored into the dictionary.  However, we construct it here
                 // so as to avoid the allocation and initialization expense while holding multiple locks.
-                var http2Stream = new Http2Stream(request, this, _initialWindowSize);
+                var http2Stream = new Http2Stream(request, this);
 
                 // Start the write.  This serializes access to write to the connection, and ensures that HEADERS
                 // and CONTINUATION frames stay together, as they must do. We use the lock as well to ensure new
@@ -1233,8 +1247,13 @@ namespace System.Net.Http
                                 s.thisRef.ThrowShutdownException();
                             }
 
+                            // Now that we're holding the lock, configure the stream.  The lock must be held while
+                            // assigning the stream ID to ensure only one stream gets an ID, and it must be held
+                            // across setting the initial window size (available credit) and storing the stream into
+                            // collection such that window size updates are able to atomically affect all known streams.
+                            s.http2Stream.Initialize(s.thisRef._nextStream, _initialWindowSize);
+
                             // Client-initiated streams are always odd-numbered, so increase by 2.
-                            s.http2Stream.StreamId = s.thisRef._nextStream;
                             s.thisRef._nextStream += 2;
 
                             // We're about to flush the HEADERS frame, so add the stream to the dictionary now.

@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite)
         {
-            var callCount = 0;
+            int callCount = 0;
             return scope =>
             {
                 if (Interlocked.Increment(ref callCount) == 2)
