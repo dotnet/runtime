@@ -483,7 +483,6 @@ namespace System.Reflection.Emit
         public override System.Type MakePointerType() { throw null; }
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        public void SetParent(System.Type? parent) { }
         public void SetParent([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent) { }
         public override string ToString() { throw null; }
     }
