@@ -18,6 +18,11 @@ namespace System.Net.Http
             _connection = connection;
         }
 
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            Write(new ReadOnlySpan<byte>(buffer, offset, count));
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)

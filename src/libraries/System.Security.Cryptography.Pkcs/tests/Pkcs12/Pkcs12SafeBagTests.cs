@@ -67,10 +67,6 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             Assert.NotSame(firstCall, secondCall);
             Assert.Equal(Oids.Aes192, firstCall.Value);
             Assert.Equal(firstCall.Value, secondCall.Value);
-
-            secondCall.Value = Oids.Cms3DesWrap;
-            Assert.NotEqual(firstCall.Value, secondCall.Value);
-            Assert.Equal(Oids.Aes192, firstCall.Value);
         }
 
         [Fact]

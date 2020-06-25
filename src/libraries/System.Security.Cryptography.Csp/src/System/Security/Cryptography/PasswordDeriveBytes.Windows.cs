@@ -3,7 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.NativeCrypto;
-using Microsoft.Win32.SafeHandles;
+
+#pragma warning disable CA5373 // Call to obsolete key derivation function PasswordDeriveBytes.*
 
 namespace System.Security.Cryptography
 {

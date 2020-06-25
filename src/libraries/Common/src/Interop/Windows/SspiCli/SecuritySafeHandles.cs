@@ -182,13 +182,6 @@ namespace System.Net.Security
             _handle = default;
         }
 
-#if TRACE_VERBOSE
-        public override string ToString()
-        {
-            return "0x" + _handle.ToString();
-        }
-#endif
-
         public override bool IsInvalid
         {
             get { return IsClosed || _handle.IsZero; }

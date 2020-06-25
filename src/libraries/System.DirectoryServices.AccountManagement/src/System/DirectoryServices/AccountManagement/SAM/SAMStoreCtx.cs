@@ -2,16 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Net;
 using System.Security.Principal;
-
-using System.DirectoryServices;
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -32,7 +27,9 @@ namespace System.DirectoryServices.AccountManagement
 
         private readonly ContextOptions _contextOptions;
 
+#pragma warning disable CA1810 // Initialize reference type static fields inline
         static SAMStoreCtx()
+#pragma warning restore CA1810
         {
             //
             // Load the *PropertyMappingTableByProperty and *PropertyMappingTableByWinNT tables
