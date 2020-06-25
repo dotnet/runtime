@@ -2151,11 +2151,9 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
                 // Adjust the offset by the amount currently pushed on the CPU stack
                 offset += genStackLevel;
             }
-            else
+#else
+            assert(genStackLevel == 0);
 #endif // !FEATURE_FIXED_OUT_ARGS
-            {
-                assert(genStackLevel == 0);
-            }
 
             if (op1->OperGet() == GT_LCL_FLD)
             {
@@ -2214,11 +2212,9 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
             // Adjust the offset by the amount currently pushed on the CPU stack
             offs += genStackLevel;
         }
-        else
+#else
+        assert(genStackLevel == 0);
 #endif // !FEATURE_FIXED_OUT_ARGS
-        {
-            assert(genStackLevel == 0);
-        }
 
         regNumber indexReg = op2->GetRegNum();
 
