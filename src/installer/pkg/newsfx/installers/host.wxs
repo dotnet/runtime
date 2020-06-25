@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <?include "$(var.SharedWixDir)\variables.wxi" ?>
+
+  <Fragment>
+
+    <ComponentGroup Id="InstallSharedHostandDetectionKeys">
+
+      <!-- When installing the SharedHost; copy all files to the traditional default install location: 'ProgramFiles'\dotnet even when installing into a custom location.
+
+      User Scenerio:
+      When a user has installed a 2.1 SDK or similar SDK first so that the PATH environmental variable has 'ProgramFiles'\dotnet in a first position.
+      Then the user installs a 3.0 SDK thru VS to a different volume with VS so that 'VSSharedVolume'\dotnet is in a second position.
+      We want the 3.0 SharedHost to be on the PATH in the first position. Therefore, installing the SharedHost to both 'VSSharedVolume'\dotnet and
+      'ProgramFiles'\dotnet will achieve this.
+
+      On a 'clean' machine when installing into a custom location; the installation behavior is the same.
+      Rationale:
+        1. the legacy SDK can be subsequently installed
+        2. the user runs 'dotnet' commands directly against 'ProgramFiles'\dotnet\dotnet.exe -->
+
+      <Component Id="cmpCoreHost" Directory="DOTNETHOME" Guid="{45399BBB-DDA5-4386-A2E9-618FB3C54A18}" >
+        <File Id="fileCoreHostExe" KeyPath="yes" Source="$(var.HostSrc)\dotnet.exe">
+          <CopyFile Id="copyFileCoreHostExe" DestinationDirectory="PROGRAMFILES_DOTNET" />
+        </File>
+        <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
+          <RegistryValue Action="write" Name="Version" Type="string" Value="$(var.NugetVersion)"/>
+        </RegistryKey>
+        <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
+      </Component>
+
+      <Component Id="cmpLicenseFiles" Directory="DOTNETHOME" Guid="{A61CBE5B-1282-4F29-90AD-63597AA2372E}">
+        <File Id="fileLicenseTxt" KeyPath="yes" Source="$(var.HostSrc)\LICENSE.txt">
+          <CopyFile Id="copyFileLicenseTxt" DestinationDirectory="PROGRAMFILES_DOTNET" />
+        </File>
+        <File Id="fileThirdPartyNoticesTxt" Source="$(var.HostSrc)\ThirdPartyNotices.txt">
+          <CopyFile Id="copyFileThirdPartyNoticesTxt" DestinationDirectory="PROGRAMFILES_DOTNET" />
+        </File>
+      </Component>
+
+    </ComponentGroup>
+
+    <Property Id="ProductCPU" Value="$(var.Platform)" />
+    <Property Id="RTM_ProductVersion" Value="$(var.Dotnet_ProductVersion)" />
+
+    <DirectoryRef Id="$(var.Program_Files)">
+      <Directory Id="PROGRAMFILES_DOTNET" Name="dotnet" />
+    </DirectoryRef>
+  </Fragment>
+
+</Wix>

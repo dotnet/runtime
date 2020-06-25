@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
+    <GenerateInstallers>true</GenerateInstallers>
+    <SharedFrameworkInstallerName>dotnet-host</SharedFrameworkInstallerName>
+    <PackageBrandNameSuffix>Host</PackageBrandNameSuffix>
+    <PlatformPackageType>ToolPack</PlatformPackageType>
+    <VSInsertionShortComponentName>NetCore.SharedHost</VSInsertionShortComponentName>
+    <UseCustomDirectoryHarvesting>true</UseCustomDirectoryHarvesting>
+    <WixIncludeRegistryKeys>true</WixIncludeRegistryKeys>
+    <RegKeyProductName>sharedhost</RegKeyProductName>
+    <WixDependencyKeyName>Dotnet_CLI_SharedHost</WixDependencyKeyName>
+    <OutputFilesCandleVariable>HostSrc</OutputFilesCandleVariable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WixSrcFile Include="host.wxs" />
+    <WixExtraComponentGroupRefId Include="InstallSharedHostandDetectionKeys" />
+    <CandleVariables Include="ExtraPropertyRefIds" Value="ProductCPU;RTM_ProductVersion" />
+  </ItemGroup>
+
+  <Target Name="PublishSharedFrameworkToDisk">
+    <Error Condition="'$(SharedFrameworkOutputPath)' == ''" Text="Publishing to disk requires the SharedFrameworkOutputPath to be set to the root of the path to write to." />
+
+    <ItemGroup>
+      <FilesToPublish Include="$(DotNetHostBinDir)\dotnet$(ExeSuffix)"
+            Destination="$(SharedFrameworkOutputPath)dotnet$(ExeSuffix)" />
+      <FilesToPublish Include="$(RepoRoot)THIRD-PARTY-NOTICES.TXT"
+            Destination="$(SharedFrameworkOutputPath)ThirdPartyNotices.txt" />
+      <FilesToPublish Include="$(RepoRoot)LICENSE.TXT"
+            Destination="$(SharedFrameworkOutputPath)LICENSE.txt"
+            Condition="'$(TargetsUnix)' == 'true'"/>
+      <FilesToPublish Include="$(InstallerProjectRoot)pkg\LICENSE-MSFT.TXT"
+            Destination="$(SharedFrameworkOutputPath)LICENSE.txt"
+            Condition="'$(TargetsUnix)' != 'true'"/>
+    </ItemGroup>
+
+    <Copy SourceFiles="@(FilesToPublish)"
+          DestinationFiles="%(FilesToPublish.Destination)" />
+  </Target>
+
+  <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
+    <ItemGroup Condition="'$(GenerateDeb)' == 'true'">
+      <LinuxPackageDependency Include="libc6;libgcc1;libstdc++6" />
+    </ItemGroup>
+    <ItemGroup>
+      <DebJsonProperty Include="symlinks" Object="{ 'dotnet': '/usr/bin/dotnet' }" />
+      <RpmJsonProperty Include="directories" Object="[ '/usr/share/dotnet', '/usr/share/doc/dotnet-host' ]" />
+      <PackageConflictsProperty Include="package_conflicts" Object="[ 'dotnet', 'dotnet-nightly' ]" />
+      <DebJsonProperty Include="@(PackageConflictsProperty)" />
+      <RpmJsonProperty Include="@(PackageConflictsProperty)" />
+    </ItemGroup>
+  </Target>
+</Project>

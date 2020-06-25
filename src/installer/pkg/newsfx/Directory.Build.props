@@ -1,4 +1,7 @@
 <Project>
+  <PropertyGroup>
+    <EnsureRuntimeIdentifierSet>true</EnsureRuntimeIdentifierSet>
+  </PropertyGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
@@ -11,6 +14,7 @@
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799417</ReleaseNotes>
     <ProjectUrl>https://dot.net</ProjectUrl>
     <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
+    <ProductBrandPrefix>Microsoft .NET</ProductBrandPrefix>
     <GenerateInstallers>true</GenerateInstallers>
     <GenerateVSInsertionPackages>true</GenerateVSInsertionPackages>
   </PropertyGroup>
