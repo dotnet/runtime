@@ -97,7 +97,7 @@ namespace System
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(ManualTestsEnabled))]
         public static void OpenStandardInput()
         {
             Console.WriteLine("Please type \"console\" (without the quotes). You shouldn't see it as you type:");
@@ -213,7 +213,7 @@ namespace System
             ConsoleKeyInfo info = Console.ReadKey();
             Console.WriteLine();
 
-            switch(info.Key)
+            switch (info.Key)
             {
                 case ConsoleKey.Y or ConsoleKey.N:
                     Assert.Equal(ConsoleKey.Y, info.Key);
