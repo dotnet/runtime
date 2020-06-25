@@ -22,6 +22,8 @@
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)nethost$(LibraryFileExtension)" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)nethost$(StaticLibraryFileExtension)" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/nethost.h" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/hostfxr.h" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Windows_NT'">
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/comhost.dll" />
