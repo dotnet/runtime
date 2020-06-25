@@ -600,7 +600,7 @@ namespace System.Reflection.Emit
             return new TypeToken(GetToken(type));
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Reflection.Emit is not subject to trimming")]
         public TypeToken GetTypeToken(string name)
         {
