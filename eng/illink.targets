@@ -106,9 +106,10 @@
 
   <PropertyGroup>
     <ILLinkResourcesSubstitutionIntermediatePath>$(IntermediateOutputPath)ILLink.Resources.Substitutions.xml</ILLinkResourcesSubstitutionIntermediatePath>
+    <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != ''">true</GenerateResourcesSubstitutions>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(StringResourcesPath)' != ''">
+  <ItemGroup Condition="'$(GenerateResourcesSubstitutions)' == 'true'">
     <ILLinkSubstitutionsXmls Include="$(ILLinkResourcesSubstitutionIntermediatePath)" />
   </ItemGroup>
   
@@ -116,12 +117,12 @@
   library so that if a consumer wants to run the linker they can specify a feature switch to strip out all resources
   from the assembly. -->
   <Target Name="GenerateResourcesSubstitutionFile"  
-          Condition="'$(StringResourcesPath)' != ''"
+          Condition="'$(GenerateResourcesSubstitutions)' == 'true'"
           Inputs="'$(MSBuildProjectFullPath)'"
           Outputs="'$(ILLinkResourcesSubstitutionIntermediatePath)'">
 
     <PropertyGroup>
-      <ILLinkResourcesSubstitutionTemplate>$(MSBuildThisFileDirectory)ILLink.Resources.Substitutions.template</ILLinkResourcesSubstitutionTemplate>
+      <ILLinkResourcesSubstitutionTemplate>$(MSBuildThisFileDirectory)ILLink.Substitutions.Resources.template</ILLinkResourcesSubstitutionTemplate>
     </PropertyGroup>
 
     <WriteLinesToFile File="$(ILLinkResourcesSubstitutionIntermediatePath)"

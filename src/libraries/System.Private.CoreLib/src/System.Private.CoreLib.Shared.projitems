@@ -2,6 +2,8 @@
   <PropertyGroup>
     <HasSharedItems>true</HasSharedItems>
     <SharedGUID>c5ed3c1d-b572-46f1-8f96-522a85ce1179</SharedGUID>
+    <StringResourcesName Condition="'$(StringResourcesName)' == ''">System.Private.CoreLib.Strings</StringResourcesName>
+    <GenerateResourcesSubstitutions>true</GenerateResourcesSubstitutions>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
     <Import_RootNamespace />
