@@ -23,6 +23,12 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        public static void SupportsCFB()
+        {
+            SupportsMode(CipherMode.CFB);
+        }
+
+        [Fact]
         public static void DoesNotSupportCTS()
         {
             DoesNotSupportMode(CipherMode.CTS);
