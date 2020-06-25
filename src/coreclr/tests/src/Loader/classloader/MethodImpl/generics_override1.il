@@ -793,24 +793,37 @@
       IL_0001:  nop
       IL_0002:  call       int32 Program::Test3Internal()
       IL_0007:  pop
-      ldstr "MissingMethodException not thrown. This is a failure."
-      call       void [mscorlib]System.Console::WriteLine(string)
-      IL_0008:  ldc.i4.s   101
-      IL_000a:  stloc.0
-      IL_000b:  leave.s    IL_0014
+      IL_0008:  ldstr      "MissingMethodException not thrown. This is a failure"
+      IL_000d:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0012:  nop
+      IL_0013:  ldc.i4.s   101
+      IL_0015:  stloc.0
+      IL_0016:  leave.s    IL_003c
     }  // end .try
     catch [mscorlib]System.MissingMethodException 
     {
-      IL_000d:  pop
-      ldstr "Caught expected MissingMethodException"
-      call       void [mscorlib]System.Console::WriteLine(string)
-      IL_000e:  nop
-      IL_000f:  ldc.i4.s   100
-      IL_0011:  stloc.0
-      IL_0012:  leave.s    IL_0014
+      IL_0018:  pop
+      IL_0019:  nop
+      IL_001a:  ldstr      "Caught expected MissingMethodException"
+      IL_001f:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0024:  nop
+      IL_0025:  ldc.i4.s   100
+      IL_0027:  stloc.0
+      IL_0028:  leave.s    IL_003c
     }  // end handler
-    IL_0014:  ldloc.0
-    IL_0015:  ret
+    catch [mscorlib]System.TypeLoadException 
+    {
+      IL_002a:  pop
+      IL_002b:  nop
+      IL_002c:  ldstr      "Caught expected TypeLoadException"
+      IL_0031:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0036:  nop
+      IL_0037:  ldc.i4.s   100
+      IL_0039:  stloc.0
+      IL_003a:  leave.s    IL_003c
+    }  // end handler
+    IL_003c:  ldloc.0
+    IL_003d:  ret
   } // end of method Program::Test3
 
   .method private hidebysig static void  CallSpecificInterfaceFuncs<X,Y>(class IMultiGeneric`2<!!X,!!Y> interf,
@@ -966,26 +979,37 @@
       IL_0022:  nop
       IL_0023:  call       void Program::Test5Internal()
       IL_0028:  nop
-      IL_0029:  ldc.i4.s   101
-      IL_002b:  stloc.0
-                ldstr "DID NOT Catch expected MissingMethodException"
-                call       void [mscorlib]System.Console::WriteLine(string)
-      IL_002c:  leave.s    IL_0035
-
+      IL_0029:  ldstr      "MissingMethodException not thrown. This is a failure"
+      IL_002e:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0033:  nop
+      IL_0034:  ldc.i4.s   101
+      IL_0036:  stloc.0
+      IL_0037:  leave.s    IL_005d
     }  // end .try
     catch [mscorlib]System.MissingMethodException 
     {
-      IL_002e:  pop
-                ldstr "Caught expected MissingMethodException"
-                call       void [mscorlib]System.Console::WriteLine(string)
-      IL_002f:  nop
-      IL_0030:  ldc.i4.s   100
-      IL_0032:  stloc.0
-      IL_0033:  leave.s    IL_0035
-
+      IL_0039:  pop
+      IL_003a:  nop
+      IL_003b:  ldstr      "Caught expected MissingMethodException"
+      IL_0040:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0045:  nop
+      IL_0046:  ldc.i4.s   100
+      IL_0048:  stloc.0
+      IL_0049:  leave.s    IL_005d
     }  // end handler
-    IL_0035:  ldloc.0
-    IL_0036:  ret
+    catch [mscorlib]System.TypeLoadException 
+    {
+      IL_004b:  pop
+      IL_004c:  nop
+      IL_004d:  ldstr      "Caught expected TypeLoadException"
+      IL_0052:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0057:  nop
+      IL_0058:  ldc.i4.s   100
+      IL_005a:  stloc.0
+      IL_005b:  leave.s    IL_005d
+    }  // end handler
+    IL_005d:  ldloc.0
+    IL_005e:  ret
   } // end of method Program::Test5
 
   .method private hidebysig static int32  Main() cil managed
