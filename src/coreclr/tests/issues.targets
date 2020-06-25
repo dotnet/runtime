@@ -1916,10 +1916,6 @@
 	    <Issue>needs triage</Issue>
 	</ExcludeList>
 
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/generics_override1/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-
         <!-- The following only fail in the mono interpreter, but we don't have a way to exclude based on scenario yet -->
 
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/zeroinit/tail/**">

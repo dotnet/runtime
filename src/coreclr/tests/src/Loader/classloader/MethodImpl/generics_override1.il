@@ -715,8 +715,8 @@
     IL_0003:  newobj     instance void class DerivedGenericsShape`1<float64>::.ctor()
     IL_0008:  stloc.0
     IL_0009:  ldloc.0
-              ldc.i4.1
-    IL_000a:  ldc.r8 1.0
+              ldnull
+    IL_000a:  ldnull
     IL_000e:  callvirt   instance string class BaseTestGenericsShape`4<object,string,int32,float64>::Method(!0, !1)
               ldstr "BaseTestGenericsShape.Method(A a, B b)"
               ldloca.s   failCount
@@ -749,8 +749,8 @@
     IL_0003:  newobj     instance void class DerivedGenericsShapeInvalidSubstitutedOverride::.ctor()
     IL_0008:  stloc.0
     IL_0009:  ldloc.0
-              ldc.i4.1
-    IL_000a:  ldc.r8 1.0
+              ldnull
+    IL_000a:  ldnull
     IL_000e:  callvirt   instance string class BaseTestGenericsShape`4<object,string,int32,float64>::Method(!0, !1)
               ldstr "BaseTestGenericsShape.Method(A a, B b)"
               ldloca.s   failCount
