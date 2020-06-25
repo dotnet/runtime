@@ -48,9 +48,11 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             Oid firstCall = certBag.GetCertificateType();
             Oid secondCall = certBag.GetCertificateType();
 
+#if !NETCOREAPP
             Assert.NotSame(oid, firstCall);
             Assert.NotSame(oid, secondCall);
             Assert.NotSame(firstCall, secondCall);
+#endif
             Assert.Equal(oid.Value, firstCall.Value);
             Assert.Equal(oid.Value, secondCall.Value);
             Assert.Equal("Hello", firstCall.FriendlyName);

@@ -76,7 +76,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 messageDigestAttr.MessageDigest.ByteArrayToHex());
 
             Assert.IsType<Pkcs9AttributeObject>(signedAttrs[3].Values[0]);
+#if !NETCOREAPP
             Assert.NotSame(signedAttrs[3].Oid, signedAttrs[3].Values[0].Oid);
+#endif
             Assert.Equal(
                 "306A300B060960864801650304012A300B0609608648016503040116300B0609" +
                     "608648016503040102300A06082A864886F70D0307300E06082A864886F70D03" +
