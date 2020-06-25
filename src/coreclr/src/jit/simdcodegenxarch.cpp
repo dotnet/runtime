@@ -2144,6 +2144,19 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
             bool     isEBPbased;
             unsigned varNum = op1->AsLclVarCommon()->GetLclNum();
             offset += compiler->lvaFrameAddress(varNum, &isEBPbased);
+
+#if !FEATURE_FIXED_OUT_ARGS
+            if (!isEBPbased)
+            {
+                // Adjust the offset by the amount currently pushed on the CPU stack
+                offset += genStackLevel;
+            }
+            else
+#endif // !FEATURE_FIXED_OUT_ARGS
+            {
+                assert(genStackLevel == 0);
+            }
+
             if (op1->OperGet() == GT_LCL_FLD)
             {
                 offset += op1->AsLclFld()->GetLclOffs();
@@ -2195,8 +2208,17 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
         bool     isEBPbased;
         unsigned offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
 
-        // Adjust the offset with stack level, if any.
-        offs += genStackLevel;
+#if !FEATURE_FIXED_OUT_ARGS
+        if (!isEBPbased)
+        {
+            // Adjust the offset by the amount currently pushed on the CPU stack
+            offs += genStackLevel;
+        }
+        else
+#endif // !FEATURE_FIXED_OUT_ARGS
+        {
+            assert(genStackLevel == 0);
+        }
 
         regNumber indexReg = op2->GetRegNum();
 
