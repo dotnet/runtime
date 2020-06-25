@@ -4984,6 +4984,7 @@ mini_cleanup (MonoDomain *domain)
 	mono_runtime_print_stats ();
 	jit_stats_cleanup ();
 	mono_jit_dump_cleanup ();
+	mini_get_interp_callbacks ()->cleanup ();
 #ifdef ENABLE_PERFTRACING
 	ep_shutdown ();
 #endif
