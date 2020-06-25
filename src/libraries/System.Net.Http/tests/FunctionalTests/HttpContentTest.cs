@@ -200,6 +200,31 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public void ReadAsStream_GetFromUnbufferedContent_CreateContentReadStreamCalledOnce()
+        {
+            var content = new MockContent(MockOptions.CanCalculateLength);
+
+            // Call multiple times: CreateContentReadStream() should be called only once.
+            Stream stream = content.ReadAsStream();
+            stream = content.ReadAsStream();
+            stream = content.ReadAsStream();
+
+            Assert.Equal(1, content.CreateContentReadStreamCount);
+            Assert.Equal(content.GetMockData().Length, stream.Length);
+            Stream stream2 = content.ReadAsStream();
+            Assert.Same(stream, stream2);
+        }
+
+        [Fact]
+        public void ReadAsStream_GetFromUnbufferedContent_ThrowsAfterReadAsStreamsAsync()
+        {
+            var content = new MockContent(MockOptions.CanCalculateLength | MockOptions.CreateContentReadStreamAsyncNeverCompletes);
+
+            var task = content.ReadAsStreamAsync();
+            AssertExtensions.Throws<HttpRequestException>(() => content.ReadAsStream());
+        }
+
+        [Fact]
         public async Task ReadAsStreamAsync_GetFromBufferedContent_CreateContentReadStreamCalled()
         {
             var content = new MockContent(MockOptions.CanCalculateLength);
@@ -806,7 +831,8 @@ namespace System.Net.Http.Functional.Tests
             DontOverrideCreateContentReadStream = 0x8,
             CanCalculateLength = 0x10,
             ThrowInTryComputeLength = 0x20,
-            ThrowInAsyncSerializeMethods = 0x40
+            ThrowInAsyncSerializeMethods = 0x40,
+            CreateContentReadStreamAsyncNeverCompletes = 0x80
         }
 
         private class MockContent : HttpContent
@@ -915,6 +941,25 @@ namespace System.Net.Http.Functional.Tests
                 });
             }
 
+            protected override Stream CreateContentReadStream(CancellationToken cancellationToken)
+            {
+                CreateContentReadStreamCount++;
+
+                if ((_options & MockOptions.DontOverrideCreateContentReadStream) != 0)
+                {
+                    return base.CreateContentReadStream(cancellationToken);
+                }
+                else
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        throw new OperationCanceledException();
+                    }
+
+                    return new MockMemoryStream(_mockData, 0, _mockData.Length, false);
+                }
+            }
+
             protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken)
             {
                 CreateContentReadStreamCount++;
@@ -928,6 +973,11 @@ namespace System.Net.Http.Functional.Tests
                     if (cancellationToken.IsCancellationRequested)
                     {
                         return Task.FromCanceled<Stream>(cancellationToken);
+                    }
+
+                    if ((_options & MockOptions.CreateContentReadStreamAsyncNeverCompletes) != 0)
+                    {
+                        return new TaskCompletionSource<Stream>().Task;
                     }
 
                     return Task.FromResult<Stream>(new MockMemoryStream(_mockData, 0, _mockData.Length, false));
