@@ -63,6 +63,7 @@
 #include "interp.h"
 #include "interp-internals.h"
 #include "mintops.h"
+#include "intrinsics.h"
 
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
@@ -5250,6 +5251,12 @@ call_newobj:
 			gpointer p = sp [0].data.p;
 			size_t size = sp [1].data.nati * sizeof (gpointer);
 			mono_gc_bzero_aligned (p, size);
+			++ip;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_INTRINS_MARVIN_BLOCK) {
+			sp -= 2;
+			interp_intrins_marvin_block ((guint32*)sp [0].data.p, (guint32*)sp [1].data.p);
 			++ip;
 			MINT_IN_BREAK;
 		}
