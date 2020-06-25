@@ -28,11 +28,17 @@ namespace Mono.Linker.Dataflow
 		public IMemberDefinition Source { get; private set; }
 		public IMetadataTokenProvider MemberWithRequirements { get; private set; }
 		public Instruction Instruction { get; private set; }
+		public bool ReportingEnabled { get; private set; }
 
-		public ReflectionPatternContext (LinkContext context, IMemberDefinition source, IMetadataTokenProvider memberWithRequirements,
+		public ReflectionPatternContext (
+			LinkContext context,
+			bool reportingEnabled,
+			IMemberDefinition source,
+			IMetadataTokenProvider memberWithRequirements,
 			Instruction instruction = null)
 		{
 			_context = context;
+			ReportingEnabled = reportingEnabled;
 			Source = source;
 			MemberWithRequirements = memberWithRequirements;
 			Instruction = instruction;
@@ -70,7 +76,9 @@ namespace Mono.Linker.Dataflow
 #endif
 
 			mark ();
-			_context.ReflectionPatternRecorder.RecognizedReflectionAccessPattern (Source, Instruction, accessedItem);
+
+			if (ReportingEnabled)
+				_context.ReflectionPatternRecorder.RecognizedReflectionAccessPattern (Source, Instruction, accessedItem);
 		}
 
 		public void RecordUnrecognizedPattern (string message)
@@ -81,7 +89,9 @@ namespace Mono.Linker.Dataflow
 
 			_patternReported = true;
 #endif
-			_context.ReflectionPatternRecorder.UnrecognizedReflectionAccessPattern (Source, Instruction, MemberWithRequirements, message);
+
+			if (ReportingEnabled)
+				_context.ReflectionPatternRecorder.UnrecognizedReflectionAccessPattern (Source, Instruction, MemberWithRequirements, message);
 		}
 
 		public void Dispose ()
