@@ -118,8 +118,8 @@
   from the assembly. -->
   <Target Name="GenerateResourcesSubstitutionFile"  
           Condition="'$(GenerateResourcesSubstitutions)' == 'true'"
-          Inputs="'$(MSBuildProjectFullPath)'"
-          Outputs="'$(ILLinkResourcesSubstitutionIntermediatePath)'">
+          Inputs="$(MSBuildProjectFullPath)"
+          Outputs="$(ILLinkResourcesSubstitutionIntermediatePath)">
 
     <PropertyGroup>
       <ILLinkResourcesSubstitutionTemplate>$(MSBuildThisFileDirectory)ILLink.Substitutions.Resources.template</ILLinkResourcesSubstitutionTemplate>
