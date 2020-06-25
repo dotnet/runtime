@@ -11,33 +11,15 @@ namespace System.Runtime.Caching
             throw new PlatformNotSupportedException();
         }
 
-        public override ReadOnlyCollection<string> FilePaths
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override ReadOnlyCollection<string> FilePaths => throw new PlatformNotSupportedException();
 
-        public override DateTimeOffset LastModified
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override DateTimeOffset LastModified => throw new PlatformNotSupportedException();
 
-        public override string UniqueId
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override string UniqueId => throw new PlatformNotSupportedException();
 
         protected override void Dispose(bool disposing)
         {
-            throw new PlatformNotSupportedException();
+
         }
     }
 }
