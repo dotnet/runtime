@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -10,7 +10,10 @@
     <Compile Include="System\IO\ErrorEventHandler.cs" />
     <Compile Include="System\IO\FileSystemEventArgs.cs" />
     <Compile Include="System\IO\FileSystemEventHandler.cs" />
-    <Compile Include="System\IO\FileSystemWatcher.cs">
+    <Compile Condition="'$(TargetsBrowser)' != 'true'" Include="System\IO\FileSystemWatcher.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Condition="'$(TargetsBrowser)' == 'true'" Include="System\IO\FileSystemWatcher.WebAssembly.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="System\IO\InternalBufferOverflowException.cs" />
