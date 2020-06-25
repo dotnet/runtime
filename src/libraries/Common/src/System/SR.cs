@@ -17,7 +17,8 @@ namespace System
         // could compile each module with a different setting for this. We want to make sure there's a consistent behavior
         // that doesn't depend on which native module this method got inlined into.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool UsingResourceKeys() => false;
+        private static bool UsingResourceKeys() =>
+            AppContext.TryGetSwitch("System.SR.UsingResourceKeys", out bool usingResourceKeys) ? usingResourceKeys : false;
 
         internal static string GetResourceString(string resourceKey, string? defaultString = null)
         {
