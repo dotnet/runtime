@@ -12,7 +12,7 @@ namespace System
         public static bool EnableUnsafeUTF7Encoding
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetCachedSwitchValue("Switch.System.Text.Encoding.EnableUnsafeUTF7Encoding", ref s_enableUnsafeUTF7Encoding);
+            get => GetCachedSwitchValue("System.Text.Encoding.EnableUnsafeUTF7Encoding", ref s_enableUnsafeUTF7Encoding);
         }
 
         private static int s_enforceJapaneseEraYearRanges;

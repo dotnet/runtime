@@ -158,6 +158,13 @@ namespace System.Text
                 }
             }
 
+            // Just in case a provider registered UTF-7 without the application's consent
+
+            if (!LocalAppContextSwitches.EnableUnsafeUTF7Encoding)
+            {
+                encodingInfoList.Remove(Encoding.CodePageUTF7); // won't throw if doesn't exist
+            }
+
             var result = new EncodingInfo[encodingInfoList.Count];
             int j = 0;
             foreach (KeyValuePair<int, EncodingInfo> pair in encodingInfoList)

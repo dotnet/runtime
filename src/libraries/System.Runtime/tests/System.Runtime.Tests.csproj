@@ -273,4 +273,7 @@
     <ProjectReference Include="TestStructs\System.TestStructs.ilproj" />
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+  </ItemGroup>
 </Project>

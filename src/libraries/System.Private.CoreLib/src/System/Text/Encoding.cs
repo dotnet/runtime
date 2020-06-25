@@ -215,7 +215,7 @@ namespace System.Text
 
         public static Encoding GetEncoding(int codepage)
         {
-            Encoding? result = EncodingProvider.GetEncodingFromProvider(codepage);
+            Encoding? result = FilterDisallowedEncodings(EncodingProvider.GetEncodingFromProvider(codepage));
             if (result != null)
                 return result;
 
@@ -271,7 +271,7 @@ namespace System.Text
         public static Encoding GetEncoding(int codepage,
             EncoderFallback encoderFallback, DecoderFallback decoderFallback)
         {
-            Encoding? baseEncoding = EncodingProvider.GetEncodingFromProvider(codepage, encoderFallback, decoderFallback);
+            Encoding? baseEncoding = FilterDisallowedEncodings(EncodingProvider.GetEncodingFromProvider(codepage, encoderFallback, decoderFallback));
 
             if (baseEncoding != null)
                 return baseEncoding;
@@ -295,7 +295,7 @@ namespace System.Text
             // add the corresponding item in EncodingTable.
             // Otherwise, the code below will throw exception when trying to call
             // EncodingTable.GetCodePageFromName().
-            return EncodingProvider.GetEncodingFromProvider(name) ??
+            return FilterDisallowedEncodings(EncodingProvider.GetEncodingFromProvider(name)) ??
                 GetEncoding(EncodingTable.GetCodePageFromName(name));
         }
 
@@ -308,8 +308,22 @@ namespace System.Text
             // add the corresponding item in EncodingTable.
             // Otherwise, the code below will throw exception when trying to call
             // EncodingTable.GetCodePageFromName().
-            return EncodingProvider.GetEncodingFromProvider(name, encoderFallback, decoderFallback) ??
+            return FilterDisallowedEncodings(EncodingProvider.GetEncodingFromProvider(name, encoderFallback, decoderFallback)) ??
                 GetEncoding(EncodingTable.GetCodePageFromName(name), encoderFallback, decoderFallback);
+        }
+
+        // If the input encoding is forbidden (currently, only UTF-7), returns null.
+        // Otherwise returns the input encoding unchanged.
+        private static Encoding? FilterDisallowedEncodings(Encoding? encoding)
+        {
+            if (LocalAppContextSwitches.EnableUnsafeUTF7Encoding)
+            {
+                return encoding;
+            }
+            else
+            {
+                return (encoding?.CodePage == CodePageUTF7) ? null : encoding;
+            }
         }
 
         /// <summary>

@@ -1,5 +1,5 @@
 {
   "configProperties": {
-    "Switch.System.Text.Encoding.EnableUnsafeUTF7Encoding": true
+    "System.Text.Encoding.EnableUnsafeUTF7Encoding": true
   }
 }
