@@ -10,6 +10,9 @@ namespace System
 {
     internal partial class SR
     {
+        // cache result of AppContext Switch System.SR.UsingResourceKeys
+        private static bool? s_usingResourceKeys;
+
         // This method is used to decide if we need to append the exception message parameters to the message when calling SR.Format.
         // by default it returns false.
         // Native code generators can replace the value this returns based on user input at the time of native code generation.
@@ -17,8 +20,14 @@ namespace System
         // could compile each module with a different setting for this. We want to make sure there's a consistent behavior
         // that doesn't depend on which native module this method got inlined into.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool UsingResourceKeys() =>
-            AppContext.TryGetSwitch("System.SR.UsingResourceKeys", out bool usingResourceKeys) ? usingResourceKeys : false;
+        private static bool UsingResourceKeys()
+        {
+            if (s_usingResourceKeys == null)
+            {
+                s_usingResourceKeys = AppContext.TryGetSwitch("System.SR.UsingResourceKeys", out bool usingResourceKeys) ? usingResourceKeys : false;
+            }
+            return s_usingResourceKeys.Value;
+        }
 
         internal static string GetResourceString(string resourceKey, string? defaultString = null)
         {
