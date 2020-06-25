@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void LogsWhenMessageIsNotProvided()
         {
             // Arrange
@@ -127,7 +127,7 @@ namespace Microsoft.Extensions.Logging.Test
                 GetMessage(sink.Writes.GetRange(2 * t.WritesPerMsg, t.WritesPerMsg)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void DoesNotLog_NewLine_WhenNoExceptionIsProvided()
         {
             // Arrange
@@ -155,7 +155,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(expected2, GetMessage(sink.Writes.GetRange(3 * t.WritesPerMsg, t.WritesPerMsg)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData("Route with name 'Default' was not found.")]
         public void Writes_NewLine_WhenExceptionIsProvided(string message)
         {
@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(expectedHeader + expectedMessage + expectedExceptionMessage, sink.Writes[1].Message);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ThrowsException_WhenNoFormatterIsProvided()
         {
             // Arrange
@@ -190,7 +190,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Throws<ArgumentNullException>(() => logger.Log<object>(LogLevel.Trace, 1, "empty", new Exception(), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void LogsWhenNullFilterGiven()
         {
             // Arrange
@@ -211,7 +211,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(expectedHeader + expectedMessage, sink.Writes[1].Message);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void WriteCritical_LogsCorrectColors()
         {
             // Arrange
@@ -253,7 +253,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void WriteWarning_LogsCorrectColors()
         {
             // Arrange
@@ -274,7 +274,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void WriteInformation_LogsCorrectColors()
         {
             // Arrange
@@ -316,7 +316,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void WriteTrace_LogsCorrectColors()
         {
             // Arrange
@@ -337,7 +337,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void WriteAllLevelsDisabledColors_LogsNoColors()
         {
             // Arrange
@@ -361,7 +361,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(FormatsAndLevels))]
         public void WriteCore_LogsCorrectTimestamp(ConsoleLoggerFormat format, LogLevel level)
         {
@@ -443,7 +443,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(FormatsAndLevels))]
         public void WriteCore_LogsCorrectMessages(ConsoleLoggerFormat format, LogLevel level)
         {
@@ -487,7 +487,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void NoLogScope_DoesNotWriteAnyScopeContentToOutput()
         {
             // Arrange
@@ -534,7 +534,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(Formats))]
         public void WritingScopes_LogsExpectedMessage(ConsoleLoggerFormat format)
         {
@@ -585,7 +585,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(Formats))]
         public void WritingNestedScope_LogsNullScopeName(ConsoleLoggerFormat format)
         {
@@ -634,7 +634,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(Formats))]
         public void WritingNestedScopes_LogsExpectedMessage(ConsoleLoggerFormat format)
         {
@@ -688,7 +688,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(Formats))]
         public void WritingMultipleScopes_LogsExpectedMessage(ConsoleLoggerFormat format)
         {
@@ -757,7 +757,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void CallingBeginScopeOnLogger_AlwaysReturnsNewDisposableInstance()
         {
             // Arrange
@@ -775,7 +775,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.NotSame(disposable1, disposable2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void CallingBeginScopeOnLogger_ReturnsNonNullableInstance()
         {
             // Arrange
@@ -790,7 +790,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.NotNull(disposable);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(Formats))]
         public void ConsoleLoggerLogsToError_WhenOverErrorLevel(ConsoleLoggerFormat format)
         {
@@ -840,7 +840,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(FormatsAndLevels))]
         public void WriteCore_NullMessageWithException(ConsoleLoggerFormat format, LogLevel level)
         {
@@ -884,7 +884,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(FormatsAndLevels))]
         public void WriteCore_EmptyMessageWithException(ConsoleLoggerFormat format, LogLevel level)
         {
@@ -927,7 +927,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(FormatsAndLevels))]
         public void WriteCore_MessageWithNullException(ConsoleLoggerFormat format, LogLevel level)
         {
@@ -967,7 +967,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(Levels))]
         public void WriteCore_NullMessageWithNullException(LogLevel level)
         {
@@ -985,7 +985,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Empty(sink.Writes);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void LogAfterDisposeWritesLog()
         {
             // Arrange
@@ -1004,7 +1004,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.True(sink.Writes.Count == 2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void IsEnabledReturnsCorrectValue()
         {
             var logger = SetUp().Logger;
@@ -1018,7 +1018,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.True(logger.IsEnabled(LogLevel.Trace));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConsoleLoggerOptions_DisableColors_IsAppliedToLoggers()
         {
             // Arrange
@@ -1033,6 +1033,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void ConsoleLoggerOptions_DisableColors_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] { new KeyValuePair<string, string>("Console:DisableColors", "true") }).Build();
@@ -1049,7 +1050,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.True(logger.Options.DisableColors);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConsoleLoggerOptions_TimeStampFormat_IsReloaded()
         {
             // Arrange
@@ -1064,6 +1065,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void ConsoleLoggerOptions_TimeStampFormat_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] { new KeyValuePair<string, string>("Console:TimeStampFormat", "yyyyMMddHHmmss") }).Build();
@@ -1080,7 +1082,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal("yyyyMMddHHmmss", logger.Options.TimestampFormat);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConsoleLoggerOptions_TimeStampFormat_MultipleReloads()
         {
             var monitor = new TestOptionsMonitor(new ConsoleLoggerOptions());
@@ -1094,7 +1096,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal("yyyyMMddHHmmss", logger.Options.TimestampFormat);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConsoleLoggerOptions_IncludeScopes_IsAppliedToLoggers()
         {
             // Arrange
@@ -1109,6 +1111,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void ConsoleLoggerOptions_LogAsErrorLevel_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] { new KeyValuePair<string, string>("Console:LogToStandardErrorThreshold", "Warning") }).Build();
@@ -1125,7 +1128,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(LogLevel.Warning, logger.Options.LogToStandardErrorThreshold);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConsoleLoggerOptions_LogAsErrorLevel_IsAppliedToLoggers()
         {
             // Arrange
@@ -1139,7 +1142,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(LogLevel.Error, logger.Options.LogToStandardErrorThreshold);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConsoleLoggerOptions_UseUtcTimestamp_IsAppliedToLoggers()
         {
             // Arrange
@@ -1154,6 +1157,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void ConsoleLoggerOptions_IncludeScopes_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] { new KeyValuePair<string, string>("Console:IncludeScopes", "true") }).Build();

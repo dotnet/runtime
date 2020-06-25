@@ -283,6 +283,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern RuntimeType internal_from_name(string name, ref StackCrawlMark stackMark, Assembly? callerAssembly, bool throwOnError, bool ignoreCase, bool reflectionOnly);
 
+        [RequiresUnreferencedCode("Types might be removed")]
         internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, bool reflectionOnly, ref StackCrawlMark stackMark,
                                                   bool loadTypeFromPartialName)
         {

@@ -21,6 +21,32 @@ namespace System.Net.Http
         /// <param name="destination">The destination stream to which to copy.</param>
         /// <param name="bufferSize">The size of the buffer to allocate if one needs to be allocated. If zero, use the default buffer size.</param>
         /// <param name="disposeSource">Whether to dispose of the source stream after the copy has finished successfully.</param>
+        public static void Copy(Stream source, Stream destination, int bufferSize, bool disposeSource)
+        {
+            Debug.Assert(source != null);
+            Debug.Assert(destination != null);
+            Debug.Assert(bufferSize >= 0);
+
+            if (bufferSize == 0)
+            {
+                source.CopyTo(destination);
+            }
+            else
+            {
+                source.CopyTo(destination, bufferSize);
+            }
+
+            if (disposeSource)
+            {
+                DisposeSource(source);
+            }
+        }
+
+        /// <summary>Copies the source stream from its current position to the destination stream at its current position.</summary>
+        /// <param name="source">The source stream from which to copy.</param>
+        /// <param name="destination">The destination stream to which to copy.</param>
+        /// <param name="bufferSize">The size of the buffer to allocate if one needs to be allocated. If zero, use the default buffer size.</param>
+        /// <param name="disposeSource">Whether to dispose of the source stream after the copy has finished successfully.</param>
         /// <param name="cancellationToken">CancellationToken used to cancel the copy operation.</param>
         public static Task CopyAsync(Stream source, Stream destination, int bufferSize, bool disposeSource, CancellationToken cancellationToken = default(CancellationToken))
         {

@@ -1679,7 +1679,7 @@ namespace System.Net.Http
 
         // Note that this is safe to be called concurrently by multiple threads.
 
-        public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             if (NetEventSource.IsEnabled) Trace($"{request}");
 

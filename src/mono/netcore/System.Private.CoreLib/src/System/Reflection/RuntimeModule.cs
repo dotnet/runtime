@@ -21,6 +21,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -106,6 +107,7 @@ namespace System.Reflection
             return is_resource;
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override
         Type[] FindTypes(TypeFilter? filter, object? filterCriteria)
         {
@@ -128,6 +130,7 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override
         FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
@@ -141,6 +144,7 @@ namespace System.Reflection
             return globalType?.GetField(name, bindingAttr);
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override
         FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
@@ -160,6 +164,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Methods might be removed")]
         protected
         override
         MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
@@ -175,6 +180,7 @@ namespace System.Reflection
             return globalType.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
+        [RequiresUnreferencedCode("Methods might be removed")]
         public
         override
         MethodInfo[] GetMethods(BindingFlags bindingFlags)

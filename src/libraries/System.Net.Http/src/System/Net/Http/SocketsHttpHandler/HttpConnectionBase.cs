@@ -39,7 +39,7 @@ namespace System.Net.Http
             }
         }
 
-        public abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
+        public abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken);
         public abstract void Trace(string message, [CallerMemberName] string? memberName = null);
 
         protected void TraceConnection(Stream stream)
