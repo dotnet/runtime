@@ -27,7 +27,7 @@ namespace System.Net.Mail.Tests
         public void MailAddress_WithDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnDisplayNameEscapeSequenceAndAddressInAngleBrackets()
         {
             MailAddress _mailAddress = new MailAddress(Address, DisplayNameWithDoubleQuotes);
-            Assert.Equal(_mailAddress.DisplayName, DisplayNameWithDoubleQuotes);
+            Assert.Equal(DisplayNameWithDoubleQuotes,_mailAddress.DisplayName );
 
             Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithDoubleQuotes.Replace("\"", "\\\""), Address), _mailAddress.ToString());
         }
