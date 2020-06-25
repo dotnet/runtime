@@ -13159,12 +13159,18 @@ DONE_MORPHING_CHILDREN:
                 {
                     if (op2->AsDblCon()->gtDconVal == 2.0)
                     {
-                        // Fold "x*2.0" to "x+x"
-                        op2  = op1->OperIsLeaf() ? gtCloneExpr(op1) : fgMakeMultiUse(&tree->AsOp()->gtOp1);
-                        op1  = tree->AsOp()->gtOp1;
-                        oper = GT_ADD;
-                        tree = gtNewOperNode(oper, tree->TypeGet(), op1, op2);
-                        INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                        bool needsComma = !op1->OperIsLeaf() && !op1->IsLocal();
+                        // if op1 is not a leaf/local we have to introduce a temp via GT_COMMA.
+                        // Unfortunately, it's not optHoistLoopCode-friendly yet so let's do it later.
+                        if (!needsComma || (fgOrder == FGOrderLinear))
+                        {
+                            // Fold "x*2.0" to "x+x"
+                            op2  = fgMakeMultiUse(&tree->AsOp()->gtOp1);
+                            op1  = tree->AsOp()->gtOp1;
+                            oper = GT_ADD;
+                            tree = gtNewOperNode(oper, tree->TypeGet(), op1, op2);
+                            INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                        }
                     }
                     else if (op2->AsDblCon()->gtDconVal == 1.0)
                     {
@@ -16310,6 +16316,17 @@ void Compiler::fgMorphBlocks()
     // We are done with the global morphing phase
     fgGlobalMorph = false;
     compCurBB     = nullptr;
+
+    // Under OSR, we no longer need to specially protect the original method entry
+    //
+    if (opts.IsOSR() && (fgEntryBB != nullptr) && (fgEntryBB->bbFlags & BBF_IMPORTED))
+    {
+        JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+        assert(fgEntryBB->bbRefs > 0);
+        fgEntryBB->bbRefs--;
+        // We don't need to remember this block anymore.
+        fgEntryBB = nullptr;
+    }
 
 #ifdef DEBUG
     if (verboseTrees)

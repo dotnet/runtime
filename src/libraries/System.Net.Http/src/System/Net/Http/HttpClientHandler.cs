@@ -235,6 +235,14 @@ namespace System.Net.Http
 
         public IDictionary<string, object?> Properties => _underlyingHandler.Properties;
 
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            return DiagnosticsHandler.IsEnabled() ?
+                _diagnosticsHandler.Send(request, cancellationToken) :
+                _underlyingHandler.Send(request, cancellationToken);
+        }
+
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {

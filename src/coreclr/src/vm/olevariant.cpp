@@ -2766,11 +2766,6 @@ void OleVariant::MarshalOleVariantForObject(OBJECTREF * const & pObj, VARIANT *p
     }
     CONTRACTL_END;
 
-    if (AppX::IsAppXProcess())
-    {
-        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_BADMARSHAL_TYPE_VARIANTASOBJECT);
-    }
-
     SafeVariantClear(pOle);
 
 #ifdef _DEBUG
@@ -2893,11 +2888,6 @@ void OleVariant::MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
         PRECONDITION(V_VT(pOle) & VT_BYREF);
     }
     CONTRACTL_END;
-
-   if (AppX::IsAppXProcess())
-   {
-       COMPlusThrow(kPlatformNotSupportedException, IDS_EE_BADMARSHAL_TYPE_VARIANTASOBJECT);
-   }
 
     HRESULT hr = MarshalCommonOleRefVariantForObject(pObj, pOle);
 
@@ -3116,11 +3106,6 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
         PRECONDITION(*pObj == NULL || (IsProtectedByGCFrame (pObj)));
     }
     CONTRACT_END;
-
-    if (AppX::IsAppXProcess())
-    {
-        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_BADMARSHAL_TYPE_VARIANTASOBJECT);
-    }
 
     // if V_ISBYREF(pOle) and V_BYREF(pOle) is null then we have a problem,
     // unless we're dealing with VT_EMPTY or VT_NULL in which case that is ok??

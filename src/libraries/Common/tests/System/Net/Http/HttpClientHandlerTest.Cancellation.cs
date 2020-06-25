@@ -4,11 +4,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.DirectoryServices.Protocols;
 using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,7 +26,7 @@ namespace System.Net.Http.Functional.Tests
     {
         public HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false, CancellationMode.Token)]
         [InlineData(true, CancellationMode.Token)]
         public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool chunkedTransfer, CancellationMode mode)
@@ -39,12 +37,10 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
 
             var serverRelease = new TaskCompletionSource<bool>();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -62,10 +58,13 @@ namespace System.Net.Http.Functional.Tests
                         req.Content = new ByteAtATimeContent(int.MaxValue, waitToSend.Task, contentSending, millisecondDelayBetweenBytes: 1);
                         req.Headers.TransferEncodingChunked = chunkedTransfer;
 
-                        Task<HttpResponseMessage> resp = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                        Task<HttpResponseMessage> resp = client.SendAsync(TestAsync, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                         waitToSend.SetResult(true);
-                        await contentSending.Task;
-                        Cancel(mode, client, cts);
+                        await Task.WhenAny(contentSending.Task, resp);
+                        if (!resp.IsCompleted)
+                        {
+                            Cancel(mode, client, cts);
+                        }
                         await ValidateClientCancellationAsync(() => resp);
                     }
                 }
@@ -83,7 +82,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(OneBoolAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseHeadersReceived_TaskCanceledQuickly(bool connectionClose, CancellationMode mode)
         {
@@ -93,12 +92,10 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
 
             using (HttpClient client = CreateHttpClient())
             {
@@ -124,7 +121,7 @@ namespace System.Net.Http.Functional.Tests
                         var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                         req.Headers.ConnectionClose = connectionClose;
 
-                        Task<HttpResponseMessage> getResponse = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                        Task<HttpResponseMessage> getResponse = client.SendAsync(TestAsync, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                         await partialResponseHeadersSent.Task;
                         Cancel(mode, client, cts);
                         await getResponse;
@@ -180,7 +177,7 @@ namespace System.Net.Http.Functional.Tests
                         var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                         req.Headers.ConnectionClose = connectionClose;
 
-                        Task<HttpResponseMessage> getResponse = client.SendAsync(req, HttpCompletionOption.ResponseContentRead, cts.Token);
+                        Task<HttpResponseMessage> getResponse = client.SendAsync(TestAsync, req, HttpCompletionOption.ResponseContentRead, cts.Token);
                         await responseHeadersSent.Task;
                         await Task.Delay(1); // make it more likely that client will have started processing response body
                         Cancel(mode, client, cts);
@@ -196,7 +193,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(ThreeBools))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Unbuffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, bool readOrCopyToAsync)
         {
@@ -205,13 +202,11 @@ namespace System.Net.Http.Functional.Tests
                 // There is no chunked encoding or connection header in HTTP/2 and later
                 return;
             }
-
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
 
             using (HttpClient client = CreateHttpClient())
             {
@@ -238,7 +233,7 @@ namespace System.Net.Http.Functional.Tests
 
                     var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                     req.Headers.ConnectionClose = connectionClose;
-                    Task<HttpResponseMessage> getResponse = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                    Task<HttpResponseMessage> getResponse = client.SendAsync(TestAsync, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     await ValidateClientCancellationAsync(async () =>
                     {
                         HttpResponseMessage resp = await getResponse;
@@ -258,19 +253,18 @@ namespace System.Net.Http.Functional.Tests
                 });
             }
         }
-        [ConditionalTheory]
+        [Theory]
         [InlineData(CancellationMode.CancelPendingRequests, false)]
         [InlineData(CancellationMode.DisposeHttpClient, false)]
         [InlineData(CancellationMode.CancelPendingRequests, true)]
         [InlineData(CancellationMode.DisposeHttpClient, true)]
         public async Task GetAsync_CancelPendingRequests_DoesntCancelReadAsyncOnResponseStream(CancellationMode mode, bool copyToAsync)
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             using (HttpClient client = CreateHttpClient())
             {
                 client.Timeout = Timeout.InfiniteTimeSpan;
@@ -335,7 +329,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
@@ -536,11 +530,17 @@ namespace System.Net.Http.Functional.Tests
 
 #if !NETFRAMEWORK
         [OuterLoop("Uses Task.Delay")]
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(PostAsync_Cancel_CancellationTokenPassedToContent_MemberData))]
         public async Task PostAsync_Cancel_CancellationTokenPassedToContent(HttpContent content, CancellationTokenSource cancellationTokenSource)
         {
             if (IsWinHttpHandler)
+            {
+                return;
+            }
+            // Skipping test for a sync scenario becasue DelegateStream drops the original cancellationToken when it calls Read/Write methods.
+            // As a result, ReadAsyncFunc receives default in cancellationToken, which will never get signaled through the cancellationTokenSource.
+            if (!TestAsync)
             {
                 return;
             }
@@ -552,7 +552,7 @@ namespace System.Net.Http.Functional.Tests
                     using (var req = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content, Version = UseVersion })
                     try
                     {
-                        using (HttpResponseMessage resp = await invoker.SendAsync(req, cancellationTokenSource.Token))
+                        using (HttpResponseMessage resp = await invoker.SendAsync(TestAsync, req, cancellationTokenSource.Token))
                         {
                             Assert.Equal("Hello World", await resp.Content.ReadAsStringAsync());
                         }
@@ -611,23 +611,21 @@ namespace System.Net.Http.Functional.Tests
             DisposeHttpClient = 0x4
         }
 
-        private static readonly bool[] s_bools = new[] { true, false };
-
         public static IEnumerable<object[]> OneBoolAndCancellationMode() =>
-            from first in s_bools
+            from first in BoolValues
             from mode in new[] { CancellationMode.Token, CancellationMode.CancelPendingRequests, CancellationMode.DisposeHttpClient, CancellationMode.Token | CancellationMode.CancelPendingRequests }
             select new object[] { first, mode };
 
         public static IEnumerable<object[]> TwoBoolsAndCancellationMode() =>
-            from first in s_bools
-            from second in s_bools
+            from first in BoolValues
+            from second in BoolValues
             from mode in new[] { CancellationMode.Token, CancellationMode.CancelPendingRequests, CancellationMode.DisposeHttpClient, CancellationMode.Token | CancellationMode.CancelPendingRequests }
             select new object[] { first, second, mode };
 
         public static IEnumerable<object[]> ThreeBools() =>
-            from first in s_bools
-            from second in s_bools
-            from third in s_bools
+            from first in BoolValues
+            from second in BoolValues
+            from third in BoolValues
             select new object[] { first, second, third };
     }
 }

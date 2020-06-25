@@ -7369,6 +7369,12 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
     preHead->inheritWeight(head);
     preHead->bbFlags &= ~BBF_PROF_WEIGHT;
 
+    // Copy the bbReach set from head for the new preHead block
+    preHead->bbReach = BlockSetOps::MakeEmpty(this);
+    BlockSetOps::Assign(this, preHead->bbReach, head->bbReach);
+    // Also include 'head' in the preHead bbReach set
+    BlockSetOps::AddElemD(this, preHead->bbReach, head->bbNum);
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -9273,12 +9279,28 @@ void Compiler::optRemoveRedundantZeroInits()
                     case GT_ASG:
                     {
                         GenTreeOp* treeOp = tree->AsOp();
-                        if (!treeOp->gtOp1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+
+                        unsigned lclNum = BAD_VAR_NUM;
+
+                        if (treeOp->gtOp1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                        {
+                            lclNum = treeOp->gtOp1->AsLclVarCommon()->GetLclNum();
+                        }
+                        else if (treeOp->gtOp1->OperIs(GT_OBJ, GT_BLK))
+                        {
+                            GenTreeLclVarCommon* lcl = treeOp->gtOp1->gtGetOp1()->IsLocalAddrExpr();
+
+                            if (lcl != nullptr)
+                            {
+                                lclNum = lcl->GetLclNum();
+                            }
+                        }
+
+                        if (lclNum == BAD_VAR_NUM)
                         {
                             break;
                         }
 
-                        unsigned         lclNum    = treeOp->gtOp1->AsLclVarCommon()->GetLclNum();
                         LclVarDsc* const lclDsc    = lvaGetDesc(lclNum);
                         unsigned*        pRefCount = refCounts.LookupPointer(lclNum);
 

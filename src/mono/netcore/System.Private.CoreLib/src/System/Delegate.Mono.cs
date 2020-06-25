@@ -248,6 +248,8 @@ namespace System
             return null;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Invoke method is never removed from delegates")]
         private static bool IsMatchingCandidate(Type type, object? target, MethodInfo method, bool allowClosed, out DelegateData? delegateData)
         {
             MethodInfo? invoke = type.GetMethod("Invoke");

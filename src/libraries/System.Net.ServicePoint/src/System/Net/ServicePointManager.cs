@@ -5,7 +5,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
 namespace System.Net
@@ -36,8 +35,12 @@ namespace System.Net
 
         private static void ValidateSecurityProtocol(SecurityProtocolType value)
         {
-            SecurityProtocolType allowed = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
-            if ((value & ~allowed) != 0)
+            const SecurityProtocolType Allowed =
+#pragma warning disable CA5364 // Do Not Use Deprecated Security Protocols
+                SecurityProtocolType.Tls | SecurityProtocolType.Tls11 |
+#pragma warning restore CA5364
+                SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
+            if ((value & ~Allowed) != 0)
             {
                 throw new NotSupportedException(SR.net_securityprotocolnotsupported);
             }

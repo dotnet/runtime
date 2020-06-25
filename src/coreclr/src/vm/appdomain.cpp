@@ -4472,9 +4472,9 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 
 #endif // CROSSGEN_COMPILE
 
-IUnknown *AppDomain::CreateBinderContext()
+CLRPrivBinderCoreCLR *AppDomain::CreateBinderContext()
 {
-    CONTRACT(IUnknown *)
+    CONTRACT(CLRPrivBinderCoreCLR *)
     {
         GC_TRIGGERS;
         THROWS;
@@ -5943,11 +5943,6 @@ void AppDomain::UnPublishHostedAssembly(
                 m_hostAssemblyMapForOrigFile.Remove(pAssembly->GetOriginalFile()->GetHostAssembly());
             }
         }
-    }
-    else
-    {
-        // In AppX processes, all PEAssemblies that are reach this stage should have host binders.
-        _ASSERTE(!AppX::IsAppXProcess());
     }
 }
 

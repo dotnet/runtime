@@ -690,5 +690,17 @@ namespace Internal.Cryptography
                 return false;
             }
         }
+
+        // Creates a defensive copy of an OID on platforms where OID
+        // is mutable. On platforms where OID is immutable, return the OID as-is.
+        [return: NotNullIfNotNull("oid")]
+        public static Oid? CopyOid(this Oid? oid)
+        {
+#if NETCOREAPP
+            return oid;
+#else
+            return oid is null ? null : new Oid(oid);
+#endif
+        }
     }
 }

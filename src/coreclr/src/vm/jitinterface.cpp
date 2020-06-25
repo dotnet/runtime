@@ -12248,15 +12248,19 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 
 #ifdef FEATURE_INTERPRETER
     static ConfigDWORD s_InterpreterFallback;
+    static ConfigDWORD s_ForceInterpreter;
 
     bool isInterpreterStub   = false;
     bool interpreterFallback = (s_InterpreterFallback.val(CLRConfig::INTERNAL_InterpreterFallback) != 0);
+    bool forceInterpreter    = (s_ForceInterpreter.val(CLRConfig::INTERNAL_ForceInterpreter) != 0);
 
     if (interpreterFallback == false)
     {
         // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
-        if (FAILED(ret) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE))
+        if (FAILED(ret) &&
+            !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
+            (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
         {
             if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
             {
@@ -12279,7 +12283,9 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     {
         // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
-        if (FAILED(ret) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE))
+        if (FAILED(ret) &&
+            !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
+            (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
         {
             if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
             {

@@ -31,10 +31,16 @@
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$(MonoObjDir)cross\config.h</CrossConfigH>
     <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
+    <MonoCCompiler>$(Compiler)</MonoCCompiler>
+    <MonoCCompiler Condition="'$(MonoCCompiler)' == ''">clang</MonoCCompiler>
+    <!-- when we use runtime/build.sh -gcc, it is passed to eng/build.sh which sets the raw value to $(Compiler); strip the leading hyphens. -->
+    <MonoCCompiler Condition="$(MonoCCompiler.StartsWith('-'))">$(MonoCCompiler.TrimStart('-'))</MonoCCompiler>
+    <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'clang'">clang++</MonoCxxCompiler>
+    <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'gcc'">g++</MonoCxxCompiler>
   </PropertyGroup>
 
   <!-- OSX/iOS/tvOS/Android/Linux Mono runtime build -->
-  <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac" Outputs="$(MonoObjDir)config.h;$(CrossConfigH)">
+  <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac;$(MonoProjectRoot)configure" Outputs="$(MonoObjDir)config.h;$(CrossConfigH)">
 
     <!-- Sanity checks -->
     <Error Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
@@ -580,6 +586,33 @@
       <_MonoSTRIPOption>STRIP="$(_MonoTuple)-strip"</_MonoSTRIPOption>
     </PropertyGroup>
 
+    <!-- x64 illumos cross build options -->
+    <PropertyGroup Condition="'$(TargetsIllumos)' == 'true' and '$(MonoCrossDir)' != ''">
+      <_MonoTuple>x86_64-sun-solaris2.10</_MonoTuple>
+      <_ToolPrefix>$(MonoCrossDir)/bin/x86_64-illumos</_ToolPrefix>
+
+      <_MonoRANLIBOption>RANLIB="$(_ToolPrefix)-ranlib"</_MonoRANLIBOption>
+      <_MonoAROption>AR="$(_ToolPrefix)-ar"</_MonoAROption>
+      <_MonoASOption>AS="$(_ToolPrefix)-as"</_MonoASOption>
+      <_MonoLDOption>LD="$(_ToolPrefix)-ld"</_MonoLDOption>
+      <_MonoSTRIPOption>STRIP="$(_ToolPrefix)-strip"</_MonoSTRIPOption>
+
+      <_MonoCCOption>CC="$(_ToolPrefix)-$(MonoCCompiler)"</_MonoCCOption>
+      <_MonoCXXOption>CXX="$(_ToolPrefix)-$(MonoCxxCompiler)"</_MonoCXXOption>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(TargetsIllumos)' == 'true' and '$(MonoCrossDir)' != ''">
+      <_MonoConfigureParams Include="--host=$(_MonoTuple)" />
+      <_MonoConfigureParams Include="--target=$(_MonoTuple)" />
+
+      <_MonoCFLAGS Include="--sysroot=$(MonoCrossDir)" />
+      <_MonoCFLAGS Include="-I$(MonoCrossDir)/include" />
+      <_MonoCXXFLAGS Include="--sysroot=$(MonoCrossDir)" />
+      <_MonoLDFLAGS Include="--sysroot=$(MonoCrossDir)" />
+      <_MonoCCLDFLAGS Include="-XCClinker" />
+      <_MonoConfigureParams Include="--with-tls=pthread" />
+    </ItemGroup>
+
     <Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
 
     <!-- WASM specific options -->
@@ -675,7 +708,7 @@
       <_MonoCCLDFLAGSOption Condition="@(_MonoCCLDFLAGS->Count()) &gt; 0">CCLDFLAGS="@(_MonoCCLDFLAGS, ' ')"</_MonoCCLDFLAGSOption>
 
       <_MonoConfigureOptions>@(_MonoConfigureParams, ' ') @(_MonoAC_VARS, ' ') $(_MonoCFLAGSOption) $(_MonoCXXFLAGSOption) $(_MonoCPPFLAGSOption) $(_MonoCXXCPPFLAGSOption) $(_MonoLDFLAGSOption) $(_MonoCCLDFLAGSOption) $(_MonoCCOption) $(_MonoCXXOption) $(_MonoAROption) $(_MonoASOption) $(_MonoCPPOption) $(_MonoCXXCPPOption) $(_MonoDLLTOOLOption) $(_MonoLDOption) $(_MonoOBJDUMPOption) $(_MonoRANLIBOption) $(_MonoCMAKEOption) $(_MonoSTRIPOption)</_MonoConfigureOptions>
-      <_MonoConfigureCommand Condition="'$(_MonoCCOption)' == '' and '$(_MonoCXXOption)' == ''">bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) clang &amp;&amp; $(MonoProjectRoot)configure $(_MonoConfigureOptions)'</_MonoConfigureCommand>
+      <_MonoConfigureCommand Condition="'$(_MonoCCOption)' == '' and '$(_MonoCXXOption)' == ''">bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) $(MonoCCompiler) &amp;&amp; $(MonoProjectRoot)configure $(_MonoConfigureOptions)'</_MonoConfigureCommand>
       <_MonoConfigureCommand Condition="'$(_MonoCCOption)' != '' and '$(_MonoCXXOption)' != ''">$(MonoProjectRoot)configure $(_MonoConfigureOptions)</_MonoConfigureCommand>
       <_MonoConfigureCommand Condition="'$(TargetsBrowser)' == 'true'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emconfigure $(MonoProjectRoot)configure $(_MonoConfigureOptions)'</_MonoConfigureCommand>
     </PropertyGroup>

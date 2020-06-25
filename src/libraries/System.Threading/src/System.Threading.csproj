@@ -18,6 +18,6 @@
              Link="Common\System\HResults.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
 </Project>

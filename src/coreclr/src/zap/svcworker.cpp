@@ -25,11 +25,6 @@ NGenWorkerEmbedding() -- called when COM invoked the COM server with
 
 #include "common.h"
 
-
-#ifdef FEATURE_APPX
-#include "AppXUtil.h"
-#endif
-
 ILocalServerLifetime *g_pLocalServerLifetime = NULL;
 
 SvcLogger::SvcLogger()

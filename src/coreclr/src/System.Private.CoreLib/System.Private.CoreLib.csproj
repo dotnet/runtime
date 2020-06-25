@@ -6,7 +6,7 @@
     <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
 
     <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
     <DebugType>Portable</DebugType>
@@ -167,7 +167,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILGenerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EmptyCAHolder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EnumBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldBuilder.cs" />
@@ -214,7 +213,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\GCHeapHash.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\QCallHandles.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
@@ -324,7 +322,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs">
       <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
-    <Compile Include="$(BclSourcesRoot)\System\ApplicationModel.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Windows.cs" />
   </ItemGroup>
   <!-- Include additional sources shared files in the compilation -->

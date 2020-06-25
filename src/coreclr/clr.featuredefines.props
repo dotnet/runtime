@@ -31,7 +31,6 @@
         <FeatureCominterop>true</FeatureCominterop>
         <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
         <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
-        <FeatureAppX>true</FeatureAppX>
         <FeatureWin32Registry>true</FeatureWin32Registry>
         <FeatureProfAttach>true</FeatureProfAttach>
         <FeaturePortableShuffleThunks Condition="'$(Platform)' != 'x86'">true</FeaturePortableShuffleThunks>
@@ -45,7 +44,6 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <DefineConstants Condition="'$(FeatureAppX)' == 'true'">$(DefineConstants);FEATURE_APPX</DefineConstants>
         <DefineConstants Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(DefineConstants);FEATURE_ARRAYSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureMulticastStubAsIL)' == 'true'">$(DefineConstants);FEATURE_MULTICASTSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureInstantiatingStubAsIL)' == 'true'">$(DefineConstants);FEATURE_INSTANTIATINGSTUB_AS_IL</DefineConstants>
