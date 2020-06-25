@@ -541,6 +541,11 @@ set(GC_SOURCES_WKS
     ../gc/gcload.cpp
     ../gc/softwarewritewatch.cpp
     ../gc/handletablecache.cpp
+)
+
+if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+  set ( GC_SOURCES_WKS
+    ${GC_SOURCES_WKS}
     ../gc/vxsort/do_vxsort_avx2.cpp
     ../gc/vxsort/do_vxsort_avx512.cpp
     ../gc/vxsort/machine_traits.avx2.cpp
@@ -549,6 +554,7 @@ set(GC_SOURCES_WKS
     ../gc/vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
     ../gc/vxsort/smallsort/bitonic_sort.AVX512.uint32_t.generated.cpp
 )
+endif (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
 
 set(GC_HEADERS_WKS
     ${GC_HEADERS_DAC_AND_WKS_COMMON}

@@ -8791,7 +8791,13 @@ void gc_heap::combine_mark_lists()
 
 void gc_heap::grow_mark_list ()
 {
-    size_t new_mark_list_size = min (mark_list_size * 2, 1000 * 1024);
+#ifdef MULTIPLE_HEAPS
+    const size_t MAX_MARK_LIST_SIZE = 1000 * 1024;
+#else //MULTIPLE_HEAPS
+    const size_t MAX_MARK_LIST_SIZE = 32 * 1024;
+#endif //MULTIPLE_HEAPS
+
+    size_t new_mark_list_size = min (mark_list_size * 2, MAX_MARK_LIST_SIZE);
     if (new_mark_list_size == mark_list_size)
         return;
 
@@ -8800,9 +8806,6 @@ void gc_heap::grow_mark_list ()
 
 #ifdef PARALLEL_MARK_LIST_SORT
     uint8_t** new_mark_list_copy = make_mark_list (new_mark_list_size * n_heaps);
-#ifdef BIT_MAP_SORT
-    memset (new_mark_list_copy, 0, new_mark_list_size * n_heaps * sizeof(new_mark_list_copy[0]));
-#endif //BIT_MAP_SORT
 #endif //PARALLEL_MARK_LIST_SORT
 
     if (new_mark_list != nullptr

@@ -37,6 +37,12 @@ else()
   set ( GC_SOURCES
     ${GC_SOURCES}
     windows/gcenv.windows.cpp
+)
+endif(CLR_CMAKE_HOST_UNIX)
+
+if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+  set ( GC_SOURCES
+    ${GC_SOURCES}
     vxsort/do_vxsort_avx2.cpp
     vxsort/do_vxsort_avx512.cpp
     vxsort/machine_traits.avx2.cpp
@@ -45,7 +51,7 @@ else()
     vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
     vxsort/smallsort/bitonic_sort.AVX512.uint32_t.generated.cpp
 )
-endif(CLR_CMAKE_HOST_UNIX)
+endif (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
 
 if (CLR_CMAKE_TARGET_WIN32)
   set(GC_HEADERS

@@ -1273,20 +1273,20 @@ bool DoesOSSupportAVX()
     return TRUE;
 }
 
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 bool DoesOSSupportAVX512()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef TARGET_UNIX
     DWORD64 FeatureMask = GetEnabledXStateFeaturesHelper();
     if ((FeatureMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
     {
         return TRUE;
     }
-#endif // !TARGET_UNIX
 
     return FALSE;
 }
+#endif //defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
@@ -1448,10 +1448,12 @@ void EEJitManager::SetCpuInfo()
                                             CPUCompileFlags.Set(InstructionSet_AVX2);
                                         }
 
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
                                         if (DoesOSSupportAVX512() && zmmStateSupport() == 1 && (buffer[6] & 0x01) != 0)
                                         {
                                             CPUCompileFlags.Set(InstructionSet_AVX512F);
                                         }
+#endif //defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
                                     }
                                 }
                             }

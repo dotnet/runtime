@@ -22,6 +22,11 @@ set(SOURCES
     ../handletablescan.cpp
     ../objecthandle.cpp
     ../softwarewritewatch.cpp
+)
+
+if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+  set ( SOURCES
+    ${SOURCES}
     ../vxsort/do_vxsort_avx2.cpp
     ../vxsort/do_vxsort_avx512.cpp
     ../vxsort/machine_traits.avx2.cpp
@@ -30,6 +35,7 @@ set(SOURCES
     ../vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
     ../vxsort/smallsort/bitonic_sort.AVX512.uint32_t.generated.cpp
 )
+endif (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
 
 if(CLR_CMAKE_TARGET_WIN32)
   set (GC_LINK_LIBRARIES
