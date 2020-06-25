@@ -28,8 +28,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
         public static Task StopAsync(this IHost host, TimeSpan timeout)
         {
-            using CancellationTokenSource cts = new CancellationTokenSource(timeout);
-            return host.StopAsync(cts.Token);
+            return host.StopAsync(new CancellationTokenSource(timeout).Token);
         }
 
         /// <summary>
