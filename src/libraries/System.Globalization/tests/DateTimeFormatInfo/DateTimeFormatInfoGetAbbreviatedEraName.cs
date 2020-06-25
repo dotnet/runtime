@@ -26,13 +26,6 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Fact]
-        public static void SantiTest()
-        {
-            var currentDt = CultureInfo.CurrentCulture.DateTimeFormat;
-            Console.WriteLine($"{currentDt.ShortDatePattern}");
-        }
-
         [Theory]
         [MemberData(nameof(GetAbbreviatedEraName_TestData))]
         public void GetAbbreviatedEraName_Invoke_ReturnsExpected(DateTimeFormatInfo format, int era, string expected)

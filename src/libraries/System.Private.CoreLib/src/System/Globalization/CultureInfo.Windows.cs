@@ -44,6 +44,8 @@ namespace System.Globalization
             return InitializeUserDefaultCulture();
         }
 
+        private static volatile string? s_userDefaultLocaleName;
+
         internal static string? GetUserDefaultLocaleName()
         {
             Interlocked.CompareExchange(ref s_userDefaultLocaleName,

@@ -69,12 +69,7 @@ namespace System.Globalization
         // PAL Layer ends here
 
         private const uint CAL_RETURN_NUMBER = 0x20000000;
-        private const uint CAL_RETURN_GENITIVE_NAMES = 0x10000000;
-        private const uint CAL_NOUSEROVERRIDE = 0x80000000;
         private const uint CAL_SCALNAME = 0x00000002;
-        private const uint CAL_SMONTHDAY = 0x00000038;
-        private const uint CAL_SSHORTDATE = 0x00000005;
-        private const uint CAL_SLONGDATE = 0x00000006;
         private const uint CAL_SYEARMONTH = 0x0000002f;
         private const uint CAL_SDAYNAME7 = 0x0000000d;
         private const uint CAL_SABBREVDAYNAME7 = 0x00000014;
@@ -175,17 +170,6 @@ namespace System.Globalization
             {
                 return Interop.BOOL.FALSE;
             }
-        }
-
-        private static unsafe string GetUserDefaultLocaleName()
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-
-            int result;
-            char* localeName = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH];
-            result = CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_USER_DEFAULT, Interop.Kernel32.LOCALE_SNAME, localeName, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH);
-
-            return result <= 0 ? "" : new string(localeName, 0, result - 1); // exclude the null termination
         }
     }
 }

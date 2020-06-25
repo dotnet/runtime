@@ -10,6 +10,12 @@ namespace System.Globalization
 {
     internal partial class CalendarData
     {
+        private const uint CAL_RETURN_GENITIVE_NAMES = 0x10000000;
+        private const uint CAL_NOUSEROVERRIDE = 0x80000000;
+        private const uint CAL_SMONTHDAY = 0x00000038;
+        private const uint CAL_SSHORTDATE = 0x00000005;
+        private const uint CAL_SLONGDATE = 0x00000006;
+
         private bool LoadCalendarDataFromSystemCore(string localeName, CalendarId calendarId, bool isUserDefaultLocale)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -170,7 +176,7 @@ namespace System.Globalization
             if ((lcType != 0) && ((lcType & CAL_NOUSEROVERRIDE) == 0) &&
                 // Get user locale, see if it matches localeName.
                 // Note that they should match exactly, including letter case
-                GetUserDefaultLocaleName() == localeName)
+                CultureInfo.GetUserDefaultLocaleName() == localeName)
             {
                 // They want user overrides, see if the user calendar matches the input calendar
                 CalendarId userCalendar = (CalendarId)CultureData.GetLocaleInfoExInt(localeName, LOCALE_ICALENDARTYPE);
