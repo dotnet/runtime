@@ -21,7 +21,7 @@ sponsors the issue. This is usually [the area owner](issue-guide.md#areas) for w
 decision whether we want to pursue the proposal or not. In this phase, the goal
 isn't necessarily to perform an in-depth review; rather, we want to make sure
 that the proposal is actionable, i.e. has a concrete design, a sketch of the
-APIs and some code samples that show how it should be used. If changes are necessary, the requester is encouraged to edit the issue description. This allows folks joining later to understand the most recent proposal. To avoid confusion, the requester should maintain a tiny change log, like a bolded "Updates:" followed by a bullet point list of the updates that were being made.
+APIs and some code samples that show how it should be used. If changes are necessary, the owner will set the label `api-needs-work`. To make the changes, the requester should edit the top-most issue description. This allows folks joining later to understand the most recent proposal. To avoid confusion, the requester can maintain a tiny change log, like a bolded "Updates:" followed by a bullet point list of the updates that were being made. When you the feedback is addressed, the requester should notify the owner to re-review the changes.
 
 4. **Owner makes decision**. When the owner believes enough information is available to make a decision, they will update the issue accordingly:
 
@@ -50,7 +50,7 @@ Unfortunately, we have throughput issues and try our best to get more stuff done
 
 ## Pull requests
 
-Pull requests against **dotnet/runtime** shouldn't be submitted before getting approval. Also, we don't want to get work in progress (WIP). The reason being that we want to reduce the number pending PRs so that we can focus on the work the community expects we take action on.
+Pull requests against **dotnet/runtime** shouldn't be submitted before getting approval. Also, we don't want to get work in progress (WIP) PR's. The reason being that we want to reduce the number pending PRs so that we can focus on the work the community expects we take action on.
 
 If you want to collaborate with other people on the design, feel free to perform the work in a branch in your own fork. If you want to track your TODOs in the description of a PR, you can always submit a PR against your own fork. Also, feel free to advertise your PR by linking it from the issue you filed against **dotnet/runtime** in the first step above.
 
