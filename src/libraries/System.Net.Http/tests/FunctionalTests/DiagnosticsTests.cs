@@ -494,6 +494,7 @@ namespace System.Net.Http.Functional.Tests
                 bool exceptionLogged = false;
 
                 Activity parentActivity = new Activity("parent");
+                parentActivity.SetIdFormat(ActivityIdFormat.Hierarchical);
                 parentActivity.AddBaggage("bad/key", "value");
                 parentActivity.AddBaggage("goodkey", "bad/value");
                 parentActivity.AddBaggage("key", "value");
