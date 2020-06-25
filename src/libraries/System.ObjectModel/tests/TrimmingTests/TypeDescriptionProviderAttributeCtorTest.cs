@@ -11,27 +11,39 @@ class Program
     /// </summary>
     static int Main(string[] args)
     {
-        // Test that public parameterless ctor of the Type argument here is preserved.
-        Type providerType = typeof(MyTypeDescriptionProvider);
-        TypeDescriptionProviderAttribute attr = new TypeDescriptionProviderAttribute(providerType);
-        object obj = Activator.CreateInstance(providerType);
-
-        if (obj == null || !(obj is MyTypeDescriptionProvider))
+        TypeDescriptionProviderAttribute attr = new TypeDescriptionProviderAttribute("Program+MyTypeDescriptionProvider");
+        if (!RunTest(attr))
         {
             return -1;
         }
 
-        // Test that public parameterless ctor of the Type argument here is preserved.
-        providerType = typeof(MyOtherTypeDescriptionProvider);
-        attr = new TypeDescriptionProviderAttribute(providerType.ToString());
-        obj = Activator.CreateInstance(providerType);
-
-        if (obj == null || !(obj is MyOtherTypeDescriptionProvider))
+        attr = new TypeDescriptionProviderAttribute(typeof(MyOtherTypeDescriptionProvider));
+        if (!RunTest(attr))
         {
             return -1;
         }
 
         return 100;
+    }
+
+    private static bool RunTest(TypeDescriptionProviderAttribute attr)
+    {
+        Type providerType = Type.GetType(attr.TypeName);
+
+        if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
+        {
+            TypeDescriptionProvider provider = (TypeDescriptionProvider)Activator.CreateInstance(providerType);
+            if (provider == null)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private class MyTypeDescriptionProvider : TypeDescriptionProvider { }

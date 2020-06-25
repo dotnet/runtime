@@ -1,6 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Reflection;
+using System.Globalization;
 
 /// <summary>
 /// Tests that System.ComponentModel.TypeConverter.ConvertFromInvariantString
@@ -10,17 +10,25 @@ class Program
 {
     static int Main(string[] args)
     {
+        TypeDescriptor.AddAttributes(typeof(string), new TypeConverterAttribute(typeof(MyStringConverter)));
+
         var attribute = new DefaultValueAttribute(typeof(string), "Hello, world!");
+        return (string)attribute.Value == "Hello, world!trivia" ? 100 : -1;
+    }
 
-        // There's a fallback in the DefaultValueAttribute ctor for when the following
-        // value is null. It shouldn't be null at this point, if the linker didn't trim
-        // System.ComponentModel.TypeConverter.ConvertFromInvariantString out.
-        object convertFromInvariantString = typeof(DefaultValueAttribute).GetField(
-            "s_convertFromInvariantString",
-            BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Static).GetValue(attribute);
+    private class MyStringConverter : StringConverter
+    {
+        /// <summary>
+        /// Converts the specified value object to a string object.
+        /// </summary>
+        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        {
+            if (value is string)
+            {
+                return (string)value + "trivia";
+            }
 
-        return (string)attribute.Value == "Hello, world!" && convertFromInvariantString != null
-            ? 100
-            : -1;
+            throw new NotSupportedException();
+        }
     }
 }
