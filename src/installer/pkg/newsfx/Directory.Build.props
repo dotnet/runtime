@@ -20,9 +20,4 @@
   </PropertyGroup>
 
   <Import Project="$(RepoRoot)eng\native\naming.props" />
-
-  <PropertyGroup>
-    <DotNetSharedFrameworkTaskDir>D:\source\arcade\artifacts\bin\Microsoft.DotNet.SharedFramework.Sdk\Debug\netcoreapp2.1\publish\</DotNetSharedFrameworkTaskDir>
-    <DotNetSharedFrameworkMSBuildDir>D:\source\arcade\src\Microsoft.DotNet.SharedFramework.Sdk\targets\</DotNetSharedFrameworkMSBuildDir>
-  </PropertyGroup>
 </Project>
