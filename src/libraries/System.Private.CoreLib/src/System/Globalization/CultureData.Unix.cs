@@ -88,6 +88,6 @@ namespace System.Globalization
 
         internal static unsafe CultureData GetCurrentRegionData() => CultureInfo.CurrentCulture._cultureData;
 
-        private bool ShouldUseNlsData => false;
+        private bool ShouldUseUserOverrideNlsData => false;
     }
 }
