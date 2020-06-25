@@ -7718,13 +7718,6 @@ namespace System.Text.Json.Tests
                         sb.Append("u002f");
                     }
                 }
-                // Remove .0
-                else if (json[i] == '.' && json[i + 1] == '0' &&
-                    (json[i + 2] == ',' || json[i + 2] == '\n' ||
-                    json[i + 2] == ']' || json[i + 2] == '}'))
-                {
-                    i += 2;
-                }
                 else if (!relaxedEscaping)
                 {
                     // Convert > to \u003e
@@ -7739,6 +7732,13 @@ namespace System.Text.Json.Tests
                         i++;
                         sb.Append("\\u003c");
                     }
+                    // Remove .0
+                    else if (json[i] == '.' && json[i + 1] == '0' &&
+                        (json[i + 2] == ',' || json[i + 2] == '\n' ||
+                        json[i + 2] == ']' || json[i + 2] == '}'))
+                    {
+                        i += 2;
+                    }                    
                 }
                 else
                 {
