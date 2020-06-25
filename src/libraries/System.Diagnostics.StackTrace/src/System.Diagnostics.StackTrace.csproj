@@ -4,8 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
-    <!-- Disable 1685 (aka multiple type definitions) warning so it doesn't turn into an error -->
-    <NoWarn>$(NoWarn);1685</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>

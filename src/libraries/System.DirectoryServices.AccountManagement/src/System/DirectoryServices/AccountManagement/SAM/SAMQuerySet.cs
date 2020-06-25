@@ -213,14 +213,14 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         //
-        // Static constructor: used for initializing static tables
+        // used for initializing static tables
         //
-        static QbeMatcher()
+        private static Hashtable CreateFilterPropertiesTable()
         {
             //
             // Load the filterPropertiesTable
             //
-            s_filterPropertiesTable = new Hashtable();
+            var filterPropertiesTable = new Hashtable();
 
             for (int i = 0; i < s_filterPropertiesTableRaw.GetLength(0); i++)
             {
@@ -233,14 +233,16 @@ namespace System.DirectoryServices.AccountManagement
                 Debug.Assert(f != null);
 
                 // There should only be one entry per QBE type
-                Debug.Assert(s_filterPropertiesTable[qbeType] == null);
+                Debug.Assert(filterPropertiesTable[qbeType] == null);
 
                 FilterPropertyTableEntry entry = new FilterPropertyTableEntry();
                 entry.winNTPropertyName = winNTPropertyName;
                 entry.matcher = f;
 
-                s_filterPropertiesTable[qbeType] = entry;
+                filterPropertiesTable[qbeType] = entry;
             }
+
+            return filterPropertiesTable;
         }
 
         internal override bool Matches(DirectoryEntry de)
@@ -311,7 +313,7 @@ namespace System.DirectoryServices.AccountManagement
             {typeof(BadLogonCountFilter),                           "BadPasswordAttempts",                new MatcherDelegate(IntMatcher)},
         };
 
-        private static readonly Hashtable s_filterPropertiesTable = null;
+        private static readonly Hashtable s_filterPropertiesTable = CreateFilterPropertiesTable();
 
         private class FilterPropertyTableEntry
         {

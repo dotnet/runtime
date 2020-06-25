@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);FLAVOR_WHIDBEY;PAPI_AD;PAPI_REGSAM;USE_CTX_CACHE</DefineConstants>
-    <NoWarn>$(NoWarn);8073;CA1810;CA2249</NoWarn>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netstandard2.0;netcoreapp2.0-Windows_NT;_$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>

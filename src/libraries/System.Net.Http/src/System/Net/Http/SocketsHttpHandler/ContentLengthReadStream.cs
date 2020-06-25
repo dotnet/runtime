@@ -134,7 +134,7 @@ namespace System.Net.Http
                     return Task.CompletedTask;
                 }
 
-                Task copyTask = _connection.CopyToContentLengthAsync(destination, _contentBytesRemaining, bufferSize, cancellationToken);
+                Task copyTask = _connection.CopyToContentLengthAsync(destination, async: true, _contentBytesRemaining, bufferSize, cancellationToken);
                 if (copyTask.IsCompletedSuccessfully)
                 {
                     Finish();
@@ -225,7 +225,7 @@ namespace System.Net.Http
                 {
                     while (true)
                     {
-                        await _connection.FillAsync().ConfigureAwait(false);
+                        await _connection.FillAsync(async: true).ConfigureAwait(false);
                         ReadFromConnectionBuffer(int.MaxValue);
                         if (_contentBytesRemaining == 0)
                         {

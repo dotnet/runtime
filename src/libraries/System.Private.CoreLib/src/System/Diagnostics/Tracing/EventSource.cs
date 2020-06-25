@@ -1184,9 +1184,6 @@ namespace System.Diagnostics.Tracing
                 Debug.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.
                 try
                 {
-                    if (relatedActivityId != null)
-                        ValidateEventOpcodeForTransfer(ref m_eventData[eventId], m_eventData[eventId].Name);
-
                     EventOpcode opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode;
                     EventActivityOptions activityOptions = m_eventData[eventId].ActivityOptions;
                     Guid* pActivityId = null;
@@ -1869,8 +1866,6 @@ namespace System.Diagnostics.Tracing
                 {
                     if (childActivityID != null)
                     {
-                        ValidateEventOpcodeForTransfer(ref m_eventData[eventId], m_eventData[eventId].Name);
-
                         // If you use WriteEventWithRelatedActivityID you MUST declare the first argument to be a GUID
                         // with the name 'relatedActivityID, and NOT pass this argument to the WriteEvent method.
                         // During manifest creation we modify the ParameterInfo[] that we store to strip out any
@@ -2379,16 +2374,6 @@ namespace System.Diagnostics.Tracing
             finally
             {
                 m_EventSourceExceptionRecurenceCount--;
-            }
-        }
-
-        private void ValidateEventOpcodeForTransfer(ref EventMetadata eventData, string? eventName)
-        {
-            if ((EventOpcode)eventData.Descriptor.Opcode != EventOpcode.Send &&
-                (EventOpcode)eventData.Descriptor.Opcode != EventOpcode.Receive &&
-                (EventOpcode)eventData.Descriptor.Opcode != EventOpcode.Start)
-            {
-                ThrowEventSourceException(eventName);
             }
         }
 
