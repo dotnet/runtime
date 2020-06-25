@@ -34,6 +34,8 @@ internal static partial class Interop
         {
             ECB = 1,
             CBC = 2,
+            CFB = 3,
+            CFB8 = 10,
         }
 
         internal enum PAL_SymmetricOptions

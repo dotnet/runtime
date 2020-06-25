@@ -303,6 +303,9 @@
   <data name="Cryptography_TransformBeyondEndOfBuffer" xml:space="preserve">
     <value>Attempt to transform beyond end of buffer.</value>
   </data>
+  <data name="Cryptography_CipherModeFeedbackNotSupported" xml:space="preserve">
+    <value>The specified feedback size '{0}' for CipherMode '{1}' is not supported.</value>
+  </data>
   <data name="Cryptography_CipherModeNotSupported" xml:space="preserve">
     <value>The specified CipherMode '{0}' is not supported.</value>
   </data>

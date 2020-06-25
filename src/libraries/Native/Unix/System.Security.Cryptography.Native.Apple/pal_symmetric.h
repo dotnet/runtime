@@ -30,6 +30,8 @@ enum
 {
     PAL_ChainingModeECB = 1,
     PAL_ChainingModeCBC = 2,
+    PAL_ChainingModeCFB = 3,
+    PAL_ChainingModeCFB8 = 10,
 };
 typedef uint32_t PAL_ChainingMode;
 

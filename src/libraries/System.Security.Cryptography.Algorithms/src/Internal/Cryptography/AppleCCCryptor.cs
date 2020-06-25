@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
+using Internal.Cryptography;
 
 namespace Internal.Cryptography
 {
@@ -14,18 +15,26 @@ namespace Internal.Cryptography
         private readonly bool _encrypting;
         private SafeAppleCryptorHandle _cryptor;
 
+        // Reset operation is not supported on stream cipher
+        private readonly bool _supportsReset;
+
         public AppleCCCryptor(
             Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm,
             CipherMode cipherMode,
             int blockSizeInBytes,
             byte[] key,
             byte[]? iv,
-            bool encrypting)
-            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
+            bool encrypting,
+            int feedbackSizeInBytes,
+            int paddingSizeInBytes)
+            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
         {
             _encrypting = encrypting;
 
-            OpenCryptor(algorithm, cipherMode, key);
+            // CFB is streaming cipher, calling CCCryptorReset is not implemented (and is effectively noop)
+            _supportsReset = cipherMode != CipherMode.CFB;
+
+            OpenCryptor(algorithm, cipherMode, key, feedbackSizeInBytes);
         }
 
         protected override void Dispose(bool disposing)
@@ -44,7 +53,7 @@ namespace Internal.Cryptography
             Debug.Assert(input != null, "Expected valid input, got null");
             Debug.Assert(inputOffset >= 0, $"Expected non-negative inputOffset, got {inputOffset}");
             Debug.Assert(count > 0, $"Expected positive count, got {count}");
-            Debug.Assert((count % BlockSizeInBytes) == 0, $"Expected count aligned to block size {BlockSizeInBytes}, got {count}");
+            Debug.Assert((count % PaddingSizeInBytes) == 0, $"Expected count aligned to block size {BlockSizeInBytes}, got {count}");
             Debug.Assert(input.Length - inputOffset >= count, $"Expected valid input length/offset/count triplet, got {input.Length}/{inputOffset}/{count}");
             Debug.Assert(output != null, "Expected valid output, got null");
             Debug.Assert(outputOffset >= 0, $"Expected non-negative outputOffset, got {outputOffset}");
@@ -58,7 +67,7 @@ namespace Internal.Cryptography
             Debug.Assert(input != null, "Expected valid input, got null");
             Debug.Assert(inputOffset >= 0, $"Expected non-negative inputOffset, got {inputOffset}");
             Debug.Assert(count >= 0, $"Expected non-negative count, got {count}");
-            Debug.Assert((count % BlockSizeInBytes) == 0, $"Expected count aligned to block size {BlockSizeInBytes}, got {count}");
+            Debug.Assert((count % PaddingSizeInBytes) == 0, $"Expected count aligned to block size {BlockSizeInBytes}, got {count}");
             Debug.Assert(input.Length - inputOffset >= count, $"Expected valid input length/offset/count triplet, got {input.Length}/{inputOffset}/{count}");
 
             byte[] output = ProcessFinalBlock(input, inputOffset, count);
@@ -146,7 +155,8 @@ namespace Internal.Cryptography
         private unsafe void OpenCryptor(
             Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm,
             CipherMode cipherMode,
-            byte[] key)
+            byte[] key,
+            int feedbackSizeInBytes)
         {
             int ret;
             int ccStatus;
@@ -161,7 +171,7 @@ namespace Internal.Cryptography
                         ? Interop.AppleCrypto.PAL_SymmetricOperation.Encrypt
                         : Interop.AppleCrypto.PAL_SymmetricOperation.Decrypt,
                     algorithm,
-                    GetPalChainMode(cipherMode),
+                    GetPalChainMode(algorithm, cipherMode, feedbackSizeInBytes),
                     Interop.AppleCrypto.PAL_PaddingMode.None,
                     pbKey,
                     key.Length,
@@ -174,14 +184,23 @@ namespace Internal.Cryptography
             ProcessInteropError(ret, ccStatus);
         }
 
-        private Interop.AppleCrypto.PAL_ChainingMode GetPalChainMode(CipherMode cipherMode)
+        private Interop.AppleCrypto.PAL_ChainingMode GetPalChainMode(Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm, CipherMode cipherMode, int feedbackSizeInBytes)
         {
-            switch (cipherMode)
+            switch ((algorithm, cipherMode, feedbackSizeInBytes))
             {
-                case CipherMode.CBC:
+                case (_, CipherMode.CBC, _):
                     return Interop.AppleCrypto.PAL_ChainingMode.CBC;
-                case CipherMode.ECB:
+                case (_, CipherMode.ECB, _):
                     return Interop.AppleCrypto.PAL_ChainingMode.ECB;
+                    // let's be consistent across all platforms,
+                    // and do not support CFB for anything else than AES.
+                case (_, CipherMode.CFB, 1):
+                    return Interop.AppleCrypto.PAL_ChainingMode.CFB8;
+                case (Interop.AppleCrypto.PAL_SymmetricAlgorithm.AES, CipherMode.CFB, 16):
+                case (Interop.AppleCrypto.PAL_SymmetricAlgorithm.TripleDES, CipherMode.CFB, 8):
+                    return Interop.AppleCrypto.PAL_ChainingMode.CFB;
+                case (_, CipherMode.CFB, _):
+                    throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedbackSizeInBytes * 8, cipherMode));
                 default:
                     throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CipherModeNotSupported, cipherMode));
             }
@@ -189,6 +208,11 @@ namespace Internal.Cryptography
 
         private unsafe void Reset()
         {
+            if (!_supportsReset)
+            {
+                return;
+            }
+
             int ret;
             int ccStatus;
 

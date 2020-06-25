@@ -15,6 +15,8 @@ namespace Internal.Cryptography
             int effectiveKeyLength,
             byte[]? iv,
             int blockSize,
+            int feedbackSizeInBytes,
+            int paddingSize,
             bool encrypting)
         {
             BasicSymmetricCipher cipher = new AppleCCCryptor(
@@ -23,7 +25,9 @@ namespace Internal.Cryptography
                 blockSize,
                 key,
                 iv,
-                encrypting);
+                encrypting,
+                feedbackSizeInBytes,
+                paddingSize);
 
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
