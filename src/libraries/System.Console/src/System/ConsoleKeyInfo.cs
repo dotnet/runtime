@@ -34,15 +34,6 @@ namespace System
                 _mods |= ConsoleModifiers.Control;
         }
 
-        internal ConsoleKeyInfo(char keyChar, ConsoleKey key, ConsoleModifiers modifiers)
-        {
-            Debug.Assert(((int)key) >= 0 && ((int)key) <= 255);
-
-            _keyChar = keyChar;
-            _key = key;
-            _mods = modifiers;
-        }
-
         public char KeyChar
         {
             get { return _keyChar; }
