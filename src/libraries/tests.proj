@@ -22,7 +22,6 @@
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true'">
     <!-- Builds and runs but fails hard enough to not produce any output XML -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging\tests\Common\Microsoft.Extensions.Logging.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Configuration.ConfigurationManager\tests\System.Configuration.ConfigurationManager.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO\tests\System.IO.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Parallel\tests\System.Linq.Parallel.Tests.csproj" />
@@ -38,7 +37,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Channels\tests\System.Threading.Channels.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Extensions\tests\System.Threading.Tasks.Extensions.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
     <!-- Builds currently do not pass -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Common\tests\Common.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.FileExtensions\tests\Microsoft.Extensions.Configuration.FileExtensions.Tests.csproj" />
