@@ -785,7 +785,7 @@ namespace System.Net.Mail
                     finally
                     {
                         if (e.Error != null) tcs.TrySetException(e.Error);
-                        else if (e.Cancelled) tcs.TrySetCanceled();
+                        else if (e.Cancelled) tcs.TrySetCanceled(cancellationToken);
                         else tcs.TrySetResult();
                     }
                 }
