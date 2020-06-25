@@ -17,6 +17,10 @@ namespace System.Net
 
         public static new bool IsEnabled => Log.IsEnabled();
 
+        private const int ResolutionStartEventId = 1;
+        private const int ResolutionSuccessEventId = 2;
+        private const int ResolutionFailureEventId = 3;
+
         private PollingCounter? _lookupsRequestedCounter;
         private EventCounter? _lookupsDuration;
 
@@ -42,7 +46,7 @@ namespace System.Net
 
         private const int MaxIPFormattedLength = 128;
 
-        [Event(1, Level = EventLevel.Informational)]
+        [Event(ResolutionStartEventId, Level = EventLevel.Informational)]
         public ValueStopwatch ResolutionStart(string hostNameOrAddress)
         {
             Debug.Assert(hostNameOrAddress != null);
@@ -50,7 +54,7 @@ namespace System.Net
             if (IsEnabled())
             {
                 Interlocked.Increment(ref _lookupsRequested);
-                WriteEvent(eventId: 1, hostNameOrAddress);
+                WriteEvent(ResolutionStartEventId, hostNameOrAddress);
                 return ValueStopwatch.StartNew();
             }
 
@@ -65,7 +69,7 @@ namespace System.Net
             if (IsEnabled())
             {
                 Interlocked.Increment(ref _lookupsRequested);
-                WriteEvent(eventId: 1, FormatIPAddressNullTerminated(address, stackalloc char[MaxIPFormattedLength]));
+                WriteEvent(ResolutionStartEventId, FormatIPAddressNullTerminated(address, stackalloc char[MaxIPFormattedLength]));
                 return ValueStopwatch.StartNew();
             }
 
@@ -102,18 +106,18 @@ namespace System.Net
                 _lookupsDuration!.WriteMetric(duration);
 
                 WriteEvent(
-                    eventId: successful ? 2 : 3,
+                    successful ? ResolutionSuccessEventId : ResolutionFailureEventId,
                     FormatIPAddressNullTerminated(address, stackalloc char[MaxIPFormattedLength]),
                     duration);
             }
         }
 
 
-        [Event(2, Level = EventLevel.Informational)]
-        private void ResolutionSuccess(string hostNameOrAddress, double duration) => WriteEvent(eventId: 2, hostNameOrAddress, duration);
+        [Event(ResolutionSuccessEventId, Level = EventLevel.Informational)]
+        private void ResolutionSuccess(string hostNameOrAddress, double duration) => WriteEvent(ResolutionSuccessEventId, hostNameOrAddress, duration);
 
-        [Event(3, Level = EventLevel.Informational)]
-        private void ResolutionFailure(string hostNameOrAddress, double duration) => WriteEvent(eventId: 3, hostNameOrAddress, duration);
+        [Event(ResolutionFailureEventId, Level = EventLevel.Informational)]
+        private void ResolutionFailure(string hostNameOrAddress, double duration) => WriteEvent(ResolutionFailureEventId, hostNameOrAddress, duration);
 
 
         [NonEvent]
