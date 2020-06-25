@@ -494,6 +494,7 @@ namespace System.Net.Http.Functional.Tests
                 bool exceptionLogged = false;
 
                 Activity parentActivity = new Activity("parent");
+                parentActivity.SetIdFormat(ActivityIdFormat.Hierarchical);
                 parentActivity.AddBaggage("bad/key", "value");
                 parentActivity.AddBaggage("goodkey", "bad/value");
                 parentActivity.AddBaggage("key", "value");
@@ -552,6 +553,7 @@ namespace System.Net.Http.Functional.Tests
                 bool activityStopLogged = false;
 
                 Activity parentActivity = new Activity("parent");
+                parentActivity.SetIdFormat(ActivityIdFormat.Hierarchical);
                 parentActivity.AddBaggage("correlationId", Guid.NewGuid().ToString("N").ToString());
                 parentActivity.Start();
 

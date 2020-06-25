@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public PublicKey(Oid oid, AsnEncodedData parameters, AsnEncodedData keyValue)
         {
-            _oid = new Oid(oid);
+            _oid = oid;
             EncodedParameters = new AsnEncodedData(parameters);
             EncodedKeyValue = new AsnEncodedData(keyValue);
         }
@@ -49,12 +49,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public Oid Oid
-        {
-            get
-            {
-                return new Oid(_oid);
-            }
-        }
+        public Oid Oid => _oid;
     }
 }

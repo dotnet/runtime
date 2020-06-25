@@ -272,11 +272,11 @@ namespace System.Reflection.Emit
         {
             StringBuilder sb = new StringBuilder(generic_type.FullName);
 
-            sb.Append("[");
+            sb.Append('[');
             for (int i = 0; i < type_arguments.Length; ++i)
             {
                 if (i > 0)
-                    sb.Append(",");
+                    sb.Append(',');
 
                 string? name;
                 if (full_name)
@@ -295,12 +295,12 @@ namespace System.Reflection.Emit
                     return null;
                 }
                 if (full_name)
-                    sb.Append("[");
+                    sb.Append('[');
                 sb.Append(name);
                 if (full_name)
-                    sb.Append("]");
+                    sb.Append(']');
             }
-            sb.Append("]");
+            sb.Append(']');
             if (assembly_qualified)
             {
                 sb.Append(", ");

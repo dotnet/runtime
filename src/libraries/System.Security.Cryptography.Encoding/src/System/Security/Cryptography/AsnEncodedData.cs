@@ -43,15 +43,8 @@ namespace System.Security.Cryptography
 
         public Oid? Oid
         {
-            get
-            {
-                return _oid;
-            }
-
-            set
-            {
-                _oid = (value == null) ? null : new Oid(value);
-            }
+            get => _oid;
+            set => _oid = value;
         }
 
         public byte[] RawData
