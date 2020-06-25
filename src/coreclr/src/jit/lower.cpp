@@ -6390,4 +6390,10 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
             }
         }
     }
+    else
+    {
+        // if `ADDR` node under `IND(struct(ADDR))` under `STORE_OBJ`
+        // is a complex one it could benefit from a not contained `LEA`.
+        TryCreateAddrMode(ind->Addr(), false);
+    }
 }
