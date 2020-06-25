@@ -31,5 +31,6 @@ namespace Internal.Cryptography
         SafeAlgorithmHandle GetEphemeralModeHandle();
         string GetNCryptAlgorithmIdentifier();
         byte[] PreprocessKey(byte[] key);
+        int GetPaddingSize();
     }
 }

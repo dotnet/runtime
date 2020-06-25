@@ -70,7 +70,7 @@ namespace Internal.Cryptography
         protected sealed override byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
             // We can't complete decryption on a partial block
-            if (inputCount % InputBlockSize != 0)
+            if (inputCount % PaddingSizeBytes != 0)
                 throw new CryptographicException(SR.Cryptography_PartialBlock);
 
             //

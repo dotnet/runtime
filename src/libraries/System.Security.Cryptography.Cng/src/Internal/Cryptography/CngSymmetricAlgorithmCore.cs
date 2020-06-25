@@ -165,6 +165,7 @@ namespace Internal.Cryptography
                 algorithmModeHandle,
                 _outer.Mode,
                 blockSizeInBytes,
+                _outer.GetPaddingSize(),
                 key,
                 false,
                 iv,

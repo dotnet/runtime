@@ -48,12 +48,12 @@ namespace Internal.Cryptography
         private byte[] PadBlock(byte[] block, int offset, int count)
         {
             byte[] result;
-            int padBytes = InputBlockSize - (count % InputBlockSize);
+            int padBytes = PaddingSizeBytes - (count % PaddingSizeBytes);
 
             switch (PaddingMode)
             {
                 case PaddingMode.None:
-                    if (count % InputBlockSize != 0)
+                    if (count % PaddingSizeBytes != 0)
                         throw new CryptographicException(SR.Cryptography_PartialBlock);
 
                     result = new byte[count];

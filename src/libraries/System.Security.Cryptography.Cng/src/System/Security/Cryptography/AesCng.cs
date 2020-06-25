@@ -106,9 +106,14 @@ namespace System.Security.Cryptography
             return false;
         }
 
+        int ICngSymmetricAlgorithm.GetPaddingSize()
+        {
+            return GetPaddingSize();
+        }
+
         SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle()
         {
-            return AesBCryptModes.GetSharedHandle(Mode);
+            return AesBCryptModes.GetSharedHandle(Mode, FeedbackSize / 8);
         }
 
         string ICngSymmetricAlgorithm.GetNCryptAlgorithmIdentifier()

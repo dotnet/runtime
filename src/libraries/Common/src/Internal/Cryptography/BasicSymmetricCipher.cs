@@ -23,10 +23,11 @@ namespace Internal.Cryptography
     //
     internal abstract class BasicSymmetricCipher : IDisposable
     {
-        protected BasicSymmetricCipher(byte[]? iv, int blockSizeInBytes)
+        protected BasicSymmetricCipher(byte[]? iv, int blockSizeInBytes, int paddingSizeInBytes = 0)
         {
             IV = iv;
             BlockSizeInBytes = blockSizeInBytes;
+            PaddingSizeInBytes = paddingSizeInBytes > 0 ? paddingSizeInBytes : blockSizeInBytes;
         }
 
         public abstract int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset);
@@ -34,6 +35,7 @@ namespace Internal.Cryptography
         public abstract byte[] TransformFinal(byte[] input, int inputOffset, int count);
 
         public int BlockSizeInBytes { get; private set; }
+        public int PaddingSizeInBytes { get; private set; }
 
         public void Dispose()
         {

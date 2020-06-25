@@ -146,7 +146,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (!(value == CipherMode.CBC || value == CipherMode.ECB))
+                if (!(value == CipherMode.CBC || value == CipherMode.ECB || value == CipherMode.CFB))
                     throw new CryptographicException(SR.Cryptography_InvalidCipherMode);
 
                 ModeValue = value;

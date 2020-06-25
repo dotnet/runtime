@@ -5,6 +5,7 @@
 #nullable enable
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Security.Cryptography;
 using Internal.NativeCrypto;
 
@@ -17,8 +18,8 @@ namespace Internal.Cryptography
         private byte[]? _currentIv;  // CNG mutates this with the updated IV for the next stage on each Encrypt/Decrypt call.
                                      // The base IV holds a copy of the original IV for Reset(), until it is cleared by Dispose().
 
-        public BasicSymmetricCipherBCrypt(SafeAlgorithmHandle algorithm, CipherMode cipherMode, int blockSizeInBytes, byte[] key, bool ownsParentHandle, byte[]? iv, bool encrypting)
-            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
+        public BasicSymmetricCipherBCrypt(SafeAlgorithmHandle algorithm, CipherMode cipherMode, int blockSizeInBytes, int paddingSizeInBytes, byte[] key, bool ownsParentHandle, byte[]? iv, bool encrypting)
+            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
         {
             Debug.Assert(algorithm != null);
 
@@ -66,7 +67,7 @@ namespace Internal.Cryptography
             Debug.Assert(input != null);
             Debug.Assert(inputOffset >= 0);
             Debug.Assert(count > 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
+            Debug.Assert((count % PaddingSizeInBytes) == 0);
             Debug.Assert(input.Length - inputOffset >= count);
             Debug.Assert(output != null);
             Debug.Assert(outputOffset >= 0);
@@ -98,7 +99,7 @@ namespace Internal.Cryptography
             Debug.Assert(input != null);
             Debug.Assert(inputOffset >= 0);
             Debug.Assert(count >= 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
+            Debug.Assert((count % PaddingSizeInBytes) == 0);
             Debug.Assert(input.Length - inputOffset >= count);
 
             byte[] output = new byte[count];
