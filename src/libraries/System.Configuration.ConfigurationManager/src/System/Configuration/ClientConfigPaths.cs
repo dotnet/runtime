@@ -96,7 +96,7 @@ namespace System.Configuration
             // (1) Company name
             string part1 = Validate(_companyName, limitSize: true);
 
-            // (2) Domain or product name & an application urit hash
+            // (2) Domain or product name & an application uri hash
             string namePrefix = Validate(AppDomain.CurrentDomain.FriendlyName, limitSize: true);
             if (string.IsNullOrEmpty(namePrefix))
                 namePrefix = Validate(ProductName, limitSize: true);

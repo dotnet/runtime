@@ -2707,7 +2707,7 @@ namespace System.Net.Http.Functional.Tests
                     (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody : false);
 
                     // Client finished sending request headers and we received them.
-                    // Send reqquest body.
+                    // Send request body.
                     await requestStream.WriteAsync(Encoding.UTF8.GetBytes(requestContent));
                     duplexContent.Complete();
 
@@ -2717,7 +2717,7 @@ namespace System.Net.Http.Functional.Tests
                         await connection.ReadBodyAsync();
                     }
 
-                     // Send response headers
+                    // Send response headers
                     await connection.SendResponseHeadersAsync(streamId, endStream: false, responseCode);
 
                     HttpResponseMessage response = await responseTask;

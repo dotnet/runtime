@@ -32,7 +32,6 @@ namespace System.Xml.Schema
 
         private Reserve _reserved = Reserve.None; // indicate the attribute type, such as xml:lang or xml:space
 
-        private readonly bool _defaultValueChecked;
         private XmlSchemaAttribute? _schemaAttribute;
 
         public static readonly SchemaAttDef Empty = new SchemaAttDef();
@@ -167,14 +166,6 @@ namespace System.Xml.Schema
         {
             get { return _reserved; }
             set { _reserved = value; }
-        }
-
-        internal bool DefaultValueChecked
-        {
-            get
-            {
-                return _defaultValueChecked;
-            }
         }
 
         internal XmlSchemaAttribute? SchemaAttribute

@@ -37,6 +37,24 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
+        public virtual HttpResponseMessage Send(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+            CheckDisposed();
+
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, request);
+
+            HttpResponseMessage response = _handler.Send(request, cancellationToken);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, response);
+
+            return response;
+        }
+
         public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {

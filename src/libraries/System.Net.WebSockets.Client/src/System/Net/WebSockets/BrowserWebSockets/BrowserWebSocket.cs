@@ -56,7 +56,6 @@ namespace System.Net.WebSockets
         /// </summary>
         public BrowserWebSocket()
         {
-            _state = _created;
             _cts = new CancellationTokenSource();
         }
 
@@ -363,19 +362,20 @@ namespace System.Net.WebSockets
             {
                 try
                 {
-                    if (messageType == WebSocketMessageType.Binary)
+                    switch (messageType)
                     {
-                        using (var uint8Buffer = Uint8Array.From(buffer))
-                        {
-                            _innerWebSocket!.Invoke("send", uint8Buffer);
+                        case WebSocketMessageType.Binary:
+                            using (var uint8Buffer = Uint8Array.From(buffer))
+                            {
+                                _innerWebSocket!.Invoke("send", uint8Buffer);
+                                tcsSend.SetResult(true);
+                            }
+                            break;
+                        default:
+                            string strBuffer = buffer.Array == null ? string.Empty : Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
+                            _innerWebSocket!.Invoke("send", strBuffer);
                             tcsSend.SetResult(true);
-                        }
-                    }
-                    else if (messageType == WebSocketMessageType.Text)
-                    {
-                        string strBuffer = buffer.Array == null ? string.Empty : Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
-                        _innerWebSocket!.Invoke("send", strBuffer);
-                        tcsSend.SetResult(true);
+                            break;
                     }
                 }
                 catch (Exception excb)

@@ -223,15 +223,14 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             using (HttpClient client = CreateHttpClient())
             {
                 var options = new GenericLoopbackOptions { Address = TestHelper.GetIPv6LinkLocalAddress() };
@@ -250,16 +249,15 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetAsync_IPBasedUri_Success_MemberData))]
         public async Task GetAsync_IPBasedUri_Success(IPAddress address)
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             using (HttpClient client = CreateHttpClient())
             {
                 var options = new GenericLoopbackOptions { Address = address };
@@ -484,10 +482,10 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> SecureAndNonSecure_IPBasedUri_MemberData() =>
             from address in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback }
-            from useSsl in new[] { true, false }
+            from useSsl in BoolValues
             select new object[] { address, useSsl };
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(SecureAndNonSecure_IPBasedUri_MemberData))]
         public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)
         {
@@ -569,17 +567,16 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData("WWW-Authenticate", "CustomAuth")]
         [InlineData("", "")] // RFC7235 requires servers to send this header with 401 but some servers don't.
         public async Task GetAsync_ServerNeedsNonStandardAuthAndSetCredential_StatusCodeUnauthorized(string authHeadrName, string authHeaderValue)
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
@@ -754,15 +751,14 @@ namespace System.Net.Http.Functional.Tests
                    server.AcceptConnectionSendCustomResponseAndCloseAsync("HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhe"));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion > HttpVersion.Version11)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             const string content = "hello world";
 
             // Using examples from https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields
@@ -839,7 +835,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Add("X-Underscore_Name", "X-Underscore_Name");
                     request.Headers.Add("X-End", "End");
 
-                    (await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)).Dispose();
+                    (await client.SendAsync(TestAsync, request, HttpCompletionOption.ResponseHeadersRead)).Dispose();
                 }
             }, async server =>
             {
@@ -925,7 +921,7 @@ namespace System.Net.Http.Functional.Tests
             from dribble in new[] { false, true }
             select new object[] { newline, fold, dribble };
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly_MemberData))]
         public async Task GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(string newline, string fold, bool dribble)
         {
@@ -1059,7 +1055,7 @@ namespace System.Net.Http.Functional.Tests
                 dribble ? new LoopbackServer.Options { StreamWrapper = s => new DribbleStream(s) } : null);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task GetAsync_NonTraditionalChunkSizes_Accepted()
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
@@ -1198,7 +1194,7 @@ namespace System.Net.Http.Functional.Tests
             req.Headers.TransferEncodingChunked = true;
             using (HttpClient c = CreateHttpClient())
             {
-                HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(() => c.SendAsync(req));
+                HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(() => c.SendAsync(TestAsync, req));
                 Assert.IsType<InvalidOperationException>(error.InnerException);
             }
         }
@@ -1232,10 +1228,16 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task SendAsync_HttpRequestMsgResponseHeadersRead_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync && remoteServer.HttpVersion.Major >= 2)
+            {
+                return;
+            }
+
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, remoteServer.EchoUri) { Version = remoteServer.HttpVersion };
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
-                using (HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, HttpCompletionOption.ResponseHeadersRead))
                 {
                     string responseContent = await response.Content.ReadAsStringAsync();
                     _output.WriteLine(responseContent);
@@ -1282,18 +1284,17 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         [InlineData(null)]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked)
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && chunked == true)
             {
                 // Chunking is not supported on HTTP/2 and later.
@@ -1304,7 +1305,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
-                using (HttpResponseMessage response = await client.SendAsync(request, CancellationToken.None))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None))
                 {
                     using (Stream responseStream = await response.Content.ReadAsStreamAsync())
                     {
@@ -1445,22 +1446,21 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ReadAsStreamAsync_EmptyResponseBody_HandlerProducesWellBehavedResponseStream()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
                 {
                     var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
 
-                    using (HttpResponseMessage response = await client.SendAsync(request, CancellationToken.None))
+                    using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None))
                     using (Stream responseStream = await response.Content.ReadAsStreamAsync())
                     {
                         // Boolean properties returning correct values
@@ -1536,15 +1536,15 @@ namespace System.Net.Http.Functional.Tests
             },
             server => server.AcceptConnectionSendResponseAndCloseAsync());
         }
-        [ConditionalFact]
+
+        [Fact]
         public async Task Dispose_DisposingHandlerCancelsActiveOperationsWithoutResponses()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             await LoopbackServerFactory.CreateServerAsync(async (server1, url1) =>
             {
                 await LoopbackServerFactory.CreateServerAsync(async (server2, url2) =>
@@ -1734,7 +1734,7 @@ namespace System.Net.Http.Functional.Tests
             get
             {
                 foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers) // target server
-                    foreach (bool syncCopy in new[] { true, false }) // force the content copy to happen via Read/Write or ReadAsync/WriteAsync
+                    foreach (bool syncCopy in BoolValues) // force the content copy to happen via Read/Write or ReadAsync/WriteAsync
                     {
                         byte[] data = new byte[1234];
                         new Random(42).NextBytes(data);
@@ -1866,36 +1866,42 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        public static IEnumerable<object[]> ExpectContinueVersion()
+        {
+            return
+                from expect in new bool?[] {true, false, null}
+                from version in new Version[] {new Version(1, 0), new Version(1, 1), new Version(2, 0)}
+                select new object[] {expect, version};
+        }
+
         [OuterLoop("Uses external server")]
         [Theory]
-        [InlineData(false, "1.0")]
-        [InlineData(true, "1.0")]
-        [InlineData(null, "1.0")]
-        [InlineData(false, "1.1")]
-        [InlineData(true, "1.1")]
-        [InlineData(null, "1.1")]
-        [InlineData(false, "2.0")]
-        [InlineData(true, "2.0")]
-        [InlineData(null, "2.0")]
-        public async Task PostAsync_ExpectContinue_Success(bool? expectContinue, string version)
+        [MemberData(nameof(ExpectContinueVersion))]
+        public async Task PostAsync_ExpectContinue_Success(bool? expectContinue, Version version)
         {
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync && version.Major >= 2)
+            {
+                return;
+            }
+
             using (HttpClient client = CreateHttpClient())
             {
-                var req = new HttpRequestMessage(HttpMethod.Post, version == "2.0" ? Configuration.Http.Http2RemoteEchoServer : Configuration.Http.RemoteEchoServer)
+                var req = new HttpRequestMessage(HttpMethod.Post, version.Major == 2 ? Configuration.Http.Http2RemoteEchoServer : Configuration.Http.RemoteEchoServer)
                 {
                     Content = new StringContent("Test String", Encoding.UTF8),
-                    Version = new Version(version)
+                    Version = version
                 };
                 req.Headers.ExpectContinue = expectContinue;
 
-                using (HttpResponseMessage response = await client.SendAsync(req))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, req))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                     if (!IsWinHttpHandler)
                     {
                         const string ExpectedReqHeader = "\"Expect\": \"100-continue\"";
-                        if (expectContinue == true && (version == "1.1" || version == "2.0"))
+                        if (expectContinue == true && (version >= new Version(1, 1)))
                         {
                             Assert.Contains(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
                         }
@@ -1908,15 +1914,14 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task GetAsync_ExpectContinueTrue_NoContent_StillSendsHeader()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             const string ExpectedContent = "Hello, expecting and continuing world.";
             var clientCompleted = new TaskCompletionSource<bool>();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1953,16 +1958,15 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { (HttpStatusCode) 199 };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(Interim1xxStatusCode))]
         public async Task SendAsync_1xxResponsesWithHeaders_InterimResponsesHeadersIgnored(HttpStatusCode responseStatusCode)
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             var clientFinished = new TaskCompletionSource<bool>();
             const string TestString = "test";
             const string CookieHeaderExpected = "yummy_cookie=choco";
@@ -1980,7 +1984,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
                     initialMessage.Content = new StringContent(TestString);
                     initialMessage.Headers.ExpectContinue = true;
-                    HttpResponseMessage response = await client.SendAsync(initialMessage);
+                    HttpResponseMessage response = await client.SendAsync(TestAsync, initialMessage);
 
                     // Verify status code.
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -2023,16 +2027,15 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(Interim1xxStatusCode))]
         public async Task SendAsync_Unexpected1xxResponses_DropAllInterimResponses(HttpStatusCode responseStatusCode)
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             var clientFinished = new TaskCompletionSource<bool>();
             const string TestString = "test";
 
@@ -2044,7 +2047,7 @@ namespace System.Net.Http.Functional.Tests
                     initialMessage.Content = new StringContent(TestString);
                     // No ExpectContinue header.
                     initialMessage.Headers.ExpectContinue = false;
-                    HttpResponseMessage response = await client.SendAsync(initialMessage);
+                    HttpResponseMessage response = await client.SendAsync(TestAsync, initialMessage);
 
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     clientFinished.SetResult(true);
@@ -2069,15 +2072,14 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task SendAsync_MultipleExpected100Responses_ReceivesCorrectResponse()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             var clientFinished = new TaskCompletionSource<bool>();
             const string TestString = "test";
 
@@ -2088,7 +2090,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
                     initialMessage.Content = new StringContent(TestString);
                     initialMessage.Headers.ExpectContinue = true;
-                    HttpResponseMessage response = await client.SendAsync(initialMessage);
+                    HttpResponseMessage response = await client.SendAsync(TestAsync, initialMessage);
 
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     clientFinished.SetResult(true);
@@ -2114,15 +2116,14 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task SendAsync_No100ContinueReceived_RequestBodySentEventually()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             var clientFinished = new TaskCompletionSource<bool>();
             const string RequestString = "request";
             const string ResponseString = "response";
@@ -2134,7 +2135,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
                     initialMessage.Content = new StringContent(RequestString);
                     initialMessage.Headers.ExpectContinue = true;
-                    using (HttpResponseMessage response = await client.SendAsync(initialMessage))
+                    using (HttpResponseMessage response = await client.SendAsync(TestAsync, initialMessage))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                         Assert.Equal(ResponseString, await response.Content.ReadAsStringAsync());
@@ -2160,7 +2161,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task SendAsync_101SwitchingProtocolsResponse_Success()
         {
             // WinHttpHandler and CurlHandler will hang, waiting for additional response.
@@ -2377,7 +2378,7 @@ namespace System.Net.Http.Functional.Tests
                     new HttpMethod(method),
                     serverUri) { Version = UseVersion };
 
-                using (HttpResponseMessage response = await client.SendAsync(request))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     TestHelper.VerifyRequestMethod(response, method);
@@ -2397,7 +2398,7 @@ namespace System.Net.Http.Functional.Tests
                     new HttpMethod(method),
                     serverUri) { Version = UseVersion };
                 request.Content = new StringContent(ExpectedContent);
-                using (HttpResponseMessage response = await client.SendAsync(request))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     TestHelper.VerifyRequestMethod(response, method);
@@ -2430,7 +2431,7 @@ namespace System.Net.Http.Functional.Tests
 
                 for (int iter = 0; iter < 2; iter++)
                 {
-                    using (HttpResponseMessage response = await handler.SendAsync(request, CancellationToken.None))
+                    using (HttpResponseMessage response = await handler.SendAsync(TestAsync, request, CancellationToken.None))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -2464,7 +2465,7 @@ namespace System.Net.Http.Functional.Tests
                     Version = UseVersion
                 };
 
-                using (HttpResponseMessage response = await client.SendAsync(request))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request))
                 {
                     if (method == "TRACE")
                     {
@@ -2491,7 +2492,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task SendAsync_RequestVersion10_ServerReceivesVersion10Request()
         {
             // Test is not supported for WinHttpHandler and HTTP/2
-            if(IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
             }
@@ -2529,6 +2530,12 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(Http2Servers))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20IfHttp2Supported(Uri server)
         {
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync)
+            {
+                return;
+            }
+
             // We don't currently have a good way to test whether HTTP/2 is supported without
             // using the same mechanism we're trying to test, so for now we allow both 2.0 and 1.1 responses.
             var request = new HttpRequestMessage(HttpMethod.Get, server);
@@ -2539,7 +2546,7 @@ namespace System.Net.Http.Functional.Tests
                 // It is generally expected that the test hosts will be trusted, so we don't register a validation
                 // callback in the usual case.
 
-                using (HttpResponseMessage response = await client.SendAsync(request))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     Assert.True(
@@ -2550,20 +2557,25 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task SendAsync_RequestVersion20_HttpNotHttps_NoUpgradeRequest()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync)
+            {
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    (await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = new Version(2, 0) })).Dispose();
+                    (await client.SendAsync(TestAsync, new HttpRequestMessage(HttpMethod.Get, uri) { Version = new Version(2, 0) })).Dispose();
                 }
             }, async server =>
             {
@@ -2576,13 +2588,19 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushServers))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20(Uri server)
         {
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync)
+            {
+                return;
+            }
+
             _output.WriteLine(server.AbsoluteUri.ToString());
             var request = new HttpRequestMessage(HttpMethod.Get, server);
             request.Version = new Version(2, 0);
 
             using (HttpClient client = CreateHttpClient())
             {
-                using (HttpResponseMessage response = await client.SendAsync(request))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     Assert.Equal(new Version(2, 0), response.Version);
@@ -2601,7 +2619,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using (HttpClient client = CreateHttpClient())
                 {
-                    Task<HttpResponseMessage> getResponse = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponse = client.SendAsync(TestAsync, request);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponse, serverTask);
 
@@ -2624,7 +2642,6 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Assert.True(false, "Invalid HTTP request version");
                     }
-
                 }
             });
 
@@ -2633,15 +2650,14 @@ namespace System.Net.Http.Functional.Tests
         #endregion
 
         #region Uri wire transmission encoding tests
-        [ConditionalFact]
+        [Fact]
         public async Task SendRequest_UriPathHasReservedChars_ServerReceivedExpectedPath()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             await LoopbackServerFactory.CreateServerAsync(async (server, rootUrl) =>
             {
                 var uri = new Uri($"{rootUrl.Scheme}://{rootUrl.Host}:{rootUrl.Port}/test[]");

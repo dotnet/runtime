@@ -9,16 +9,10 @@ namespace System.Net.WebSockets
     internal sealed class ReceivePayload
     {
         private readonly byte[] _dataMessageReceived;
-        private WebSocketMessageType _messageType;
+        private readonly WebSocketMessageType _messageType;
         private int _unconsumedDataOffset;
 
-        public ReceivePayload(byte[] array, WebSocketMessageType messageType = WebSocketMessageType.Binary)
-        {
-            _dataMessageReceived = array;
-            _messageType = messageType;
-        }
-
-        public ReceivePayload(ArrayBuffer arrayBuffer, WebSocketMessageType messageType = WebSocketMessageType.Binary)
+        public ReceivePayload(ArrayBuffer arrayBuffer, WebSocketMessageType messageType)
         {
             using (var bin = new Uint8Array(arrayBuffer))
             {
@@ -27,7 +21,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        public ReceivePayload(ArraySegment<byte> payload, WebSocketMessageType messageType = WebSocketMessageType.Binary)
+        public ReceivePayload(ArraySegment<byte> payload, WebSocketMessageType messageType)
         {
             _dataMessageReceived = payload.Array ?? Array.Empty<byte>();
             _messageType = messageType;

@@ -16,6 +16,16 @@ namespace System.Net.Http
             {
             }
 
+            public override void Write(ReadOnlySpan<byte> buffer)
+            {
+                // Have the connection write the data, skipping the buffer. Importantly, this will
+                // force a flush of anything already in the buffer, i.e. any remaining request headers
+                // that are still buffered.
+                HttpConnection connection = GetConnectionOrThrow();
+                Debug.Assert(connection._currentRequest != null);
+                connection.Write(buffer);
+            }
+
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ignored) // token ignored as it comes from SendAsync
             {
                 // Have the connection write the data, skipping the buffer. Importantly, this will
@@ -23,10 +33,10 @@ namespace System.Net.Http
                 // that are still buffered.
                 HttpConnection connection = GetConnectionOrThrow();
                 Debug.Assert(connection._currentRequest != null);
-                return connection.WriteAsync(buffer);
+                return connection.WriteAsync(buffer, async: true);
             }
 
-            public override ValueTask FinishAsync()
+            public override ValueTask FinishAsync(bool async)
             {
                 _connection = null;
                 return default;

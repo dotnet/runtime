@@ -7078,9 +7078,7 @@ inline bool GenTree::IsMultiRegCall() const
 {
     if (this->IsCall())
     {
-        // We cannot use AsCall() as it is not declared const
-        const GenTreeCall* call = reinterpret_cast<const GenTreeCall*>(this);
-        return call->HasMultiRegRetVal();
+        return AsCall()->HasMultiRegRetVal();
     }
 
     return false;

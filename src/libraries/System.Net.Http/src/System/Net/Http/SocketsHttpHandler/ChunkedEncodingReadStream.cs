@@ -170,7 +170,7 @@ namespace System.Net.Http
                         }
 
                         // We're only here if we need more data to make forward progress.
-                        await _connection.FillAsync().ConfigureAwait(false);
+                        await _connection.FillAsync(async: true).ConfigureAwait(false);
 
                         // Now that we have more, see if we can get any response data, and if
                         // we can we're done.
@@ -224,7 +224,7 @@ namespace System.Net.Http
                             return;
                         }
 
-                        await _connection.FillAsync().ConfigureAwait(false);
+                        await _connection.FillAsync(async: true).ConfigureAwait(false);
                     }
                 }
                 catch (Exception exc) when (CancellationHelper.ShouldWrapInOperationCanceledException(exc, cancellationToken))
@@ -473,7 +473,7 @@ namespace System.Net.Http
                             }
                         }
 
-                        await _connection.FillAsync().ConfigureAwait(false);
+                        await _connection.FillAsync(async: true).ConfigureAwait(false);
                     }
                 }
                 finally
