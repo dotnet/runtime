@@ -22,7 +22,7 @@
     <Compile Include="System\Runtime\Caching\Dbg.cs" />
     <Compile Include="System\Runtime\Caching\DefaultCacheCapabilities.cs" />
     <Compile Include="System\Runtime\Caching\EntryState.cs" />
-    <Compile Include="System\Runtime\Caching\FileChangeMonitor.cs" />
+    <Compile Condition="'$(TargetsBrowser)' != 'true'" Include="System\Runtime\Caching\FileChangeMonitor.cs" />
     <Compile Include="System\Runtime\Caching\FileChangeNotificationSystem.cs" />
     <Compile Include="System\Runtime\Caching\HostFileChangeMonitor.cs" />
     <Compile Include="System\Runtime\Caching\MemoryCache.cs" />
@@ -48,6 +48,9 @@
     <Compile Include="System\Runtime\Caching\Hosting\IFileChangeNotificationSystem.cs" />
     <Compile Include="System\Runtime\Caching\Hosting\IMemoryCacheManager.cs" />
     <Compile Include="System\Runtime\Caching\Resources\RH.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="System\Runtime\Caching\HostFileChangeMonitor.Browser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Runtime\Caching\MemoryMonitor.Windows.cs" />
