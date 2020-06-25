@@ -191,4 +191,7 @@
   <data name="IO_PathTooLong_Path" xml:space="preserve">
     <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
   </data>
+  <data name="FileSystemWatcher_PlatformNotSupported" xml:space="preserve">
+    <value>System.IO.FileSystem.Watcher is not supported on Browser.</value>
+  </data>
 </root>
