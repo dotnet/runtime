@@ -12,7 +12,7 @@ namespace System.Configuration
         private static readonly XmlDocument _document = new XmlDocument();
 
         private XmlNode _valueXml;
-        private bool _isModified = false;
+        private bool _isModified;
 
         protected internal override ConfigurationPropertyCollection Properties
         {

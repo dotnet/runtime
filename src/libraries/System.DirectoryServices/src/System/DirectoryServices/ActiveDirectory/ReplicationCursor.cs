@@ -8,12 +8,12 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ReplicationCursor
     {
-        private readonly string _serverDN = null;
+        private readonly string _serverDN;
         private readonly DateTime _syncTime;
-        private readonly bool _advanced = false;
-        private string _sourceServer = null;
+        private readonly bool _advanced;
+        private string _sourceServer;
 
-        private readonly DirectoryServer _server = null;
+        private readonly DirectoryServer _server;
 
         private ReplicationCursor() { }
 

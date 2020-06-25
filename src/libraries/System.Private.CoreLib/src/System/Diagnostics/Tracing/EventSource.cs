@@ -4368,7 +4368,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Used to disallow reentrancy.
         /// </summary>
-        private static bool s_CreatingListener = false;
+        private static bool s_CreatingListener;
 
 #if DEBUG
         /// <summary>
@@ -4383,8 +4383,8 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Used to register AD/Process shutdown callbacks.
         /// </summary>
-        private static bool s_EventSourceShutdownRegistered = false;
-#endregion
+        private static bool s_EventSourceShutdownRegistered;
+        #endregion
     }
 
     /// <summary>

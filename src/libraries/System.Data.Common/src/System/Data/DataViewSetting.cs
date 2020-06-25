@@ -14,7 +14,7 @@ namespace System.Data
         private string _sort = string.Empty;
         private string _rowFilter = string.Empty;
         private DataViewRowState _rowStateFilter = DataViewRowState.CurrentRows;
-        private bool _applyDefaultSort = false;
+        private bool _applyDefaultSort;
 
         internal DataViewSetting() { }
 

@@ -1389,7 +1389,7 @@ namespace System.Management
 
     internal class SecurityHandler
     {
-        private bool needToReset = false;
+        private bool needToReset;
         private readonly IntPtr handle;
         private readonly ManagementScope scope;
 

@@ -17,11 +17,11 @@ namespace System.Net.Http
     internal sealed class WinHttpRequestState : IDisposable
     {
 #if DEBUG
-        private static int s_dbg_allocated = 0;
-        private static int s_dbg_pin = 0;
-        private static int s_dbg_clearSendRequestState = 0;
-        private static int s_dbg_callDispose = 0;
-        private static int s_dbg_operationHandleFree = 0;
+        private static int s_dbg_allocated;
+        private static int s_dbg_pin;
+        private static int s_dbg_clearSendRequestState;
+        private static int s_dbg_callDispose;
+        private static int s_dbg_operationHandleFree;
 
         private IntPtr s_dbg_requestHandle;
 #endif
@@ -30,7 +30,7 @@ namespace System.Net.Http
         // This is owned by the callback and will be deallocated when the sessionHandle has been closed.
         private GCHandle _operationHandle;
         private WinHttpTransportContext _transportContext;
-        private volatile bool _disposed = false; // To detect redundant calls.
+        private volatile bool _disposed; // To detect redundant calls.
 
         public WinHttpRequestState()
         {

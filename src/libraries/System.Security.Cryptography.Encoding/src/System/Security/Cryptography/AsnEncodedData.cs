@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
             this.RawData = rawData;
         }
 
-        private Oid? _oid = null;
+        private Oid? _oid;
         private byte[] _rawData;
     }
 }

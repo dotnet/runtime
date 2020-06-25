@@ -103,7 +103,7 @@ namespace System.Xml.Schema
         internal const int TF_gYearMonth = 1 << HC_ST_gYearMonth;
         internal const int TF_string = 1 << HC_ST_string;
 
-        private XmlSchema? _rootSchema = null; //(XmlSchema) xsc[TargetNamespace];
+        private XmlSchema? _rootSchema; //(XmlSchema) xsc[TargetNamespace];
         private XmlSchemaSet? _schemaSet;
         private XmlReader? _xtr;
         private readonly NameTable _nametable;

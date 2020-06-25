@@ -18,7 +18,7 @@ namespace System.Runtime.Serialization
     {
         protected XmlReader reader;
         protected XmlDictionaryReader dictionaryReader;
-        protected bool isEndOfEmptyElement = false;
+        protected bool isEndOfEmptyElement;
 
         public XmlReaderDelegator(XmlReader reader)
         {

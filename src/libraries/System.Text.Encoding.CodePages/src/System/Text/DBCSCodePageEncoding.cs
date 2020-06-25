@@ -28,7 +28,7 @@ namespace System.Text
         // They aren't actually used because of the fallback mechanism. (char is though)
         private ushort _bytesUnknown;
         private int _byteCountUnknown;
-        protected char charUnknown = (char)0;
+        protected char charUnknown;
 
         public DBCSCodePageEncoding(int codePage) : this(codePage, codePage)
         {
@@ -1147,7 +1147,7 @@ namespace System.Text
         internal class DBCSDecoder : DecoderNLS
         {
             // Need a place for the last left over byte
-            internal byte bLeftOver = 0;
+            internal byte bLeftOver;
 
             public DBCSDecoder(DBCSCodePageEncoding encoding) : base(encoding)
             {

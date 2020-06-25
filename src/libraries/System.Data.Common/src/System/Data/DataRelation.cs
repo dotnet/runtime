@@ -34,28 +34,28 @@ namespace System.Data
     public class DataRelation
     {
         // properties
-        private DataSet _dataSet = null;
-        internal PropertyCollection _extendedProperties = null;
+        private DataSet _dataSet;
+        internal PropertyCollection _extendedProperties;
         internal string _relationName = string.Empty;
 
         // state
         private DataKey _childKey;
         private DataKey _parentKey;
-        private UniqueConstraint _parentKeyConstraint = null;
-        private ForeignKeyConstraint _childKeyConstraint = null;
+        private UniqueConstraint _parentKeyConstraint;
+        private ForeignKeyConstraint _childKeyConstraint;
 
         // Design time serialization
-        internal string[] _parentColumnNames = null;
-        internal string[] _childColumnNames = null;
-        internal string _parentTableName = null;
-        internal string _childTableName = null;
-        internal string _parentTableNamespace = null;
-        internal string _childTableNamespace = null;
+        internal string[] _parentColumnNames;
+        internal string[] _childColumnNames;
+        internal string _parentTableName;
+        internal string _childTableName;
+        internal string _parentTableNamespace;
+        internal string _childTableNamespace;
 
         /// <summary>
         /// This stores whether the  child element appears beneath the parent in the XML persisted files.
         /// </summary>
-        internal bool _nested = false;
+        internal bool _nested;
 
         /// <summary>
         /// This stores whether the relationship should make sure that KeyConstraints and ForeignKeyConstraints
