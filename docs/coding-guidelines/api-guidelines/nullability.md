@@ -35,6 +35,7 @@ The majority of reference type usage in our APIs is fairly clear as to whether i
 - **DO** define a parameter as nullable if the parameter is explicitly documented to accept `null`.
 - **DO** define a parameter as nullable if the method checks the parameter for `null` and does something other than throw.  This may include normalizing the input, e.g. treating `null` as `string.Empty`.
 - **DO** define a parameter as nullable if the parameter is optional and has a default value of `null`.
+- **DO** define `string message` and `Exception innerException` arguments to `Exception`-derived types as nullable.  Additional reference type arguments to `Exception`-derived types should, in general, also be nullable unless not doing so is required for compatibility.
 - **DO** prefer nullable over non-nullable if there's any disagreement between the previous guidelines.  For example, if a non-virtual method has documentation that suggests `null` isn't accepted but the implementation explicitly checks for, normalizes, and accepts a `null` input, the parameter should be defined nullable.
 
 However, there are some gray areas that require case-by-case analysis to determine intent. In particular, if a parameter isn't validated nor sanitized nor documented regarding `null`, but in some cases simply ignored such that a `null` doesn't currently cause any problems, several factors should be considered when determining whether to annotate it as `null`.
