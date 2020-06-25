@@ -154,11 +154,5 @@ namespace System.Security.Cryptography
         internal const string secp256r1 = "1.2.840.10045.3.1.7";
         internal const string secp384r1 = "1.3.132.0.34";
         internal const string secp521r1 = "1.3.132.0.35";
-
-        internal static readonly Oid RsaOid = new Oid(Rsa, "RSA");
-        internal static readonly Oid EcPublicKeyOid = new Oid(EcPublicKey, "ECC");
-        internal static readonly Oid secp256r1Oid = new Oid(secp256r1, nameof(ECCurve.NamedCurves.nistP256));
-        internal static readonly Oid secp384r1Oid = new Oid(secp384r1, nameof(ECCurve.NamedCurves.nistP384));
-        internal static readonly Oid secp521r1Oid = new Oid(secp521r1, nameof(ECCurve.NamedCurves.nistP521));
     }
 }
