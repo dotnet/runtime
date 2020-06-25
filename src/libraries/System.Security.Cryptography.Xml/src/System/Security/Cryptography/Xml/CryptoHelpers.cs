@@ -8,8 +8,6 @@ namespace System.Security.Cryptography.Xml
     {
         private static readonly char[] _invalidChars = new char[] { ',', '`', '[', '*', '&' };
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 needed for compat.")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "HMACMD5 needed for compat.")]
         public static object CreateFromKnownName(string name) =>
             name switch
             {
@@ -36,14 +34,6 @@ namespace System.Security.Cryptography.Xml
                 "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" => new RSAPKCS1SHA256SignatureDescription(),
                 "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384" => new RSAPKCS1SHA384SignatureDescription(),
                 "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512" => new RSAPKCS1SHA512SignatureDescription(),
-
-                // workarounds for issue https://github.com/dotnet/runtime/issues/20374
-                // remove attribute from this method when removing them
-                "http://www.w3.org/2000/09/xmldsig#sha1" => SHA1.Create(),
-                "MD5" => MD5.Create(),
-                "http://www.w3.org/2001/04/xmldsig-more#hmac-md5" => new HMACMD5(),
-                "http://www.w3.org/2001/04/xmlenc#tripledes-cbc" => TripleDES.Create(),
-
                 _ => null,
             };
 
