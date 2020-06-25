@@ -675,6 +675,7 @@ callKind                : /* EMPTY */                         { $$ = IMAGE_CEE_C
                         | UNMANAGED_ STDCALL_                 { $$ = IMAGE_CEE_CS_CALLCONV_STDCALL; }
                         | UNMANAGED_ THISCALL_                { $$ = IMAGE_CEE_CS_CALLCONV_THISCALL; }
                         | UNMANAGED_ FASTCALL_                { $$ = IMAGE_CEE_CS_CALLCONV_FASTCALL; }
+                        | UNMANAGED_                          { $$ = IMAGE_CEE_CS_CALLCONV_UNMANAGED; }
                         ;
 
 mdtoken                 : MDTOKEN_ '(' int32 ')'             { $$ = $3; }
