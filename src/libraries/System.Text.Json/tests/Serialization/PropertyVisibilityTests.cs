@@ -851,38 +851,41 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializerOptions options = new JsonSerializerOptions();
 
             // Unsupported collections will throw on serialize by default.
-            // Only if they contain elements.
-            List<KeyValuePair<object, object>> elements = new List<KeyValuePair<object, object>>();
-            // Uri is an unsupported dictionary key.
-            elements.Add(new KeyValuePair<object, object>(new Uri("http://foo"), "bar"));
+            // Only when the collection contains elements.
 
-            var concurrent = new ConcurrentDictionary<object, object>(elements);
-            var dictionary = new Dictionary<object, object>(elements);
+            var dictionary = new Dictionary<object, object>();
+            // Uri is an unsupported dictionary key.
+            dictionary.Add(new Uri("http://foo"), "bar");
+
+            var concurrentDictionary = new ConcurrentDictionary<object, object>(dictionary);
 
             var instance = new ClassWithUnsupportedDictionary()
             {
-                MyConcurrentDict = concurrent,
+                MyConcurrentDict = concurrentDictionary,
                 MyIDict = dictionary
             };
 
             var instanceWithIgnore = new ClassWithIgnoredUnsupportedDictionary
             {
-                MyConcurrentDict = concurrent,
+                MyConcurrentDict = concurrentDictionary,
                 MyIDict = dictionary
             };
 
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(instance, options));
 
-            // Unsupported collections will throw on deserialize by default.
+            // Unsupported collections will throw on deserialize by default if they contain elements.
             options = new JsonSerializerOptions();
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForClassWithUnsupportedDictionary>(wrapperJson, options));
 
             options = new JsonSerializerOptions();
-            // Unsupported collections will throw on serialize by default.
+            // Unsupported collections will throw on serialize by default if they contain elements.
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(instance, options));
 
             // When ignored, we can serialize and deserialize without exceptions.
             options = new JsonSerializerOptions();
+
+            Assert.NotNull(JsonSerializer.Serialize(instanceWithIgnore, options));
+
             ClassWithIgnoredUnsupportedDictionary obj = JsonSerializer.Deserialize<ClassWithIgnoredUnsupportedDictionary>(json, options);
             Assert.Null(obj.MyDict);
 
