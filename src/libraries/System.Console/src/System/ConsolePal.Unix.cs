@@ -477,7 +477,7 @@ namespace System
                 // involved in reading/writing, such as when accessing a remote system. We also extend
                 // the timeout on the very first request to 15 seconds, to account for potential latency
                 // before we know if we will receive a response.
-                Interop.Sys.InitializeConsoleBeforeRead(enableCrNl: false, minChars: (byte)(s_everReceivedCursorPositionResponse ? 1 : 0), decisecondsTimeout: (byte)(s_firstCursorPositionRequest ? 100 : 10));
+                Interop.Sys.InitializeConsoleBeforeRead(minChars: (byte)(s_everReceivedCursorPositionResponse ? 1 : 0), decisecondsTimeout: (byte)(s_firstCursorPositionRequest ? 100 : 10));
                 try
                 {
                     // Write out the cursor position report request.
@@ -552,7 +552,7 @@ namespace System
                 {
                     if (reinitializeForRead)
                     {
-                        Interop.Sys.InitializeConsoleBeforeRead(enableCrNl: false);
+                        Interop.Sys.InitializeConsoleBeforeRead();
                     }
                     else
                     {
@@ -1210,7 +1210,7 @@ namespace System
         /// <returns>The number of bytes read, or a negative value if there's an error.</returns>
         internal static unsafe int Read(SafeFileHandle fd, byte[] buffer, int offset, int count)
         {
-            Interop.Sys.InitializeConsoleBeforeRead(enableCrNl: true);
+            Interop.Sys.InitializeConsoleBeforeRead(convertCrToNl: true);
             try
             {
                 fixed (byte* bufPtr = buffer)

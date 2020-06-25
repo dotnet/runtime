@@ -88,7 +88,7 @@ namespace System.IO
             Debug.Assert(_tmpKeys.Count == 0);
             string? readLineStr = null;
 
-            Interop.Sys.InitializeConsoleBeforeRead(enableCrNl: false);
+            Interop.Sys.InitializeConsoleBeforeRead();
             try
             {
                 // Read key-by-key until we've read a line.
@@ -386,7 +386,7 @@ namespace System.IO
             }
 
             previouslyProcessed = false;
-            Interop.Sys.InitializeConsoleBeforeRead(enableCrNl: false);
+            Interop.Sys.InitializeConsoleBeforeRead();
             try
             {
                 ConsoleKey key;
