@@ -29,8 +29,31 @@ namespace System.Net.WebSockets
 
         public Task ConnectAsync(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
-            // TODO: Implement this to connect and set WebSocket to a working instance.
-            return Task.FromException(new PlatformNotSupportedException());
+            CancellationTokenRegistration registration = cancellationToken.Register(s => ((WebSocketHandle)s!).Abort(), this);
+            try
+            {
+                WebSocket = new BrowserWebSocket();
+                return ((BrowserWebSocket)WebSocket).ConnectAsyncJavaScript(uri, cancellationToken, options.RequestedSubProtocols);
+            }
+            catch (Exception exc)
+            {
+                if (_state < WebSocketState.Closed)
+                {
+                    _state = WebSocketState.Closed;
+                }
+
+                Abort();
+
+                if (exc is WebSocketException)
+                {
+                    throw;
+                }
+                throw new WebSocketException(SR.net_webstatus_ConnectFailure, exc);
+            }
+            finally
+            {
+                registration.Dispose();
+            }
         }
     }
 }
