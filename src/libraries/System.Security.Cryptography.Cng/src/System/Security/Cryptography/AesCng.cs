@@ -113,7 +113,14 @@ namespace System.Security.Cryptography
 
         SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle()
         {
-            return AesBCryptModes.GetSharedHandle(Mode, FeedbackSize / 8);
+            try
+            {
+                return AesBCryptModes.GetSharedHandle(Mode, FeedbackSize / 8);
+            }
+            catch (NotSupportedException)
+            {
+                throw new CryptographicException(SR.Cryptography_InvalidCipherMode);
+            }
         }
 
         string ICngSymmetricAlgorithm.GetNCryptAlgorithmIdentifier()

@@ -67,6 +67,7 @@ namespace Internal.NativeCrypto
         public const string BCRYPT_CHAIN_MODE_CBC = "ChainingModeCBC";
         public const string BCRYPT_CHAIN_MODE_ECB = "ChainingModeECB";
         public const string BCRYPT_CHAIN_MODE_GCM = "ChainingModeGCM";
+        public const string BCRYPT_CHAIN_MODE_CFB = "ChainingModeCFB";
         public const string BCRYPT_CHAIN_MODE_CCM = "ChainingModeCCM";
 
         public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(string pszAlgId, string? pszImplementation, OpenAlgorithmProviderFlags dwFlags)
@@ -76,6 +77,16 @@ namespace Internal.NativeCrypto
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                 throw CreateCryptographicException(ntStatus);
             return hAlgorithm;
+        }
+
+        public static void SetFeedbackSize(this SafeAlgorithmHandle hAlg, int dwFeedbackSize)
+        {
+            NTSTATUS ntStatus = Interop.BCryptSetIntProperty(hAlg, BCryptPropertyStrings.BCRYPT_MESSAGE_BLOCK_LENGTH, ref dwFeedbackSize, 0);
+
+            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+            {
+                throw CreateCryptographicException(ntStatus);
+            }
         }
 
         public static void SetCipherMode(this SafeAlgorithmHandle hAlg, string cipherMode)
