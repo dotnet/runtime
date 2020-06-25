@@ -2293,6 +2293,12 @@ public:
             // because it doesn't take into account that we might use a vector register for struct copies.
             slotCount = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
         }
+#ifndef TARGET_64BIT
+        if (candidate->Expr()->TypeGet() == TYP_LONG)
+        {
+            slotCount = 2; // on 32-bit targets longs use two registers
+        }
+#endif
 
         if (CodeOptKind() == Compiler::SMALL_CODE)
         {

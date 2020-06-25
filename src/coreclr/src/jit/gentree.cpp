@@ -3250,16 +3250,43 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         switch (oper)
         {
 #ifdef TARGET_ARM
-            case GT_CNS_LNG:
-                costSz = 9;
-                costEx = 4;
-                goto COMMON_CNS;
-
             case GT_CNS_STR:
                 // Uses movw/movt
                 costSz = 7;
                 costEx = 3;
                 goto COMMON_CNS;
+
+            case GT_CNS_LNG:
+            {
+                GenTreeIntConCommon* con = tree->AsIntConCommon();
+
+                INT64 lngVal    = con->LngValue();
+                INT32 loVal     = (INT32)(lngVal & 0xffffffff);
+                bool  fitsInVal = ((INT64)loVal == lngVal);
+
+                if (!fitsInVal)
+                {
+                    costSz = 9;
+                    costEx = 4;
+                }
+                else if (!codeGen->validImmForInstr(INS_mov, (target_ssize_t)loVal))
+                {
+                    // Uses movw/movt
+                    costSz = 8;
+                    costEx = 3;
+                }
+                else if ((unsigned)loVal <= 0xff)
+                {
+                    costSz = 2;
+                    costEx = 2;
+                }
+                else
+                {
+                    costSz = 4;
+                    costEx = 2;
+                }
+                goto COMMON_CNS;
+            }
 
             case GT_CNS_INT:
             {
@@ -3274,7 +3301,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 {
                     // Uses movw/movt
                     costSz = 7;
-                    costEx = 3;
+                    costEx = 2;
                 }
                 else if (((unsigned)tree->AsIntCon()->gtIconVal) <= 0x00ff)
                 {
