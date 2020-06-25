@@ -5523,7 +5523,6 @@ MethodTableBuilder::ProcessInexactMethodImpls()
                 }
             }
 
-            Substitution *pDeclSubst = &bmtMetaData->pMethodDeclSubsts[m];
             MethodSignature declSig(GetModule(), szName, pSig, cbSig, NULL);
             bmtInterfaceEntry * pItfEntry = NULL;
 
@@ -5702,11 +5701,10 @@ MethodTableBuilder::ProcessMethodImpls()
                         {   // 2. Get or create the correct substitution
                             if (pDeclMT->IsInterface())
                             {   
-                                bmtRTType * pDeclType = NULL;
                                 // If the declaration method is a part of an interface, search through
                                 // the interface map to find the matching interface so we can provide
                                 // the correct substitution chain.
-                                pDeclType = NULL;
+                                bmtRTType *pDeclType = NULL;
 
                                 bmtInterfaceEntry * pItfEntry = NULL;
                                 for (DWORD i = 0; i < bmtInterface->dwInterfaceMapSize; i++)
@@ -5908,7 +5906,7 @@ MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInH
                         declSig.GetSignature(),
                         static_cast<DWORD>(declSig.GetSignatureLength()),
                         declSig.GetModule(),
-                        NULL, // Do not use the substitution of declSig, as we have adjusted the pDeclTypeSubstituion such that it must not be used.
+                        NULL, // Do not use the substitution of declSig, as we have adjusted the pDeclTypeSubstitution such that it must not be used.
                         pCurMDSig,
                         cbCurMDSig,
                         pCurMD->GetModule(),
