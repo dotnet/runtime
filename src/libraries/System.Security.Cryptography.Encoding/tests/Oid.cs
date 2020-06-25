@@ -81,6 +81,13 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Equal(expectedFriendlyName, oid.FriendlyName);
         }
 
+        [Fact]
+        public static void Oid_StringString_ExplicitNullFriendlyName()
+        {
+            Oid oid = new Oid(SHA1_Oid, null) { FriendlyName = null };
+            Assert.Throws<PlatformNotSupportedException>(() => oid.FriendlyName = SHA1_Name);
+        }
+
         [Theory]
         [InlineData(SHA1_Name)]
         [InlineData(SHA256_Name)]
