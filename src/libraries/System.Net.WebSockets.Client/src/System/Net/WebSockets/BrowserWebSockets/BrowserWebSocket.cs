@@ -83,7 +83,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private WebSocketState ReadyStateToDotNetState(int readyState) =>
+        private static WebSocketState ReadyStateToDotNetState(int readyState) =>
             // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
             readyState switch
             {
@@ -125,28 +125,28 @@ namespace System.Net.WebSockets
                         {
                             subProtocols.Push(item);
                         }
+                        _innerWebSocket = new HostObject("WebSocket", uri.ToString(), subProtocols);
                     }
-                    _innerWebSocket = subProtocols == null ? new HostObject("WebSocket", uri.ToString()) : new HostObject("WebSocket", uri.ToString(), subProtocols);
+                    else
+                    {
+                        _innerWebSocket = new HostObject("WebSocket", uri.ToString());
+                    }
                     _innerWebSocket.SetObjectProperty("binaryType", "arraybuffer");
 
                     subProtocols?.Dispose();
 
                     // Setup the onError callback
-                    _onError = new Action<JSObject>((errorEvt) =>
-                    {
-                        errorEvt.Dispose();
-                    });
+                    _onError = (errorEvt) => errorEvt.Dispose();
 
                     // Attach the onError callback
                     _innerWebSocket.SetObjectProperty("onerror", _onError);
 
                     // Setup the onClose callback
-                    _onClose = new Action<JSObject>((closeEvt) =>
+                    _onClose = (closeEvt) =>
                     {
                         _innerWebSocketCloseStatus = (WebSocketCloseStatus)closeEvt.GetObjectProperty("code");
                         _innerWebSocketCloseStatusDescription = closeEvt.GetObjectProperty("reason")?.ToString();
-                        var mess = new ReceivePayload(ArraySegment<byte>.Empty, WebSocketMessageType.Close);
-                        _receiveMessageQueue.BufferPayload(mess);
+                        _receiveMessageQueue.BufferPayload(new ReceivePayload(ArraySegment<byte>.Empty, WebSocketMessageType.Close));
 
                         if (!tcsConnect.Task.IsCanceled && !tcsConnect.Task.IsCompleted && !tcsConnect.Task.IsFaulted)
                         {
@@ -158,13 +158,13 @@ namespace System.Net.WebSockets
                         }
 
                         closeEvt.Dispose();
-                    });
+                    };
 
                     // Attach the onClose callback
                     _innerWebSocket.SetObjectProperty("onclose", _onClose);
 
                     // Setup the onOpen callback
-                    _onOpen = new Action<JSObject>((evt) =>
+                    _onOpen = (evt) =>
                     {
                         using (evt)
                         {
@@ -179,13 +179,13 @@ namespace System.Net.WebSockets
                                 tcsConnect.SetResult(true);
                             }
                         }
-                    });
+                    };
 
                     // Attach the onOpen callback
                     _innerWebSocket.SetObjectProperty("onopen", _onOpen);
 
                     // Setup the onMessage callback
-                    _onMessage = new Action<JSObject>((messageEvent) =>
+                    _onMessage = (messageEvent) =>
                     {
                         // get the events "data"
                         using (messageEvent)
@@ -210,7 +210,7 @@ namespace System.Net.WebSockets
                                         // Create a new "FileReader" object
                                         using (var reader = new HostObject("FileReader"))
                                         {
-                                            loadend = new Action<JSObject>((loadEvent) =>
+                                            loadend = (loadEvent) =>
                                             {
                                                 using (loadEvent)
                                                 using (var target = (JSObject)loadEvent.GetObjectProperty("target"))
@@ -226,7 +226,7 @@ namespace System.Net.WebSockets
                                                         }
                                                     }
                                                 }
-                                            });
+                                            };
 
                                             reader.Invoke("addEventListener", "loadend", loadend);
                                             reader.Invoke("readAsArrayBuffer", blobData);
@@ -243,7 +243,7 @@ namespace System.Net.WebSockets
                                     throw new NotImplementedException($"WebSocket bynary type '{_innerWebSocket.GetObjectProperty("binaryType").ToString()}' not supported.");
                             }
                         }
-                    });
+                    };
 
                     // Attach the onMessage callaback
                     _innerWebSocket.SetObjectProperty("onmessage", _onMessage);
