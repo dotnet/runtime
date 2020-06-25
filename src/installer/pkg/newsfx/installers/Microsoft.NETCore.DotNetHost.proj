@@ -4,6 +4,7 @@
   <PropertyGroup>
     <GenerateInstallers>true</GenerateInstallers>
     <SharedFrameworkInstallerName>dotnet-host</SharedFrameworkInstallerName>
+    <SharedFrameworkInstallerName Condition="'$(TargetOS)' == 'OSX'">dotnet-host-internal</SharedFrameworkInstallerName>
     <PackageBrandNameSuffix>Host</PackageBrandNameSuffix>
     <PlatformPackageType>ToolPack</PlatformPackageType>
     <VSInsertionShortComponentName>NetCore.SharedHost</VSInsertionShortComponentName>
@@ -12,6 +13,10 @@
     <RegKeyProductName>sharedhost</RegKeyProductName>
     <WixDependencyKeyName>Dotnet_CLI_SharedHost</WixDependencyKeyName>
     <OutputFilesCandleVariable>HostSrc</OutputFilesCandleVariable>
+    <VersionInstallerName>false</VersionInstallerName>
+    <MacOSComponentNamePackType>sharedhost</MacOSComponentNamePackType>
+    <IncludeVersionInMacOSComponentName>false</IncludeVersionInMacOSComponentName>
+    <MacOSScriptsDirectory>osx_scripts/host</MacOSScriptsDirectory>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,8 +29,8 @@
     <Error Condition="'$(SharedFrameworkOutputPath)' == ''" Text="Publishing to disk requires the SharedFrameworkOutputPath to be set to the root of the path to write to." />
 
     <ItemGroup>
-      <FilesToPublish Include="$(DotNetHostBinDir)\dotnet$(ExeSuffix)"
-            Destination="$(SharedFrameworkOutputPath)dotnet$(ExeSuffix)" />
+      <FilesToPublish Include="$(DotNetHostBinDir)\dotnet$(ApplicationFileExtension)"
+            Destination="$(SharedFrameworkOutputPath)dotnet$(ApplicationFileExtension)" />
       <FilesToPublish Include="$(RepoRoot)THIRD-PARTY-NOTICES.TXT"
             Destination="$(SharedFrameworkOutputPath)ThirdPartyNotices.txt" />
       <FilesToPublish Include="$(RepoRoot)LICENSE.TXT"

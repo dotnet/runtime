@@ -5,7 +5,7 @@
   <PropertyGroup>
     <PlatformPackageType>RuntimePack</PlatformPackageType>
     <SharedFrameworkArchiveName>dotnet-runtime-internal</SharedFrameworkArchiveName>
-    <SharedFrameworkInstallerName>dotnet-runtime</SharedFrameworkInstallerName>
+    <SharedFrameworkInstallerName Condition="'$(TargetOS)' != 'OSX'">dotnet-runtime</SharedFrameworkInstallerName>
     <SharedFrameworkSymbolsArchiveName>dotnet-runtime-symbols</SharedFrameworkSymbolsArchiveName>
     <VSInsertionShortComponentName>NetCore.SharedFramework</VSInsertionShortComponentName>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
