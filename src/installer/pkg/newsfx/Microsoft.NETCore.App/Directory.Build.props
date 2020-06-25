@@ -93,11 +93,21 @@
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.so" IsNative="true" />
     <PlatformManifestFileEntry Include="coreclr.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libcoreclr.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libcoreclr.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="clretwrc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="clrjit.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libclrjit.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libclrjit.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="dbgshim.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libdbgshim.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libdbgshim.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="mscordaccore.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmscordaccore.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmscordaccore.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="mscordbi.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmscordbi.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmscordbi.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="mscorrc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="api-ms-win-core-console-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="api-ms-win-core-console-l1-2-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
@@ -308,6 +318,7 @@
     <PlatformManifestFileEntry Include="Microsoft.VisualBasic.Core.dll" />
     <PlatformManifestFileEntry Include="createdump.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump" IsNative="true" />
+    <PlatformManifestFileEntry Include="libcoreclrtraceptprovider.so" IsNative="true" />
     <PlatformManifestFileEntry Include="hostpolicy.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libhostpolicy.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libhostpolicy.dylib" IsNative="true" />
