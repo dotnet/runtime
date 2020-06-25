@@ -33,7 +33,7 @@
       <LinuxPackageDependency Include="dotnet-host" Version="$(Version)" />
     </ItemGroup>
     <ItemGroup>
-      <RpmJsonProperty Include="directories" Object="[ '/usr/share/dotnet', '/usr/share/doc/dotnet-host' ]" />
+      <RpmJsonProperty Include="directories" Object="[ &quot;/usr/share/dotnet&quot;, &quot;/usr/share/doc/$(VersionedInstallerName)&quot; ]" />
     </ItemGroup>
   </Target>
 </Project>
