@@ -160,7 +160,6 @@ nodist_libmonoruntime_shimglobalization_la_SOURCES = \
 libmonoruntime_shimglobalization_la_CFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../libraries/Native/Unix/System.Globalization.Native/ -I$(top_srcdir)/../libraries/Native/Unix/Common/
 
 if STATIC_ICU
-nodist_libmonoruntime_shimglobalization_la_SOURCES += @ICU_SHIM_PATH@/pal_icushim_static.c
 libmonoruntime_shimglobalization_la_CFLAGS += -I$(ICU_REPO)/icu4c/source/wasm-usr/include/ \
 -L$(ICU_REPO)/icu4c/source/wasm-build/lib/ -licui18n -licuuc -licutu -licuio \
 -L$(ICU_REPO)/icu4c/source/wasm-build/stubdata -licudata
