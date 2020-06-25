@@ -30,6 +30,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         {
             using (DSA dsa = DSAFactory.Create())
             {
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN PRIVATE KEY-----
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
@@ -50,6 +51,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         {
             using (DSA dsa = DSAFactory.Create())
             {
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]                
                 string pem = @"
 -----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
@@ -75,6 +77,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         {
             using (DSA dsa = DSAFactory.Create())
             {
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN CERTIFICATE-----
 MII=
@@ -98,6 +101,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         {
             using (DSA dsa = DSAFactory.Create())
             {
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]                
                 string pem = @"
 -----BEGIN CERTIFICATE-----
 $$$ BAD PEM
@@ -142,6 +146,7 @@ PKRWBQ==
         {
             using (DSA dsa = DSAFactory.Create())
             {
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]                
                 string pem = @"
 -----BEGIN PRIVATE KEY-----
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
@@ -167,6 +172,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         {
             using (DSA dsa = DSAFactory.Create())
             {
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN PUBLIC KEY-----
 MIHxMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWNIHRn
@@ -193,6 +199,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         {
             using (DSA dsa = DSAFactory.Create())
             {
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
 MIIBIDBLBgkqhkiG9w0BBQ0wPjApBgkqhkiG9w0BBQwwHAQIkM/kCKe6rYsCAggA
@@ -356,6 +363,7 @@ v8pi3w==
         {
             using (DSA dsa = DSAFactory.Create())
             {
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]                
                 string pem = @"
 -----BEGIN PRIVATE KEY-----
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
