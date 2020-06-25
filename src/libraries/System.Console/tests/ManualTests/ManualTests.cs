@@ -97,6 +97,18 @@ namespace System
             }
         }
 
+        [Fact]
+        public static void OpenStandardInput()
+        {
+            Console.WriteLine("Please type \"console\" (without the quotes). You shouldn't see it as you type:");
+            var stream = Console.OpenStandardInput();
+            var textReader = new System.IO.StreamReader(stream);
+            var result = textReader.ReadLine();
+
+            Assert.Equal("console", result);
+            AssertUserExpectedResults("\"console\" correctly not echoed as you typed it");
+        }
+
         [ConditionalFact(nameof(ManualTestsEnabled))]
         public static void ConsoleOutWriteLine()
         {
