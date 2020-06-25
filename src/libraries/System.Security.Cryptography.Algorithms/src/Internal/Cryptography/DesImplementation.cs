@@ -90,15 +90,5 @@ namespace Internal.Cryptography
                 throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
             }
         }
-
-        private int GetPaddingSize()
-        {
-            // CFB8 does not require any padding at all
-            // otherwise, it is always required to pad for block size
-            if (Mode == CipherMode.CFB && FeedbackSize == 8)
-                return 1;
-
-            return BlockSize / BitsPerByte;
-        }
     }
 }

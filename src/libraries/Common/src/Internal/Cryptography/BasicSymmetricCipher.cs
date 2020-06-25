@@ -23,7 +23,7 @@ namespace Internal.Cryptography
     //
     internal abstract class BasicSymmetricCipher : IDisposable
     {
-        protected BasicSymmetricCipher(byte[]? iv, int blockSizeInBytes, int paddingSizeInBytes = 0)
+        protected BasicSymmetricCipher(byte[]? iv, int blockSizeInBytes, int paddingSizeInBytes)
         {
             IV = iv;
             BlockSizeInBytes = blockSizeInBytes;

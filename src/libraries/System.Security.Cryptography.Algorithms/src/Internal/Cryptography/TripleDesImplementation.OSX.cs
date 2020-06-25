@@ -14,8 +14,8 @@ namespace Internal.Cryptography
             byte[] key,
             byte[]? iv,
             int blockSize,
-            int feedbackSizeInBytes,
             int paddingSize,
+            int feedbackSizeInBytes,
             bool encrypting)
         {
             BasicSymmetricCipher cipher = new AppleCCCryptor(

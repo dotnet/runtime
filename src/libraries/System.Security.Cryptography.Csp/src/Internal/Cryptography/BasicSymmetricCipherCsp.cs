@@ -17,8 +17,8 @@ namespace Internal.Cryptography
         private SafeProvHandle _hProvider;
         private SafeKeyHandle _hKey;
 
-        public BasicSymmetricCipherCsp(int algId, CipherMode cipherMode, int blockSizeInBytes, byte[] key, int effectiveKeyLength, bool addNoSaltFlag, byte[]? iv, bool encrypting)
-            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
+        public BasicSymmetricCipherCsp(int algId, CipherMode cipherMode, int blockSizeInBytes, byte[] key, int effectiveKeyLength, bool addNoSaltFlag, byte[]? iv, bool encrypting, int feedbackSize, int paddingSizeInBytes)
+            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
         {
             _encrypting = encrypting;
 
@@ -26,6 +26,10 @@ namespace Internal.Cryptography
             _hKey = ImportCspBlob(_hProvider, algId, key, addNoSaltFlag);
 
             SetKeyParameter(_hKey, CryptGetKeyParamQueryType.KP_MODE, (int)cipherMode);
+            if (cipherMode == CipherMode.CFB)
+            {
+                SetKeyParameter(_hKey, CryptGetKeyParamQueryType.KP_MODE_BITS, feedbackSize);
+            }
 
             byte[]? currentIv = cipherMode.GetCipherIv(iv);
             if (currentIv != null)
@@ -71,7 +75,7 @@ namespace Internal.Cryptography
             Debug.Assert(input != null);
             Debug.Assert(inputOffset >= 0);
             Debug.Assert(count >= 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
+            Debug.Assert((count % PaddingSizeInBytes) == 0);
             Debug.Assert(input.Length - inputOffset >= count);
 
             byte[] output = new byte[count];
@@ -97,7 +101,7 @@ namespace Internal.Cryptography
             Debug.Assert(input != null);
             Debug.Assert(inputOffset >= 0);
             Debug.Assert(count > 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
+            Debug.Assert((count % PaddingSizeInBytes) == 0);
             Debug.Assert(input.Length - inputOffset >= count);
             Debug.Assert(output != null);
             Debug.Assert(outputOffset >= 0);

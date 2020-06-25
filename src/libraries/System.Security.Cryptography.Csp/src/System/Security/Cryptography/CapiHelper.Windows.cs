@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using static Interop.Crypt32;
@@ -923,7 +924,6 @@ namespace Internal.NativeCrypto
             Debug.Assert(outputOffset >= 0);
             Debug.Assert(outputCount >= 0);
             Debug.Assert(outputCount <= output.Length - outputOffset);
-            Debug.Assert((inputCount % 8) == 0);
 
             // Figure out how big the encrypted data will be
             int cbEncryptedData = inputCount;
@@ -982,7 +982,6 @@ namespace Internal.NativeCrypto
             Debug.Assert(outputOffset >= 0);
             Debug.Assert(outputCount >= 0);
             Debug.Assert(outputCount <= output.Length - outputOffset);
-            Debug.Assert((inputCount % 8) == 0);
 
             byte[] dataTobeDecrypted = new byte[inputCount];
             Buffer.BlockCopy(input, inputOffset, dataTobeDecrypted, 0, inputCount);

@@ -30,6 +30,16 @@ namespace System.Security.Cryptography
             return (DES?)CryptoConfig.CreateFromName(algName);
         }
 
+        protected internal int GetPaddingSize()
+        {
+            // CFB8 does not require any padding at all
+            // otherwise, it is always required to pad for block size
+            if (Mode == CipherMode.CFB && FeedbackSize == 8)
+                return 1;
+
+            return BlockSize / 8;
+        }
+
         public override byte[] Key
         {
             get
