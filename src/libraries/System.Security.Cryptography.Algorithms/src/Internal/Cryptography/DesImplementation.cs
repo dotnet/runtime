@@ -74,7 +74,31 @@ namespace Internal.Cryptography
                     throw new ArgumentException(SR.Cryptography_InvalidIVSize, nameof(rgbIV));
             }
 
-            return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, encrypting);
+            if (Mode == CipherMode.CFB)
+            {
+                ValidateCFBFeedbackSize(FeedbackSize);
+            }
+
+            return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, FeedbackSize / BitsPerByte, GetPaddingSize(), encrypting);
+        }
+
+        private static void ValidateCFBFeedbackSize(int feedback)
+        {
+            // only 8bits feedback is available on all platforms
+            if (feedback != 8)
+            {
+                throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+            }
+        }
+
+        private int GetPaddingSize()
+        {
+            // CFB8 does not require any padding at all
+            // otherwise, it is always required to pad for block size
+            if (Mode == CipherMode.CFB && FeedbackSize == 8)
+                return 1;
+
+            return BlockSize / BitsPerByte;
         }
     }
 }
