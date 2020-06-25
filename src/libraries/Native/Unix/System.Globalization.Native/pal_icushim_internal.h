@@ -56,6 +56,7 @@
 
 #include "pal_compiler.h"
 
+#if !defined(STATIC_ICU)
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
     PER_FUNCTION_BLOCK(u_charsToUChars, libicuuc) \
@@ -280,3 +281,4 @@ FOR_ALL_ICU_FUNCTIONS
 #define usearch_getMatchedLength(...) usearch_getMatchedLength_ptr(__VA_ARGS__)
 #define usearch_last(...) usearch_last_ptr(__VA_ARGS__)
 #define usearch_openFromCollator(...) usearch_openFromCollator_ptr(__VA_ARGS__)
+#endif // !defined(STATIC_ICU)

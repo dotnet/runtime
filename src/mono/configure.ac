@@ -1309,6 +1309,12 @@ AC_ARG_WITH(spectre-mitigation,             [  --with-spectre-mitigation=yes,no 
 AC_ARG_WITH(spectre-indirect-branch-choice,   [  --with-spectre-indirect-branch-choice=keep,thunk,inline,extern   Convert indirect branches to the specified kind of thunk (defaults to inline)], [], [with_spectre_indirect_branch_choice=inline])
 AC_ARG_WITH(spectre-function-return-choice, [  --with-spectre-function-return-choice=keep,thunk,inline,extern   Convert function return instructions to the specified kind of thunk (defaults to inline)], [], [with_spectre_function_return_choice=inline])
 
+AC_ARG_WITH(static_icu, [  --with-static-icu=yes|no      Integrate ICU statically into the runtime (defaults to no)],[
+	if test x$with_static_icu = xyes ; then
+		AC_DEFINE(STATIC_ICU,1,[Integrate ICU statically into the runtime.])
+	fi
+], [with_static_icu=no])
+
 dnl
 dnl Spectre compiler mitigation flag checks
 dnl
@@ -1696,6 +1702,7 @@ AM_CONDITIONAL(INSTALL_MONOTOUCH, [test "x$with_monotouch" != "xno"])
 AM_CONDITIONAL(INSTALL_MONOTOUCH_WATCH, [test "x$with_monotouch_watch" != "xno"])
 AM_CONDITIONAL(INSTALL_MONOTOUCH_TV, [test "x$with_monotouch_tv" != "xno"])
 AM_CONDITIONAL(BITCODE, test "x$with_bitcode" = "xyes")
+AM_CONDITIONAL(STATIC_ICU, test "x$with_static_icu" = "xyes")
 AM_CONDITIONAL(INSTALL_XAMMAC, [test "x$with_xammac" != "xno"])
 AM_CONDITIONAL(INSTALL_TESTING_AOT_FULL_INTERP, [test "x$with_testing_aot_full_interp" != "xno"])
 AM_CONDITIONAL(INSTALL_TESTING_AOT_HYBRID, [test "x$with_testing_aot_hybrid" != "xno"])
@@ -6836,7 +6843,10 @@ if test x$with_core = xonly; then
 	fi
 	if test x$have_shim_globalization = xyes || test x$cross_compiling = xyes; then
 		ICU_SHIM_PATH=../../../libraries/Native/Unix/System.Globalization.Native
-		if test x$target_osx = xyes; then
+		if test x$target_wasm = xyes && test x$with_static_icu = xyes; then
+			ICU_CFLAGS="-DTARGET_UNIX -DU_DISABLE_RENAMING"
+			have_sys_icu=yes
+		elif test x$target_osx = xyes; then
 			ORIG_CPPFLAGS=$CPPFLAGS
 			# adding icu path to pkg_config_path
 			PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig

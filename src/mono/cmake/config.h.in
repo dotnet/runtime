@@ -210,6 +210,9 @@
 /* Use static zlib */
 #cmakedefine HAVE_STATIC_ZLIB 1
 
+/* Use static ICU */
+#cmakedefine STATIC_ICU 1
+
 /* Use OS-provided zlib */
 #cmakedefine HAVE_SYS_ZLIB 1
 
