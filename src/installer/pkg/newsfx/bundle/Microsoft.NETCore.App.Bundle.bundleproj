@@ -14,7 +14,7 @@
     <BundleNameSuffix>Runtime</BundleNameSuffix>
     <MacOSBundleTemplate>$(MSBuildProjectDirectory)/shared-framework-distribution-template.xml</MacOSBundleTemplate>
     <MacOSBundleIdentifierName>com.microsoft.dotnet.$(SharedFrameworkName).$(ProductVersion).osx.x64</MacOSBundleIdentifierName>
-    <MacOSBundleResourcesPath>osx_resources</MacOSBundleResourcespath>
+    <MacOSBundleResourcesPath>osx_resources</MacOSBundleResourcesPath>
   </PropertyGroup>
 
   <ItemGroup>
