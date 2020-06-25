@@ -1244,6 +1244,13 @@ namespace Internal.JitInterface
             //
 
             targetMethod = methodAfterConstraintResolution;
+            if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(targetMethod))
+            {
+                // This loosely corresponds to the bit around
+                // https://github.com/dotnet/runtime/blob/9380bbf37bb0ba19c7e2671359875c93686b400c/src/coreclr/src/vm/zapsig.cpp#L1278
+                // where we're resorting to use the original token for the sake of version resiliency.
+                targetMethod = originalMethod;
+            }
 
             if (targetMethod.HasInstantiation)
             {
