@@ -3475,7 +3475,8 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
     bool bRet = FALSE;
 
     PAL_CPP_TRY {
-        if((*pComSig & IMAGE_CEE_CS_CALLCONV_MASK) > IMAGE_CEE_CS_CALLCONV_VARARG)
+        if((*pComSig & IMAGE_CEE_CS_CALLCONV_MASK) > IMAGE_CEE_CS_CALLCONV_VARARG
+            && (*pComSig & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_UNMANAGED)
         {
             sprintf_s(szString,SZSTRING_SIZE,"%sERROR: signature of method '%s' has invalid calling convention 0x%2.2X",g_szAsmCodeIndent,pszMemberName,*pComSig);
             printError(GUICookie,ERRORMSG(szString));

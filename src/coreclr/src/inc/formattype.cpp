@@ -247,17 +247,19 @@ PCCOR_SIGNATURE PrettyPrintSignature(
         }
         else
         {
-            static const char* const callConvNames[8] = {
+            static const char* const callConvNames[10] = {
                 "",
                 "unmanaged cdecl ",
                 "unmanaged stdcall ",
                 "unmanaged thiscall ",
                 "unmanaged fastcall ",
                 "vararg ",
-                "<error> ",
-                "<error> "
+                "<error> ", // field
+                "<error> ", // local sig
+                "<error> ", // property
+                "unmanaged "
                 };
-            appendStr(out, KEYWORD(callConvNames[callConv & 7]));
+            appendStr(out, KEYWORD(callConvNames[callConv & 0xf]));
         }
 
         if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
