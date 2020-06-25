@@ -14884,8 +14884,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 //
 //    2. Move that is identical to last instruction emitted.
 //
-//         mov Rx, Rx  # <-- last instruction
-//         mov Rx, Rx  # <-- current instruction can be omitted.
+//         mov Rx, Ry  # <-- last instruction
+//         mov Rx, Ry  # <-- current instruction can be omitted.
 //
 //    3. Opposite Move as that of last instruction emitted.
 //
@@ -14921,8 +14921,10 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         }
     }
 
-    // Don't look back across IG boundary or if the last instruction was not mov
-    if (emitCurIGinsCnt > 0 && emitLastIns != nullptr && emitLastIns->idIns() == INS_mov)
+   bool isFirstInstrInIG = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+
+   // Don't look back across IG boundary or if the last instruction was not mov
+   if (!isFirstInstrInIG && emitLastIns != nullptr && emitLastIns->idIns() == INS_mov)
     {
         // Check if we did same move in prev instruction except dst/src were switched.
         regNumber prevDst = emitLastIns->idReg1();
@@ -14930,14 +14932,14 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 
         if ((prevDst == dst) && (prevSrc == src))
         {
+            assert(emitLastIns->idOpSize() == size);
             JITDUMP("\n -- suppressing mov because previous instruction already moved from src to dst register.\n");
             return true;
         }
 
-        // A mov with a EA_4BYTE has the side-effect of clearing the upper bits
-        // So only eliminate mov instructions that are not clearing the upper bits
-        //
-        if (((size == EA_8BYTE) || (size == EA_16BYTE)) && (prevDst == src) && (prevSrc == dst))
+        if (((size == EA_8BYTE) || (size == EA_16BYTE)) && // Only optimize instructions that don't clear upper bits
+            (emitLastIns->idOpSize() == size) &&  // Only optimize if operand size is same as previous instruction
+            (prevDst == src) && (prevSrc == dst)) // Only optimize if this is an opposite mov.
         {
             JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst to src "
                     "register.\n");
