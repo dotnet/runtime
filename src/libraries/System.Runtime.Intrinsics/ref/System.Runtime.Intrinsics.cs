@@ -761,6 +761,24 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<byte> ExtractNarrowingLower(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ushort> ExtractNarrowingLower(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<uint> ExtractNarrowingLower(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> ExtractNarrowingSaturateLower(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> ExtractNarrowingSaturateLower(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> ExtractNarrowingSaturateLower(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> ExtractNarrowingSaturateLower(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> ExtractNarrowingSaturateLower(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> ExtractNarrowingSaturateLower(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> ExtractNarrowingSaturateUnsignedLower(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> ExtractNarrowingSaturateUnsignedLower(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> ExtractNarrowingSaturateUnsignedLower(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> ExtractNarrowingSaturateUnsignedUpper(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> ExtractNarrowingSaturateUnsignedUpper(System.Runtime.Intrinsics.Vector64<ushort> lower, System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> ExtractNarrowingSaturateUnsignedUpper(System.Runtime.Intrinsics.Vector64<uint> lower, System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> ExtractNarrowingSaturateUpper(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> ExtractNarrowingSaturateUpper(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> ExtractNarrowingSaturateUpper(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> ExtractNarrowingSaturateUpper(System.Runtime.Intrinsics.Vector64<sbyte> lower, System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> ExtractNarrowingSaturateUpper(System.Runtime.Intrinsics.Vector64<ushort> lower, System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> ExtractNarrowingSaturateUpper(System.Runtime.Intrinsics.Vector64<uint> lower, System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> ExtractNarrowingUpper(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> ExtractNarrowingUpper(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> ExtractNarrowingUpper(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
@@ -1979,6 +1997,15 @@ namespace System.Runtime.Intrinsics.Arm
             public static System.Runtime.Intrinsics.Vector128<double> DuplicateToVector128(double value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> DuplicateToVector128(long value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ulong> DuplicateToVector128(ulong value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<sbyte> ExtractNarrowingSaturateScalar(System.Runtime.Intrinsics.Vector64<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<short> ExtractNarrowingSaturateScalar(System.Runtime.Intrinsics.Vector64<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<int> ExtractNarrowingSaturateScalar(System.Runtime.Intrinsics.Vector64<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<byte> ExtractNarrowingSaturateScalar(System.Runtime.Intrinsics.Vector64<ushort> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<ushort> ExtractNarrowingSaturateScalar(System.Runtime.Intrinsics.Vector64<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<uint> ExtractNarrowingSaturateScalar(System.Runtime.Intrinsics.Vector64<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<byte> ExtractNarrowingSaturateUnsignedScalar(System.Runtime.Intrinsics.Vector64<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<ushort> ExtractNarrowingSaturateUnsignedScalar(System.Runtime.Intrinsics.Vector64<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<uint> ExtractNarrowingSaturateUnsignedScalar(System.Runtime.Intrinsics.Vector64<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> Floor(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> FusedMultiplyAdd(System.Runtime.Intrinsics.Vector128<double> addend, System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> FusedMultiplyAddByScalar(System.Runtime.Intrinsics.Vector128<double> addend, System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector64<double> right) { throw null; }
