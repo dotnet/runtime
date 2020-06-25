@@ -780,6 +780,10 @@ typedef struct
     const WCHAR* providerName;
     UINT64       keywords;
     UINT32       loggingLevel;
+    // filterData expects a semicolon delimited string that defines key value pairs
+    // such as "key1=value1;key2=value2;". Quotes can be used to escape the '=' and ';'
+    // characters. These key value pairs will be passed in the enable callback to event
+    // providers
     const WCHAR* filterData;
 } COR_PRF_EVENTPIPE_PROVIDER_CONFIG;
 
