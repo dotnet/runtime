@@ -2110,6 +2110,39 @@ namespace JIT.HardwareIntrinsics.Arm
             return saturated;
         }
 
+        public static sbyte ExtractNarrowingSaturate(short op1)
+        {
+            sbyte result;
+
+            SignedSatQ(op1, out result);
+
+            return result;
+        }
+
+        public static sbyte ExtractNarrowingSaturateUpper(sbyte[] op1, short[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturate(op2[i - op1.Length]);
+
+        public static byte ExtractNarrowingSaturate(ushort op1)
+        {
+            byte result;
+
+            UnsignedSatQ(op1, out result);
+
+            return result;
+        }
+
+        public static byte ExtractNarrowingSaturateUpper(byte[] op1, ushort[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturate(op2[i - op1.Length]);
+
+        public static byte ExtractNarrowingSaturateUnsigned(short op1)
+        {
+            byte result;
+
+            SignedSatQ(op1, out result);
+
+            return result;
+        }
+
+        public static byte ExtractNarrowingSaturateUnsignedUpper(byte[] op1, short[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
+
         public static short ShiftLeftLogicalWidening(sbyte op1, byte op2) => UnsignedShift((short)op1, (short)op2);
 
         public static ushort ShiftLeftLogicalWidening(byte op1, byte op2) => UnsignedShift((ushort)op1, (short)op2);
@@ -2302,6 +2335,39 @@ namespace JIT.HardwareIntrinsics.Arm
             return saturated;
         }
 
+        public static short ExtractNarrowingSaturate(int op1)
+        {
+            short result;
+
+            SignedSatQ(op1, out result);
+
+            return result;
+        }
+
+        public static short ExtractNarrowingSaturateUpper(short[] op1, int[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturate(op2[i - op1.Length]);
+
+        public static ushort ExtractNarrowingSaturate(uint op1)
+        {
+            ushort result;
+
+            UnsignedSatQ(op1, out result);
+
+            return result;
+        }
+
+        public static ushort ExtractNarrowingSaturateUpper(ushort[] op1, uint[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturate(op2[i - op1.Length]);
+
+        public static ushort ExtractNarrowingSaturateUnsigned(int op1)
+        {
+            ushort result;
+
+            SignedSatQ(op1, out result);
+
+            return result;
+        }
+
+        public static ushort ExtractNarrowingSaturateUnsignedUpper(ushort[] op1, int[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
+
         public static int ShiftLeftLogicalWidening(short op1, byte op2) => UnsignedShift((int)op1, (int)op2);
 
         public static uint ShiftLeftLogicalWidening(ushort op1, byte op2) => UnsignedShift((uint)op1, (int)op2);
@@ -2493,6 +2559,39 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return saturated;
         }
+
+        public static int ExtractNarrowingSaturate(long op1)
+        {
+            int result;
+
+            SignedSatQ(op1, out result);
+
+            return result;
+        }
+
+        public static int ExtractNarrowingSaturateUpper(int[] op1, long[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturate(op2[i - op1.Length]);
+
+        public static uint ExtractNarrowingSaturate(ulong op1)
+        {
+            uint result;
+
+            UnsignedSatQ(op1, out result);
+
+            return result;
+        }
+
+        public static uint ExtractNarrowingSaturateUpper(uint[] op1, ulong[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturate(op2[i - op1.Length]);
+
+        public static uint ExtractNarrowingSaturateUnsigned(long op1)
+        {
+            uint result;
+
+            SignedSatQ(op1, out result);
+
+            return result;
+        }
+
+        public static uint ExtractNarrowingSaturateUnsignedUpper(uint[] op1, long[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
 
         public static long ShiftLeftLogicalWidening(int op1, byte op2) => UnsignedShift((long)op1, (long)op2);
 
@@ -4956,6 +5055,7 @@ namespace JIT.HardwareIntrinsics.Arm
             byte newval = (byte)(((byte)left & mask) | value);
             return newval;
         }
+
         public static short ShiftRightAndInsert(short left, short right, byte shift)
         {
             ushort mask = (ushort)~(ushort.MaxValue >> shift);
@@ -4971,6 +5071,7 @@ namespace JIT.HardwareIntrinsics.Arm
             short newval = (short)(((ushort)left & mask) | value);
             return newval;
         }
+
         public static int ShiftRightAndInsert(int left, int right, byte shift)
         {
             uint mask = (uint)~(uint.MaxValue >> shift);
@@ -4986,6 +5087,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int newval = (int)(((uint)left & mask) | value);
             return newval;
         }
+
         public static long ShiftRightAndInsert(long left, long right, byte shift)
         {
             ulong mask = (ulong)~(ulong.MaxValue >> shift);
@@ -5001,6 +5103,7 @@ namespace JIT.HardwareIntrinsics.Arm
             long newval = (long)(((ulong)left & mask) | value);
             return newval;
         }
+
         public static sbyte ShiftRightAndInsert(sbyte left, sbyte right, byte shift)
         {
             byte mask = (byte)~(byte.MaxValue >> shift);
@@ -5016,6 +5119,7 @@ namespace JIT.HardwareIntrinsics.Arm
             sbyte newval = (sbyte)(((byte)left & mask) | value);
             return newval;
         }
+
         public static ushort ShiftRightAndInsert(ushort left, ushort right, byte shift)
         {
             ushort mask = (ushort)~(ushort.MaxValue >> shift);
@@ -5031,6 +5135,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ushort newval = (ushort)(((ushort)left & mask) | value);
             return newval;
         }
+
         public static uint ShiftRightAndInsert(uint left, uint right, byte shift)
         {
             uint mask = (uint)~(uint.MaxValue >> shift);
@@ -5046,6 +5151,7 @@ namespace JIT.HardwareIntrinsics.Arm
             uint newval = (uint)(((uint)left & mask) | value);
             return newval;
         }
+
         public static ulong ShiftRightAndInsert(ulong left, ulong right, byte shift)
         {
             ulong mask = (ulong)~(ulong.MaxValue >> shift);
@@ -5061,6 +5167,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong newval = (ulong)(((ulong)left & mask) | value);
             return newval;
         }
+
         public static double Ceiling(double op1) => Math.Ceiling(op1);
 
         public static double Floor(double op1) => Math.Floor(op1);
