@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System
 {
     public readonly struct ConsoleKeyInfo
@@ -30,6 +32,15 @@ namespace System
                 _mods |= ConsoleModifiers.Alt;
             if (control)
                 _mods |= ConsoleModifiers.Control;
+        }
+
+        internal ConsoleKeyInfo(char keyChar, ConsoleKey key, ConsoleModifiers modifiers)
+        {
+            Debug.Assert(((int)key) >= 0 && ((int)key) <= 255);
+
+            _keyChar = keyChar;
+            _key = key;
+            _mods = modifiers;
         }
 
         public char KeyChar

@@ -221,9 +221,10 @@ namespace System.IO
             if (_availableKeys.Count > 0)
             {
                 ConsoleKeyInfo keyInfo = peek ? _availableKeys.Peek() : _availableKeys.Pop();
-                if (!IsEol(keyInfo.KeyChar))
+                char keyChar = (keyInfo.KeyChar == '\r') ? '\n' : keyInfo.KeyChar; // Map CR chars to LF
+                if (!IsEol(keyChar))
                 {
-                    return keyInfo.KeyChar;
+                    return keyChar;
                 }
             }
 
