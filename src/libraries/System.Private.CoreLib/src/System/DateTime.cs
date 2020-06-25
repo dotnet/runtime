@@ -443,7 +443,7 @@ namespace System
             if (millis_double <= (double)-MaxMillis || millis_double >= (double)MaxMillis)
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_AddValue);
 
-            return AddTicks((long)millis_double * TicksPerMillisecond);
+            return AddTicks((long)(millis_double * (double)TicksPerMillisecond));
         }
 
         // Returns the DateTime resulting from adding a fractional number of
