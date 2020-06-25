@@ -290,7 +290,9 @@ namespace System.Collections.Generic
                         // For floating-point, do a pre-pass to move all NaNs to the beginning
                         // so that we can do an optimized comparison as part of the actual sort
                         // on the remainder of the values.
-                        if (typeof(T) == typeof(double) || typeof(T) == typeof(float))
+                        if (typeof(T) == typeof(double) ||
+                            typeof(T) == typeof(float) ||
+                            typeof(T) == typeof(Half))
                         {
                             int nanLeft = SortUtils.MoveNansToFront(keys, default(Span<byte>));
                             if (nanLeft == keys.Length)
@@ -794,7 +796,9 @@ namespace System.Collections.Generic
                         // For floating-point, do a pre-pass to move all NaNs to the beginning
                         // so that we can do an optimized comparison as part of the actual sort
                         // on the remainder of the values.
-                        if (typeof(TKey) == typeof(double) || typeof(TKey) == typeof(float))
+                        if (typeof(TKey) == typeof(double) ||
+                            typeof(TKey) == typeof(float) ||
+                            typeof(TKey) == typeof(Half))
                         {
                             int nanLeft = SortUtils.MoveNansToFront(keys, values);
                             if (nanLeft == keys.Length)
@@ -1043,6 +1047,7 @@ namespace System.Collections.Generic
             if (typeof(T) == typeof(nint)) return (nint)(object)left < (nint)(object)right ? true : false;
             if (typeof(T) == typeof(float)) return (float)(object)left < (float)(object)right ? true : false;
             if (typeof(T) == typeof(double)) return (double)(object)left < (double)(object)right ? true : false;
+            if (typeof(T) == typeof(Half)) return (Half)(object)left < (Half)(object)right ? true : false;
             return left.CompareTo(right) < 0 ? true : false;
         }
 
@@ -1061,6 +1066,7 @@ namespace System.Collections.Generic
             if (typeof(T) == typeof(nint)) return (nint)(object)left > (nint)(object)right ? true : false;
             if (typeof(T) == typeof(float)) return (float)(object)left > (float)(object)right ? true : false;
             if (typeof(T) == typeof(double)) return (double)(object)left > (double)(object)right ? true : false;
+            if (typeof(T) == typeof(Half)) return (Half)(object)left > (Half)(object)right ? true : false;
             return left.CompareTo(right) > 0 ? true : false;
         }
 
@@ -1073,7 +1079,8 @@ namespace System.Collections.Generic
             for (int i = 0; i < keys.Length; i++)
             {
                 if ((typeof(TKey) == typeof(double) && double.IsNaN((double)(object)keys[i])) ||
-                    (typeof(TKey) == typeof(float) && float.IsNaN((float)(object)keys[i])))
+                    (typeof(TKey) == typeof(float) && float.IsNaN((float)(object)keys[i])) ||
+                    (typeof(TKey) == typeof(Half) && Half.IsNaN((Half)(object)keys[i])))
                 {
                     TKey temp = keys[left];
                     keys[left] = keys[i];
