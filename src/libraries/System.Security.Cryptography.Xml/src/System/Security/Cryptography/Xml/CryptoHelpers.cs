@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Xml
             }
             try
             {
-                return (CreateFromKnownName(name) ?? CryptoConfig.CreateFromName(name)) as T;
+                return (CryptoConfig.CreateFromName(name) ?? CreateFromKnownName(name)) as T;
             }
             catch (Exception)
             {
