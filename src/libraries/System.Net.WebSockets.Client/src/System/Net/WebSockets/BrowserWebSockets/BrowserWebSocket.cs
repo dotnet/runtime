@@ -117,23 +117,22 @@ namespace System.Net.WebSockets
             {
                 try
                 {
-                    JavaScript.Array? subProtocols = null;
                     if (requestedSubProtocols?.Count > 0)
                     {
-                        subProtocols = new JavaScript.Array();
-                        foreach (var item in requestedSubProtocols)
+                        using (JavaScript.Array subProtocols = new JavaScript.Array())
                         {
-                            subProtocols.Push(item);
+                            foreach (var item in requestedSubProtocols)
+                            {
+                                subProtocols.Push(item);
+                            }
+                            _innerWebSocket = new HostObject("WebSocket", uri.ToString(), subProtocols);
                         }
-                        _innerWebSocket = new HostObject("WebSocket", uri.ToString(), subProtocols);
                     }
                     else
                     {
                         _innerWebSocket = new HostObject("WebSocket", uri.ToString());
                     }
                     _innerWebSocket.SetObjectProperty("binaryType", "arraybuffer");
-
-                    subProtocols?.Dispose();
 
                     // Setup the onError callback
                     _onError = (errorEvt) => errorEvt.Dispose();
