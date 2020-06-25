@@ -12,11 +12,11 @@ namespace System.Net
 
         public static readonly bool IsEnabled = false;
 
-        public ValueStopwatch ResolutionStart(string hostName) => default;
+        public ValueStopwatch ResolutionStart(string hostNameOrAddress) => default;
 
         public ValueStopwatch ResolutionStart(IPAddress address) => default;
 
-        public void AfterResolution(string hostName, ValueStopwatch stopwatch, bool successful) { }
+        public void AfterResolution(string hostNameOrAddress, ValueStopwatch stopwatch, bool successful) { }
 
         public void AfterResolution(IPAddress address, ValueStopwatch stopwatch, bool successful) { }
     }

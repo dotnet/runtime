@@ -545,7 +545,7 @@ namespace System.Net
                         {
                             var tuple = (Tuple<string, ValueStopwatch>)state!;
                             NameResolutionTelemetry.Log.AfterResolution(
-                                hostName: tuple.Item1,
+                                hostNameOrAddress: tuple.Item1,
                                 stopwatch: tuple.Item2,
                                 successful: task.IsCompletedSuccessfully);
                         },

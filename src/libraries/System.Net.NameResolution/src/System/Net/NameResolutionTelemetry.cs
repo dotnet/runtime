@@ -43,14 +43,14 @@ namespace System.Net
         private const int MaxIPFormattedLength = 128;
 
         [Event(1, Level = EventLevel.Informational)]
-        public ValueStopwatch ResolutionStart(string hostName)
+        public ValueStopwatch ResolutionStart(string hostNameOrAddress)
         {
-            Debug.Assert(hostName != null);
+            Debug.Assert(hostNameOrAddress != null);
 
             if (IsEnabled())
             {
                 Interlocked.Increment(ref _lookupsRequested);
-                WriteEvent(eventId: 1, hostName);
+                WriteEvent(eventId: 1, hostNameOrAddress);
                 return ValueStopwatch.StartNew();
             }
 
@@ -73,7 +73,7 @@ namespace System.Net
         }
 
         [NonEvent]
-        public void AfterResolution(string hostName, ValueStopwatch stopwatch, bool successful)
+        public void AfterResolution(string hostNameOrAddress, ValueStopwatch stopwatch, bool successful)
         {
             if (stopwatch.IsActive)
             {
@@ -83,11 +83,11 @@ namespace System.Net
 
                 if (successful)
                 {
-                    ResolutionSuccess(hostName, duration);
+                    ResolutionSuccess(hostNameOrAddress, duration);
                 }
                 else
                 {
-                    ResolutionFailure(hostName, duration);
+                    ResolutionFailure(hostNameOrAddress, duration);
                 }
             }
         }
@@ -110,10 +110,10 @@ namespace System.Net
 
 
         [Event(2, Level = EventLevel.Informational)]
-        private void ResolutionSuccess(string hostName, double duration) => WriteEvent(eventId: 2, hostName, duration);
+        private void ResolutionSuccess(string hostNameOrAddress, double duration) => WriteEvent(eventId: 2, hostNameOrAddress, duration);
 
         [Event(3, Level = EventLevel.Informational)]
-        private void ResolutionFailure(string hostName, double duration) => WriteEvent(eventId: 3, hostName, duration);
+        private void ResolutionFailure(string hostNameOrAddress, double duration) => WriteEvent(eventId: 3, hostNameOrAddress, duration);
 
 
         [NonEvent]
