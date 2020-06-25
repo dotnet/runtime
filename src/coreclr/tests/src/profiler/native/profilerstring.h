@@ -236,7 +236,7 @@ public:
             printBuffer = new wchar_t[bufferLen];
         }
 
-        for (int i = 0; i < bufferLen; ++i)
+        for (size_t i = 0; i < bufferLen; ++i)
         {
             printBuffer[i] = (wchar_t)buffer[i];
         }

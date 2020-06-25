@@ -219,7 +219,7 @@ public:
         ThreadID eventThread,
         ULONG numStackFrames,
         UINT_PTR stackFrames[]) override;
-    HRESULT EventPipeProviderCreated(EVENTPIPE_PROVIDER provider) override;
+    HRESULT STDMETHODCALLTYPE EventPipeProviderCreated(EVENTPIPE_PROVIDER provider) override;
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject) override;
     ULONG STDMETHODCALLTYPE AddRef(void) override;
