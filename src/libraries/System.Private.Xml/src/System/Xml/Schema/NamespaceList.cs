@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -18,8 +19,8 @@ namespace System.Xml.Schema
         };
 
         private ListType _type = ListType.Any;
-        private Hashtable _set = null;
-        private readonly string _targetNamespace;
+        private Hashtable? _set = null;
+        private readonly string? _targetNamespace;
 
         public NamespaceList()
         {
@@ -78,7 +79,7 @@ namespace System.Xml.Schema
             get { return _type; }
         }
 
-        public string Excluded
+        public string? Excluded
         {
             get { return _targetNamespace; }
         }
@@ -90,7 +91,7 @@ namespace System.Xml.Schema
                 switch (_type)
                 {
                     case ListType.Set:
-                        return _set.Keys;
+                        return _set!.Keys;
                     case ListType.Other:
                     case ListType.Any:
                     default:
@@ -108,7 +109,7 @@ namespace System.Xml.Schema
                 case ListType.Other:
                     return ns != _targetNamespace && ns.Length != 0;
                 case ListType.Set:
-                    return _set[ns] != null;
+                    return _set![ns] != null;
             }
             Debug.Fail($"Unexpected type {_type}");
             return false;
@@ -130,7 +131,7 @@ namespace System.Xml.Schema
                 case ListType.Set:
                     StringBuilder sb = new StringBuilder();
                     bool first = true;
-                    foreach (string s in _set.Keys)
+                    foreach (string? s in _set!.Keys)
                     {
                         if (first)
                         {
@@ -144,7 +145,7 @@ namespace System.Xml.Schema
                         {
                             sb.Append("##targetNamespace");
                         }
-                        else if (s.Length == 0)
+                        else if (s!.Length == 0)
                         {
                             sb.Append("##local");
                         }
@@ -173,14 +174,14 @@ namespace System.Xml.Schema
             {
                 if (super._type == ListType.Other)
                 {
-                    return !sub._set.Contains(super._targetNamespace);
+                    return !sub._set!.Contains(super._targetNamespace!);
                 }
                 else
                 {
                     Debug.Assert(super._type == ListType.Set);
-                    foreach (string ns in sub._set.Keys)
+                    foreach (string? ns in sub._set!.Keys)
                     {
-                        if (!super._set.Contains(ns))
+                        if (!super._set!.Contains(ns!))
                         {
                             return false;
                         }
@@ -192,9 +193,9 @@ namespace System.Xml.Schema
         }
 
 
-        public static NamespaceList Union(NamespaceList o1, NamespaceList o2, bool v1Compat)
+        public static NamespaceList? Union(NamespaceList o1, NamespaceList o2, bool v1Compat)
         {
-            NamespaceList nslist = null;
+            NamespaceList? nslist = null;
             Debug.Assert(o1 != o2);
             if (o1._type == ListType.Any)
             { //clause 2 - o1 is Any
@@ -207,9 +208,9 @@ namespace System.Xml.Schema
             else if (o1._type == ListType.Set && o2._type == ListType.Set)
             { //clause 3 , both are sets
                 nslist = o1.Clone();
-                foreach (string ns in o2._set.Keys)
+                foreach (string? ns in o2._set!.Keys)
                 {
-                    nslist._set[ns] = ns;
+                    nslist._set![ns!] = ns;
                 }
             }
             else if (o1._type == ListType.Other && o2._type == ListType.Other)
@@ -227,7 +228,7 @@ namespace System.Xml.Schema
             {
                 if (v1Compat)
                 {
-                    if (o1._set.Contains(o2._targetNamespace))
+                    if (o1._set!.Contains(o2._targetNamespace!))
                     {
                         nslist = new NamespaceList();
                     }
@@ -242,7 +243,7 @@ namespace System.Xml.Schema
                     { //clause 5, o1 is set S, o2 is not(tns)
                         nslist = o1.CompareSetToOther(o2);
                     }
-                    else if (o1._set.Contains(string.Empty))
+                    else if (o1._set!.Contains(string.Empty))
                     { //clause 6.1 - set S includes absent, o2 is not(absent)
                         nslist = new NamespaceList();
                     }
@@ -256,7 +257,7 @@ namespace System.Xml.Schema
             {
                 if (v1Compat)
                 {
-                    if (o2._set.Contains(o2._targetNamespace))
+                    if (o2._set!.Contains(o2._targetNamespace!))
                     {
                         nslist = new NamespaceList();
                     }
@@ -271,7 +272,7 @@ namespace System.Xml.Schema
                     { //clause 5, o1 is set S, o2 is not(tns)
                         nslist = o2.CompareSetToOther(o1);
                     }
-                    else if (o2._set.Contains(string.Empty))
+                    else if (o2._set!.Contains(string.Empty))
                     { //clause 6.1 - set S includes absent, o2 is not(absent)
                         nslist = new NamespaceList();
                     }
@@ -284,11 +285,11 @@ namespace System.Xml.Schema
             return nslist;
         }
 
-        private NamespaceList CompareSetToOther(NamespaceList other)
+        private NamespaceList? CompareSetToOther(NamespaceList other)
         {
             //clause 5.1
-            NamespaceList nslist = null;
-            if (_set.Contains(other._targetNamespace))
+            NamespaceList? nslist = null;
+            if (_set!.Contains(other._targetNamespace!))
             { //S contains negated ns
                 if (_set.Contains(string.Empty))
                 { // AND S contains absent
@@ -310,9 +311,9 @@ namespace System.Xml.Schema
             return nslist;
         }
 
-        public static NamespaceList Intersection(NamespaceList o1, NamespaceList o2, bool v1Compat)
+        public static NamespaceList? Intersection(NamespaceList o1, NamespaceList o2, bool v1Compat)
         {
-            NamespaceList nslist = null;
+            NamespaceList? nslist = null;
             Debug.Assert(o1 != o2); //clause 1
             if (o1._type == ListType.Any)
             { //clause 2 - o1 is any
@@ -325,7 +326,7 @@ namespace System.Xml.Schema
             else if (o1._type == ListType.Set && o2._type == ListType.Other)
             { //Clause 3 o2 is other
                 nslist = o1.Clone();
-                nslist.RemoveNamespace(o2._targetNamespace);
+                nslist.RemoveNamespace(o2._targetNamespace!);
                 if (!v1Compat)
                 {
                     nslist.RemoveNamespace(string.Empty); //remove ##local
@@ -334,7 +335,7 @@ namespace System.Xml.Schema
             else if (o1._type == ListType.Other && o2._type == ListType.Set)
             { //Clause 3 o1 is other
                 nslist = o2.Clone();
-                nslist.RemoveNamespace(o1._targetNamespace);
+                nslist.RemoveNamespace(o1._targetNamespace!);
                 if (!v1Compat)
                 {
                     nslist.RemoveNamespace(string.Empty); //remove ##local
@@ -346,11 +347,11 @@ namespace System.Xml.Schema
                 nslist = new NamespaceList();
                 nslist._type = ListType.Set;
                 nslist._set = new Hashtable();
-                foreach (string ns in o1._set.Keys)
+                foreach (string? ns in o1._set!.Keys)
                 {
-                    if (o2._set.Contains(ns))
+                    if (o2._set!.Contains(ns!))
                     {
-                        nslist._set.Add(ns, ns);
+                        nslist._set.Add(ns!, ns);
                     }
                 }
             }
@@ -379,7 +380,7 @@ namespace System.Xml.Schema
 
         private void RemoveNamespace(string tns)
         {
-            if (_set[tns] != null)
+            if (_set![tns] != null)
             {
                 _set.Remove(tns);
             }

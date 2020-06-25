@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.ComponentModel;
 using System.Xml.Serialization;
 using System.Diagnostics;
@@ -19,21 +20,21 @@ namespace System.Xml.Schema
         private XmlSchemaDerivationMethod _block = XmlSchemaDerivationMethod.None;
         private XmlSchemaDerivationMethod _final = XmlSchemaDerivationMethod.None;
         private XmlSchemaForm _form = XmlSchemaForm.None;
-        private string _defaultValue;
-        private string _fixedValue;
-        private string _name;
+        private string? _defaultValue;
+        private string? _fixedValue;
+        private string? _name;
 
         private XmlQualifiedName _refName = XmlQualifiedName.Empty;
         private XmlQualifiedName _substitutionGroup = XmlQualifiedName.Empty;
         private XmlQualifiedName _typeName = XmlQualifiedName.Empty;
-        private XmlSchemaType _type = null;
+        private XmlSchemaType? _type = null;
 
         private XmlQualifiedName _qualifiedName = XmlQualifiedName.Empty;
-        private XmlSchemaType _elementType;
+        private XmlSchemaType? _elementType;
         private XmlSchemaDerivationMethod _blockResolved;
         private XmlSchemaDerivationMethod _finalResolved;
-        private XmlSchemaObjectCollection _constraints;
-        private SchemaElementDecl _elementDecl;
+        private XmlSchemaObjectCollection? _constraints;
+        private SchemaElementDecl? _elementDecl;
 
 
         [XmlAttribute("abstract"), DefaultValue(false)]
@@ -56,7 +57,7 @@ namespace System.Xml.Schema
 
         [XmlAttribute("default")]
         [DefaultValue(null)]
-        public string DefaultValue
+        public string? DefaultValue
         {
             get { return _defaultValue; }
             set { _defaultValue = value; }
@@ -71,7 +72,7 @@ namespace System.Xml.Schema
 
         [XmlAttribute("fixed")]
         [DefaultValue(null)]
-        public string FixedValue
+        public string? FixedValue
         {
             get { return _fixedValue; }
             set { _fixedValue = value; }
@@ -85,7 +86,7 @@ namespace System.Xml.Schema
         }
 
         [XmlAttribute("name"), DefaultValue("")]
-        public string Name
+        public string? Name
         {
             get { return _name; }
             set { _name = value; }
@@ -133,7 +134,7 @@ namespace System.Xml.Schema
 
         [XmlElement("complexType", typeof(XmlSchemaComplexType)),
          XmlElement("simpleType", typeof(XmlSchemaSimpleType))]
-        public XmlSchemaType SchemaType
+        public XmlSchemaType? SchemaType
         {
             get { return _type; }
             set { _type = value; }
@@ -162,7 +163,7 @@ namespace System.Xml.Schema
 
         [XmlIgnore]
         [Obsolete("This property has been deprecated. Please use ElementSchemaType property that returns a strongly typed element type. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public object ElementType
+        public object? ElementType
         {
             get
             {
@@ -178,7 +179,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        public XmlSchemaType ElementSchemaType
+        public XmlSchemaType? ElementSchemaType
         {
             get { return _elementType; }
         }
@@ -195,7 +196,7 @@ namespace System.Xml.Schema
             get { return _finalResolved; }
         }
 
-        internal XmlReader Validate(XmlReader reader, XmlResolver resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
+        internal XmlReader? Validate(XmlReader reader, XmlResolver resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
         {
             if (schemaSet != null)
             {
@@ -213,7 +214,7 @@ namespace System.Xml.Schema
             _qualifiedName = value;
         }
 
-        internal void SetElementType(XmlSchemaType value)
+        internal void SetElementType(XmlSchemaType? value)
         {
             _elementType = value;
         }
@@ -251,14 +252,14 @@ namespace System.Xml.Schema
             }
         }
 
-        internal SchemaElementDecl ElementDecl
+        internal SchemaElementDecl? ElementDecl
         {
             get { return _elementDecl; }
             set { _elementDecl = value; }
         }
 
         [XmlIgnore]
-        internal override string NameAttribute
+        internal override string? NameAttribute
         {
             get { return Name; }
             set { Name = value; }
@@ -279,7 +280,7 @@ namespace System.Xml.Schema
             return Clone(null);
         }
 
-        internal XmlSchemaObject Clone(XmlSchema parentSchema)
+        internal XmlSchemaObject Clone(XmlSchema? parentSchema)
         {
             XmlSchemaElement newElem = (XmlSchemaElement)MemberwiseClone();
 
@@ -291,7 +292,7 @@ namespace System.Xml.Schema
             // If this element has a complex type which is anonymous (declared in place with the element)
             //  it needs to be cloned as well, since it may contain named elements and such. And these names
             //  will need to be cloned since they may change their namespace on chameleon includes
-            XmlSchemaComplexType complexType = _type as XmlSchemaComplexType;
+            XmlSchemaComplexType? complexType = _type as XmlSchemaComplexType;
             if (complexType != null && complexType.QualifiedName.IsEmpty)
             {
                 newElem._type = (XmlSchemaType)complexType.Clone(parentSchema);

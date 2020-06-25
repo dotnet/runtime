@@ -279,7 +279,7 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
                 }
                 m_argDescs[k].m_typeStackNormal = m_argDescs[k].m_type;
                 m_argDescs[k].m_nativeOffset = argOffsets_[k];
-                m_argDescs[k].m_directOffset = reinterpret_cast<short>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
                 directOffset++;
                 k++;
             }
@@ -302,18 +302,18 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
 #endif // defined(HOST_ARM)
                 )
             {
-                directRetBuffOffset = reinterpret_cast<short>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                directRetBuffOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
 #if defined(HOST_AMD64)
             if (GetFlag<Flag_isVarArg>())
             {
-                directVarArgOffset = reinterpret_cast<short>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                directVarArgOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
             if (GetFlag<Flag_hasGenericsContextArg>())
             {
-                directTypeParamOffset = reinterpret_cast<short>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                directTypeParamOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
 #endif
@@ -343,11 +343,11 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
                 // When invoking the interpreter directly, large value types are always passed by reference.
                 if (it.IsLargeStruct(comp))
                 {
-                    m_argDescs[k].m_directOffset = reinterpret_cast<short>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
+                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
                 }
                 else
                 {
-                    m_argDescs[k].m_directOffset = reinterpret_cast<short>(ArgSlotEndianessFixup(directOffset, it.Size(comp)));
+                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, it.Size(comp))));
                 }
                 argPtr = comp->getArgNext(argPtr);
                 directOffset++;
@@ -1627,6 +1627,8 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
     } CONTRACTL_END;
 
     unsigned int MaxInterpretCount = s_InterpreterJITThreshold.val(CLRConfig::INTERNAL_InterpreterJITThreshold);
+    bool scheduleTieringBackgroundWork = false;
+    TieredCompilationManager *tieredCompilationManager = GetAppDomain()->GetTieredCompilationManager();
 
     if (force || interpMethInfo->m_invocations > MaxInterpretCount)
     {
@@ -1663,13 +1665,23 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
             // interpreter I didn't wring my hands too much trying to determine the ideal
             // policy.
 #ifdef FEATURE_TIERED_COMPILATION
-            bool scheduleTieringBackgroundWork = false;
+            CodeVersionManager::LockHolder _lockHolder;
             NativeCodeVersion activeCodeVersion = md->GetCodeVersionManager()->GetActiveILCodeVersion(md).GetActiveNativeCodeVersion(md);
-            GetAppDomain()->GetTieredCompilationManager()->AsyncPromoteToTier1(activeCodeVersion, &scheduleTieringBackgroundWork);
+            ILCodeVersion ilCodeVersion = activeCodeVersion.GetILCodeVersion();
+            if (activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
+                !ilCodeVersion.HasAnyOptimizedNativeCodeVersion(activeCodeVersion))
+            {
+                tieredCompilationManager->AsyncPromoteToTier1(activeCodeVersion, &scheduleTieringBackgroundWork);
+            }
 #else
 #error FEATURE_INTERPRETER depends on FEATURE_TIERED_COMPILATION now
 #endif
         }
+    }
+
+    if (scheduleTieringBackgroundWork)
+    {
+        tieredCompilationManager->ScheduleBackgroundWork(); // requires GC_TRIGGERS
     }
 }
 
@@ -7887,16 +7899,40 @@ void Interpreter::LdElemWithType()
         }
         else
         {
-            T res = reinterpret_cast<Array<T>*>(a)->GetDirectConstPointerToNonObjectElements()[index];
+            intptr_t res_ptr = reinterpret_cast<intptr_t>(reinterpret_cast<Array<T>*>(a)->GetDirectConstPointerToNonObjectElements());
             if (cit == CORINFO_TYPE_INT)
             {
+                assert(std::is_integral<T>::value);
+
                 // Widen narrow types.
-                int ires = (int)res;
+                int ires;
+                switch (sizeof(T))
+                {
+                case 1:
+                    ires = std::is_same<T, INT8>::value ?
+                           static_cast<int>(reinterpret_cast<INT8*>(res_ptr)[index]) :
+                           static_cast<int>(reinterpret_cast<UINT8*>(res_ptr)[index]);
+                    break;
+                case 2:
+                    ires = std::is_same<T, INT16>::value ?
+                           static_cast<int>(reinterpret_cast<INT16*>(res_ptr)[index]) :
+                           static_cast<int>(reinterpret_cast<UINT16*>(res_ptr)[index]);
+                    break;
+                case 4:
+                    ires = std::is_same<T, INT32>::value ?
+                           static_cast<int>(reinterpret_cast<INT32*>(res_ptr)[index]) :
+                           static_cast<int>(reinterpret_cast<UINT32*>(res_ptr)[index]);
+                    break;
+                default:
+                    _ASSERTE_MSG(false, "This should have exhausted all the possible sizes.");
+                    break;
+                }
+
                 OpStackSet<int>(arrInd, ires);
             }
             else
             {
-                OpStackSet<T>(arrInd, res);
+                OpStackSet<T>(arrInd, ((T*) res_ptr)[index]);
             }
         }
     }
@@ -9034,6 +9070,26 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             thrd->m_dwLastError = thrd->m_dwLastErrorInterp;
             didIntrinsic = true;
         }
+
+// TODO: The following check for hardware intrinsics is not a production-level
+//       solution and may produce incorrect results.
+#ifdef FEATURE_INTERPRETER
+        static ConfigDWORD s_InterpreterHWIntrinsicsIsSupportedFalse;
+        if (s_InterpreterHWIntrinsicsIsSupportedFalse.val(CLRConfig::INTERNAL_InterpreterHWIntrinsicsIsSupportedFalse) != 0)
+        {
+            if (strcmp(methToCall->GetModule()->GetSimpleName(), "System.Private.CoreLib") == 0 &&
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+                strncmp(methToCall->GetClass()->GetDebugClassName(), "System.Runtime.Intrinsics.X86", 29) == 0 &&
+#elif defined(TARGET_ARM64)
+                strncmp(methToCall->GetClass()->GetDebugClassName(), "System.Runtime.Intrinsics.Arm", 29) == 0 &&
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+                strcmp(methToCall->GetName(), "get_IsSupported") == 0)
+            {
+                DoGetIsSupported();
+                didIntrinsic = true;
+            }
+        }
+#endif // FEATURE_INTERPRETER
 
 #if FEATURE_SIMD
         if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
@@ -10613,6 +10669,20 @@ void Interpreter::DoSIMDHwAccelerated()
 #endif // INTERP_TRACING
 
     LdIcon(1);
+}
+
+
+void Interpreter::DoGetIsSupported()
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    OpStackSet<BOOL>(m_curStackHt, false);
+    OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
+    m_curStackHt++;
 }
 
 void Interpreter::RecordConstrainedCall()

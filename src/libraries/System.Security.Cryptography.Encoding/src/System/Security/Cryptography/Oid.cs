@@ -69,8 +69,18 @@ namespace System.Security.Cryptography
 
         public string? Value
         {
-            get { return _value; }
-            set { _value = value; }
+            get => _value;
+            set
+            {
+                // If _value has not been set, permit it to be set once, or to
+                // the same value for "initialize once" behavior.
+                if (_value != null && !_value.Equals(value, StringComparison.Ordinal))
+                {
+                    throw new PlatformNotSupportedException(SR.Cryptography_Oid_SetOnceValue);
+                }
+
+                _value = value;
+            }
         }
 
         public string? FriendlyName
@@ -86,16 +96,40 @@ namespace System.Security.Cryptography
             }
             set
             {
-                _friendlyName = value;
+                // If _friendlyName has not been set, permit it to be set once, or to
+                // the same value for "initialize once" behavior.
+                if (_friendlyName != null && !_friendlyName.Equals(value, StringComparison.Ordinal))
+                {
+                    throw new PlatformNotSupportedException(SR.Cryptography_Oid_SetOnceFriendlyName);
+                }
+
                 // If we can find the matching OID value, then update it as well
-                if (_friendlyName != null)
+                if (_friendlyName == null && value != null)
                 {
                     // If FindOidInfo fails, we return a null String
-                    string? oidValue = OidLookup.ToOid(_friendlyName, _group, fallBackToAllGroups: true);
+                    string? oidValue = OidLookup.ToOid(value, _group, fallBackToAllGroups: true);
+
                     if (oidValue != null)
                     {
-                        _value = oidValue;
+                        // If the OID value has not been initialized, set it
+                        // to the lookup value.
+                        if (_value == null)
+                        {
+                            _value = oidValue;
+                        }
+
+                        // The friendly name resolves to an OID value other than the
+                        // current one, which is not permitted under "initialize once"
+                        // behavior.
+                        else if (!_value.Equals(oidValue, StringComparison.Ordinal))
+                        {
+                            throw new PlatformNotSupportedException(SR.Cryptography_Oid_SetOnceValue);
+                        }
                     }
+
+                    // Ensure we don't mutate _friendlyName until we are sure we can
+                    // set _value if we are going to.
+                    _friendlyName = value;
                 }
             }
         }

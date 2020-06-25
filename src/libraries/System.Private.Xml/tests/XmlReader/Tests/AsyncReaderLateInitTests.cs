@@ -93,7 +93,7 @@ namespace System.Xml.Tests
             Assert.Throws<System.Net.Http.HttpRequestException>(() => XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = false }));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void SynchronizationContextCurrent_NotUsedForAsyncOperations()
         {
             Task.Run(() =>

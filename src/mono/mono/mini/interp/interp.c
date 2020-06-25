@@ -103,10 +103,10 @@ struct FrameClauseArgs {
  * This code synchronizes with interp_mark_stack () using compiler memory barriers.
  */
 
-static StackFragment*
-stack_frag_new (int size)
+static FrameDataFragment*
+frame_data_frag_new (int size)
 {
-	StackFragment *frag = (StackFragment*)g_malloc (size);
+	FrameDataFragment *frag = (FrameDataFragment*)g_malloc (size);
 
 	frag->pos = (guint8*)&frag->data;
 	frag->end = (guint8*)frag + size;
@@ -115,107 +115,105 @@ stack_frag_new (int size)
 }
 
 static void
-frame_stack_init (FrameStack *stack, int size)
+frame_data_frag_free (FrameDataFragment *frag)
 {
-	StackFragment *frag;
-
-	frag = stack_frag_new (size);
-	stack->first = stack->current = frag;
-	mono_compiler_barrier ();
-	stack->inited = 1;
+	while (frag) {
+		FrameDataFragment *next = frag->next;
+		g_free (frag);
+		frag = next;
+	}
 }
 
-static StackFragment*
-add_frag (FrameStack *stack, int size)
+static void
+frame_data_allocator_init (FrameDataAllocator *stack, int size)
 {
-	StackFragment *new_frag;
+	FrameDataFragment *frag;
+
+	frag = frame_data_frag_new (size);
+	stack->first = stack->current = frag;
+	stack->infos_capacity = 4;
+	stack->infos = g_malloc (stack->infos_capacity * sizeof (FrameDataInfo));
+}
+
+static void
+frame_data_allocator_free (FrameDataAllocator *stack)
+{
+	/* Assert to catch leaks */
+	g_assert_checked (stack->current == stack->first && stack->current->pos == (guint8*)&stack->current->data);
+	frame_data_frag_free (stack->first);
+}
+
+static FrameDataFragment*
+frame_data_allocator_add_frag (FrameDataAllocator *stack, int size)
+{
+	FrameDataFragment *new_frag;
 
 	// FIXME:
 	int frag_size = 4096;
-	if (size + sizeof (StackFragment) > frag_size)
-		frag_size = size + sizeof (StackFragment);
-	new_frag = stack_frag_new (frag_size);
+	if (size + sizeof (FrameDataFragment) > frag_size)
+		frag_size = size + sizeof (FrameDataFragment);
+	new_frag = frame_data_frag_new (frag_size);
 	mono_compiler_barrier ();
 	stack->current->next = new_frag;
 	stack->current = new_frag;
 	return new_frag;
 }
 
-static void
-free_frag (StackFragment *frag)
+static gpointer
+frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *frame, int size)
 {
-	while (frag) {
-		StackFragment *next = frag->next;
-		g_free (frag);
-		frag = next;
-	}
-}
-
-static MONO_ALWAYS_INLINE gpointer
-frame_stack_alloc_ovf (FrameStack *stack, int size, StackFragment **out_frag)
-{
-	StackFragment *current = stack->current;
+	FrameDataFragment *current = stack->current;
 	gpointer res;
 
-	if (current->next && current->next->pos + size <= current->next->end) {
-		current = stack->current = current->next;
-		current->pos = (guint8*)&current->data;
-	} else {
-		StackFragment *tmp = current->next;
-		/* avoid linking to be freed fragments, so the GC can't trip over it */
-		current->next = NULL;
-		mono_compiler_barrier ();
-		free_frag (tmp);
+	int infos_len = stack->infos_len;
 
-		current = add_frag (stack, size);
+	if (!infos_len || (infos_len > 0 && stack->infos [infos_len - 1].frame != frame)) {
+		/* First allocation by this frame. Save the markers for restore */
+		if (infos_len == stack->infos_capacity) {
+			stack->infos_capacity = infos_len * 2;
+			stack->infos = g_realloc (stack->infos, stack->infos_capacity * sizeof (FrameDataInfo));
+		}
+		stack->infos [infos_len].frame = frame;
+		stack->infos [infos_len].frag = current;
+		stack->infos [infos_len].pos = current->pos;
+		stack->infos_len++;
 	}
-	g_assert (current->pos + size <= current->end);
-	res = (gpointer)current->pos;
-	current->pos += size;
-
-	mono_compiler_barrier ();
-
-	if (out_frag)
-		*out_frag = current;
-	return res;
-}
-
-static MONO_ALWAYS_INLINE gpointer
-frame_stack_alloc (FrameStack *stack, int size, StackFragment **out_frag)
-{
-	StackFragment *current = stack->current;
-	gpointer res;
 
 	if (G_LIKELY (current->pos + size <= current->end)) {
 		res = current->pos;
 		current->pos += size;
-		mono_compiler_barrier ();
-
-		if (out_frag)
-			*out_frag = current;
-		return res;
 	} else {
-		return frame_stack_alloc_ovf (stack, size, out_frag);
-	}
-}
+		if (current->next && current->next->pos + size <= current->next->end) {
+			current = stack->current = current->next;
+			current->pos = (guint8*)&current->data;
+		} else {
+			FrameDataFragment *tmp = current->next;
+			/* avoid linking to be freed fragments, so the GC can't trip over it */
+			current->next = NULL;
+			mono_compiler_barrier ();
+			frame_data_frag_free (tmp);
 
-static MONO_ALWAYS_INLINE void
-frame_stack_pop (FrameStack *stack, StackFragment *frag, gpointer pos)
-{
-	g_assert_checked ((guint8*)pos >= (guint8*)&frag->data && (guint8*)pos <= (guint8*)frag->end);
-	stack->current = frag;
+			current = frame_data_allocator_add_frag (stack, size);
+		}
+		g_assert (current->pos + size <= current->end);
+		res = (gpointer)current->pos;
+		current->pos += size;
+	}
 	mono_compiler_barrier ();
-	stack->current->pos = (guint8*)pos;
-	mono_compiler_barrier ();
-	//memset (stack->current->pos, 0, stack->current->end - stack->current->pos);
+	return res;
 }
 
 static void
-frame_stack_free (FrameStack *stack)
+frame_data_allocator_pop (FrameDataAllocator *stack, InterpFrame *frame)
 {
-	stack->inited = 0;
-	mono_compiler_barrier ();
-	free_frag (stack->first);
+	int infos_len = stack->infos_len;
+
+	if (infos_len > 0 && stack->infos [infos_len - 1].frame == frame) {
+		infos_len--;
+		stack->current = stack->infos [infos_len].frag;
+		stack->current->pos = stack->infos [infos_len].pos;
+		stack->infos_len = infos_len;
+	}
 }
 
 /*
@@ -231,42 +229,6 @@ reinit_frame (InterpFrame *frame, InterpFrame *parent, InterpMethod *imethod, st
 	frame->stack_args = stack_args;
 	frame->stack = NULL;
 	frame->state.ip = NULL;
-}
-
-/*
- * alloc_data_stack:
- *
- *   Allocate stack space for a frame.
- */
-static MONO_ALWAYS_INLINE void
-alloc_stack_data (ThreadContext *ctx, InterpFrame *frame, int size)
-{
-	StackFragment *frag;
-	gpointer res = frame_stack_alloc (&ctx->data_stack, size, &frag);
-
-	frame->stack = (stackval*)res;
-	frame->data_frag = frag;
-}
-
-static gpointer
-alloc_extra_stack_data (ThreadContext *ctx, int size)
-{
-	StackFragment *frag;
-
-	return frame_stack_alloc (&ctx->data_stack, size, &frag);
-}
-
-/*
- * pop_frame:
- *
- *   Pop FRAME and its child frames from the frame stack.
- * FRAME stays valid until the next alloc_frame () call.
- */
-static void
-pop_frame (ThreadContext *context, InterpFrame *frame)
-{
-	if (frame->stack)
-		frame_stack_pop (&context->data_stack, frame->data_frag, frame->stack);
 }
 
 /*
@@ -435,14 +397,12 @@ get_context (void)
 	ThreadContext *context = (ThreadContext *) mono_native_tls_get_value (thread_context_id);
 	if (context == NULL) {
 		context = g_new0 (ThreadContext, 1);
-		/*
-		 * Initialize data stack.
-		 * There are multiple advantages to this being separate from the frame stack.
-		 * Frame stack can be alloca.
-		 * Frame stack can be perfectly fit (if heap).
-		 * Frame stack can skip GC tracking.
-		 */
-		frame_stack_init (&context->data_stack, 8192);
+		context->stack_start = (guchar*)mono_valloc (0, INTERP_STACK_SIZE, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_INTERP_STACK);
+		context->stack_pointer = context->stack_start;
+
+		frame_data_allocator_init (&context->data_stack, 8192);
+		/* Make sure all data is initialized before publishing the context */
+		mono_compiler_barrier ();
 		set_context (context);
 	}
 	return context;
@@ -453,7 +413,11 @@ interp_free_context (gpointer ctx)
 {
 	ThreadContext *context = (ThreadContext*)ctx;
 
-	frame_stack_free (&context->data_stack);
+	mono_vfree (context->stack_start, INTERP_STACK_SIZE, MONO_MEM_ACCOUNT_INTERP_STACK);
+	/* Prevent interp_mark_stack from trying to scan the data_stack, before freeing it */
+	context->stack_start = NULL;
+	mono_compiler_barrier ();
+	frame_data_allocator_free (&context->data_stack);
 	g_free (context);
 }
 
@@ -3297,12 +3261,6 @@ g_warning_d (const char *format, int d)
 	g_warning (format, d);
 }
 
-static void
-g_warning_ds (const char *format, int d, const char *s)
-{
-	g_warning (format, d, s);
-}
-
 #if !USE_COMPUTED_GOTO
 static void
 g_error_xsx (const char *format, int x1, const char *s, int x2)
@@ -3335,12 +3293,21 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 		MonoException *ex = do_transform_method (frame, context);
 		if (ex) {
 			*out_ex = ex;
+			/*
+			 * Initialize the stack base pointer here, in the uncommon branch, so we don't
+			 * need to check for it everytime when exitting a frame.
+			 */
+			frame->stack = (stackval*)context->stack_pointer;
 			return slow;
 		}
 	}
 
-	if (!clause_args || clause_args->base_frame)
-		alloc_stack_data (context, frame, frame->imethod->alloca_size);
+	if (!clause_args || clause_args->base_frame) {
+		frame->stack = (stackval*)context->stack_pointer;
+		context->stack_pointer += frame->imethod->alloca_size;
+		/* Make sure the stack pointer is bumped before we store any references on the stack */
+		mono_compiler_barrier ();
+	}
 
 	return slow;
 }
@@ -3359,16 +3326,16 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 	sp = frame->state.sp; \
 	vt_sp = frame->state.vt_sp; \
 	finally_ips = frame->state.finally_ips; \
-	locals = (unsigned char *)frame->stack + frame->imethod->stack_size + frame->imethod->vt_stack_size; \
+	locals = (unsigned char *)frame->stack; \
 	frame->state.ip = NULL; \
 	} while (0)
 
 /* Initialize interpreter state for executing FRAME */
 #define INIT_INTERP_STATE(frame, _clause_args) do {	 \
 	ip = _clause_args ? ((FrameClauseArgs *)_clause_args)->start_with_ip : (frame)->imethod->code; \
-	sp = (frame)->stack; \
-	vt_sp = (unsigned char *) sp + (frame)->imethod->stack_size; \
-	locals = (unsigned char *) vt_sp + (frame)->imethod->vt_stack_size; \
+	locals = (unsigned char *)(frame)->stack; \
+	vt_sp = (unsigned char *) locals + (frame)->imethod->total_locals_size; \
+	sp = (stackval*)(vt_sp + (frame)->imethod->vt_stack_size); \
 	finally_ips = NULL; \
 	} while (0)
 
@@ -3443,9 +3410,14 @@ main_loop:
 	while (1) {
 		MintOpcode opcode;
 #ifdef ENABLE_CHECKED_BUILD
-		g_assert (sp >= frame->stack);
-		g_assert (vt_sp >= sp);
-		g_assert (locals >= vt_sp);
+		guchar *vt_start = (guchar*)frame->stack + frame->imethod->total_locals_size;
+		guchar *sp_start = vt_start + frame->imethod->vt_stack_size;
+		guchar *sp_end = sp_start + frame->imethod->stack_size;
+		g_assert (locals == (guchar*)frame->stack);
+		g_assert (vt_sp >= vt_start);
+		g_assert (vt_sp <= sp_start);
+		g_assert ((guchar*)sp >= sp_start);
+		g_assert ((guchar*)sp <= sp_end);
 #endif
 		DUMP_INSTR();
 		MINT_IN_SWITCH (*ip) {
@@ -3594,7 +3566,7 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_JMP) {
-			g_assert (sp == frame->stack);
+			g_assert_checked (sp == (stackval*)(locals + frame->imethod->total_locals_size + frame->imethod->vt_stack_size));
 			InterpMethod *new_method = (InterpMethod*)frame->imethod->data_items [ip [1]];
 
 			if (frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL)
@@ -3609,23 +3581,17 @@ main_loop:
 					THROW_EX (ex, ip);
 				EXCEPTION_CHECKPOINT;
 			}
-			const gboolean realloc_frame = new_method->alloca_size > frame->imethod->alloca_size;
-			frame->imethod = new_method;
 			/*
-			 * We allocate the stack frame from scratch and store the arguments in the
-			 * locals again since it's possible for the caller stack frame to be smaller
+			 * It's possible for the caller stack frame to be smaller
 			 * than the callee stack frame (at the interp level)
 			 */
-			if (realloc_frame) {
-				alloc_stack_data (context, frame, frame->imethod->alloca_size);
-				memset (frame->stack, 0, frame->imethod->alloca_size);
-				sp = frame->stack;
-			}
-			vt_sp = (unsigned char *) sp + frame->imethod->stack_size;
+			context->stack_pointer = (guchar*)frame->stack + new_method->alloca_size;
+			frame->imethod = new_method;
+			vt_sp = locals + frame->imethod->total_locals_size;
 #if DEBUG_INTERP
 			vtalloc = vt_sp;
 #endif
-			locals = vt_sp + frame->imethod->vt_stack_size;
+			sp = (stackval*)(vt_sp + frame->imethod->vt_stack_size);
 			ip = frame->imethod->code;
 			MINT_IN_BREAK;
 		}
@@ -4021,18 +3987,10 @@ call:
 				// FIXME This can only happen in a few wrappers. Add separate opcode for it
 				*frame->retval = *sp;
 			}
-#ifdef ENABLE_CHECKED_BUILD
-			/* FIXME Fix these warnings and replace with assertions */
-			if (sp > frame->stack)
-				g_warning_d ("ret: more values on stack: %d", sp - frame->stack);
-#endif
+			g_assert_checked (sp == (stackval*)(locals + frame->imethod->total_locals_size + frame->imethod->vt_stack_size));
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_VOID)
-#ifdef ENABLE_CHECKED_BUILD
-			/* FIXME Fix these warnings and replace with assertions */
-			if (sp > frame->stack)
-				g_warning_ds ("ret.void: more values on stack: %d %s", sp - frame->stack, mono_method_full_name (frame->imethod->method, TRUE));
-#endif
+			g_assert_checked (sp == (stackval*)(locals + frame->imethod->total_locals_size + frame->imethod->vt_stack_size));
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_VT) {
 			gpointer dest_vt;
@@ -4048,11 +4006,41 @@ call:
 				dest_vt = frame->retval->data.p;
 			}
 			memcpy (dest_vt, sp->data.p, i32);
-#ifdef ENABLE_CHECKED_BUILD
-			/* FIXME Fix these warnings and replace with assertions */
-			if (sp > frame->stack)
-				g_warning_d ("ret.vt: more values on stack: %d", sp - frame->stack);
-#endif
+			g_assert_checked (sp == (stackval*)(locals + frame->imethod->total_locals_size + frame->imethod->vt_stack_size));
+			goto exit_frame;
+		}
+		MINT_IN_CASE(MINT_RET_LOCALLOC)
+			--sp;
+			if (frame->parent) {
+				frame->parent->state.sp [0] = *sp;
+				frame->parent->state.sp++;
+			} else {
+				// FIXME This can only happen in a few wrappers. Add separate opcode for it
+				*frame->retval = *sp;
+			}
+			frame_data_allocator_pop (&context->data_stack, frame);
+			g_assert_checked (sp == (stackval*)(locals + frame->imethod->total_locals_size + frame->imethod->vt_stack_size));
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_VOID_LOCALLOC)
+			frame_data_allocator_pop (&context->data_stack, frame);
+			g_assert_checked (sp == (stackval*)(locals + frame->imethod->total_locals_size + frame->imethod->vt_stack_size));
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_VT_LOCALLOC) {
+			gpointer dest_vt;
+			int const i32 = READ32 (ip + 1);
+			--sp;
+			if (frame->parent) {
+				dest_vt = frame->parent->state.vt_sp;
+				/* Push the valuetype in the parent frame */
+				frame->parent->state.sp [0].data.p = dest_vt;
+				frame->parent->state.sp++;
+				frame->parent->state.vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
+			} else {
+				dest_vt = frame->retval->data.p;
+			}
+			memcpy (dest_vt, sp->data.p, i32);
+			frame_data_allocator_pop (&context->data_stack, frame);
+			g_assert_checked (sp == (stackval*)(locals + frame->imethod->total_locals_size + frame->imethod->vt_stack_size));
 			goto exit_frame;
 		}
 
@@ -5346,12 +5334,17 @@ call_newobj:
 			MINT_IN_BREAK;
 		}
 
-#define LDFLD_VT(datamem, fieldtype) do { \
+#define LDFLD_VT_UNALIGNED(datamem, fieldtype, unaligned) do { \
 	gpointer p = sp [-1].data.p; \
 	vt_sp -= ip [2]; \
-	sp [-1].data.datamem = * (fieldtype *)((char *)p + ip [1]); \
+	if (unaligned) \
+		memcpy (&sp[-1].data.datamem, (char *)p + ip [1], sizeof (fieldtype)); \
+	else \
+		sp [-1].data.datamem = * (fieldtype *)((char *)p + ip [1]); \
 	ip += 3; \
 } while (0)
+
+#define LDFLD_VT(datamem, fieldtype) LDFLD_VT_UNALIGNED(datamem, fieldtype, FALSE)
 
 		MINT_IN_CASE(MINT_LDFLD_VT_I1) LDFLD_VT(i, gint8); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_VT_U1) LDFLD_VT(i, guint8); MINT_IN_BREAK;
@@ -5362,6 +5355,8 @@ call_newobj:
 		MINT_IN_CASE(MINT_LDFLD_VT_R4) LDFLD_VT(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_VT_R8) LDFLD_VT(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_VT_O) LDFLD_VT(p, gpointer); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_VT_I8_UNALIGNED) LDFLD_VT_UNALIGNED(l, gint64, TRUE); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_VT_R8_UNALIGNED) LDFLD_VT_UNALIGNED(f, double, TRUE); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDFLD_VT_VT) {
 			gpointer p = sp [-1].data.p;
@@ -5775,42 +5770,54 @@ call_newobj:
 				goto overflow_label;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_U8_R4)
-			if (sp [-1].data.f_r4 < 0 || sp [-1].data.f_r4 > G_MAXUINT64 || isnan (sp [-1].data.f_r4))
+		MINT_IN_CASE(MINT_CONV_OVF_U8_R4) {
+			guint64 res = (guint64)sp [-1].data.f_r4;
+			if (mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
 				goto overflow_label;
-			sp [-1].data.l = (guint64)sp [-1].data.f_r4;
+			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_U8_R8)
-			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXUINT64 || isnan (sp [-1].data.f))
+		}
+		MINT_IN_CASE(MINT_CONV_OVF_U8_R8) {
+			guint64 res = (guint64)sp [-1].data.f;
+			if (mono_isnan (sp [-1].data.f) || mono_trunc (sp [-1].data.f) != res)
 				goto overflow_label;
-			sp [-1].data.l = (guint64)sp [-1].data.f;
+			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R8)
-			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXINT64 || isnan (sp [-1].data.f))
+		}
+		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R8) {
+			gint64 res = (gint64)sp [-1].data.f;
+			if (res < 0 || mono_isnan (sp [-1].data.f) || mono_trunc (sp [-1].data.f) != res)
 				goto overflow_label;
-			sp [-1].data.l = (gint64)sp [-1].data.f;
+			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R4)
-			if (sp [-1].data.f_r4 < 0 || sp [-1].data.f_r4 > G_MAXINT64 || isnan (sp [-1].data.f_r4))
+		}
+		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R4) {
+			gint64 res = (gint64)sp [-1].data.f_r4;
+			if (res < 0 || mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
 				goto overflow_label;
-			sp [-1].data.l = (gint64)sp [-1].data.f_r4;
+			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_I8_R4)
-			if (sp [-1].data.f_r4 < G_MININT64 || sp [-1].data.f_r4 > G_MAXINT64 || isnan (sp [-1].data.f_r4))
+		}
+		MINT_IN_CASE(MINT_CONV_OVF_I8_R4) {
+			gint64 res = (gint64)sp [-1].data.f_r4;
+			if (mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
 				goto overflow_label;
-			sp [-1].data.l = (gint64)sp [-1].data.f_r4;
+			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_I8_R8)
-			if (sp [-1].data.f < G_MININT64 || sp [-1].data.f > G_MAXINT64 || isnan (sp [-1].data.f))
+		}
+		MINT_IN_CASE(MINT_CONV_OVF_I8_R8) {
+			gint64 res = (gint64)sp [-1].data.f;
+			if (mono_isnan (sp [-1].data.f) || mono_trunc (sp [-1].data.f) != res)
 				goto overflow_label;
-			sp [-1].data.l = (gint64)sp [-1].data.f;
+			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_BOX) {
 			mono_interp_box (frame, ip, sp);
 			ip += 3;
@@ -6081,12 +6088,14 @@ call_newobj:
 			sp [-1].data.i = (gint32) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_I4_R4)
-			if (sp [-1].data.f_r4 < G_MININT32 || sp [-1].data.f_r4 > G_MAXINT32 || isnan (sp [-1].data.f_r4))
+		MINT_IN_CASE(MINT_CONV_OVF_I4_R4) {
+			gint32 res = (gint32)sp [-1].data.f_r4;
+			if (mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
 				goto overflow_label;
-			sp [-1].data.i = (gint32) sp [-1].data.f_r4;
+			sp [-1].data.i = res;
 			++ip;
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_R8)
 			if (sp [-1].data.f < G_MININT32 || sp [-1].data.f > G_MAXINT32 || isnan (sp [-1].data.f))
 				goto overflow_label;
@@ -6104,12 +6113,14 @@ call_newobj:
 			sp [-1].data.i = (guint32) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_U4_R4)
-			if (sp [-1].data.f_r4 < 0 || sp [-1].data.f_r4 > G_MAXUINT32 || isnan (sp [-1].data.f_r4))
+		MINT_IN_CASE(MINT_CONV_OVF_U4_R4) {
+			guint32 res = (guint32)sp [-1].data.f_r4;
+			if (mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
 				goto overflow_label;
-			sp [-1].data.i = (guint32) sp [-1].data.f_r4;
+			sp [-1].data.i = res;
 			++ip;
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_CONV_OVF_U4_R8)
 			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXUINT32 || isnan (sp [-1].data.f))
 				goto overflow_label;
@@ -6386,10 +6397,9 @@ call_newobj:
 			if (clause_args && clause_args->exec_frame == frame && clause_index == clause_args->exit_clause)
 				goto exit_clause;
 
-#if DEBUG_INTERP // This assert causes Linux/amd64/clang to use more stack.
-			g_assert (sp >= frame->stack);
-#endif
-			sp = frame->stack;
+			// endfinally empties the stack
+			vt_sp = (guchar*)frame->stack + frame->imethod->total_locals_size;
+			sp = (stackval*)(vt_sp + frame->imethod->vt_stack_size);
 
 			if (finally_ips) {
 				ip = (const guint16*)finally_ips->data;
@@ -6410,8 +6420,9 @@ call_newobj:
 		MINT_IN_CASE(MINT_LEAVE_CHECK)
 		MINT_IN_CASE(MINT_LEAVE_S_CHECK) {
 			guint32 ip_offset = ip - frame->imethod->code;
-			g_assert (sp >= frame->stack);
-			sp = frame->stack; /* spec says stack should be empty at endfinally so it should be at the start too */
+			// leave empties the stack
+			vt_sp = (guchar*)frame->stack + frame->imethod->total_locals_size;
+			sp = (stackval*)(vt_sp + frame->imethod->vt_stack_size);
 
 			int opcode = *ip;
 			gboolean const check = opcode == MINT_LEAVE_CHECK || opcode == MINT_LEAVE_S_CHECK;
@@ -6427,16 +6438,10 @@ call_newobj:
 			ip += short_offset ? (short)*(ip + 1) : (gint32)READ32 (ip + 1);
 			const guint16 *endfinally_ip = ip;
 			GSList *old_list = finally_ips;
-			MonoMethod *method = frame->imethod->method;
 #if DEBUG_INTERP
 			if (tracing)
 				g_print ("* Handle finally IL_%04x\n", endfinally_ip - frame->imethod->code);
 #endif
-			// FIXME Null check for frame->imethod follows deref.
-			if (frame->imethod == NULL || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-					|| (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)))
-				goto exit_frame;
-
 			finally_ips = g_slist_prepend (finally_ips, (void *)endfinally_ip);
 
 			for (int i = frame->imethod->num_clauses - 1; i >= 0; i--) {
@@ -6456,8 +6461,6 @@ call_newobj:
 			if (old_list != finally_ips && finally_ips) {
 				ip = (const guint16*)finally_ips->data;
 				finally_ips = g_slist_remove (finally_ips, ip);
-				// we set vt_sp later here so we relieve stack pressure
-				vt_sp = (unsigned char*)sp + frame->imethod->stack_size;
 				// goto main_loop instead of MINT_IN_DISPATCH helps the compiler and therefore conserves stack.
 				// This is a slow/rare path and conserving stack is preferred over its performance otherwise.
 				goto main_loop;
@@ -6503,6 +6506,7 @@ call_newobj:
 			     mono_method_signature_internal (frame->imethod->method)->pinvoke);
 			if (sp > frame->stack)
 				g_warning_d ("retobj: more values on stack: %d", sp - frame->stack);
+			frame_data_allocator_pop (&context->data_stack, frame);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_MONO_SGEN_THREAD_INFO)
 			sp->data.p = mono_tls_get_sgen_thread_info ();
@@ -6873,6 +6877,7 @@ call_newobj:
 			}
 
 			ip += 4;
+			frame_data_allocator_pop (&context->data_stack, frame);
 			goto exit_frame;
 		}
 		MINT_IN_CASE(MINT_PROF_COVERAGE_STORE) {
@@ -6976,12 +6981,13 @@ call_newobj:
 		}
 
 		MINT_IN_CASE(MINT_LOCALLOC) {
-			if (sp != frame->stack + 1) /*FIX?*/
+			stackval *sp_start = (stackval*)(locals + frame->imethod->total_locals_size + frame->imethod->vt_stack_size);
+			if (sp != sp_start + 1) /*FIX?*/
 				goto abort_label;
 
 			int len = sp [-1].data.i;
-			//sp [-1].data.p = alloca (len);
-			sp [-1].data.p = alloc_extra_stack_data (context, ALIGN_TO (len, 8));
+			// FIXME we need a separate allocator for localloc sections
+			sp [-1].data.p = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
 
 			if (frame->imethod->init_locals)
 				memset (sp [-1].data.p, 0, len);
@@ -7256,8 +7262,9 @@ resume:
 			/* Set the current execution state to the resume state in context */
 			ip = context->handler_ip;
 			/* spec says stack should be empty at endfinally so it should be at the start too */
-			sp = frame->stack;
-			vt_sp = (guchar*)sp + frame->imethod->stack_size;
+			locals = (guchar*)frame->stack;
+			vt_sp = locals + frame->imethod->total_locals_size;
+			sp = (stackval*)(vt_sp + frame->imethod->vt_stack_size);
 			g_assert (context->exc_gchandle);
 			sp->data.p = mono_gchandle_get_target_internal (context->exc_gchandle);
 			++sp;
@@ -7275,6 +7282,9 @@ resume:
 		 */
 		goto exit_clause;
 	}
+	// Because we are resuming in another frame, bypassing a normal ret opcode,
+	// we need to make sure to reset the localloc stack
+	frame_data_allocator_pop (&context->data_stack, frame);
 	// fall through
 exit_frame:
 	g_assert_checked (frame->imethod);
@@ -7282,12 +7292,10 @@ exit_frame:
 	if (frame->parent && frame->parent->state.ip) {
 		/* Return to the main loop after a non-recursive interpreter call */
 		//printf ("R: %s -> %s %p\n", mono_method_get_full_name (frame->imethod->method), mono_method_get_full_name (frame->parent->imethod->method), frame->parent->state.ip);
-		InterpFrame* const child_frame = frame;
-
+		g_assert_checked (frame->stack);
+		context->stack_pointer = (guchar*)frame->stack;
 		frame = frame->parent;
 		LOAD_INTERP_STATE (frame);
-
-		pop_frame (context, child_frame);
 
 		CHECK_RESUME_STATE (context);
 
@@ -7298,13 +7306,13 @@ exit_clause:
 		if (clause_args->base_frame) {
 			// We finished executing a filter. The execution stack of the base frame
 			// should remain unmodified, but we need to update the local space.
-			char *locals_base = (char*)clause_args->base_frame->stack + frame->imethod->stack_size + frame->imethod->vt_stack_size;
+			char *locals_base = (char*)clause_args->base_frame->stack;
 
 			memcpy (locals_base, locals, frame->imethod->locals_size);
-			pop_frame (context, frame);
+			context->stack_pointer = (guchar*)frame->stack;
 		}
 	} else {
-		pop_frame (context, frame);
+		context->stack_pointer = (guchar*)frame->stack;
 	}
 
 	DEBUG_LEAVE ();
@@ -7656,10 +7664,14 @@ interp_mark_stack (gpointer thread_data, GcScanFunc func, gpointer gc_data, gboo
 		return;
 
 	ThreadContext *context = (ThreadContext*)jit_tls->interp_context;
-	if (!context || !context->data_stack.inited)
+	if (!context || !context->stack_start)
 		return;
 
-	StackFragment *frag;
+	// FIXME: Scan the whole area with 1 call
+	for (gpointer *p = (gpointer*)context->stack_start; p < (gpointer*)context->stack_pointer; p++)
+		func (p, gc_data);
+
+	FrameDataFragment *frag;
 	for (frag = context->data_stack.first; frag; frag = frag->next) {
 		// FIXME: Scan the whole area with 1 call
 		for (gpointer *p = (gpointer*)&frag->data; p < (gpointer*)frag->pos; ++p)

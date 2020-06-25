@@ -887,7 +887,7 @@ const OleVariant::Marshaler *OleVariant::GetMarshalerForVarType(VARTYPE vt, BOOL
 
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
     if (vt & VT_ARRAY)
     {
 VariantArray:
@@ -900,7 +900,7 @@ VariantArray:
             ClearVariantArray
         );
     }
-#endif // FEATURE_CLASSIC_COMINTEROP
+#endif // FEATURE_COMINTEROP
 
     switch (vt)
     {
@@ -973,10 +973,8 @@ VariantArray:
             ClearInterfaceArray
         );
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
     case VT_SAFEARRAY:
         goto VariantArray;
-#endif
 
     case VT_VARIANT:
         RETURN_MARSHALER(
@@ -1053,7 +1051,7 @@ VariantArray:
         );
 
     case VT_RECORD:
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
         RETURN_MARSHALER(
             MarshalRecordVariantOleToCom,
             MarshalRecordVariantComToOle,
@@ -1069,7 +1067,7 @@ VariantArray:
             MarshalRecordArrayComToOle,
             ClearRecordArray
         );
-#endif // FEATURE_CLASSIC_COMINTEROP
+#endif // FEATURE_COMINTEROP
 
     case VT_CARRAY:
     case VT_USERDEFINED:
@@ -2581,7 +2579,7 @@ void OleVariant::MarshalDecimalVariantOleRefToCom(VARIANT *pOleVariant,
  * Record marshaling routines
  * ------------------------------------------------------------------------- */
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
 void OleVariant::MarshalRecordVariantOleToCom(VARIANT *pOleVariant,
                                               VariantData *pComVariant)
 {
@@ -2668,7 +2666,7 @@ void OleVariant::MarshalRecordVariantOleRefToCom(VARIANT *pOleVariant,
     // the same so we can simply forward the call to the non byref API.
     MarshalRecordVariantOleToCom(pOleVariant, pComVariant);
 }
-#endif // FEATURE_CLASSIC_COMINTEROP
+#endif // FEATURE_COMINTEROP
 
 void OleVariant::MarshalRecordArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
                                             MethodTable *pElementMT, PCODE pManagedMarshalerCode)
@@ -2767,11 +2765,6 @@ void OleVariant::MarshalOleVariantForObject(OBJECTREF * const & pObj, VARIANT *p
         PRECONDITION(CheckPointer(pOle));
     }
     CONTRACTL_END;
-
-    if (AppX::IsAppXProcess())
-    {
-        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_BADMARSHAL_TYPE_VARIANTASOBJECT);
-    }
 
     SafeVariantClear(pOle);
 
@@ -2895,11 +2888,6 @@ void OleVariant::MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
         PRECONDITION(V_VT(pOle) & VT_BYREF);
     }
     CONTRACTL_END;
-
-   if (AppX::IsAppXProcess())
-   {
-       COMPlusThrow(kPlatformNotSupportedException, IDS_EE_BADMARSHAL_TYPE_VARIANTASOBJECT);
-   }
 
     HRESULT hr = MarshalCommonOleRefVariantForObject(pObj, pOle);
 
@@ -3118,11 +3106,6 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
         PRECONDITION(*pObj == NULL || (IsProtectedByGCFrame (pObj)));
     }
     CONTRACT_END;
-
-    if (AppX::IsAppXProcess())
-    {
-        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_BADMARSHAL_TYPE_VARIANTASOBJECT);
-    }
 
     // if V_ISBYREF(pOle) and V_BYREF(pOle) is null then we have a problem,
     // unless we're dealing with VT_EMPTY or VT_NULL in which case that is ok??
@@ -4090,7 +4073,7 @@ void OleVariant::ClearVariantArray(void *oleArray, SIZE_T cElements, MethodTable
 /* ------------------------------------------------------------------------- *
  * Array marshaling routines
  * ------------------------------------------------------------------------- */
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
 
 void OleVariant::MarshalArrayVariantOleToCom(VARIANT *pOleVariant,
                                              VariantData *pComVariant)
@@ -4220,7 +4203,7 @@ void OleVariant::MarshalArrayVariantOleRefToCom(VARIANT *pOleVariant,
         pComVariant->SetObjRef(NULL);
     }
 }
-#endif //FEATURE_CLASSIC_COMINTEROP
+#endif //FEATURE_COMINTEROP
 
 
 /* ------------------------------------------------------------------------- *
@@ -5102,7 +5085,7 @@ TypeHandle OleVariant::GetArrayElementTypeWrapperAware(BASEARRAYREF *pArray)
     }
 }
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
 TypeHandle OleVariant::GetElementTypeForRecordSafeArray(SAFEARRAY* pSafeArray)
 {
     CONTRACTL
@@ -5130,7 +5113,7 @@ TypeHandle OleVariant::GetElementTypeForRecordSafeArray(SAFEARRAY* pSafeArray)
 
     return TypeHandle(pValueClass);
 }
-#endif //FEATURE_CLASSIC_COMINTEROP
+#endif //FEATURE_COMINTEROP
 
 void OleVariant::AllocateEmptyStringForBSTR(BSTR bstr, STRINGREF *pStringObj)
 {

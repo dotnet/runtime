@@ -31,7 +31,7 @@ namespace System.Xml.Schema
         public ChameleonKey(string ns, XmlSchema originalSchema)
         {
             targetNS = ns;
-            chameleonLocation = originalSchema.BaseUri;
+            chameleonLocation = originalSchema.BaseUri!;
             if (chameleonLocation.OriginalString.Length == 0)
             {
                 // Only store the original schema when the location is empty URI

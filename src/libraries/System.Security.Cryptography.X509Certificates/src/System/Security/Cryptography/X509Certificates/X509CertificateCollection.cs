@@ -83,9 +83,9 @@ namespace System.Security.Cryptography.X509Certificates
         public override int GetHashCode()
         {
             int hashCode = 0;
-            foreach (X509Certificate? cert in List)
+            foreach (X509Certificate cert in List)
             {
-                hashCode += cert!.GetHashCode();
+                hashCode += cert.GetHashCode();
             }
             return hashCode;
         }

@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, object?>
         where TCollection : IEnumerable
     {
-        protected override void Add(object? value, ref ReadStack state)
+        protected override void Add(in object? value, ref ReadStack state)
         {
             ((Action<TCollection, object?>)state.Current.AddMethodDelegate!)((TCollection)state.Current.ReturnValue!, value);
         }
@@ -53,7 +53,8 @@ namespace System.Text.Json.Serialization.Converters
                     return false;
                 }
 
-                if (!converter.TryWrite(writer, enumerator.Current, options, ref state))
+                object? element = enumerator.Current;
+                if (!converter.TryWrite(writer, element, options, ref state))
                 {
                     state.Current.CollectionEnumerator = enumerator;
                     return false;

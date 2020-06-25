@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             try
             {
-                var callSite = CallSiteFactory.GetCallSite(descriptor, new CallSiteChain());
+                ServiceCallSite callSite = CallSiteFactory.GetCallSite(descriptor, new CallSiteChain());
                 if (callSite != null)
                 {
                     _callback?.OnCreate(callSite);
@@ -83,7 +83,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ThrowHelper.ThrowObjectDisposedException();
             }
 
-            var realizedService = RealizedServices.GetOrAdd(serviceType, _createServiceAccessor);
+            Func<ServiceProviderEngineScope, object> realizedService = RealizedServices.GetOrAdd(serviceType, _createServiceAccessor);
             _callback?.OnResolve(serviceType, serviceProviderEngineScope);
             DependencyInjectionEventSource.Log.ServiceResolved(serviceType);
             return realizedService.Invoke(serviceProviderEngineScope);
@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private Func<ServiceProviderEngineScope, object> CreateServiceAccessor(Type serviceType)
         {
-            var callSite = CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
+            ServiceCallSite callSite = CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
             if (callSite != null)
             {
                 DependencyInjectionEventSource.Log.CallSiteBuilt(serviceType, callSite);

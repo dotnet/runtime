@@ -4,7 +4,6 @@
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
-    <JitOptimizationSensitive>True</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

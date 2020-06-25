@@ -40,6 +40,7 @@ using System.ComponentModel;
 
 namespace System.Drawing.Printing
 {
+    [DefaultProperty("DocumentName"), DefaultEvent("PrintPage")]
     public class PrintDocument : System.ComponentModel.Component
     {
         private PageSettings defaultpagesettings;

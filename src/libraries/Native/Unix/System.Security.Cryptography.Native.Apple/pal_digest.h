@@ -50,3 +50,10 @@ Complete the digest in ctx, copying the results to pOutput, and reset ctx for a 
 Returns 1 on success, 0 on failure, any other value on invalid inputs/state.
 */
 PALEXPORT int32_t AppleCryptoNative_DigestFinal(DigestCtx* ctx, uint8_t* pOutput, int32_t cbOutput);
+
+/*
+Get the digest of the data already loaded into ctx, without resetting ctx.
+
+Returns 1 on success, 0 on failure, any other value on invalid inputs/state.
+*/
+PALEXPORT int32_t AppleCryptoNative_DigestCurrent(const DigestCtx* ctx, uint8_t* pOutput, int32_t cbOutput);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Xml;
 using System.Diagnostics;
@@ -28,8 +29,8 @@ namespace System.Xml.Schema
         private readonly Dictionary<XmlQualifiedName, SchemaElementDecl> _elementDecls = new Dictionary<XmlQualifiedName, SchemaElementDecl>();
         private readonly Dictionary<XmlQualifiedName, SchemaElementDecl> _undeclaredElementDecls = new Dictionary<XmlQualifiedName, SchemaElementDecl>();
 
-        private Dictionary<XmlQualifiedName, SchemaEntity> _generalEntities;
-        private Dictionary<XmlQualifiedName, SchemaEntity> _parameterEntities;
+        private Dictionary<XmlQualifiedName, SchemaEntity>? _generalEntities;
+        private Dictionary<XmlQualifiedName, SchemaEntity>? _parameterEntities;
 
         private XmlQualifiedName _docTypeName = XmlQualifiedName.Empty;
         private string _internalDtdSubset = string.Empty;
@@ -41,7 +42,7 @@ namespace System.Xml.Schema
         private int _errorCount;
         private SchemaType _schemaType;
         private readonly Dictionary<XmlQualifiedName, SchemaElementDecl> _elementDeclsByType = new Dictionary<XmlQualifiedName, SchemaElementDecl>();
-        private Dictionary<string, SchemaNotation> _notations;
+        private Dictionary<string, SchemaNotation>? _notations;
 
 
         internal SchemaInfo()
@@ -134,34 +135,37 @@ namespace System.Xml.Schema
             set { _errorCount = value; }
         }
 
-        internal SchemaElementDecl GetElementDecl(XmlQualifiedName qname)
+        internal SchemaElementDecl? GetElementDecl(XmlQualifiedName qname)
         {
-            SchemaElementDecl elemDecl;
+            SchemaElementDecl? elemDecl;
             if (_elementDecls.TryGetValue(qname, out elemDecl))
             {
                 return elemDecl;
             }
+
             return null;
         }
 
-        internal SchemaElementDecl GetTypeDecl(XmlQualifiedName qname)
+        internal SchemaElementDecl? GetTypeDecl(XmlQualifiedName qname)
         {
-            SchemaElementDecl elemDecl;
+            SchemaElementDecl? elemDecl;
             if (_elementDeclsByType.TryGetValue(qname, out elemDecl))
             {
                 return elemDecl;
             }
+
             return null;
         }
 
 
-        internal XmlSchemaElement GetElement(XmlQualifiedName qname)
+        internal XmlSchemaElement? GetElement(XmlQualifiedName qname)
         {
-            SchemaElementDecl ed = GetElementDecl(qname);
+            SchemaElementDecl? ed = GetElementDecl(qname);
             if (ed != null)
             {
                 return ed.SchemaElement;
             }
+
             return null;
         }
 
@@ -175,15 +179,15 @@ namespace System.Xml.Schema
             return _targetNamespaces.ContainsKey(ns);
         }
 
-        internal SchemaAttDef GetAttributeXdr(SchemaElementDecl ed, XmlQualifiedName qname)
+        internal SchemaAttDef? GetAttributeXdr(SchemaElementDecl? ed, XmlQualifiedName qname)
         {
-            SchemaAttDef attdef = null;
+            SchemaAttDef? attdef = null;
             if (ed != null)
             {
                 attdef = ed.GetAttDef(qname); ;
                 if (attdef == null)
                 {
-                    if (!ed.ContentValidator.IsOpen || qname.Namespace.Length == 0)
+                    if (!ed.ContentValidator!.IsOpen || qname.Namespace.Length == 0)
                     {
                         throw new XmlSchemaException(SR.Sch_UndeclaredAttribute, qname.ToString());
                     }
@@ -193,13 +197,14 @@ namespace System.Xml.Schema
                     }
                 }
             }
+
             return attdef;
         }
 
 
-        internal SchemaAttDef GetAttributeXsd(SchemaElementDecl ed, XmlQualifiedName qname, XmlSchemaObject partialValidationType, out AttributeMatchState attributeMatchState)
+        internal SchemaAttDef? GetAttributeXsd(SchemaElementDecl? ed, XmlQualifiedName qname, XmlSchemaObject? partialValidationType, out AttributeMatchState attributeMatchState)
         {
-            SchemaAttDef attdef = null;
+            SchemaAttDef? attdef = null;
             attributeMatchState = AttributeMatchState.UndeclaredAttribute;
             if (ed != null)
             {
@@ -209,10 +214,10 @@ namespace System.Xml.Schema
                     attributeMatchState = AttributeMatchState.AttributeFound;
                     return attdef;
                 }
-                XmlSchemaAnyAttribute any = ed.AnyAttribute;
+                XmlSchemaAnyAttribute? any = ed.AnyAttribute;
                 if (any != null)
                 {
-                    if (!any.NamespaceList.Allows(qname))
+                    if (!any.NamespaceList!.Allows(qname))
                     {
                         attributeMatchState = AttributeMatchState.ProhibitedAnyAttribute;
                     }
@@ -246,7 +251,7 @@ namespace System.Xml.Schema
             }
             else if (partialValidationType != null)
             {
-                XmlSchemaAttribute attr = partialValidationType as XmlSchemaAttribute;
+                XmlSchemaAttribute? attr = partialValidationType as XmlSchemaAttribute;
                 if (attr != null)
                 {
                     if (qname.Equals(attr.QualifiedName))
@@ -278,11 +283,11 @@ namespace System.Xml.Schema
             return attdef;
         }
 
-        internal SchemaAttDef GetAttributeXsd(SchemaElementDecl ed, XmlQualifiedName qname, ref bool skip)
+        internal SchemaAttDef? GetAttributeXsd(SchemaElementDecl? ed, XmlQualifiedName qname, ref bool skip)
         {
             AttributeMatchState attributeMatchState;
 
-            SchemaAttDef attDef = GetAttributeXsd(ed, qname, null, out attributeMatchState);
+            SchemaAttDef? attDef = GetAttributeXsd(ed, qname, null, out attributeMatchState);
             switch (attributeMatchState)
             {
                 case AttributeMatchState.UndeclaredAttribute:
@@ -309,7 +314,7 @@ namespace System.Xml.Schema
             return attDef;
         }
 
-        internal void Add(SchemaInfo sinfo, ValidationEventHandler eventhandler)
+        internal void Add(SchemaInfo sinfo, ValidationEventHandler? eventhandler)
         {
             if (_schemaType == SchemaType.None)
             {
@@ -401,10 +406,10 @@ namespace System.Xml.Schema
             }
         }
 
-        IDtdAttributeListInfo IDtdInfo.LookupAttributeList(string prefix, string localName)
+        IDtdAttributeListInfo? IDtdInfo.LookupAttributeList(string prefix, string localName)
         {
             XmlQualifiedName qname = new XmlQualifiedName(prefix, localName);
-            SchemaElementDecl elementDecl;
+            SchemaElementDecl? elementDecl;
             if (!_elementDecls.TryGetValue(qname, out elementDecl))
             {
                 _undeclaredElementDecls.TryGetValue(qname, out elementDecl);
@@ -421,14 +426,14 @@ namespace System.Xml.Schema
             }
         }
 
-        IDtdEntityInfo IDtdInfo.LookupEntity(string name)
+        IDtdEntityInfo? IDtdInfo.LookupEntity(string name)
         {
             if (_generalEntities == null)
             {
                 return null;
             }
             XmlQualifiedName qname = new XmlQualifiedName(name);
-            SchemaEntity entity;
+            SchemaEntity? entity;
             if (_generalEntities.TryGetValue(qname, out entity))
             {
                 return entity;

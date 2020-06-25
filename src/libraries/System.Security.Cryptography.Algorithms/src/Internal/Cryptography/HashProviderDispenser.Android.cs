@@ -63,12 +63,12 @@ namespace Internal.Cryptography
                 throw new NotImplementedException();
             }
 
-            public override byte[] FinalizeHashAndReset()
+            public override int FinalizeHashAndReset(Span<byte> destination)
             {
                 throw new NotImplementedException();
             }
 
-            public override bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
+            public override int GetCurrentHash(Span<byte> destination)
             {
                 throw new NotImplementedException();
             }

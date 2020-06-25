@@ -21,6 +21,13 @@ linux-s390x: &linux-s390x
     - ulimit -c unlimited
     - make check -j32
 
+windows-remote-only: &windows-remote-only
+  os: windows
+  compiler: msvc
+  script:
+  - cmake -G "Visual Studio 15 2017" -A ${HOST} -S . -B bin/windows-${HOST}/${TARGET}
+  - cmake --build bin/windows-${HOST}/${TARGET}
+
 script:
 - ./autogen.sh
 - ./configure --target=$TARGET --host=$HOST
@@ -32,3 +39,9 @@ script:
 jobs:
   include:
     - <<: *linux-s390x
+    - <<: *windows-remote-only
+      env: TARGET=x86_64-linux-gnu    HOST=x64
+    - <<: *windows-remote-only
+      env: TARGET=arm-linux-gnueabihf HOST=Win32
+    - <<: *windows-remote-only
+      env: TARGET=aarch64-linux-gnu   HOST=x64
