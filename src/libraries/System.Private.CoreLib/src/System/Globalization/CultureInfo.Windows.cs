@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading;
+
 namespace System.Globalization
 {
     public partial class CultureInfo : IFormatProvider
@@ -11,8 +13,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
 
-            string? strDefault = CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_USER_DEFAULT, Interop.Kernel32.LOCALE_SNAME) ??
-                                 CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_SYSTEM_DEFAULT, Interop.Kernel32.LOCALE_SNAME);
+            string? strDefault = GetUserDefaultLocaleName();
 
             return strDefault != null ?
                 GetCultureByName(strDefault) :
@@ -41,6 +42,16 @@ namespace System.Globalization
             }
 
             return InitializeUserDefaultCulture();
+        }
+
+        internal static string? GetUserDefaultLocaleName()
+        {
+            Interlocked.CompareExchange(ref s_userDefaultLocaleName,
+                CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_USER_DEFAULT, Interop.Kernel32.LOCALE_SNAME) ??
+                CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_SYSTEM_DEFAULT, Interop.Kernel32.LOCALE_SNAME),
+                null);
+
+            return s_userDefaultLocaleName;
         }
     }
 }

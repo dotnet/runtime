@@ -87,5 +87,7 @@ namespace System.Globalization
         internal bool IsWin32Installed => false;
 
         internal static unsafe CultureData GetCurrentRegionData() => CultureInfo.CurrentCulture._cultureData;
+
+        private bool ShouldUseNlsData => false;
     }
 }

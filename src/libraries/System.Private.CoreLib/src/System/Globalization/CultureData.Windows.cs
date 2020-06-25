@@ -80,6 +80,7 @@ namespace System.Globalization
             // Start by assuming the windows name will be the same as the specific name since windows knows
             // about specifics on all versions. Only for downlevel Neutral locales does this have to change.
             _sWindowsName = realNameBuffer;
+            _isDefaultUserLocale = _sWindowsName == CultureInfo.GetUserDefaultLocaleName();
 
             // Neutrals and non-neutrals are slightly different
             if (_bNeutral)
@@ -187,5 +188,10 @@ namespace System.Globalization
 
             return null;
         }
+
+        // If we are using ICU and loading the calendar data for the user's default
+        // local, and we're using user overrides, then we use NLS to load the data
+        // in order to get the user overrides from the OS.
+        private bool ShouldUseUserOverrideNlsData => GlobalizationMode.UseNls || (UseUserOverride && _isDefaultUserLocale);
     }
 }

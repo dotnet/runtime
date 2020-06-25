@@ -115,7 +115,7 @@ namespace System.Globalization
         private string? _sPM2359; // (user can override) PM designator
         private string? _sTimeSeparator;
         private volatile string[]? _saLongTimes; // (user can override) time format
-        private volatile string[]? _saShortTimes; // short time format
+        private volatile string[]? _saShortTimes; // (user can override) short time format
         private volatile string[]? _saDurationFormats; // time duration format
 
         // Calendar specific data
@@ -143,6 +143,7 @@ namespace System.Globalization
         private int _iLanguage; // locale ID (0409) - NO sort information
         private bool _bUseOverrides; // use user overrides?
         private bool _bNeutral; // Flags for the culture (ie: neutral or not right now)
+        private bool _isDefaultUserLocale;
 
         /// <summary>
         /// Region Name to Culture Name mapping table
@@ -1185,7 +1186,7 @@ namespace System.Globalization
             {
                 if (_iGeoId == undef && !GlobalizationMode.Invariant)
                 {
-                    _iGeoId = GlobalizationMode.UseNls ? NlsGetGeoId(_sRealName!) : IcuGetGeoId(_sRealName!);
+                    _iGeoId = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.GeoId) : IcuGetGeoId(_sRealName!);
                 }
                 return _iGeoId;
             }
@@ -1268,7 +1269,7 @@ namespace System.Globalization
         /// <summary>
         /// (user can override) grouping of digits
         /// </summary>
-        internal int[] NumberGroupSizes => _waGrouping ??= GetLocaleInfoCore(LocaleGroupingData.Digit);
+        internal int[] NumberGroupSizes => _waGrouping ??= GetLocaleInfoCoreUserOverride(LocaleGroupingData.Digit);
 
         /// <summary>
         /// Not a Number
@@ -1330,7 +1331,7 @@ namespace System.Globalization
         /// <summary>
         /// (user can override) local monetary symbol, eg: $
         /// </summary>
-        internal string CurrencySymbol => _sCurrency ??= GetLocaleInfoCore(LocaleStringData.MonetarySymbol);
+        internal string CurrencySymbol => _sCurrency ??= GetLocaleInfoCoreUserOverride(LocaleStringData.MonetarySymbol);
 
         /// <summary>
         /// international monetary symbol (RegionInfo), eg: USD
@@ -1350,7 +1351,7 @@ namespace System.Globalization
         /// <summary>
         /// (user can override) monetary grouping of digits
         /// </summary>
-        internal int[] CurrencyGroupSizes => _waMonetaryGrouping ??= GetLocaleInfoCore(LocaleGroupingData.Monetary);
+        internal int[] CurrencyGroupSizes => _waMonetaryGrouping ??= GetLocaleInfoCoreUserOverride(LocaleGroupingData.Monetary);
 
         /// <summary>
         /// (user can override) system of measurement 0=metric, 1=US (RegionInfo)
@@ -1361,7 +1362,7 @@ namespace System.Globalization
             {
                 if (_iMeasure == undef)
                 {
-                    _iMeasure = GetLocaleInfoCore(LocaleNumberData.MeasurementSystem);
+                    _iMeasure = GetLocaleInfoCoreUserOverride(LocaleNumberData.MeasurementSystem);
                 }
                 return _iMeasure;
             }
@@ -1370,17 +1371,17 @@ namespace System.Globalization
         /// <summary>
         /// (user can override) list Separator
         /// </summary>
-        internal string ListSeparator => _sListSeparator ??= GetLocaleInfoCore(LocaleStringData.ListSeparator);
+        internal string ListSeparator => _sListSeparator ??= GetLocaleInfoCoreUserOverride(LocaleStringData.ListSeparator);
 
         /// <summary>
         /// (user can override) AM designator
         /// </summary>
-        internal string AMDesignator => _sAM1159 ??= GetLocaleInfoCore(LocaleStringData.AMDesignator);
+        internal string AMDesignator => _sAM1159 ??= GetLocaleInfoCoreUserOverride(LocaleStringData.AMDesignator);
 
         /// <summary>
         /// (user can override) PM designator
         /// </summary>
-        internal string PMDesignator => _sPM2359 ??= GetLocaleInfoCore(LocaleStringData.PMDesignator);
+        internal string PMDesignator => _sPM2359 ??= GetLocaleInfoCoreUserOverride(LocaleStringData.PMDesignator);
 
         /// <summary>
         /// (user can override) time format
@@ -1393,7 +1394,7 @@ namespace System.Globalization
                 {
                     Debug.Assert(!GlobalizationMode.Invariant);
 
-                    string[]? longTimes = GlobalizationMode.UseNls ? NlsGetTimeFormats() : IcuGetTimeFormats();
+                    string[]? longTimes = GetTimeFormatsCore();
                     if (longTimes == null || longTimes.Length == 0)
                     {
                         _saLongTimes = Invariant._saLongTimes!;
@@ -1408,7 +1409,7 @@ namespace System.Globalization
         }
 
         /// <summary>
-        /// short time format
+        /// (user can override) short time format
         /// Short times (derived from long times format)
         /// </summary>
         internal string[] ShortTimes
@@ -1420,7 +1421,7 @@ namespace System.Globalization
                     Debug.Assert(!GlobalizationMode.Invariant);
 
                     // Try to get the short times from the OS/culture.dll
-                    string[]? shortTimes = GlobalizationMode.UseNls ? NlsGetShortTimeFormats() : IcuGetShortTimeFormats();
+                    string[]? shortTimes = GetShortTimeFormatsCore();
 
                     if (shortTimes == null || shortTimes.Length == 0)
                     {
@@ -1436,6 +1437,34 @@ namespace System.Globalization
                 }
                 return _saShortTimes!;
             }
+        }
+
+        private string[]? GetTimeFormatsCore()
+        {
+            if (!ShouldUseUserOverrideNlsData)
+            {
+                return IcuGetTimeFormats();
+            }
+
+            // Note that this gets overrides for us all the time
+            Debug.Assert(_sWindowsName != null, "[CultureData.DoEnumTimeFormats] Expected _sWindowsName to be populated by already");
+            string[]? result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, 0, UseUserOverride));
+
+            return result;
+        }
+
+        private string[]? GetShortTimeFormatsCore()
+        {
+            if (!ShouldUseUserOverrideNlsData)
+            {
+                return IcuGetShortTimeFormats();
+            }
+
+            // Note that this gets overrides for us all the time
+            Debug.Assert(_sWindowsName != null, "[CultureData.DoEnumShortTimeFormats] Expected _sWindowsName to be populated by already");
+            string[]? result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, Interop.Kernel32.TIME_NOSECONDS, UseUserOverride));
+
+            return result;
         }
 
         private string[] DeriveShortTimesFromLong()
@@ -1571,7 +1600,7 @@ namespace System.Globalization
             {
                 if (_iFirstDayOfWeek == undef && !GlobalizationMode.Invariant)
                 {
-                    _iFirstDayOfWeek = GlobalizationMode.UseNls ? NlsGetFirstDayOfWeek() : IcuGetFirstDayOfWeek();
+                    _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
                 }
                 return _iFirstDayOfWeek;
             }
@@ -1584,7 +1613,7 @@ namespace System.Globalization
             {
                 if (_iFirstWeekOfYear == undef)
                 {
-                    _iFirstWeekOfYear = GetLocaleInfoCore(LocaleNumberData.FirstWeekOfYear);
+                    _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
                 }
                 return _iFirstWeekOfYear;
             }
@@ -1678,7 +1707,7 @@ namespace System.Globalization
                     CalendarId[] calendars = new CalendarId[23];
                     Debug.Assert(_sWindowsName != null, "[CultureData.CalendarIds] Expected _sWindowsName to be populated by already");
 
-                    int count = GlobalizationMode.UseNls
+                    int count = ShouldUseUserOverrideNlsData
                         ? CalendarData.NlsGetCalendars(_sWindowsName, _bUseOverrides, calendars)
                         : CalendarData.IcuGetCalendars(_sWindowsName, _bUseOverrides, calendars);
 
@@ -1726,7 +1755,7 @@ namespace System.Globalization
                         // Prior to Vista the enumeration didn't have default calendar first
                         if (temp.Length > 1)
                         {
-                            CalendarId i = (CalendarId)GetLocaleInfoCore(LocaleNumberData.CalendarType);
+                            CalendarId i = (CalendarId)GetLocaleInfoCoreUserOverride(LocaleNumberData.CalendarType);
                             if (temp[1] == i)
                             {
                                 temp[1] = temp[0];
@@ -1775,7 +1804,7 @@ namespace System.Globalization
             if (calendarData == null)
             {
                 Debug.Assert(_sWindowsName != null, "[CultureData.GetCalendar] Expected _sWindowsName to be populated by already");
-                calendarData = new CalendarData(_sWindowsName, calendarId, UseUserOverride);
+                calendarData = new CalendarData(_sWindowsName, calendarId, UseUserOverride, _isDefaultUserLocale);
                 _calendars[calendarIndex] = calendarData;
             }
 
@@ -1855,7 +1884,7 @@ namespace System.Globalization
             {
                 if (_iDefaultAnsiCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultAnsiCodePage = GlobalizationMode.UseNls ? NlsGetAnsiCodePage(_sRealName!) : IcuGetAnsiCodePage(_sRealName!);
+                    _iDefaultAnsiCodePage = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.AnsiCodePage) : IcuGetAnsiCodePage(_sRealName!);
                 }
                 return _iDefaultAnsiCodePage;
             }
@@ -1870,7 +1899,7 @@ namespace System.Globalization
             {
                 if (_iDefaultOemCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultOemCodePage = GlobalizationMode.UseNls ? NlsGetOemCodePage(_sRealName!) : IcuGetOemCodePage(_sRealName!);
+                    _iDefaultOemCodePage = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.OemCodePage) : IcuGetOemCodePage(_sRealName!);
                 }
                 return _iDefaultOemCodePage;
             }
@@ -1885,7 +1914,7 @@ namespace System.Globalization
             {
                 if (_iDefaultMacCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultMacCodePage = GlobalizationMode.UseNls ? NlsGetMacCodePage(_sRealName!) : IcuGetMacCodePage(_sRealName!);
+                    _iDefaultMacCodePage = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.MacCodePage) : IcuGetMacCodePage(_sRealName!);
                 }
                 return _iDefaultMacCodePage;
             }
@@ -1900,7 +1929,7 @@ namespace System.Globalization
             {
                 if (_iDefaultEbcdicCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultEbcdicCodePage = GlobalizationMode.UseNls ? NlsGetEbcdicCodePage(_sRealName!) : IcuGetEbcdicCodePage(_sRealName!);
+                    _iDefaultEbcdicCodePage = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.EbcdicCodePage) : IcuGetEbcdicCodePage(_sRealName!);
                 }
                 return _iDefaultEbcdicCodePage;
             }
@@ -1980,7 +2009,7 @@ namespace System.Globalization
             {
                 if (_sTimeSeparator == null && !GlobalizationMode.Invariant)
                 {
-                    string? longTimeFormat = GlobalizationMode.UseNls ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
+                    string? longTimeFormat = ShouldUseUserOverrideNlsData ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
                     if (string.IsNullOrEmpty(longTimeFormat))
                     {
                         longTimeFormat = LongTimes[0];
@@ -2187,24 +2216,24 @@ namespace System.Globalization
             {
                 Debug.Assert(_sWindowsName != null, "[CultureData.GetNFIValues] Expected _sWindowsName to be populated by already");
                 // String values
-                nfi._positiveSign = GetLocaleInfoCore(LocaleStringData.PositiveSign);
-                nfi._negativeSign = GetLocaleInfoCore(LocaleStringData.NegativeSign);
+                nfi._positiveSign = GetLocaleInfoCoreUserOverride(LocaleStringData.PositiveSign);
+                nfi._negativeSign = GetLocaleInfoCoreUserOverride(LocaleStringData.NegativeSign);
 
-                nfi._numberDecimalSeparator = GetLocaleInfoCore(LocaleStringData.DecimalSeparator);
-                nfi._numberGroupSeparator = GetLocaleInfoCore(LocaleStringData.ThousandSeparator);
-                nfi._currencyGroupSeparator = GetLocaleInfoCore(LocaleStringData.MonetaryThousandSeparator);
-                nfi._currencyDecimalSeparator = GetLocaleInfoCore(LocaleStringData.MonetaryDecimalSeparator);
-                nfi._currencySymbol = GetLocaleInfoCore(LocaleStringData.MonetarySymbol);
+                nfi._numberDecimalSeparator = GetLocaleInfoCoreUserOverride(LocaleStringData.DecimalSeparator);
+                nfi._numberGroupSeparator = GetLocaleInfoCoreUserOverride(LocaleStringData.ThousandSeparator);
+                nfi._currencyGroupSeparator = GetLocaleInfoCoreUserOverride(LocaleStringData.MonetaryThousandSeparator);
+                nfi._currencyDecimalSeparator = GetLocaleInfoCoreUserOverride(LocaleStringData.MonetaryDecimalSeparator);
+                nfi._currencySymbol = GetLocaleInfoCoreUserOverride(LocaleStringData.MonetarySymbol);
 
                 // Numeric values
-                nfi._numberDecimalDigits = GetLocaleInfoCore(LocaleNumberData.FractionalDigitsCount);
-                nfi._currencyDecimalDigits = GetLocaleInfoCore(LocaleNumberData.MonetaryFractionalDigitsCount);
-                nfi._currencyPositivePattern = GetLocaleInfoCore(LocaleNumberData.PositiveMonetaryNumberFormat);
-                nfi._currencyNegativePattern = GetLocaleInfoCore(LocaleNumberData.NegativeMonetaryNumberFormat);
-                nfi._numberNegativePattern = GetLocaleInfoCore(LocaleNumberData.NegativeNumberFormat);
+                nfi._numberDecimalDigits = GetLocaleInfoCoreUserOverride(LocaleNumberData.FractionalDigitsCount);
+                nfi._currencyDecimalDigits = GetLocaleInfoCoreUserOverride(LocaleNumberData.MonetaryFractionalDigitsCount);
+                nfi._currencyPositivePattern = GetLocaleInfoCoreUserOverride(LocaleNumberData.PositiveMonetaryNumberFormat);
+                nfi._currencyNegativePattern = GetLocaleInfoCoreUserOverride(LocaleNumberData.NegativeMonetaryNumberFormat);
+                nfi._numberNegativePattern = GetLocaleInfoCoreUserOverride(LocaleNumberData.NegativeNumberFormat);
 
                 // LOCALE_SNATIVEDIGITS (array of 10 single character strings).
-                string digits = GetLocaleInfoCore(LocaleStringData.Digits);
+                string digits = GetLocaleInfoCoreUserOverride(LocaleStringData.Digits);
                 nfi._nativeDigits = new string[10];
                 for (int i = 0; i < nfi._nativeDigits.Length; i++)
                 {
@@ -2212,7 +2241,7 @@ namespace System.Globalization
                 }
 
                 Debug.Assert(_sRealName != null);
-                nfi._digitSubstitution = GlobalizationMode.UseNls ? NlsGetDigitSubstitution(_sRealName) : IcuGetDigitSubstitution(_sRealName);
+                nfi._digitSubstitution = ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(LocaleNumberData.DigitSubstitution) : IcuGetDigitSubstitution(_sRealName);
             }
 
             // Gather additional data
@@ -2266,6 +2295,24 @@ namespace System.Globalization
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
         }
 
+        private int GetLocaleInfoCoreUserOverride(LocaleNumberData type)
+        {
+            // This is never reached but helps illinker statically remove dependencies
+            if (GlobalizationMode.Invariant)
+                return 0;
+
+            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+        }
+
+        private string GetLocaleInfoCoreUserOverride(LocaleStringData type)
+        {
+            // This is never reached but helps illinker statically remove dependencies
+            if (GlobalizationMode.Invariant)
+                return null!;
+
+            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+        }
+
         private string GetLocaleInfoCore(LocaleStringData type)
         {
             // This is never reached but helps illinker statically remove dependencies
@@ -2284,13 +2331,13 @@ namespace System.Globalization
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type);
         }
 
-        private int[] GetLocaleInfoCore(LocaleGroupingData type)
+        private int[] GetLocaleInfoCoreUserOverride(LocaleGroupingData type)
         {
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
 
-            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
         }
 
         /// <remarks>

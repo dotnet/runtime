@@ -147,8 +147,6 @@ namespace System.Globalization
             return ConvertIcuTimeFormatString(span.Slice(0, span.IndexOf('\0')));
         }
 
-        private int IcuGetFirstDayOfWeek() => IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
-
         private string[] IcuGetTimeFormats()
         {
             string format = IcuGetTimeFormatString(false);

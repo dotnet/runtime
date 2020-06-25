@@ -9,22 +9,30 @@ namespace System.Globalization.Tests
 {
     internal static class DateTimeFormatInfoData
     {
-        public static string EnUSEraName()
+        // When running in Windows and CultureInfo is using user overrides, we honor those
+        // overrides for the default user UI culture instead of using the ones from ICU.
+        private static bool ShouldUseNlsTestData(bool useUserOverrides, string cultureName) =>
+            PlatformDetection.IsNlsGlobalization ||
+            (useUserOverrides &&
+                PlatformDetection.IsWindows &&
+                CultureInfo.InstalledUICulture.Name == cultureName);
+
+        public static string EnUSEraName(bool useUserOverrides)
         {
-            return PlatformDetection.IsNlsGlobalization ? "A.D." : "AD";
+            return ShouldUseNlsTestData(useUserOverrides, "en-US") ? "A.D." : "AD";
         }
 
-        public static string EnUSAbbreviatedEraName()
+        public static string EnUSAbbreviatedEraName(bool useUserOverrides)
         {
-            return PlatformDetection.IsNlsGlobalization ? "AD" : "A";
+            return ShouldUseNlsTestData(useUserOverrides, "en-US") ? "AD" : "A";
         }
 
-        public static string JaJPAbbreviatedEraName()
+        public static string JaJPAbbreviatedEraName(bool useUserOverrides)
         {
             // For Windows<Win7 and others, the default calendar is Gregorian Calendar, AD is expected to be the Era Name
             // CLDR has the Japanese abbreviated era name for the Gregorian Calendar in English - "AD",
             // so for non-Windows machines it will be "AD".
-            return PlatformDetection.IsNlsGlobalization ? "\u897F\u66A6" : "AD";
+            return ShouldUseNlsTestData(useUserOverrides, "ja-JP") ? "\u897F\u66A6" : "AD";
         }
 
         public static string[] FrFRDayNames()

@@ -101,6 +101,9 @@ namespace System.Globalization
         // The culture used in the user interface. This is mostly used to load correct localized resources.
         private static volatile CultureInfo? s_userDefaultUICulture;
 
+        // The name of the user default locale we use to create the default culture.
+        private static volatile string? s_userDefaultLocaleName;
+
         // WARNING: We allow diagnostic tools to directly inspect these three members (s_InvariantCultureInfo, s_DefaultThreadCurrentUICulture and s_DefaultThreadCurrentCulture)
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details.
         // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools.
@@ -750,6 +753,7 @@ namespace System.Globalization
         public void ClearCachedData()
         {
             // reset the default culture values
+            s_userDefaultLocaleName = null; // this is set by GetUserDefaultCulture();
             s_userDefaultCulture = GetUserDefaultCulture();
             s_userDefaultUICulture = GetUserDefaultUICulture();
 
