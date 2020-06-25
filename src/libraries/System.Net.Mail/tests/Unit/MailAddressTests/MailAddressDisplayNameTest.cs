@@ -11,6 +11,7 @@ namespace System.Net.Mail.Tests
         private const string Address = "test@example.com";
         private const string DisplayNameWithUnicode = "DisplayNameWith\u00C9\u00C0\u0106\u0100\u0109\u0105\u00E4Unicode";
         private const string DisplayNameWithNoUnicode = "testDisplayName";
+        private const string DisplayNameWithDoubleQuotes = "test\"Display\"Name";
 
         [Fact]
         public void MailAddress_WithUnicodeDisplayAndMailAddress_ToStringShouldReturnDisplayNameInQuotesAndAddressInAngleBrackets()
@@ -19,6 +20,16 @@ namespace System.Net.Mail.Tests
             Assert.Equal(_mailAddress.DisplayName, DisplayNameWithUnicode);
 
             Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithUnicode, Address), _mailAddress.ToString());
+        }
+
+
+        [Fact]
+        public void MailAddress_WithDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnDisplayNameEscapeSequenceAndAddressInAngleBrackets()
+        {
+            MailAddress _mailAddress = new MailAddress(Address, DisplayNameWithDoubleQuotes);
+            Assert.Equal(_mailAddress.DisplayName, DisplayNameWithDoubleQuotes);
+
+            Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithDoubleQuotes.Replace("\"", "\\\""), Address), _mailAddress.ToString());
         }
 
         [Fact]
