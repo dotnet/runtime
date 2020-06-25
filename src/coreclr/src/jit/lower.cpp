@@ -6454,9 +6454,24 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
+    if (varTypeIsGC(regType))
+    {
+        // TODO: STOREIND does not try to contain src if we need a barrier,
+        // STORE_OBJ generates better code currently.
+        return false;
+    }
+
     GenTree* src = blkNode->Data();
     if (src->OperIsInitVal() && !src->IsConstInitVal())
     {
+        return false;
+    }
+
+    if (varTypeIsSmall(regType) && !src->IsConstInitVal())
+    {
+        // source operand INDIR will use a widening instruction
+        // and generate worse code, like `movzx` instead of `mov`
+        // on x64.
         return false;
     }
 
