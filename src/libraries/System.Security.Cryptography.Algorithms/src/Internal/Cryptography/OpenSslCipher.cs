@@ -17,8 +17,8 @@ namespace Internal.Cryptography
         private readonly bool _encrypting;
         private SafeEvpCipherCtxHandle _ctx;
 
-        public OpenSslCipher(IntPtr algorithm, CipherMode cipherMode, int blockSizeInBytes, byte[] key, int effectiveKeyLength, byte[]? iv, bool encrypting)
-            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
+        public OpenSslCipher(IntPtr algorithm, CipherMode cipherMode, int blockSizeInBytes, int paddingSizeInBytes, byte[] key, int effectiveKeyLength, byte[]? iv, bool encrypting)
+            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
         {
             Debug.Assert(algorithm != IntPtr.Zero);
 
@@ -46,7 +46,7 @@ namespace Internal.Cryptography
             Debug.Assert(input != null);
             Debug.Assert(inputOffset >= 0);
             Debug.Assert(count > 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
+            Debug.Assert((count % PaddingSizeInBytes) == 0);
             Debug.Assert(input.Length - inputOffset >= count);
             Debug.Assert(output != null);
             Debug.Assert(outputOffset >= 0);
@@ -78,7 +78,7 @@ namespace Internal.Cryptography
             Debug.Assert(input != null);
             Debug.Assert(inputOffset >= 0);
             Debug.Assert(count >= 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
+            Debug.Assert((count % PaddingSizeInBytes) == 0);
             Debug.Assert(input.Length - inputOffset >= count);
 
             byte[] output = ProcessFinalBlock(input, inputOffset, count);

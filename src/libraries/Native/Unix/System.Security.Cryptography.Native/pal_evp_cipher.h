@@ -103,6 +103,7 @@ Direct shim to EVP_aes_128_ecb.
 */
 PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes128Ecb(void);
 
+
 /*
 Function:
 EvpAes128Cbc
@@ -110,6 +111,22 @@ EvpAes128Cbc
 Direct shim to EVP_aes_128_cbc.
 */
 PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes128Cbc(void);
+
+/*
+Function:
+EvpAes128Cfb8
+
+Direct shim to EVP_aes_128_cfb8.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes128Cfb8(void);
+
+/*
+Function:
+EvpAes128Cfb128
+
+Direct shim to EVP_aes_128_cfb128.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes128Cfb128(void);
 
 /*
 Function:
@@ -145,6 +162,22 @@ PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes192Cbc(void);
 
 /*
 Function:
+EvpAes192Cfb8
+
+Direct shim to EVP_aes_192_cfb8.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes192Cfb8(void);
+
+/*
+Function:
+EvpAes192Cfb128
+
+Direct shim to EVP_aes_192_cfb128.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes192Cfb128(void);
+
+/*
+Function:
 EvpAes192Gcm
 
 Direct shim to EVP_aes_192_gcm.
@@ -174,6 +207,22 @@ EvpAes256Cbc
 Direct shim to EVP_aes_256_cbc.
 */
 PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes256Cbc(void);
+
+/*
+Function:
+EvpAes256Cfb8
+
+Direct shim to EVP_aes_256_cfb8.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes256Cfb8(void);
+
+/*
+Function:
+EvpAes256Cfb128
+
+Direct shim to EVP_aes_256_cfb128.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes256Cfb128(void);
 
 /*
 Function:
@@ -209,11 +258,35 @@ PALEXPORT const EVP_CIPHER* CryptoNative_EvpDes3Cbc(void);
 
 /*
 Function:
+EvpDes3Cfb8
+
+Direct shim to EVP_des_ede3_cfb8.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpDes3Cfb8(void);
+
+/*
+Function:
+EvpDes3Cfb64
+
+Direct shim to EVP_des_ede3_cfb64.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpDes3Cfb64(void);
+
+/*
+Function:
 EvpDesEcb
 
 Direct shim to EVP_des_ecb.
 */
 PALEXPORT const EVP_CIPHER* CryptoNative_EvpDesEcb(void);
+
+/*
+Function:
+EvpDesCfb8
+
+Direct shim to EVP_des_cfb8.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpDesCfb8(void);
 
 /*
 Function:
