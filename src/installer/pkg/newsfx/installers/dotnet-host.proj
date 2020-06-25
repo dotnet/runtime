@@ -25,6 +25,10 @@
     <CandleVariables Include="ExtraPropertyRefIds" Value="ProductCPU;RTM_ProductVersion" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Manpage Include="$(ManPagesDir)/**/*" />
+  </ItemGroup>
+
   <Target Name="PublishSharedFrameworkToDisk">
     <Error Condition="'$(SharedFrameworkOutputPath)' == ''" Text="Publishing to disk requires the SharedFrameworkOutputPath to be set to the root of the path to write to." />
 
@@ -50,9 +54,9 @@
       <LinuxPackageDependency Include="libc6;libgcc1;libstdc++6" />
     </ItemGroup>
     <ItemGroup>
-      <DebJsonProperty Include="symlinks" Object="{ 'dotnet': '/usr/bin/dotnet' }" />
-      <RpmJsonProperty Include="directories" Object="[ '/usr/share/dotnet', '/usr/share/doc/dotnet-host' ]" />
-      <PackageConflictsProperty Include="package_conflicts" Object="[ 'dotnet', 'dotnet-nightly' ]" />
+      <DebJsonProperty Include="symlinks" Object="{ &quot;dotnet&quot;: &quot;/usr/bin/dotnet&quot; }" />
+      <RpmJsonProperty Include="directories" Object="[ &quot;/usr/share/dotnet&quot;, &quot;/usr/share/doc/dotnet-host&quot; ]" />
+      <PackageConflictsProperty Include="package_conflicts" Object="[ &quot;dotnet&quot;, &quot;dotnet-nightly&quot; ]" />
       <DebJsonProperty Include="@(PackageConflictsProperty)" />
       <RpmJsonProperty Include="@(PackageConflictsProperty)" />
     </ItemGroup>
