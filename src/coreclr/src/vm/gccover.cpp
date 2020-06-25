@@ -625,7 +625,9 @@ void GCCoverageInfo::SprinkleBreakpoints(
         size_t dwRelOffset = (cur - codeStart) + regionOffsetAdj;
         _ASSERTE(FitsIn<DWORD>(dwRelOffset));
         if (codeMan->IsGcSafe(&codeInfo, static_cast<DWORD>(dwRelOffset)))
-        *cur = INTERRUPT_INSTR;
+        {
+            *cur = INTERRUPT_INSTR;
+        }
 
 #ifdef TARGET_X86
         // we will whack every instruction in the prolog and epilog to make certain
@@ -1249,7 +1251,7 @@ void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr)
 // 6)	Now, thread T can modify the stack (ex: RedirectionFrame setup) while the GC thread is scanning it.
 //
 // This race is now mitigated below. Where we won't initiate a stress mode GC
-// for a thread in cooperative mode with an active ICF, if g_TtrapReturningThreads is true.
+// for a thread in cooperative mode with an active ICF, if g_TrapReturningThreads is true.
 
 BOOL OnGcCoverageInterrupt(PCONTEXT regs)
 {
