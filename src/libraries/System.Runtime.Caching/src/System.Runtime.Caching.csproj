@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.Caching</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>netstandard2.0;netstandard2.0-Windows_NT;_$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.0-Windows_NT;netstandard2.0-Browser;_$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\Caching\_shims.cs" />
@@ -22,9 +22,9 @@
     <Compile Include="System\Runtime\Caching\Dbg.cs" />
     <Compile Include="System\Runtime\Caching\DefaultCacheCapabilities.cs" />
     <Compile Include="System\Runtime\Caching\EntryState.cs" />
-    <Compile Condition="'$(TargetsBrowser)' != 'true'" Include="System\Runtime\Caching\FileChangeMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\FileChangeMonitor.cs" />
     <Compile Include="System\Runtime\Caching\FileChangeNotificationSystem.cs" />
-    <Compile Include="System\Runtime\Caching\HostFileChangeMonitor.cs" />
+    <Compile Condition="'$(TargetsBrowser)' != 'true'" Include="System\Runtime\Caching\HostFileChangeMonitor.cs" />
     <Compile Include="System\Runtime\Caching\MemoryCache.cs" />
     <Compile Include="System\Runtime\Caching\MemoryCacheEntry.cs" />
     <Compile Include="System\Runtime\Caching\MemoryCacheEntryChangeMonitor.cs" />
