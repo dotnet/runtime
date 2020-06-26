@@ -334,26 +334,29 @@ namespace System.Net.WebSockets
             ThrowIfNotConnected();
 
             if (messageType != WebSocketMessageType.Binary &&
-                messageType != WebSocketMessageType.Text)
+                    messageType != WebSocketMessageType.Text)
             {
-                throw new ArgumentException($"Invalid message type: '{messageType}' specified in method 'SendAsync'.  Valid types are 'Binary' and 'Text'",
+                throw new ArgumentException(SR.Format(SR.net_WebSockets_Argument_InvalidMessageType,
+                    messageType,
+                    nameof(SendAsync),
+                    WebSocketMessageType.Binary,
+                    WebSocketMessageType.Text,
+                    nameof(CloseOutputAsync)),
                     nameof(messageType));
             }
 
-            if (!endOfMessage && buffer.Array == null)
-                return;
+            WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
             if (!endOfMessage)
             {
-                if (buffer.Array == null)
-                    return;
                 _writeBuffer = _writeBuffer ?? new MemoryStream();
-                _writeBuffer.Write(buffer.Array, buffer.Offset, buffer.Count);
+                _writeBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
                 return;
             }
-            else if (_writeBuffer != null && buffer.Array != null)
+            else
             {
-                _writeBuffer.Write(buffer.Array, buffer.Offset, buffer.Count);
+                _writeBuffer = _writeBuffer ?? new MemoryStream();
+                _writeBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
                 if (!_writeBuffer.TryGetBuffer(out buffer))
                     throw new WebSocketException(WebSocketError.NativeError);
             }
