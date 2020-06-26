@@ -10,36 +10,36 @@ namespace Mono.Linker
 	{
 		public static string GetDisplayName (this MethodReference method)
 		{
-			var builder = new System.Text.StringBuilder ();
-			builder.Append (method.DeclaringType.FullName);
-			builder.Append ("::");
-			if (method.Name == ".ctor")
-				builder.Append (method.DeclaringType.Name);
-			else
-				builder.Append (method.Name);
+			var sb = new System.Text.StringBuilder ();
 
-			if (method.HasGenericParameters) {
-				builder.Append ('<');
-
-				for (int i = 0; i < method.GenericParameters.Count - 1; i++)
-					builder.Append ($"{method.GenericParameters[i]},");
-
-				builder.Append ($"{method.GenericParameters[method.GenericParameters.Count - 1]}>");
-			}
-
-			builder.Append ("(");
-
+			// Append parameters
+			sb.Append ("(");
 			if (method.HasParameters) {
-				for (int i = 0; i < method.Parameters.Count - 1; i++) {
-					builder.Append ($"{method.Parameters[i].ParameterType},");
-				}
+				for (int i = 0; i < method.Parameters.Count - 1; i++)
+					sb.Append (method.Parameters[i].ParameterType.GetDisplayName ()).Append (',');
 
-				builder.Append (method.Parameters[method.Parameters.Count - 1].ParameterType);
+				sb.Append (method.Parameters[method.Parameters.Count - 1].ParameterType.GetDisplayName ());
 			}
 
-			builder.Append (")");
+			sb.Append (")");
 
-			return builder.ToString ();
+			// Insert generic parameters
+			if (method.HasGenericParameters) {
+				TypeReferenceExtensions.ParseGenericParameters (method.GenericParameters, sb);
+			}
+
+			// Insert method name
+			if (method.Name == ".ctor")
+				sb.Insert (0, method.DeclaringType.Name);
+			else
+				sb.Insert (0, method.Name);
+
+			// Insert declaring type name
+			sb.Insert (0, '.').Insert (0, method.DeclaringType.GetDisplayName ());
+
+			// Insert namespace
+			sb.Insert (0, '.').Insert (0, method.GetNamespaceDisplayName ());
+			return sb.ToString ();
 		}
 
 		public static TypeReference GetReturnType (this MethodReference method)
