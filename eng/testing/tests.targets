@@ -24,15 +24,30 @@
     <RunScriptCommands Include="set DEVPATH=%RUNTIME_PATH%" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <ArchiveTestsAfterTargets>PrepareForRun</ArchiveTestsAfterTargets>
+
+    <!-- For browser we need to hook up the target with DependsOnTargets in PublishTestAsSelfContained
+    because we do a Publish which runs after Build, if we run after PrepareForRun we would generated
+    an empty zip because we haven't published the selfcontained app.  -->
+    <ArchiveTestsAfterTargets Condition="'$(TargetOS)' == 'Browser'" />
+  </PropertyGroup>
+
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
-          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'"
-          AfterTargets="PrepareForRun"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'Browser')"
+          AfterTargets="$(ArchiveTestsAfterTargets)"
           DependsOnTargets="GenerateRunScript">
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
+    <PropertyGroup>
+      <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
+      <_ZipSourceDirectory>$(OutDir)</_ZipSourceDirectory>
+      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser'">$(BundleDir)</_ZipSourceDirectory>
+    </PropertyGroup>
+
     <MakeDir Directories="$(TestArchiveTestsDir)" />
-    <ZipDirectory SourceDirectory="$(OutDir)"
+    <ZipDirectory SourceDirectory="$(_ZipSourceDirectory)"
                   DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
                   Overwrite="true" />
   </Target>

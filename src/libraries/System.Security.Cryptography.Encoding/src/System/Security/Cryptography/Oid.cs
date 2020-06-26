@@ -156,8 +156,8 @@ namespace System.Security.Cryptography
             _hasInitializedFriendlyName = true;
         }
 
-        private string? _value = null;
-        private string? _friendlyName = null;
+        private string? _value;
+        private string? _friendlyName;
         private bool _hasInitializedFriendlyName;
         private readonly OidGroup _group = OidGroup.All;
     }

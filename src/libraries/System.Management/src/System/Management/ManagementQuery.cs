@@ -610,7 +610,7 @@ namespace System.Management
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     public class SelectQuery : WqlObjectQuery
     {
-        private bool isSchemaQuery = false;
+        private bool isSchemaQuery;
         private string className;
         private string condition;
         private StringCollection selectedProperties;

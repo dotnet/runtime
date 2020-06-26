@@ -72,6 +72,6 @@ namespace System.Security.Cryptography.Pkcs
             return PkcsHelpers.EncodeOctetString(octets);
         }
 
-        private volatile string? _lazyDocumentName = null;
+        private volatile string? _lazyDocumentName;
     }
 }

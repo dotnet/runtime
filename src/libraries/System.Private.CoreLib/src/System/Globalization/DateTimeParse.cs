@@ -5160,7 +5160,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 if (s.Length > MaxLineLength || (curLineLength + s.Length + 2) > MaxLineLength)
                 {
                     buffer.Append(',');
-                    buffer.Append(Environment.NewLineConst);
+                    buffer.AppendLine();
                     buffer.Append(' ', NewLinePadding);
                     curLineLength = 0;
                 }
@@ -5177,7 +5177,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             s = Hex(strs[strs.Length - 1]);
             if (s.Length > MaxLineLength || (curLineLength + s.Length + 6) > MaxLineLength)
             {
-                buffer.Append(Environment.NewLineConst);
+                buffer.AppendLine();
                 buffer.Append(' ', NewLinePadding);
             }
             else
@@ -5192,7 +5192,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         private static string Hex(ReadOnlySpan<char> str)
         {
             StringBuilder buffer = new StringBuilder();
-            buffer.Append("\"");
+            buffer.Append('"');
             for (int i = 0; i < str.Length; i++)
             {
                 if (str[i] <= '\x007f')
@@ -5200,7 +5200,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 else
                     buffer.Append("\\u").Append(((int)str[i]).ToString("x4", CultureInfo.InvariantCulture));
             }
-            buffer.Append("\"");
+            buffer.Append('"');
             return buffer.ToString();
         }
         // return an unicode escaped string form of char c
@@ -5218,7 +5218,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         }
 
         // for testing; do not make this readonly
-        private static bool s_tracingEnabled = false;
+        private static bool s_tracingEnabled;
 #endif // _LOGGING
     }
 

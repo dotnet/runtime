@@ -393,7 +393,7 @@ namespace System.Xml.Schema
 
         private const string x_schema = "x-schema:";
 
-        private XmlResolver? _xmlResolver = null;
+        private XmlResolver? _xmlResolver;
 
         internal XdrBuilder(
                            XmlReader reader,

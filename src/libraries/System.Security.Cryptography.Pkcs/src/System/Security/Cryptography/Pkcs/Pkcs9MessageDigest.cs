@@ -57,6 +57,6 @@ namespace System.Security.Cryptography.Pkcs
             return PkcsHelpers.DecodeOctetString(rawData);
         }
 
-        private volatile byte[]? _lazyMessageDigest = null;
+        private volatile byte[]? _lazyMessageDigest;
     }
 }

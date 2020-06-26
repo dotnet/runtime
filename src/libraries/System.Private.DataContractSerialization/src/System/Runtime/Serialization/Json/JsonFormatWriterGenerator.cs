@@ -47,7 +47,7 @@ namespace System.Runtime.Serialization.Json
             // Used for classes
             private ArgBuilder _memberNamesArg;
             private int _typeIndex = 1;
-            private int _childElementIndex = 0;
+            private int _childElementIndex;
 
             internal JsonFormatClassWriterDelegate GenerateClassWriter(ClassDataContract classContract)
             {

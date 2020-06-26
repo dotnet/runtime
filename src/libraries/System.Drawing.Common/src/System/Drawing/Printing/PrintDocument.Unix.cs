@@ -47,7 +47,7 @@ namespace System.Drawing.Printing
         private PrinterSettings printersettings;
         private PrintController printcontroller;
         private string documentname;
-        private bool originAtMargins = false; // .NET V1.1 Beta
+        private bool originAtMargins; // .NET V1.1 Beta
 
         public PrintDocument()
         {

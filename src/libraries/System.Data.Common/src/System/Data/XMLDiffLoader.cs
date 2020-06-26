@@ -12,8 +12,8 @@ namespace System.Data
     internal sealed class XMLDiffLoader
     {
         private ArrayList _tables;
-        private DataSet _dataSet = null;
-        private DataTable _dataTable = null;
+        private DataSet _dataSet;
+        private DataTable _dataTable;
 
         internal void LoadDiffGram(DataSet ds, XmlReader dataTextReader)
         {

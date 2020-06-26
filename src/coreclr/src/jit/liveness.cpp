@@ -342,21 +342,21 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                 fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
                 fgCurMemoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
             }
-        }
 
-            // If this is a p/invoke unmanaged call or if this is a tail-call
+            // If this is a p/invoke unmanaged call or if this is a tail-call via helper,
             // and we have an unmanaged p/invoke call in the method,
             // then we're going to run the p/invoke epilog.
             // So we mark the FrameRoot as used by this instruction.
             // This ensures that the block->bbVarUse will contain
             // the FrameRoot local var if is it a tracked variable.
 
-            if ((tree->AsCall()->IsUnmanaged() || tree->AsCall()->IsTailCall()) && compMethodRequiresPInvokeFrame())
+            if ((tree->AsCall()->IsUnmanaged() || tree->AsCall()->IsTailCallViaJitHelper()) &&
+                compMethodRequiresPInvokeFrame())
             {
                 assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
                 if (!opts.ShouldUsePInvokeHelpers())
                 {
-                    /* Get the TCB local and mark it as used */
+                    // Get the FrameRoot local and mark it as used.
 
                     noway_assert(info.compLvFrameListRoot < lvaCount);
 
@@ -373,6 +373,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             }
 
             break;
+        }
 
         default:
 
@@ -504,7 +505,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
             }
         }
 
-        /* Get the TCB local and mark it as used */
+        // Mark the FrameListRoot as used, if applicable.
 
         if (block->bbJumpKind == BBJ_RETURN && compMethodRequiresPInvokeFrame())
         {
@@ -513,13 +514,22 @@ void Compiler::fgPerBlockLocalVarLiveness()
             {
                 noway_assert(info.compLvFrameListRoot < lvaCount);
 
-                LclVarDsc* varDsc = &lvaTable[info.compLvFrameListRoot];
-
-                if (varDsc->lvTracked)
+                // 32-bit targets always pop the frame in the epilog.
+                // For 64-bit targets, we only do this in the epilog for IL stubs;
+                // for non-IL stubs the frame is popped after every PInvoke call.
+                CLANG_FORMAT_COMMENT_ANCHOR;
+#ifdef TARGET_64BIT
+                if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
+#endif
                 {
-                    if (!VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
+                    LclVarDsc* varDsc = &lvaTable[info.compLvFrameListRoot];
+
+                    if (varDsc->lvTracked)
                     {
-                        VarSetOps::AddElemD(this, fgCurUseSet, varDsc->lvVarIndex);
+                        if (!VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
+                        {
+                            VarSetOps::AddElemD(this, fgCurUseSet, varDsc->lvVarIndex);
+                        }
                     }
                 }
             }
@@ -1437,16 +1447,16 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
 {
     assert(call != nullptr);
 
-    // If this is a tail-call and we have any unmanaged p/invoke calls in
-    // the method then we're going to run the p/invoke epilog
+    // If this is a tail-call via helper, and we have any unmanaged p/invoke calls in
+    // the method, then we're going to run the p/invoke epilog
     // So we mark the FrameRoot as used by this instruction.
     // This ensure that this variable is kept alive at the tail-call
-    if (call->IsTailCall() && compMethodRequiresPInvokeFrame())
+    if (call->IsTailCallViaJitHelper() && compMethodRequiresPInvokeFrame())
     {
         assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
-            /* Get the TCB local and make it live */
+            // Get the FrameListRoot local and make it live.
 
             noway_assert(info.compLvFrameListRoot < lvaCount);
 
@@ -1465,7 +1475,7 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
     /* Is this call to unmanaged code? */
     if (call->IsUnmanaged() && compMethodRequiresPInvokeFrame())
     {
-        /* Get the TCB local and make it live */
+        // Get the FrameListRoot local and make it live.
         assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {

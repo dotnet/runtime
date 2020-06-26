@@ -24,10 +24,10 @@ namespace System.Xml.Schema
 
         private Hashtable _attPresence;
         private XmlNamespaceManager _nsManager;
-        private bool _bManageNamespaces = false;
+        private bool _bManageNamespaces;
         private Hashtable? _IDs;
         private IdRefNode? _idRefListHead;
-        private Parser? _inlineSchemaParser = null;
+        private Parser? _inlineSchemaParser;
         private XmlSchemaContentProcessing _processContents;
 
         private static readonly XmlSchemaDatatype s_dtCDATA = XmlSchemaDatatype.FromXmlTokenizedType(XmlTokenizedType.CDATA)!;

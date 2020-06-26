@@ -10,7 +10,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class AttributeQuery : BaseAxisQuery
     {
-        private bool _onAttribute = false;
+        private bool _onAttribute;
 
         public AttributeQuery(Query qyParent, string Name, string Prefix, XPathNodeType Type) : base(qyParent, Name, Prefix, Type) { }
         private AttributeQuery(AttributeQuery other) : base(other)
