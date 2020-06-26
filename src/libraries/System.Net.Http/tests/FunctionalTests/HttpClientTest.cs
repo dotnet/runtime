@@ -898,7 +898,7 @@ namespace System.Net.Http.Functional.Tests
                         try
                         {
                             await connection.ReadRequestHeaderAsync();
-                            mres.Wait();
+                            mres.Wait(TimeSpan.FromMinutes(5));
                         }
                         catch { }
                     });
@@ -987,7 +987,7 @@ namespace System.Net.Http.Functional.Tests
                             await connection.SendResponseAsync(headers: new List<HttpHeaderData>() {
                                 new HttpHeaderData("Content-Length", (content.Length * 2).ToString())
                             });
-                            mres.Wait();
+                            mres.Wait(TimeSpan.FromMinutes(5));
                             await connection.Writer.WriteLineAsync(content);
                         }
                         catch { }
