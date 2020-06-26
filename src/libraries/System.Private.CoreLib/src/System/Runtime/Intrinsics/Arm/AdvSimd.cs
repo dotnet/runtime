@@ -7109,6 +7109,27 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> Insert(Vector128<ulong> vector, byte index, ulong data) => Insert(vector, index, data);
 
         /// <summary>
+        /// float64x2_t vcopyq_lane_f64 (float64x2_t a, const int lane1, float64x1_t b, const int lane2)
+        ///   A32: VMOV.F64 Dd, Dm
+        ///   A64: INS Vd.D[lane1], Vn.D[0]
+        /// </summary>
+        public static Vector128<double> InsertScalar(Vector128<double> result, byte resultIndex, Vector64<double> value) => InsertScalar(result, resultIndex, value);
+
+        /// <summary>
+        /// int64x2_t vcopyq_lane_s64 (int64x2_t a, const int lane1, int64x1_t b, const int lane2)
+        ///   A32: VMOV Dd, Dm
+        ///   A64: INS Vd.D[lane1], Vn.D[0]
+        /// </summary>
+        public static Vector128<long> InsertScalar(Vector128<long> result, byte resultIndex, Vector64<long> value) => InsertScalar(result, resultIndex, value);
+
+        /// <summary>
+        /// uint64x2_t vcopyq_lane_u64 (uint64x2_t a, const int lane1, uint64x1_t b, const int lane2)
+        ///   A32: VMOV Dd, Dm
+        ///   A64: INS Vd.D[lane1], Vn.D[0]
+        /// </summary>
+        public static Vector128<ulong> InsertScalar(Vector128<ulong> result, byte resultIndex, Vector64<ulong> value) => InsertScalar(result, resultIndex, value);
+
+        /// <summary>
         /// int16x4_t vcls_s16 (int16x4_t a)
         ///   A32: VCLS.S16 Dd, Dm
         ///   A64: CLS Vd.4H, Vn.4H
