@@ -25,7 +25,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+  <ItemGroup>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
