@@ -17,6 +17,7 @@ namespace Internal.Cryptography
     {
         // SymmetricAlgorithm members used by the core.
         int BlockSize { get; }
+        int FeedbackSize { get; }
         CipherMode Mode { get; }
         PaddingMode Padding { get; }
         byte[] IV { get; set; }
