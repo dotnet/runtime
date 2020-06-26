@@ -254,13 +254,22 @@ namespace System.Text.Json.Serialization
 
         public static bool IsNonGenericStackOrQueue(this Type type)
         {
-            Type? stackType = GetTypeIfExists("System.Collections.Stack, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
+#if BUILDING_INBOX_LIBRARY
+            // Optimize for linking scenarios where mscorlib is trimmed out.
+            const string stackTypeName = "System.Collections.Stack, System.Collections.NonGeneric";
+            const string queueTypeName = "System.Collections.Queue, System.Collections.NonGeneric";
+#else
+            const string stackTypeName = "System.Collections.Stack, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+            const string queueTypeName = "System.Collections.Queue, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+#endif
+
+            Type? stackType = GetTypeIfExists(stackTypeName);
             if (stackType?.IsAssignableFrom(type) == true)
             {
                 return true;
             }
 
-            Type? queueType = GetTypeIfExists("System.Collections.Queue, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
+            Type? queueType = GetTypeIfExists(queueTypeName);
             if (queueType?.IsAssignableFrom(type) == true)
             {
                 return true;
