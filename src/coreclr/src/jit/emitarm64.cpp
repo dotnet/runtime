@@ -14939,12 +14939,30 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
             return true;
         }
 
-        if (((size == EA_8BYTE) || (size == EA_16BYTE)) && // Only optimize instructions that don't clear upper bits.
-            (prevDst == src) && (prevSrc == dst))          // Only optimize if this is an opposite mov.
+        if ((prevDst == src) && (prevSrc == dst))
         {
-            JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst to src "
-                    "register.\n");
-            return true;
+            // For mov with EA_8BYTE, ensure src/dst are both scalar or both vector.
+            if (size == EA_8BYTE)
+            {
+                if (isVectorRegister(src) == isVectorRegister(dst))
+                {
+                    JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst "
+                            "to src register.\n");
+                    return true;
+                }
+            }
+
+            // For mov with EA_16BYTE, both src/dst will be vector.
+            else if (size == EA_16BYTE)
+            {
+                assert(isVectorRegister(src) && isVectorRegister(dst));
+
+                JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst to "
+                        "src register.\n");
+                return true;
+            }
+
+            // For mov of other sizes, don't optimize because it has side-effect of clearing the upper bits.
         }
     }
 
