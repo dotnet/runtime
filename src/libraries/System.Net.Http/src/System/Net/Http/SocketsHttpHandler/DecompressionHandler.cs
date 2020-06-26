@@ -152,9 +152,15 @@ namespace System.Net.Http
 
                 _contentConsumed = true;
 
-                Stream originalStream = async ?
-                    _originalContent.TryReadAsStream() ?? await _originalContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false) :
-                    _originalContent.ReadAsStream();
+                Stream originalStream;
+                if (async)
+                {
+                    originalStream = _originalContent.TryReadAsStream() ?? await _originalContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    originalStream = _originalContent.ReadAsStream();
+                }
                 return GetDecompressedStream(originalStream);
             }
 
