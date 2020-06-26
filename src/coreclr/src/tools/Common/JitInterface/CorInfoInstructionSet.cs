@@ -49,15 +49,16 @@ namespace Internal.JitInterface
         X64_POPCNT=16,
         X64_Vector128=17,
         X64_Vector256=18,
-        X64_X86Base_X64=19,
-        X64_BMI1_X64=20,
-        X64_BMI2_X64=21,
-        X64_LZCNT_X64=22,
-        X64_POPCNT_X64=23,
-        X64_SSE_X64=24,
-        X64_SSE2_X64=25,
-        X64_SSE41_X64=26,
-        X64_SSE42_X64=27,
+        X64_AVX512F=19,
+        X64_X86Base_X64=20,
+        X64_BMI1_X64=21,
+        X64_BMI2_X64=22,
+        X64_LZCNT_X64=23,
+        X64_POPCNT_X64=24,
+        X64_SSE_X64=25,
+        X64_SSE2_X64=26,
+        X64_SSE41_X64=27,
+        X64_SSE42_X64=28,
         X86_X86Base=1,
         X86_SSE=2,
         X86_SSE2=3,
@@ -76,15 +77,16 @@ namespace Internal.JitInterface
         X86_POPCNT=16,
         X86_Vector128=17,
         X86_Vector256=18,
-        X86_X86Base_X64=19,
-        X86_BMI1_X64=20,
-        X86_BMI2_X64=21,
-        X86_LZCNT_X64=22,
-        X86_POPCNT_X64=23,
-        X86_SSE_X64=24,
-        X86_SSE2_X64=25,
-        X86_SSE41_X64=26,
-        X86_SSE42_X64=27,
+        X86_AVX512F=19,
+        X86_X86Base_X64=20,
+        X86_BMI1_X64=21,
+        X86_BMI2_X64=22,
+        X86_LZCNT_X64=23,
+        X86_POPCNT_X64=24,
+        X86_SSE_X64=25,
+        X86_SSE2_X64=26,
+        X86_SSE41_X64=27,
+        X86_SSE42_X64=28,
 
     }
 
@@ -256,6 +258,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_SSE42);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_Vector256))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512F))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
                     break;
 
                 case TargetArchitecture.X86:
@@ -289,6 +293,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X86_SSE42);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_Vector256))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512F))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
                     break;
 
                 }
@@ -379,6 +385,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_POPCNT);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
                         resultflags.AddInstructionSet(InstructionSet.X64_Vector256);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512F);
                     break;
 
                 case TargetArchitecture.X86:
@@ -412,6 +420,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X86_POPCNT);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
                         resultflags.AddInstructionSet(InstructionSet.X86_Vector256);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512F);
                     break;
 
                 }
@@ -471,6 +481,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("popcnt", "Popcnt", InstructionSet.X64_POPCNT, true);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X64_Vector128, false);
                     yield return new InstructionSetInfo("Vector256", "", InstructionSet.X64_Vector256, false);
+                    yield return new InstructionSetInfo("avx512f", "", InstructionSet.X64_AVX512F, true);
                     break;
 
                 case TargetArchitecture.X86:
@@ -492,6 +503,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("popcnt", "Popcnt", InstructionSet.X86_POPCNT, true);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X86_Vector128, false);
                     yield return new InstructionSetInfo("Vector256", "", InstructionSet.X86_Vector256, false);
+                    yield return new InstructionSetInfo("avx512f", "", InstructionSet.X86_AVX512F, true);
                     break;
 
             }
