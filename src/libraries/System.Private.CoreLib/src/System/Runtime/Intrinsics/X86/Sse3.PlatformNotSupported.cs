@@ -18,6 +18,13 @@ namespace System.Runtime.Intrinsics.X86
 
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
+        public abstract class X64 : Sse2.X64
+        {
+            internal X64() { }
+
+            public static bool IsSupported { [Intrinsic] get { return false; } }
+        }
+
         /// <summary>
         /// __m128 _mm_addsub_ps (__m128 a, __m128 b)
         ///   ADDSUBPS xmm, xmm/m128

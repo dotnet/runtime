@@ -18,6 +18,13 @@ namespace System.Runtime.Intrinsics.X86
 
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
+        public abstract class X64 : Sse42.X64
+        {
+            internal X64() { }
+
+            public static bool IsSupported { [Intrinsic] get { return false; } }
+        }
+
         /// <summary>
         /// __m256 _mm256_add_ps (__m256 a, __m256 b)
         ///   VADDPS ymm, ymm, ymm/m256
