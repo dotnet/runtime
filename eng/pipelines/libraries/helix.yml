@@ -1,12 +1,10 @@
 parameters:
   runtimeFlavor: ''
-  archGroup: ''
-  configuration: ''
+  archType: ''
+  buildConfig: ''
   creator: ''
-  framework: ''
   helixQueues: ''
-  msbuildScript: ''
-  targetOS: ''
+  osGroup: ''
   testRunNamePrefixSuffix: ''
   testScope: 'innerloop' # innerloop | outerloop | all
   interpreter: ''
@@ -15,12 +13,12 @@ parameters:
   scenarios: ''
 
 steps:
-  - script: ${{ parameters.msbuildScript }}
+  - script: $(_msbuildCommand)
             $(Build.SourcesDirectory)/src/libraries/sendtohelix.proj
             /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
-            /p:TargetArchitecture=${{ parameters.archGroup }}
-            /p:Configuration=${{ parameters.configuration }}
-            /p:TargetOS=${{ parameters.targetOS }}
+            /p:TargetArchitecture=${{ parameters.archType }}
+            /p:Configuration=${{ parameters.buildConfig }}
+            /p:TargetOS=${{ parameters.osGroup }}
             /p:MonoEnableInterpreter=${{ parameters.interpreter }}
             /p:TestScope=${{ parameters.testScope }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
@@ -32,5 +30,5 @@ steps:
     condition: and(succeeded(), ${{ parameters.condition }})
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
-      HelixTargetQueues: ${{ parameters.helixQueues }} # Pass queues to MSBuild as env var to avoid need of escaping them
+      HelixTargetQueues: ${{ join('+', parameters.helixQueues) }} # Pass queues to MSBuild as env var to avoid need of escaping them
       _Scenarios: ${{ join(',', parameters.scenarios) }} # Pass scenarios to MSBuild as env var to avoid need of escaping comma separated list

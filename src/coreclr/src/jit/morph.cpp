@@ -13159,12 +13159,18 @@ DONE_MORPHING_CHILDREN:
                 {
                     if (op2->AsDblCon()->gtDconVal == 2.0)
                     {
-                        // Fold "x*2.0" to "x+x"
-                        op2  = op1->OperIsLeaf() ? gtCloneExpr(op1) : fgMakeMultiUse(&tree->AsOp()->gtOp1);
-                        op1  = tree->AsOp()->gtOp1;
-                        oper = GT_ADD;
-                        tree = gtNewOperNode(oper, tree->TypeGet(), op1, op2);
-                        INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                        bool needsComma = !op1->OperIsLeaf() && !op1->IsLocal();
+                        // if op1 is not a leaf/local we have to introduce a temp via GT_COMMA.
+                        // Unfortunately, it's not optHoistLoopCode-friendly yet so let's do it later.
+                        if (!needsComma || (fgOrder == FGOrderLinear))
+                        {
+                            // Fold "x*2.0" to "x+x"
+                            op2  = fgMakeMultiUse(&tree->AsOp()->gtOp1);
+                            op1  = tree->AsOp()->gtOp1;
+                            oper = GT_ADD;
+                            tree = gtNewOperNode(oper, tree->TypeGet(), op1, op2);
+                            INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                        }
                     }
                     else if (op2->AsDblCon()->gtDconVal == 1.0)
                     {

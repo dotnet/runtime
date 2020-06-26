@@ -22,5 +22,5 @@ namespace Microsoft.Extensions.Internal
 #else
     internal
 #endif
-    delegate object ObjectFactory(IServiceProvider serviceProvider, object[] arguments);
+    delegate object ObjectFactory(IServiceProvider serviceProvider, object?[]? arguments);
 }
