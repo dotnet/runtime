@@ -2056,7 +2056,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return saturated;
         }
 
-        private static bool SignedSatQ(short val, out byte result)
+        private static bool UnsignedSatQ(short val, out byte result)
         {
             bool saturated = false;
 
@@ -2075,16 +2075,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = (byte)val;
             }
 
-            return saturated;
-        }
-
-        private static bool UnsignedSatQ(short val, out sbyte result)
-        {
-            byte res;
-
-            bool saturated = UnsignedSatQ((ushort)val, out res);
-
-            result = (sbyte)res;
             return saturated;
         }
 
@@ -2110,11 +2100,31 @@ namespace JIT.HardwareIntrinsics.Arm
             return saturated;
         }
 
+        private static bool SatQ(short val, out sbyte result, bool reinterpretAsUnsigned = false)
+        {
+            bool saturated;
+
+            if (reinterpretAsUnsigned)
+            {
+                byte res;
+                saturated = UnsignedSatQ((ushort)val, out res);
+                result = (sbyte)res;
+            }
+            else
+            {
+                saturated = SignedSatQ(val, out result);
+            }
+
+            return saturated;
+        }
+
+        private static bool SatQ(ushort val, out byte result) => UnsignedSatQ(val, out result);
+
         public static sbyte ExtractNarrowingSaturate(short op1)
         {
             sbyte result;
 
-            SignedSatQ(op1, out result);
+            SatQ(op1, out result);
 
             return result;
         }
@@ -2125,7 +2135,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             byte result;
 
-            UnsignedSatQ(op1, out result);
+            SatQ(op1, out result);
 
             return result;
         }
@@ -2136,7 +2146,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             byte result;
 
-            SignedSatQ(op1, out result);
+            UnsignedSatQ(op1, out result);
 
             return result;
         }
@@ -2155,7 +2165,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             sbyte result;
 
-            SignedSatQ(SignedShift(op1, (short)(-op2), rounding: true), out result);
+            SatQ(SignedShift(op1, (short)(-op2), rounding: true), out result);
 
             return result;
         }
@@ -2164,7 +2174,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             byte result;
 
-            SignedSatQ(SignedShift(op1, (short)(-op2), rounding: true), out result);
+            UnsignedSatQ(SignedShift(op1, (short)(-op2), rounding: true), out result);
 
             return result;
         }
@@ -2177,7 +2187,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             sbyte result;
 
-            SignedSatQ(SignedShift(op1, (short)(-op2)), out result);
+            SatQ(SignedShift(op1, (short)(-op2)), out result);
 
             return result;
         }
@@ -2186,7 +2196,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             byte result;
 
-            SignedSatQ(SignedShift(op1, (short)(-op2)), out result);
+            UnsignedSatQ(SignedShift(op1, (short)(-op2)), out result);
 
             return result;
         }
@@ -2211,7 +2221,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             sbyte result;
 
-            UnsignedSatQ(UnsignedShift(op1, (short)(-op2), rounding: true), out result);
+            SatQ(UnsignedShift(op1, (short)(-op2), rounding: true), out result, reinterpretAsUnsigned: true);
 
             return result;
         }
@@ -2220,7 +2230,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             byte result;
 
-            UnsignedSatQ(UnsignedShift(op1, (short)(-op2), rounding: true), out result);
+            SatQ(UnsignedShift(op1, (short)(-op2), rounding: true), out result);
 
             return result;
         }
@@ -2237,7 +2247,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             sbyte result;
 
-            UnsignedSatQ(UnsignedShift(op1, (short)(-op2)), out result);
+            SatQ(UnsignedShift(op1, (short)(-op2)), out result, reinterpretAsUnsigned: true);
 
             return result;
         }
@@ -2246,7 +2256,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             byte result;
 
-            UnsignedSatQ(UnsignedShift(op1, (short)(-op2)), out result);
+            SatQ(UnsignedShift(op1, (short)(-op2)), out result);
 
             return result;
         }
@@ -2281,7 +2291,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return saturated;
         }
 
-        private static bool SignedSatQ(int val, out ushort result)
+        private static bool UnsignedSatQ(int val, out ushort result)
         {
             bool saturated = false;
 
@@ -2300,16 +2310,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = (ushort)val;
             }
 
-            return saturated;
-        }
-
-        private static bool UnsignedSatQ(int val, out short result)
-        {
-            ushort res;
-
-            bool saturated = UnsignedSatQ((uint)val, out res);
-
-            result = (short)res;
             return saturated;
         }
 
@@ -2335,11 +2335,31 @@ namespace JIT.HardwareIntrinsics.Arm
             return saturated;
         }
 
+        private static bool SatQ(int val, out short result, bool reinterpretAsUnsigned = false)
+        {
+            bool saturated;
+
+            if (reinterpretAsUnsigned)
+            {
+                ushort res;
+                saturated = UnsignedSatQ((uint)val, out res);
+                result = (short)res;
+            }
+            else
+            {
+                saturated = SignedSatQ(val, out result);
+            }
+
+            return saturated;
+        }
+
+        private static bool SatQ(uint val, out ushort result) => UnsignedSatQ(val, out result);
+
         public static short ExtractNarrowingSaturate(int op1)
         {
             short result;
 
-            SignedSatQ(op1, out result);
+            SatQ(op1, out result);
 
             return result;
         }
@@ -2350,7 +2370,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             ushort result;
 
-            UnsignedSatQ(op1, out result);
+            SatQ(op1, out result);
 
             return result;
         }
@@ -2361,7 +2381,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             ushort result;
 
-            SignedSatQ(op1, out result);
+            UnsignedSatQ(op1, out result);
 
             return result;
         }
@@ -2380,7 +2400,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             short result;
 
-            SignedSatQ(SignedShift(op1, (int)(-op2), rounding: true), out result);
+            SatQ(SignedShift(op1, (int)(-op2), rounding: true), out result);
 
             return result;
         }
@@ -2389,7 +2409,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             ushort result;
 
-            SignedSatQ(SignedShift(op1, (int)(-op2), rounding: true), out result);
+            UnsignedSatQ(SignedShift(op1, (int)(-op2), rounding: true), out result);
 
             return result;
         }
@@ -2402,7 +2422,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             short result;
 
-            SignedSatQ(SignedShift(op1, (int)(-op2)), out result);
+            SatQ(SignedShift(op1, (int)(-op2)), out result);
 
             return result;
         }
@@ -2411,7 +2431,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             ushort result;
 
-            SignedSatQ(SignedShift(op1, (int)(-op2)), out result);
+            UnsignedSatQ(SignedShift(op1, (int)(-op2)), out result);
 
             return result;
         }
@@ -2436,7 +2456,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             short result;
 
-            UnsignedSatQ(UnsignedShift(op1, (int)(-op2), rounding: true), out result);
+            SatQ(UnsignedShift(op1, (int)(-op2), rounding: true), out result, reinterpretAsUnsigned: true);
 
             return result;
         }
@@ -2445,7 +2465,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             ushort result;
 
-            UnsignedSatQ(UnsignedShift(op1, (int)(-op2), rounding: true), out result);
+            SatQ(UnsignedShift(op1, (int)(-op2), rounding: true), out result);
 
             return result;
         }
@@ -2462,7 +2482,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             short result;
 
-            UnsignedSatQ(UnsignedShift(op1, (int)(-op2)), out result);
+            SatQ(UnsignedShift(op1, (int)(-op2)), out result, reinterpretAsUnsigned: true);
 
             return result;
         }
@@ -2471,7 +2491,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             ushort result;
 
-            UnsignedSatQ(UnsignedShift(op1, (int)(-op2)), out result);
+            SatQ(UnsignedShift(op1, (int)(-op2)), out result);
 
             return result;
         }
@@ -2506,7 +2526,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return saturated;
         }
 
-        private static bool SignedSatQ(long val, out uint result)
+        private static bool UnsignedSatQ(long val, out uint result)
         {
             bool saturated = false;
 
@@ -2525,16 +2545,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = (uint)val;
             }
 
-            return saturated;
-        }
-
-        private static bool UnsignedSatQ(long val, out int result)
-        {
-            uint res;
-
-            bool saturated = UnsignedSatQ((ulong)val, out res);
-
-            result = (int)res;
             return saturated;
         }
 
@@ -2560,11 +2570,31 @@ namespace JIT.HardwareIntrinsics.Arm
             return saturated;
         }
 
+        private static bool SatQ(long val, out int result, bool reinterpretAsUnsigned = false)
+        {
+            bool saturated;
+
+            if (reinterpretAsUnsigned)
+            {
+                uint res;
+                saturated = UnsignedSatQ((ulong)val, out res);
+                result = (int)res;
+            }
+            else
+            {
+                saturated = SignedSatQ(val, out result);
+            }
+
+            return saturated;
+        }
+
+        private static bool SatQ(ulong val, out uint result) => UnsignedSatQ(val, out result);
+
         public static int ExtractNarrowingSaturate(long op1)
         {
             int result;
 
-            SignedSatQ(op1, out result);
+            SatQ(op1, out result);
 
             return result;
         }
@@ -2575,7 +2605,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             uint result;
 
-            UnsignedSatQ(op1, out result);
+            SatQ(op1, out result);
 
             return result;
         }
@@ -2586,7 +2616,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             uint result;
 
-            SignedSatQ(op1, out result);
+            UnsignedSatQ(op1, out result);
 
             return result;
         }
@@ -2605,7 +2635,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             int result;
 
-            SignedSatQ(SignedShift(op1, (long)(-op2), rounding: true), out result);
+            SatQ(SignedShift(op1, (long)(-op2), rounding: true), out result);
 
             return result;
         }
@@ -2614,7 +2644,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             uint result;
 
-            SignedSatQ(SignedShift(op1, (long)(-op2), rounding: true), out result);
+            UnsignedSatQ(SignedShift(op1, (long)(-op2), rounding: true), out result);
 
             return result;
         }
@@ -2627,7 +2657,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             int result;
 
-            SignedSatQ(SignedShift(op1, (long)(-op2)), out result);
+            SatQ(SignedShift(op1, (long)(-op2)), out result);
 
             return result;
         }
@@ -2636,7 +2666,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             uint result;
 
-            SignedSatQ(SignedShift(op1, (long)(-op2)), out result);
+            UnsignedSatQ(SignedShift(op1, (long)(-op2)), out result);
 
             return result;
         }
@@ -2661,7 +2691,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             int result;
 
-            UnsignedSatQ(UnsignedShift(op1, (long)(-op2), rounding: true), out result);
+            SatQ(UnsignedShift(op1, (long)(-op2), rounding: true), out result, reinterpretAsUnsigned: true);
 
             return result;
         }
@@ -2670,7 +2700,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             uint result;
 
-            UnsignedSatQ(UnsignedShift(op1, (long)(-op2), rounding: true), out result);
+            SatQ(UnsignedShift(op1, (long)(-op2), rounding: true), out result);
 
             return result;
         }
@@ -2687,7 +2717,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             int result;
 
-            UnsignedSatQ(UnsignedShift(op1, (long)(-op2)), out result);
+            SatQ(UnsignedShift(op1, (long)(-op2)), out result, reinterpretAsUnsigned: true);
 
             return result;
         }
@@ -2696,7 +2726,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             uint result;
 
-            UnsignedSatQ(UnsignedShift(op1, (long)(-op2)), out result);
+            SatQ(UnsignedShift(op1, (long)(-op2)), out result);
 
             return result;
         }
