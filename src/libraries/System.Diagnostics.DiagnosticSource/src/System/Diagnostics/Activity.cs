@@ -789,6 +789,9 @@ namespace System.Diagnostics
                    ('0' <= id[1] && id[1] <= '9' || 'a' <= id[1] && id[1] <= 'e');
         }
 
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+        [System.Security.SecuritySafeCriticalAttribute]
+#endif
         internal static bool TryConvertIdToContext(string id, out ActivityContext context)
         {
             context = default;

@@ -386,6 +386,9 @@ namespace System.Diagnostics.Tests
         {
             RemoteExecutor.Invoke(() => {
 
+                const string w3cId = "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01";
+                const string hierarchicalId = "SomeId";
+
                 int callingByContext = 0;
                 int callingByParentId = 0;
 
@@ -398,6 +401,10 @@ namespace System.Diagnostics.Tests
                 listener1.GetRequestedDataUsingContext = listener3.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
                 {
                     callingByContext++;
+
+                    Assert.Equal(new ActivityContext(ActivityTraceId.CreateFromString(w3cId.AsSpan(3,  32)), ActivitySpanId.CreateFromString(w3cId.AsSpan(36, 16)), ActivityTraceFlags.Recorded),
+                                 activityOptions.Parent);
+
                     return ActivityDataRequest.AllData;
                 };
                 listener2.GetRequestedDataUsingParentId = listener3.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) =>
@@ -410,8 +417,6 @@ namespace System.Diagnostics.Tests
                 ActivitySource.AddActivityListener(listener2);
                 ActivitySource.AddActivityListener(listener3);
 
-                const string w3cId = "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-00";
-                const string hierarchicalId = "SomeId";
 
                 // Create Activity using hierarchical Id, should trigger calling listener 2 and listener 3 only.
                 using Activity a = aSource.StartActivity("a", ActivityKind.Client, hierarchicalId);
