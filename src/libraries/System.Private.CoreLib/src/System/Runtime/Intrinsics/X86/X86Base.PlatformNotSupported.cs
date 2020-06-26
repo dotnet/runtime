@@ -18,7 +18,7 @@ namespace System.Runtime.Intrinsics.X86
 
         internal abstract class X64
         {
-            internal Arm64() { }
+            internal X64() { }
 
             public static bool IsSupported { [Intrinsic] get => false; }
 
