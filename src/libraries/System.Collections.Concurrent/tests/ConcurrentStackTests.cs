@@ -64,7 +64,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(s.IsEmpty);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(8, 10)]
         [InlineData(16, 100)]
         [InlineData(128, 100)]
@@ -98,7 +98,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(8, 10)]
         [InlineData(16, 100)]
         [InlineData(128, 100)]

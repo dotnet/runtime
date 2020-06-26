@@ -9,7 +9,11 @@
 #include <cstring>
 #include <string>
 
-#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+#ifdef _WIN32
+#define WCHAR(str) L##str
+#define CAST_CHAR(ch) ch
+
+#else // defined(_WIN32)
 
 // Definitely won't work for non-ascii characters so hopefully we never start using
 // them in the tests
@@ -56,10 +60,7 @@ inline int wcscmp(const char16_t *lhs, const char16_t *rhs)
     return lhs[i] - rhs[i];
 }
 
-#else // defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
-#define WCHAR(str) L##str
-#define CAST_CHAR(ch) ch
-#endif // defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+#endif // defined(__WIN32)
 
 // 16 bit string type that works cross plat and doesn't require changing widths
 // on non-windows platforms

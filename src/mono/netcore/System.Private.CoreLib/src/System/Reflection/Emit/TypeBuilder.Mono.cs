@@ -47,7 +47,10 @@ namespace System.Reflection.Emit
         #region Sync with reflection.h
         private string tname; // name in internal form
         private string nspace; // namespace in internal form
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? parent;
+
         private Type? nesting_type;
         internal Type[]? interfaces;
         internal int num_methods;
@@ -67,7 +70,10 @@ namespace System.Reflection.Emit
         private IntPtr generic_container;
         private GenericTypeParameterBuilder[]? generic_params;
         private object? permissions;
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? created;
+
         private int state;
         #endregion
 #pragma warning restore 169
@@ -95,7 +101,7 @@ namespace System.Reflection.Emit
             pmodule = mb;
         }
 
-        internal TypeBuilder(ModuleBuilder mb, string fullname, TypeAttributes attr, Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
+        internal TypeBuilder(ModuleBuilder mb, string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
         {
             int sep_index;
             this.parent = ResolveUserType(parent);
@@ -256,7 +262,7 @@ namespace System.Reflection.Emit
         }
 
         [ComVisible(true)]
-        public void AddInterfaceImplementation(Type interfaceType)
+        public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
         {
             if (interfaceType == null)
                 throw new ArgumentNullException(nameof(interfaceType));
@@ -283,6 +289,7 @@ namespace System.Reflection.Emit
             }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
                                        CallingConventions callConvention, Type[] types,
                                        ParameterModifier[]? modifiers)
@@ -376,12 +383,12 @@ namespace System.Reflection.Emit
             return DefineNestedType(name, attr, typeof(object), null);
         }
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent)
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             return DefineNestedType(name, attr, parent, null);
         }
 
-        private TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent, Type[]? interfaces,
+        private TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces,
                               PackingSize packSize, int typeSize)
         {
             // Visibility must be NestedXXX
@@ -420,22 +427,22 @@ namespace System.Reflection.Emit
         }
 
         [ComVisible(true)]
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent, Type[]? interfaces)
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
         {
             return DefineNestedType(name, attr, parent, interfaces, PackingSize.Unspecified, UnspecifiedTypeSize);
         }
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent, int typeSize)
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, int typeSize)
         {
             return DefineNestedType(name, attr, parent, null, PackingSize.Unspecified, typeSize);
         }
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent, PackingSize packSize)
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize)
         {
             return DefineNestedType(name, attr, parent, null, packSize, UnspecifiedTypeSize);
         }
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent, PackingSize packSize,
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize,
                                          int typeSize)
         {
             return DefineNestedType(name, attr, parent, null, packSize, typeSize);
@@ -472,6 +479,8 @@ namespace System.Reflection.Emit
         }
 
         [ComVisible(true)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
         public ConstructorBuilder DefineDefaultConstructor(MethodAttributes attributes)
         {
             Type parent_type, old_parent_type;
@@ -736,6 +745,7 @@ namespace System.Reflection.Emit
                 null);
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern TypeInfo create_runtime_class();
 
@@ -1024,6 +1034,9 @@ namespace System.Reflection.Emit
         }
 
         /* Needed to keep signature compatibility with MS.NET */
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't recongnize GetEvents(BindingFlags.Public) but this is what the body is doing")]
         public override EventInfo[] GetEvents()
         {
             const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
@@ -1577,7 +1590,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void SetParent(Type? parent)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't recongnize ResolveUserType")]
+        public void SetParent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             check_not_created();
 
@@ -1841,6 +1856,8 @@ namespace System.Reflection.Emit
             return false;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Type.MakeGenericType is used to create a typical instantiation")]
         public static MethodInfo GetMethod(Type type, MethodInfo method)
         {
             if (!IsValidGetMethodType(type))

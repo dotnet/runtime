@@ -2,8 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
+using System.Formats.Asn1;
+using System.Security.Cryptography.X509Certificates.Asn1;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -225,6 +229,107 @@ namespace System.Security.Cryptography.X509Certificates
                 for (int j = 0; j < i; j++)
                 {
                     Add(certificates[j]);
+                }
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Imports a collection of RFC 7468 PEM-encoded certificates.
+        /// </summary>
+        /// <param name="certPemFilePath">The path for the PEM-encoded X509 certificate collection.</param>
+        /// <remarks>
+        /// <para>
+        /// See <see cref="System.IO.File.ReadAllText(string)" /> for additional documentation about
+        /// exceptions that can be thrown.
+        /// </para>
+        /// <para>
+        /// PEM-encoded items with a CERTIFICATE PEM label will be imported. PEM items
+        /// with other labels will be ignored.
+        /// </para>
+        /// <para>
+        /// More advanced scenarios for loading certificates and
+        /// can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
+        /// PEM-encoded values and apply any custom loading behavior.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="CryptographicException">
+        /// The decoded contents of a PEM are invalid or corrupt and could not be imported.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="certPemFilePath" /> is <see langword="null" />.
+        /// </exception>
+        public void ImportFromPemFile(string certPemFilePath)
+        {
+            if (certPemFilePath is null)
+                throw new ArgumentNullException(nameof(certPemFilePath));
+
+            ReadOnlySpan<char> contents = System.IO.File.ReadAllText(certPemFilePath);
+            ImportFromPem(contents);
+        }
+
+        /// <summary>
+        /// Imports a collection of RFC 7468 PEM-encoded certificates.
+        /// </summary>
+        /// <param name="certPem">The text of the PEM-encoded X509 certificate collection.</param>
+        /// <remarks>
+        /// <para>
+        /// PEM-encoded items with a CERTIFICATE PEM label will be imported. PEM items
+        /// with other labels will be ignored.
+        /// </para>
+        /// <para>
+        /// More advanced scenarios for loading certificates and
+        /// can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
+        /// PEM-encoded values and apply any custom loading behavior.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="CryptographicException">
+        /// The decoded contents of a PEM are invalid or corrupt and could not be imported.
+        /// </exception>
+        public void ImportFromPem(ReadOnlySpan<char> certPem)
+        {
+            int added = 0;
+
+            try
+            {
+                foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(certPem))
+                {
+                    ReadOnlySpan<char> label = contents[fields.Label];
+
+                    if (label.SequenceEqual(PemLabels.X509Certificate))
+                    {
+                        // We verify below that every byte is written to.
+                        byte[] certBytes = GC.AllocateUninitializedArray<byte>(fields.DecodedDataLength);
+
+                        if (!Convert.TryFromBase64Chars(contents[fields.Base64Data], certBytes, out int bytesWritten)
+                            || bytesWritten != fields.DecodedDataLength)
+                        {
+                            Debug.Fail("The contents should have already been validated by the PEM reader.");
+                            throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
+                        }
+
+                        try
+                        {
+                            // Check that the contents are actually an X509 DER encoded
+                            // certificate, not something else that the constructor will
+                            // will otherwise be able to figure out.
+                            CertificateAsn.Decode(certBytes, AsnEncodingRules.DER);
+                        }
+                        catch (CryptographicException)
+                        {
+                            throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
+                        }
+
+                        Import(certBytes);
+                        added++;
+                    }
+                }
+            }
+            catch
+            {
+                for (int i = 0; i < added; i++)
+                {
+                    RemoveAt(Count - 1);
                 }
                 throw;
             }

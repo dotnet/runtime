@@ -68,11 +68,12 @@ namespace System.Numerics
         public static Vector<T> Zero
         {
             [Intrinsic]
-            get => s_zero;
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                return default;
+            }
         }
-#pragma warning disable 0649 // never assigned to
-        private static readonly Vector<T> s_zero;
-#pragma warning restore 0649
 
         /// <summary>
         /// Returns a vector containing all ones.
@@ -80,16 +81,22 @@ namespace System.Numerics
         public static Vector<T> One
         {
             [Intrinsic]
-            get => s_one;
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                return new Vector<T>(GetOneValue());
+            }
         }
-        private static readonly Vector<T> s_one = new Vector<T>(GetOneValue());
 
         internal static Vector<T> AllBitsSet
         {
             [Intrinsic]
-            get => s_allBitsSet;
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                return new Vector<T>(GetAllBitsSetValue());
+            }
         }
-        private static readonly Vector<T> s_allBitsSet = new Vector<T>(GetAllBitsSetValue());
         #endregion Static Members
 
         #region Constructors
@@ -100,6 +107,8 @@ namespace System.Numerics
         public unsafe Vector(T value)
             : this()
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if (Vector.IsHardwareAccelerated)
             {
                 if (typeof(T) == typeof(byte))
@@ -317,15 +326,19 @@ namespace System.Numerics
         [Intrinsic]
         public unsafe Vector(T[] values, int index)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if (values == null)
             {
                 // Match the JIT's exception type here. For perf, a NullReference is thrown instead of an ArgumentNull.
                 throw new NullReferenceException(SR.Arg_NullArgumentNullRef);
             }
+
             if (index < 0 || (values.Length - index) < Count)
             {
                 Vector.ThrowInsufficientNumberOfElementsException(Vector<T>.Count);
             }
+
             this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref values[index]));
         }
 
@@ -337,6 +350,7 @@ namespace System.Numerics
 
         private Vector(ref Register existingRegister)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
             this.register = existingRegister;
         }
 
@@ -347,10 +361,12 @@ namespace System.Numerics
         public Vector(ReadOnlySpan<byte> values)
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if (values.Length < Vector<byte>.Count)
             {
                 Vector.ThrowInsufficientNumberOfElementsException(Vector<byte>.Count);
             }
+
             this = Unsafe.ReadUnaligned<Vector<T>>(ref MemoryMarshal.GetReference(values));
         }
 
@@ -360,10 +376,13 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(ReadOnlySpan<T> values)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if (values.Length < Count)
             {
                 Vector.ThrowInsufficientNumberOfElementsException(Vector<T>.Count);
             }
+
             this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
         }
 
@@ -373,10 +392,13 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(Span<T> values)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if (values.Length < Count)
             {
                 Vector.ThrowInsufficientNumberOfElementsException(Vector<T>.Count);
             }
+
             this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
         }
         #endregion Constructors
@@ -390,6 +412,7 @@ namespace System.Numerics
         public readonly void CopyTo(Span<byte> destination)
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if ((uint)destination.Length < (uint)Vector<byte>.Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
@@ -405,6 +428,8 @@ namespace System.Numerics
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination span</exception>
         public readonly void CopyTo(Span<T> destination)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if ((uint)destination.Length < (uint)Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
@@ -420,10 +445,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentNullException">If the destination array is null</exception>
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination array</exception>
         [Intrinsic]
-        public readonly void CopyTo(T[] destination)
-        {
-            CopyTo(destination, 0);
-        }
+        public readonly void CopyTo(T[] destination) => CopyTo(destination, 0);
 
         /// <summary>
         /// Copies the vector to the given destination array. The destination array must be at least size Vector'T.Count.
@@ -436,15 +458,19 @@ namespace System.Numerics
         [Intrinsic]
         public readonly unsafe void CopyTo(T[] destination, int startIndex)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if (destination == null)
             {
                 // Match the JIT's exception type here. For perf, a NullReference is thrown instead of an ArgumentNull.
                 throw new NullReferenceException(SR.Arg_NullArgumentNullRef);
             }
+
             if ((uint)startIndex >= (uint)destination.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Format(SR.Arg_ArgumentOutOfRangeException, startIndex));
             }
+
             if ((destination.Length - startIndex) < Count)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_ElementsInSourceIsGreaterThanDestination, startIndex));
@@ -461,6 +487,8 @@ namespace System.Numerics
             [Intrinsic]
             get
             {
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
                 if ((uint)index >= (uint)Count)
                 {
                     throw new IndexOutOfRangeException(SR.Format(SR.Arg_ArgumentOutOfRangeException, index));
@@ -476,10 +504,7 @@ namespace System.Numerics
         /// <param name="obj">The Object to compare against.</param>
         /// <returns>True if the Object is equal to this vector; False otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override readonly bool Equals(object? obj)
-        {
-            return (obj is Vector<T> other) && Equals(other);
-        }
+        public override readonly bool Equals(object? obj) => (obj is Vector<T> other) && Equals(other);
 
         /// <summary>
         /// Returns a boolean indicating whether the given vector is equal to this vector instance.
@@ -487,10 +512,7 @@ namespace System.Numerics
         /// <param name="other">The vector to compare this instance to.</param>
         /// <returns>True if the other vector is equal to this instance; False otherwise.</returns>
         [Intrinsic]
-        public readonly bool Equals(Vector<T> other)
-        {
-            return this == other;
-        }
+        public readonly bool Equals(Vector<T> other) => this == other;
 
         /// <summary>
         /// Returns the hash code for this instance.
@@ -540,20 +562,14 @@ namespace System.Numerics
         /// Returns a String representing this vector.
         /// </summary>
         /// <returns>The string representation.</returns>
-        public override readonly string ToString()
-        {
-            return ToString("G", CultureInfo.CurrentCulture);
-        }
+        public override readonly string ToString() => ToString("G", CultureInfo.CurrentCulture);
 
         /// <summary>
         /// Returns a String representing this vector, using the specified format string to format individual elements.
         /// </summary>
         /// <param name="format">The format of individual elements.</param>
         /// <returns>The string representation.</returns>
-        public readonly string ToString(string? format)
-        {
-            return ToString(format, CultureInfo.CurrentCulture);
-        }
+        public readonly string ToString(string? format) => ToString(format, CultureInfo.CurrentCulture);
 
         /// <summary>
         /// Returns a String representing this vector, using the specified format string to format individual elements
@@ -564,6 +580,8 @@ namespace System.Numerics
         /// <returns>The string representation.</returns>
         public readonly string ToString(string? format, IFormatProvider? formatProvider)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             StringBuilder sb = new StringBuilder();
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
             sb.Append('<');
@@ -588,6 +606,7 @@ namespace System.Numerics
         public readonly bool TryCopyTo(Span<byte> destination)
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if ((uint)destination.Length < (uint)Vector<byte>.Count)
             {
                 return false;
@@ -605,6 +624,8 @@ namespace System.Numerics
         /// <paramref name="destination"/> is not large enough to hold the source vector.</returns>
         public readonly bool TryCopyTo(Span<T> destination)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if ((uint)destination.Length < (uint)Count)
             {
                 return false;
@@ -625,6 +646,8 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator +(Vector<T> left, Vector<T> right)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             unchecked
             {
                 if (Vector.IsHardwareAccelerated)
@@ -837,6 +860,8 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator -(Vector<T> left, Vector<T> right)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             unchecked
             {
                 if (Vector.IsHardwareAccelerated)
@@ -1050,6 +1075,8 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator *(Vector<T> left, Vector<T> right)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             unchecked
             {
                 if (Vector.IsHardwareAccelerated)
@@ -1260,8 +1287,7 @@ namespace System.Numerics
         /// <param name="factor">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator *(Vector<T> value, T factor) =>
-            new Vector<T>(factor) * value;
+        public static Vector<T> operator *(Vector<T> value, T factor) => new Vector<T>(factor) * value;
 
         /// <summary>
         /// Multiplies a vector by the given scalar.
@@ -1270,8 +1296,7 @@ namespace System.Numerics
         /// <param name="value">The source vector.</param>
         /// <returns>The scaled vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator *(T factor, Vector<T> value) =>
-            new Vector<T>(factor) * value;
+        public static Vector<T> operator *(T factor, Vector<T> value) => new Vector<T>(factor) * value;
 
         // This method is intrinsic only for certain types. It cannot access fields directly unless we are sure the context is unaccelerated.
         /// <summary>
@@ -1283,6 +1308,8 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator /(Vector<T> left, Vector<T> right)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             unchecked
             {
                 if (Vector.IsHardwareAccelerated)
@@ -1504,6 +1531,8 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator &(Vector<T> left, Vector<T> right)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             Vector<T> result = default;
             unchecked
             {
@@ -1535,6 +1564,8 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator |(Vector<T> left, Vector<T> right)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             Vector<T> result = default;
             unchecked
             {
@@ -1566,6 +1597,8 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator ^(Vector<T> left, Vector<T> right)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             Vector<T> result = default;
             unchecked
             {
@@ -1594,8 +1627,7 @@ namespace System.Numerics
         /// <param name="value">The source vector.</param>
         /// <returns>The one's complement vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator ~(Vector<T> value) =>
-            AllBitsSet ^ value;
+        public static Vector<T> operator ~(Vector<T> value) => AllBitsSet ^ value;
         #endregion Bitwise Operators
 
         #region Logical Operators
@@ -1753,8 +1785,11 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<byte>(Vector<T> value) =>
-            new Vector<byte>(ref value.register);
+        public static explicit operator Vector<byte>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<byte>(ref value.register);
+        }
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -1763,8 +1798,11 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static explicit operator Vector<sbyte>(Vector<T> value) =>
-            new Vector<sbyte>(ref value.register);
+        public static explicit operator Vector<sbyte>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<sbyte>(ref value.register);
+        }
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -1773,8 +1811,11 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static explicit operator Vector<ushort>(Vector<T> value) =>
-            new Vector<ushort>(ref value.register);
+        public static explicit operator Vector<ushort>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<ushort>(ref value.register);
+        }
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -1782,27 +1823,11 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<short>(Vector<T> value) =>
-            new Vector<short>(ref value.register);
-
-        /// <summary>
-        /// Reinterprets the bits of the given vector into those of another type.
-        /// </summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [CLSCompliant(false)]
-        [Intrinsic]
-        public static explicit operator Vector<uint>(Vector<T> value) =>
-            new Vector<uint>(ref value.register);
-
-        /// <summary>
-        /// Reinterprets the bits of the given vector into those of another type.
-        /// </summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [Intrinsic]
-        public static explicit operator Vector<int>(Vector<T> value) =>
-            new Vector<int>(ref value.register);
+        public static explicit operator Vector<short>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<short>(ref value.register);
+        }
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -1811,8 +1836,11 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static explicit operator Vector<ulong>(Vector<T> value) =>
-            new Vector<ulong>(ref value.register);
+        public static explicit operator Vector<uint>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<uint>(ref value.register);
+        }
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -1820,8 +1848,24 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<long>(Vector<T> value) =>
-            new Vector<long>(ref value.register);
+        public static explicit operator Vector<int>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<int>(ref value.register);
+        }
+
+        /// <summary>
+        /// Reinterprets the bits of the given vector into those of another type.
+        /// </summary>
+        /// <param name="value">The source vector</param>
+        /// <returns>The reinterpreted vector.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static explicit operator Vector<ulong>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<ulong>(ref value.register);
+        }
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -1829,8 +1873,11 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<float>(Vector<T> value) =>
-            new Vector<float>(ref value.register);
+        public static explicit operator Vector<long>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<long>(ref value.register);
+        }
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -1838,8 +1885,23 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<double>(Vector<T> value) =>
-            new Vector<double>(ref value.register);
+        public static explicit operator Vector<float>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<float>(ref value.register);
+        }
+
+        /// <summary>
+        /// Reinterprets the bits of the given vector into those of another type.
+        /// </summary>
+        /// <param name="value">The source vector</param>
+        /// <returns>The reinterpreted vector.</returns>
+        [Intrinsic]
+        public static explicit operator Vector<double>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<double>(ref value.register);
+        }
 
         #endregion Conversions
 

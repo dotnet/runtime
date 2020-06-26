@@ -239,7 +239,7 @@ namespace System.Linq.Parallel
             /// <summary>
             /// Tracks whether MoveNext() has already been called previously.
             /// </summary>
-            private bool _initialized = false;
+            private bool _initialized;
 
             /// <summary>
             /// Constructor

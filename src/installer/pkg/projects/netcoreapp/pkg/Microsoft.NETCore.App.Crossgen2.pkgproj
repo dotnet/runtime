@@ -64,7 +64,7 @@
       <Crossgen2File Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)" />
     </ItemGroup>
 
-    <MSBuild Projects="$(CoreClrProjectRoot)src/tools/crossgen2/crossgen2/crossgen2.csproj"
+    <MSBuild Projects="$(CoreClrProjectRoot)src/tools/aot/crossgen2/crossgen2.csproj"
             Targets="Restore"
             Properties="
             Configuration=$(RuntimeConfiguration);
@@ -73,7 +73,7 @@
     <Output TaskParameter="TargetOutputs" ItemName="Crossgen2File" />
     </MSBuild>
 
-    <MSBuild Projects="$(CoreClrProjectRoot)src/tools/crossgen2/crossgen2/crossgen2.csproj"
+    <MSBuild Projects="$(CoreClrProjectRoot)src/tools/aot/crossgen2/crossgen2.csproj"
             Targets="GenerateDepsJsonFile"
             Properties="
             Configuration=$(RuntimeConfiguration);

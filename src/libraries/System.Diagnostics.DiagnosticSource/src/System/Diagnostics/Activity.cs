@@ -51,7 +51,7 @@ namespace System.Diagnostics
         private static ActivityIdFormat s_defaultIdFormat;
         /// <summary>
         /// Normally if the ParentID is defined, the format of that is used to determine the
-        /// format used by the Activity.   However if ForceDefaultFormat is set to true, the
+        /// format used by the Activity. However if ForceDefaultFormat is set to true, the
         /// ID format will always be the DefaultIdFormat even if the ParentID is define and is
         /// a different format.
         /// </summary>
@@ -735,7 +735,13 @@ namespace System.Diagnostics
             get
             {
                 if (s_defaultIdFormat == ActivityIdFormat.Unknown)
+                {
+#if W3C_DEFAULT_ID_FORMAT
+                    s_defaultIdFormat = LocalAppContextSwitches.DefaultActivityIdFormatIsHierarchial ? ActivityIdFormat.Hierarchical : ActivityIdFormat.W3C;
+#else
                     s_defaultIdFormat = ActivityIdFormat.Hierarchical;
+#endif // W3C_DEFAULT_ID_FORMAT
+                }
                 return s_defaultIdFormat;
             }
             set

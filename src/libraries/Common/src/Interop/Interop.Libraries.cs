@@ -6,10 +6,6 @@ internal static partial class Interop
 {
     internal static partial class Libraries
     {
-#if MONO
-        internal const string GlobalizationNative = "__Internal";
-#else
         internal const string GlobalizationNative = "QCall";
-#endif
     }
 }

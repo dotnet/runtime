@@ -70,16 +70,6 @@ public:
 
 #ifdef FEATURE_COMINTEROP
     //====================================================================
-    // map GUID to Type
-    //====================================================================
-    static FCDECL1(Object*, GetLoadedTypeForGUID, GUID* pGuid);
-
-    //====================================================================
-    // map Type to ITypeInfo*
-    //====================================================================
-    static FCDECL1(ITypeInfo*, GetITypeInfoForType, ReflectClassBaseObject* refClassUNSAFE);
-
-    //====================================================================
     // return the IUnknown* for an Object
     //====================================================================
     static FCDECL2(IUnknown*, GetIUnknownForObjectNative, Object* orefUNSAFE, CLR_BOOL fOnlyInContext);

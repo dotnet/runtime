@@ -6,9 +6,6 @@
 
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
-    <!-- Temporarily ignore nit warning/errors (e.g. extra whitespace) from Extensions projects -->
-    <NoWarn Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">$(NoWarn);SA1129;SA1028;SA1027;SA1121;CA1200;SA1000;CA1507;CA1802;CA1825;CA1018;SA1648;CA2007;SA1001;SA1026;CA1810;SA1206</NoWarn>
-    <NoWarn Condition="!$(MSBuildProjectName.Contains('ref'))">$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -255,6 +252,10 @@
     <NetStandard20RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.0'))</NetStandard20RefPath>
     <NetStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.1'))</NetStandard21RefPath>
     <NetFxRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(NetFrameworkCurrent)'))</NetFxRefPath>
+
+    <!-- System.Private.CoreLib -->
+    <CoreLibProject Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'src', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
+    <CoreLibProject Condition="'$(RuntimeFlavor)' == 'Mono'">$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'netcore', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
 
     <!-- Helix properties -->
     <OSPlatformConfig>$(TargetOS).$(Platform).$(Configuration)</OSPlatformConfig>

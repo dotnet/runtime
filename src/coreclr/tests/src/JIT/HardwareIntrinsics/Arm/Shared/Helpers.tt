@@ -340,6 +340,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static <#= type.wide #> AbsoluteDifferenceWideningUpperAndAdd(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #>[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
+        public static <#= type.wide #> AddAcrossWidening(<#= type.name #>[] op1) => Reduce(AddWidening, op1);
+
         public static <#= type.wide #> AddPairwiseWidening(<#= type.name #>[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
         public static <#= type.wide #> AddPairwiseWideningAndAdd(<#= type.wide #>[] op1, <#= type.name #>[] op2, int i) => (<#= type.wide #>)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
@@ -417,6 +419,18 @@ namespace JIT.HardwareIntrinsics.Arm
         public static <#= type.wide #> ZeroExtendWidening(<#= type.name #> op1) => (<#= type.wide #>)(<#= type.wideUnsigned #>)op1;
 
         public static <#= type.wide #> ZeroExtendWideningUpper(<#= type.name #>[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
+
+        private static <#= type.wide #> Reduce(Func<<#= type.wide #>, <#= type.name #>, <#= type.wide #>> reduceOp, <#= type.name #>[] op1)
+        {
+            <#= type.wide #> acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
 
 <#
         }
@@ -792,6 +806,33 @@ namespace JIT.HardwareIntrinsics.Arm
             return (result, ovf);
         }
 
+        private static (<#= type.name #> val, bool ovf) AddOvf(<#= type.name #> op1, <#= type.unsigned #> op2)
+        {
+            <#= type.name #> result = (<#= type.name #>)(op1 + (<#= type.name #>)op2);
+
+            bool ovf = (result < op1);
+
+            return (result, ovf);
+        }
+
+        private static (<#= type.unsigned #> val, bool ovf) AddOvf(<#= type.unsigned #> op1, <#= type.name #> op2)
+        {
+            <#= type.unsigned #> result = (<#= type.unsigned #>)(op1 + (<#= type.unsigned #>)op2);
+
+            bool ovf;
+
+            if (op2 < 0)
+            {
+                ovf = (result > op1);
+            }
+            else
+            {
+                ovf = (result < op1);
+            }
+
+            return (result, ovf);
+        }
+
         private static (<#= type.unsigned #> val, bool ovf) AddOvf(<#= type.unsigned #> op1, <#= type.unsigned #> op2)
         {
             <#= type.unsigned #> result = (<#= type.unsigned #>)(op1 + op2);
@@ -805,15 +846,15 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             <#= type.name #> result = (<#= type.name #>)(op1 - op2);
 
-            bool ovf = false;
+            bool ovf;
 
-            if ((op1 > 0) && (op2 < 0))
+            if (op2 < 0)
             {
-                ovf = (result < 0);
+                ovf = (result < op1);
             }
-            else if ((op1 < 0) && (op2 > 0))
+            else
             {
-                ovf = (result > 0);
+                ovf = (result > op1);
             }
 
             return (result, ovf);
@@ -828,10 +869,24 @@ namespace JIT.HardwareIntrinsics.Arm
             return (result, ovf);
         }
 
+        public static <#= type.name #> AbsSaturate(<#= type.name #> op1) => op1 < 0 ? NegateSaturate(op1) : op1;
+
         public static <#= type.name #> AddSaturate(<#= type.name #> op1, <#= type.name #> op2)
         {
             var (result, ovf) = AddOvf(op1, op2);
             return ovf ? (result > 0 ? <#= type.name #>.MinValue : <#= type.name #>.MaxValue) : result;
+        }
+
+        public static <#= type.name #> AddSaturate(<#= type.name #> op1, <#= type.unsigned #> op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? <#= type.name #>.MaxValue : result;
+        }
+
+        public static <#= type.unsigned #> AddSaturate(<#= type.unsigned #> op1, <#= type.name #> op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? (result < op1 ? <#= type.unsigned #>.MaxValue : <#= type.unsigned #>.MinValue) : result;
         }
 
         public static <#= type.unsigned #> AddSaturate(<#= type.unsigned #> op1, <#= type.unsigned #> op2)
@@ -839,6 +894,8 @@ namespace JIT.HardwareIntrinsics.Arm
             var (result, ovf) = AddOvf(op1, op2);
             return ovf ? <#= type.unsigned #>.MaxValue : result;
         }
+
+        public static <#= type.name #> NegateSaturate(<#= type.name #> op1) => SubtractSaturate((<#= type.name #>)0, op1);
 
         public static <#= type.name #> SubtractSaturate(<#= type.name #> op1, <#= type.name #> op2)
         {
@@ -885,7 +942,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (result, ovf);
         }
-
 
 <#
         }
@@ -1246,12 +1302,6 @@ namespace JIT.HardwareIntrinsics.Arm
             return TableVectorExtension(i, zeros, indices, table);
         }
 
-        public static byte Clamp(int i, <#= typeName #> value, bool inclusive)
-        {
-            <#= typeName #> max = (<#= typeName #>)((i * 8) - (inclusive ? 0 : 1));
-            <#= typeName #> min = ( <#= typeName #>)(inclusive ? 1 : 0);
-            return (byte)Math.Max (min, Math.Min(value % max, max));
-        }
 <#
         }
 
@@ -1282,7 +1332,67 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 <#
         }
+
+        foreach ((string fpType, string mathClass) in new (string, string)[] { ("double", "Math"), ("float", "MathF") })
+        {
 #>
+        public static <#= fpType #> Ceiling(<#= fpType #> op1) => <#= mathClass #>.Ceiling(op1);
+
+        public static <#= fpType #> Floor(<#= fpType #> op1) => <#= mathClass #>.Floor(op1);
+
+        public static <#= fpType #> RoundAwayFromZero(<#= fpType #> op1) => <#= mathClass #>.Round(op1, MidpointRounding.AwayFromZero);
+
+        public static <#= fpType #> RoundToNearest(<#= fpType #> op1) => <#= mathClass #>.Round(op1, MidpointRounding.ToEven);
+
+        public static <#= fpType #> RoundToNegativeInfinity(<#= fpType #> op1) => <#= mathClass #>.Round(op1, MidpointRounding.ToNegativeInfinity);
+
+        public static <#= fpType #> RoundToPositiveInfinity(<#= fpType #> op1) => <#= mathClass #>.Round(op1, MidpointRounding.ToPositiveInfinity);
+
+        public static <#= fpType #> RoundToZero(<#= fpType #> op1) => <#= mathClass #>.Round(op1, MidpointRounding.ToZero);
+
+<#
+        }
+#>
+        private static int ConvertToInt32(float op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
+
+        private static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
+
+        private static uint ConvertToUInt32(float op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
+
+        private static ulong ConvertToUInt64(double op1) => (ulong)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+
+<#
+        foreach ((string fpType, string intType) in new (string, string)[] { ("float", "Int32"), ("double", "Int64"), ("float", "UInt32"), ("double", "UInt64") })
+        {
+#>
+        public static <#= intType #> ConvertTo<#= intType #>RoundAwayFromZero(<#= fpType #> op1) => ConvertTo<#= intType #>(RoundAwayFromZero(op1));
+
+        public static <#= intType #> ConvertTo<#= intType #>RoundToEven(<#= fpType #> op1) => ConvertTo<#= intType #>(RoundToNearest(op1));
+
+        public static <#= intType #> ConvertTo<#= intType #>RoundToNegativeInfinity(<#= fpType #> op1) => ConvertTo<#= intType #>(RoundToNegativeInfinity(op1));
+
+        public static <#= intType #> ConvertTo<#= intType #>RoundToPositiveInfinity(<#= fpType #> op1) => ConvertTo<#= intType #>(RoundToPositiveInfinity(op1));
+
+        public static <#= intType #> ConvertTo<#= intType #>RoundToZero(<#= fpType #> op1) => ConvertTo<#= intType #>(RoundToZero(op1));
+
+<#
+        }
+#>
+        public static float ConvertToSingle(int op1) => op1;
+
+        public static float ConvertToSingle(uint op1) => op1;
+
+        public static float ConvertToSingle(double op1) => (float)op1;
+
+        public static float ConvertToSingleUpper(float[] op1, double[] op2, int i) => i < op1.Length ? op1[i] : ConvertToSingle(op2[i - op1.Length]);
+
+        public static double ConvertToDouble(float op1) => op1;
+
+        public static double ConvertToDoubleUpper(float[] op1, int i) => ConvertToDouble(op1[i + op1.Length / 2]);
+
+        public static double ConvertToDouble(long op1) => op1;
+
+        public static double ConvertToDouble(ulong op1) => op1;
 
     }
 }

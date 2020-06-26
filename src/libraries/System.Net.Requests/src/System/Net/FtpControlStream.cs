@@ -38,7 +38,7 @@ namespace System.Net
 
         private long _contentLength = -1;
         private DateTime _lastModified;
-        private bool _dataHandshakeStarted = false;
+        private bool _dataHandshakeStarted;
         private string? _loginDirectory;
         private string? _establishedServerDirectory;
         private string? _requestedServerDirectory;

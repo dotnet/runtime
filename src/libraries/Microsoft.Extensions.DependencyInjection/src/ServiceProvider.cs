@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.DependencyInjection
             if (options.ValidateOnBuild)
             {
                 List<Exception> exceptions = null;
-                foreach (var serviceDescriptor in serviceDescriptors)
+                foreach (ServiceDescriptor serviceDescriptor in serviceDescriptors)
                 {
                     try
                     {

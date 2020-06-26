@@ -166,6 +166,42 @@ namespace System.Net.Http
         // write "--" + boundary + "--"
         // Can't be canceled directly by the user.  If the overall request is canceled
         // then the stream will be closed an exception thrown.
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        {
+            Debug.Assert(stream != null);
+            try
+            {
+                // Write start boundary.
+                EncodeStringToStream(stream, "--" + _boundary + CrLf);
+
+                // Write each nested content.
+                var output = new StringBuilder();
+                for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
+                {
+                    // Write divider, headers, and content.
+                    HttpContent content = _nestedContent[contentIndex];
+                    EncodeStringToStream(stream, SerializeHeadersToString(output, contentIndex, content));
+                    content.CopyTo(stream, context, cancellationToken);
+                }
+
+                // Write footer boundary.
+                EncodeStringToStream(stream, CrLf + "--" + _boundary + "--" + CrLf);
+            }
+            catch (Exception ex)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
+                throw;
+            }
+        }
+
+        // for-each content
+        //   write "--" + boundary
+        //   for-each content header
+        //     write header: header-value
+        //   write content.CopyTo[Async]
+        // write "--" + boundary + "--"
+        // Can't be canceled directly by the user.  If the overall request is canceled
+        // then the stream will be closed an exception thrown.
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             SerializeToStreamAsyncCore(stream, context, default);
 
@@ -288,6 +324,12 @@ namespace System.Net.Http
             scratch.Append(CrLf);
 
             return scratch.ToString();
+        }
+
+        private static void EncodeStringToStream(Stream stream, string input)
+        {
+            byte[] buffer = HttpRuleParser.DefaultHttpEncoding.GetBytes(input);
+            stream.Write(buffer);
         }
 
         private static ValueTask EncodeStringToStreamAsync(Stream stream, string input, CancellationToken cancellationToken)

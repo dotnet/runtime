@@ -5,7 +5,6 @@
     <NoWarn>$(NoWarn);SA1205</NoWarn>
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.1;netstandard1.3;net45;net46;netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -20,6 +19,7 @@
     <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);EVENTSOURCE_ENUMERATE_SUPPORT</DefineConstants>
     <DefineConstants Condition="$(TargetFramework.StartsWith('net4'))">$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS;ENABLE_HTTP_HANDLER</DefineConstants>
     <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0'">true</ExcludeFromPackage>
+    <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(DefineConstants);W3C_DEFAULT_ID_FORMAT</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
@@ -47,6 +47,12 @@
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <None Include="ActivityUserGuide.md" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="System\Diagnostics\LocalAppContextSwitches.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
+      <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'net45' And '$(TargetFramework)' != 'netstandard1.1'">
     <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />

@@ -328,6 +328,7 @@ internal static partial class Interop
         /// <summary>
         /// Gets the thread information for the given thread
         /// </summary>
+        /// <param name="pid">The process id.</param>
         /// <param name="thread">The ID of the thread to query for information</param>
         /// <returns>
         /// Returns a valid proc_threadinfo struct for valid threads that the caller

@@ -63,6 +63,11 @@
   <PropertyGroup Condition="'$(_Framework)' != 'net461'">
     <WorkItemCommand>$(WorkItemCommand) $(CliArguments)</WorkItemCommand>
   </PropertyGroup>
+  
+  <PropertyGroup>
+    <WorkItemTimeout>2:30</WorkItemTimeout>
+    <WorkItemTimeout Condition="'$(HelixSourcePrefix)' != 'official'">0:15</WorkItemTimeout>
+  </PropertyGroup>
 
   <ItemGroup>
     <HelixCorrelationPayload Include="$(CorrelationPayloadDirectory)">
@@ -119,7 +124,7 @@
       <PreCommands Condition="'$(Compare)' == 'true'">$(WorkItemCommand) --bdn-artifacts $(BaselineArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(BaselineCoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</PreCommands>
       <Command>$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</Command>
       <PostCommands Condition="'$(Compare)' == 'true'">$(DotnetExe) run -f $(_Framework) -p $(ResultsComparer) --base $(BaselineArtifactsDirectory) --diff $(ArtifactsDirectory) --threshold 2$(Percent) --xml $(XMLResults);$(FinalCommand)</PostCommands>
-      <Timeout>4:00</Timeout>
+      <Timeout>$(WorkItemTimeout)</Timeout>
     </HelixWorkItem>
   </ItemGroup>
 
@@ -176,6 +181,11 @@
     <HelixWorkItem Include="Crossgen2 System.Private.CoreLib.dll">
       <PayloadDirectory>$(WorkItemDirectory)\ScenarioCorrelation</PayloadDirectory>
       <Command>$(Python) %HELIX_CORRELATION_PAYLOAD%\performance\src\scenarios\crossgen2\test.py crossgen2 --single System.Private.CoreLib.dll --core-root %HELIX_CORRELATION_PAYLOAD%\Core_Root</Command>
+    </HelixWorkItem>
+    <HelixWorkItem Include="Crossgen2 Composite Framework R2R">
+      <PayloadDirectory>$(WorkItemDirectory)\ScenarioCorrelation</PayloadDirectory>	
+      <Command>$(Python) %HELIX_CORRELATION_PAYLOAD%\performance\src\scenarios\crossgen2\test.py crossgen2 --composite %HELIX_CORRELATION_PAYLOAD%\performance\src\scenarios\crossgen2\framework-r2r.dll.rsp --core-root %HELIX_CORRELATION_PAYLOAD%\Core_Root</Command>	
+      <Timeout>1:00</Timeout>  
     </HelixWorkItem>
 
   </ItemGroup>

@@ -13,6 +13,8 @@
 #include "stack.h"
 #include "crst.h"
 #include "callhelpers.h"
+#include "codeversion.h"
+#include "clr_std/type_traits"
 
 typedef SSIZE_T NativeInt;
 typedef SIZE_T NativeUInt;
@@ -1767,6 +1769,7 @@ private:
     void DoByReferenceCtor();
     void DoByReferenceValue();
     void DoSIMDHwAccelerated();
+    void DoGetIsSupported();
 
     // Returns the proper generics context for use in resolving tokens ("precise" in the sense of including generic instantiation
     // information).

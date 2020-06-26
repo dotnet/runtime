@@ -7,6 +7,15 @@
     <JSEngine Condition="'$(TargetOS)' == 'Browser' and '$(JSEngine)' == ''">V8</JSEngine>
   </PropertyGroup>
 
+  <ItemGroup>
+    <RunScriptCommands Include="TARGET_ARCH=$(TargetArchitecture)" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
+    <RunScriptCommand>$HARNESS_RUNNER xharness wasm test --engine=$(JSEngine) --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- --enable-gc --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
+  </PropertyGroup>
+
   <!-- Generate a self-contained app bundle for Android with tests. -->
   <UsingTask Condition="'$(TargetOS)' == 'Android'"
              TaskName="AndroidAppBuilderTask"
@@ -113,15 +122,19 @@
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp">
     <ItemGroup>
       <AssemblySearchPaths Include="$(PublishDir)"/>
+      <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
+      <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true'" />
     </ItemGroup>
+
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <WasmAppBuilder
       AppDir="$(BundleDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
-      MainAssembly="$(PublishDir)\WasmTestRunner.dll"
+      MainAssembly="$(PublishDir)WasmTestRunner.dll"
       MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
-      ExtraAssemblies="$(PublishDir)\$(AssemblyName).dll"
-      AssemblySearchPaths="@(AssemblySearchPaths)"/>
+      ExtraAssemblies="$(PublishDir)$(AssemblyName).dll"
+      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
+      AssemblySearchPaths="@(AssemblySearchPaths)" />
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
@@ -131,7 +144,8 @@
       <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" />
       <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser'" />
 
-      <ResolvedFileToPublish Include="@(_runnerFilesToPublish)" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
+      <!-- Exclude xunit assemblies as those should be resolved by our own package references -->
+      <ResolvedFileToPublish Include="@(_runnerFilesToPublish)" Condition="!$([System.String]::Copy('%(Filename)').StartsWith('xunit.'))" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
     </ItemGroup>
   </Target>
 
@@ -151,5 +165,5 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp" />
+          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
 </Project>
