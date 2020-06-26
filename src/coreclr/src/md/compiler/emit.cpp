@@ -2148,11 +2148,12 @@ STDMETHODIMP RegMeta::DefineDocument(       // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
     char delim[2] = "";
-    ULONG partsCount = 0;
     ULONG docNameBlobSize = 0;
     ULONG docNameBlobMaxSize = 0;
     BYTE* docNameBlob = NULL;
     BYTE* docNameBlobPtr = NULL;
+    ULONG partsCount = 0;
+    ULONG partsIndexesCount = 0;
     UINT32* partsIndexes = NULL;
     UINT32* partsIndexesPtr = NULL;
     char* stringToken = NULL;
@@ -2178,12 +2179,21 @@ STDMETHODIMP RegMeta::DefineDocument(       // S_OK or error.
 
     // add path parts to blob heap and store their indexes
     partsIndexesPtr = partsIndexes;
+    if (*delim == *docName)
+    {
+        // if the path starts with the delimiter (e.g. /home/user/...) store an empty string
+        *partsIndexesPtr++ = 0;
+        partsIndexesCount++;
+    }
     stringToken = strtok(docName, (const char*)delim);
     while (stringToken != NULL)
     {
         IfFailGo(m_pStgdb->m_MiniMd.m_BlobHeap.AddBlob(MetaData::DataBlob((BYTE*)stringToken, (ULONG)strlen(stringToken)), partsIndexesPtr++));
         stringToken = strtok(NULL, (const char*)delim);
+        partsIndexesCount++;
     }
+
+    _ASSERTE(partsIndexesCount == partsCount);
 
     // build up the documentBlob ::= separator part+
     docNameBlobPtr = docNameBlob;
