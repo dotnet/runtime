@@ -151,6 +151,8 @@ namespace System.Reflection.Emit
             return DefineDataImpl(name, size, attributes & ~FieldAttributes.ReservedMask);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Reflection.Emit is not subject to trimming")]
         private FieldBuilder DefineDataImpl(string name, int size, FieldAttributes attributes)
         {
             if (name == null)
@@ -288,6 +290,8 @@ namespace System.Reflection.Emit
             num_types++;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
         private TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
             if (name == null)
