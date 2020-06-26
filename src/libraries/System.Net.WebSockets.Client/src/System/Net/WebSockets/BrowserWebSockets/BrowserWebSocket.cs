@@ -140,13 +140,16 @@ namespace System.Net.WebSockets
                     _innerWebSocket.SetObjectProperty("binaryType", "arraybuffer");
 
                     // Setup the onError callback
-                    _onError = (errorEvt) => errorEvt.Dispose();
+                    _onError = new Action<JSObject>((errorEvt) =>
+                    {
+                        errorEvt.Dispose();
+                    });
 
                     // Attach the onError callback
                     _innerWebSocket.SetObjectProperty("onerror", _onError);
 
                     // Setup the onClose callback
-                    _onClose = (closeEvt) =>
+                    _onClose = new Action<JSObject>((closeEvt) =>
                     {
                         _innerWebSocketCloseStatus = (WebSocketCloseStatus)closeEvt.GetObjectProperty("code");
                         _innerWebSocketCloseStatusDescription = closeEvt.GetObjectProperty("reason")?.ToString();
@@ -162,13 +165,13 @@ namespace System.Net.WebSockets
                         }
 
                         closeEvt.Dispose();
-                    };
+                    });
 
                     // Attach the onClose callback
                     _innerWebSocket.SetObjectProperty("onclose", _onClose);
 
                     // Setup the onOpen callback
-                    _onOpen = (evt) =>
+                    _onOpen = new Action<JSObject> ((evt) =>
                     {
                         using (evt)
                         {
@@ -183,13 +186,13 @@ namespace System.Net.WebSockets
                                 tcsConnect.SetResult(true);
                             }
                         }
-                    };
+                    });
 
                     // Attach the onOpen callback
                     _innerWebSocket.SetObjectProperty("onopen", _onOpen);
 
                     // Setup the onMessage callback
-                    _onMessage = (messageEvent) =>
+                    _onMessage = new Action<JSObject>((messageEvent) =>
                     {
                         // get the events "data"
                         using (messageEvent)
@@ -247,17 +250,16 @@ namespace System.Net.WebSockets
                                     throw new NotImplementedException($"WebSocket bynary type '{_innerWebSocket.GetObjectProperty("binaryType").ToString()}' not supported.");
                             }
                         }
-                    };
+                    });
 
                     // Attach the onMessage callaback
                     _innerWebSocket.SetObjectProperty("onmessage", _onMessage);
-
                     await tcsConnect.Task.ConfigureAwait(continueOnCapturedContext: true);
                 }
                 catch (Exception wse)
                 {
                     ConnectExceptionCleanup();
-                    WebSocketException wex = new WebSocketException("WebSocket connection failure.", wse);
+                    WebSocketException wex = new WebSocketException(SR.net_webstatus_ConnectFailure, wse);
                     throw wex;
                 }
             }
@@ -288,22 +290,22 @@ namespace System.Net.WebSockets
             if (_onClose != null)
             {
                 _innerWebSocket?.SetObjectProperty("onclose", "");
-                JavaScript.Runtime.FreeObject(_onClose);
+                _onClose = null;
             }
             if (_onError != null)
             {
                 _innerWebSocket?.SetObjectProperty("onerror", "");
-                JavaScript.Runtime.FreeObject(_onError);
+                _onError = null;
             }
             if (_onOpen != null)
             {
                 _innerWebSocket?.SetObjectProperty("onopen", "");
-                JavaScript.Runtime.FreeObject(_onOpen);
+                _onOpen = null;
             }
             if (_onMessage != null)
             {
                 _innerWebSocket?.SetObjectProperty("onmessage", "");
-                JavaScript.Runtime.FreeObject(_onMessage);
+                _onMessage = null;
             }
             _innerWebSocket?.Dispose();
         }
