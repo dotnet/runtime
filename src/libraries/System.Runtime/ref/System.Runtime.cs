@@ -2194,6 +2194,53 @@ namespace System
         public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? format, out System.Guid result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination) { throw null; }
     }
+    public readonly partial struct Half : System.IComparable, System.IComparable<System.Half>, System.IEquatable<System.Half>, System.IFormattable
+    {
+        private readonly int _dummyPrimitive;
+        public static System.Half Epsilon { get { throw null; } }
+        public static System.Half MaxValue { get { throw null; } }
+        public static System.Half MinValue { get { throw null; } }
+        public static System.Half NaN { get { throw null; } }
+        public static System.Half NegativeInfinity { get { throw null; } }
+        public static System.Half PositiveInfinity { get { throw null; } }
+        public int CompareTo(System.Half other) { throw null; }
+        public int CompareTo(object? obj) { throw null; }
+        public bool Equals(System.Half other) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool IsFinite(System.Half value) { throw null; }
+        public static bool IsInfinity(System.Half value) { throw null; }
+        public static bool IsNaN(System.Half value) { throw null; }
+        public static bool IsNegative(System.Half value) { throw null; }
+        public static bool IsNegativeInfinity(System.Half value) { throw null; }
+        public static bool IsNormal(System.Half value) { throw null; }
+        public static bool IsPositiveInfinity(System.Half value) { throw null; }
+        public static bool IsSubnormal(System.Half value) { throw null; }
+        public static bool operator ==(System.Half left, System.Half right) { throw null; }
+        public static explicit operator System.Half (double value) { throw null; }
+        public static explicit operator System.Half (float value) { throw null; }
+        public static bool operator >(System.Half left, System.Half right) { throw null; }
+        public static bool operator >=(System.Half left, System.Half right) { throw null; }
+        public static explicit operator double (System.Half value) { throw null; }
+        public static explicit operator float (System.Half value) { throw null; }
+        public static bool operator !=(System.Half left, System.Half right) { throw null; }
+        public static bool operator <(System.Half left, System.Half right) { throw null; }
+        public static bool operator <=(System.Half left, System.Half right) { throw null; }
+        public static System.Half Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Half Parse(string s) { throw null; }
+        public static System.Half Parse(string s, System.Globalization.NumberStyles style) { throw null; }
+        public static System.Half Parse(string s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Half Parse(string s, System.IFormatProvider provider) { throw null; }
+        public override string ToString() { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString(string? format) { throw null; }
+        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Half result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out System.Half result) { throw null; }
+        public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Half result) { throw null; }
+        public static bool TryParse(string s, out System.Half result) { throw null; }
+    }
     public partial struct HashCode
     {
         private int _dummyPrimitive;
