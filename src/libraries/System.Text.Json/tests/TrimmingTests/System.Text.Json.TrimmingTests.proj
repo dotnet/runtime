@@ -1,5 +1,64 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromReader.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromReader.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromSpan.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromSpan.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromString.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromString.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\DeserializeAsync.FromStream.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\DeserializeAsync.FromStream.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToByteArray.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToByteArray.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToString.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToString.BoxedObject.WithWriter.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToString.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToString.TypedObject.WithWriter.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\SerializeAsync.ToStream.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\SerializeAsync.ToStream.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CollectionConvertersTest.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="EnumConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="JsonConstructorAttributeTest.cs" />
+    <TestConsoleAppSourceFiles Include="ObjectConvertersTest.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

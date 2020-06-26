@@ -139,6 +139,7 @@ namespace System.Text.Json.Serialization
             }
         }
 
+        // TODO: https://github.com/dotnet/runtime/issues/38593.
         public static MethodInfo GetImmutableEnumerableCreateRangeMethod(this Type type, Type elementType)
         {
             Type constructingType = GetImmutableEnumerableConstructingType(type);
@@ -159,6 +160,7 @@ namespace System.Text.Json.Serialization
             return null!;
         }
 
+        // TODO: https://github.com/dotnet/runtime/issues/38593.
         public static MethodInfo GetImmutableDictionaryCreateRangeMethod(this Type type, Type elementType)
         {
             Type constructingType = GetImmutableDictionaryConstructingType(type);
