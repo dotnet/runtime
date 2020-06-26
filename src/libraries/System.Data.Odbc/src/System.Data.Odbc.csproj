@@ -10,8 +10,9 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetsBrowser)' == 'true'">SR.Odbc_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <EnableAnalyzers Condition="'$(TargetOS)' == 'Browser'">false</EnableAnalyzers>
   </PropertyGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or $(TargetFramework.StartsWith('netcoreapp2.0'))">
+  <ItemGroup Condition="($(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or $(TargetFramework.StartsWith('netcoreapp2.0'))) and '$(TargetsBrowser)' != 'true'">
     <Compile Include="$(CommonPath)System\Data\Common\AdapterUtil.cs"
              Link="Common\System\Data\Common\AdapterUtil.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\AdapterUtil.Drivers.cs"
