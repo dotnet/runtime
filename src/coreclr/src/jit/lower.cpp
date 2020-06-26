@@ -6392,7 +6392,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
     }
     else
     {
-        // If the `ADDR` node under `STORE_OBJ(dstAddr, IND(struct(ADDR))` 
+        // If the `ADDR` node under `STORE_OBJ(dstAddr, IND(struct(ADDR))`
         // is a complex one it could benefit from an `LEA` that is not contained.
         TryCreateAddrMode(ind->Addr(), false);
     }
@@ -6425,7 +6425,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 //    true if the replacement was made, false otherwise.
 //
 // Notes:
-//    TODO: that method should do the transformation when possible
+//    TODO-CQ: that method should do the transformation when possible
 //    and STOREIND should always generate better or the same code as
 //    STORE_OBJ/BLK for the same copy.
 //
@@ -6450,13 +6450,13 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     }
     if (varTypeIsSIMD(regType))
     {
-        // TODO: support STORE_IND SIMD16(SIMD16, CNT_INT 0).
+        // TODO-CQ: support STORE_IND SIMD16(SIMD16, CNT_INT 0).
         return false;
     }
 
     if (varTypeIsGC(regType))
     {
-        // TODO: STOREIND does not try to contain src if we need a barrier,
+        // TODO-CQ: STOREIND does not try to contain src if we need a barrier,
         // STORE_OBJ generates better code currently.
         return false;
     }
