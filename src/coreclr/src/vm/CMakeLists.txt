@@ -307,7 +307,6 @@ set(VM_SOURCES_WKS
     ceemain.cpp
     clrconfignative.cpp
     clrex.cpp
-    clrprivbinderutil.cpp
     clrvarargs.cpp
     comdatetime.cpp
     comdependenthandle.cpp
