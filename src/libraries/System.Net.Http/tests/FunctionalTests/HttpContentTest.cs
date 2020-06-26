@@ -183,74 +183,113 @@ namespace System.Net.Http.Functional.Tests
             Assert.Throws<MockException>(() => content.Headers.ContentLength);
         }
 
-        [Fact]
-        public async Task ReadAsStreamAsync_GetFromUnbufferedContent_CreateContentReadStreamCalledOnce()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsStreamAsync_GetFromUnbufferedContent_CreateContentReadStreamCalledOnce(bool readStreamAsync)
         {
             var content = new MockContent(MockOptions.CanCalculateLength);
 
             // Call multiple times: CreateContentReadStreamAsync() should be called only once.
-            Stream stream = await content.ReadAsStreamAsync();
-            stream = await content.ReadAsStreamAsync();
-            stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
+            stream = await content.ReadAsStreamAsync(readStreamAsync);
+            stream = await content.ReadAsStreamAsync(readStreamAsync);
 
             Assert.Equal(1, content.CreateContentReadStreamCount);
             Assert.Equal(content.GetMockData().Length, stream.Length);
-            Stream stream2 = await content.ReadAsStreamAsync();
+            Stream stream2 = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Same(stream, stream2);
         }
 
         [Fact]
-        public void ReadAsStream_GetFromUnbufferedContent_CreateContentReadStreamCalledOnce()
+        public async Task ReadAsStreamAsync_GetFromUnbufferedContent_SucceedsAfterReadAsStream()
         {
             var content = new MockContent(MockOptions.CanCalculateLength);
 
             // Call multiple times: CreateContentReadStream() should be called only once.
             Stream stream = content.ReadAsStream();
             stream = content.ReadAsStream();
-            stream = content.ReadAsStream();
+            Assert.Equal(1, content.CreateContentReadStreamCount);
+
+            stream = await content.ReadAsStreamAsync();
+            stream = await content.ReadAsStreamAsync();
 
             Assert.Equal(1, content.CreateContentReadStreamCount);
             Assert.Equal(content.GetMockData().Length, stream.Length);
-            Stream stream2 = content.ReadAsStream();
+            Stream stream2 = await content.ReadAsStreamAsync();
             Assert.Same(stream, stream2);
         }
 
         [Fact]
         public void ReadAsStream_GetFromUnbufferedContent_ThrowsAfterReadAsStreamsAsync()
         {
-            var content = new MockContent(MockOptions.CanCalculateLength | MockOptions.CreateContentReadStreamAsyncNeverCompletes);
+            var content = new MockContent();
 
             var task = content.ReadAsStreamAsync();
             AssertExtensions.Throws<HttpRequestException>(() => content.ReadAsStream());
         }
 
-        [Fact]
-        public async Task ReadAsStreamAsync_GetFromBufferedContent_CreateContentReadStreamCalled()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsStreamAsync_GetFromBufferedContent_CreateContentReadStreamCalled(bool readStreamAsync)
         {
             var content = new MockContent(MockOptions.CanCalculateLength);
             await content.LoadIntoBufferAsync();
 
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
 
             Assert.Equal(0, content.CreateContentReadStreamCount);
             Assert.Equal(content.GetMockData().Length, stream.Length);
-            Stream stream2 = await content.ReadAsStreamAsync();
+            Stream stream2 = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Same(stream, stream2);
             Assert.Equal(0, stream.Position);
             Assert.Equal((byte)'d', stream.ReadByte());
         }
 
         [Fact]
-        public async Task ReadAsStreamAsync_FirstGetFromUnbufferedContentThenGetFromBufferedContent_SameStream()
+        public async Task ReadAsStreamAsync_GetFromBufferedContent_SucceedsAfterReadAsStream()
+        {
+            var content = new MockContent(MockOptions.CanCalculateLength);
+            await content.LoadIntoBufferAsync();
+
+            // Call multiple times: CreateContentReadStream() should be called only once.
+            Stream stream = content.ReadAsStream();
+            stream = content.ReadAsStream();
+            Assert.Equal(0, content.CreateContentReadStreamCount);
+
+            stream = await content.ReadAsStreamAsync();
+            stream = await content.ReadAsStreamAsync();
+
+            Assert.Equal(0, content.CreateContentReadStreamCount);
+            Assert.Equal(content.GetMockData().Length, stream.Length);
+            Stream stream2 = await content.ReadAsStreamAsync();
+            Assert.Same(stream, stream2);
+        }
+
+        [Fact]
+        public async Task ReadAsStream_GetFromBufferedContent_ThrowsAfterReadAsStreamsAsync()
+        {
+            var content = new MockContent();
+            await content.LoadIntoBufferAsync();
+
+            var task = content.ReadAsStreamAsync();
+            AssertExtensions.Throws<HttpRequestException>(() => content.ReadAsStream());
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsStreamAsync_FirstGetFromUnbufferedContentThenGetFromBufferedContent_SameStream(bool readStreamAsync)
         {
             var content = new MockContent(MockOptions.CanCalculateLength);
 
-            Stream before = await content.ReadAsStreamAsync();
+            Stream before = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(1, content.CreateContentReadStreamCount);
 
             await content.LoadIntoBufferAsync();
 
-            Stream after = await content.ReadAsStreamAsync();
+            Stream after = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(1, content.CreateContentReadStreamCount);
 
             // Note that ContentReadStream returns always the same stream. If the user gets the stream, buffers content,
@@ -260,15 +299,17 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(before, after);
         }
 
-        [Fact]
-        public async Task ReadAsStreamAsync_UseBaseImplementation_ContentGetsBufferedThenMemoryStreamReturned()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsStreamAsync_UseBaseImplementation_ContentGetsBufferedThenMemoryStreamReturned(bool readStreamAsync)
         {
             var content = new MockContent(MockOptions.DontOverrideCreateContentReadStream);
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
 
             Assert.NotNull(stream);
             Assert.Equal(1, content.SerializeToStreamAsyncCount);
-            Stream stream2 = await content.ReadAsStreamAsync();
+            Stream stream2 = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Same(stream, stream2);
             Assert.Equal(0, stream.Position);
             Assert.Equal((byte)'d', stream.ReadByte());
@@ -290,20 +331,24 @@ namespace System.Net.Http.Functional.Tests
             await Assert.ThrowsAsync<HttpRequestException>(() => t);
         }
 
-        [Fact]
-        public async Task LoadIntoBufferAsync_CallOnMockContentWithCalculatedContentLength_CopyToAsyncMemoryStreamCalled()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task LoadIntoBufferAsync_CallOnMockContentWithCalculatedContentLength_CopyToAsyncMemoryStreamCalled(bool readStreamAsync)
         {
             var content = new MockContent(MockOptions.CanCalculateLength);
             Assert.NotNull(content.Headers.ContentLength);
             await content.LoadIntoBufferAsync();
 
             Assert.Equal(1, content.SerializeToStreamAsyncCount);
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.False(stream.CanWrite);
         }
 
-        [Fact]
-        public async Task LoadIntoBufferAsync_CallOnMockContentWithNullContentLength_CopyToAsyncMemoryStreamCalled()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task LoadIntoBufferAsync_CallOnMockContentWithNullContentLength_CopyToAsyncMemoryStreamCalled(bool readStreamAsync)
         {
             var content = new MockContent();
             Assert.Null(content.Headers.ContentLength);
@@ -312,12 +357,14 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(content.MockData.Length, content.Headers.ContentLength);
 
             Assert.Equal(1, content.SerializeToStreamAsyncCount);
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.False(stream.CanWrite);
         }
 
-        [Fact]
-        public async Task LoadIntoBufferAsync_CallOnMockContentWithLessLengthThanContentLengthHeader_BufferedStreamLengthMatchesActualLengthNotContentLengthHeaderValue()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task LoadIntoBufferAsync_CallOnMockContentWithLessLengthThanContentLengthHeader_BufferedStreamLengthMatchesActualLengthNotContentLengthHeaderValue(bool readStreamAsync)
         {
             byte[] data = Encoding.UTF8.GetBytes("16 bytes of data");
             var content = new MockContent(data);
@@ -329,31 +376,35 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(1, content.SerializeToStreamAsyncCount);
             Assert.NotNull(content.Headers.ContentLength);
             Assert.Equal(32, content.Headers.ContentLength);
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(data.Length, stream.Length);
         }
 
-        [Fact]
-        public async Task LoadIntoBufferAsync_CallMultipleTimesWithCalculatedContentLength_CopyToAsyncMemoryStreamCalledOnce()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task LoadIntoBufferAsync_CallMultipleTimesWithCalculatedContentLength_CopyToAsyncMemoryStreamCalledOnce(bool readStreamAsync)
         {
             var content = new MockContent(MockOptions.CanCalculateLength);
             await content.LoadIntoBufferAsync();
             await content.LoadIntoBufferAsync();
 
             Assert.Equal(1, content.SerializeToStreamAsyncCount);
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.False(stream.CanWrite);
         }
 
-        [Fact]
-        public async Task LoadIntoBufferAsync_CallMultipleTimesWithNullContentLength_CopyToAsyncMemoryStreamCalledOnce()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task LoadIntoBufferAsync_CallMultipleTimesWithNullContentLength_CopyToAsyncMemoryStreamCalledOnce(bool readStreamAsync)
         {
             var content = new MockContent();
             await content.LoadIntoBufferAsync();
             await content.LoadIntoBufferAsync();
 
             Assert.Equal(1, content.SerializeToStreamAsyncCount);
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.False(stream.CanWrite);
         }
 
@@ -414,11 +465,13 @@ namespace System.Net.Http.Functional.Tests
             Assert.IsType<IOException>(ex.InnerException);
         }
 
-        [Fact]
-        public async Task Dispose_GetReadStreamThenDispose_ReadStreamGetsDisposed()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Dispose_GetReadStreamThenDispose_ReadStreamGetsDisposed(bool readStreamAsync)
         {
             var content = new MockContent();
-            MockMemoryStream s = (MockMemoryStream) await content.ReadAsStreamAsync();
+            MockMemoryStream s = (MockMemoryStream)await content.ReadAsStreamAsync(readStreamAsync);;
             Assert.Equal(1, content.CreateContentReadStreamCount);
 
             Assert.Equal(0, s.DisposeCount);
@@ -544,9 +597,11 @@ namespace System.Net.Http.Functional.Tests
             var m = new MemoryStream();
 
             Assert.Throws<ObjectDisposedException>(() => { content.CopyToAsync(m); });
+            Assert.Throws<ObjectDisposedException>(() => { content.CopyTo(m, null, default); });
             Assert.Throws<ObjectDisposedException>(() => { content.ReadAsByteArrayAsync(); });
             Assert.Throws<ObjectDisposedException>(() => { content.ReadAsStringAsync(); });
             Assert.Throws<ObjectDisposedException>(() => { content.ReadAsStreamAsync(); });
+            Assert.Throws<ObjectDisposedException>(() => { content.ReadAsStream(); });
             Assert.Throws<ObjectDisposedException>(() => { content.LoadIntoBufferAsync(); });
 
             // Note that we don't throw when users access the Headers property. This is useful e.g. to be able to
@@ -831,8 +886,7 @@ namespace System.Net.Http.Functional.Tests
             DontOverrideCreateContentReadStream = 0x8,
             CanCalculateLength = 0x10,
             ThrowInTryComputeLength = 0x20,
-            ThrowInAsyncSerializeMethods = 0x40,
-            CreateContentReadStreamAsyncNeverCompletes = 0x80
+            ThrowInAsyncSerializeMethods = 0x40
         }
 
         private class MockContent : HttpContent
@@ -912,6 +966,9 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
 
+            protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken)
+                => SerializeToStreamAsync(stream, context, cancellationToken).GetAwaiter().GetResult();
+
             protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
                 throw new NotImplementedException(); // The overload with the CancellationToken should be called
 
@@ -973,11 +1030,6 @@ namespace System.Net.Http.Functional.Tests
                     if (cancellationToken.IsCancellationRequested)
                     {
                         return Task.FromCanceled<Stream>(cancellationToken);
-                    }
-
-                    if ((_options & MockOptions.CreateContentReadStreamAsyncNeverCompletes) != 0)
-                    {
-                        return new TaskCompletionSource<Stream>().Task;
                     }
 
                     return Task.FromResult<Stream>(new MockMemoryStream(_mockData, 0, _mockData.Length, false));

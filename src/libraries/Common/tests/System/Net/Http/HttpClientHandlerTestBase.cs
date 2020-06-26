@@ -172,5 +172,24 @@ namespace System.Net.Http.Functional.Tests
 #endif
             }
         }
+
+        public static Task<Stream> ReadAsStreamAsync(this HttpContent content, bool async, CancellationToken cancellationToken = default)
+        {
+            if (async)
+            {
+                return content.ReadAsStreamAsync(cancellationToken);
+            }
+            else
+            {
+#if NETCOREAPP
+                return Task.FromResult(content.ReadAsStream(cancellationToken));
+#else
+                // Framework won't ever have the sync API.
+                // This shouldn't be called due to AsyncBoolValues returning only true on Framework.
+                Debug.Fail("Framework doesn't have Sync API and it shouldn't be attempted to be tested.");
+                throw new Exception("Shouldn't be reachable");
+#endif
+            }
+        }
     }
 }
