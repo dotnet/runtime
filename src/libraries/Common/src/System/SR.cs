@@ -11,17 +11,13 @@ namespace System
     internal partial class SR
     {
 #if (!NETSTANDARD1_0 && !NETSTANDARD1_1 && !NET45) // AppContext is not supported on < NetStandard1.3 or < .NET Framework 4.5
-        private static bool s_usingResourceKeys = AppContext.TryGetSwitch("System.Resources.UseResourceKeys", out bool usingResourceKeys) ? usingResourceKeys : false;
+        private static readonly bool s_usingResourceKeys = AppContext.TryGetSwitch("System.Resources.UseResourceKeys", out bool usingResourceKeys) ? usingResourceKeys : false;
 #endif
 
         // This method is used to decide if we need to append the exception message parameters to the message when calling SR.Format.
         // by default it returns the value of System.Resources.UseResourceKeys AppContext switch or false if not specified.
         // Native code generators can replace the value this returns based on user input at the time of native code generation.
         // The Linker is also capable of replacing the value of this method when the application is being trimmed.
-        // Marked as NoInlining because if this is used in an AoT compiled app that is not compiled into a single file, the user
-        // could compile each module with a different setting for this. We want to make sure there's a consistent behavior
-        // that doesn't depend on which native module this method got inlined into.
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool UsingResourceKeys() =>
 #if (!NETSTANDARD1_0 && !NETSTANDARD1_1 && !NET45) // AppContext is not supported on < NetStandard1.3 or < .NET Framework 4.5
             s_usingResourceKeys;
