@@ -254,8 +254,13 @@ namespace System.Text.Json.Serialization
 
         public static bool IsNonGenericStackOrQueue(this Type type)
         {
+#if NETCOREAPP
+            Type? typeOfStack = typeof(System.Collections.Stack);
+            Type? typeOfQueue = typeof(System.Collections.Queue);
+#else
             Type? typeOfStack = Type.GetType("System.Collections.Stack, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
             Type? typeOfQueue = Type.GetType("System.Collections.Queue, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
+#endif
 
             Debug.Assert(typeOfStack != null);
             Debug.Assert(typeOfQueue != null);
