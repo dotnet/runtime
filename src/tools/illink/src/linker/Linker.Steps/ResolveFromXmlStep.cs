@@ -455,7 +455,7 @@ namespace Mono.Linker.Steps
 		void MarkMethod (TypeDefinition type, MethodDefinition method, bool required)
 		{
 			if (Annotations.IsMarked (method))
-				Context.LogWarning ($"Duplicate preserve of '{method.FullName}' in '{_xmlDocumentLocation}'", 2025, _xmlDocumentLocation);
+				Context.LogWarning ($"Duplicate preserve of '{method.GetDisplayName ()}' in '{_xmlDocumentLocation}'", 2025, _xmlDocumentLocation);
 
 			Annotations.Mark (method, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 			Annotations.MarkIndirectlyCalledMethod (method);
