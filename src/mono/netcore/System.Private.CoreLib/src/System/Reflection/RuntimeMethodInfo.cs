@@ -744,7 +744,7 @@ namespace System.Reflection
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeMethodInfo>(other);
     }
-
+#region Sync with _MonoReflectionMethod in object-internals.h
     [StructLayout(LayoutKind.Sequential)]
     internal class RuntimeConstructorInfo : ConstructorInfo
     {
@@ -753,6 +753,8 @@ namespace System.Reflection
         private string? name;
         private Type? reftype;
 #pragma warning restore 649
+#endregion
+        private string? toString;
 
         public override Module Module
         {
@@ -966,16 +968,26 @@ namespace System.Reflection
             return RuntimeMethodInfo.GetMethodBody(mhandle);
         }
 
+        // copied from CoreCLR's RuntimeConstructorInfo
         public override string ToString()
         {
-            StringBuilder sbName = new StringBuilder(Name);
-            sbName.Append("Void ");
+            if (toString == null)
+            {
+                var sbName = new ValueStringBuilder(MethodNameBufferSize);
 
-            sbName.Append('(');
-            RuntimeParameterInfo.FormatParameters(sbName, GetParametersNoCopy(), CallingConvention);
-            sbName.Append(')');
+                // "Void" really doesn't make sense here. But we'll keep it for compat reasons.
+                sbName.Append("Void ");
 
-            return sbName.ToString();
+                sbName.Append(Name);
+
+                sbName.Append('(');
+                AppendParameters(ref sbName, GetParameterTypes(), CallingConvention);
+                sbName.Append(')');
+
+                toString = sbName.ToString();
+            }
+
+            return toString;
         }
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
