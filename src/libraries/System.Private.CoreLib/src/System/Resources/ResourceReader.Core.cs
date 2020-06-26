@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -19,6 +20,7 @@ namespace System.Resources
         // statics used to dynamically call into BinaryFormatter
         // When successfully located s_binaryFormatterType will point to the BinaryFormatter type
         // and s_deserializeMethod will point to an unbound delegate to the deserialize method.
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         private static Type? s_binaryFormatterType;
         private static Func<object?, Stream, object>? s_deserializeMethod;
 
@@ -65,24 +67,47 @@ namespace System.Resources
             return graph;
         }
 
+        // TODO: Remove this DynamicDependencyAttributes when https://github.com/mono/linker/issues/943 is fixed.
+        [DynamicDependency("Deserialize", "System.Runtime.Serialization.Formatters.Binary.BinaryFormatter", "System.Runtime.Serialization.Formatters")]
         private void InitializeBinaryFormatter()
         {
-            LazyInitializer.EnsureInitialized(ref s_binaryFormatterType, () =>
-                Type.GetType("System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
-                throwOnError: true)!);
-
-            LazyInitializer.EnsureInitialized(ref s_deserializeMethod, () =>
+            if (s_binaryFormatterType == null || s_deserializeMethod == null)
             {
-                MethodInfo binaryFormatterDeserialize = s_binaryFormatterType!.GetMethod("Deserialize", new Type[] { typeof(Stream) })!;
+                // Important: keep this as a local that is populated by a Type.GetType call so that the dataflow
+                // analysis in IL Linker can reason about the subsequent GetMethod call.
+                // Accessing the type from the s_binaryFormatterType field would make IL Linker lose track of the value
+                // (the value could be overwritten from another thread, so IL Linker can't make assumptions about it).
+                Type binaryFormatterType =
+                    Type.GetType("System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                    throwOnError: true)!;
 
-                // create an unbound delegate that can accept a BinaryFormatter instance as object
-                return (Func<object?, Stream, object>)typeof(ResourceReader)
-                        .GetMethod(nameof(CreateUntypedDelegate), BindingFlags.NonPublic | BindingFlags.Static)!
-                        .MakeGenericMethod(s_binaryFormatterType)
-                        .Invoke(null, new object[] { binaryFormatterDeserialize })!;
-            });
+                if (s_binaryFormatterType == null)
+                {
+                    s_binaryFormatterType = binaryFormatterType;
+                }
+
+                if (s_deserializeMethod == null)
+                {
+                    MethodInfo binaryFormatterDeserialize = binaryFormatterType.GetMethod("Deserialize", new Type[] { typeof(Stream) })!;
+
+                    // create an unbound delegate that can accept a BinaryFormatter instance as object
+                    s_deserializeMethod = (Func<object?, Stream, object>)CreateUntypedDelegateMethodInfo()
+                            .Invoke(null, new object[] { binaryFormatterDeserialize })!;
+                }
+            }
 
             _binaryFormatter = Activator.CreateInstance(s_binaryFormatterType!)!;
+
+            // This is split off into a separate method only because we need a IL Linker suppression and the
+            // containing method is doing a lot of reflection we do want to get warnings for.
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+                Justification = "CreateUntypedDelegate doesn't have annotated generic parameters and this is safe")]
+            static MethodInfo CreateUntypedDelegateMethodInfo()
+            {
+                return typeof(ResourceReader)
+                    .GetMethod(nameof(CreateUntypedDelegate), BindingFlags.NonPublic | BindingFlags.Static)!
+                    .MakeGenericMethod(s_binaryFormatterType!);
+            }
         }
 
         // generic method that we specialize at runtime once we've loaded the BinaryFormatter type
