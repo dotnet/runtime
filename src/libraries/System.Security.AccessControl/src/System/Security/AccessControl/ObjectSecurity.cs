@@ -37,10 +37,10 @@ namespace System.Security.AccessControl
 
         internal readonly CommonSecurityDescriptor _securityDescriptor = null!;
 
-        private bool _ownerModified = false;
-        private bool _groupModified = false;
-        private bool _saclModified = false;
-        private bool _daclModified = false;
+        private bool _ownerModified;
+        private bool _groupModified;
+        private bool _saclModified;
+        private bool _daclModified;
 
         // only these SACL control flags will be automatically carry forward
         // when update with new security descriptor.

@@ -9,7 +9,7 @@ namespace System.Xml
 {
     internal class XmlAsyncCheckWriter : XmlWriter
     {
-        private readonly XmlWriter _coreWriter = null;
+        private readonly XmlWriter _coreWriter;
         private Task _lastTask = Task.CompletedTask;
 
         internal XmlWriter CoreWriter

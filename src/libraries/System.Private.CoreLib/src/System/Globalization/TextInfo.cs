@@ -27,7 +27,7 @@ namespace System.Globalization
         }
 
         private string? _listSeparator;
-        private bool _isReadOnly = false;
+        private bool _isReadOnly;
 
         private readonly string _cultureName;
         private readonly CultureData _cultureData;

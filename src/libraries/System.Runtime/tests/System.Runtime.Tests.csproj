@@ -80,6 +80,7 @@
     <Compile Include="System\FormatExceptionTests.cs" />
     <Compile Include="System\GCTests.cs" />
     <Compile Include="System\GuidTests.cs" />
+    <Compile Include="System\HalfTests.cs" />
     <Compile Include="System\HandleTests.cs" />
     <Compile Include="System\HashCodeTests.cs" />
     <Compile Include="System\IndexOutOfRangeExceptionTests.cs" />

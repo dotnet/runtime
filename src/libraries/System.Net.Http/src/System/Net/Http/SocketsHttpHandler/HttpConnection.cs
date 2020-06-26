@@ -57,7 +57,7 @@ namespace System.Net.Http
         private string[] _headerValues = Array.Empty<string>();
 
         private ValueTask<int>? _readAheadTask;
-        private int _readAheadTaskLock = 0; // 0 == free, 1 == held
+        private int _readAheadTaskLock; // 0 == free, 1 == held
         private byte[] _readBuffer;
         private int _readOffset;
         private int _readLength;

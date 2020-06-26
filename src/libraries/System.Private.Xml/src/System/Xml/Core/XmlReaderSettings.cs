@@ -27,7 +27,7 @@ namespace System.Xml
         private XmlNameTable? _nameTable;
 
         // XmlResolver
-        private XmlResolver? _xmlResolver = null;
+        private XmlResolver? _xmlResolver;
 
         // Text settings
         private int _lineNumberOffset;

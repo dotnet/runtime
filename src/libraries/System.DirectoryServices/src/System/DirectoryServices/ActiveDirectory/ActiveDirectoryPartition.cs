@@ -6,10 +6,10 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public abstract class ActiveDirectoryPartition : IDisposable
     {
-        private bool _disposed = false;
-        internal string partitionName = null;
-        internal DirectoryContext context = null;
-        internal DirectoryEntryManager directoryEntryMgr = null;
+        private bool _disposed;
+        internal string partitionName;
+        internal DirectoryContext context;
+        internal DirectoryEntryManager directoryEntryMgr;
 
         #region constructors
         protected ActiveDirectoryPartition()

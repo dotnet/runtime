@@ -46,9 +46,9 @@ namespace System.Drawing
     public sealed partial class Graphics : MarshalByRefObject, IDisposable, IDeviceContext
     {
         internal IMacContext? maccontext;
-        private bool disposed = false;
-        private static float defDpiX = 0;
-        private static float defDpiY = 0;
+        private bool disposed;
+        private static float defDpiX;
+        private static float defDpiY;
 
         internal Graphics(IntPtr nativeGraphics) => NativeGraphics = nativeGraphics;
 

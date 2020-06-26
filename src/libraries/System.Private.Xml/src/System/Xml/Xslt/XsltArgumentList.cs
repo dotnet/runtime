@@ -19,7 +19,7 @@ namespace System.Xml.Xsl
         private readonly Hashtable _extensions = new Hashtable();
 
         // Used for reporting xsl:message's during execution
-        internal XsltMessageEncounteredEventHandler xsltMessageEncountered = null;
+        internal XsltMessageEncounteredEventHandler xsltMessageEncountered;
 
         public XsltArgumentList() { }
 
