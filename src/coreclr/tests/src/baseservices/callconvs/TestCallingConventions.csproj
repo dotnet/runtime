@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- Disable test until we get new IL build tools -->
-    <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
+    <DisableProjectBuild>true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TestCallingConventions.cs" />
