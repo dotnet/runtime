@@ -378,6 +378,7 @@ namespace Tracing.Tests.Common
                 IEnumerable<IGrouping<int,FileInfo>> afterIpcs = Directory.GetFiles(Path.GetTempPath(), "dotnet-diagnostic*")
                     .Select(filename => new { pid = int.Parse(Regex.Match(filename, @"dotnet-diagnostic-(?<pid>\d+)").Groups["pid"].Value), fileInfo = new FileInfo(filename) })
                     .GroupBy(fileInfos => fileInfos.pid, fileInfos => fileInfos.fileInfo);
+                currentPids = System.Diagnostics.Process.GetProcesses().Select(pid => pid.Id).ToList();
 
                 // if there are pipes for processses that don't exist anymore,
                 // or a process has multiple pipes, we failed.
