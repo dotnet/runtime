@@ -18,8 +18,6 @@ namespace System.Security.Cryptography.Pkcs
         public Pkcs9DocumentDescription()
             : base(Oids.DocumentDescriptionOid.CopyOid())
         {
-            // CAPI doesn't have an OID mapping for szOID_CAPICOM_documentDescription, so we cannot use the faster
-            // FromOidValue factory
         }
 
         public Pkcs9DocumentDescription(string documentDescription)

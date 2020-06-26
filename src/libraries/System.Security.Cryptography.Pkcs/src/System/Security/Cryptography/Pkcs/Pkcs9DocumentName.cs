@@ -16,20 +16,18 @@ namespace System.Security.Cryptography.Pkcs
         //
 
         public Pkcs9DocumentName()
-            : base(new Oid(Oids.DocumentName))
+            : base(Oids.DocumentNameOid.CopyOid())
         {
-            // CAPI doesn't have an OID mapping for szOID_CAPICOM_documentName, so we cannot use the faster
-            // FromOidValue factory
         }
 
         public Pkcs9DocumentName(string documentName)
-            : base(Oids.DocumentName, Encode(documentName))
+            : base(Oids.DocumentNameOid.CopyOid(), Encode(documentName))
         {
             _lazyDocumentName = documentName;
         }
 
         public Pkcs9DocumentName(byte[] encodedDocumentName)
-            : base(Oids.DocumentName, encodedDocumentName)
+            : base(Oids.DocumentNameOid.CopyOid(), encodedDocumentName)
         {
         }
 
