@@ -1,9 +1,9 @@
 <linker>
   <assembly fullname="{AssemblyName}">
-    <!-- System.Resources.UsingResourceKeys removes resource strings and instead uses the resource key as the exception message -->
-    <resource name="{StringResourcesName}.resources" action="remove" feature="System.Resources.UsingResourceKeys" featurevalue="true" />
+    <!-- System.Resources.UseResourceKeys removes resource strings and instead uses the resource key as the exception message -->
+    <resource name="{StringResourcesName}.resources" action="remove" feature="System.Resources.UseResourceKeys" featurevalue="true" />
     <type fullname="System.SR">
-      <method signature="System.Boolean UsingResourceKeys()" body="stub" value="true" feature="System.Resources.UsingResourceKeys" featurevalue="true" />
+      <method signature="System.Boolean UsingResourceKeys()" body="stub" value="true" feature="System.Resources.UseResourceKeys" featurevalue="true" />
     </type>
   </assembly>
 </linker>
