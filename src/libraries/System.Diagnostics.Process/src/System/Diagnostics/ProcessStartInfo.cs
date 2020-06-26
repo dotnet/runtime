@@ -171,7 +171,7 @@ namespace System.Diagnostics
 
         internal string BuildArguments()
         {
-            if (_argumentList == null || ArgumentList.Count == 0)
+            if (_argumentList == null || _argumentList.Count == 0)
             {
                 return Arguments;
             }
@@ -185,9 +185,9 @@ namespace System.Diagnostics
 
         internal void AppendArgumentsTo(StringBuilder stringBuilder)
         {
-            if (_argumentList != null && ArgumentList.Count > 0)
+            if (_argumentList != null && _argumentList.Count > 0)
             {
-                foreach (string argument in ArgumentList)
+                foreach (string argument in _argumentList)
                 {
                     PasteArguments.AppendArgument(stringBuilder, argument);
                 }
