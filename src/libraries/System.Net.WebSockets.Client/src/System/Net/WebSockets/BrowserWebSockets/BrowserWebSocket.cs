@@ -57,7 +57,7 @@ namespace System.Net.WebSockets
         private const int _disposed = 3;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="System.Net.WebSockets.ClientWebSocket"/> class.
+        /// Initializes a new instance of the <see cref="System.Net.WebSockets.BrowserWebSocket"/> class.
         /// </summary>
         public BrowserWebSocket()
         {
@@ -67,7 +67,7 @@ namespace System.Net.WebSockets
         #region Properties
 
         /// <summary>
-        /// Gets the WebSocket state of the <see cref="System.Net.WebSockets.ClientWebSocket"/> instance.
+        /// Gets the WebSocket state of the <see cref="System.Net.WebSockets.BrowserWebSocket"/> instance.
         /// </summary>
         /// <value>The state.</value>
         public override WebSocketState State
@@ -222,7 +222,8 @@ namespace System.Net.WebSockets
                                                 using (loadEvent)
                                                 using (var target = (JSObject)loadEvent.GetObjectProperty("target"))
                                                 {
-                                                    if ((int)target.GetObjectProperty("readyState") == 2)
+                                                    // https://developer.mozilla.org/en-US/docs/Web/API/FileReader/readyState
+                                                    if ((int)target.GetObjectProperty("readyState") == 2) // DONE - The operation is complete.
                                                     {
                                                         using (var binResult = (ArrayBuffer)target.GetObjectProperty("result"))
                                                         {
