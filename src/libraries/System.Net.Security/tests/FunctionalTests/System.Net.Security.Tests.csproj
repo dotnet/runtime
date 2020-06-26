@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <AllowUnsafeBlocks Condition="'$(TargetsUnixOrBrowser)' == 'true'">true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS</TargetFrameworks>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
@@ -90,7 +90,7 @@
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Windows.cs"
              Link="Common\System\Net\Capability.Security.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnixOrBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="IdentityValidator.Unix.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Unix.cs"
              Link="Common\System\Net\Capability.Security.Unix.cs" />

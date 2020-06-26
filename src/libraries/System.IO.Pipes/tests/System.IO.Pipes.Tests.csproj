@@ -49,7 +49,7 @@
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Windows.cs" />
     <Compile Include="InteropTest.Windows.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnixOrBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.Unix.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.UnixDomainSockets.cs" />
     <Compile Include="InteropTest.Unix.cs" />

@@ -99,7 +99,7 @@
       <DependentUpon>TlsCipherSuiteData.Lookup.tt</DependentUpon>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnixOrBrowser)' != 'true' ">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <None Include="System\Net\Security\TlsCipherSuiteData.Lookup.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>

@@ -13,7 +13,7 @@
     <Compile Include="MemoryMappedViewStream.Tests.cs" />
     <Compile Include="MemoryMappedViewAccessor.Tests.cs" />
     <Compile Include="MemoryMappedFilesTestsBase.cs" />
-    <Compile Include="MemoryMappedFilesTestsBase.Unix.cs" Condition="'$(TargetsUnixOrBrowser)' == 'true'" />
+    <Compile Include="MemoryMappedFilesTestsBase.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'" />
     <Compile Include="MemoryMappedFilesTestsBase.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
              Link="Common\System\IO\TempFile.cs" />

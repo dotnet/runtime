@@ -226,7 +226,7 @@
              Link="ProductionCode\System\Net\Http\StringContent.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" Condition=" '$(TargetsUnixOrBrowser)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Windows.cs" Condition=" '$(TargetsWindows)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Windows.cs" />
@@ -234,7 +234,7 @@
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.OSX.cs" Condition=" ('$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.OSX.cs" />
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" Condition=" '$(TargetsUnixOrBrowser)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" Condition=" '$(TargetsWindows)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" />

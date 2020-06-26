@@ -82,7 +82,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs"
              Link="ProductionCode\Common\Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnixOrBrowser)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="..\..\src\System\Net\SocketException.Unix.cs"
              Link="ProductionCode\System\Net\SocketException.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Unix.cs"

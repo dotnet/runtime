@@ -73,7 +73,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs"
              Link="Common\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnixOrBrowser)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
              Link="Common\System\Net\Internals\SocketAddressPal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Interop.CheckedAccess.cs"
