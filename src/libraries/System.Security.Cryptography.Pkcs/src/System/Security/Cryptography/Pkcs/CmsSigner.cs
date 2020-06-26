@@ -14,8 +14,6 @@ namespace System.Security.Cryptography.Pkcs
 {
     public sealed class CmsSigner
     {
-        private static readonly Oid s_defaultAlgorithm = Oid.FromOidValue(Oids.Sha256, OidGroup.HashAlgorithm);
-
         private SubjectIdentifierType _signerIdentifierType;
 
         public X509Certificate2? Certificate { get; set; }
@@ -94,7 +92,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             Certificate = certificate;
-            DigestAlgorithm = s_defaultAlgorithm.CopyOid();
+            DigestAlgorithm = Oids.Sha256Oid.CopyOid();
             PrivateKey = privateKey;
         }
 
@@ -216,12 +214,12 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             bool signed;
-            Oid? signatureAlgorithm;
+            string? signatureAlgorithm;
             ReadOnlyMemory<byte> signatureValue;
 
             if (SignerIdentifierType == SubjectIdentifierType.NoSignature)
             {
-                signatureAlgorithm = new Oid(Oids.NoSignature, null);
+                signatureAlgorithm = Oids.NoSignature;
                 signatureValue = dataHash;
                 signed = true;
             }
@@ -243,7 +241,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             newSignerInfo.SignatureValue = signatureValue;
-            newSignerInfo.SignatureAlgorithm.Algorithm = signatureAlgorithm!.Value!;
+            newSignerInfo.SignatureAlgorithm.Algorithm = signatureAlgorithm!;
 
             X509Certificate2Collection certs = new X509Certificate2Collection();
             certs.AddRange(Certificates);
