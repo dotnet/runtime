@@ -7,6 +7,7 @@
   <!-- Shared CoreCLR -->
   <ItemGroup>
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
+    <Compile Include="System.Runtime.CompilerServices.VisualC.TypeForwards.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />
