@@ -408,6 +408,8 @@ namespace System.Net.WebSockets
         /// <param name="cancellationToken">Cancellation token.</param>
         public override async Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
         {
+            WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
+
             ThrowIfDisposed();
             ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseSent);
 

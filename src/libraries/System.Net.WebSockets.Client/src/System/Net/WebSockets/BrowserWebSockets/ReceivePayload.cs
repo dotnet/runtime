@@ -32,8 +32,7 @@ namespace System.Net.WebSockets
             var bytesTransferred = Math.Min(_dataMessageReceived.Length - _unconsumedDataOffset, arraySegment.Count);
             var endOfMessage = (_dataMessageReceived.Length - _unconsumedDataOffset) <= arraySegment.Count;
 
-            if (arraySegment.Array != null)
-                Buffer.BlockCopy(_dataMessageReceived, _unconsumedDataOffset, arraySegment.Array, arraySegment.Offset, bytesTransferred);
+            Buffer.BlockCopy(_dataMessageReceived, _unconsumedDataOffset, arraySegment.Array!, arraySegment.Offset, bytesTransferred);
 
             if (!endOfMessage)
                 _unconsumedDataOffset += arraySegment.Count;
