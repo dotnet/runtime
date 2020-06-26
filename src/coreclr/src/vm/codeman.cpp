@@ -1473,6 +1473,15 @@ void EEJitManager::SetCpuInfo()
             CPUCompileFlags.Set(InstructionSet_LZCNT);
         }
     }
+
+    if (!CPUCompileFlags.IsSet(InstructionSet_SSE))
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("SSE is not supported on the processor."));
+    }
+    if (!CPUCompileFlags.IsSet(InstructionSet_SSE2))
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("SSE2 is not supported on the processor."));
+    }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #if defined(TARGET_ARM64)

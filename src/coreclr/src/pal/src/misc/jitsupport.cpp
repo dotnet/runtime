@@ -132,6 +132,5 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
     // ARM64 intrinsics for Linux
     CPUCompileFlags.Set(InstructionSet_ArmBase);
     CPUCompileFlags.Set(InstructionSet_AdvSimd);
-#endif // defined(TARGET_ARM64)
 #endif // defined(HOST_ARM64)
 }
