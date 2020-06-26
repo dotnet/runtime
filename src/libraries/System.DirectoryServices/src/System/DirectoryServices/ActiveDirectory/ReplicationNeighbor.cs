@@ -37,9 +37,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private readonly string _sourceServerDN;
 
-        private readonly DirectoryServer _server = null;
-        private string _sourceServer = null;
-        private readonly Hashtable _nameTable = null;
+        private readonly DirectoryServer _server;
+        private string _sourceServer;
+        private readonly Hashtable _nameTable;
 
         internal ReplicationNeighbor(IntPtr addr, DirectoryServer server, Hashtable table)
         {

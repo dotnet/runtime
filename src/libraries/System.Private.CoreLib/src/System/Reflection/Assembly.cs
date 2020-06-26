@@ -209,7 +209,7 @@ namespace System.Reflection
         }
 
         // internal test hook
-        private static bool s_forceNullEntryPoint = false;
+        private static bool s_forceNullEntryPoint;
 
         public static Assembly? GetEntryAssembly()
         {

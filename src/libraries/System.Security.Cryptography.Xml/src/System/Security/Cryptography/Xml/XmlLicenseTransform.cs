@@ -11,9 +11,9 @@ namespace System.Security.Cryptography.Xml
     {
         private readonly Type[] _inputTypes = { typeof(XmlDocument) };
         private readonly Type[] _outputTypes = { typeof(XmlDocument) };
-        private XmlNamespaceManager _namespaceManager = null;
-        private XmlDocument _license = null;
-        private IRelDecryptor _relDecryptor = null;
+        private XmlNamespaceManager _namespaceManager;
+        private XmlDocument _license;
+        private IRelDecryptor _relDecryptor;
         private const string ElementIssuer = "issuer";
         private const string NamespaceUriCore = "urn:mpeg:mpeg21:2003:01-REL-R-NS";
 

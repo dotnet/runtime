@@ -34,6 +34,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         private readonly DebugLevel _debugLevel = GlobalConfig.DefaultDebugLevel;
-        private readonly string _debugLogFile = null;
+        private readonly string _debugLogFile;
     }
 }

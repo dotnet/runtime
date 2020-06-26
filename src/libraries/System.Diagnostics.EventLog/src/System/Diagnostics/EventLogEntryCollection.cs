@@ -72,7 +72,7 @@ namespace System.Diagnostics
         {
             private readonly EventLogEntryCollection entries;
             private int num = -1;
-            private EventLogEntry cachedEntry = null;
+            private EventLogEntry cachedEntry;
 
             internal EntriesEnumerator(EventLogEntryCollection entries)
             {

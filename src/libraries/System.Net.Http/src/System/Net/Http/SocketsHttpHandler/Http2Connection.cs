@@ -64,7 +64,7 @@ namespace System.Net.Http
         // report a cancellation to the user, but also block the connection until
         // the write completes. We avoid actually canceling the write, as we would
         // then have to close the whole connection.
-        private Task? _inProgressWrite = null;
+        private Task? _inProgressWrite;
 
         private const int MaxStreamId = int.MaxValue;
 
@@ -1679,7 +1679,7 @@ namespace System.Net.Http
 
         // Note that this is safe to be called concurrently by multiple threads.
 
-        public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             if (NetEventSource.IsEnabled) Trace($"{request}");
 

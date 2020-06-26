@@ -682,7 +682,7 @@ namespace System.Net
     internal class ResponseDescription
     {
         internal const int NoStatus = -1;
-        internal bool Multiline = false;
+        internal bool Multiline;
 
         internal int Status = NoStatus;
         internal string? StatusDescription;

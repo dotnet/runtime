@@ -55,7 +55,7 @@ namespace System.ConfigurationTests
                 "System.Configuration.UserSettingsGroup, System.Configuration.ConfigurationManager, Version=255.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51",
                 null)
             ]
-        [SkipOnMono("Mono always resolves backwards for the second type.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38351", TestRuntimes.Mono)]
         public void GetType_ConfigurationManagerTypes(string typeString, Type expectedType)
         {
             Assert.Equal(expectedType, TypeUtil.GetType(typeString, throwOnError: false));

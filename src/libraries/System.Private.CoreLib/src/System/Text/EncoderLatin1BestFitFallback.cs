@@ -30,7 +30,7 @@ namespace System.Text
     internal sealed partial class EncoderLatin1BestFitFallbackBuffer : EncoderFallbackBuffer
     {
         // Our variables
-        private char _cBestFit = '\0';
+        private char _cBestFit;
         private int _iCount = -1;
         private int _iSize;
 

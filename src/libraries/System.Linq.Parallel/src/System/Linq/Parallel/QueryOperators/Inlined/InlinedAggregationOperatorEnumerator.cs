@@ -33,7 +33,7 @@ namespace System.Linq.Parallel
     internal abstract class InlinedAggregationOperatorEnumerator<TIntermediate> : QueryOperatorEnumerator<TIntermediate, int>
     {
         private readonly int _partitionIndex; // This partition's unique index.
-        private bool _done = false;
+        private bool _done;
         protected CancellationToken _cancellationToken;
 
         //---------------------------------------------------------------------------------------

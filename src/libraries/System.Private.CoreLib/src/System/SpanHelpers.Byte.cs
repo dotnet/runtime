@@ -1552,6 +1552,13 @@ namespace System
                     goto NotEqual;
                 }
             }
+            //else if (AdvSimd.Arm64.IsSupported)
+            //{
+            //    // This API is not optimized with ARM64 intrinsics because there is not much performance win seen
+            //    // when compared to the vectorized implementation below. In addition to comparing the bytes in chunks of
+            //    // 16-bytes, the only check that is done is if there is a mismatch and if yes, return false. This check
+            //    // done with Vector<T> will generate same code by JIT as that if used ARM64 intrinsic instead.
+            //}
             else if (Vector.IsHardwareAccelerated && length >= (nuint)Vector<byte>.Count)
             {
                 nuint offset = 0;
@@ -1787,6 +1794,15 @@ namespace System
                     return result;
                 }
             }
+            //else if (AdvSimd.Arm64.IsSupported)
+            //{
+            //    // This API is not optimized with ARM64 intrinsics because there is not much performance win seen
+            //    // when compared to the vectorized implementation below. There were some wins if the mismatch happen
+            //    // after 8th index of the chunk because with ARM64 intrinsic, using fewer instructions the first mismatched
+            //    // index can be retrieved. In case of vectorization, sequential scan has to be done instead. However, at the
+            //    // same time, there are losses if the mismatch index is less than 7~8. So the overall benefit doesn't justify
+            //    // to optimize this method with ARM64 hardware intrinsics.
+            //}
             else if (Vector.IsHardwareAccelerated)
             {
                 if (lengthToExamine > (nuint)Vector<byte>.Count)

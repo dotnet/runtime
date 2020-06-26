@@ -94,7 +94,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelingViaCancelPendingFlushThrows()
         {
             var helloBytes = Encoding.UTF8.GetBytes("Hello World");
@@ -113,7 +113,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelingViaCancellationTokenThrows()
         {
             var helloBytes = Encoding.UTF8.GetBytes("Hello World");
@@ -133,7 +133,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelingStreamViaCancellationTokenThrows()
         {
             var pipe = new Pipe();

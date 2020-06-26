@@ -42,8 +42,7 @@ public class Program
             TestUnmanagedCallersOnlyValid();
             TestUnmanagedCallersOnlyValid_OnNewNativeThread();
             TestUnmanagedCallersOnlyValid_PrepareMethod();
-            // Fails due to https://github.com/dotnet/runtime/issues/38192
-            //TestUnmanagedCallersOnlyMultipleTimesValid();
+            TestUnmanagedCallersOnlyMultipleTimesValid();
             NegativeTest_NonStaticMethod();
             NegativeTest_ViaDelegate();
             NegativeTest_NonBlittable();

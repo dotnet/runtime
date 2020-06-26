@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Caching.Memory
     public class MemoryCache : IMemoryCache
     {
         private readonly ConcurrentDictionary<object, CacheEntry> _entries;
-        private long _cacheSize = 0;
+        private long _cacheSize;
         private bool _disposed;
         private ILogger _logger;
 
