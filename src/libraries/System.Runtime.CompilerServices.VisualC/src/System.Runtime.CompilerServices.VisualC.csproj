@@ -2,12 +2,12 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.CompilerServices.VisualC</AssemblyName>
     <Nullable>enable</Nullable>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <!-- Shared CoreCLR -->
   <ItemGroup>
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
-    <Compile Include="System.Runtime.CompilerServices.VisualC.TypeForwards.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />
