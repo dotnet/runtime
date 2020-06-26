@@ -188,6 +188,10 @@ namespace Internal.JitInterface
             {
                 return true;
             }
+            if (methodNeedingCode.IsInternalCall)
+            {
+                return true;
+            }
             if (methodNeedingCode.OwningType.IsDelegate && (
                 methodNeedingCode.IsConstructor ||
                 methodNeedingCode.Name == "BeginInvoke" ||
