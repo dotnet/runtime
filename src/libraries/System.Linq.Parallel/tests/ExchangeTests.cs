@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -88,10 +89,15 @@ namespace System.Linq.Parallel.Tests
         // The basic tests are covered elsewhere, although without WithDegreeOfParallelism
         // or WithMergeOptions
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Partitioning_Default(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
+            if (partitions > 1 && !PlatformDetection.IsThreadingSupported)
+            {
+                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+            }
+
             _ = count;
             int seen = 0;
             foreach (int i in labeled.Item.WithDegreeOfParallelism(partitions).Select(i => i))
@@ -108,10 +114,15 @@ namespace System.Linq.Parallel.Tests
             Partitioning_Default(labeled, count, partitions);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Partitioning_Striped(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
+            if (partitions > 1 && !PlatformDetection.IsThreadingSupported)
+            {
+                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+            }
+
             int seen = 0;
             foreach (int i in labeled.Item.WithDegreeOfParallelism(partitions).Take(count).Select(i => i))
             {
@@ -147,7 +158,7 @@ namespace System.Linq.Parallel.Tests
             Merge_Ordered(labeled, count, options);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(ThrowOnCount_AllMergeOptions_MemberData), new[] { 4, 8 })]
         // FailingMergeData has enumerables that throw errors when attempting to perform the nth enumeration.
         // This test checks whether the query runs in a pipelined or buffered fashion.
@@ -156,7 +167,7 @@ namespace System.Linq.Parallel.Tests
             Assert.Equal(0, labeled.Item.WithDegreeOfParallelism(count - 1).WithMergeOptions(options).First());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(MergeData), new[] { 4, 8 })]
         // This test checks whether the query runs in a pipelined or buffered fashion.
         public static void Merge_Ordered_Pipelining_Select(Labeled<ParallelQuery<int>> labeled, int count, ParallelMergeOptions options)

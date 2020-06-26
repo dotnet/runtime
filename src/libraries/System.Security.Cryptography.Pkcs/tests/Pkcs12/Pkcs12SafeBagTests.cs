@@ -64,9 +64,12 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             Pkcs12SafeBag safeBag = new TestSafeBag(Oids.Aes192);
             Oid firstCall = safeBag.GetBagId();
             Oid secondCall = safeBag.GetBagId();
-            Assert.NotSame(firstCall, secondCall);
+
             Assert.Equal(Oids.Aes192, firstCall.Value);
             Assert.Equal(firstCall.Value, secondCall.Value);
+#if !NETCOREAPP
+            Assert.NotSame(firstCall, secondCall);
+#endif
         }
 
         [Fact]
