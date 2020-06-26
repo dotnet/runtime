@@ -1168,26 +1168,6 @@ namespace Internal.JitInterface
             {
                 pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
             }
-            else if (constrainedType.IsRuntimeDeterminedSubtype || exactType.IsRuntimeDeterminedSubtype)
-            {
-                Debug.Assert(false);
-
-                // <NICE> It shouldn't really matter what we do here - but the x86 JIT is annoyingly sensitive
-                // about what we do, since it pretend generic variables are reference types and generates
-                // an internal JIT tree even when just verifying generic code. </NICE>
-                if (constrainedType.IsRuntimeDeterminedType)
-                {
-                    pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_DEREF_THIS; // convert 'this' of type &T --> T
-                }
-                else if (constrainedType.IsValueType)
-                {
-                    pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS; // convert 'this' of type &VC<T> --> boxed(VC<T>)
-                }
-                else
-                {
-                    pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_DEREF_THIS; // convert 'this' of type &C<T> --> C<T>
-                }
-            }
             else
             {
                 // We have a "constrained." call.  Try a partial resolve of the constraint call.  Note that this
