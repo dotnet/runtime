@@ -279,25 +279,8 @@ namespace System.Net.Http
             }
             else // have a Task<Stream>
             {
-                // Several options here:
-                // 0. Forbid any combination of ReadAsStreamAsync and ReadAsStream to be called on the same HttpContent instance.
-                //    It would require introducing a new variable and checking it the same way as we check for _disposed.
-                // 1. Just throw in any case, the ReadAsStreamAsync has been called previously
-                //    It will throw even if ReadAsStreamAsync had Stream available synchrounously
+                // Throw if ReadAsStreamAsync has been called previously since _contentReadStream contains a cached task.
                 throw new HttpRequestException(SR.net_http_content_read_as_stream_has_task);
-                // 2. If the task is completed, return the stream it holds; otherwise throw.
-                /*Debug.Assert(_contentReadStream is Task<Stream>, $"Expected a Task<Stream>, got ${_contentReadStream}");
-                Task<Stream> t = (Task<Stream>)_contentReadStream;
-                Stream s = t.Status == TaskStatus.RanToCompletion ? t.Result : throw new HttpRequestException(SR.net_http_content_read_as_stream_has_task);*/
-                // 3. If the task is completed, return the stream it holds; call CreateContentReadStream.
-                //    Optionally, store the stream in _contentReadStream, effectivelly overriding stored task.
-                /*Debug.Assert(_contentReadStream is Task<Stream>, $"Expected a Task<Stream>, got ${_contentReadStream}");
-                Task<Stream> t = (Task<Stream>)_contentReadStream;
-                Stream s = t.Status == TaskStatus.RanToCompletion ? t.Result : CreateContentReadStream(cancellationToken);
-                _contentReadStream = s;
-                return s;*/
-                // 4. Split _contentReadStream into 2 fields (stream and task).
-                //    Allowing to have multiple calls to ReadAsStream/ReadAsStreamAsync with cached results.
             }
         }
 

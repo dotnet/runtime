@@ -274,9 +274,18 @@ namespace System.Net.Http
                     HttpContent nestedContent = _nestedContent[contentIndex];
                     streams[streamIndex++] = EncodeStringToNewStream(SerializeHeadersToString(scratch, contentIndex, nestedContent));
 
-                    Stream readStream = async ?
-                        nestedContent.TryReadAsStream() ?? await nestedContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false) ?? new MemoryStream() :
-                        nestedContent.ReadAsStream();
+                    Stream readStream;
+                    if (async)
+                    {
+                        readStream = nestedContent.TryReadAsStream() ?? await nestedContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        readStream = nestedContent.ReadAsStream();
+                    }
+                    // Cannot be null, at least an empty stream is necessary.
+                    readStream ??= new MemoryStream();
+
                     if (!readStream.CanSeek)
                     {
                         // Seekability impacts whether HttpClientHandlers are able to rewind. To maintain compat
