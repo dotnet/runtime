@@ -212,66 +212,6 @@ namespace Tracing.Tests.ReverseValidation
             return fSuccess;
         }
 
-        public static async Task<bool> TEST_ReverseConnectionCanRecycleWhileTracing()
-        {
-            bool fSuccess = true;
-            string serverName = ReverseServer.MakeServerAddress();
-            Logger.logger.Log($"Server name is '{serverName}'");
-            Task<bool> subprocessTask = Utils.RunSubprocess(
-                currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> 
-                {
-                    { Utils.DiagnosticsMonitorAddressEnvKey, serverName },
-                    { Utils.DiagnosticsMonitorPauseOnStartEnvKey, "0" }
-                },
-                duringExecution: async (int pid) =>
-                {
-                    ManualResetEvent mre = new ManualResetEvent(false);
-                    Task regularTask = Task.Run(async () => 
-                    {
-                        try
-                        {
-                            var config = new SessionConfiguration(
-                                circularBufferSizeMB: 1000,
-                                format: EventPipeSerializationFormat.NetTrace,
-                                providers: new List<Provider> { 
-                                    new Provider("Microsoft-DotNETCore-SampleProfiler")
-                                });
-                            Logger.logger.Log("Starting EventPipeSession over standard connection");
-                            using Stream stream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
-                            Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
-                            using var source = new EventPipeEventSource(stream);
-                            Task readerTask = Task.Run(() => source.Process());
-                            await Task.Delay(500);
-                            Logger.logger.Log("Stopping EventPipeSession over standard connection");
-                            EventPipeClient.StopTracing(pid, sessionId);
-                            await readerTask;
-                            Logger.logger.Log("Stopped EventPipeSession over standard connection");
-                        }
-                        finally
-                        {
-                            mre.Set();
-                        }
-                    });
-
-                    Task reverseTask = Task.Run(async () => 
-                    {
-                        while (!mre.WaitOne(0))
-                        {
-                            var ad1 = await ReverseServer.CreateServerAndReceiveAdvertisement(serverName);
-                            Logger.logger.Log(ad1.ToString());
-                        }
-                    });
-
-                    await Task.WhenAll(reverseTask, regularTask);
-                }
-            );
-
-            fSuccess &= await subprocessTask;
-
-            return fSuccess;
-        }
-
         public static async Task<bool> TEST_StandardConnectionStillWorksIfReverseConnectionIsBroken()
         {
             bool fSuccess = true;
