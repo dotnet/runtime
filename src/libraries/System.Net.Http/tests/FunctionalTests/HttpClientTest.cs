@@ -824,6 +824,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var sendTask = Task.Run(() => {
                         using HttpClient httpClient = CreateHttpClient();
+                        httpClient.Timeout = TimeSpan.FromMinutes(5);
 
                         HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
                             Content = new CustomContent(new Action<Stream>(stream =>
@@ -917,6 +918,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var sendTask = Task.Run(() => {
                         using HttpClient httpClient = CreateHttpClient();
+                        httpClient.Timeout = TimeSpan.FromMinutes(5);
 
                         HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
                             Content = new CustomContent(stream =>
