@@ -57,7 +57,7 @@ if ($useWindowsContainers)
     $env:DOCKERFILE="windows.Dockerfile"
 }
 
-docker-compose --file "$COMPOSE_FILE" build $BUILD_ARGS.Split()
+(docker-compose --file "$COMPOSE_FILE" build $BUILD_ARGS.Split()) 2> $null
 
 # Run the stress app
 
