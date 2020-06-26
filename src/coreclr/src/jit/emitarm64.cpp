@@ -14921,10 +14921,12 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         }
     }
 
-   bool isFirstInstrInIG = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+    bool isFirstInstrInIG = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
 
-   // Don't look back across IG boundary or if the last instruction was not mov
-   if (!isFirstInstrInIG && emitLastIns != nullptr && emitLastIns->idIns() == INS_mov)
+    if (!isFirstInstrInIG && // Don't optimize if instruction is not the first instruction in IG.
+        (emitLastIns != nullptr &&
+         emitLastIns->idIns() == INS_mov) && // Don't optimize if last instruction was not 'mov'.
+        (emitLastIns->idOpSize() == size))   // Don't optimize if operand size is different than previous instruction.
     {
         // Check if we did same move in prev instruction except dst/src were switched.
         regNumber prevDst = emitLastIns->idReg1();
@@ -14937,9 +14939,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
             return true;
         }
 
-        if (((size == EA_8BYTE) || (size == EA_16BYTE)) && // Only optimize instructions that don't clear upper bits
-            (emitLastIns->idOpSize() == size) &&  // Only optimize if operand size is same as previous instruction
-            (prevDst == src) && (prevSrc == dst)) // Only optimize if this is an opposite mov.
+        if (((size == EA_8BYTE) || (size == EA_16BYTE)) && // Only optimize instructions that don't clear upper bits.
+            (prevDst == src) && (prevSrc == dst))          // Only optimize if this is an opposite mov.
         {
             JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst to src "
                     "register.\n");
