@@ -269,6 +269,8 @@ namespace System.Text.Json.Serialization
             return false;
         }
 
+        // This method takes an unannotated string which makes linker reflection analysis lose track of the type we are
+        // looking for. This indirection allows the removal of the type if it is not used in the calling application.
         private static Type? GetTypeIfExists(string name) => Type.GetType(name, false);
     }
 }
