@@ -40,7 +40,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
              Link="Common\Interop\Unix\Interop.Stat.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+  <ItemGroup>
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
