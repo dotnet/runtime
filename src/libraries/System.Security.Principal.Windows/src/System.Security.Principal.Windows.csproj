@@ -138,7 +138,7 @@
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) and '$(TargetsWindows)' != 'true'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
