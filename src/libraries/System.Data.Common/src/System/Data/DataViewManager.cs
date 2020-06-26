@@ -16,7 +16,7 @@ namespace System.Data
         private DataSet _dataSet;
         private readonly DataViewManagerListItemTypeDescriptor _item;
         private readonly bool _locked;
-        internal int _nViews = 0;
+        internal int _nViews;
 
         private static readonly NotSupportedException s_notSupported = new NotSupportedException();
 

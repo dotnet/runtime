@@ -5218,7 +5218,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         }
 
         // for testing; do not make this readonly
-        private static bool s_tracingEnabled = false;
+        private static bool s_tracingEnabled;
 #endif // _LOGGING
     }
 

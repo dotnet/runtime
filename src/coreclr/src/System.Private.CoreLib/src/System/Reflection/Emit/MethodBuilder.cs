@@ -847,8 +847,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal bool m_canBeRuntimeImpl = false;
-        internal bool m_isDllImport = false;
+        internal bool m_canBeRuntimeImpl;
+        internal bool m_isDllImport;
 
         #endregion
     }

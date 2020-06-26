@@ -33,7 +33,7 @@ namespace System.Text.RegularExpressions
         internal WeakReference<RegexReplacement?>? _replref;  // cached parsed replacement pattern
         private volatile RegexRunner? _runner;                // cached runner
         private RegexCode? _code;                             // if interpreted, this is the code for RegexInterpreter
-        private bool _refsInitialized = false;
+        private bool _refsInitialized;
 
         protected Regex()
         {

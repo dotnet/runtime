@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Specialized;
-using System.Globalization;
 using System.Net.Mail;
 using System.Text;
 
@@ -14,8 +13,6 @@ namespace System.Net.Mime
     /// </summary>
     internal class HeaderCollection : NameValueCollection
     {
-        private readonly MimeBasePart? _part = null;
-
         // default constructor
         // intentionally override the default comparer in the derived base class
         internal HeaderCollection() : base(StringComparer.OrdinalIgnoreCase)
@@ -36,17 +33,6 @@ namespace System.Net.Mime
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(name)), nameof(name));
             }
 
-            MailHeaderID id = MailHeaderInfo.GetID(name);
-
-            if (id == MailHeaderID.ContentType && _part != null)
-            {
-                _part.ContentType = null!; // this throws ArgumentNullException
-            }
-            else if (id == MailHeaderID.ContentDisposition && _part is MimePart)
-            {
-                ((MimePart)_part).ContentDisposition = null;
-            }
-
             base.Remove(name);
         }
 
@@ -65,16 +51,6 @@ namespace System.Net.Mime
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(name)), nameof(name));
             }
 
-            MailHeaderID id = MailHeaderInfo.GetID(name);
-
-            if (id == MailHeaderID.ContentType && _part != null)
-            {
-                _part.ContentType.PersistIfNeeded(this, false);
-            }
-            else if (id == MailHeaderID.ContentDisposition && _part is MimePart)
-            {
-                ((MimePart)_part!).ContentDisposition!.PersistIfNeeded(this, false);
-            }
             return base.Get(name);
         }
 
@@ -92,16 +68,6 @@ namespace System.Net.Mime
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(name)), nameof(name));
             }
 
-            MailHeaderID id = MailHeaderInfo.GetID(name);
-
-            if (id == MailHeaderID.ContentType && _part != null)
-            {
-                _part.ContentType.PersistIfNeeded(this, false);
-            }
-            else if (id == MailHeaderID.ContentDisposition && _part is MimePart)
-            {
-                ((MimePart)_part).ContentDisposition!.PersistIfNeeded(this, false);
-            }
             return base.GetValues(name);
         }
 
@@ -156,22 +122,9 @@ namespace System.Net.Mime
             // normalize the case of well known headers
             name = MailHeaderInfo.NormalizeCase(name);
 
-            MailHeaderID id = MailHeaderInfo.GetID(name);
-
             value = value.Normalize(NormalizationForm.FormC);
 
-            if (id == MailHeaderID.ContentType && _part != null)
-            {
-                _part.ContentType.Set(value.ToLowerInvariant(), this);
-            }
-            else if (id == MailHeaderID.ContentDisposition && _part is MimePart)
-            {
-                ((MimePart)_part).ContentDisposition!.Set(value.ToLowerInvariant(), this);
-            }
-            else
-            {
-                base.Set(name, value);
-            }
+            base.Set(name, value);
         }
 
 
@@ -201,22 +154,9 @@ namespace System.Net.Mime
             // normalize the case of well known headers
             name = MailHeaderInfo.NormalizeCase(name);
 
-            MailHeaderID id = MailHeaderInfo.GetID(name);
-
             value = value.Normalize(NormalizationForm.FormC);
 
-            if (id == MailHeaderID.ContentType && _part != null)
-            {
-                _part.ContentType.Set(value.ToLowerInvariant(), this);
-            }
-            else if (id == MailHeaderID.ContentDisposition && _part is MimePart)
-            {
-                ((MimePart)_part).ContentDisposition!.Set(value.ToLowerInvariant(), this);
-            }
-            else
-            {
-                InternalAdd(name, value);
-            }
+            InternalAdd(name, value);
         }
     }
 }
