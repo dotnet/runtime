@@ -91,15 +91,15 @@ namespace System.Xml.Schema
         internal object? MinExclusive;
         internal int TotalDigits;
         internal int FractionDigits;
-        internal RestrictionFlags Flags = 0;
-        internal RestrictionFlags FixedFlags = 0;
+        internal RestrictionFlags Flags;
+        internal RestrictionFlags FixedFlags;
     }
 
     internal abstract class DatatypeImplementation : XmlSchemaDatatype
     {
         private XmlSchemaDatatypeVariety _variety = XmlSchemaDatatypeVariety.Atomic;
-        private RestrictionFacets? _restriction = null;
-        private DatatypeImplementation? _baseType = null;
+        private RestrictionFacets? _restriction;
+        private DatatypeImplementation? _baseType;
         private XmlValueConverter? _valueConverter;
         private XmlSchemaType? _parentSchemaType;
 

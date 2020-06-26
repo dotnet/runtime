@@ -24,8 +24,8 @@ namespace System.Linq.Parallel
     internal sealed class ElementAtQueryOperator<TSource> : UnaryQueryOperator<TSource, TSource>
     {
         private readonly int _index; // The index that we're looking for.
-        private readonly bool _prematureMerge = false; // Whether to prematurely merge the input of this operator.
-        private readonly bool _limitsParallelism = false; // Whether this operator limits parallelism
+        private readonly bool _prematureMerge; // Whether to prematurely merge the input of this operator.
+        private readonly bool _limitsParallelism; // Whether this operator limits parallelism
 
         //---------------------------------------------------------------------------------------
         // Constructs a new instance of the contains search operator.

@@ -179,8 +179,8 @@ namespace System.DirectoryServices.AccountManagement
         private readonly SAMStoreCtx _storeCtx;
         private readonly DirectoryEntry _ctxBase;
         private readonly DirectoryEntries _entries;
-        private readonly IEnumerator _enumerator = null;  // the enumerator for "entries"
-        private DirectoryEntry _current = null;  // the DirectoryEntry that we're currently positioned at
+        private readonly IEnumerator _enumerator;  // the enumerator for "entries"
+        private DirectoryEntry _current;  // the DirectoryEntry that we're currently positioned at
 
         // Filter parameters
         private readonly int _sizeLimit;  // -1 == no limit
@@ -188,10 +188,10 @@ namespace System.DirectoryServices.AccountManagement
         private readonly SAMMatcher _matcher;
 
         // Count of number of results returned so far
-        private int _resultsReturned = 0;
+        private int _resultsReturned;
 
         // Have we run out of entries?
-        private bool _endReached = false;
+        private bool _endReached;
     }
 
     internal abstract class SAMMatcher

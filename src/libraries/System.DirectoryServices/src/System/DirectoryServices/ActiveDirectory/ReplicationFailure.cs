@@ -12,9 +12,9 @@ namespace System.DirectoryServices.ActiveDirectory
         private readonly string _sourceDsaDN;
         internal int lastResult;
 
-        private readonly DirectoryServer _server = null;
-        private string _sourceServer = null;
-        private readonly Hashtable _nameTable = null;
+        private readonly DirectoryServer _server;
+        private string _sourceServer;
+        private readonly Hashtable _nameTable;
 
         internal ReplicationFailure(IntPtr addr, DirectoryServer server, Hashtable table)
         {

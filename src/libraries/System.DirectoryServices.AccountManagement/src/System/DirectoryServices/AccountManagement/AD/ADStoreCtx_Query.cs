@@ -309,7 +309,7 @@ namespace System.DirectoryServices.AccountManagement
             {typeof(BadLogonCountFilter),                "badPwdCount", new FilterConverterDelegate(MatchingIntConverter)}
         };
 
-        private static Hashtable s_filterPropertiesTable = null;
+        private static Hashtable s_filterPropertiesTable;
 
         private class FilterPropertyTableEntry
         {

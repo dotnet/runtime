@@ -28,7 +28,7 @@ namespace System.Linq.Parallel
         private QuerySettings _querySettings;
         private readonly ParallelMergeOptions? _mergeOptions;
         private readonly bool _suppressOrderPreservation;
-        private int _moveNextIteration = 0;
+        private int _moveNextIteration;
         private bool _hasQueryOpeningFailed;
 
         // -- Cancellation and Dispose fields--

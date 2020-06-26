@@ -1268,7 +1268,7 @@ namespace System.Diagnostics
 
     internal class PerformanceMonitor
     {
-        private PerformanceDataRegistryKey perfDataKey = null;
+        private PerformanceDataRegistryKey perfDataKey;
         private readonly string machineName;
 
         internal PerformanceMonitor(string machineName)

@@ -42,7 +42,7 @@ namespace System.Diagnostics
             public override void WriteLine(string? message) { TraceInternal.WriteLine(message); }
         }
 
-        private static volatile string? s_appName = null;
+        private static volatile string? s_appName;
         private static volatile TraceListenerCollection? s_listeners;
         private static volatile bool s_autoFlush;
         private static volatile bool s_useGlobalLock;

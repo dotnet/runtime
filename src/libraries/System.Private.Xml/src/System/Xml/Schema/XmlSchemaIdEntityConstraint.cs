@@ -15,7 +15,7 @@ namespace System.Xml.Schema
         private XmlSchemaXPath? _selector;
         private readonly XmlSchemaObjectCollection _fields = new XmlSchemaObjectCollection();
         private XmlQualifiedName _qualifiedName = XmlQualifiedName.Empty;
-        private CompiledIdentityConstraint? _compiledConstraint = null;
+        private CompiledIdentityConstraint? _compiledConstraint;
 
         [XmlAttribute("name")]
         public string? Name

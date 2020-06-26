@@ -8,11 +8,11 @@ namespace System.Configuration
 {
     public abstract class SettingsBase
     {
-        private SettingsPropertyCollection _properties = null;
-        private SettingsProviderCollection _providers = null;
-        private readonly SettingsPropertyValueCollection _propertyValues = null;
-        private SettingsContext _context = null;
-        private bool _isSynchronized = false;
+        private SettingsPropertyCollection _properties;
+        private SettingsProviderCollection _providers;
+        private readonly SettingsPropertyValueCollection _propertyValues;
+        private SettingsContext _context;
+        private bool _isSynchronized;
 
         protected SettingsBase()
         {
