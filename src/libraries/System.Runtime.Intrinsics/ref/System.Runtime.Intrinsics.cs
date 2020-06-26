@@ -871,6 +871,9 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<float> Insert(System.Runtime.Intrinsics.Vector64<float> vector, byte index, float data) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ushort> Insert(System.Runtime.Intrinsics.Vector64<ushort> vector, byte index, ushort data) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<uint> Insert(System.Runtime.Intrinsics.Vector64<uint> vector, byte index, uint data) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> InsertScalar(System.Runtime.Intrinsics.Vector128<double> result, byte resultIndex, System.Runtime.Intrinsics.Vector64<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<long> InsertScalar(System.Runtime.Intrinsics.Vector128<long> result, byte resultIndex, System.Runtime.Intrinsics.Vector64<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> InsertScalar(System.Runtime.Intrinsics.Vector128<ulong> result, byte resultIndex, System.Runtime.Intrinsics.Vector64<ulong> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> LeadingSignCount(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> LeadingSignCount(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<sbyte> LeadingSignCount(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
