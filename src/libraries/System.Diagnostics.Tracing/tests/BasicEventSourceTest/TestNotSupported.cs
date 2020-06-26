@@ -21,12 +21,10 @@ namespace BasicEventSourceTests
         /// feature switch is set to disable all EventSource operations.
         /// </summary>
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/arcade/pull/5698", TargetFrameworkMonikers.Any)]
         public void TestBasicOperations_IsSupported_False()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            // Requires https://github.com/dotnet/arcade/pull/5698 to be merged into dotnet/runtime
-            // options.RuntimeConfigurationOptions.Add("System.Diagnostics.Tracing.EventSource.IsSupported", "false");
+            options.RuntimeConfigurationOptions.Add("System.Diagnostics.Tracing.EventSource.IsSupported", false);
 
             RemoteExecutor.Invoke(() =>
             {
