@@ -349,6 +349,8 @@ namespace System.Net.Http
                     w.Dispose();
                     _creditWaiter = null;
                 }
+
+                if (HttpTelemetry.IsEnabled) HttpTelemetry.Log.RequestStop();
             }
 
             private void Cancel()
@@ -383,6 +385,8 @@ namespace System.Net.Http
                 {
                     _waitSource.SetResult(true);
                 }
+
+                if (HttpTelemetry.IsEnabled) HttpTelemetry.Log.RequestAborted();
             }
 
             // Returns whether the waiter should be signalled or not.

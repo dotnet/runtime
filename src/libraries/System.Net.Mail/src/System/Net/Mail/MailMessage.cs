@@ -25,8 +25,8 @@ namespace System.Net.Mail
         private string? _body = string.Empty;
         private Encoding? _bodyEncoding;
         private TransferEncoding _bodyTransferEncoding = TransferEncoding.Unknown;
-        private bool _isBodyHtml = false;
-        private bool _disposed = false;
+        private bool _isBodyHtml;
+        private bool _disposed;
         private readonly Message _message;
         private DeliveryNotificationOptions _deliveryStatusNotification = DeliveryNotificationOptions.None;
 

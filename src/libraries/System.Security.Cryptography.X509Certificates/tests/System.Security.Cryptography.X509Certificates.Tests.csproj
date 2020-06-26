@@ -34,9 +34,11 @@
     <Compile Include="PfxTests.cs" />
     <Compile Include="PropsTests.cs" />
     <Compile Include="PublicKeyTests.cs" />
+    <Compile Include="TempFileHolder.cs" />
     <Compile Include="TestData.cs" />
     <Compile Include="TestEnvironmentConfiguration.cs" />
     <Compile Include="X500DistinguishedNameEncodingTests.cs" />
+    <Compile Include="X509Certificate2PemTests.cs" />
     <Compile Include="X500DistinguishedNameTests.cs" />
     <Compile Include="X509StoreTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"

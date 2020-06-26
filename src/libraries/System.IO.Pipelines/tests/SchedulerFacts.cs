@@ -89,7 +89,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DefaultReaderSchedulerRunsOnSynchronizationContext()
         {
             SynchronizationContext previous = SynchronizationContext.Current;
@@ -133,7 +133,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DefaultReaderSchedulerIgnoresSyncContextIfConfigureAwaitFalse()
         {
             // Get off the xunit sync context
@@ -181,7 +181,7 @@ namespace System.IO.Pipelines.Tests
 
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DefaultReaderSchedulerRunsOnThreadPool()
         {
             var pipe = new Pipe(new PipeOptions(useSynchronizationContext: false));
@@ -210,7 +210,7 @@ namespace System.IO.Pipelines.Tests
             await reading;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DefaultWriterSchedulerRunsOnThreadPool()
         {
             using (var pool = new TestMemoryPool())
@@ -251,7 +251,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task UseSynchronizationContextFalseIgnoresSyncContextForWriterScheduler()
         {
             SynchronizationContext previous = SynchronizationContext.Current;
@@ -358,7 +358,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DefaultWriterSchedulerIgnoresSynchronizationContext()
         {
             SynchronizationContext previous = SynchronizationContext.Current;
@@ -411,7 +411,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task FlushCallbackRunsOnWriterScheduler()
         {
             using (var pool = new TestMemoryPool())
@@ -456,7 +456,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ReadAsyncCallbackRunsOnReaderScheduler()
         {
             using (var pool = new TestMemoryPool())
@@ -489,7 +489,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ThreadPoolScheduler_SchedulesOnThreadPool()
         {
             var pipe = new Pipe(new PipeOptions(readerScheduler: PipeScheduler.ThreadPool, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));

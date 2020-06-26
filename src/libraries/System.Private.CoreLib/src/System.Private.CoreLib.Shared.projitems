@@ -338,6 +338,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\UmAlQuraCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\UnicodeCategory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Guid.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Half.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\HashCode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IAsyncDisposable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IAsyncResult.cs" />
@@ -505,6 +506,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeTypedArgument.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\DefaultMemberAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\AssemblyBuilderAccess.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EmptyCAHolder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EventToken.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FieldToken.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FlowControl.cs" />

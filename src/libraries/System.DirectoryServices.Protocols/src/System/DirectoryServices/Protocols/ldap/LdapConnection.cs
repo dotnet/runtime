@@ -36,37 +36,21 @@ namespace System.DirectoryServices.Protocols
         }
 
         private const int LDAP_MOD_BVALUES = 0x80;
+
+        internal static readonly object s_objectLock = new object();
+        internal static readonly Hashtable s_handleTable = new Hashtable();
+        private static readonly Hashtable s_asyncResultTable = Hashtable.Synchronized(new Hashtable());
+        private static readonly ManualResetEvent s_waitHandle = new ManualResetEvent(false);
+        private static readonly LdapPartialResultsProcessor s_partialResultsProcessor = new LdapPartialResultsProcessor(s_waitHandle);
+
         private AuthType _connectionAuthType = AuthType.Negotiate;
-        internal ConnectionHandle _ldapHandle = null;
-        internal bool _disposed = false;
-        private bool _bounded = false;
-        private bool _needRebind = false;
-        internal static Hashtable s_handleTable = null;
-        internal static object s_objectLock = null;
-        private static readonly Hashtable s_asyncResultTable = null;
-        private static readonly LdapPartialResultsProcessor s_partialResultsProcessor = null;
-        private static readonly ManualResetEvent s_waitHandle = null;
-        private static readonly PartialResultsRetriever s_retriever = null;
         internal bool _needDispose = true;
-        private bool _connected = false;
-        internal QUERYCLIENTCERT _clientCertificateRoutine = null;
-
-        static LdapConnection()
-        {
-            s_handleTable = new Hashtable();
-
-            // Initialize the lock.
-            s_objectLock = new object();
-
-            Hashtable tempAsyncTable = new Hashtable();
-            s_asyncResultTable = Hashtable.Synchronized(tempAsyncTable);
-
-            s_waitHandle = new ManualResetEvent(false);
-
-            s_partialResultsProcessor = new LdapPartialResultsProcessor(s_waitHandle);
-
-            s_retriever = new PartialResultsRetriever(s_waitHandle, s_partialResultsProcessor);
-        }
+        internal ConnectionHandle _ldapHandle;
+        internal bool _disposed;
+        private bool _bounded;
+        private bool _needRebind;
+        private bool _connected;
+        internal QUERYCLIENTCERT _clientCertificateRoutine;
 
         public LdapConnection(string server) : this(new LdapDirectoryIdentifier(server))
         {

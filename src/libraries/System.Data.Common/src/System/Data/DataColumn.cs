@@ -27,33 +27,33 @@ namespace System.Data
     public class DataColumn : MarshalByValueComponent
     {
         private bool _allowNull = true;
-        private string _caption = null;
-        private string _columnName = null;
-        private Type _dataType = null;
+        private string _caption;
+        private string _columnName;
+        private Type _dataType;
         private StorageType _storageType;
         internal object _defaultValue = DBNull.Value; // DefaultValue Converter
         private DataSetDateTime _dateTimeMode = DataSetDateTime.UnspecifiedLocal;
-        private DataExpression _expression = null;
+        private DataExpression _expression;
         private int _maxLength = -1;
         private int _ordinal = -1;
-        private bool _readOnly = false;
-        internal Index _sortIndex = null;
-        internal DataTable _table = null;
-        private bool _unique = false;
+        private bool _readOnly;
+        internal Index _sortIndex;
+        internal DataTable _table;
+        private bool _unique;
         internal MappingType _columnMapping = MappingType.Element;
         internal int _hashCode;
 
         internal int _errors;
-        private bool _isSqlType = false;
-        private bool _implementsINullable = false;
-        private bool _implementsIChangeTracking = false;
-        private bool _implementsIRevertibleChangeTracking = false;
-        private bool _implementsIXMLSerializable = false;
+        private bool _isSqlType;
+        private bool _implementsINullable;
+        private bool _implementsIChangeTracking;
+        private bool _implementsIRevertibleChangeTracking;
+        private bool _implementsIXMLSerializable;
 
         private bool _defaultValueIsNull = true;
 
-        internal List<DataColumn> _dependentColumns = null; // list of columns whose expression consume values from this column
-        internal PropertyCollection _extendedProperties = null;
+        internal List<DataColumn> _dependentColumns; // list of columns whose expression consume values from this column
+        internal PropertyCollection _extendedProperties;
 
         private DataStorage _storage;
 
@@ -61,11 +61,11 @@ namespace System.Data
         private AutoIncrementValue _autoInc;
 
         // The _columnClass member is the class for the unfoliated virtual nodes in the XML.
-        internal string _columnUri = null;
+        internal string _columnUri;
         private string _columnPrefix = string.Empty;
-        internal string _encodedColumnName = null;
+        internal string _encodedColumnName;
 
-        internal SimpleType _simpleType = null;
+        internal SimpleType _simpleType;
 
         private static int s_objectTypeCount;
         private readonly int _objectID = Interlocked.Increment(ref s_objectTypeCount);

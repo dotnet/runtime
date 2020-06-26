@@ -5,7 +5,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
 namespace System.Net
@@ -18,7 +17,7 @@ namespace System.Net
         private static readonly ConcurrentDictionary<string, WeakReference<ServicePoint>> s_servicePointTable = new ConcurrentDictionary<string, WeakReference<ServicePoint>>();
         private static SecurityProtocolType s_securityProtocolType = SecurityProtocolType.SystemDefault;
         private static int s_connectionLimit = 2;
-        private static int s_maxServicePoints = 0;
+        private static int s_maxServicePoints;
         private static int s_maxServicePointIdleTime = 100 * 1000;
         private static int s_dnsRefreshTimeout = 2 * 60 * 1000;
 
@@ -36,8 +35,12 @@ namespace System.Net
 
         private static void ValidateSecurityProtocol(SecurityProtocolType value)
         {
-            SecurityProtocolType allowed = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
-            if ((value & ~allowed) != 0)
+            const SecurityProtocolType Allowed =
+#pragma warning disable CA5364 // Do Not Use Deprecated Security Protocols
+                SecurityProtocolType.Tls | SecurityProtocolType.Tls11 |
+#pragma warning restore CA5364
+                SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
+            if ((value & ~Allowed) != 0)
             {
                 throw new NotSupportedException(SR.net_securityprotocolnotsupported);
             }

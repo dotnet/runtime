@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
         private SafeKeyHandle? _safeKeyHandle;
         private SafeProvHandle? _safeProvHandle;
         private readonly SHA1 _sha1;
-        private static volatile CspProviderFlags s_useMachineKeyStore = 0;
+        private static volatile CspProviderFlags s_useMachineKeyStore;
         private bool _disposed;
 
         /// <summary>

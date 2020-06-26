@@ -16,7 +16,7 @@ namespace System.ComponentModel.Composition.Hosting
     {
         private readonly ReadOnlyCollection<ExportProvider> _readOnlyProviders;
         private readonly ExportProvider[] _providers;
-        private volatile int _isDisposed = 0;
+        private volatile int _isDisposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AggregateExportProvider"/> class.

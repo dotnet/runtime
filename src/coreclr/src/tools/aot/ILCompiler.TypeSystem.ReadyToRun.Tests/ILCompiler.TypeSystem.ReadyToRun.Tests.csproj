@@ -44,6 +44,7 @@
     <Compile Include="ILDisassemblerTests.cs" />
     <Compile Include="InterfacesTests.cs" />
     <Compile Include="RuntimeDeterminedTypesTests.cs" />
+    <Compile Include="SignatureTests.cs" />
     <Compile Include="SyntheticVirtualOverrideTests.cs" />
     <Compile Include="TestMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="TypeNameParsingTests.cs" />

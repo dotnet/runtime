@@ -22,8 +22,8 @@ namespace System.Net.NetworkInformation
         private readonly long _speed;
 
         // Any interface can have two completely different valid indexes for ipv4 and ipv6.
-        private readonly uint _index = 0;
-        private readonly uint _ipv6Index = 0;
+        private readonly uint _index;
+        private readonly uint _ipv6Index;
         private readonly Interop.IpHlpApi.AdapterFlags _adapterFlags;
         private readonly SystemIPInterfaceProperties _interfaceProperties;
 

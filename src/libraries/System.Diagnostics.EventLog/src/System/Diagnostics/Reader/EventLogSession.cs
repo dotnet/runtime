@@ -46,7 +46,7 @@ namespace System.Diagnostics.Eventing.Reader
         internal EventLogHandle renderContextHandleUser = EventLogHandle.Zero;
 
         // The dummy sync object for the two contexts.
-        private readonly object _syncObject = null;
+        private readonly object _syncObject;
 
         private readonly string _server;
         private readonly string _user;

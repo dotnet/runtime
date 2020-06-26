@@ -2194,6 +2194,53 @@ namespace System
         public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? format, out System.Guid result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination) { throw null; }
     }
+    public readonly partial struct Half : System.IComparable, System.IComparable<System.Half>, System.IEquatable<System.Half>, System.IFormattable
+    {
+        private readonly int _dummyPrimitive;
+        public static System.Half Epsilon { get { throw null; } }
+        public static System.Half MaxValue { get { throw null; } }
+        public static System.Half MinValue { get { throw null; } }
+        public static System.Half NaN { get { throw null; } }
+        public static System.Half NegativeInfinity { get { throw null; } }
+        public static System.Half PositiveInfinity { get { throw null; } }
+        public int CompareTo(System.Half other) { throw null; }
+        public int CompareTo(object? obj) { throw null; }
+        public bool Equals(System.Half other) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool IsFinite(System.Half value) { throw null; }
+        public static bool IsInfinity(System.Half value) { throw null; }
+        public static bool IsNaN(System.Half value) { throw null; }
+        public static bool IsNegative(System.Half value) { throw null; }
+        public static bool IsNegativeInfinity(System.Half value) { throw null; }
+        public static bool IsNormal(System.Half value) { throw null; }
+        public static bool IsPositiveInfinity(System.Half value) { throw null; }
+        public static bool IsSubnormal(System.Half value) { throw null; }
+        public static bool operator ==(System.Half left, System.Half right) { throw null; }
+        public static explicit operator System.Half (double value) { throw null; }
+        public static explicit operator System.Half (float value) { throw null; }
+        public static bool operator >(System.Half left, System.Half right) { throw null; }
+        public static bool operator >=(System.Half left, System.Half right) { throw null; }
+        public static explicit operator double (System.Half value) { throw null; }
+        public static explicit operator float (System.Half value) { throw null; }
+        public static bool operator !=(System.Half left, System.Half right) { throw null; }
+        public static bool operator <(System.Half left, System.Half right) { throw null; }
+        public static bool operator <=(System.Half left, System.Half right) { throw null; }
+        public static System.Half Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Half Parse(string s) { throw null; }
+        public static System.Half Parse(string s, System.Globalization.NumberStyles style) { throw null; }
+        public static System.Half Parse(string s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Half Parse(string s, System.IFormatProvider provider) { throw null; }
+        public override string ToString() { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString(string? format) { throw null; }
+        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Half result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out System.Half result) { throw null; }
+        public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Half result) { throw null; }
+        public static bool TryParse(string s, out System.Half result) { throw null; }
+    }
     public partial struct HashCode
     {
         private int _dummyPrimitive;
@@ -4125,6 +4172,7 @@ namespace System
         public System.Reflection.ConstructorInfo[] GetConstructors() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public abstract System.Reflection.ConstructorInfo[] GetConstructors(System.Reflection.BindingFlags bindingAttr);
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public virtual System.Reflection.MemberInfo[] GetDefaultMembers() { throw null; }
         public abstract System.Type? GetElementType();
         public virtual string? GetEnumName(object value) { throw null; }
@@ -4155,7 +4203,7 @@ namespace System
         public abstract System.Type? GetInterface(string name, bool ignoreCase);
         public virtual System.Reflection.InterfaceMapping GetInterfaceMap(System.Type interfaceType) { throw null; }
         public abstract System.Type[] GetInterfaces();
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public System.Reflection.MemberInfo[] GetMember(string name) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public virtual System.Reflection.MemberInfo[] GetMember(string name, System.Reflection.BindingFlags bindingAttr) { throw null; }
@@ -7499,10 +7547,10 @@ namespace System.Reflection
         protected Assembly() { }
         public virtual string? CodeBase { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData> CustomAttributes { get { throw null; } }
-        public virtual System.Collections.Generic.IEnumerable<System.Reflection.TypeInfo> DefinedTypes { get { throw null; } }
+        public virtual System.Collections.Generic.IEnumerable<System.Reflection.TypeInfo> DefinedTypes { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")] get { throw null; } }
         public virtual System.Reflection.MethodInfo? EntryPoint { get { throw null; } }
         public virtual string EscapedCodeBase { get { throw null; } }
-        public virtual System.Collections.Generic.IEnumerable<System.Type> ExportedTypes { get { throw null; } }
+        public virtual System.Collections.Generic.IEnumerable<System.Type> ExportedTypes { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")] get { throw null; } }
         public virtual string? FullName { get { throw null; } }
         public virtual bool GlobalAssemblyCache { get { throw null; } }
         public virtual long HostContext { get { throw null; } }
@@ -7531,10 +7579,12 @@ namespace System.Reflection
         public virtual System.Collections.Generic.IList<System.Reflection.CustomAttributeData> GetCustomAttributesData() { throw null; }
         public static System.Reflection.Assembly? GetEntryAssembly() { throw null; }
         public static System.Reflection.Assembly GetExecutingAssembly() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public virtual System.Type[] GetExportedTypes() { throw null; }
         public virtual System.IO.FileStream? GetFile(string name) { throw null; }
         public virtual System.IO.FileStream[] GetFiles() { throw null; }
         public virtual System.IO.FileStream[] GetFiles(bool getResourceModules) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public virtual System.Type[] GetForwardedTypes() { throw null; }
         public override int GetHashCode() { throw null; }
         public System.Reflection.Module[] GetLoadedModules() { throw null; }
@@ -7549,12 +7599,17 @@ namespace System.Reflection
         public virtual System.Reflection.AssemblyName GetName() { throw null; }
         public virtual System.Reflection.AssemblyName GetName(bool copiedName) { throw null; }
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Assembly references might be removed")]
         public virtual System.Reflection.AssemblyName[] GetReferencedAssemblies() { throw null; }
         public virtual System.Reflection.Assembly GetSatelliteAssembly(System.Globalization.CultureInfo culture) { throw null; }
         public virtual System.Reflection.Assembly GetSatelliteAssembly(System.Globalization.CultureInfo culture, System.Version? version) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public virtual System.Type? GetType(string name) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public virtual System.Type? GetType(string name, bool throwOnError) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public virtual System.Type? GetType(string name, bool throwOnError, bool ignoreCase) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public virtual System.Type[] GetTypes() { throw null; }
         public virtual bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]

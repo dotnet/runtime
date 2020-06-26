@@ -46,8 +46,12 @@ namespace BINDER_SPACE
             key = e.m_wszSimpleName;
             return key;
         }
-        static count_t Hash(const key_t &str) { return HashiString(str); }
-        static BOOL Equals(const key_t &lhs, const key_t &rhs) { LIMITED_METHOD_CONTRACT; return (_wcsicmp(lhs, rhs) == 0); }
+        static count_t Hash(const key_t &str)
+        {
+            SString ssKey(SString::Literal, str);
+            return ssKey.HashCaseInsensitive();
+        }
+        static BOOL Equals(const key_t &lhs, const key_t &rhs) { LIMITED_METHOD_CONTRACT; return (SString::_wcsicmp(lhs, rhs) == 0); }
 
         void OnDestructPerEntryCleanupAction(const SimpleNameToFileNameMapEntry & e)
         {
