@@ -1073,6 +1073,18 @@ namespace Internal.JitInterface
             //       and STS::AccessCheck::CanAccess.
         }
 
+        private static bool IsTypeSpecForTypicalInstantiation(TypeDesc t)
+        {
+            Instantiation inst = t.Instantiation;
+            for (int i = 0; i < inst.Length; i++)
+            {
+                var arg = inst[i] as SignatureTypeVariable;
+                if (arg == null || arg.Index != i)
+                    return false;
+            }
+            return true;
+        }
+
         private void ceeInfoGetCallInfo(
             ref CORINFO_RESOLVED_TOKEN pResolvedToken,
             CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -1246,10 +1258,14 @@ namespace Internal.JitInterface
                 if (pResult->exactContextNeedsRuntimeLookup &&
                     pResolvedToken.tokenContext == contextFromMethodBeingCompiled() &&
                     constrainedType == null &&
-                    exactType == MethodBeingCompiled.OwningType &&
-                    false) // TODO: IsTypeSpecForTypicalInstantiation(SigPointer(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec))
+                    exactType == MethodBeingCompiled.OwningType)
                 {
-                    pResult->contextHandle = contextFromMethodBeingCompiled();
+                    var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+                    var rawMethod = (MethodDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token);
+                    if (IsTypeSpecForTypicalInstantiation(rawMethod.OwningType))
+                    {
+                        pResult->contextHandle = contextFromMethodBeingCompiled();
+                    }
                 }
             }
 
