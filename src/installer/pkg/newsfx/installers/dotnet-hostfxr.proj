@@ -15,6 +15,7 @@
     <UseBrandingNameInLinuxPackageDescription>true</UseBrandingNameInLinuxPackageDescription>
     <MacOSComponentNamePackType>hostfxr</MacOSComponentNamePackType>
     <MacOSScriptsDirectory>osx_scripts/hostfxr</MacOSScriptsDirectory>
+    <MacOSPackageDescription>The .NET HostFxr</MacOSPackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

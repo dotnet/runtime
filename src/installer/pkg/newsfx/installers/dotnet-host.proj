@@ -18,6 +18,7 @@
     <MacOSComponentNamePackType>sharedhost</MacOSComponentNamePackType>
     <IncludeVersionInMacOSComponentName>false</IncludeVersionInMacOSComponentName>
     <MacOSScriptsDirectory>osx_scripts/host</MacOSScriptsDirectory>
+    <MacOSPackageDescription>The .NET Shared Host.</MacOSPackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

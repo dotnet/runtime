@@ -20,6 +20,7 @@
     <!-- These components are installed by the root shared framework, but not others. -->
     <IncludeWerRelatedKeys>true</IncludeWerRelatedKeys>
     <IncludeBreadcrumbStoreFolder>true</IncludeBreadcrumbStoreFolder>
+    <MacOSPackageDescription>The .NET Shared Framework</MacOSPackageDescription>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
