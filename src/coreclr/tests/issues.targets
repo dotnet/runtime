@@ -152,6 +152,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/tracevalidation/inducedgc/inducedgc/*">
             <Issue>https://github.com/dotnet/runtime/issues/12216</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/binding/assemblies/assemblybugs/37910/Ii/*">
+            <Issue>https://github.com/dotnet/runtime/issues/38452</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets  on CoreCLR Runtime -->
