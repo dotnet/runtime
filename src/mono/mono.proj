@@ -39,8 +39,17 @@
     <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'gcc'">g++</MonoCxxCompiler>
   </PropertyGroup>
 
+  <Target Name="CheckMonoEnv">
+	<!-- EMSDK_PATH is set by CI or we set it to the location of a local copy -->
+    <Exec Command="make -C $(MonoProjectRoot)wasm check-provision-wasm" Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == ''" />
+
+    <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+      <EMSDK_PATH Condition="'$(EMSDK_PATH)' == ''">$(MonoProjectRoot)wasm/emsdk</EMSDK_PATH>
+    </PropertyGroup>
+  </Target>
+
   <!-- OSX/iOS/tvOS/Android/Linux Mono runtime build -->
-  <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac;$(MonoProjectRoot)configure" Outputs="$(MonoObjDir)config.h;$(CrossConfigH)">
+  <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac;$(MonoProjectRoot)configure" Outputs="$(MonoObjDir)config.h;$(CrossConfigH)" DependsOnTargets="CheckMonoEnv">
 
     <!-- Sanity checks -->
     <Error Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
@@ -613,12 +622,11 @@
       <_MonoConfigureParams Include="--with-tls=pthread" />
     </ItemGroup>
 
-    <Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
-
     <!-- WASM specific options -->
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
       <_MonoEnableMinimal Condition="'$(MonoWasmEnableAOT)' != 'true'">aot</_MonoEnableMinimal>
     </PropertyGroup>
+
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <_MonoConfigureParams Include="--host=wasm32"/>
       <_MonoConfigureParams Include="--disable-boehm" />
@@ -743,7 +751,7 @@
     <Touch Condition="'$(_MonoAotCrossConfigureCommand)' != ''" Files="$(MonoObjDir)cross/config.h" />
   </Target>
 
-  <Target Name="BuildMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" DependsOnTargets="ConfigureMonoRuntimeUnix">
+  <Target Name="BuildMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" DependsOnTargets="CheckMonoEnv;ConfigureMonoRuntimeUnix">
     <Message Text="--- Building Mono ---" Importance="High" />
     <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="make -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
     <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; make -j$([System.Environment]::ProcessorCount)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />

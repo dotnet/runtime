@@ -42,6 +42,9 @@ else
 provision-wasm:
 endif
 
+check-provision-wasm:
+	@if [ ! -d emsdk ]; then echo "Either set EMSDK_PATH to the path of the emscripten SDK, or install a local copy by running make provision-wasm in src/mono/wasm."; exit 1; fi
+
 # emsdk_env.sh calls emsdk construct_env which is a bit slow so make a copy
 emsdk_env.sh: | provision-wasm
 	cd $(EMSDK_PATH) && ./emsdk construct_env $(CURDIR)/emsdk_env.sh
@@ -99,9 +102,6 @@ else
 $(eval $(call InterpBuildTemplate,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS)))
 endif
 
-build:
-	EMSDK_PATH=$(PWD)/src/mono/wasm/emsdk $(DOTNET) build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG) $(TOP)/src/libraries/src.proj /t:NativeBinPlace
-
 clean-emsdk:
 	$(RM) -rf $(EMSDK_LOCAL_PATH)
 
@@ -112,8 +112,14 @@ clean:
 # Helper targets
 .PHONY: runtime
 
+# Rebuild after mono runtime changes
 runtime:
-	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono --arch wasm --os Browser -c $(CONFIG)
+	$(TOP)/build.sh --subset mono --arch wasm --os Browser -c $(CONFIG)
+	$(DOTNET) build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG) $(TOP)/src/libraries/src.proj /t:NativeBinPlace
+
+.PHONY: libs
+libs:
+	EMSDK_PATH=$(PWD)/emsdk $(TOP)/build.sh --subset libs --arch wasm --os Browser -c $(CONFIG)
 
 test-runner:
 	$(DOTNET) build $(TOP)/src/libraries/Common/tests/WasmTestRunner /p:Configuration=$(CONFIG)
