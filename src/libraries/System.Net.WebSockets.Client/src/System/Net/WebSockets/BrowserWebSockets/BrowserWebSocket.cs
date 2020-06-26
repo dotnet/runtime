@@ -8,6 +8,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Channels;
 using System.Runtime.InteropServices.JavaScript;
 
 using JavaScript = System.Runtime.InteropServices.JavaScript;
@@ -27,7 +28,11 @@ namespace System.Net.WebSockets
     /// </summary>
     internal sealed class BrowserWebSocket : WebSocket
     {
-        private ActionQueue<ReceivePayload> _receiveMessageQueue = new ActionQueue<ReceivePayload>();
+        private readonly Channel<ReceivePayload> _receiveMessageQueue = Channel.CreateUnbounded<ReceivePayload>(new UnboundedChannelOptions()
+        {
+            SingleReader = true,
+            SingleWriter = true,
+        });
 
         private TaskCompletionSource<bool>? _tcsClose;
         private WebSocketCloseStatus? _innerWebSocketCloseStatus;
@@ -145,7 +150,7 @@ namespace System.Net.WebSockets
                     {
                         _innerWebSocketCloseStatus = (WebSocketCloseStatus)closeEvt.GetObjectProperty("code");
                         _innerWebSocketCloseStatusDescription = closeEvt.GetObjectProperty("reason")?.ToString();
-                        _receiveMessageQueue.BufferPayload(new ReceivePayload(ArraySegment<byte>.Empty, WebSocketMessageType.Close));
+                        _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(Array.Empty<byte>(), WebSocketMessageType.Close));
 
                         if (!tcsConnect.Task.IsCanceled && !tcsConnect.Task.IsCompleted && !tcsConnect.Task.IsFaulted)
                         {
@@ -199,7 +204,7 @@ namespace System.Net.WebSockets
                                     using (buffer)
                                     {
                                         var mess = new ReceivePayload(buffer, WebSocketMessageType.Binary);
-                                        _receiveMessageQueue.BufferPayload(mess);
+                                        _receiveMessageQueue.Writer.TryWrite(mess);
                                         break;
                                     }
                                 case JSObject blobData:
@@ -219,7 +224,7 @@ namespace System.Net.WebSockets
                                                         using (var binResult = (ArrayBuffer)target.GetObjectProperty("result"))
                                                         {
                                                             var mess = new ReceivePayload(binResult, WebSocketMessageType.Binary);
-                                                            _receiveMessageQueue.BufferPayload(mess);
+                                                            _receiveMessageQueue.Writer.TryWrite(mess);
                                                             if (loadend != null)
                                                                 JavaScript.Runtime.FreeObject(loadend);
                                                         }
@@ -235,7 +240,7 @@ namespace System.Net.WebSockets
                                 case string message:
                                     {
                                         var mess = new ReceivePayload(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text);
-                                        _receiveMessageQueue.BufferPayload(mess);
+                                        _receiveMessageQueue.Writer.TryWrite(mess);
                                         break;
                                     }
                                 default:
@@ -305,11 +310,11 @@ namespace System.Net.WebSockets
 
         // This method is registered by the CancellationTokenSource cts in the connect method
         // and called by Dispose or Abort so that any open websocket connection can be closed.
-        private void AbortRequest()
+        private async void AbortRequest()
         {
             if (State == WebSocketState.Open)
             {
-                var closeResult = CloseAsyncCore(WebSocketCloseStatus.NormalClosure, "Connection was aborted", CancellationToken.None);
+                await CloseAsyncCore(WebSocketCloseStatus.NormalClosure, "Connection was aborted", CancellationToken.None).ConfigureAwait(continueOnCapturedContext: true);
             }
         }
 
@@ -408,7 +413,9 @@ namespace System.Net.WebSockets
             using (cancellationToken.Register(() => tcsReceive.TrySetCanceled()))
             {
                 if (_bufferedPayload == null)
-                    _bufferedPayload = await _receiveMessageQueue.DequeuePayloadAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
+                {
+                    _bufferedPayload = await _receiveMessageQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
+                }
 
                 try
                 {
@@ -444,6 +451,7 @@ namespace System.Net.WebSockets
         public override async Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
             _writeBuffer = null;
+            _receiveMessageQueue.Writer.Complete();
             ThrowIfNotConnected();
 
             await CloseAsyncCore(closeStatus, statusDescription, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
@@ -489,39 +497,6 @@ namespace System.Net.WebSockets
             if (_state == _disposed)
             {
                 throw new ObjectDisposedException(GetType().FullName);
-            }
-        }
-
-        private class ActionQueue<T>
-        {
-
-            private readonly SemaphoreSlim actionSem;
-            private readonly ConcurrentQueue<T> actionQueue;
-
-            public ActionQueue()
-            {
-                actionSem = new SemaphoreSlim(0);
-                actionQueue = new ConcurrentQueue<T>();
-            }
-
-            public void BufferPayload(T item)
-            {
-                actionQueue.Enqueue(item);
-                actionSem.Release();
-            }
-
-            public async Task<T> DequeuePayloadAsync(CancellationToken cancellationToken = default(CancellationToken))
-            {
-                while (true)
-                {
-                    await actionSem.WaitAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
-
-                    T item;
-                    if (actionQueue.TryDequeue(out item))
-                    {
-                        return item;
-                    }
-                }
             }
         }
     }
