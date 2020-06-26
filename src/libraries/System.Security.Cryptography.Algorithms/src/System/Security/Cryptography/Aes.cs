@@ -19,16 +19,6 @@ namespace System.Security.Cryptography
             ModeValue = CipherMode.CBC;
         }
 
-        protected internal int GetPaddingSize()
-        {
-            // CFB8 does not require any padding at all
-            // otherwise, it is always required to pad for block size
-            if (Mode == CipherMode.CFB && FeedbackSize == 8)
-                return 1;
-
-            return BlockSize / 8;
-        }
-
         public static new Aes Create()
         {
             return new AesImplementation();

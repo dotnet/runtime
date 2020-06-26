@@ -58,16 +58,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        protected internal int GetPaddingSize()
-        {
-            // CFB8 does not require any padding at all
-            // otherwise, it is always required to pad for block size
-            if (Mode == CipherMode.CFB && FeedbackSize == 8)
-                return 1;
-
-            return BlockSize / 8;
-        }
-
         public static bool IsWeakKey(byte[] rgbKey)
         {
             if (rgbKey == null)

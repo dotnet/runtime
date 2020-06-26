@@ -108,7 +108,7 @@ namespace System.Security.Cryptography
 
         int ICngSymmetricAlgorithm.GetPaddingSize()
         {
-            return GetPaddingSize();
+            return this.GetPaddingSize();
         }
 
         SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle()
