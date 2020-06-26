@@ -58,12 +58,10 @@ namespace System.Security.Cryptography
             Debug.Assert(oidValue != null);
             Oid oid = new Oid(oidValue, null);
 
-            // Do not remove - the FriendlyName property has side effects.
-            // On read, it initializes the friendly name based on the value. On write,
-            // it locks the friendly name so that it can not be set again, including
-            // if it is null and being set to null.
-            string? friendlyName = oid.FriendlyName;
-            oid.FriendlyName = friendlyName;
+            // Do not remove - the FriendlyName property get has side effects.
+            // On read, it initializes the friendly name based on the value and
+            // locks it to prevent any further changes.
+            _ = oid.FriendlyName;
 
             return oid;
         }

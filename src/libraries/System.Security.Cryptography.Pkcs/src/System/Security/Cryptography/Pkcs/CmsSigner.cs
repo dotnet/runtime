@@ -14,6 +14,8 @@ namespace System.Security.Cryptography.Pkcs
 {
     public sealed class CmsSigner
     {
+        private static readonly Oid s_defaultAlgorithm = Oids.Sha256Oid;
+
         private SubjectIdentifierType _signerIdentifierType;
 
         public X509Certificate2? Certificate { get; set; }
@@ -92,7 +94,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             Certificate = certificate;
-            DigestAlgorithm = Oids.Sha256Oid.CopyOid();
+            DigestAlgorithm = s_defaultAlgorithm.CopyOid();
             PrivateKey = privateKey;
         }
 

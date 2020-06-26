@@ -273,7 +273,7 @@ namespace System.Security.Cryptography
                 Oids.secp256r1 => Oids.secp256r1Oid,
                 Oids.secp384r1 => Oids.secp384r1Oid,
                 Oids.secp521r1 => Oids.secp521r1Oid,
-                _ => new Oid(domainParameters.Named)
+                _ => new Oid(domainParameters.Named, null)
             };
 
             return ECCurve.CreateFromOid(curveOid);
