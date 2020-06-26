@@ -25,16 +25,30 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_SSE_X64;
         case InstructionSet_SSE2:
             return InstructionSet_SSE2_X64;
+        case InstructionSet_SSE3:
+            return InstructionSet_SSE3_X64;
+        case InstructionSet_SSSE3:
+            return InstructionSet_SSSE3_X64;
         case InstructionSet_SSE41:
             return InstructionSet_SSE41_X64;
         case InstructionSet_SSE42:
             return InstructionSet_SSE42_X64;
+        case InstructionSet_AVX:
+            return InstructionSet_AVX_X64;
+        case InstructionSet_AVX2:
+            return InstructionSet_AVX2_X64;
+        case InstructionSet_AES:
+            return InstructionSet_AES_X64;
         case InstructionSet_BMI1:
             return InstructionSet_BMI1_X64;
         case InstructionSet_BMI2:
             return InstructionSet_BMI2_X64;
+        case InstructionSet_FMA:
+            return InstructionSet_FMA_X64;
         case InstructionSet_LZCNT:
             return InstructionSet_LZCNT_X64;
+        case InstructionSet_PCLMULQDQ:
+            return InstructionSet_PCLMULQDQ_X64;
         case InstructionSet_POPCNT:
             return InstructionSet_POPCNT_X64;
         default:
@@ -330,16 +344,21 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
     {
         // These ISAs are fully implemented
         case InstructionSet_AES:
+        case InstructionSet_AES_X64:
         case InstructionSet_AVX:
+        case InstructionSet_AVX_X64:
         case InstructionSet_AVX2:
+        case InstructionSet_AVX2_X64:
         case InstructionSet_BMI1:
-        case InstructionSet_BMI2:
         case InstructionSet_BMI1_X64:
+        case InstructionSet_BMI2:
         case InstructionSet_BMI2_X64:
         case InstructionSet_FMA:
+        case InstructionSet_FMA_X64:
         case InstructionSet_LZCNT:
         case InstructionSet_LZCNT_X64:
         case InstructionSet_PCLMULQDQ:
+        case InstructionSet_PCLMULQDQ_X64:
         case InstructionSet_POPCNT:
         case InstructionSet_POPCNT_X64:
         case InstructionSet_SSE:
@@ -347,7 +366,9 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_SSE2:
         case InstructionSet_SSE2_X64:
         case InstructionSet_SSE3:
+        case InstructionSet_SSE3_X64:
         case InstructionSet_SSSE3:
+        case InstructionSet_SSSE3_X64:
         case InstructionSet_SSE41:
         case InstructionSet_SSE41_X64:
         case InstructionSet_SSE42:
@@ -380,8 +401,8 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
     switch (isa)
     {
         case InstructionSet_BMI1:
-        case InstructionSet_BMI2:
         case InstructionSet_BMI1_X64:
+        case InstructionSet_BMI2:
         case InstructionSet_BMI2_X64:
         case InstructionSet_LZCNT:
         case InstructionSet_LZCNT_X64:
