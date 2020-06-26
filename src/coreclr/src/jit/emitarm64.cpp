@@ -12082,7 +12082,7 @@ void emitter::emitDispIns(
                 assert(imm == 0);
                 if (id->idIsReloc())
                 {
-                    printf("RELOC ");
+                    printf("HIGH RELOC ");
                     emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
                 }
                 else if (id->idIsBound())
@@ -12272,7 +12272,17 @@ void emitter::emitDispIns(
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, true);
             }
-            emitDispImmOptsLSL12(emitGetInsSC(id), id->idInsOpt());
+            if (id->idIsReloc())
+            {
+                assert(ins == INS_add);
+                printf("[LOW RELOC ");
+                emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
+                printf("]");
+            }
+            else
+            {
+                emitDispImmOptsLSL12(emitGetInsSC(id), id->idInsOpt());
+            }
             break;
 
         case IF_DI_2B: // DI_2B   X........X.nnnnn ssssssnnnnnddddd      Rd Rn    imm(0-63)
