@@ -174,6 +174,19 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
+        public static void TestFriendlyNameGetInitializes()
+        {
+            Oid oid = new Oid(SHA1_Oid, null);
+            Assert.Equal(SHA1_Oid, oid.Value);
+
+            // Getter should initialize and lock the friendly name
+            Assert.Equal(SHA1_Name, oid.FriendlyName);
+
+            // Set to a friendly name that does not map to an OID
+            Assert.Throws<PlatformNotSupportedException>(() => oid.FriendlyName = Bogus_Name);
+        }
+
+        [Fact]
         public static void TestFriendlyNameWithMismatchedValue()
         {
             Oid oid = new Oid(SHA1_Oid, SHA256_Name);

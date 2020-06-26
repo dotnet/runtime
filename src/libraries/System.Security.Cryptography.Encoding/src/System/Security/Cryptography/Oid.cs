@@ -92,6 +92,7 @@ namespace System.Security.Cryptography
                 if (!_hasInitializedFriendlyName && _value != null)
                 {
                     _friendlyName = OidLookup.ToFriendlyName(_value, _group, fallBackToAllGroups: true);
+                    _hasInitializedFriendlyName = true;
                 }
 
                 return _friendlyName;
