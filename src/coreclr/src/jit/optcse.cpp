@@ -405,20 +405,22 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     unsigned hash;
     unsigned hval;
     CSEdsc*  hashDsc;
-    bool     isIntConstHash = false;
-    bool     enableConstCSE = false;
+    bool     isIntConstHash       = false;
+    bool     enableSharedConstCSE = false;
+    int      configValue          = JitConfig.JitDisableConstCSE();
 
 #if defined(TARGET_ARM64)
-    if (JitConfig.JitDisableConstCSE() != 1)
+    if (configValue != 2)
     {
-        enableConstCSE = true;
+        enableSharedConstCSE = true;
     }
-#else
-    if (JitConfig.JitDisableConstCSE() == 3)
+#endif // TARGET_ARM64
+
+    // All Platforms - don't combine with nearby offsets
+    if (configValue == 5)
     {
-        enableConstCSE = true;
+        enableSharedConstCSE = true;
     }
-#endif
 
     // We use the liberal Value numbers when building the set of CSE
     ValueNum vnLib     = tree->GetVN(VNK_Liberal);
@@ -473,14 +475,17 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         //
         assert(vnLibNorm == vnStore->VNNormalValue(vnOp2Lib));
     }
-    else if (enableConstCSE && (tree->OperGet() == GT_CNS_INT) && vnStore->IsVNConstant(vnLibNorm))
+    else if (enableSharedConstCSE && tree->IsIntegralConst())
     {
+        assert(vnStore->IsVNConstant(vnLibNorm));
         key = vnStore->CoercedConstantValue<ssize_t>(vnLibNorm);
 
-        // We can't share small offset constants when we require a reloc
-        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this) && (JitConfig.JitDisableConstCSE() != 2))
+        // We don't shared small offset constants when we require a reloc
+        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this))
         {
-            // This will zero the upper 12 bits
+            // Make constants that have the same upper bits use the same key
+
+            // Shift the key right by 12 bits
             key = (ssize_t)(((size_t)key) >> 12);
         }
         assert(key > 0);
@@ -716,6 +721,21 @@ unsigned Compiler::optValnumCSE_Locate()
 {
     // Locate CSE candidates and assign them indices
 
+    bool disableConstCSE = false;
+
+    int configValue = JitConfig.JitDisableConstCSE();
+
+    if (configValue == 1)
+    {
+        disableConstCSE = true;
+    }
+#if !defined(TARGET_ARM64)
+    if (configValue == 0)
+    {
+        disableConstCSE = true;
+    }
+#endif
+
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         /* Make the block publicly available */
@@ -739,6 +759,13 @@ unsigned Compiler::optValnumCSE_Locate()
                     // bound candidate(s); we may want to update its value number.
                     // if the array length gets CSEd
                     optCseUpdateCheckedBoundMap(tree);
+                }
+
+                // Don't allow CSE of constants if it is disabled
+                //
+                if (disableConstCSE && tree->IsIntegralConst())
+                {
+                    continue;
                 }
 
                 if (!optIsCSEcandidate(tree))
@@ -2293,7 +2320,7 @@ public:
             // because it doesn't take into account that we might use a vector register for struct copies.
             slotCount = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
         }
-#ifndef TARGET_64BIT
+#if 0 //ndef TARGET_64BIT
         if (candidate->Expr()->TypeGet() == TYP_LONG)
         {
             slotCount = 2; // on 32-bit targets longs use two registers

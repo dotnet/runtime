@@ -3252,38 +3252,45 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #ifdef TARGET_ARM
             case GT_CNS_STR:
                 // Uses movw/movt
-                costSz = 7;
-                costEx = 3;
+                costSz = 8;
+                costEx = 2;
                 goto COMMON_CNS;
 
             case GT_CNS_LNG:
             {
                 GenTreeIntConCommon* con = tree->AsIntConCommon();
 
-                INT64 lngVal    = con->LngValue();
-                INT32 loVal     = (INT32)(lngVal & 0xffffffff);
-                bool  fitsInVal = ((INT64)loVal == lngVal);
+                INT64 lngVal = con->LngValue();
+                INT32 loVal  = (INT32)(lngVal & 0xffffffff);
+                INT32 hiVal  = (INT32)(lngVal >> 32);
 
-                if (!fitsInVal)
+                if (lngVal == 0)
                 {
-                    costSz = 9;
-                    costEx = 4;
-                }
-                else if (!codeGen->validImmForInstr(INS_mov, (target_ssize_t)loVal))
-                {
-                    // Uses movw/movt
-                    costSz = 8;
-                    costEx = 3;
-                }
-                else if ((unsigned)loVal <= 0xff)
-                {
-                    costSz = 2;
-                    costEx = 2;
+                    costSz = 1;
+                    costEx = 1;
                 }
                 else
                 {
-                    costSz = 4;
-                    costEx = 2;
+                    // Minimum of one instruction to setup hiVal,
+                    // and one instruction to setup loVal
+                    costSz = 4 + 4;
+                    costEx = 1 + 1;
+
+                    if (!codeGen->validImmForInstr(INS_mov, (target_ssize_t)hiVal) &&
+                        !codeGen->validImmForInstr(INS_mvn, (target_ssize_t)hiVal))
+                    {
+                        // Needs extra instruction: movw/movt
+                        costSz += 4;
+                        costEx += 1;
+                    }
+
+                    if (!codeGen->validImmForInstr(INS_mov, (target_ssize_t)loVal) &&
+                        !codeGen->validImmForInstr(INS_mvn, (target_ssize_t)loVal))
+                    {
+                        // Needs extra instruction: movw/movt
+                        costSz += 4;
+                        costEx += 1;
+                    }
                 }
                 goto COMMON_CNS;
             }
@@ -3295,25 +3302,32 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // Any constant that requires a reloc must use the movw/movt sequence
                 //
                 GenTreeIntConCommon* con = tree->AsIntConCommon();
+                INT32 conVal = con->IconValue();
 
-                if (con->ImmedValNeedsReloc(this) ||
-                    !codeGen->validImmForInstr(INS_mov, (target_ssize_t)tree->AsIntCon()->gtIconVal))
+                if (con->ImmedValNeedsReloc(this))
                 {
-                    // Uses movw/movt
-                    costSz = 7;
+                    // Requires movw/movt
+                    costSz = 8;
                     costEx = 2;
                 }
-                else if (((unsigned)tree->AsIntCon()->gtIconVal) <= 0x00ff)
+                else if (codeGen->validImmForInstr(INS_add, (target_ssize_t)conVal))
                 {
-                    // mov  Rd, <const8>
+                    // Typically included with parent oper
                     costSz = 1;
+                    costEx = 1;
+                }
+                else if (codeGen->validImmForInstr(INS_mov, (target_ssize_t)conVal) &&
+                         codeGen->validImmForInstr(INS_mvn, (target_ssize_t)conVal))
+                {
+                    // Uses mov ot mvn
+                    costSz = 4;
                     costEx = 1;
                 }
                 else
                 {
-                    // Uses movw/mvn
-                    costSz = 3;
-                    costEx = 1;
+                    // Needs movw/movt
+                    costSz = 8;
+                    costEx = 2;
                 }
                 goto COMMON_CNS;
             }
@@ -3383,22 +3397,27 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
 #endif // TARGET_X86
 
-                if (JitConfig.JitDisableConstCSE() == 3)
+                // If JitDisableConstCSE is set to 4 or 5 we change the costs of the GT_CNS_INT
+                // to match that used by ARM64, so that we get a similar set of CSE performed
+                // when running on x64
+                //
+                int configValue = JitConfig.JitDisableConstCSE();
+                if ((configValue == 4) || (configValue == 5))
                 {
-                    GenTreeIntConCommon* con            = tree->AsIntConCommon();
+                    GenTreeIntConCommon* con = tree->AsIntConCommon();
                     bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
-                    INT64                imm            = con->LngValue();
-                    emitAttr             size           = EA_8BYTE;
+                    INT64                imm = con->LngValue();
+                    emitAttr             size = EA_8BYTE;
 
-                    if ((imm >= -256) && (imm < 1024))
-                    {
-                        costSz = 2;
-                        costEx = 1;
-                    }
-                    else if (iconNeedsReloc)
+                    if (iconNeedsReloc)
                     {
                         costSz = 8;
                         costEx = 2;
+                    }
+                    else if ((imm >= -256) && (imm < 1024))
+                    {
+                        costSz = 2;
+                        costEx = 1;
                     }
                     else
                     {
@@ -3413,8 +3432,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         // with ones
 
                         // Determine whether movn or movz will require the fewest instructions to populate the immediate
-                        bool preferMovz       = false;
-                        bool preferMovn       = false;
+                        bool preferMovz = false;
+                        bool preferMovn = false;
                         int  instructionCount = 4;
 
                         for (int i = (size == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
@@ -3443,19 +3462,18 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_CNS_STR:
             case GT_CNS_LNG:
             case GT_CNS_INT:
-                if (JitConfig.JitDisableConstCSE() == 1)
-                {
-                    costSz = 1;
-                    costEx = 1;
-                }
-                else
                 {
                     GenTreeIntConCommon* con            = tree->AsIntConCommon();
                     bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
                     INT64                imm            = con->LngValue();
                     emitAttr             size           = EA_8BYTE;
 
-                    if ((imm >= -256) && (imm < 1024))
+                    if (iconNeedsReloc)
+                    {
+                        costSz = 8;
+                        costEx = 2;
+                    }
+                    else if ((imm >= -256) && (imm < 1024))
                     {
                         costSz = 2;
                         costEx = 1;
@@ -3464,11 +3482,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     {
                         costSz = 4;
                         costEx = 1;
-                    }
-                    else if (iconNeedsReloc)
-                    {
-                        costSz = 8;
-                        costEx = 2;
                     }
                     else
                     {
@@ -3501,8 +3514,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             }
                         }
 
-                        costSz = 4 * instructionCount;
                         costEx = instructionCount;
+                        costSz = 4 * instructionCount;
                     }
                 }
                 goto COMMON_CNS;
