@@ -231,7 +231,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator *(Vector3 left, float right)
         {
-            return left * new Vector3(right);
+            return new Vector3(left.X * right, left.Y * right, left.Z * right);
         }
 
         /// <summary>
@@ -243,7 +243,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator *(float left, Vector3 right)
         {
-            return new Vector3(left) * right;
+            return new Vector3(left * right.X, left * right.Y, left * right.Z);
         }
 
         /// <summary>
@@ -268,7 +268,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator /(Vector3 value1, float value2)
         {
-            return value1 / new Vector3(value2);
+            return new Vector3(value1.X / value2, value1.Y / value2, value1.Z / value2);
         }
 
         /// <summary>
