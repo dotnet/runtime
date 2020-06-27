@@ -70,6 +70,7 @@ public:
     const SString& GetPath();
 
     void ApplyBaseRelocations();
+    virtual BOOL IsInBundle() const;
 
 public:
 #ifdef DACCESS_COMPILE
