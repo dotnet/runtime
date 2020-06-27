@@ -163,7 +163,7 @@ namespace System.Text.Json.Serialization.Tests
 
         // Use a common options instance to encourage additional metadata collisions across types. Also since
         // this options is not the default options instance the tests will not use previously cached metadata.
-        private static JsonSerializerOptions s_options = new JsonSerializerOptions();
+        private static JsonSerializerOptions s_options = new JsonSerializerOptions { IncludeFields = true };
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(WriteSuccessCases))]
@@ -174,7 +174,8 @@ namespace System.Text.Json.Serialization.Tests
             // Get the test json with the default options to avoid cache pollution of Deserialize() below.
             testObj.Initialize();
             testObj.Verify();
-            string json = JsonSerializer.Serialize(testObj, type);
+            var options = new JsonSerializerOptions { IncludeFields = true };
+            string json = JsonSerializer.Serialize(testObj, type, options);
 
             void Serialize()
             {

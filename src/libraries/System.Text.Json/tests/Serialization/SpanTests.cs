@@ -20,7 +20,8 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(ReadSuccessCases))]
         public static void Read(Type classType, byte[] data)
         {
-            object obj = JsonSerializer.Deserialize(data, classType);
+            var options = new JsonSerializerOptions { IncludeFields = true };
+            object obj = JsonSerializer.Deserialize(data, classType, options);
             Assert.IsAssignableFrom<ITestClass>(obj);
             ((ITestClass)obj).Verify();
         }
@@ -30,9 +31,11 @@ namespace System.Text.Json.Serialization.Tests
         public static void ReadFromStream(Type classType, byte[] data)
         {
             MemoryStream stream = new MemoryStream(data);
+            var options = new JsonSerializerOptions { IncludeFields = true };
             object obj = JsonSerializer.DeserializeAsync(
                 stream,
-                classType).Result;
+                classType,
+                options).Result;
 
             Assert.IsAssignableFrom<ITestClass>(obj);
             ((ITestClass)obj).Verify();

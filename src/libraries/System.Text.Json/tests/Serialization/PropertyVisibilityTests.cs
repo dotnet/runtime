@@ -12,6 +12,23 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class PropertyVisibilityTests
     {
         [Fact]
+        public static void Serialize_NewSlotPublicField()
+        {
+            // Serialize
+            var obj = new ClassWithNewSlotField();
+            string json = JsonSerializer.Serialize(obj);
+
+            Assert.Equal(@"{""MyString"":""NewDefaultValue""}", json);
+
+            // Deserialize
+            json = @"{""MyString"":""NewValue""}";
+            obj = JsonSerializer.Deserialize<ClassWithNewSlotField>(json);
+
+            Assert.Equal("NewValue", ((ClassWithNewSlotField)obj).MyString);
+            Assert.Equal("DefaultValue", ((ClassWithInternalField)obj).MyString);
+        }
+
+        [Fact]
         public static void Serialize_NewSlotPublicProperty()
         {
             // Serialize
@@ -104,6 +121,40 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void Serialize_NewSlotPublicField_ConflictWithBasePublicProperty()
+        {
+            // Serialize
+            var obj = new ClassWithNewSlotDecimalField();
+            string json = JsonSerializer.Serialize(obj);
+
+            Assert.Equal(@"{""MyNumeric"":1.5}", json);
+
+            // Deserialize
+            json = @"{""MyNumeric"":2.5}";
+            obj = JsonSerializer.Deserialize<ClassWithNewSlotDecimalField>(json);
+
+            Assert.Equal(2.5M, obj.MyNumeric);
+        }
+
+        [Fact]
+        public static void Serialize_NewSlotPublicField_SpecifiedJsonPropertyName()
+        {
+            // Serialize
+            var obj = new ClassWithNewSlotAttributedDecimalField();
+            string json = JsonSerializer.Serialize(obj);
+
+            Assert.Contains(@"""MyNewNumeric"":1.5", json);
+            Assert.Contains(@"""MyNumeric"":1", json);
+
+            // Deserialize
+            json = @"{""MyNewNumeric"":2.5,""MyNumeric"":4}";
+            obj = JsonSerializer.Deserialize<ClassWithNewSlotAttributedDecimalField>(json);
+
+            Assert.Equal(4, ((ClassWithHiddenByNewSlotIntProperty)obj).MyNumeric);
+            Assert.Equal(2.5M, ((ClassWithNewSlotAttributedDecimalField)obj).MyNumeric);
+        }
+
+        [Fact]
         public static void Serialize_NewSlotPublicProperty_SpecifiedJsonPropertyName()
         {
             // Serialize
@@ -135,6 +186,23 @@ namespace System.Text.Json.Serialization.Tests
             obj = JsonSerializer.Deserialize<ClassWithInternalProperty>(json);
 
             Assert.Equal("DefaultValue", obj.MyString);
+        }
+
+        [Fact]
+        public static void Ignore_NewSlotPublicFieldIgnored()
+        {
+            // Serialize
+            var obj = new ClassWithIgnoredNewSlotField();
+            string json = JsonSerializer.Serialize(obj);
+
+            Assert.Equal(@"{}", json);
+
+            // Deserialize
+            json = @"{""MyString"":""NewValue""}";
+            obj = JsonSerializer.Deserialize<ClassWithIgnoredNewSlotField>(json);
+
+            Assert.Equal("NewDefaultValue", ((ClassWithIgnoredNewSlotField)obj).MyString);
+            Assert.Equal("DefaultValue", ((ClassWithInternalField)obj).MyString);
         }
 
         [Fact]
@@ -265,6 +333,20 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void Throw_PublicPropertyAndField_ConflictDueAttributes()
+        {
+            // Serialize
+            var obj = new ClassWithPropertyFieldNamingConflictWhichThrows();
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(obj));
+
+            // Deserialize
+            string json = @"{""MyString"":""NewValue""}";
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassWithPropertyFieldNamingConflictWhichThrows>(json));
+        }
+
+        [Fact]
         public static void Throw_PublicProperty_ConflictDueAttributes_SingleInheritance()
         {
             // Serialize
@@ -281,6 +363,29 @@ namespace System.Text.Json.Serialization.Tests
             string json = @"{""MyString"":""NewValue""}";
             Assert.Throws<InvalidOperationException>(
                 () => JsonSerializer.Deserialize<ClassInheritedWithPropertyNamingConflictWhichThrows>(json));
+
+            // The output for Newtonsoft.Json is:
+            // obj.ConflictingString = "NewValue"
+            // obj.MyString still equals "DefaultValue"
+        }
+
+        [Fact]
+        public static void Throw_PublicPropertyAndField_ConflictDueAttributes_SingleInheritance()
+        {
+            // Serialize
+            var obj = new ClassInheritedWithPropertyFieldNamingConflictWhichThrows();
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(obj));
+
+            // The output for Newtonsoft.Json is:
+            // {"MyString":"ConflictingValue"}
+            // Conflicts at different type-hierarchy levels that are not caused by
+            // deriving or the new keyword are allowed. Properties on more derived types win.
+
+            // Deserialize
+            string json = @"{""MyString"":""NewValue""}";
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassInheritedWithPropertyFieldNamingConflictWhichThrows>(json));
 
             // The output for Newtonsoft.Json is:
             // obj.ConflictingString = "NewValue"
@@ -312,6 +417,30 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void Throw_PublicPropertyAndField_ConflictDueAttributes_DoubleInheritance()
+        {
+            // Serialize
+            var obj = new ClassTwiceInheritedWithPropertyFieldNamingConflictWhichThrows();
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(obj));
+
+            // The output for Newtonsoft.Json is:
+            // {"MyString":"ConflictingValue"}
+            // Conflicts at different type-hierarchy levels that are not caused by
+            // deriving or the new keyword are allowed. Properties on more derived types win.
+
+            // Deserialize
+            string json = @"{""MyString"":""NewValue""}";
+
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassTwiceInheritedWithPropertyFieldNamingConflictWhichThrows>(json));
+
+            // The output for Newtonsoft.Json is:
+            // obj.ConflictingString = "NewValue"
+            // obj.MyString still equals "DefaultValue"
+        }
+
+        [Fact]
         public static void Throw_PublicProperty_ConflictDuePolicy()
         {
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -325,6 +454,22 @@ namespace System.Text.Json.Serialization.Tests
             string json = @"{""MyString"":""NewValue""}";
             Assert.Throws<InvalidOperationException>(
                 () => JsonSerializer.Deserialize<ClassWithPropertyPolicyConflictWhichThrows>(json, options));
+        }
+
+        [Fact]
+        public static void Throw_PublicPropertyAndField_ConflictDuePolicy()
+        {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+            // Serialize
+            var obj = new ClassWithPropertyFieldPolicyConflictWhichThrows();
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(obj, options));
+
+            // Deserialize
+            string json = @"{""MyString"":""NewValue""}";
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassWithPropertyFieldPolicyConflictWhichThrows>(json, options));
         }
 
         [Fact]
@@ -354,6 +499,32 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void Throw_PublicPropertyAndField_ConflictDuePolicy_SingleInheritance()
+        {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+            // Serialize
+            var obj = new ClassInheritedWithPropertyFieldPolicyConflictWhichThrows();
+
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(obj, options));
+
+            // The output for Newtonsoft.Json is:
+            // {"myString":"ConflictingValue"}
+            // Conflicts at different type-hierarchy levels that are not caused by
+            // deriving or the new keyword are allowed. Properties on more derived types win.
+
+            // Deserialize
+            string json = @"{""MyString"":""NewValue""}";
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassInheritedWithPropertyFieldPolicyConflictWhichThrows>(json, options));
+
+            // The output for Newtonsoft.Json is:
+            // obj.myString = "NewValue"
+            // obj.MyString still equals "DefaultValue"
+        }
+
+        [Fact]
         public static void Throw_PublicProperty_ConflictDuePolicy_DobuleInheritance()
         {
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -374,6 +545,33 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Throws<InvalidOperationException>(
                 () => JsonSerializer.Deserialize<ClassTwiceInheritedWithPropertyPolicyConflictWhichThrows>(json, options));
+
+            // The output for Newtonsoft.Json is:
+            // obj.myString = "NewValue"
+            // obj.MyString still equals "DefaultValue"
+        }
+
+        [Fact]
+        public static void Throw_PublicPropertyAndField_ConflictDuePolicy_DobuleInheritance()
+        {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+            // Serialize
+            var obj = new ClassTwiceInheritedWithPropertyFieldPolicyConflictWhichThrows();
+
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(obj, options));
+
+            // The output for Newtonsoft.Json is:
+            // {"myString":"ConflictingValue"}
+            // Conflicts at different type-hierarchy levels that are not caused by
+            // deriving or the new keyword are allowed. Properties on more derived types win.
+
+            // Deserialize
+            string json = @"{""MyString"":""NewValue""}";
+
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassTwiceInheritedWithPropertyFieldPolicyConflictWhichThrows>(json, options));
 
             // The output for Newtonsoft.Json is:
             // obj.myString = "NewValue"
@@ -430,6 +628,17 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(@"{""MyProp"":null}", serialized);
         }
 
+        public class ClassWithInternalField
+        {
+            internal string MyString = "DefaultValue";
+        }
+
+        public class ClassWithNewSlotField : ClassWithInternalField
+        {
+            [JsonInclude]
+            public new string MyString = "NewDefaultValue";
+        }
+
         public class ClassWithInternalProperty
         {
             internal string MyString { get; set; } = "DefaultValue";
@@ -466,10 +675,26 @@ namespace System.Text.Json.Serialization.Tests
             public string ConflictingString { get; set; } = "ConflictingValue";
         }
 
+        public class ClassWithPropertyFieldNamingConflictWhichThrows
+        {
+            public string MyString { get; set; } = "DefaultValue";
+
+            [JsonInclude]
+            [JsonPropertyName(nameof(MyString))]
+            public string ConflictingString = "ConflictingValue";
+        }
+
         public class ClassInheritedWithPropertyNamingConflictWhichThrows : ClassWithPublicProperty
         {
             [JsonPropertyName(nameof(MyString))]
             public string ConflictingString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassInheritedWithPropertyFieldNamingConflictWhichThrows : ClassWithPublicProperty
+        {
+            [JsonInclude]
+            [JsonPropertyName(nameof(MyString))]
+            public string ConflictingString = "ConflictingValue";
         }
 
         public class ClassTwiceInheritedWithPropertyNamingConflictWhichThrowsDummy : ClassWithPublicProperty
@@ -480,6 +705,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonPropertyName(nameof(MyString))]
             public string ConflictingString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassTwiceInheritedWithPropertyFieldNamingConflictWhichThrows : ClassTwiceInheritedWithPropertyNamingConflictWhichThrowsDummy
+        {
+            [JsonInclude]
+            [JsonPropertyName(nameof(MyString))]
+            public string ConflictingString = "ConflictingValue";
         }
 
         public class ClassWithPropertyPolicyConflict
@@ -496,9 +728,23 @@ namespace System.Text.Json.Serialization.Tests
             public string myString { get; set; } = "ConflictingValue";
         }
 
+        public class ClassWithPropertyFieldPolicyConflictWhichThrows
+        {
+            public string MyString { get; set; } = "DefaultValue";
+
+            [JsonInclude]
+            public string myString = "ConflictingValue";
+        }
+
         public class ClassInheritedWithPropertyPolicyConflictWhichThrows : ClassWithPublicProperty
         {
             public string myString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassInheritedWithPropertyFieldPolicyConflictWhichThrows : ClassWithPublicProperty
+        {
+            [JsonInclude]
+            public string myString = "ConflictingValue";
         }
 
         public class ClassInheritedWithPropertyPolicyConflictWhichThrowsDummy : ClassWithPublicProperty
@@ -508,6 +754,18 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassTwiceInheritedWithPropertyPolicyConflictWhichThrows : ClassInheritedWithPropertyPolicyConflictWhichThrowsDummy
         {
             public string myString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassTwiceInheritedWithPropertyFieldPolicyConflictWhichThrows : ClassInheritedWithPropertyPolicyConflictWhichThrowsDummy
+        {
+            [JsonInclude]
+            public string myString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassWithIgnoredNewSlotField : ClassWithInternalField
+        {
+            [JsonIgnore]
+            public new string MyString = "NewDefaultValue";
         }
 
         public class ClassWithIgnoredNewSlotProperty : ClassWithInternalProperty
@@ -566,9 +824,22 @@ namespace System.Text.Json.Serialization.Tests
             public int MyNumeric { get; set; } = 1;
         }
 
+        public class ClassWithNewSlotDecimalField : ClassWithHiddenByNewSlotIntProperty
+        {
+            [JsonInclude]
+            public new decimal MyNumeric = 1.5M;
+        }
+
         public class ClassWithNewSlotDecimalProperty : ClassWithHiddenByNewSlotIntProperty
         {
             public new decimal MyNumeric { get; set; } = 1.5M;
+        }
+
+        public class ClassWithNewSlotAttributedDecimalField : ClassWithHiddenByNewSlotIntProperty
+        {
+            [JsonInclude]
+            [JsonPropertyName("MyNewNumeric")]
+            public new decimal MyNumeric = 1.5M;
         }
 
         public class ClassWithNewSlotAttributedDecimalProperty : ClassWithHiddenByNewSlotIntProperty
