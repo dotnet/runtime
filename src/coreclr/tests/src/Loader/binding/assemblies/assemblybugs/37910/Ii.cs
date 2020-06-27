@@ -21,8 +21,8 @@ public class Program
         IntPtr res = setlocale(6 /*LC_ALL*/, TRLocale);
         if (TRLocale != Marshal.PtrToStringAnsi(res))
         {
-            Console.WriteLine("Failed! " + TRLocale + " locale was not found in system!");
-            return -1;
+            Console.WriteLine("Skipped! " + TRLocale + " locale was not found in system!");
+            return 100;
         }
 
         Assembly a2 = Assembly.Load("Ii");
