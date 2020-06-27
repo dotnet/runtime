@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "eventpipeprofiler.h"
+#include "eventpipewritingprofiler.h"
 
-GUID EventPipeProfiler::GetClsid()
+GUID EventPipeWritingProfiler::GetClsid()
 {
     // {2726B5B4-3F88-462D-AEC0-4EFDC8D7B921}
     GUID clsid = { 0x2726B5B4, 0x3F88, 0x462D,{ 0xAE, 0xC0, 0x4E, 0xFD, 0xC8, 0xD7, 0xB9, 0x21 } };
     return clsid;
 }
 
-HRESULT EventPipeProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
+HRESULT EventPipeWritingProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 {
     Profiler::Initialize(pICorProfilerInfoUnk);
 
@@ -152,7 +152,7 @@ HRESULT EventPipeProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     return S_OK;
 }
 
-HRESULT EventPipeProfiler::Shutdown()
+HRESULT EventPipeWritingProfiler::Shutdown()
 {
     Profiler::Shutdown();
 
@@ -170,12 +170,12 @@ HRESULT EventPipeProfiler::Shutdown()
     return S_OK;
 }
 
-HRESULT EventPipeProfiler::JITCompilationStarted(FunctionID functionId, BOOL fIsSafeToBlock)
+HRESULT EventPipeWritingProfiler::JITCompilationStarted(FunctionID functionId, BOOL fIsSafeToBlock)
 {
     return FunctionSeen(functionId);
 }
 
-HRESULT STDMETHODCALLTYPE EventPipeProfiler::JITCachedFunctionSearchFinished(FunctionID functionId, COR_PRF_JIT_CACHE result)
+HRESULT STDMETHODCALLTYPE EventPipeWritingProfiler::JITCachedFunctionSearchFinished(FunctionID functionId, COR_PRF_JIT_CACHE result)
 {
     if (result == COR_PRF_CACHED_FUNCTION_FOUND)
     {
@@ -186,7 +186,7 @@ HRESULT STDMETHODCALLTYPE EventPipeProfiler::JITCachedFunctionSearchFinished(Fun
 }
 
 
-HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionID)
+HRESULT EventPipeWritingProfiler::FunctionSeen(FunctionID functionID)
 {
     String functionName = GetFunctionIDName(functionID);
     if (functionName == WCHAR("TriggerMethod"))
@@ -259,7 +259,7 @@ HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionID)
 
         HRESULT hr = _pCorProfilerInfo12->EventPipeWriteEvent(
                         _allTypesEvent,
-                        sizeof(eventData)/sizeof(eventData[0]),
+                        sizeof(eventData)/sizeof(COR_PRF_EVENT_DATA),
                         eventData,
                         NULL,
                         NULL);
@@ -305,8 +305,8 @@ HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionID)
         {
             hr = _pCorProfilerInfo12->EventPipeWriteEvent(
                         _emptyEvent,
-                        NULL,
                         0,
+                        NULL,
                         NULL,
                         NULL);
             if (FAILED(hr))
