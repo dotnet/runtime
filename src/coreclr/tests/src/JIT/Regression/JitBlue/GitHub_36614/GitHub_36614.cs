@@ -36,8 +36,9 @@ namespace projs
             }
             for (int i = 0; i < Vector<double>.Count; i++)
             {
-                // The test represents a problem where stack level is not adjusted in the offset while trying to
-                // fetch the element of dest.
+                // The test represents a problem on x86 when double-alignment causes access to stack local.
+                // At that time, the stack level was not included in the offset while trying to fetch the element
+                // of dest present on stack.
                 Assert.Equal(unchecked((float)source2[i]), dest[i + Vector<double>.Count]);
             }
         }
