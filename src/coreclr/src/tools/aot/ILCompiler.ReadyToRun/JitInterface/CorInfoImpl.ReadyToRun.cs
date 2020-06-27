@@ -188,6 +188,10 @@ namespace Internal.JitInterface
             {
                 return true;
             }
+            if (methodNeedingCode.IsInternalCall)
+            {
+                return true;
+            }
             if (methodNeedingCode.OwningType.IsDelegate && (
                 methodNeedingCode.IsConstructor ||
                 methodNeedingCode.Name == "BeginInvoke" ||
@@ -1021,28 +1025,9 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0)
-                        {
-                            throw new RequiresRuntimeJitException("https://github.com/dotnet/runtime/issues/32663: CORINFO_FIELD_STATIC_ADDRESS");
-                        }
-
                         helperId = field.HasGCStaticBase ?
                             ReadyToRunHelperId.GetGCStaticBase :
                             ReadyToRunHelperId.GetNonGCStaticBase;
-
-                        //
-                        // Currently, we only do this optimization for regular statics, but it
-                        // looks like it may be permissible to do this optimization for
-                        // thread statics as well. Currently there's no reason to do this
-                        // as this code is not reachable until we implement CORINFO_FIELD_STATIC_ADDRESS
-                        // which is something Crossgen1 doesn't do (cf. the above GitHub issue 32663).
-                        /*
-                        if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0 &&
-                            (fieldAccessor != CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS))
-                        {
-                            fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN;
-                        }
-                        */
                     }
 
                     if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType) &&
@@ -1170,24 +1155,6 @@ namespace Internal.JitInterface
             if (constrainedType == null)
             {
                 pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
-            }
-            else if (constrainedType.IsRuntimeDeterminedSubtype || exactType.IsRuntimeDeterminedSubtype)
-            {
-                // <NICE> It shouldn't really matter what we do here - but the x86 JIT is annoyingly sensitive
-                // about what we do, since it pretend generic variables are reference types and generates
-                // an internal JIT tree even when just verifying generic code. </NICE>
-                if (constrainedType.IsRuntimeDeterminedType)
-                {
-                    pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_DEREF_THIS; // convert 'this' of type &T --> T
-                }
-                else if (constrainedType.IsValueType)
-                {
-                    pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS; // convert 'this' of type &VC<T> --> boxed(VC<T>)
-                }
-                else
-                {
-                    pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_DEREF_THIS; // convert 'this' of type &C<T> --> C<T>
-                }
             }
             else
             {
