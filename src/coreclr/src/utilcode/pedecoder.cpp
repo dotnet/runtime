@@ -290,7 +290,11 @@ CHECK PEDecoder::CheckNTHeaders() const
         // Ideally we would require the layout address to honor the section alignment constraints.
         // However, we do have 8K aligned IL only images which we load on 32 bit platforms. In this
         // case, we can only guarantee OS page alignment (which after all, is good enough.)
-        CHECK(CheckAligned(m_base, GetOsPageSize()));
+
+        // In the case of files embedded within a single-file app, the default alignment for assemblies is 16 bytes.
+        UINT alignment = IsInBundle() ? 16 : GetOsPageSize();
+
+        CHECK(CheckAligned(m_base, alignment));
     }
 
     // @todo: check NumberOfSections for overflow of SizeOfHeaders

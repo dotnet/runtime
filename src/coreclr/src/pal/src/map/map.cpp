@@ -2137,6 +2137,18 @@ MAPRecordMapping(
     return palError;
 }
 
+static size_t OffsetWithinPage(off_t offset)
+{
+    return offset & (GetVirtualPageSize() - 1);
+}
+
+static size_t RoundToPage(size_t size, off_t offset)
+{
+    size_t result = size + OffsetWithinPage(offset);
+    _ASSERTE(result >= size);
+    return result;
+}
+
 // Do the actual mmap() call, and record the mapping in the MappedViewList list.
 // This call assumes the mapping_critsec has already been taken.
 static PAL_ERROR
@@ -2155,9 +2167,13 @@ MAPmmapAndRecord(
     _ASSERTE(pPEBaseAddress != NULL);
 
     PAL_ERROR palError = NO_ERROR;
-    off_t adjust = offset & (GetVirtualPageSize() - 1);
+    off_t adjust = OffsetWithinPage(offset);
     LPVOID pvBaseAddress = static_cast<char *>(addr) - adjust;
 
+    // Ensure address and offset arguments mmap() are page-aligned.
+    _ASSERTE(OffsetWithinPage(offset - adjust) == 0);
+    _ASSERTE(OffsetWithinPage((off_t)pvBaseAddress) == 0);
+    
 #ifdef __APPLE__
     if ((prot & PROT_EXEC) != 0 && IsRunningOnMojaveHardenedRuntime())
     {
@@ -2176,7 +2192,7 @@ MAPmmapAndRecord(
     else
 #endif
     {
-        pvBaseAddress = mmap(static_cast<char *>(addr) - adjust, len + adjust, prot, flags, fd, offset - adjust);
+        pvBaseAddress = mmap(pvBaseAddress, len + adjust, prot, flags, fd, offset - adjust);
         if (MAP_FAILED == pvBaseAddress)
         {
             ERROR_(LOADER)( "mmap failed with code %d: %s.\n", errno, strerror( errno ) );
@@ -2360,7 +2376,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     // We're going to start adding mappings to the mapping list, so take the critical section
     InternalEnterCriticalSection(pThread, &mapping_critsec);
 
-    reserveSize = virtualSize;
+    reserveSize = RoundToPage(virtualSize, offset);
     if ((ntHeader.OptionalHeader.SectionAlignment) > GetVirtualPageSize())
     {
         reserveSize += ntHeader.OptionalHeader.SectionAlignment;
@@ -2425,6 +2441,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
 
     size_t headerSize;
     headerSize = GetVirtualPageSize(); // if there are lots of sections, this could be wrong
+    headerSize = RoundToPage(headerSize, offset);
 
     if (forceOveralign)
     {
@@ -2441,11 +2458,14 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     //we have now reserved memory (potentially we got rebased).  Walk the PE sections and map each part
     //separately.
 
-
     //first, map the PE header to the first page in the image.  Get pointers to the section headers
+    loadedHeader = (IMAGE_DOS_HEADER*)(static_cast<char*>(loadedBase) + OffsetWithinPage(offset));
+
+    LPVOID loadedHeaderBase;
+    loadedHeaderBase = NULL;
     palError = MAPmmapAndRecord(pFileObject, loadedBase,
-                    loadedBase, headerSize, PROT_READ, readOnlyFlags, fd, offset,
-                    (void**)&loadedHeader);
+                    (LPVOID)loadedHeader, headerSize, PROT_READ, readOnlyFlags, fd, offset,
+                    &loadedHeaderBase);
     if (NO_ERROR != palError)
     {
         ERROR_(LOADER)( "mmap of PE header failed\n" );
@@ -2453,7 +2473,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     }
 
     TRACE_(LOADER)("PE header loaded @ %p\n", loadedHeader);
-    _ASSERTE(loadedHeader == loadedBase); // we already preallocated the space, and we used MAP_FIXED, so we should have gotten this address
+    _ASSERTE(loadedHeaderBase == loadedBase); // we already preallocated the space, and we used MAP_FIXED, so we should have gotten this address
     IMAGE_SECTION_HEADER * firstSection;
     firstSection = (IMAGE_SECTION_HEADER*)(((char *)loadedHeader)
                                            + loadedHeader->e_lfanew
@@ -2465,9 +2485,9 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     // Validation
     char* sectionHeaderEnd;
     sectionHeaderEnd = (char*)firstSection + numSections * sizeof(IMAGE_SECTION_HEADER);
-    if (   ((void*)firstSection < loadedBase)
+    if (   ((void*)firstSection < loadedHeader)
         || ((char*)firstSection > sectionHeaderEnd)
-        || (sectionHeaderEnd > (char*)loadedBase + virtualSize)
+        || (sectionHeaderEnd > (char*)loadedHeader + virtualSize)
         )
     {
         ERROR_(LOADER)( "image is corrupt\n" );
@@ -2476,7 +2496,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     }
 
     void* prevSectionEnd;
-    prevSectionEnd = (char*)loadedBase + headerSize; // the first "section" for our purposes is the header
+    prevSectionEnd = (char*)loadedHeader + headerSize; // the first "section" for our purposes is the header
     for (unsigned i = 0; i < numSections; ++i)
     {
         //for each section, map the section of the file to the correct virtual offset.  Gather the
@@ -2485,13 +2505,13 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         int prot = 0;
         IMAGE_SECTION_HEADER &currentHeader = firstSection[i];
 
-        void* sectionBase = (char*)loadedBase + currentHeader.VirtualAddress;
+        void* sectionBase = (char*)loadedHeader + currentHeader.VirtualAddress;
         void* sectionBaseAligned = ALIGN_DOWN(sectionBase, GetVirtualPageSize());
 
         // Validate the section header
-        if (   (sectionBase < loadedBase)                                                           // Did computing the section base overflow?
+        if (   (sectionBase < loadedHeader)                                                           // Did computing the section base overflow?
             || ((char*)sectionBase + currentHeader.SizeOfRawData < (char*)sectionBase)              // Does the section overflow?
-            || ((char*)sectionBase + currentHeader.SizeOfRawData > (char*)loadedBase + virtualSize) // Does the section extend past the end of the image as the header stated?
+            || ((char*)sectionBase + currentHeader.SizeOfRawData > (char*)loadedHeader + virtualSize) // Does the section extend past the end of the image as the header stated?
             || (prevSectionEnd > sectionBase)                                                       // Does this section overlap the previous one?
             )
         {
@@ -2600,7 +2620,7 @@ done:
 
     if (palError == ERROR_SUCCESS)
     {
-        retval = loadedBase;
+        retval = loadedHeader;
         LOGEXIT("MAPMapPEFile returns %p\n", retval);
     }
     else

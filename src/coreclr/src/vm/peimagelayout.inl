@@ -116,4 +116,9 @@ inline BOOL PEImageLayout::CompareBase(UPTR base, UPTR mapping)
 
 }
 
+inline BOOL PEImageLayout::IsInBundle() const
+{
+    return m_pOwner->IsInBundle();
+}
+
 #endif //PEIMAGEVIEW_INL_
