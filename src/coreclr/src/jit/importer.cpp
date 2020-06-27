@@ -18686,7 +18686,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
             if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
             {
-                pParam->result->NoteFatal(InlineObservation::CALLSITE_CLASS_INIT_FAILURE);
+                pParam->result->NoteFatal(InlineObservation::CALLSITE_CANT_CLASS_INIT);
                 goto _exit;
             }
 
