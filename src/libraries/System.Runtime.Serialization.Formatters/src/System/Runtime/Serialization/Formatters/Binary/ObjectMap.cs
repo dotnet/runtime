@@ -19,7 +19,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal string[] _memberNames;
         internal ReadObjectInfo _objectInfo;
         internal bool _isInitObjectInfo = true;
-        internal ObjectReader? _objectReader = null;
+        internal ObjectReader? _objectReader;
         internal int _objectId;
         internal BinaryAssemblyInfo _assemblyInfo;
 

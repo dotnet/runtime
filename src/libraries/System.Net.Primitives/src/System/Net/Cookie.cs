@@ -68,9 +68,10 @@ namespace System.Net
 
         private string m_domainKey = string.Empty; // Do not rename (binary serialization)
 
-        internal bool IsQuotedVersion = false;
-
-        internal bool IsQuotedDomain = false;
+#pragma warning disable 0649 // set via reflection by CookieParser: https://github.com/dotnet/runtime/issues/19348
+        internal bool IsQuotedVersion; // Do not rename (binary serialization)
+        internal bool IsQuotedDomain; // Do not rename (binary serialization)
+#pragma warning restore 0649
 
 #if DEBUG
         static Cookie()
