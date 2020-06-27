@@ -79,6 +79,7 @@
     <When Condition="'$(TargetFrameworkSuffix)' == 'Browser'">
       <PropertyGroup>
         <TargetsBrowser>true</TargetsBrowser>
+        <PackageTargetRuntime>browser</PackageTargetRuntime>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetFrameworkSuffix)' == ''">
