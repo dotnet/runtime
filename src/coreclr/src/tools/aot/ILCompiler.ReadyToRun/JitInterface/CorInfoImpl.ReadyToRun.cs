@@ -1073,6 +1073,18 @@ namespace Internal.JitInterface
             //       and STS::AccessCheck::CanAccess.
         }
 
+        private static bool IsTypeSpecForTypicalInstantiation(TypeDesc t)
+        {
+            Instantiation inst = t.Instantiation;
+            for (int i = 0; i < inst.Length; i++)
+            {
+                var arg = inst[i] as SignatureTypeVariable;
+                if (arg == null || arg.Index != i)
+                    return false;
+            }
+            return true;
+        }
+
         private void ceeInfoGetCallInfo(
             ref CORINFO_RESOLVED_TOKEN pResolvedToken,
             CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -1221,6 +1233,20 @@ namespace Internal.JitInterface
             {
                 pResult->contextHandle = contextFromType(exactType);
                 pResult->exactContextNeedsRuntimeLookup = exactType.IsCanonicalSubtype(CanonicalFormKind.Any);
+
+                // Use main method as the context as long as the methods are called on the same type
+                if (pResult->exactContextNeedsRuntimeLookup &&
+                    pResolvedToken.tokenContext == contextFromMethodBeingCompiled() &&
+                    constrainedType == null &&
+                    exactType == MethodBeingCompiled.OwningType)
+                {
+                    var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+                    var rawMethod = (MethodDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token);
+                    if (IsTypeSpecForTypicalInstantiation(rawMethod.OwningType))
+                    {
+                        pResult->contextHandle = contextFromMethodBeingCompiled();
+                    }
+                }
             }
 
             //
@@ -1332,8 +1358,7 @@ namespace Internal.JitInterface
                 const CORINFO_CALLINFO_FLAGS LdVirtFtnMask = CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT;
                 bool unresolvedLdVirtFtn = ((flags & LdVirtFtnMask) == LdVirtFtnMask) && !resolvedCallVirt;
 
-                if (((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || resolvedConstraint)) || forceUseRuntimeLookup)
-                    && entityFromContext(pResolvedToken.tokenContext) is MethodDesc methodDesc && methodDesc.IsSharedByGenericInstantiations)
+                if ((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || resolvedConstraint)) || forceUseRuntimeLookup)
                 {
                     if (unresolvedLdVirtFtn)
                     {
@@ -1343,7 +1368,6 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
                         pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
 
                         // For reference types, the constrained type does not affect method resolution
@@ -1412,10 +1436,7 @@ namespace Internal.JitInterface
                 // We can't make stub calls when we need exact information
                 // for interface calls from shared code.
 
-                if (// If the token is not shared then we don't need a runtime lookup
-                    pResult->exactContextNeedsRuntimeLookup
-                    // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
-                    && entityFromContext(pResolvedToken.tokenContext) is MethodDesc methodDesc && methodDesc.IsSharedByGenericInstantiations)
+                if (pResult->exactContextNeedsRuntimeLookup)
                 {
                     ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind.DispatchStubAddrSlot, ref pResolvedToken, null, originalMethod, ref pResult->codePointerOrStubLookup);
                 }
@@ -1595,7 +1616,6 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
                     MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     if (canonMethod.RequiresInstMethodDescArg())
                     {
@@ -1633,19 +1653,21 @@ namespace Internal.JitInterface
             pResult.indirections = CORINFO.USEHELPER;
             pResult.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
 
-            MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-            TypeDesc contextType = typeFromContext(pResolvedToken.tokenContext);
-
-            // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-            // to abort the inlining attempt anyway.
-            if (contextMethod != MethodBeingCompiled)
+            // Runtime lookups in inlined contexts are not supported by the runtime for now
+            if (pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
             {
+                pResultLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
                 return;
             }
 
+            MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+            TypeDesc contextType = typeFromContext(pResolvedToken.tokenContext);
+
             // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup. 
-            // All callers of ComputeRuntimeLookupForSharedGenericToken have to filter out this case. We can't do much about it here.
-            Debug.Assert(contextMethod.IsSharedByGenericInstantiations);
+            if (!contextMethod.IsSharedByGenericInstantiations)
+            {
+                ThrowHelper.ThrowInvalidProgramException();
+            }
 
             if (contextMethod.RequiresInstMethodDescArg())
             {
@@ -1767,15 +1789,7 @@ namespace Internal.JitInterface
 
             Debug.Assert(pResult.compileTimeHandle != null);
 
-            if (runtimeLookup
-                /* TODO: this Crossgen check doesn't pass for ThisObjGenericLookupTest when inlining
-                 * GenericLookup<object>.CheckInstanceTypeArg -> GetTypeName<object> because 
-                 * tokenContext is GenericLookup<object> which is an exact class. Crossgen doesn't hit
-                 * this code path as it properly propagates the object generic type argument to GetTypeName
-                 * and inlines the method too.
-                    // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
-                    && ContextIsShared(pResolvedToken.tokenContext)
-                */)
+            if (runtimeLookup)
             {
                 DictionaryEntryKind entryKind = DictionaryEntryKind.EmptySlot;
                 switch (pResult.handleType)

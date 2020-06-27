@@ -565,8 +565,7 @@ public:
     CorInfoInitClassResult initClass(
             CORINFO_FIELD_HANDLE    field,
             CORINFO_METHOD_HANDLE   method,
-            CORINFO_CONTEXT_HANDLE  context,
-            BOOL                    speculative = FALSE);
+            CORINFO_CONTEXT_HANDLE  context);
 
     void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls);
     void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE meth);

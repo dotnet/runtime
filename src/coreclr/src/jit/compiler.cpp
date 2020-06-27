@@ -4364,7 +4364,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
         // Insert call to class constructor as the first basic block if
         // we were asked to do so.
-        if (info.compCompHnd->initClass(nullptr /* field */, info.compMethodHnd /* method */,
+        if (info.compCompHnd->initClass(nullptr /* field */, nullptr /* method */,
                                         impTokenLookupContextHandle /* context */) &
             CORINFO_INITCLASS_USE_HELPER)
         {
@@ -5390,7 +5390,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     }
     else
     {
-        impTokenLookupContextHandle = MAKE_METHODCONTEXT(info.compMethodHnd);
+        impTokenLookupContextHandle = METHOD_BEING_COMPILED_CONTEXT();
 
         info.compClassHnd  = info.compCompHnd->getMethodClass(info.compMethodHnd);
         info.compClassAttr = info.compCompHnd->getClassAttribs(info.compClassHnd);
