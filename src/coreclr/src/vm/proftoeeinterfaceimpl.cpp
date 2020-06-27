@@ -7247,10 +7247,8 @@ HRESULT ProfToEEInterfaceImpl::EventPipeGetProviderInfo(
         "**PROF: EventPipeGetProviderInfo.\n"));
 
 #ifdef FEATURE_PERFTRACING
-        if (cchName == 0 || szName == NULL)
+        if (cchName > 0 && szName == NULL)
         {
-            // The only thing this API returns is the name, so bail
-            // if we can't return the name.
             return E_INVALIDARG;
         }
 
