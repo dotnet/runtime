@@ -787,8 +787,10 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
-        [Fact]
-        public async Task ReadAsStreamAsync_Buffered_IgnoresCancellationToken()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsStreamAsync_Buffered_IgnoresCancellationToken(bool readStreamAsync)
         {
             string content = Guid.NewGuid().ToString();
 
@@ -804,7 +806,7 @@ namespace System.Net.Http.Functional.Tests
                     var cts = new CancellationTokenSource();
                     cts.Cancel();
 
-                    Stream receivedStream = await response.Content.ReadAsStreamAsync(cts.Token);
+                    Stream receivedStream = await response.Content.ReadAsStreamAsync(readStreamAsync, cts.Token);
                     Assert.IsType<MemoryStream>(receivedStream);
                     byte[] receivedBytes = (receivedStream as MemoryStream).ToArray();
                     string received = Encoding.UTF8.GetString(receivedBytes);
@@ -816,8 +818,10 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
-        [Fact]
-        public async Task ReadAsStreamAsync_Unbuffered_IgnoresCancellationToken()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsStreamAsync_Unbuffered_IgnoresCancellationToken(bool readStreamAsync)
         {
             string content = Guid.NewGuid().ToString();
 
@@ -833,7 +837,7 @@ namespace System.Net.Http.Functional.Tests
                     var cts = new CancellationTokenSource();
                     cts.Cancel();
 
-                    Stream receivedStream = await response.Content.ReadAsStreamAsync(cts.Token);
+                    Stream receivedStream = await response.Content.ReadAsStreamAsync(readStreamAsync, cts.Token);
                     var ms = new MemoryStream();
                     await receivedStream.CopyToAsync(ms);
                     byte[] receivedBytes = ms.ToArray();
@@ -855,6 +859,17 @@ namespace System.Net.Http.Functional.Tests
             cts.Cancel();
 
             await Assert.ThrowsAsync<TaskCanceledException>(() => content.ReadAsStreamAsync(cts.Token));
+        }
+
+        [Fact]
+        public void ReadAsStream_Unbuffered_CustomContent_CanBeCanceled()
+        {
+            var content = new MockContent();
+
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            Assert.Throws<OperationCanceledException>(() => content.ReadAsStream(cts.Token));
         }
 
         #region Helper methods
@@ -1010,7 +1025,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        throw new OperationCanceledException();
+                        throw new OperationCanceledException(cancellationToken);
                     }
 
                     return new MockMemoryStream(_mockData, 0, _mockData.Length, false);

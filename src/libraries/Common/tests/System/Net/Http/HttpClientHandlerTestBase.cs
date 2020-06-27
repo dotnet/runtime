@@ -173,16 +173,22 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static Task<Stream> ReadAsStreamAsync(this HttpContent content, bool async)
+        public static Task<Stream> ReadAsStreamAsync(this HttpContent content, bool async, CancellationToken cancellationToken = default)
         {
             if (async)
             {
+#if NETCOREAPP
+                // No CancellationToken accepting overload on NETFX.
+                return content.ReadAsStreamAsync(cancellationToken);
+#else
                 return content.ReadAsStreamAsync();
+#endif
+
             }
             else
             {
 #if NETCOREAPP
-                return Task.FromResult(content.ReadAsStream());
+                return Task.FromResult(content.ReadAsStream(cancellationToken));
 #else
                 // Framework won't ever have the sync API.
                 // This shouldn't be called due to AsyncBoolValues returning only true on Framework.

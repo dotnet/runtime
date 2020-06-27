@@ -34,7 +34,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Ctor_EmptySource_Succeed(bool readStreamAsync)
         {
             var content = new FormUrlEncodedContent(new Dictionary<string, string>());
-            Stream stream = readStreamAsync ? await content.ReadAsStreamAsync() : content.ReadAsStream();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(0, stream.Length);
         }
 
@@ -58,7 +58,7 @@ namespace System.Net.Http.Functional.Tests
             data.Add("key", "value");
             var content = new FormUrlEncodedContent(data);
 
-            Stream stream = readStreamAsync ? await content.ReadAsStreamAsync() : content.ReadAsStream();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(9, stream.Length);
             string result = new StreamReader(stream).ReadToEnd();
             Assert.Equal("key=value", result);
@@ -73,7 +73,7 @@ namespace System.Net.Http.Functional.Tests
             data.Add("key", "value\u30AF");
             var content = new FormUrlEncodedContent(data);
 
-            Stream stream = readStreamAsync ? await content.ReadAsStreamAsync() : content.ReadAsStream();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(18, stream.Length);
             string result = new StreamReader(stream).ReadToEnd();
             Assert.Equal("key=value%E3%82%AF", result);
@@ -89,7 +89,7 @@ namespace System.Net.Http.Functional.Tests
             data.Add("key2", "value2");
             var content = new FormUrlEncodedContent(data);
 
-            Stream stream = readStreamAsync ? await content.ReadAsStreamAsync() : content.ReadAsStream();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(23, stream.Length);
             string result = new StreamReader(stream).ReadToEnd();
             Assert.Equal("key1=value1&key2=value2", result);
@@ -105,7 +105,7 @@ namespace System.Net.Http.Functional.Tests
             data.Add("key 2", "val%ue 2");
             var content = new FormUrlEncodedContent(data);
 
-            Stream stream = readStreamAsync ? await content.ReadAsStreamAsync() : content.ReadAsStream();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(35, stream.Length);
             string result = new StreamReader(stream).ReadToEnd();
             Assert.Equal("key+1=val%2520ue+1&key+2=val%25ue+2", result);
@@ -127,7 +127,7 @@ namespace System.Net.Http.Functional.Tests
             data.Add("key", testString);
             var content = new FormUrlEncodedContent(data);
 
-            Stream stream = readStreamAsync ? await content.ReadAsStreamAsync() : content.ReadAsStream();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             string result = new StreamReader(stream).ReadToEnd().ToLowerInvariant();
 
             // Result of UrlEncode invoked in .NET Framework 4.6

@@ -397,7 +397,7 @@ namespace System.Net.Http.Functional.Tests
             switch (mode)
             {
                 case MultipartContentToStringMode.ReadAsStreamAsync:
-                    stream = async ? await content.ReadAsStreamAsync() : content.ReadAsStream();
+                    stream = await content.ReadAsStreamAsync(async);
                     break;
 
                 default:

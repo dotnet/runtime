@@ -85,7 +85,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ReadAsStreamAsync_EmptySourceArray_Succeed(bool readStreamAsync)
         {
             var content = new ByteArrayContent(new byte[0]);
-            Stream stream = readStreamAsync ? await content.ReadAsStreamAsync() : content.ReadAsStream();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(0, stream.Length);
         }
 
@@ -97,19 +97,7 @@ namespace System.Net.Http.Functional.Tests
             var contentData = new byte[10];
             var content = new MockByteArrayContent(contentData, 5, 3);
 
-            Stream stream = readStreamAsync ? await content.ReadAsStreamAsync() : content.ReadAsStream();
-            Assert.False(stream.CanWrite);
-            Assert.Equal(3, stream.Length);
-            Assert.Equal(0, content.CopyToCount);
-        }
-
-        [Fact]
-        public void ReadAsStream_Call_MemoryStreamWrappingByteArrayReturned()
-        {
-            var contentData = new byte[10];
-            var content = new MockByteArrayContent(contentData, 5, 3);
-
-            Stream stream = content.ReadAsStream();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.False(stream.CanWrite);
             Assert.Equal(3, stream.Length);
             Assert.Equal(0, content.CopyToCount);
