@@ -14879,6 +14879,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 //    A `mov` is redundant in following 3 cases:
 //
 //    1. Move to same register
+//       (Except 4-byte movement like "mov w1, w1" which zeros out upper bits of x1 register)
 //
 //         mov Rx, Rx
 //
