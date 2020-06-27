@@ -615,9 +615,9 @@ EventPipeProvider *EventPipe::CreateProvider(const SString &providerName, EventP
     CONTRACTL_END;
 
     return s_config.CreateProvider(providerName,
-                                                           pCallbackFunction,
-                                                           pCallbackData,
-                                                           pEventPipeProviderCallbackDataQueue);
+                                   pCallbackFunction,
+                                   pCallbackData,
+                                   pEventPipeProviderCallbackDataQueue);
 }
 
 EventPipeProvider *EventPipe::GetProvider(const SString &providerName)
