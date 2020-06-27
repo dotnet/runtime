@@ -18679,17 +18679,14 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             }
 
             // Speculatively check if initClass() can be done.
-            // If it can be done, we will try to inline the method. If inlining
-            // succeeds, then we will do the non-speculative initClass() and commit it.
-            // If this speculative call to initClass() fails, there is no point
-            // trying to inline this method.
+            // If it can be done, we will try to inline the method.
             initClassResult =
                 pParam->pThis->info.compCompHnd->initClass(nullptr /* field */, pParam->fncHandle /* method */,
                                                            pParam->exactContextHnd /* context */);
 
             if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
             {
-                pParam->result->NoteFatal(InlineObservation::CALLSITE_CLASS_INIT_FAILURE_SPEC);
+                pParam->result->NoteFatal(InlineObservation::CALLSITE_CLASS_INIT_FAILURE);
                 goto _exit;
             }
 
@@ -20639,6 +20636,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     CORINFO_CLASS_HANDLE derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
 
     // Need to update call info too. This is fragile and suboptimal
+    // https://github.com/dotnet/runtime/issues/38477
     // but hopefully the derived method conforms to
     // the base in most other ways.
     *method        = derivedMethod;

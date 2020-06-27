@@ -120,7 +120,6 @@ INLINE_OBSERVATION(ARG_NO_BASH_TO_REF,        bool,   "argument can't bash to re
 INLINE_OBSERVATION(ARG_TYPES_INCOMPATIBLE,    bool,   "argument types incompatible",          FATAL,       CALLSITE)
 INLINE_OBSERVATION(CANT_EMBED_PINVOKE_COOKIE, bool,   "can't embed pinvoke cookie",           FATAL,       CALLSITE)
 INLINE_OBSERVATION(CANT_EMBED_VARARGS_COOKIE, bool,   "can't embed varargs cookie",           FATAL,       CALLSITE)
-INLINE_OBSERVATION(CLASS_INIT_FAILURE_SPEC,   bool,   "speculative class init failed",        FATAL,       CALLSITE)
 INLINE_OBSERVATION(COMPILATION_ERROR,         bool,   "compilation error",                    FATAL,       CALLSITE)
 INLINE_OBSERVATION(COMPILATION_FAILURE,       bool,   "failed to compile",                    FATAL,       CALLSITE)
 INLINE_OBSERVATION(CROSS_BOUNDARY_CALLI,      bool,   "cross-boundary calli",                 FATAL,       CALLSITE)
