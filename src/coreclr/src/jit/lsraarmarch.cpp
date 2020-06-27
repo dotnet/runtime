@@ -117,7 +117,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     int srcCount = BuildIndirUses(indirTree);
     buildInternalRegisterUses();
 
-    if (indirTree->gtOper != GT_STOREIND)
+    if (!indirTree->OperIs(GT_STOREIND, GT_NULLCHECK))
     {
         BuildDef(indirTree);
     }
@@ -181,6 +181,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // so that epilog sequence can generate "br xip0/r12" to achieve fast tail call.
             ctrlExprCandidates = RBM_FASTTAILCALL_TARGET;
         }
+    }
+    else if (call->IsR2ROrVirtualStubRelativeIndir())
+    {
+        buildInternalIntRegisterDefForNode(call);
     }
 #ifdef TARGET_ARM
     else

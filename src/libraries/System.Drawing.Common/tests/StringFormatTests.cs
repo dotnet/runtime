@@ -84,7 +84,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_NullFormat_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("format", () => new StringFormat(null));

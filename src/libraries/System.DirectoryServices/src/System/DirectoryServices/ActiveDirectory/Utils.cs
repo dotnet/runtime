@@ -1976,7 +1976,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return serverName;
         }
 
-        private static string s_NTAuthorityString = null;
+        private static string s_NTAuthorityString;
 
         internal static string GetNtAuthorityString()
         {

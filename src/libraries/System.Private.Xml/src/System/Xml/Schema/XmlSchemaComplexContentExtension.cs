@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -9,9 +10,9 @@ namespace System.Xml.Schema
 
     public class XmlSchemaComplexContentExtension : XmlSchemaContent
     {
-        private XmlSchemaParticle _particle;
+        private XmlSchemaParticle? _particle;
         private XmlSchemaObjectCollection _attributes = new XmlSchemaObjectCollection();
-        private XmlSchemaAnyAttribute _anyAttribute;
+        private XmlSchemaAnyAttribute? _anyAttribute;
         private XmlQualifiedName _baseTypeName = XmlQualifiedName.Empty;
 
         [XmlAttribute("base")]
@@ -25,7 +26,7 @@ namespace System.Xml.Schema
          XmlElement("choice", typeof(XmlSchemaChoice)),
          XmlElement("all", typeof(XmlSchemaAll)),
          XmlElement("sequence", typeof(XmlSchemaSequence))]
-        public XmlSchemaParticle Particle
+        public XmlSchemaParticle? Particle
         {
             get { return _particle; }
             set { _particle = value; }
@@ -38,9 +39,8 @@ namespace System.Xml.Schema
             get { return _attributes; }
         }
 
-
         [XmlElement("anyAttribute")]
-        public XmlSchemaAnyAttribute AnyAttribute
+        public XmlSchemaAnyAttribute? AnyAttribute
         {
             get { return _anyAttribute; }
             set { _anyAttribute = value; }

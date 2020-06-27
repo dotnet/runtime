@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -10,12 +11,12 @@ namespace System.Xml.Schema
 
     public class XmlSchemaAnyAttribute : XmlSchemaAnnotated
     {
-        private string _ns;
+        private string? _ns;
         private XmlSchemaContentProcessing _processContents = XmlSchemaContentProcessing.None;
-        private NamespaceList _namespaceList;
+        private NamespaceList? _namespaceList;
 
         [XmlAttribute("namespace")]
-        public string Namespace
+        public string? Namespace
         {
             get { return _ns ?? NamespaceList?.ToString(); }
             set { _ns = value; }
@@ -30,7 +31,7 @@ namespace System.Xml.Schema
 
 
         [XmlIgnore]
-        internal NamespaceList NamespaceList
+        internal NamespaceList? NamespaceList
         {
             get { return _namespaceList; }
         }
@@ -41,11 +42,11 @@ namespace System.Xml.Schema
             get { return _processContents == XmlSchemaContentProcessing.None ? XmlSchemaContentProcessing.Strict : _processContents; }
         }
 
-        internal void BuildNamespaceList(string targetNamespace)
+        internal void BuildNamespaceList(string? targetNamespace)
         {
             if (_ns != null)
             {
-                _namespaceList = new NamespaceList(_ns, targetNamespace);
+                _namespaceList = new NamespaceList(_ns, targetNamespace!);
             }
             else
             {
@@ -67,17 +68,17 @@ namespace System.Xml.Schema
 
         internal bool Allows(XmlQualifiedName qname)
         {
-            return _namespaceList.Allows(qname.Namespace);
+            return _namespaceList!.Allows(qname.Namespace);
         }
 
         internal static bool IsSubset(XmlSchemaAnyAttribute sub, XmlSchemaAnyAttribute super)
         {
-            return NamespaceList.IsSubset(sub.NamespaceList, super.NamespaceList);
+            return NamespaceList.IsSubset(sub.NamespaceList!, super.NamespaceList!);
         }
 
-        internal static XmlSchemaAnyAttribute Intersection(XmlSchemaAnyAttribute o1, XmlSchemaAnyAttribute o2, bool v1Compat)
+        internal static XmlSchemaAnyAttribute? Intersection(XmlSchemaAnyAttribute o1, XmlSchemaAnyAttribute o2, bool v1Compat)
         {
-            NamespaceList nsl = NamespaceList.Intersection(o1.NamespaceList, o2.NamespaceList, v1Compat);
+            NamespaceList? nsl = NamespaceList.Intersection(o1.NamespaceList!, o2.NamespaceList!, v1Compat);
             if (nsl != null)
             {
                 XmlSchemaAnyAttribute anyAttribute = new XmlSchemaAnyAttribute();
@@ -93,9 +94,9 @@ namespace System.Xml.Schema
             }
         }
 
-        internal static XmlSchemaAnyAttribute Union(XmlSchemaAnyAttribute o1, XmlSchemaAnyAttribute o2, bool v1Compat)
+        internal static XmlSchemaAnyAttribute? Union(XmlSchemaAnyAttribute o1, XmlSchemaAnyAttribute o2, bool v1Compat)
         {
-            NamespaceList nsl = NamespaceList.Union(o1.NamespaceList, o2.NamespaceList, v1Compat);
+            NamespaceList? nsl = NamespaceList.Union(o1.NamespaceList!, o2.NamespaceList!, v1Compat);
             if (nsl != null)
             {
                 XmlSchemaAnyAttribute anyAttribute = new XmlSchemaAnyAttribute();

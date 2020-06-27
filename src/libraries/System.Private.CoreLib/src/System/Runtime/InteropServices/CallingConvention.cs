@@ -4,7 +4,7 @@
 
 namespace System.Runtime.InteropServices
 {
-    // Used for the CallingConvention named argument to the DllImport and UnmanagedCallersOnly attribute
+    // Used for the CallingConvention named argument to the DllImport attribute
     public enum CallingConvention
     {
         Winapi = 1,

@@ -89,7 +89,7 @@ namespace System.Net.Http
             // See comment on ConnectionWindowThreshold.
             private const int StreamWindowThreshold = StreamWindowSize / 8;
 
-            public Http2Stream(HttpRequestMessage request, Http2Connection connection, int initialWindowSize)
+            public Http2Stream(HttpRequestMessage request, Http2Connection connection)
             {
                 _request = request;
                 _connection = connection;
@@ -102,8 +102,6 @@ namespace System.Net.Http
                 _responseBuffer = new ArrayBuffer(InitialStreamBufferSize, usePool: true);
 
                 _pendingWindowUpdate = 0;
-                _availableCredit = initialWindowSize;
-
                 _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
 
                 if (_request.Content == null)
@@ -135,13 +133,18 @@ namespace System.Net.Http
                     RequestMessage = _request,
                     Content = new HttpConnectionResponseContent()
                 };
-
-                if (NetEventSource.IsEnabled) Trace($"{request}, {nameof(initialWindowSize)}={initialWindowSize}");
             }
 
             private object SyncObject => this; // this isn't handed out to code that may lock on it
 
-            public int StreamId { get; set; }
+            public void Initialize(int streamId, int initialWindowSize)
+            {
+                StreamId = streamId;
+                _availableCredit = initialWindowSize;
+                if (NetEventSource.IsEnabled) Trace($"{_request}, {nameof(initialWindowSize)}={initialWindowSize}");
+            }
+
+            public int StreamId { get; private set; }
 
             public HttpResponseMessage GetAndClearResponse()
             {
@@ -346,6 +349,8 @@ namespace System.Net.Http
                     w.Dispose();
                     _creditWaiter = null;
                 }
+
+                if (HttpTelemetry.IsEnabled) HttpTelemetry.Log.RequestStop();
             }
 
             private void Cancel()
@@ -380,6 +385,8 @@ namespace System.Net.Http
                 {
                     _waitSource.SetResult(true);
                 }
+
+                if (HttpTelemetry.IsEnabled) HttpTelemetry.Log.RequestAborted();
             }
 
             // Returns whether the waiter should be signalled or not.
@@ -1069,12 +1076,11 @@ namespace System.Net.Http
             {
                 Debug.Assert(_requestBodyCancellationSource != null);
 
-                // Deal with [ActiveIssue("https://github.com/dotnet/runtime/issues/17492")]
-                // Custom HttpContent classes do not get passed the cancellationToken.
-                // So, inject the expected CancellationToken here, to ensure we can cancel the request body send if needed.
+                // Cancel the request body sending if cancellation is requested on the supplied cancellation token.
                 CancellationTokenRegistration linkedRegistration = cancellationToken.CanBeCanceled && cancellationToken != _requestBodyCancellationSource.Token ?
                     RegisterRequestBodyCancellation(cancellationToken) :
                     default;
+
                 try
                 {
                     while (buffer.Length > 0)
@@ -1299,12 +1305,12 @@ namespace System.Net.Http
 
                     if (http2Stream == null)
                     {
-                        return new ValueTask<int>(Task.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)))));
+                        return ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream))));
                     }
 
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                        return ValueTask.FromCanceled<int>(cancellationToken);
                     }
 
                     return http2Stream.ReadDataAsync(destination, _responseMessage, cancellationToken);
@@ -1366,7 +1372,7 @@ namespace System.Net.Http
 
                     if (http2Stream == null)
                     {
-                        return new ValueTask(Task.FromException(new ObjectDisposedException(nameof(Http2WriteStream))));
+                        return ValueTask.FromException(new ObjectDisposedException(nameof(Http2WriteStream)));
                     }
 
                     return http2Stream.SendDataAsync(buffer, cancellationToken);

@@ -27,8 +27,6 @@ protected:
     DWORD                       m_cbPublicKeyOrToken;
     DWORD                       m_dwFlags;             // CorAssemblyFlags
     LPCWSTR                     m_wszCodeBase;         // URL to the code
-    LPCSTR                      m_szWinRtTypeNamespace;
-    LPCSTR                      m_szWinRtTypeClassName;
     int                         m_ownedFlags;
     ICLRPrivBinder             *m_pBindingContext;
 
@@ -40,7 +38,7 @@ public:
         CODE_BASE_OWNED             = 0x04,
         LOCALE_OWNED                = 0x08,
         CODEBASE_OWNED              = 0x10,
-        WINRT_TYPE_NAME_OWNED       = 0x20,
+        // unused                   = 0x20,
         // Set if ParseName() returned illegal textual identity.
         // Cannot process the string any further.
         BAD_NAME_OWNED              = 0x40,
@@ -112,20 +110,6 @@ public:
     BOOL IsMscorlibSatellite() const;
     BOOL IsMscorlib();
 
-    //
-    // Windows Runtime functions that could not be refactored out to AssemblySpec
-    //
-    inline LPCSTR GetWinRtTypeNamespace() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_szWinRtTypeNamespace;
-    }
-    inline LPCSTR GetWinRtTypeClassName() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_szWinRtTypeClassName;
-    }
-
     //****************************************************************************************
     //
     // Creates an IAssemblyName object representing this AssemblySpec.
@@ -140,27 +124,11 @@ public:
         BOOL fIncludeCodeBase = TRUE, /* Used by fusion only */
         BOOL fMustBeBindable = FALSE) const;
 
-    inline BOOL IsContentType_WindowsRuntime() const
-    {
-        LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_COMINTEROP
-        return IsAfContentType_WindowsRuntime(m_dwFlags);
-#else
-        return FALSE;
-#endif
-    }
-
-    void GetEncodedName(SString & ssEncodedName) const;
-
-    // Returns true if this object uniquely identifies a single assembly;
-    // false otherwise. This will return false for Windows Runtime assemblies,
-    // as WinRT assembly names do not represent an identity. This method
-    // does not take into account additional attributes such as type namespace
-    // and name.
+    // Returns true
     inline BOOL HasUniqueIdentity() const
     {
         STATIC_CONTRACT_LIMITED_METHOD;
-        return !IsContentType_WindowsRuntime();
+        return TRUE;
     }
 
     enum CompareExFlags

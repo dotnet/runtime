@@ -541,6 +541,8 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
 
 struct InlArgInfo
 {
+    unsigned __int64 bbFlags;             // basic block flags that need to be added when replacing GT_RET_EXPR
+                                          // with argNode
     GenTree* argNode;                     // caller node for this argument
     GenTree* argBashTmpNode;              // tmp node created, if it may be replaced with actual arg
     unsigned argTmpNum;                   // the argument tmp number
@@ -584,6 +586,7 @@ struct InlineInfo
     InlineResult* inlineResult;
 
     GenTree*             retExpr; // The return expression of the inlined candidate.
+    BasicBlock*          retBB;   // The basic block of the return expression of the inlined candidate.
     CORINFO_CLASS_HANDLE retExprClassHnd;
     bool                 retExprClassHndIsExact;
 

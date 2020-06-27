@@ -625,11 +625,16 @@ namespace System.Globalization
             // Calendar specific data
             invariant._iFirstDayOfWeek = 0;                      // first day of week
             invariant._iFirstWeekOfYear = 0;                      // first week of year
-            invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };       // all available calendar type(s).  The first one is the default calendar
 
-            // Store for specific data about each calendar
-            invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
-            invariant._calendars[0] = CalendarData.Invariant;
+            // all available calendar type(s).  The first one is the default calendar
+            invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };
+
+            if (!GlobalizationMode.Invariant)
+            {
+                // Store for specific data about each calendar
+                invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
+                invariant._calendars[0] = CalendarData.Invariant;
+            }
 
             // Text information
             invariant._iReadingLayout = 0;
@@ -862,8 +867,7 @@ namespace System.Globalization
             }
 
             // Convert the lcid to a name, then use that
-            // Note that this will return neutral names (unlike Vista native API)
-            localeName = GlobalizationMode.UseNls ? NlsLCIDToLocaleName(culture) : IcuLCIDToLocaleName(culture);
+            localeName = LCIDToLocaleName(culture);
 
             if (!string.IsNullOrEmpty(localeName))
             {
@@ -922,7 +926,7 @@ namespace System.Globalization
             get
             {
                 string? localizedDisplayName = _sLocalizedDisplayName;
-                if (localizedDisplayName == null)
+                if (localizedDisplayName == null && !GlobalizationMode.Invariant)
                 {
                     if (IsSupplementalCustomCulture)
                     {
@@ -991,7 +995,7 @@ namespace System.Globalization
                     _sLocalizedDisplayName = localizedDisplayName;
                 }
 
-                return localizedDisplayName;
+                return localizedDisplayName!;
             }
         }
 
@@ -1007,7 +1011,7 @@ namespace System.Globalization
             get
             {
                 string? englishDisplayName = _sEnglishDisplayName;
-                if (englishDisplayName == null)
+                if (englishDisplayName == null && !GlobalizationMode.Invariant)
                 {
                     // If its neutral use the language name
                     if (IsNeutralCulture)
@@ -1052,7 +1056,7 @@ namespace System.Globalization
                     _sEnglishDisplayName = englishDisplayName;
                 }
 
-                return englishDisplayName;
+                return englishDisplayName!;
             }
         }
 
@@ -1064,7 +1068,7 @@ namespace System.Globalization
             get
             {
                 string? nativeDisplayName = _sNativeDisplayName;
-                if (nativeDisplayName == null)
+                if (nativeDisplayName == null && !GlobalizationMode.Invariant)
                 {
                     // If its neutral use the language name
                     if (IsNeutralCulture)
@@ -1096,7 +1100,7 @@ namespace System.Globalization
                     _sNativeDisplayName = nativeDisplayName;
                 }
 
-                return nativeDisplayName;
+                return nativeDisplayName!;
             }
         }
 
@@ -1138,7 +1142,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_sLocalizedLanguage == null)
+                if (_sLocalizedLanguage == null && !GlobalizationMode.Invariant)
                 {
                     // Usually the UI culture shouldn't be different than what we got from WinRT except
                     // if DefaultThreadCurrentUICulture was set
@@ -1156,7 +1160,7 @@ namespace System.Globalization
                     }
                 }
 
-                return _sLocalizedLanguage;
+                return _sLocalizedLanguage!;
             }
         }
 
@@ -1179,7 +1183,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_iGeoId == undef)
+                if (_iGeoId == undef && !GlobalizationMode.Invariant)
                 {
                     _iGeoId = GlobalizationMode.UseNls ? NlsGetGeoId(_sRealName!) : IcuGetGeoId(_sRealName!);
                 }
@@ -1195,7 +1199,7 @@ namespace System.Globalization
             get
             {
                 string? localizedCountry = _sLocalizedCountry;
-                if (localizedCountry == null)
+                if (localizedCountry == null && !GlobalizationMode.Invariant)
                 {
                     try
                     {
@@ -1210,7 +1214,7 @@ namespace System.Globalization
                     _sLocalizedCountry = localizedCountry;
                 }
 
-                return localizedCountry;
+                return localizedCountry!;
             }
         }
 
@@ -1385,7 +1389,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_saLongTimes == null)
+                if (_saLongTimes == null && !GlobalizationMode.Invariant)
                 {
                     Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -1399,7 +1403,7 @@ namespace System.Globalization
                         _saLongTimes = longTimes;
                     }
                 }
-                return _saLongTimes;
+                return _saLongTimes!;
             }
         }
 
@@ -1411,7 +1415,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_saShortTimes == null)
+                if (_saShortTimes == null && !GlobalizationMode.Invariant)
                 {
                     Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -1430,7 +1434,7 @@ namespace System.Globalization
                     // Found short times, use them
                     _saShortTimes = shortTimes;
                 }
-                return _saShortTimes;
+                return _saShortTimes!;
             }
         }
 
@@ -1565,7 +1569,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_iFirstDayOfWeek == undef)
+                if (_iFirstDayOfWeek == undef && !GlobalizationMode.Invariant)
                 {
                     _iFirstDayOfWeek = GlobalizationMode.UseNls ? NlsGetFirstDayOfWeek() : IcuGetFirstDayOfWeek();
                 }
@@ -1666,7 +1670,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_waCalendars == null)
+                if (_waCalendars == null && !GlobalizationMode.Invariant)
                 {
                     // We pass in an array of ints, and native side fills it up with count calendars.
                     // We then have to copy that list to a new array of the right size.
@@ -1734,7 +1738,7 @@ namespace System.Globalization
                     }
                 }
 
-                return _waCalendars;
+                return _waCalendars!;
             }
         }
 
@@ -1749,6 +1753,11 @@ namespace System.Globalization
 
         internal CalendarData GetCalendar(CalendarId calendarId)
         {
+            if (GlobalizationMode.Invariant)
+            {
+                return CalendarData.Invariant;
+            }
+
             Debug.Assert(calendarId > 0 && calendarId <= CalendarId.LAST_CALENDAR,
                 "[CultureData.GetCalendar] Expect calendarId to be in a valid range");
 
@@ -1792,7 +1801,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_iReadingLayout == undef)
+                if (_iReadingLayout == undef && !GlobalizationMode.Invariant)
                 {
                     Debug.Assert(_sRealName != null, "[CultureData.IsRightToLeft] Expected _sRealName to be populated by already");
                     _iReadingLayout = GetLocaleInfoCore(LocaleNumberData.ReadingLayout);
@@ -1844,7 +1853,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_iDefaultAnsiCodePage == undef)
+                if (_iDefaultAnsiCodePage == undef && !GlobalizationMode.Invariant)
                 {
                     _iDefaultAnsiCodePage = GlobalizationMode.UseNls ? NlsGetAnsiCodePage(_sRealName!) : IcuGetAnsiCodePage(_sRealName!);
                 }
@@ -1859,7 +1868,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_iDefaultOemCodePage == undef)
+                if (_iDefaultOemCodePage == undef && !GlobalizationMode.Invariant)
                 {
                     _iDefaultOemCodePage = GlobalizationMode.UseNls ? NlsGetOemCodePage(_sRealName!) : IcuGetOemCodePage(_sRealName!);
                 }
@@ -1874,7 +1883,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_iDefaultMacCodePage == undef)
+                if (_iDefaultMacCodePage == undef && !GlobalizationMode.Invariant)
                 {
                     _iDefaultMacCodePage = GlobalizationMode.UseNls ? NlsGetMacCodePage(_sRealName!) : IcuGetMacCodePage(_sRealName!);
                 }
@@ -1889,7 +1898,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_iDefaultEbcdicCodePage == undef)
+                if (_iDefaultEbcdicCodePage == undef && !GlobalizationMode.Invariant)
                 {
                     _iDefaultEbcdicCodePage = GlobalizationMode.UseNls ? NlsGetEbcdicCodePage(_sRealName!) : IcuGetEbcdicCodePage(_sRealName!);
                 }
@@ -1901,7 +1910,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_iLanguage == 0)
+                if (_iLanguage == 0 && !GlobalizationMode.Invariant)
                 {
                     Debug.Assert(_sRealName != null, "[CultureData.LCID] Expected this.sRealName to be populated already");
                     _iLanguage = GlobalizationMode.UseNls ? NlsLocaleNameToLCID(_sRealName) : IcuLocaleNameToLCID(_sRealName);
@@ -1927,7 +1936,7 @@ namespace System.Globalization
             {
                 if (GlobalizationMode.Invariant)
                 {
-                    return CultureInfo.GetCalendarInstance(CalendarIds[0]);
+                    return new GregorianCalendar();
                 }
 
                 CalendarId defaultCalId = (CalendarId)GetLocaleInfoCore(LocaleNumberData.CalendarType);
@@ -1969,7 +1978,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_sTimeSeparator == null)
+                if (_sTimeSeparator == null && !GlobalizationMode.Invariant)
                 {
                     string? longTimeFormat = GlobalizationMode.UseNls ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
                     if (string.IsNullOrEmpty(longTimeFormat))
@@ -1980,7 +1989,7 @@ namespace System.Globalization
                     // Compute STIME from time format
                     _sTimeSeparator = GetTimeSeparator(longTimeFormat);
                 }
-                return _sTimeSeparator;
+                return _sTimeSeparator!;
             }
         }
 
@@ -1989,6 +1998,11 @@ namespace System.Globalization
         /// </summary>
         internal string DateSeparator(CalendarId calendarId)
         {
+            if (GlobalizationMode.Invariant)
+            {
+                return "/";
+            }
+
             if (calendarId == CalendarId.JAPAN && !LocalAppContextSwitches.EnforceLegacyJapaneseDateParsing)
             {
                 // The date separator is derived from the default short date pattern. So far this pattern is using
@@ -2243,21 +2257,41 @@ namespace System.Globalization
         /// </remarks>
         internal static string AnsiToLower(string testString) => TextInfo.ToLowerAsciiInvariant(testString);
 
-        private int GetLocaleInfoCore(LocaleNumberData type) => GlobalizationMode.UseNls ?
-                                                                    NlsGetLocaleInfo(type) :
-                                                                    IcuGetLocaleInfo(type);
+        private int GetLocaleInfoCore(LocaleNumberData type)
+        {
+            // This is never reached but helps illinker statically remove dependencies
+            if (GlobalizationMode.Invariant)
+                return 0;
 
-        private string GetLocaleInfoCore(LocaleStringData type) => GlobalizationMode.UseNls ?
-                                                                    NlsGetLocaleInfo(type) :
-                                                                    IcuGetLocaleInfo(type);
+            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+        }
 
-        private string GetLocaleInfoCore(string localeName, LocaleStringData type) => GlobalizationMode.UseNls ?
-                                                                                        NlsGetLocaleInfo(localeName, type) :
-                                                                                        IcuGetLocaleInfo(localeName, type);
+        private string GetLocaleInfoCore(LocaleStringData type)
+        {
+            // This is never reached but helps illinker statically remove dependencies
+            if (GlobalizationMode.Invariant)
+                return null!;
 
-        private int[] GetLocaleInfoCore(LocaleGroupingData type) => GlobalizationMode.UseNls ?
-                                                                       NlsGetLocaleInfo(type) :
-                                                                       IcuGetLocaleInfo(type);
+            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+        }
+
+        private string GetLocaleInfoCore(string localeName, LocaleStringData type)
+        {
+            // This is never reached but helps illinker statically remove dependencies
+            if (GlobalizationMode.Invariant)
+                return null!;
+
+            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type);
+        }
+
+        private int[] GetLocaleInfoCore(LocaleGroupingData type)
+        {
+            // This is never reached but helps illinker statically remove dependencies
+            if (GlobalizationMode.Invariant)
+                return null!;
+
+            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+        }
 
         /// <remarks>
         /// The numeric values of the enum members match their Win32 counterparts.  The CultureData Win32 PAL implementation

@@ -408,7 +408,7 @@ namespace System.Xml
             set { _impl.EntityHandling = value; }
         }
 
-        public XmlResolver XmlResolver
+        public XmlResolver? XmlResolver
         {
             set { _impl.XmlResolver = value; }
         }

@@ -149,14 +149,14 @@ namespace System.Threading
     }
     public static class EventWaitHandleAcl
     {
-        public static System.Threading.EventWaitHandle Create(bool initialState, System.Threading.EventResetMode mode, string name, out bool createdNew, System.Security.AccessControl.EventWaitHandleSecurity eventSecurity) { throw null; }
+        public static System.Threading.EventWaitHandle Create(bool initialState, System.Threading.EventResetMode mode, string? name, out bool createdNew, System.Security.AccessControl.EventWaitHandleSecurity? eventSecurity) { throw null; }
     }
     public static class MutexAcl
     {
-        public static System.Threading.Mutex Create(bool initiallyOwned, string name, out bool createdNew, System.Security.AccessControl.MutexSecurity mutexSecurity) { throw null; }
+        public static System.Threading.Mutex Create(bool initiallyOwned, string? name, out bool createdNew, System.Security.AccessControl.MutexSecurity? mutexSecurity) { throw null; }
     }
     public static class SemaphoreAcl
     {
-        public static System.Threading.Semaphore Create(int initialCount, int maximumCount, string name, out bool createdNew, System.Security.AccessControl.SemaphoreSecurity semaphoreSecurity) { throw null; }
+        public static System.Threading.Semaphore Create(int initialCount, int maximumCount, string? name, out bool createdNew, System.Security.AccessControl.SemaphoreSecurity? semaphoreSecurity) { throw null; }
     }
 }

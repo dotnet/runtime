@@ -33,7 +33,7 @@ namespace System.Linq.Parallel
         private IntValueEvent? _consumerEvent; // The consumer event.
         private readonly bool[] _done;       // Tracks which channels are done.
         private int _channelIndex;  // The next channel from which we'll dequeue.
-        [MaybeNull, AllowNull] private T _currentElement = default;  // The remembered element from the previous MoveNext. TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/37511
+        [MaybeNull, AllowNull] private T _currentElement = default;  // The remembered element from the previous MoveNext.
 
         //-----------------------------------------------------------------------------------
         // Allocates a new enumerator over a set of one-to-one channels.
@@ -99,7 +99,7 @@ namespace System.Linq.Parallel
             }
 
             // Else try the fast path.
-            if (!_done[index] && _channels[index].TryDequeue(ref _currentElement!)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2872
+            if (!_done[index] && _channels[index].TryDequeue(ref _currentElement))
             {
                 _channelIndex = (index + 1) % _channels.Length;
                 return true;
@@ -127,7 +127,7 @@ namespace System.Linq.Parallel
                 AsynchronousChannel<T> current = _channels[currChannelIndex];
 
                 bool isDone = _done[currChannelIndex];
-                if (!isDone && current.TryDequeue(ref _currentElement!)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2872
+                if (!isDone && current.TryDequeue(ref _currentElement))
                 {
                     // The channel has an item to be processed. We already remembered the current
                     // element (Dequeue stores it as an out-parameter), so we just return true
@@ -147,7 +147,7 @@ namespace System.Linq.Parallel
                         // we still need to continue processing them.
                         if (!current.IsChunkBufferEmpty)
                         {
-                            bool dequeueResult = current.TryDequeue(ref _currentElement!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2872
+                            bool dequeueResult = current.TryDequeue(ref _currentElement);
                             Debug.Assert(dequeueResult, "channel isn't empty, yet the dequeue failed, hmm");
                             return true;
                         }
@@ -192,7 +192,7 @@ namespace System.Linq.Parallel
                             for (int i = 0; i < _channels.Length; i++)
                             {
                                 bool channelIsDone = false;
-                                if (!_done[i] && _channels[i].TryDequeue(ref _currentElement!, ref channelIsDone)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2872
+                                if (!_done[i] && _channels[i].TryDequeue(ref _currentElement, ref channelIsDone))
                                 {
                                     // The channel has received an item since the last time we checked.
                                     // Just return and let the consumer process the element returned.

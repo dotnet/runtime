@@ -14,7 +14,12 @@ namespace System.Diagnostics.CodeAnalysis
     [AttributeUsage(
         AttributeTargets.Constructor | AttributeTargets.Field | AttributeTargets.Method,
         AllowMultiple = true, Inherited = false)]
-    public sealed class DynamicDependencyAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    sealed class DynamicDependencyAttribute : Attribute
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicDependencyAttribute"/> class

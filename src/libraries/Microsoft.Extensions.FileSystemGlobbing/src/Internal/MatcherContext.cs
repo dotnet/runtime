@@ -69,8 +69,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
             }
             else
             {
-                var candidates = directory.EnumerateFileSystemInfos().OfType<DirectoryInfoBase>();
-                foreach (var candidate in candidates)
+                IEnumerable<DirectoryInfoBase> candidates = directory.EnumerateFileSystemInfos().OfType<DirectoryInfoBase>();
+                foreach (DirectoryInfoBase candidate in candidates)
                 {
                     if (_declaredLiteralFolderSegmentInString.Contains(candidate.Name))
                     {
@@ -86,12 +86,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
 
             // collect files and sub directories
             var subDirectories = new List<DirectoryInfoBase>();
-            foreach (var entity in entities)
+            foreach (FileSystemInfoBase entity in entities)
             {
                 var fileInfo = entity as FileInfoBase;
                 if (fileInfo != null)
                 {
-                    var result = MatchPatternContexts(fileInfo, (pattern, file) => pattern.Test(file));
+                    PatternTestResult result = MatchPatternContexts(fileInfo, (pattern, file) => pattern.Test(file));
                     if (result.IsSuccessful)
                     {
                         _files.Add(new FilePatternMatch(
@@ -115,9 +115,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
             }
 
             // Matches the sub directories recursively
-            foreach (var subDir in subDirectories)
+            foreach (DirectoryInfoBase subDir in subDirectories)
             {
-                var relativePath = CombinePath(parentRelativePath, subDir.Name);
+                string relativePath = CombinePath(parentRelativePath, subDir.Name);
 
                 Match(subDir, relativePath);
             }
@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
             _declaredParentPathSegment = false;
             _declaredWildcardPathSegment = false;
 
-            foreach (var include in _includePatternContexts)
+            foreach (IPatternContext include in _includePatternContexts)
             {
                 include.Declare(DeclareInclude);
             }
@@ -196,12 +196,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
 
         private PatternTestResult MatchPatternContexts<TFileInfoBase>(TFileInfoBase fileinfo, Func<IPatternContext, TFileInfoBase, PatternTestResult> test)
         {
-            var result = PatternTestResult.Failed;
+            PatternTestResult result = PatternTestResult.Failed;
 
             // If the given file/directory matches any including pattern, continues to next step.
-            foreach (var context in _includePatternContexts)
+            foreach (IPatternContext context in _includePatternContexts)
             {
-                var localResult = test(context, fileinfo);
+                PatternTestResult localResult = test(context, fileinfo);
                 if (localResult.IsSuccessful)
                 {
                     result = localResult;
@@ -216,7 +216,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
             }
 
             // If the given file/directory matches any excluding pattern, returns false.
-            foreach (var context in _excludePatternContexts)
+            foreach (IPatternContext context in _excludePatternContexts)
             {
                 if (test(context, fileinfo).IsSuccessful)
                 {
@@ -229,12 +229,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
 
         private void PopDirectory()
         {
-            foreach (var context in _excludePatternContexts)
+            foreach (IPatternContext context in _excludePatternContexts)
             {
                 context.PopDirectory();
             }
 
-            foreach (var context in _includePatternContexts)
+            foreach (IPatternContext context in _includePatternContexts)
             {
                 context.PopDirectory();
             }
@@ -242,12 +242,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
 
         private void PushDirectory(DirectoryInfoBase directory)
         {
-            foreach (var context in _includePatternContexts)
+            foreach (IPatternContext context in _includePatternContexts)
             {
                 context.PushDirectory(directory);
             }
 
-            foreach (var context in _excludePatternContexts)
+            foreach (IPatternContext context in _excludePatternContexts)
             {
                 context.PushDirectory(directory);
             }

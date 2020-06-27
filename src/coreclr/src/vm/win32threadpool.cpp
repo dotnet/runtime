@@ -235,7 +235,7 @@ void ThreadpoolMgr::EnsureInitialized()
 {
     CONTRACTL
     {
-        THROWS;         // Initialize can throw
+        THROWS;         // EnsureInitializedSlow can throw
         MODE_ANY;
         GC_NOTRIGGER;
     }
@@ -243,6 +243,19 @@ void ThreadpoolMgr::EnsureInitialized()
 
     if (IsInitialized())
         return;
+
+    EnsureInitializedSlow();
+}
+
+NOINLINE void ThreadpoolMgr::EnsureInitializedSlow()
+{
+    CONTRACTL
+    {
+        THROWS;         // Initialize can throw
+        MODE_ANY;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
 
     DWORD dwSwitchCount = 0;
 
@@ -758,7 +771,10 @@ void ThreadpoolMgr::ReportThreadStatus(bool isWorking)
         MODE_ANY;
     }
     CONTRACTL_END;
+
+    _ASSERTE(IsInitialized()); // can't be here without requesting a thread first
     _ASSERTE(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_EnableWorkerTracking));
+
     while (true)
     {
         WorkingThreadCounts currentCounts, newCounts;
@@ -1992,7 +2008,7 @@ Retire:
     while (true)
     {
 RetryRetire:
-        if (RetiredWorkerSemaphore->Wait(AppX::IsAppXProcess() ? WorkerTimeoutAppX : WorkerTimeout))
+        if (RetiredWorkerSemaphore->Wait(WorkerTimeout))
         {
             foundWork = true;
 
@@ -2069,7 +2085,7 @@ WaitForWork:
         FireEtwThreadPoolWorkerThreadWait(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
 RetryWaitForWork:
-    if (WorkerSemaphore->Wait(AppX::IsAppXProcess() ? WorkerTimeoutAppX : WorkerTimeout, WorkerThreadSpinLimit, NumberOfProcessors))
+    if (WorkerSemaphore->Wait(WorkerTimeout, WorkerThreadSpinLimit, NumberOfProcessors))
     {
         foundWork = true;
         goto Work;
@@ -3069,6 +3085,7 @@ void ThreadpoolMgr::DeregisterWait(WaitInfo* pArgs)
 void ThreadpoolMgr::WaitHandleCleanup(HANDLE hWaitObject)
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(IsInitialized()); // cannot call cleanup before first registering
 
     WaitInfo* waitInfo = (WaitInfo*) hWaitObject;
     _ASSERTE(waitInfo->refCount > 0);
@@ -3204,7 +3221,7 @@ DWORD WINAPI ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
     PIOCompletionContext context;
     BOOL fIsCompletionContext;
 
-    const DWORD CP_THREAD_WAIT = AppX::IsAppXProcess() ? 5000 : 15000; /* milliseconds */
+    const DWORD CP_THREAD_WAIT = 15000; /* milliseconds */
 
     _ASSERTE(GlobalCompletionPort != NULL);
 

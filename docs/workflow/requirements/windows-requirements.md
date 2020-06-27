@@ -71,6 +71,14 @@ While not strictly needed to build or test this repository, having the .NET SDK 
 We use this in the [Using Your Build](../testing/using-your-build.md) instructions.
 The minimum required version of the SDK is specified in the [global.json file](https://github.com/dotnet/runtime/blob/master/global.json#L3). [You can find the installers and binaries for nightly builds of .NET SDK here](https://github.com/dotnet/installer#installers-and-binaries).
 
+Alternatively, to avoid modifying your machine state, you can use the repository's locally acquired SDK by passing in the solution to load via the `-vs` switch:
+
+```
+build.cmd -vs System.Text.RegularExpressions
+```
+
+This will set the `DOTNET_ROOT` and `PATH` environment variables to point to the locally acquired SDK under `runtime\.dotnet\` and will launch the Visual Studio instance which is registered for the `sln` extension.
+
 ## Adding to the default PATH variable
 
 The commands above need to be on your command lookup path.   Some installers will automatically add them to the path as part of the installation, but if not here is how you can do it.

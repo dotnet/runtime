@@ -229,7 +229,7 @@ size_t GCHeap::GetLastGCStartTime(int generation)
     gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
 
-    return dd_time_clock (hp->dynamic_data_of (generation));
+    return (size_t)(dd_time_clock (hp->dynamic_data_of (generation)) / 1000);
 }
 
 size_t GCHeap::GetLastGCDuration(int generation)
@@ -240,14 +240,14 @@ size_t GCHeap::GetLastGCDuration(int generation)
     gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
 
-    return dd_gc_elapsed_time (hp->dynamic_data_of (generation));
+    return (size_t)(dd_gc_elapsed_time (hp->dynamic_data_of (generation)) / 1000);
 }
 
-size_t GetHighPrecisionTimeStamp();
+uint64_t GetHighPrecisionTimeStamp();
 
 size_t GCHeap::GetNow()
 {
-    return GetHighPrecisionTimeStamp();
+    return (size_t)(GetHighPrecisionTimeStamp() / 1000);
 }
 
 bool GCHeap::IsGCInProgressHelper (bool bConsiderGCStart)

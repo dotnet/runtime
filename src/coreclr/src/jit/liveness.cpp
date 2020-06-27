@@ -342,21 +342,21 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                 fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
                 fgCurMemoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
             }
-        }
 
-            // If this is a p/invoke unmanaged call or if this is a tail-call
+            // If this is a p/invoke unmanaged call or if this is a tail-call via helper,
             // and we have an unmanaged p/invoke call in the method,
             // then we're going to run the p/invoke epilog.
             // So we mark the FrameRoot as used by this instruction.
             // This ensures that the block->bbVarUse will contain
             // the FrameRoot local var if is it a tracked variable.
 
-            if ((tree->AsCall()->IsUnmanaged() || tree->AsCall()->IsTailCall()) && compMethodRequiresPInvokeFrame())
+            if ((tree->AsCall()->IsUnmanaged() || tree->AsCall()->IsTailCallViaJitHelper()) &&
+                compMethodRequiresPInvokeFrame())
             {
                 assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
                 if (!opts.ShouldUsePInvokeHelpers())
                 {
-                    /* Get the TCB local and mark it as used */
+                    // Get the FrameRoot local and mark it as used.
 
                     noway_assert(info.compLvFrameListRoot < lvaCount);
 
@@ -373,6 +373,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             }
 
             break;
+        }
 
         default:
 
@@ -504,7 +505,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
             }
         }
 
-        /* Get the TCB local and mark it as used */
+        // Mark the FrameListRoot as used, if applicable.
 
         if (block->bbJumpKind == BBJ_RETURN && compMethodRequiresPInvokeFrame())
         {
@@ -513,13 +514,22 @@ void Compiler::fgPerBlockLocalVarLiveness()
             {
                 noway_assert(info.compLvFrameListRoot < lvaCount);
 
-                LclVarDsc* varDsc = &lvaTable[info.compLvFrameListRoot];
-
-                if (varDsc->lvTracked)
+                // 32-bit targets always pop the frame in the epilog.
+                // For 64-bit targets, we only do this in the epilog for IL stubs;
+                // for non-IL stubs the frame is popped after every PInvoke call.
+                CLANG_FORMAT_COMMENT_ANCHOR;
+#ifdef TARGET_64BIT
+                if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
+#endif
                 {
-                    if (!VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
+                    LclVarDsc* varDsc = &lvaTable[info.compLvFrameListRoot];
+
+                    if (varDsc->lvTracked)
                     {
-                        VarSetOps::AddElemD(this, fgCurUseSet, varDsc->lvVarIndex);
+                        if (!VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
+                        {
+                            VarSetOps::AddElemD(this, fgCurUseSet, varDsc->lvVarIndex);
+                        }
                     }
                 }
             }
@@ -1437,16 +1447,16 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
 {
     assert(call != nullptr);
 
-    // If this is a tail-call and we have any unmanaged p/invoke calls in
-    // the method then we're going to run the p/invoke epilog
+    // If this is a tail-call via helper, and we have any unmanaged p/invoke calls in
+    // the method, then we're going to run the p/invoke epilog
     // So we mark the FrameRoot as used by this instruction.
     // This ensure that this variable is kept alive at the tail-call
-    if (call->IsTailCall() && compMethodRequiresPInvokeFrame())
+    if (call->IsTailCallViaJitHelper() && compMethodRequiresPInvokeFrame())
     {
         assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
-            /* Get the TCB local and make it live */
+            // Get the FrameListRoot local and make it live.
 
             noway_assert(info.compLvFrameListRoot < lvaCount);
 
@@ -1465,7 +1475,7 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
     /* Is this call to unmanaged code? */
     if (call->IsUnmanaged() && compMethodRequiresPInvokeFrame())
     {
-        /* Get the TCB local and make it live */
+        // Get the FrameListRoot local and make it live.
         assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
@@ -1623,7 +1633,11 @@ bool Compiler::fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
 //    keepAliveVars - The current set of variables to keep alive regardless of their actual lifetime.
 //    varDsc        - The LclVar descriptor for the variable being used or defined.
 //    lclVarNode    - The node that corresponds to the local var def or use.
-void Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
+//
+// Returns:
+//    `true` if the node is a dead store (i.e. all fields are dead); `false` otherwise.
+//
+bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
                                            VARSET_VALARG_TP     keepAliveVars,
                                            LclVarDsc&           varDsc,
                                            GenTreeLclVarCommon* lclVarNode)
@@ -1632,39 +1646,66 @@ void Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
 
     if (!varTypeIsStruct(varDsc.lvType) || (lvaGetPromotionType(&varDsc) == PROMOTION_TYPE_NONE))
     {
-        return;
+        return false;
     }
 
-    VARSET_TP varBit(VarSetOps::MakeEmpty(this));
+    VARSET_TP fieldSet(VarSetOps::MakeEmpty(this));
+    bool      fieldsAreTracked = true;
+    bool      isDef            = ((lclVarNode->gtFlags & GTF_VAR_DEF) != 0);
 
     for (unsigned i = varDsc.lvFieldLclStart; i < varDsc.lvFieldLclStart + varDsc.lvFieldCnt; ++i)
     {
+        LclVarDsc* fieldVarDsc = lvaGetDesc(i);
 #if !defined(TARGET_64BIT)
-        if (!varTypeIsLong(lvaTable[i].lvType) || !lvaTable[i].lvPromoted)
+        if (!varTypeIsLong(fieldVarDsc->lvType) || !fieldVarDsc->lvPromoted)
 #endif // !defined(TARGET_64BIT)
         {
-            noway_assert(lvaTable[i].lvIsStructField);
+            noway_assert(fieldVarDsc->lvIsStructField);
         }
-        if (lvaTable[i].lvTracked)
+        if (fieldVarDsc->lvTracked)
         {
-            const unsigned varIndex = lvaTable[i].lvVarIndex;
+            const unsigned varIndex = fieldVarDsc->lvVarIndex;
             noway_assert(varIndex < lvaTrackedCount);
-            VarSetOps::AddElemD(this, varBit, varIndex);
+            VarSetOps::AddElemD(this, fieldSet, varIndex);
+            if (isDef && lclVarNode->IsMultiRegLclVar() && !VarSetOps::IsMember(this, life, varIndex))
+            {
+                // Dead definition.
+                lclVarNode->AsLclVar()->SetLastUse(i - varDsc.lvFieldLclStart);
+            }
+        }
+        else
+        {
+            fieldsAreTracked = false;
         }
     }
-    if (lclVarNode->gtFlags & GTF_VAR_DEF)
+
+    if (isDef)
     {
-        VarSetOps::DiffD(this, varBit, keepAliveVars);
-        VarSetOps::DiffD(this, life, varBit);
-        return;
+        VARSET_TP liveFields(VarSetOps::Intersection(this, life, fieldSet));
+        VarSetOps::DiffD(this, fieldSet, keepAliveVars);
+        VarSetOps::DiffD(this, life, fieldSet);
+        if (fieldsAreTracked && VarSetOps::IsEmpty(this, liveFields))
+        {
+            // None of the fields were live, so this is a dead store.
+            if (!opts.MinOpts())
+            {
+                // keepAliveVars always stay alive
+                VARSET_TP keepAliveFields(VarSetOps::Intersection(this, fieldSet, keepAliveVars));
+                noway_assert(VarSetOps::IsEmpty(this, keepAliveFields));
+
+                // Do not consider this store dead if the parent local variable is an address exposed local.
+                return !varDsc.lvAddrExposed;
+            }
+        }
+        return false;
     }
     // This is a use.
 
     // Are the variables already known to be alive?
-    if (VarSetOps::IsSubset(this, varBit, life))
+    if (VarSetOps::IsSubset(this, fieldSet, life))
     {
         lclVarNode->gtFlags &= ~GTF_VAR_DEATH; // Since we may now call this multiple times, reset if live.
-        return;
+        return false;
     }
 
     // Some variables are being used, and they are not currently live.
@@ -1674,18 +1715,19 @@ void Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
     lclVarNode->gtFlags |= GTF_VAR_DEATH;
 
     // Are all the variables becoming alive (in the backwards traversal), or just a subset?
-    if (!VarSetOps::IsEmptyIntersection(this, varBit, life))
+    if (!VarSetOps::IsEmptyIntersection(this, fieldSet, life))
     {
         // Only a subset of the variables are become live; we must record that subset.
         // (Lack of an entry for "lclVarNode" will be considered to imply all become dead in the
         // forward traversal.)
         VARSET_TP* deadVarSet = new (this, CMK_bitset) VARSET_TP;
-        VarSetOps::AssignNoCopy(this, *deadVarSet, VarSetOps::Diff(this, varBit, life));
+        VarSetOps::AssignNoCopy(this, *deadVarSet, VarSetOps::Diff(this, fieldSet, life));
         GetPromotedStructDeathVars()->Set(lclVarNode, deadVarSet);
     }
 
     // In any case, all the field vars are now live (in the backwards traversal).
-    VarSetOps::UnionD(this, life, varBit);
+    VarSetOps::UnionD(this, life, fieldSet);
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -1706,12 +1748,13 @@ bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVar
 
     assert(lclNum < lvaCount);
     LclVarDsc& varDsc = lvaTable[lclNum];
+    bool       isDef  = ((lclVarNode->gtFlags & GTF_VAR_DEF) != 0);
 
     // Is this a tracked variable?
     if (varDsc.lvTracked)
     {
         /* Is this a definition or use? */
-        if (lclVarNode->gtFlags & GTF_VAR_DEF)
+        if (isDef)
         {
             return fgComputeLifeTrackedLocalDef(life, keepAliveVars, varDsc, lclVarNode->AsLclVarCommon());
         }
@@ -1722,7 +1765,7 @@ bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVar
     }
     else
     {
-        fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode->AsLclVarCommon());
+        return fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode->AsLclVarCommon());
     }
     return false;
 }
@@ -2272,7 +2315,24 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
         else
         {
             // This is an INTERIOR STATEMENT with a dead assignment - remove it
-            noway_assert(!VarSetOps::IsMember(this, life, varDsc->lvVarIndex));
+            // TODO-Cleanup: I'm not sure this assert is valuable; we've already determined this when
+            // we computed that it was dead.
+            if (varDsc->lvTracked)
+            {
+                noway_assert(!VarSetOps::IsMember(this, life, varDsc->lvVarIndex));
+            }
+            else
+            {
+                for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
+                {
+                    unsigned fieldVarNum = varDsc->lvFieldLclStart + i;
+                    {
+                        LclVarDsc* fieldVarDsc = lvaGetDesc(fieldVarNum);
+                        noway_assert(fieldVarDsc->lvTracked &&
+                                     !VarSetOps::IsMember(this, life, fieldVarDsc->lvVarIndex));
+                    }
+                }
+            }
 
             if (sideEffList != nullptr)
             {
@@ -2435,24 +2495,25 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
     for (varNum = 0, varDsc = lvaTable; varNum < lvaCount; varNum++, varDsc++)
     {
-        /* Ignore the variable if it's not tracked */
+        // Ignore the variable if it's not tracked
 
         if (!varDsc->lvTracked)
         {
             continue;
         }
 
-        if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
-        {
-            continue;
-        }
+        // Fields of dependently promoted structs may be tracked. We shouldn't set lvMustInit on them since
+        // the whole parent struct will be initialized; however, lvLiveInOutOfHndlr should be set on them
+        // as appropriate.
 
-        /* Un-init locals may need auto-initialization. Note that the
-           liveness of such locals will bubble to the top (fgFirstBB)
-           in fgInterBlockLocalVarLiveness() */
+        bool fieldOfDependentlyPromotedStruct = lvaIsFieldOfDependentlyPromotedStruct(varDsc);
+
+        // Un-init locals may need auto-initialization. Note that the
+        // liveness of such locals will bubble to the top (fgFirstBB)
+        // in fgInterBlockLocalVarLiveness()
 
         if (!varDsc->lvIsParam && VarSetOps::IsMember(this, fgFirstBB->bbLiveIn, varDsc->lvVarIndex) &&
-            (info.compInitMem || varTypeIsGC(varDsc->TypeGet())))
+            (info.compInitMem || varTypeIsGC(varDsc->TypeGet())) && !fieldOfDependentlyPromotedStruct)
         {
             varDsc->lvMustInit = true;
         }
@@ -2472,7 +2533,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
             if (isFinallyVar)
             {
                 // Set lvMustInit only if we have a non-arg, GC pointer.
-                if (!varDsc->lvIsParam && varTypeIsGC(varDsc->TypeGet()))
+                if (!varDsc->lvIsParam && varTypeIsGC(varDsc->TypeGet()) && !fieldOfDependentlyPromotedStruct)
                 {
                     varDsc->lvMustInit = true;
                 }

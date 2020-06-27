@@ -21,7 +21,6 @@ namespace Microsoft.Extensions.Logging.EventSource
         private EventSourceLogger _loggers; // Linked list of loggers that I have created
         private readonly LoggingEventSource _eventSource;
 
-        /// <inheritdoc />
         public EventSourceLoggerProvider(LoggingEventSource eventSource)
         {
             if (eventSource == null)
@@ -42,7 +41,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         public void Dispose()
         {
             // Turn off any logging
-            for (var logger = _loggers; logger != null; logger = logger.Next)
+            for (EventSourceLogger logger = _loggers; logger != null; logger = logger.Next)
             {
                 logger.Level = LogLevel.None;
             }

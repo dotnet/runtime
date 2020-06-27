@@ -342,12 +342,12 @@ protected:
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
 
-    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
+    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegModified);
 #else
     void genPushCalleeSavedRegisters();
 #endif
 
-    void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
+    void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegModified, regMaskTP maskArgRegsLiveIn);
 
 #if defined(TARGET_ARM)
 
@@ -435,18 +435,18 @@ protected:
 
     void genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& initDblRegs, const regNumber& initReg);
 
-    regNumber genGetZeroReg(regNumber initReg, bool* pInitRegZeroed);
+    regNumber genGetZeroReg(regNumber initReg, bool* pInitRegModified);
 
-    void genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed);
+    void genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegModified);
 
-    void genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed);
+    void genReportGenericContextArg(regNumber initReg, bool* pInitRegModified);
 
-    void genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed);
+    void genSetGSSecurityCookie(regNumber initReg, bool* pInitRegModified);
 
     void genFinalizeFrame();
 
 #ifdef PROFILING_SUPPORTED
-    void genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed);
+    void genProfilingEnterCallback(regNumber initReg, bool* pInitRegModified);
     void genProfilingLeaveCallback(unsigned helper);
 #endif // PROFILING_SUPPORTED
 
@@ -512,7 +512,7 @@ protected:
     void genFuncletEpilog();
     void genCaptureFuncletPrologEpilogInfo();
 
-    void genSetPSPSym(regNumber initReg, bool* pInitRegZeroed);
+    void genSetPSPSym(regNumber initReg, bool* pInitRegModified);
 
     void genUpdateCurrentFunclet(BasicBlock* block);
 #if defined(TARGET_ARM)
@@ -978,7 +978,6 @@ protected:
     void genSIMDIntrinsicInit(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicInitN(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicUnOpWithImm(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode);
@@ -1061,7 +1060,7 @@ protected:
         // Returns true after the last call to EmitCaseEnd() (i.e. this signals that code generation is done).
         bool Done() const
         {
-            return immValue == immUpperBound;
+            return (immValue > immUpperBound);
         }
 
         // Returns a value of the immediate operand that should be used for a case.
@@ -1082,7 +1081,7 @@ protected:
         bool TestImmOpZeroOrOne() const
         {
             assert(NonConstImmOp());
-            return immUpperBound == 2;
+            return (immLowerBound == 0) && (immUpperBound == 1);
         }
 
         emitter* GetEmitter() const
@@ -1094,6 +1093,7 @@ protected:
         BasicBlock*    endLabel;
         BasicBlock*    nonZeroLabel;
         int            immValue;
+        int            immLowerBound;
         int            immUpperBound;
         regNumber      nonConstImmReg;
         regNumber      branchTargetReg;
@@ -1117,7 +1117,9 @@ protected:
     void genUnspillLocal(
         unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum, bool reSpill, bool isLastUse);
     void genUnspillRegIfNeeded(GenTree* tree);
+    void genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex);
     regNumber genConsumeReg(GenTree* tree);
+    regNumber genConsumeReg(GenTree* tree, unsigned multiRegIndex);
     void genCopyRegIfNeeded(GenTree* tree, regNumber needReg);
     void genConsumeRegAndCopy(GenTree* tree, regNumber needReg);
 
@@ -1130,6 +1132,7 @@ protected:
     }
 
     void genRegCopy(GenTree* tree);
+    regNumber genRegCopy(GenTree* tree, unsigned multiRegIndex);
     void genTransferRegGCState(regNumber dst, regNumber src);
     void genConsumeAddress(GenTree* addr);
     void genConsumeAddrMode(GenTreeAddrMode* mode);
@@ -1188,7 +1191,7 @@ protected:
     void genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode);
 #endif
     void genCodeForPhysReg(GenTreePhysReg* tree);
-    void genCodeForNullCheck(GenTreeOp* tree);
+    void genCodeForNullCheck(GenTreeIndir* tree);
     void genCodeForCmpXchg(GenTreeCmpXchg* tree);
 
     void genAlignStackBeforeCall(GenTreePutArgStk* putArgStk);
@@ -1278,7 +1281,8 @@ protected:
     void genEHFinallyOrFilterRet(BasicBlock* block);
 #endif // !FEATURE_EH_FUNCLETS
 
-    void genMultiRegStoreToLocal(GenTree* treeNode);
+    void genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode);
+    void genMultiRegStoreToLocal(GenTreeLclVar* lclNode);
 
     // Codegen for multi-register struct returns.
     bool isStructReturn(GenTree* treeNode);

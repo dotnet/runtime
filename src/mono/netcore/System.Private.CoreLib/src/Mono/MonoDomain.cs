@@ -15,9 +15,5 @@ namespace Mono
         private IntPtr _mono_app_domain;
         #endregion
 #pragma warning restore 169
-
-        public event UnhandledExceptionEventHandler? UnhandledException;
-
-        public event EventHandler? ProcessExit;
     }
 }

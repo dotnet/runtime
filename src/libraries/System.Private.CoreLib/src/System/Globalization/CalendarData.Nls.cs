@@ -216,13 +216,14 @@ namespace System.Globalization
                     {
                         // Failed, set it to a locale (fa-IR) that's alway has Gregorian US available in the OS
                         localeName = "fa-IR";
-                    }
-                    // See if that works
-                    if (!CallGetCalendarInfoEx(localeName, calendar, CAL_SCALNAME, out string _))
-                    {
-                        // Failed again, just use en-US with the gregorian calendar
-                        localeName = "en-US";
-                        calendar = CalendarId.GREGORIAN;
+
+                        // See if that works
+                        if (!CallGetCalendarInfoEx(localeName, calendar, CAL_SCALNAME, out string _))
+                        {
+                            // Failed again, just use en-US with the gregorian calendar
+                            localeName = "en-US";
+                            calendar = CalendarId.GREGORIAN;
+                        }
                     }
                     break;
                 case CalendarId.TAIWAN:
@@ -271,7 +272,7 @@ namespace System.Globalization
         }
 
         // EnumCalendarInfoExEx callback itself.
-        // [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
+        // [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
         private static unsafe Interop.BOOL EnumCalendarInfoCallback(char* lpCalendarInfoString, uint calendar, IntPtr pReserved, void* lParam)
         {
             ref EnumData context = ref Unsafe.As<byte, EnumData>(ref *(byte*)lParam);
@@ -424,7 +425,7 @@ namespace System.Globalization
             public List<int> calendars;      // list of calendars found so far
         }
 
-        // [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
+        // [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
         private static unsafe Interop.BOOL EnumCalendarsCallback(char* lpCalendarInfoString, uint calendar, IntPtr reserved, void* lParam)
         {
             ref NlsEnumCalendarsData context = ref Unsafe.As<byte, NlsEnumCalendarsData>(ref *(byte*)lParam);

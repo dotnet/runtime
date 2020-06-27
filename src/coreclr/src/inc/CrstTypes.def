@@ -133,9 +133,6 @@ Crst ClrNotification
     Unordered
 End
 
-Crst CrstCLRPrivBinderLocalWinMDPath
-End
-
 Crst CLRPrivBinderMaps
 End
 
@@ -281,9 +278,6 @@ End
 
 Crst GCCover
     AcquiredBefore LoaderHeap CodeVersioning
-End
-
-Crst GCMemoryPressure
 End
 
 Crst GlobalStrLiteralMap
@@ -496,6 +490,7 @@ End
 Crst CodeVersioning
     AcquiredBefore LoaderHeap SingleUseLock DeadlockDetection JumpStubCache DebuggerController FuncPtrStubs
     AcquiredAfter ReJITGlobalRequest ThreadStore GlobalStrLiteralMap SystemDomain DebuggerMutex MethodDescBackpatchInfoTracker
+                ReadyToRunEntryPointToMethodDescMap ClassInit AppDomainCache TypeIDMap FusionAppCtx
 End
 
 // Used to synchronize all global requests (which may span multiple AppDomains) which add
@@ -509,12 +504,7 @@ End
 // used to remember which types have been logged (to avoid duplicate logging of the
 // same type).
 Crst EtwTypeLogHash
-    AcquiredAfter ThreadStore AllowedFiles Cer TPMethodTable
-    AcquiredBefore AvailableParamTypes ConnectionNameTable DeadlockDetection DebuggerController
-               DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
-               JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilingAPIStatus
-               ProfilerGCRefDataFreeList RWLock SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList
-               ThreadIdDispenser ThreadStaticDataHashTable
+    AcquiredAfter AllowedFiles Cer SingleUseLock TPMethodTable
 End
 
 Crst Remoting
@@ -671,10 +661,6 @@ Crst MulticoreJitManager
     AcquiredBefore MulticoreJitHash ThreadStore
 End
 
-Crst WinRTFactoryCache
-    AcquiredBefore HandleTable
-End
-
 Crst SqmManager
 End
 
@@ -715,4 +701,7 @@ Crst MethodDescBackpatchInfoTracker
 End
 
 Crst NativeImageEagerFixups
+End
+
+Crst NativeImageLoad
 End

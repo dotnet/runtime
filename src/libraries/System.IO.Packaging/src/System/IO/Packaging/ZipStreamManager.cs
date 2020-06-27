@@ -15,7 +15,7 @@ namespace System.IO.Packaging
         private readonly ZipArchive _zipArchive;
         private readonly FileAccess _packageFileAccess;
         private readonly FileMode _packageFileMode;
-        private bool _disposed = false;
+        private bool _disposed;
 
         public ZipStreamManager(ZipArchive zipArchive, FileMode packageFileMode, FileAccess packageFileAccess)
         {

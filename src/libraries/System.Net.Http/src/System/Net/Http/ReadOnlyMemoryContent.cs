@@ -15,6 +15,11 @@ namespace System.Net.Http
         public ReadOnlyMemoryContent(ReadOnlyMemory<byte> content) =>
             _content = content;
 
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        {
+            stream.Write(_content.Span);
+        }
+
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             stream.WriteAsync(_content).AsTask();
 

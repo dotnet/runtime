@@ -46,7 +46,7 @@ namespace System
          */
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.Char[])", "System.String")]
+        [DynamicDependency("Ctor(System.Char[])")]
         public extern String(char[]? value);
 
         private
@@ -69,7 +69,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.Char[],System.Int32,System.Int32)", "System.String")]
+        [DynamicDependency("Ctor(System.Char[],System.Int32,System.Int32)")]
         public extern String(char[] value, int startIndex, int length);
 
         private
@@ -105,7 +105,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.Char*)", "System.String")]
+        [DynamicDependency("Ctor(System.Char*)")]
         public extern unsafe String(char* value);
 
         private
@@ -133,7 +133,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.Char*,System.Int32,System.Int32)", "System.String")]
+        [DynamicDependency("Ctor(System.Char*,System.Int32,System.Int32)")]
         public extern unsafe String(char* value, int startIndex, int length);
 
         private
@@ -172,7 +172,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.SByte*)", "System.String")]
+        [DynamicDependency("Ctor(System.SByte*)")]
         public extern unsafe String(sbyte* value);
 
         private
@@ -192,7 +192,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.SByte*,System.Int32,System.Int32)", "System.String")]
+        [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32)")]
         public extern unsafe String(sbyte* value, int startIndex, int length);
 
         private
@@ -253,7 +253,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)", "System.String")]
+        [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)")]
         public extern unsafe String(sbyte* value, int startIndex, int length, Encoding enc);
 
         private
@@ -289,7 +289,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.Char,System.Int32)", "System.String")]
+        [DynamicDependency("Ctor(System.Char,System.Int32)")]
         public extern String(char c, int count);
 
         private
@@ -340,7 +340,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [PreserveDependency("Ctor(System.ReadOnlySpan`1<System.Char>)", "System.String")]
+        [DynamicDependency("Ctor(System.ReadOnlySpan{System.Char})")]
         public extern String(ReadOnlySpan<char> value);
 
         private

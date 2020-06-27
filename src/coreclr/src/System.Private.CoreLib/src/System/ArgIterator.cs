@@ -25,7 +25,7 @@ namespace System
         private IntPtr ArgPtr;                  // Pointer to remaining args.
         private int RemainingArgs;           // # of remaining args.
 
-#if TARGET_WINDOWS // Native Varargs are not supported on Unix
+#if (TARGET_WINDOWS && !TARGET_ARM)   // Native Varargs are not supported on Unix (all architectures) and Windows ARM
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern ArgIterator(IntPtr arglist);
 

@@ -2944,7 +2944,7 @@ void emitter::spillIntArgRegsToShadowSlots()
 //
 void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem)
 {
-    assert(mem->OperIs(GT_IND));
+    assert(mem->OperIs(GT_IND, GT_NULLCHECK));
 
     GenTree* addr = mem->Addr();
 
@@ -10765,8 +10765,12 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Check that the offset is properly aligned (i.e. the ddd in [ddd])
+        // When SMALL_CODE is set, we only expect 4-byte alignment, otherwise
+        // we expect the same alignment as the size of the constant.
+
         assert((emitChkAlign == false) || (ins == INS_lea) ||
-               ((byteSize < 16) && (((size_t)addr & (byteSize - 1)) == 0)) || (((size_t)addr & (16 - 1)) == 0));
+               ((emitComp->compCodeOpt() == Compiler::SMALL_CODE) && (((size_t)addr & 3) == 0)) ||
+               (((size_t)addr & (byteSize - 1)) == 0));
     }
     else
     {

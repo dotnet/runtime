@@ -87,6 +87,10 @@ bool emitInsIsCompare(instruction ins);
 bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
+bool emitInsIsVectorRightShift(instruction ins);
+bool emitInsIsVectorLong(instruction ins);
+bool emitInsIsVectorNarrow(instruction ins);
+bool emitInsIsVectorWide(instruction ins);
 emitAttr emitInsTargetRegSize(instrDesc* id);
 emitAttr emitInsLoadStoreSize(instrDesc* id);
 
@@ -300,8 +304,8 @@ static code_t insEncodeVectorIndex2(emitAttr elemsize, ssize_t index2);
 // Returns the encoding to select 'index' for an Arm64 'mul' elem instruction
 static code_t insEncodeVectorIndexLMH(emitAttr elemsize, ssize_t index);
 
-// Returns the encoding to shift by 'shift' bits for an Arm64 vector or scalar instruction
-static code_t insEncodeVectorShift(emitAttr size, ssize_t shift);
+// Returns the encoding for ASIMD Shift instruction.
+static code_t insEncodeVectorShift(emitAttr size, ssize_t shiftAmount);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 vector instruction
 static code_t insEncodeElemsize(emitAttr size);
@@ -309,13 +313,13 @@ static code_t insEncodeElemsize(emitAttr size);
 // Returns the encoding to select the 4/8 byte elemsize for an Arm64 float vector instruction
 static code_t insEncodeFloatElemsize(emitAttr size);
 
-// Returns the encoding to select the index for an Arm64 float vector by elem instruction
+// Returns the encoding to select the index for an Arm64 float vector by element instruction
 static code_t insEncodeFloatIndex(emitAttr elemsize, ssize_t index);
 
 // Returns the encoding to select the vector elemsize for an Arm64 ld/st# vector instruction
 static code_t insEncodeVLSElemsize(emitAttr size);
 
-// Returns the encoding to select the index for an Arm64 ld/st# vector by elem instruction
+// Returns the encoding to select the index for an Arm64 ld/st# vector by element instruction
 static code_t insEncodeVLSIndex(emitAttr elemsize, ssize_t index);
 
 // Returns the encoding to select the 'conversion' operation for a type 'fmt' Arm64 instruction
@@ -435,8 +439,11 @@ static emitAttr optGetDatasize(insOpts arrangement);
 //  For the given 'arrangement' returns the 'elemsize' specified by the vector register arrangement
 static emitAttr optGetElemsize(insOpts arrangement);
 
-//  For the given 'arrangement' returns the 'widen-arrangement' specified by the vector register arrangement
-static insOpts optWidenElemsize(insOpts arrangement);
+//  For the given 'arrangement' returns the one with the element width that is double that of the 'arrangement' element.
+static insOpts optWidenElemsizeArrangement(insOpts arrangement);
+
+//  For the given 'datasize' returns the one that is double that of the 'datasize'.
+static emitAttr widenDatasize(emitAttr datasize);
 
 //  For the given 'srcArrangement' returns the "widen" 'dstArrangement' specifying the destination vector register
 //  arrangement
@@ -515,6 +522,13 @@ inline static unsigned getBitWidth(emitAttr size)
 inline static unsigned isValidImmShift(ssize_t imm, emitAttr size)
 {
     return (imm >= 0) && (imm < getBitWidth(size));
+}
+
+// Returns true if the 'shiftAmount' represents a valid shift for the given 'size'.
+inline static unsigned isValidVectorShiftAmount(ssize_t shiftAmount, emitAttr size, bool rightShift)
+{
+    return (rightShift && (shiftAmount >= 1) && (shiftAmount <= getBitWidth(size))) ||
+           ((shiftAmount >= 0) && (shiftAmount < getBitWidth(size)));
 }
 
 inline static bool isValidGeneralDatasize(emitAttr size)

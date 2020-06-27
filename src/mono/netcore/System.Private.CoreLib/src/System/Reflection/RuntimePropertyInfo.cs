@@ -150,7 +150,7 @@ namespace System.Reflection
         {
             StringBuilder sbName = new StringBuilder(PropertyType.FormatTypeName());
 
-            sbName.Append(" ");
+            sbName.Append(' ');
             sbName.Append(Name);
 
             ParameterInfo[] pi = GetIndexParameters();
@@ -158,7 +158,7 @@ namespace System.Reflection
             {
                 sbName.Append(" [");
                 RuntimeParameterInfo.FormatParameters(sbName, pi, 0);
-                sbName.Append("]");
+                sbName.Append(']');
             }
 
             return sbName.ToString();

@@ -9,11 +9,8 @@ namespace System.Data
 {
     internal sealed class NameNode : ExpressionNode
     {
-        internal char _open = '\0';
-        internal char _close = '\0';
         internal string _name;
         internal bool _found;
-        internal bool _type = false;
         internal DataColumn _column;
 
         internal NameNode(DataTable table, char[] text, int start, int pos) : base(table)
@@ -194,7 +191,7 @@ namespace System.Data
                 {
                     if (text[i] == esc)
                     {
-                        if (i + 1 < pos && charsToEscape.IndexOf(text[i + 1]) >= 0)
+                        if (i + 1 < pos && charsToEscape.Contains(text[i + 1]))
                         {
                             i++;
                         }

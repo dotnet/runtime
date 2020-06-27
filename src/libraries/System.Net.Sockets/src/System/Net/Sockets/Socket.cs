@@ -36,7 +36,7 @@ namespace System.Net.Sockets
         // so we need to handle one of these cases at a time.
         private bool _willBlock = true; // Desired state of the socket from the user.
         private bool _willBlockInternal = true; // Actual win32 state of the socket.
-        private bool _isListening = false;
+        private bool _isListening;
 
         // Our internal state doesn't automatically get updated after a non-blocking connect
         // completes.  Keep track of whether we're doing a non-blocking connect, and make sure
@@ -188,36 +188,45 @@ namespace System.Net.Sockets
                 {
                     try
                     {
-                        // Local and Remote EP may be different sizes for something like UDS.
+                        // Local and remote end points may be different sizes for protocols like Unix Domain Sockets.
                         bufferLength = buffer.Length;
-                        if (SocketPal.GetPeerName(handle, buffer, ref bufferLength) != SocketError.Success)
+                        switch (SocketPal.GetPeerName(handle, buffer, ref bufferLength))
                         {
-                            return;
-                        }
+                            case SocketError.Success:
+                                switch (_addressFamily)
+                                {
+                                    case AddressFamily.InterNetwork:
+                                        _remoteEndPoint = new IPEndPoint(
+                                            new IPAddress((long)SocketAddressPal.GetIPv4Address(buffer.Slice(0, bufferLength)) & 0x0FFFFFFFF),
+                                            SocketAddressPal.GetPort(buffer));
+                                        break;
 
-                        switch (_addressFamily)
-                        {
-                            case AddressFamily.InterNetwork:
-                            _remoteEndPoint = new IPEndPoint(
-                                new IPAddress((long)SocketAddressPal.GetIPv4Address(buffer.Slice(0, bufferLength)) & 0x0FFFFFFFF),
-                                SocketAddressPal.GetPort(buffer));
-                            break;
+                                    case AddressFamily.InterNetworkV6:
+                                        Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
+                                        SocketAddressPal.GetIPv6Address(buffer.Slice(0, bufferLength), address, out uint scope);
+                                        _remoteEndPoint = new IPEndPoint(
+                                            new IPAddress(address, scope),
+                                            SocketAddressPal.GetPort(buffer));
+                                        break;
 
-                            case AddressFamily.InterNetworkV6:
-                                Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
-                                SocketAddressPal.GetIPv6Address(buffer.Slice(0, bufferLength), address, out uint scope);
-                                _remoteEndPoint = new IPEndPoint(
-                                    new IPAddress(address, scope),
-                                    SocketAddressPal.GetPort(buffer));
+                                    case AddressFamily.Unix:
+                                        socketAddress = new Internals.SocketAddress(_addressFamily, buffer.Slice(0, bufferLength));
+                                        _remoteEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
+                                        break;
+                                }
+
+                                _isConnected = true;
                                 break;
 
-                            case AddressFamily.Unix:
-                                socketAddress = new Internals.SocketAddress(_addressFamily, buffer.Slice(0, bufferLength));
-                                _remoteEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
+                            case SocketError.InvalidArgument:
+                                // On some OSes (e.g. macOS), EINVAL means the socket has been shut down.
+                                // This can happen if, for example, socketpair was used and the parent
+                                // process closed its copy of the child's socket.  Since we don't know
+                                // whether we're actually connected or not, err on the side of saying
+                                // we're connected.
+                                _isConnected = true;
                                 break;
                         }
-
-                        _isConnected = true;
                     }
                     catch { }
                 }
@@ -817,17 +826,6 @@ namespace System.Net.Sockets
                 socketAddress.Buffer,
                 socketAddress.Size);
 
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled)
-            {
-                try
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} Bind returns errorCode:{errorCode}");
-                }
-                catch (ObjectDisposedException) { }
-            }
-#endif
-
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
@@ -1079,17 +1077,6 @@ namespace System.Net.Sockets
             // This may throw ObjectDisposedException.
             SocketError errorCode = SocketPal.Listen(_handle, backlog);
 
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled)
-            {
-                try
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} Listen returns errorCode:{errorCode}");
-                }
-                catch (ObjectDisposedException) { }
-            }
-#endif
-
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
@@ -1210,17 +1197,6 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             errorCode = SocketPal.Send(_handle, buffers, socketFlags, out bytesTransferred);
-
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled)
-            {
-                try
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} Send returns errorCode:{errorCode} bytesTransferred:{bytesTransferred}");
-                }
-                catch (ObjectDisposedException) { }
-            }
-#endif
 
             if (errorCode != SocketError.Success)
             {
@@ -1357,17 +1333,6 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"::SendFile() SRC:{LocalEndPoint} DST:{RemoteEndPoint} fileName:{fileName}");
 
             SendFileInternal(fileName, preBuffer, postBuffer, flags);
-
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled)
-            {
-                try
-                {
-                    NetEventSource.Info(this, $"::SendFile() SRC:{LocalEndPoint} DST:{RemoteEndPoint} UnsafeNclNativeMethods.OSSOCK.TransmitFile returns errorCode:{errorCode}");
-                }
-                catch (ObjectDisposedException) { }
-            }
-#endif
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -1512,13 +1477,6 @@ namespace System.Net.Sockets
 
             if (NetEventSource.IsEnabled)
             {
-#if TRACE_VERBOSE
-                try
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} bytesTransferred:{bytesTransferred}");
-                }
-                catch (ObjectDisposedException) { }
-#endif
                 NetEventSource.DumpBuffer(this, buffer, offset, bytesTransferred);
                 NetEventSource.Exit(this, bytesTransferred);
             }
@@ -1596,18 +1554,6 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             errorCode = SocketPal.Receive(_handle, buffers, socketFlags, out bytesTransferred);
-
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled)
-            {
-                try
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} Receive returns errorCode:{errorCode} bytesTransferred:{bytesTransferred}");
-                }
-                catch (ObjectDisposedException) { }
-            }
-#endif
-
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
 
             if (errorCode != SocketError.Success)
@@ -1621,17 +1567,6 @@ namespace System.Net.Sockets
                 }
                 return 0;
             }
-
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled)
-            {
-                try
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} bytesTransferred:{bytesTransferred}");
-                }
-                catch (ObjectDisposedException) { }
-            }
-#endif
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this, bytesTransferred);
 
@@ -3185,17 +3120,6 @@ namespace System.Net.Sockets
             int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
 
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled)
-            {
-                try
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} bytesTransferred:{bytesTransferred}");
-                }
-                catch (ObjectDisposedException) { }
-            }
-#endif
-
             // Throw an appropriate SocketException if the native call failed asynchronously.
             errorCode = (SocketError)castedAsyncResult.ErrorCode;
 
@@ -3761,16 +3685,6 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled)
-            {
-                try
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} acceptedSocket:{socket} acceptedSocket.SRC:{socket.LocalEndPoint} acceptSocket.DST:{socket.RemoteEndPoint} bytesTransferred:{bytesTransferred}");
-                }
-                catch (ObjectDisposedException) { }
-            }
-#endif
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Accepted(socket, socket.RemoteEndPoint, socket.LocalEndPoint);
@@ -4420,16 +4334,6 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, endPointSnapshot);
 
             SocketError errorCode = SocketPal.Connect(_handle, socketAddress.Buffer, socketAddress.Size);
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled)
-            {
-                try
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} Connect returns errorCode:{errorCode}");
-                }
-                catch (ObjectDisposedException) { }
-            }
-#endif
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)

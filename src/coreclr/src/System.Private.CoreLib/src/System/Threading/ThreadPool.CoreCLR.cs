@@ -34,8 +34,8 @@ namespace System.Threading
         private static IntPtr InvalidHandle => new IntPtr(-1);
         private IntPtr registeredWaitHandle = InvalidHandle;
         private WaitHandle? m_internalWaitObject;
-        private bool bReleaseNeeded = false;
-        private volatile int m_lock = 0;
+        private bool bReleaseNeeded;
+        private volatile int m_lock;
 
         internal IntPtr GetHandle() => registeredWaitHandle;
 
@@ -192,12 +192,7 @@ namespace System.Threading
         // Time in ms for which ThreadPoolWorkQueue.Dispatch keeps executing work items before returning to the OS
         private const uint DispatchQuantum = 30;
 
-        private static bool GetEnableWorkerTracking()
-        {
-            bool enableWorkerTracking = false;
-            InitializeVMTp(ref enableWorkerTracking);
-            return enableWorkerTracking;
-        }
+        internal static readonly bool EnableWorkerTracking = GetEnableWorkerTracking();
 
         internal static bool KeepDispatching(int startTickCount)
         {
@@ -340,8 +335,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void NotifyWorkItemProgressNative();
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void InitializeVMTp(ref bool enableWorkerTracking);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool GetEnableWorkerTracking();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr RegisterWaitForSingleObjectNative(

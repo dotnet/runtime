@@ -533,7 +533,7 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
     // Retrieve the number of vtable slots the interface has.
     nSlots = m_pMT->GetNumVirtuals();
 
-    // IDispatch, IUnknown, or IInspectable derived?
+    // IDispatch, IUnknown derived?
     ifaceType = (m_pMT->IsInterface() ? m_pMT->GetComInterfaceType() : ifDual);
     oVftBase = ComMethodTable::GetNumExtraSlots(ifaceType) * (SHORT)sizeOfPtr;
 
@@ -817,14 +817,14 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
 
     CQuickBytes qb;
     UINT        iCur;
-    CorIfaceAttr ifaceType;             // VTBL, Dispinterface, IDispatch, or IInspectable
+    CorIfaceAttr ifaceType;             // VTBL, Dispinterface, IDispatch
     ULONG       cBaseNames;             // Count of names in base interface.
     BOOL        bDup;                   // Is the name a duplicate?
     HRESULT     hr          = S_OK;
     const size_t cchrcName  = MAX_CLASSNAME_LENGTH;
     LPWSTR      rcName      = (LPWSTR)qb.AllocThrows(cchrcName * sizeof(WCHAR));
 
-    // Tables of names of methods on IUnknown, IDispatch, and IInspectable.
+    // Tables of names of methods on IUnknown, IDispatch.
     static const LPCWSTR rBaseNames_Dispatch[] =
     {
         W("QueryInterface"),
@@ -836,19 +836,9 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
         W("Invoke")
     };
 
-    static const LPCWSTR rBaseNames_Inspectable[] =
-    {
-        W("QueryInterface"),
-        W("AddRef"),
-        W("Release"),
-        W("GetIIDs"),
-        W("GetRuntimeClassName"),
-        W("GetTrustLevel")
-    };
-
     // Determine which names are in the base interface.
     ifaceType = (m_pMT->IsInterface() ? m_pMT->GetComInterfaceType() : ifDual);
-    const LPCWSTR * rBaseNames = (ifaceType == ifInspectable ? rBaseNames_Inspectable : rBaseNames_Dispatch);
+    const LPCWSTR * rBaseNames = (rBaseNames_Dispatch);
 
     // Is it pure dispinterface?
     if (ifaceType == ifDispatch)

@@ -4,7 +4,7 @@
 
 using System.Threading;
 using System.Reflection;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -43,7 +43,7 @@ namespace System.Diagnostics
             int loadedPeSize, IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
             out string? sourceFile, out int sourceLine, out int sourceColumn);
 
-        private static GetSourceLineInfoDelegate? s_getSourceLineInfo = null;
+        private static GetSourceLineInfoDelegate? s_getSourceLineInfo;
 
         [ThreadStatic]
         private static int t_reentrancy;
@@ -84,12 +84,13 @@ namespace System.Diagnostics
         // done by GetStackFramesInternal (on Windows for old PDB format).
         //
 
+        // TODO: Remove these DynamicDependencyAttributes when https://github.com/mono/linker/issues/943 is fixed.
         // This is necessary because linker can't add new assemblies to the closure when recognizing Type.GetType
         // so the code below is actually recognized by linker, but fails to resolve the type since the System.Diagnostics.StackTrace
         // is not always part of the closure linker works on.
-        // PreserveDependencyAttribute on the other hand can pull in additional assemblies.
-        [PreserveDependency("GetSourceLineInfo", "System.Diagnostics.StackTraceSymbols", "System.Diagnostics.StackTrace")]
-        [PreserveDependency(".ctor()", "System.Diagnostics.StackTraceSymbols", "System.Diagnostics.StackTrace")]
+        // DynamicDependencyAttribute on the other hand can pull in additional assemblies.
+        [DynamicDependency("GetSourceLineInfo", "System.Diagnostics.StackTraceSymbols", "System.Diagnostics.StackTrace")]
+        [DynamicDependency("#ctor()", "System.Diagnostics.StackTraceSymbols", "System.Diagnostics.StackTrace")]
         internal void InitializeSourceInfo(int iSkip, bool fNeedFileInfo, Exception? exception)
         {
             StackTrace.GetStackFramesInternal(this, iSkip, fNeedFileInfo, exception);
@@ -131,7 +132,7 @@ namespace System.Diagnostics
                     object? target = Activator.CreateInstance(symbolsType);
 
                     // Create an instance delegate for the GetSourceLineInfo method
-                    GetSourceLineInfoDelegate getSourceLineInfo = (GetSourceLineInfoDelegate)symbolsMethodInfo.CreateDelegate(typeof(GetSourceLineInfoDelegate), target);
+                    GetSourceLineInfoDelegate getSourceLineInfo = symbolsMethodInfo.CreateDelegate<GetSourceLineInfoDelegate>(target);
 
                     // We could race with another thread. It doesn't matter if we win or lose, the losing instance will be GC'ed and all threads including this one will
                     // use the winning instance

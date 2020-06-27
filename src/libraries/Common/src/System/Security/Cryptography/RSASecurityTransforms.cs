@@ -5,6 +5,7 @@
 #nullable enable
 using System.Buffers;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -229,18 +230,16 @@ namespace System.Security.Cryptography
                         {
                             Algorithm = new AlgorithmIdentifierAsn
                             {
-                                Algorithm = new Oid(Oids.Rsa),
+                                Algorithm = Oids.Rsa,
                                 Parameters = AlgorithmIdentifierAsn.ExplicitDerNull,
                             },
                             SubjectPublicKey = firstElement,
                         };
 
-                        using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-                        {
-                            spki.Encode(writer);
-                            ImportSubjectPublicKeyInfo(writer.EncodeAsSpan(), out _);
-                        }
+                        AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                        spki.Encode(writer);
 
+                        ImportSubjectPublicKeyInfo(writer.Encode(), out _);
                         bytesRead = firstElement.Length;
                     }
                 }
@@ -819,19 +818,38 @@ namespace System.Security.Cryptography
 
             private static SafeSecKeyRefHandle ImportKey(RSAParameters parameters)
             {
+                AsnWriter keyWriter;
+                bool hasPrivateKey;
+
                 if (parameters.D != null)
                 {
-                    using (AsnWriter pkcs1PrivateKey = RSAKeyFormatHelper.WritePkcs1PrivateKey(parameters))
-                    {
-                        return Interop.AppleCrypto.ImportEphemeralKey(pkcs1PrivateKey.EncodeAsSpan(), true);
-                    }
+                    keyWriter = RSAKeyFormatHelper.WritePkcs1PrivateKey(parameters);
+                    hasPrivateKey = true;
                 }
                 else
                 {
-                    using (AsnWriter pkcs1PublicKey = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters))
-                    {
-                        return Interop.AppleCrypto.ImportEphemeralKey(pkcs1PublicKey.EncodeAsSpan(), false);
-                    }
+                    keyWriter = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters);
+                    hasPrivateKey = false;
+                }
+
+                byte[] rented = CryptoPool.Rent(keyWriter.GetEncodedLength());
+
+                if (!keyWriter.TryEncode(rented, out int written))
+                {
+                    Debug.Fail("TryEncode failed with a pre-allocated buffer");
+                    throw new InvalidOperationException();
+                }
+
+                // Explicitly clear the inner buffer
+                keyWriter.Reset();
+
+                try
+                {
+                    return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), hasPrivateKey);
+                }
+                finally
+                {
+                    CryptoPool.Return(rented, written);
                 }
             }
 

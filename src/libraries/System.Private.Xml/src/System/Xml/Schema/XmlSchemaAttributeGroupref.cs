@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
+    using System.Diagnostics.CodeAnalysis;
     using System.Xml.Serialization;
 
     public class XmlSchemaAttributeGroupRef : XmlSchemaAnnotated
@@ -12,6 +14,7 @@ namespace System.Xml.Schema
         private XmlQualifiedName _refName = XmlQualifiedName.Empty;
 
         [XmlAttribute("ref")]
+        [AllowNull]
         public XmlQualifiedName RefName
         {
             get { return _refName; }

@@ -83,33 +83,14 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_LCL_VAR:
-        {
-            // We handle tracked variables differently from non-tracked ones.  If it is tracked,
-            // we will simply add a use of the tracked variable at its parent/consumer.
-            // Otherwise, for a use we need to actually add the appropriate references for loading
-            // or storing the variable.
-            //
-            // A tracked variable won't actually get used until the appropriate ancestor tree node
-            // is processed, unless this is marked "isLocalDefUse" because it is a stack-based argument
-            // to a call or an orphaned dead node.
-            //
-            // Because we do containment analysis before we redo dataflow and identify register
-            // candidates, the containment analysis only uses !lvDoNotEnregister to estimate register
-            // candidates.
-            // If there is a lclVar that is estimated to be register candidate but
-            // is not, if they were marked regOptional they should now be marked contained instead.
-            bool isCandidate = compiler->lvaGetDesc(tree->AsLclVar())->lvLRACandidate;
-            if (tree->IsRegOptional() && !isCandidate)
-            {
-                tree->ClearRegOptional();
-                tree->SetContained();
-                return 0;
-            }
-            if (isCandidate)
+            // We make a final determination about whether a GT_LCL_VAR is a candidate or contained
+            // after liveness. In either case we don't build any uses or defs. Otherwise, this is a
+            // load of a stack-based local into a register and we'll fall through to the general
+            // local case below.
+            if (checkContainedOrCandidateLclVar(tree->AsLclVar()))
             {
                 return 0;
             }
-        }
             __fallthrough;
 
         case GT_LCL_FLD:
@@ -132,6 +113,10 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_STORE_LCL_FLD:
         case GT_STORE_LCL_VAR:
+            if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
+            {
+                dstCount = compiler->lvaGetDesc(tree->AsLclVar()->GetLclNum())->lvFieldCnt;
+            }
             srcCount = BuildStoreLoc(tree->AsLclVarCommon());
             break;
 
@@ -635,8 +620,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_NULLCHECK:
         {
             assert(dstCount == 0);
-            regMaskTP indirCandidates = RBM_NONE;
-            BuildUse(tree->gtGetOp1(), indirCandidates);
+            // If we have a contained address on a nullcheck, we transform it to
+            // an unused GT_IND, since we require a target register.
+            BuildUse(tree->gtGetOp1());
             srcCount = 1;
             break;
         }
@@ -707,7 +693,7 @@ int LinearScan::BuildNode(GenTree* tree)
     assert((dstCount < 2) || ((dstCount == 2) && tree->IsMultiRegNode()));
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsUnusedValue() || (dstCount != 0));
-    assert(dstCount == tree->GetRegisterDstCount());
+    assert(dstCount == tree->GetRegisterDstCount(compiler));
     return srcCount;
 }
 
@@ -1862,20 +1848,16 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
 //
 int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 {
-    // Only SIMDIntrinsicInit can be contained. Other than that,
-    // only SIMDIntrinsicOpEquality and SIMDIntrinsicOpInEquality can have 0 dstCount.
-    int       dstCount      = simdTree->IsValue() ? 1 : 0;
+    // All intrinsics have a dstCount of 1
+    assert(simdTree->IsValue());
+
     bool      buildUses     = true;
     regMaskTP dstCandidates = RBM_NONE;
 
     if (simdTree->isContained())
     {
+        // Only SIMDIntrinsicInit can be contained
         assert(simdTree->gtSIMDIntrinsicID == SIMDIntrinsicInit);
-    }
-    else if (dstCount != 1)
-    {
-        assert((simdTree->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality) ||
-               (simdTree->gtSIMDIntrinsicID == SIMDIntrinsicOpInEquality));
     }
     SetContainsAVXFlags(simdTree->gtSIMDSize);
     GenTree* op1      = simdTree->gtGetOp1();
@@ -1956,35 +1938,11 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             noway_assert(varTypeIsFloating(simdTree->gtSIMDBaseType));
             break;
 
-        case SIMDIntrinsicAbs:
-            // float/double vectors: This gets implemented as bitwise-And operation
-            // with a mask and hence should never see  here.
-            //
-            // Must be a Vector<int> or Vector<short> Vector<sbyte>
-            assert(simdTree->gtSIMDBaseType == TYP_INT || simdTree->gtSIMDBaseType == TYP_SHORT ||
-                   simdTree->gtSIMDBaseType == TYP_BYTE);
-            assert(compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported);
-            break;
-
-        case SIMDIntrinsicSqrt:
-            // SSE2 has no instruction support for sqrt on integer vectors.
-            noway_assert(varTypeIsFloating(simdTree->gtSIMDBaseType));
-            break;
-
-        case SIMDIntrinsicCeil:
-        case SIMDIntrinsicFloor:
-            assert(compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported);
-            break;
-
         case SIMDIntrinsicAdd:
         case SIMDIntrinsicSub:
         case SIMDIntrinsicMul:
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseAndNot:
         case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicBitwiseXor:
-        case SIMDIntrinsicMin:
-        case SIMDIntrinsicMax:
             // SSE2 32-bit integer multiplication requires two temp regs
             if (simdTree->gtSIMDIntrinsicID == SIMDIntrinsicMul && simdTree->gtSIMDBaseType == TYP_INT &&
                 compiler->getSIMDSupportLevel() == SIMD_SSE2_Supported)
@@ -1995,40 +1953,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             break;
 
         case SIMDIntrinsicEqual:
-            break;
-
-        // SSE2 doesn't support < and <= directly on int vectors.
-        // Instead we need to use > and >= with swapped operands.
-        case SIMDIntrinsicLessThan:
-        case SIMDIntrinsicLessThanOrEqual:
-            noway_assert(!varTypeIsIntegral(simdTree->gtSIMDBaseType));
-            break;
-
-        // SIMDIntrinsicEqual is supported only on non-floating point base type vectors.
-        // SSE2 cmpps/pd doesn't support > and >=  directly on float/double vectors.
-        // Instead we need to use <  and <= with swapped operands.
-        case SIMDIntrinsicGreaterThan:
-            noway_assert(!varTypeIsFloating(simdTree->gtSIMDBaseType));
-            break;
-
-        case SIMDIntrinsicOpEquality:
-        case SIMDIntrinsicOpInEquality:
-            if (simdTree->gtGetOp2()->isContained())
-            {
-                // If the second operand is contained then ContainCheckSIMD has determined
-                // that PTEST can be used. We only need a single source register and no
-                // internal registers.
-            }
-            else
-            {
-                // Can't use PTEST so we need 2 source registers, 1 internal SIMD register
-                // (to hold the result of PCMPEQD or other similar SIMD compare instruction)
-                // and one internal INT register (to hold the result of PMOVMSKB).
-                buildInternalIntRegisterDefForNode(simdTree);
-                buildInternalFloatRegisterDefForNode(simdTree);
-            }
-            // These SIMD nodes only set the condition flags.
-            dstCount = 0;
             break;
 
         case SIMDIntrinsicDotProduct:
@@ -2258,14 +2182,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         srcCount = BuildRMWUses(simdTree);
     }
     buildInternalRegisterUses();
-    if (dstCount == 1)
-    {
-        BuildDef(simdTree, dstCandidates);
-    }
-    else
-    {
-        assert(dstCount == 0);
-    }
+    BuildDef(simdTree, dstCandidates);
     return srcCount;
 }
 #endif // FEATURE_SIMD

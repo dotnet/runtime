@@ -109,6 +109,8 @@ namespace System.Net.Security
             _certSelectionDelegate = userCertificateSelectionCallback == null ? null : new LocalCertSelectionCallback(UserCertSelectionCallbackWrapper);
 
             _innerStream = innerStream;
+
+            if (NetEventSource.IsEnabled) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
 
         public SslApplicationProtocol NegotiatedApplicationProtocol
@@ -484,7 +486,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -560,7 +562,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 return _context!.ConnectionInfo?.TlsCipherSuite ?? default(TlsCipherSuite);
             }
         }
@@ -569,7 +571,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -583,7 +585,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -598,7 +600,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -612,7 +614,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -627,7 +629,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -642,7 +644,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -858,6 +860,17 @@ namespace System.Net.Security
             ThrowIfExceptional();
 
             if (!IsAuthenticated)
+            {
+                ThrowNotAuthenticated();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ThrowIfExceptionalOrNotHandshake()
+        {
+            ThrowIfExceptional();
+
+            if (!IsAuthenticated && _context?.ConnectionInfo == null)
             {
                 ThrowNotAuthenticated();
             }

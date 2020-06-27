@@ -173,6 +173,8 @@ private:
 
     Volatile<LONG> m_metadataIdCounter;
 
+    Volatile<bool> m_isInitialized = false;
+
     unsigned int m_stackIdCounter;
     EventPipeStackHash m_stackHash;
 #ifdef DEBUG

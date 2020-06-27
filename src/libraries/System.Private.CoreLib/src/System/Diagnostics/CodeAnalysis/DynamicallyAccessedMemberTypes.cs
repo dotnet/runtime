@@ -11,7 +11,12 @@ namespace System.Diagnostics.CodeAnalysis
     /// bitwise combination of its member values.
     /// </summary>
     [Flags]
-    public enum DynamicallyAccessedMemberTypes
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    enum DynamicallyAccessedMemberTypes
     {
         /// <summary>
         /// Specifies no members.
@@ -21,12 +26,12 @@ namespace System.Diagnostics.CodeAnalysis
         /// <summary>
         /// Specifies the default, parameterless public constructor.
         /// </summary>
-        DefaultConstructor = 0x0001,
+        PublicParameterlessConstructor = 0x0001,
 
         /// <summary>
         /// Specifies all public constructors.
         /// </summary>
-        PublicConstructors = 0x0002 | DefaultConstructor,
+        PublicConstructors = 0x0002 | PublicParameterlessConstructor,
 
         /// <summary>
         /// Specifies all non-public constructors.

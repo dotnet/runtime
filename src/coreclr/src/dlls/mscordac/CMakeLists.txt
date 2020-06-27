@@ -71,35 +71,24 @@ else(CLR_CMAKE_HOST_WIN32)
         # Add lib redefines file to DAC
         list(APPEND CLR_DAC_SOURCES libredefines.S)
     endif(CLR_CMAKE_HOST_LINUX)
+
+    if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+        # This option is necessary to ensure that the overloaded delete operator defined inside
+        # of the utilcode will be used instead of the standard library delete operator.
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
+
+        # The following linked options can be inserted into the linker libraries list to
+        # ensure proper resolving of circular references between a subset of the libraries.
+        set(START_LIBRARY_GROUP -Wl,--start-group)
+        set(END_LIBRARY_GROUP -Wl,--end-group)
+
+        # These options are used to force every object to be included even if it's unused.
+        set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
+        set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
+    endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+
+    set_exports_linker_option(${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_WIN32)
-
-if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
-    # This option is necessary to ensure that the overloaded delete operator defined inside
-    # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
-
-    # The following linked options can be inserted into the linker libraries list to
-    # ensure proper resolving of circular references between a subset of the libraries.
-    set(START_LIBRARY_GROUP -Wl,--start-group)
-    set(END_LIBRARY_GROUP -Wl,--end-group)
-
-    # These options are used to force every object to be included even if it's unused.
-    set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
-    set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
-
-    # Add linker exports file option
-    set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
-
-if(CLR_CMAKE_HOST_OSX)
-    # Add linker exports file option
-    set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_OSX)
-
-if(CLR_CMAKE_HOST_SUNOS)
-    # Add linker exports file option
-    set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_SUNOS)
 
 # Create object library to enable creation of proper dependency of mscordaccore.exp on mscordac.obj and
 # mscordaccore on both the mscordaccore.exp and mscordac.obj.
@@ -139,12 +128,6 @@ set(COREDAC_LIBRARIES
     unwinder_dac
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
 )
-
-if(CLR_CMAKE_TARGET_WIN32)
-    list(APPEND COREDAC_LIBRARIES
-        mdwinmd_dac
-    )
-endif(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_HOST_WIN32)
     # mscordac.def should be generated before mscordaccore.dll is built
@@ -189,6 +172,12 @@ else(CLR_CMAKE_HOST_WIN32)
         ${END_WHOLE_ARCHIVE}
     )
 endif(CLR_CMAKE_HOST_WIN32)
+
+if(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
+    list(APPEND COREDAC_LIBRARIES
+        libunwind_xdac
+    )
+endif(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
 
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 

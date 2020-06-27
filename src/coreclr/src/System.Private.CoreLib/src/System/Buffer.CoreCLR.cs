@@ -101,5 +101,28 @@ namespace System
                 Memcpy(pDest + destIndex, pSrc + srcIndex, len);
             }
         }
+
+        // This method has different signature for x64 and other platforms and is done for performance reasons.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void Memmove<T>(ref T destination, ref T source, nuint elementCount)
+        {
+            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                // Blittable memmove
+
+                Memmove(
+                    ref Unsafe.As<T, byte>(ref destination),
+                    ref Unsafe.As<T, byte>(ref source),
+                    elementCount * (nuint)Unsafe.SizeOf<T>());
+            }
+            else
+            {
+                // Non-blittable memmove
+                BulkMoveWithWriteBarrier(
+                    ref Unsafe.As<T, byte>(ref destination),
+                    ref Unsafe.As<T, byte>(ref source),
+                    elementCount * (nuint)Unsafe.SizeOf<T>());
+            }
+        }
     }
 }

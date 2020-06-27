@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Configuration.Memory
 
             if (_source.InitialData != null)
             {
-                foreach (var pair in _source.InitialData)
+                foreach (KeyValuePair<string, string> pair in _source.InitialData)
                 {
                     Data.Add(pair.Key, pair.Value);
                 }

@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -12,6 +13,10 @@ namespace System.Security.Cryptography
     {
         protected AsnEncodedData()
         {
+            // Initialize _rawData to an empty array so that RawData may reasonably be a non-nullable byte[].
+            // It naturally is for the base type as well as for derived types behaving as intended.
+            // This, however, is a deviation from the original .NET Framework behavior.
+            _rawData = Array.Empty<byte>();
         }
 
         public AsnEncodedData(byte[] rawData)
@@ -38,15 +43,8 @@ namespace System.Security.Cryptography
 
         public Oid? Oid
         {
-            get
-            {
-                return _oid;
-            }
-
-            set
-            {
-                _oid = (value == null) ? null : new Oid(value);
-            }
+            get => _oid;
+            set => _oid = value;
         }
 
         public byte[] RawData
@@ -57,6 +55,7 @@ namespace System.Security.Cryptography
                 return _rawData;
             }
 
+            [MemberNotNull(nameof(_rawData))]
             set
             {
                 if (value == null)
@@ -81,13 +80,14 @@ namespace System.Security.Cryptography
             return AsnFormatter.Instance.Format(_oid, _rawData, multiLine);
         }
 
+        [MemberNotNull(nameof(_rawData))]
         private void Reset(Oid? oid, byte[] rawData)
         {
             this.Oid = oid;
             this.RawData = rawData;
         }
 
-        private Oid? _oid = null;
-        private byte[] _rawData = null!; // initialized in helper method Reset for all public constuctors
+        private Oid? _oid;
+        private byte[] _rawData;
     }
 }

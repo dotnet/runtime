@@ -11,7 +11,7 @@ namespace System.Net.Mail
 {
     public abstract class AttachmentBase : IDisposable
     {
-        internal bool disposed = false;
+        internal bool disposed;
         private readonly MimePart _part = new MimePart();
         private static readonly char[] s_contentCIDInvalidChars = new char[] { '<', '>' };
 

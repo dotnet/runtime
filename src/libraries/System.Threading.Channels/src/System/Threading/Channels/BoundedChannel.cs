@@ -356,8 +356,7 @@ namespace System.Threading.Channels
                         while (!parent._blockedReaders.IsEmpty)
                         {
                             AsyncOperation<T> r = parent._blockedReaders.DequeueHead();
-                            r.UnregisterCancellation(); // ensure that once we grab it, we own its completion
-                            if (!r.IsCompleted)
+                            if (r.UnregisterCancellation()) // ensure that once we grab it, we own its completion
                             {
                                 blockedReader = r;
                                 break;
@@ -517,8 +516,7 @@ namespace System.Threading.Channels
                         while (!parent._blockedReaders.IsEmpty)
                         {
                             AsyncOperation<T> r = parent._blockedReaders.DequeueHead();
-                            r.UnregisterCancellation(); // ensure that once we grab it, we own its completion
-                            if (!r.IsCompleted)
+                            if (r.UnregisterCancellation()) // ensure that once we grab it, we own its completion
                             {
                                 blockedReader = r;
                                 break;

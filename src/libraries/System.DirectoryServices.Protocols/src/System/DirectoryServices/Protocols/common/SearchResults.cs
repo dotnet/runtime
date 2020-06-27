@@ -9,7 +9,6 @@ namespace System.DirectoryServices.Protocols
     public class SearchResultReference
     {
         private readonly Uri[] _resultReferences;
-        private readonly DirectoryControl[] _resultControls;
 
         internal SearchResultReference(Uri[] uris) => _resultReferences = uris;
 
@@ -31,24 +30,7 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        public DirectoryControl[] Controls
-        {
-            get
-            {
-                if (_resultControls == null)
-                {
-                    return Array.Empty<DirectoryControl>();
-                }
-
-                DirectoryControl[] controls = new DirectoryControl[_resultControls.Length];
-                for (int i = 0; i < _resultControls.Length; i++)
-                {
-                    controls[i] = new DirectoryControl(_resultControls[i].Type, _resultControls[i].GetValue(), _resultControls[i].IsCritical, _resultControls[i].ServerSide);
-                }
-                DirectoryControl.TransformControls(controls);
-                return controls;
-            }
-        }
+        public DirectoryControl[] Controls => Array.Empty<DirectoryControl>();
     }
 
     public class SearchResultReferenceCollection : ReadOnlyCollectionBase
@@ -70,8 +52,6 @@ namespace System.DirectoryServices.Protocols
 
     public class SearchResultEntry
     {
-        private readonly DirectoryControl[] _resultControls = null;
-
         internal SearchResultEntry(string dn) : this(dn, new SearchResultAttributeCollection()) { }
 
         internal SearchResultEntry(string dn, SearchResultAttributeCollection attrs)
@@ -84,24 +64,7 @@ namespace System.DirectoryServices.Protocols
 
         public SearchResultAttributeCollection Attributes { get; }
 
-        public DirectoryControl[] Controls
-        {
-            get
-            {
-                if (_resultControls == null)
-                {
-                    return Array.Empty<DirectoryControl>();
-                }
-
-                DirectoryControl[] controls = new DirectoryControl[_resultControls.Length];
-                for (int i = 0; i < _resultControls.Length; i++)
-                {
-                    controls[i] = new DirectoryControl(_resultControls[i].Type, _resultControls[i].GetValue(), _resultControls[i].IsCritical, _resultControls[i].ServerSide);
-                }
-                DirectoryControl.TransformControls(controls);
-                return controls;
-            }
-        }
+        public DirectoryControl[] Controls => Array.Empty<DirectoryControl>();
     }
 
     public class SearchResultEntryCollection : ReadOnlyCollectionBase

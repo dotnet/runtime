@@ -33,7 +33,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EventSource_EventsRaisedAsExpected()
         {
             RemoteExecutor.Invoke(() =>

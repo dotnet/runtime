@@ -8,9 +8,7 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.ComponentModel
@@ -87,7 +85,7 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Type InterfaceType
         {
-            [PreserveDependency(".ctor", "System.ComponentModel.TypeDescriptor/TypeDescriptorInterface")]
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             get => typeof(TypeDescriptorInterface);
         }
 
@@ -325,7 +323,7 @@ namespace System.ComponentModel
             // own cache state against the type. There shouldn't be
             // more than one of these, but walk anyway. Walk in
             // reverse order so that the most derived takes precidence.
-            object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false).ToArray();
+            object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false);
             bool providerAdded = false;
             for (int idx = attrs.Length - 1; idx >= 0; idx--)
             {
@@ -2319,8 +2317,7 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Type ComObjectType
         {
-            [PreserveDependency(".ctor", "System.ComponentModel.TypeDescriptor/TypeDescriptorComObject")]
-            [PreserveDependency(".ctor", "System.ComponentModel.TypeDescriptor/ComNativeDescriptorProxy")] // TODO: https://github.com/mono/linker/issues/801
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             get => typeof(TypeDescriptorComObject);
         }
 
