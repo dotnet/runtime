@@ -728,6 +728,7 @@ TESTS_CS_SRC=		\
 	null-blob-main.cs \
 	last-error.cs \
 	rgctx-thread-static.cs \
+	ccw-class-iface.cs \
 	bug-gh-17285.cs
 
 # some tests fail to compile on mcs
@@ -1431,6 +1432,7 @@ PROFILE_DISABLED_TESTS += \
 	dynamic-method-delegate.exe \
 	dynamic-method-churn.exe \
 	bug-666008.exe \
+	ccw-class-iface.exe \
 	bug-685908.exe
 
 # Test which needs System.Web support
@@ -1950,6 +1952,7 @@ INTERP_DISABLED_TESTS += localloc-noinit.exe
 INTERP_DISABLED_TESTS += dim-diamondshape.exe
 INTERP_DISABLED_TESTS += pinvoke3.exe
 INTERP_DISABLED_TESTS += cominterop.exe
+INTERP_DISABLED_TESTS += ccw-class-iface.exe
 # bug-60862.exe: missing support to map IP->method; only works on platforms with altstack support.
 INTERP_DISABLED_TESTS += bug-60862.exe
 # bug-48015.exe: remoting test that fails on fullaotinterp scenarios
@@ -2750,7 +2753,7 @@ test-unhandled-exception: unhandled-exception-test-runner.2.exe
 safehandle.2.exe winx64structs.exe thunks.exe pinvoke3.exe pinvoke2.exe pinvoke-2.2.exe pinvoke17.exe pinvoke13.exe \
 	pinvoke11.exe pinvoke_ppcs.exe pinvoke_ppci.exe pinvoke_ppcf.exe pinvoke_ppcd.exe pinvoke_ppcc.exe pinvoke.exe \
 	marshalbool.exe marshal9.exe marshal5.exe marshal.exe handleref.exe cominterop.exe bug-Xamarin-5278.exe \
-	bug-58782-plain-throw.exe bug-58782-capture-and-throw.exe install_eh_callback.exe: libtest.la
+	bug-58782-plain-throw.exe bug-58782-capture-and-throw.exe install_eh_callback.exe ccw-class-iface.exe: libtest.la
 
 EXTRA_DIST += event-il.il
 
