@@ -807,7 +807,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     sigReader.Read(info.compCompHnd, sig);
 
 #ifdef TARGET_ARM64
-    if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_LoadAndInsertScalar))
+    if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_InsertScalar) ||
+        (intrinsic == NI_AdvSimd_LoadAndInsertScalar))
     {
         assert(sig->numArgs == 3);
         immOp = impStackTop(1).val;
@@ -1058,7 +1059,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         }
                     }
                 }
-                else if (intrinsic == NI_AdvSimd_Insert)
+                else if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_InsertScalar))
                 {
                     op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
                 }
