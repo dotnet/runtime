@@ -26,7 +26,7 @@ namespace System.ComponentModel.Composition.Hosting
         private IDisposable? _disposableAncestorExportProvider;
 
         private readonly ReadOnlyCollection<ExportProvider> _providers;
-        private volatile bool _isDisposed = false;
+        private volatile bool _isDisposed;
         private readonly object _lock = new object();
         private static readonly ReadOnlyCollection<ExportProvider> EmptyProviders = new ReadOnlyCollection<ExportProvider>(Array.Empty<ExportProvider>());
 

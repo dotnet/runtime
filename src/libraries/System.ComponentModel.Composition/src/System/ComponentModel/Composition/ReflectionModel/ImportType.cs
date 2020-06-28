@@ -20,7 +20,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private readonly bool _isAssignableCollectionType;
         private Type _contractType;
         private Func<Export, object>? _castSingleValue;
-        private readonly bool _isOpenGeneric = false;
+        private readonly bool _isOpenGeneric;
 
         [ThreadStatic]
         internal static Dictionary<Type, Func<Export, object>?>? _castSingleValueCache;

@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             Certificate = certificate;
-            DigestAlgorithm = new Oid(s_defaultAlgorithm);
+            DigestAlgorithm = s_defaultAlgorithm.CopyOid();
             PrivateKey = privateKey;
         }
 

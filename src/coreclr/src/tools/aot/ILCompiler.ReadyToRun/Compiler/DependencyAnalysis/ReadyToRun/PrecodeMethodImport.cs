@@ -55,14 +55,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 yield return entry;
             }
-            yield return new DependencyListEntry(_localMethod, "Precode Method Import");
+            if (_localMethod != null)
+                yield return new DependencyListEntry(_localMethod, "Precode Method Import");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            int result = comparer.Compare(_localMethod, ((PrecodeMethodImport)other)._localMethod);
-            if (result != 0)
-                return result;
+            if ((_localMethod != null) && (((PrecodeMethodImport)other)._localMethod != null))
+            {
+                int result = comparer.Compare(_localMethod, ((PrecodeMethodImport)other)._localMethod);
+                if (result != 0)
+                    return result;
+            }
+            else if (_localMethod != null)
+                return 1;
+            else if (((PrecodeMethodImport)other)._localMethod != null)
+                return -1;
 
             return base.CompareToImpl(other, comparer);
         }

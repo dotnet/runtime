@@ -2349,7 +2349,7 @@ void PEFile::SetupAssemblyLoadContext()
 
     m_pAssemblyLoadContext = (pOpaqueBinder != NULL) ?
         (AssemblyLoadContext*)pOpaqueBinder :
-        AppDomain::GetCurrentDomain()->GetTPABinderContext();
+        AppDomain::GetCurrentDomain()->CreateBinderContext();
 }
 
 #endif // #ifndef DACCESS_COMPILE

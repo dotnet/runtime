@@ -308,7 +308,7 @@ namespace System.Linq.Expressions
     // Separate expression creation class to hide the CreateExpressionFunc function from users reflecting on Expression<T>
     public class ExpressionCreator<TDelegate>
     {
-        public static LambdaExpression CreateExpressionFunc(Expression body, string name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
+        public static Expression<TDelegate> CreateExpressionFunc(Expression body, string? name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
         {
             if (name == null && !tailCall)
             {
@@ -598,7 +598,7 @@ namespace System.Linq.Expressions
 #if FEATURE_COMPILE
                 MethodInfo create = typeof(Expression<>).MakeGenericType(delegateType).GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic)!;
 #else
-                MethodInfo create = typeof(ExpressionCreator<>).MakeGenericType(delegateType).GetMethod("CreateExpressionFunc", BindingFlags.Static | BindingFlags.Public);
+                MethodInfo create = typeof(ExpressionCreator<>).MakeGenericType(delegateType).GetMethod("CreateExpressionFunc", BindingFlags.Static | BindingFlags.Public)!;
 #endif
                 if (delegateType.IsCollectible)
                 {

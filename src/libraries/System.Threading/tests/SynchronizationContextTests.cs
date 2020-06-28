@@ -9,7 +9,7 @@ namespace System.Threading.Tests
 {
     public static class SynchronizationContextTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void WaitTest()
         {
             var tsc = new TestSynchronizationContext();

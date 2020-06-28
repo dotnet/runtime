@@ -801,6 +801,11 @@ typedef struct {
 	guint32 intType;
 } MonoInterfaceTypeAttribute;
 
+typedef struct {
+	MonoObject object;
+	guint32 intType;
+} MonoClassInterfaceAttribute;
+
 /* Safely access System.Delegate from native code */
 TYPED_HANDLE_DECL (MonoDelegate);
 

@@ -15,9 +15,9 @@ namespace System.ComponentModel.Composition.Hosting
     public class CompositionScopeDefinition : ComposablePartCatalog, INotifyComposablePartCatalogChanged
     {
         private ComposablePartCatalog? _catalog;
-        private IEnumerable<ExportDefinition>? _publicSurface = null;
+        private IEnumerable<ExportDefinition>? _publicSurface;
         private IEnumerable<CompositionScopeDefinition> _children = Enumerable.Empty<CompositionScopeDefinition>();
-        private volatile int _isDisposed = 0;
+        private volatile int _isDisposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CompositionScopeDefinition"/> class.

@@ -29,8 +29,8 @@ namespace System.Xml.Schema
         private SchemaNames? _schemaNames;
         private readonly object? _wLock;
         private readonly bool _isThreadSafe = true;
-        private ValidationEventHandler? _validationEventHandler = null;
-        private XmlResolver? _xmlResolver = null;
+        private ValidationEventHandler? _validationEventHandler;
+        private XmlResolver? _xmlResolver;
 
 
         /// <summary>

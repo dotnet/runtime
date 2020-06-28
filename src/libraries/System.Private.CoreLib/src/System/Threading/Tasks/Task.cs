@@ -174,7 +174,7 @@ namespace System.Threading.Tasks
 
         // Can be null, a single continuation, a list of continuations, or s_taskCompletionSentinel,
         // in that order. The logic arround this object assumes it will never regress to a previous state.
-        private volatile object? m_continuationObject = null; // SOS DumpAsync command depends on this name
+        private volatile object? m_continuationObject; // SOS DumpAsync command depends on this name
 
         // m_continuationObject is set to this when the task completes.
         private static readonly object s_taskCompletionSentinel = new object();

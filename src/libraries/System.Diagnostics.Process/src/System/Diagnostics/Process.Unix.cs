@@ -17,7 +17,7 @@ namespace System.Diagnostics
     {
         private static readonly UTF8Encoding s_utf8NoBom =
             new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-        private static volatile bool s_initialized = false;
+        private static volatile bool s_initialized;
         private static readonly object s_initializedGate = new object();
         private static readonly Interop.Sys.SigChldCallback s_sigChildHandler = OnSigChild;
         private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();

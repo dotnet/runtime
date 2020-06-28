@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Caching.Memory
 {
     internal class CacheEntry : ICacheEntry
     {
-        private bool _added = false;
+        private bool _added;
         private static readonly Action<object> ExpirationCallback = ExpirationTokensExpired;
         private readonly Action<CacheEntry> _notifyCacheOfExpiration;
         private readonly Action<CacheEntry> _notifyCacheEntryDisposed;

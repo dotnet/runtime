@@ -60,7 +60,7 @@ inline void MethodTableBuilder::DeclaredMethodIterator::ResetToEnd()
 }
 
 //***************************************************************************************
-inline mdMethodDef MethodTableBuilder::DeclaredMethodIterator::Token()
+inline mdMethodDef MethodTableBuilder::DeclaredMethodIterator::Token() const
 {
     STANDARD_VM_CONTRACT;
     CONSISTENCY_CHECK(TypeFromToken(GetMDMethod()->GetMethodSignature().GetToken()) == mdtMethodDef);
@@ -127,7 +127,7 @@ inline MethodTableBuilder::METHOD_TYPE MethodTableBuilder::DeclaredMethodIterato
 
 //***************************************************************************************
 inline MethodTableBuilder::bmtMDMethod *
-MethodTableBuilder::DeclaredMethodIterator::GetMDMethod()
+MethodTableBuilder::DeclaredMethodIterator::GetMDMethod() const
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(FitsIn<SLOT_INDEX>(m_idx)); // Review: m_idx should probably _be_ a SLOT_INDEX, but that asserts.

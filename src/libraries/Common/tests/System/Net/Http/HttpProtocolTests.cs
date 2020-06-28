@@ -20,15 +20,14 @@ namespace System.Net.Http.Functional.Tests
 
         public HttpProtocolTests(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalFact]
+        [Fact]
         public async Task GetAsync_RequestVersion10_Success()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion > HttpVersion.Version11)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -36,7 +35,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
                     request.Version = HttpVersion.Version10;
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
@@ -57,7 +56,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
                     request.Version = HttpVersion.Version11;
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
@@ -81,7 +80,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
                     request.Version = new Version(0, minorVersion);
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     if (IsWinHttpHandler)
@@ -92,7 +91,8 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                     {
-                        await Assert.ThrowsAsync<NotSupportedException>(() => TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask));
+                        // Await only client side that will throw. Nothing will get to the server side due to this exception thus do not await it at all.
+                        await Assert.ThrowsAsync<NotSupportedException>(() => getResponseTask);
                     }
                 }
             }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk});
@@ -108,6 +108,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(4, 2)]
         public async Task GetAsync_UnknownRequestVersion_ThrowsOrDegradesTo11(int majorVersion, int minorVersion)
         {
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync && majorVersion >= 2)
+            {
+                return;
+            }
+
             Type exceptionType = null;
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -117,7 +123,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
                     request.Version = new Version(majorVersion, minorVersion);
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     if (exceptionType == null)
@@ -146,7 +152,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
                     request.Version = HttpVersion.Version11;
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
                     Task<List<string>> serverTask =
                         server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"HTTP/1.{responseMinorVersion} 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
@@ -174,7 +180,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
                     request.Version = HttpVersion.Version11;
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
                     Task<List<string>> serverTask =
                         server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"HTTP/1.{responseMinorVersion} 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
@@ -213,7 +219,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
                     request.Version = HttpVersion.Version11;
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
                     Task<List<string>> serverTask =
                         server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"HTTP/0.{responseMinorVersion} 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
@@ -250,7 +256,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
                     request.Version = HttpVersion.Version11;
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
                     Task<List<string>> serverTask =
                         server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"HTTP/{responseMajorVersion}.{responseMinorVersion} 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
@@ -460,7 +466,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpMessageInvoker client = new HttpMessageInvoker(CreateHttpClientHandler()))
-                using (HttpResponseMessage resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = base.UseVersion }, CancellationToken.None))
+                using (HttpResponseMessage resp = await client.SendAsync(TestAsync, new HttpRequestMessage(HttpMethod.Get, uri) { Version = base.UseVersion }, CancellationToken.None))
                 using (Stream respStream = await resp.Content.ReadAsStreamAsync())
                 {
                     var actualData = new MemoryStream();
@@ -512,6 +518,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("head", "HEAD")]
         [InlineData("post", "POST")]
         [InlineData("put", "PUT")]
+        [InlineData("delete", "DELETE")]
+        [InlineData("options", "OPTIONS")]
+        [InlineData("trace", "TRACE")]
+#if !WINHTTPHANDLER_TEST
+        [InlineData("patch", "PATCH")]
+#endif
         [InlineData("other", "other")]
         [InlineData("SometHING", "SometHING")]
         public async Task CustomMethod_SentUppercasedIfKnown(string specifiedMethod, string expectedMethod)
@@ -521,7 +533,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     var m = new HttpRequestMessage(new HttpMethod(specifiedMethod), uri) { Version = UseVersion };
-                    (await client.SendAsync(m)).Dispose();
+                    (await client.SendAsync(TestAsync, m)).Dispose();
                 }
             }, async server =>
             {

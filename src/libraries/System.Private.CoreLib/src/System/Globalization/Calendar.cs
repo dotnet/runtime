@@ -57,7 +57,7 @@ namespace System.Globalization
 
         private int _currentEraValue = -1;
 
-        private bool _isReadOnly = false;
+        private bool _isReadOnly;
 
         public virtual DateTime MinSupportedDateTime => DateTime.MinValue;
 

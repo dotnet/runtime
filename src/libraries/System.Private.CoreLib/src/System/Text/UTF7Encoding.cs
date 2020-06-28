@@ -854,7 +854,7 @@ namespace System.Text
         private sealed class DecoderUTF7FallbackBuffer : DecoderFallbackBuffer
         {
             // Store our default string
-            private char cFallback = (char)0;
+            private char cFallback;
             private int iCount = -1;
             private int iSize;
 

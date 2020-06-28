@@ -4472,9 +4472,9 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 
 #endif // CROSSGEN_COMPILE
 
-IUnknown *AppDomain::CreateBinderContext()
+CLRPrivBinderCoreCLR *AppDomain::CreateBinderContext()
 {
-    CONTRACT(IUnknown *)
+    CONTRACT(CLRPrivBinderCoreCLR *)
     {
         GC_TRIGGERS;
         THROWS;
@@ -4492,11 +4492,6 @@ IUnknown *AppDomain::CreateBinderContext()
 
         // Initialize the assembly binder for the default context loads for CoreCLR.
         IfFailThrow(CCoreCLRBinderHelper::DefaultBinderSetupContext(DefaultADID, &m_pTPABinderContext));
-
-        // Since the PEAssembly for the System.Private.CoreLib.dll is created before the binder (the AssemblyLoadContext),
-        // we need to update the AssemblyLoadContext pointer in that PEAssembly now. For other assemblies, it is
-        // set in the PEFile constructor.
-        SystemDomain::SystemFile()->SetupAssemblyLoadContext();
     }
 
     RETURN m_pTPABinderContext;

@@ -57,6 +57,7 @@ namespace System.Net.Http
                     if (_connection == null)
                     {
                         // Fully consumed the response in ReadChunksFromConnectionBuffer.
+                        if (HttpTelemetry.IsEnabled) LogRequestStop();
                         return 0;
                     }
 
@@ -169,7 +170,7 @@ namespace System.Net.Http
                         }
 
                         // We're only here if we need more data to make forward progress.
-                        await _connection.FillAsync().ConfigureAwait(false);
+                        await _connection.FillAsync(async: true).ConfigureAwait(false);
 
                         // Now that we have more, see if we can get any response data, and if
                         // we can we're done.
@@ -223,7 +224,7 @@ namespace System.Net.Http
                             return;
                         }
 
-                        await _connection.FillAsync().ConfigureAwait(false);
+                        await _connection.FillAsync(async: true).ConfigureAwait(false);
                     }
                 }
                 catch (Exception exc) when (CancellationHelper.ShouldWrapInOperationCanceledException(exc, cancellationToken))
@@ -362,6 +363,7 @@ namespace System.Net.Http
                                     cancellationRegistration.Dispose();
                                     CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
 
+                                    if (HttpTelemetry.IsEnabled) LogRequestStop();
                                     _state = ParsingState.Done;
                                     _connection.CompleteResponse();
                                     _connection = null;
@@ -471,7 +473,7 @@ namespace System.Net.Http
                             }
                         }
 
-                        await _connection.FillAsync().ConfigureAwait(false);
+                        await _connection.FillAsync(async: true).ConfigureAwait(false);
                     }
                 }
                 finally

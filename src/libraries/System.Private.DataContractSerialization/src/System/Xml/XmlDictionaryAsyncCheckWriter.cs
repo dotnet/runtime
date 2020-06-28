@@ -14,7 +14,7 @@ namespace System.Xml
 {
     internal class XmlDictionaryAsyncCheckWriter : XmlDictionaryWriter
     {
-        private readonly XmlDictionaryWriter _coreWriter = null;
+        private readonly XmlDictionaryWriter _coreWriter;
         private Task _lastTask;
 
         public XmlDictionaryAsyncCheckWriter(XmlDictionaryWriter writer)

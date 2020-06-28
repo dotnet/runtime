@@ -39,7 +39,7 @@ namespace System.Linq.Parallel
     {
         private readonly IDictionary<TKey, IGrouping<TKey, TElement>> _dict;
         private readonly IEqualityComparer<TKey> _comparer;
-        private IGrouping<TKey, TElement>? _defaultKeyGrouping = null;
+        private IGrouping<TKey, TElement>? _defaultKeyGrouping;
 
         internal Lookup(IEqualityComparer<TKey> comparer)
         {

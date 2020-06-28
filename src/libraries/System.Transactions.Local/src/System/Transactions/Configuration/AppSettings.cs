@@ -6,7 +6,7 @@ namespace System.Transactions.Configuration
 {
     internal static class AppSettings
     {
-        private static bool s_settingsInitalized = false;
+        private static volatile bool s_settingsInitalized;
         private static readonly object s_appSettingsLock = new object();
         private static bool s_includeDistributedTxIdInExceptionMessage;
 
@@ -22,6 +22,7 @@ namespace System.Transactions.Configuration
                         // This uses System.Configuration on .NET Framework to load:
                         // Transactions:IncludeDistributedTransactionIdInExceptionMessage
                         s_includeDistributedTxIdInExceptionMessage = false;
+                        s_settingsInitalized = true;
                     }
                 }
             }

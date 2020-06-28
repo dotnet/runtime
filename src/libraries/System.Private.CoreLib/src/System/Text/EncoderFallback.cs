@@ -67,8 +67,8 @@ namespace System.Text
         internal EncoderNLS? encoder; // TODO: MAKE ME PRIVATE
         internal bool setEncoder;
         internal bool bUsedEncoder;
-        internal bool bFallingBack = false;
-        internal int iRecursionCount = 0;
+        internal bool bFallingBack;
+        internal int iRecursionCount;
         private const int iMaxRecursion = 250;
         private Encoding? encoding;
         private int originalCharCount;

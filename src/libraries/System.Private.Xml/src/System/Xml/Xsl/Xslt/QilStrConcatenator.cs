@@ -16,7 +16,7 @@ namespace System.Xml.Xsl.Xslt
         private readonly XPathQilFactory _f;
         private readonly StringBuilder _builder;
         private QilList _concat;
-        private bool _inUse = false;
+        private bool _inUse;
 
         public QilStrConcatenator(XPathQilFactory f)
         {
