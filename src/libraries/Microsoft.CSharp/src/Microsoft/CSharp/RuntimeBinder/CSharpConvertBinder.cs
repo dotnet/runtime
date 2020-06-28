@@ -18,7 +18,7 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpConvertBinder : ConvertBinder, ICSharpBinder
     {
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Name should not be called for this binder")]
         public string Name
         {
             get
