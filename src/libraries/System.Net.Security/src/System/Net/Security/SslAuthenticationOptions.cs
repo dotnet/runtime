@@ -73,7 +73,7 @@ namespace System.Net.Security
                         throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
                     }
 
-                    CertificateContext = new SslStreamCertificateContext(certificateWithKey);
+                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey);
                 }
             }
         }

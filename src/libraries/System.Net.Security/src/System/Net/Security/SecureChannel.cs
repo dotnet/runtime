@@ -531,7 +531,7 @@ namespace System.Net.Security
             //
             // SECURITY: Accessing X509 cert Credential is disabled for semitrust.
             // We no longer need to demand for unmanaged code permissions.
-            // EnsurePrivateKey should do the right demand for us.
+            // FindCertificateWithPrivateKey should do the right demand for us.
             if (filteredCerts != null)
             {
                 for (int i = 0; i < filteredCerts.Count; ++i)
@@ -608,10 +608,9 @@ namespace System.Net.Security
             }
             finally
             {
-                // An extra cert could have been created, dispose it now.
-                if (selectedCert != null && (object?)clientCertificate != (object?)selectedCert)
+                if (selectedCert != null)
                 {
-                    selectedCert.Dispose();
+                    _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert);
                 }
             }
 
@@ -698,7 +697,7 @@ namespace System.Net.Security
                     NetEventSource.Fail(this, "'selectedCert' does not match 'localCertificate'.");
                 }
 
-                _sslAuthenticationOptions.CertificateContext = new SslStreamCertificateContext(selectedCert);
+                _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert);
             }
 
             //
