@@ -134,8 +134,9 @@ namespace Microsoft.Extensions.DependencyInjection
             => services.PostConfigure(name: null, configureOptions: configureOptions);
 
         /// <summary>
-        /// Registers a type that will have all of its IConfigureOptions, IPostConfigureOptions,
-        /// and IValidateOptions registered.
+        /// Registers a type that will have all of its <see cref="IConfigureOptions{TOptions}"/>,
+        /// <see cref="IPostConfigureOptions{TOptions}"/>, and <see cref="IValidateOptions{TOptions}"/>
+        /// registered.
         /// </summary>
         /// <typeparam name="TConfigureOptions">The type that will configure options.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
@@ -167,8 +168,9 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Registers a type that will have all of its IConfigureOptions, IPostConfigureOptions,
-        /// and IValidateOptions registered.
+        /// Registers a type that will have all of its <see cref="IConfigureOptions{TOptions}"/>,
+        /// <see cref="IPostConfigureOptions{TOptions}"/>, and <see cref="IValidateOptions{TOptions}"/>
+        /// registered.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <param name="configureType">The type that will configure options.</param>
@@ -185,8 +187,9 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Registers an object that will have all of its IConfigureOptions, IPostConfigureOptions,
-        /// and IValidateOptions registered.
+        /// Registers an object that will have all of its <see cref="IConfigureOptions{TOptions}"/>,
+        /// <see cref="IPostConfigureOptions{TOptions}"/>, and <see cref="IValidateOptions{TOptions}"/>
+        /// registered.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <param name="configureInstance">The instance that will configure options.</param>
