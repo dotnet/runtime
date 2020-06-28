@@ -11,7 +11,7 @@ namespace System.Net.Security
         internal static SslStreamCertificateContext Create(X509Certificate2 target)
         {
             // On OSX we do not need to build chain unless we are asked for it.
-            return new SslStreamCertificateContext(target, Array.Empty<X509Certificate2>);
+            return new SslStreamCertificateContext(target, Array.Empty<X509Certificate2>());
         }
     }
 }
