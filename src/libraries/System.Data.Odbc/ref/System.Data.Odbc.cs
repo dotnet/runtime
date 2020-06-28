@@ -8,15 +8,15 @@
 namespace System.Data.Odbc
 {
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public static class ODBC32
+    public static partial class ODBC32
     {
         [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
         public enum RETCODE : int
         {
+            INVALID_HANDLE = -2,
+            ERROR = -1,
             SUCCESS = 0,
             SUCCESS_WITH_INFO = 1,
-            ERROR = -1,
-            INVALID_HANDLE = -2,
             NO_DATA = 100,
         }
     }
@@ -112,6 +112,9 @@ namespace System.Data.Odbc
         public new System.Data.Odbc.OdbcCommand CreateCommand() { throw null; }
         protected override System.Data.Common.DbCommand CreateDbCommand() { throw null; }
         protected override void Dispose(bool disposing) { }
+        public override System.Data.DataTable GetSchema() { throw null; }
+        public override System.Data.DataTable GetSchema(string collectionName) { throw null; }
+        public override System.Data.DataTable GetSchema(string collectionName, string[] restrictionValues) { throw null; }
         public override void Open() { }
         public static void ReleaseObjectPool() { }
         object System.ICloneable.Clone() { throw null; }
@@ -272,6 +275,7 @@ namespace System.Data.Odbc
         [System.ComponentModel.DefaultValueAttribute(System.Data.Odbc.OdbcType.NChar)]
         [System.Data.Common.DbProviderSpecificTypePropertyAttribute(true)]
         public System.Data.Odbc.OdbcType OdbcType { get { throw null; } set { } }
+        public int Offset { get { throw null; } set { } }
         public override string ParameterName { get { throw null; } set { } }
         public new byte Precision { get { throw null; } set { } }
         public new byte Scale { get { throw null; } set { } }
