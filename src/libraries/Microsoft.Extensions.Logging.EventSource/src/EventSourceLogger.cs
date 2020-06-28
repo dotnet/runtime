@@ -104,6 +104,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                     exceptionJson = ToJson(exceptionInfoData);
                 }
                 IReadOnlyList<KeyValuePair<string, string>> arguments = GetProperties(state);
+                string message = formatter(state, exception);
                 _eventSource.MessageJson(
                     logLevel,
                     _factoryID,
@@ -111,7 +112,8 @@ namespace Microsoft.Extensions.Logging.EventSource
                     eventId.Id,
                     eventId.Name,
                     exceptionJson,
-                    ToJson(arguments));
+                    ToJson(arguments),
+                    message);
             }
         }
 
