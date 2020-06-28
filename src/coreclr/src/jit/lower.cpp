@@ -6394,7 +6394,8 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
     {
         // If the `ADDR` node under `STORE_OBJ(dstAddr, IND(struct(ADDR))`
         // is a complex one it could benefit from an `LEA` that is not contained.
-        TryCreateAddrMode(ind->Addr(), false);
+        const bool isContainable = false;
+        TryCreateAddrMode(ind->Addr(), isContainable);
     }
 }
 
@@ -6425,7 +6426,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 //    true if the replacement was made, false otherwise.
 //
 // Notes:
-//    TODO-CQ: that method should do the transformation when possible
+//    TODO-CQ: this method should do the transformation when possible
 //    and STOREIND should always generate better or the same code as
 //    STORE_OBJ/BLK for the same copy.
 //
