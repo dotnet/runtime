@@ -454,7 +454,8 @@ if (MSVC)
   # 4132: Const object should be initialized.
   # 4212: Function declaration used ellipsis.
   # 4530: C++ exception handler used, but unwind semantics are not enabled. Specify -GX.
-  add_compile_options(/w34092 /w34121 /w34125 /w34130 /w34132 /w34212 /w34530)
+  # 35038: data member 'member1' will be initialized after data member 'member2'.
+  add_compile_options(/w34092 /w34121 /w34125 /w34130 /w34132 /w34212 /w34530 /w35038)
 
   # Set Warning Level 4:
   # 4177: Pragma data_seg s/b at global scope.
