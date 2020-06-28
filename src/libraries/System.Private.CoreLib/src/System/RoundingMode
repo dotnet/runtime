@@ -1,0 +1,126 @@
+namespace System
+{
+  public enum RoundingMode
+	{
+	  	/// <summary>
+		  /// Directed round down (same as Floor).
+		  /// </summary>
+		  /// <remarks>
+		  /// <code>Assert.AreEqual(-2D, -1.8D);</code>
+		  /// <code>Assert.AreEqual(-2D, -1.5D);</code>
+		  /// <code>Assert.AreEqual(-2D, -1.2D);</code>
+		  /// <code>Assert.AreEqual(1D, +1.2D);</code>
+		  /// <code>Assert.AreEqual(1D, +1.5D);</code>
+		  /// <code>Assert.AreEqual(1D, +1.8D);</code>
+		  /// </remarks>
+		  Down = 3,
+
+		  /// <summary>
+		  /// Directed round up (same as Ceiling).
+		  /// </summary>
+		  /// <remarks>
+		  /// <code>Assert.AreEqual(-1D, -1.8D);</code>
+		  /// <code>Assert.AreEqual(-1D, -1.5D);</code>
+		  /// <code>Assert.AreEqual(-1D, -1.2D);</code>
+		  /// <code>Assert.AreEqual(2D, +1.2D);</code>
+		  /// <code>Assert.AreEqual(2D, +1.5D);</code>
+		  /// <code>Assert.AreEqual(2D, +1.8D);</code>
+		  /// </remarks>
+		  Up = 4,
+
+		  /// <summary>
+		  /// Directed round towards zero (same as Truncate).
+		  /// </summary>
+		  /// <remarks>
+		  /// <code>Assert.AreEqual(-1D, -1.8D);</code>
+		  /// <code>Assert.AreEqual(-1D, -1.5D);</code>
+		  /// <code>Assert.AreEqual(-1D, -1.2D);</code>
+		  /// <code>Assert.AreEqual(1D, +1.2D);</code>
+		  /// <code>Assert.AreEqual(1D, +1.5D);</code>
+		  /// <code>Assert.AreEqual(1D, +1.8D);</code>
+		  /// </remarks>
+		  TowardsZero = 2,
+
+		  /// <summary>
+		  /// Directed round away from zero
+		  /// </summary>
+		  /// <remarks>
+		  /// <code>Assert.AreEqual(-2D, -1.8D);</code>
+		  /// <code>Assert.AreEqual(-2D, -1.5D);</code>
+		  /// <code>Assert.AreEqual(-2D, -1.2D);</code>
+		  /// <code>Assert.AreEqual(2D, +1.2D);</code>
+		  /// <code>Assert.AreEqual(2D, +1.5D);</code>
+		  /// <code>Assert.AreEqual(2D, +1.8D);</code>
+		  /// </remarks>
+		  AwayZero = 5,
+
+		  /// <summary>
+		  /// Round to nearest integer and down when the number is halfway between two others.
+		  /// </summary>
+		  /// <remarks>
+		  /// <code>Assert.AreEqual(-2D, -1.8D);</code>
+		  /// <code>Assert.AreEqual(-2D, -1.5D);</code>
+		  /// <code>Assert.AreEqual(-1D, -1.2D);</code>
+		  /// <code>Assert.AreEqual(1D, +1.2D);</code>
+		  /// <code>Assert.AreEqual(1D, +1.5D);</code>
+		  /// <code>Assert.AreEqual(2D, +1.8D);</code>
+      /// <code>Assert.AreEqual(4503599627370496D, 4503599627370496D);
+		  /// </remarks>
+		  HalfDown = 6,
+
+		  /// <summary>
+		  /// Round to nearest integer and up when the number is halfway between two others.
+		  /// </summary>
+		  /// <remarks>
+		  /// <code>Assert.AreEqual(-2D, -1.8D);</code>
+		  /// <code>Assert.AreEqual(-1D, -1.5D);</code>
+		  /// <code>Assert.AreEqual(-1D, -1.2D);</code>
+		  /// <code>Assert.AreEqual(1D, +1.2D);</code>
+		  /// <code>Assert.AreEqual(2D, +1.5D);</code>
+		  /// <code>Assert.AreEqual(2D, +1.8D);</code>
+      /// <code>Assert.AreEqual(4503599627370496D, 4503599627370496D);
+		  /// </remarks>
+		  HalfUp = 7,
+
+		  /// <summary>
+		  /// Round to nearest integer and towards zero when the number is halfway between two others.
+		  /// </summary>
+		  /// <remarks>
+		  /// <code>Assert.AreEqual(-2D, -1.8D);</code>
+		  /// <code>Assert.AreEqual(-1D, -1.5D);</code>
+		  /// <code>Assert.AreEqual(-1D, -1.2D);</code>
+		  /// <code>Assert.AreEqual(1D, +1.2D);</code>
+		  /// <code>Assert.AreEqual(1D, +1.5D);</code>
+		  /// <code>Assert.AreEqual(2D, +1.8D);</code>
+		  /// </remarks>
+		  HalfTowardsZero = 8,
+
+		  /// <summary>
+		  /// Round to nearest integer and away from zero when the number is halfway between two others.
+		  /// </summary>
+		  /// <remarks>
+		  /// <code>Assert.AreEqual(-2D, -1.8D);</code>
+		  /// <code>Assert.AreEqual(-2D, -1.5D);</code>
+		  /// <code>Assert.AreEqual(-1D, -1.2D);</code>
+		  /// <code>Assert.AreEqual(1D, +1.2D);</code>
+		  /// <code>Assert.AreEqual(2D, +1.5D);</code>
+		  /// <code>Assert.AreEqual(2D, +1.8D);</code>
+		  /// </remarks>
+		  HalfAwayZero = 1,
+
+		  /// <summary>
+		  /// Round to nearest integer and to nearest even integer when the number is halfway between two others.
+		  /// </summary>
+		  /// <remarks>
+		  /// <code>Assert.AreEqual(-2D, -1.8D);</code>
+		  /// <code>Assert.AreEqual(-2D, -1.5D);</code>
+		  /// <code>Assert.AreEqual(-1D, -1.2D);</code>
+		  /// <code>Assert.AreEqual(0D, -0.5D);</code>
+		  /// <code>Assert.AreEqual(0D, +0.5D);</code>
+		  /// <code>Assert.AreEqual(1D, +1.2D);</code>
+		  /// <code>Assert.AreEqual(2D, +1.5D);</code>
+		  /// <code>Assert.AreEqual(2D, +1.8D);</code>
+		  /// </remarks>
+		  HalfToEven = 0
+	}
+}
