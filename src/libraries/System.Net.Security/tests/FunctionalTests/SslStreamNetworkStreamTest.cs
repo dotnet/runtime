@@ -22,7 +22,7 @@ namespace System.Net.Security.Tests
 
         public SslStreamNetworkStreamTest()
         {
-            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", DateTimeOffset.UtcNow.AddMinutes(-5));
+            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost");
         }
 
         [Fact]

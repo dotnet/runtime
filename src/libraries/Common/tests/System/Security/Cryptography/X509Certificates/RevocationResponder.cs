@@ -5,11 +5,12 @@
 using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Net;
+using System.Security.Cryptography.X509Certificates.Tests.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 
-namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
+namespace System.Security.Cryptography.X509Certificates.Tests.Common
 {
     internal sealed class RevocationResponder : IDisposable
     {
@@ -292,7 +293,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                 if (!versionReader.TryReadInt32(out int version) || version != 0)
                 {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    throw new CryptographicException("ASN1 corrupted data");
                 }
 
                 versionReader.ThrowIfNotEmpty();
