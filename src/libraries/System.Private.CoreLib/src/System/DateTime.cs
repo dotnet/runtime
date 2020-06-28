@@ -1047,13 +1047,25 @@ namespace System
         internal bool IsAmbiguousDaylightSavingTime() =>
             InternalKind == KindLocalAmbiguousDst;
 
-        public DateTimeKind Kind =>
-            InternalKind switch
+        public DateTimeKind Kind
+        {
+            get
             {
-                KindUnspecified => DateTimeKind.Unspecified,
-                KindUtc => DateTimeKind.Utc,
-                _ => DateTimeKind.Local,
-            };
+                //This algorithm works because values defined in DateTimeKind
+                //correspond to the internal represenation
+                //stored in the most significant bits of _dateData.
+                //The exception is the 4th kind
+                //which we need to coerce to DateTimeKind.Local.
+                var kind = (DateTimeKind)(_dateData >> KindShift);
+                var isAmbiguousLocalDst = kind > DateTimeKind.Local;
+                if (isAmbiguousLocalDst)
+                {
+                    kind = DateTimeKind.Local;
+                }
+
+                return kind;
+            }
+        }
 
         // Returns the millisecond part of this DateTime. The returned value
         // is an integer between 0 and 999.
