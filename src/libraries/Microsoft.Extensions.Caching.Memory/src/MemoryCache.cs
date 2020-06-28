@@ -222,7 +222,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-            StartScanForExpiredItems();
+            StartScanForExpiredItems(utcNow);
         }
 
         /// <inheritdoc />
@@ -257,7 +257,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-            StartScanForExpiredItems();
+            StartScanForExpiredItems(utcNow);
 
             return found;
         }
@@ -306,9 +306,10 @@ namespace Microsoft.Extensions.Caching.Memory
 
         // Called by multiple actions to see how long it's been since we last checked for expired items.
         // If sufficient time has elapsed then a scan is initiated on a background task.
-        private void StartScanForExpiredItems()
+        private void StartScanForExpiredItems(DateTimeOffset? utcNow = null)
         {
-            DateTimeOffset now = _options.Clock.UtcNow;
+            // Since fetching time is expensive, minimize it in the hot paths
+            DateTimeOffset now = utcNow ?? _options.Clock.UtcNow;
             if (_options.ExpirationScanFrequency < now - _lastExpirationScan)
             {
                 _lastExpirationScan = now;
