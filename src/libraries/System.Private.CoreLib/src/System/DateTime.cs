@@ -111,8 +111,7 @@ namespace System
         private const ulong TicksMask = 0x3FFFFFFFFFFFFFFF;
         private const ulong FlagsMask = 0xC000000000000000;
         private const ulong LocalMask = 0x8000000000000000;
-        private const long TicksCeiling = 0x4000000000000000;
-        private const ulong KindUnspecified = 0x0000000000000000;
+        private const long TicksCeiling = 0x4000000000000000;        
         private const ulong KindUtc = 0x4000000000000000;
         private const ulong KindLocal = 0x8000000000000000;
         private const ulong KindLocalAmbiguousDst = 0xC000000000000000;
