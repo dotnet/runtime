@@ -1804,7 +1804,7 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
 
             // This can throw ObjectDisposedException.
-            SocketError errorCode = SocketPal.SetSockOpt(_handle, optionLevel, optionName, optionValue);
+            SocketError errorCode = SocketPal.SetSockOpt(_handle, _protocolType, optionLevel, optionName, optionValue);
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetSockOpt returns errorCode:{errorCode}");
 
@@ -1920,6 +1920,7 @@ namespace System.Net.Sockets
             // This can throw ObjectDisposedException.
             SocketError errorCode = SocketPal.GetSockOpt(
                 _handle,
+                _protocolType,
                 optionLevel,
                 optionName,
                 out optionValue);
@@ -1944,6 +1945,7 @@ namespace System.Net.Sockets
             // This can throw ObjectDisposedException.
             SocketError errorCode = SocketPal.GetSockOpt(
                 _handle,
+                _protocolType,
                 optionLevel,
                 optionName,
                 optionValue!,
@@ -1968,6 +1970,7 @@ namespace System.Net.Sockets
             // This can throw ObjectDisposedException.
             SocketError errorCode = SocketPal.GetSockOpt(
                 _handle,
+                _protocolType,
                 optionLevel,
                 optionName,
                 optionValue,
@@ -4429,6 +4432,7 @@ namespace System.Net.Sockets
                         // This should give us a timeout in milliseconds.
                         errorCode = SocketPal.SetSockOpt(
                             _handle,
+                            _protocolType,
                             SocketOptionLevel.Socket,
                             SocketOptionName.ReceiveTimeout,
                             timeout);
@@ -4559,7 +4563,7 @@ namespace System.Net.Sockets
             SocketError errorCode = SocketError.Success;
             try
             {
-                errorCode = SocketPal.SetSockOpt(_handle, optionLevel, optionName, optionValue);
+                errorCode = SocketPal.SetSockOpt(_handle, _protocolType, optionLevel, optionName, optionValue);
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetSockOpt returns errorCode:{errorCode}");
             }
             catch

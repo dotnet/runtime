@@ -385,13 +385,13 @@ PALEXPORT int32_t SystemNative_Shutdown(intptr_t socket, int32_t socketShutdown)
 PALEXPORT int32_t SystemNative_GetSocketErrorOption(intptr_t socket, int32_t* error);
 
 PALEXPORT int32_t SystemNative_GetSockOpt(
-    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen);
+    intptr_t socket, int32_t socketOptionLevel, int32_t protocolType, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen);
 
 PALEXPORT int32_t SystemNative_GetRawSockOpt(
     intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen);
 
 PALEXPORT int32_t SystemNative_SetSockOpt(
-    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen);
+    intptr_t socket, int32_t socketOptionLevel, int32_t protocolType, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen);
 
 PALEXPORT int32_t SystemNative_SetRawSockOpt(
     intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen);

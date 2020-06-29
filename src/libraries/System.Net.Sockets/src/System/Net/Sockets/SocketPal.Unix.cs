@@ -78,7 +78,7 @@ namespace System.Net.Sockets
                 if (addressFamily == AddressFamily.InterNetworkV6 && socketType != SocketType.Raw)
                 {
                     int on = 1;
-                    error = Interop.Sys.SetSockOpt(fd, SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, (byte*)&on, sizeof(int));
+                    error = Interop.Sys.SetSockOpt(fd, protocolType, SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, (byte*)&on, sizeof(int));
                     if (error != Interop.Error.SUCCESS)
                     {
                         Interop.Sys.Close(fd);
@@ -1260,7 +1260,7 @@ namespace System.Net.Sockets
             return GetSocketErrorForErrorCode(err);
         }
 
-        public static unsafe SocketError SetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue)
+        public static unsafe SocketError SetSockOpt(SafeSocketHandle handle, ProtocolType protocolType, SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue)
         {
             Interop.Error err;
 
@@ -1301,7 +1301,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, (byte*)&optionValue, sizeof(int));
+            err = Interop.Sys.SetSockOpt(handle, protocolType, optionLevel, optionName, (byte*)&optionValue, sizeof(int));
 
             if (err == Interop.Error.SUCCESS)
             {
@@ -1319,11 +1319,11 @@ namespace System.Net.Sockets
             return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
         }
 
-        public static unsafe SocketError SetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue)
+        public static unsafe SocketError SetSockOpt(SafeSocketHandle handle, ProtocolType protocolType, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue)
         {
             fixed (byte* pinnedValue = optionValue)
             {
-                Interop.Error err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, pinnedValue, optionValue != null ? optionValue.Length : 0);
+                Interop.Error err = Interop.Sys.SetSockOpt(handle, protocolType, optionLevel, optionName, pinnedValue, optionValue != null ? optionValue.Length : 0);
                 return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
             }
         }
@@ -1415,7 +1415,7 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_IPProtectionLevel);
         }
 
-        public static unsafe SocketError GetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, out int optionValue)
+        public static unsafe SocketError GetSockOpt(SafeSocketHandle handle, ProtocolType protocolType, SocketOptionLevel optionLevel, SocketOptionName optionName, out int optionValue)
         {
             if (optionLevel == SocketOptionLevel.Socket)
             {
@@ -1441,13 +1441,13 @@ namespace System.Net.Sockets
 
             int value = 0;
             int optLen = sizeof(int);
-            Interop.Error err = Interop.Sys.GetSockOpt(handle, optionLevel, optionName, (byte*)&value, &optLen);
+            Interop.Error err = Interop.Sys.GetSockOpt(handle, protocolType, optionLevel, optionName, (byte*)&value, &optLen);
 
             optionValue = value;
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
-        public static unsafe SocketError GetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue, ref int optionLength)
+        public static unsafe SocketError GetSockOpt(SafeSocketHandle handle, ProtocolType protocolType, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue, ref int optionLength)
         {
             int optLen = optionLength;
 
@@ -1455,12 +1455,12 @@ namespace System.Net.Sockets
             if (optionValue == null || optionValue.Length == 0)
             {
                 optLen = 0;
-                err = Interop.Sys.GetSockOpt(handle, optionLevel, optionName, null, &optLen);
+                err = Interop.Sys.GetSockOpt(handle, protocolType, optionLevel, optionName, null, &optLen);
             }
             else if (optionName == SocketOptionName.Error && optionValue.Length >= sizeof(int))
             {
                 int outError;
-                SocketError returnError = GetSockOpt(handle, optionLevel, optionName, out outError);
+                SocketError returnError = GetSockOpt(handle, protocolType, optionLevel, optionName, out outError);
                 if (returnError == SocketError.Success)
                 {
                     fixed (byte* pinnedValue = &optionValue[0])
@@ -1476,7 +1476,7 @@ namespace System.Net.Sockets
             {
                 fixed (byte* pinnedValue = &optionValue[0])
                 {
-                    err = Interop.Sys.GetSockOpt(handle, optionLevel, optionName, pinnedValue, &optLen);
+                    err = Interop.Sys.GetSockOpt(handle, protocolType, optionLevel, optionName, pinnedValue, &optLen);
                 }
             }
 

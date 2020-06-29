@@ -217,7 +217,7 @@ namespace System.Net.Sockets
 
             int type = 0;
             int optLen = sizeof(int);
-            Interop.Error err = Interop.Sys.GetSockOpt(handle, SocketOptionLevel.Socket, SocketOptionName.Type, (byte*)&type, &optLen);
+            Interop.Error err = Interop.Sys.GetSockOpt(handle, ProtocolType.Unknown, SocketOptionLevel.Socket, SocketOptionName.Type, (byte*)&type, &optLen);
             if (err == Interop.Error.SUCCESS)
             {
                 // For TCP (SocketType.Stream), perform an abortive close.

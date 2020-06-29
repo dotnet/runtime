@@ -472,6 +472,45 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Fact]
+        public void UdpConnectFiltersForClient()
+        {
+            // Bind socket.
+            using Socket socket1 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket1.Blocking = false;
+            socket1.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            socket1.Bind(new IPEndPoint(IPAddress.Any, 0));
+
+            // Connect to the bound address for sending.
+            using Socket sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            sendSocket.Connect(socket1.LocalEndPoint);
+
+            // Send a packet.
+            Span<byte> buffer = stackalloc byte[1];
+            sendSocket.Send(buffer);
+
+            // Receive the packet, and capture the remote endpoint.
+            EndPoint remoteEndPoint = new IPEndPoint(0, 0);
+            socket1.ReceiveFrom(new byte[1], SocketFlags.None, ref remoteEndPoint);
+
+            // Create a socket connected to the remote endpoint.
+            using Socket socket2 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket2.Blocking = false;
+            socket2.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            socket2.Bind(socket1.LocalEndPoint);
+            socket2.Connect(remoteEndPoint);
+
+            // Send another packet.
+            sendSocket.Send(buffer);
+
+            // Verify packet is received on Socket that is specifically connected to sender endpoint.
+            SocketError socketError;
+            socket1.Receive(buffer, SocketFlags.None, out socketError);
+            Assert.Equal(SocketError.WouldBlock, socketError);
+            socket2.Receive(buffer, SocketFlags.None, out socketError);
+            Assert.Equal(SocketError.Success, socketError);
+        }
+
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]  // SetIPProtectionLevel not supported on Unix
         [InlineData(IPProtectionLevel.EdgeRestricted, AddressFamily.InterNetwork, SocketOptionLevel.IP)]

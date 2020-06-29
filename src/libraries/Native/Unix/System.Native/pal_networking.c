@@ -1939,7 +1939,7 @@ static bool TryConvertSocketTypePlatformToPal(int platformSocketType, int32_t* p
 }
 
 int32_t SystemNative_GetSockOpt(
-    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen)
+    intptr_t socket, int32_t protocolType, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen)
 {
     if (optionLen == NULL || *optionLen < 0)
     {
@@ -1962,8 +1962,14 @@ int32_t SystemNative_GetSockOpt(
 
 #ifdef SO_REUSEPORT
             socklen_t optLen = (socklen_t)*optionLen;
-            // On Unix, SO_REUSEPORT controls the ability to bind multiple sockets to the same address.
-            int err = getsockopt(fd, SOL_SOCKET, SO_REUSEPORT, optionValue, &optLen);
+            int optname = SO_REUSEPORT;
+#ifdef __linux__
+            if (protocolType == ProtocolType_PT_UDP)
+            {
+                optname = SO_REUSEADDR;
+            }
+#endif // __linux__
+            int err = getsockopt(fd, SOL_SOCKET, optname, optionValue, &optLen);
 
             if (err != 0)
             {
@@ -2072,7 +2078,7 @@ int32_t SystemNative_GetRawSockOpt(
 }
 
 int32_t
-SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen)
+SystemNative_SetSockOpt(intptr_t socket, int32_t protocolType, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen)
 {
     if (optionLen < 0 || optionValue == NULL)
     {
@@ -2115,14 +2121,24 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
                 }
             }
 
-            // An application that sets SO_REUSEPORT/SO_REUSEADDR can reuse the endpoint with another
-            // application that sets the same option. If one application sets SO_REUSEPORT and another
-            // sets SO_REUSEADDR the second application will fail to bind. We set both options, this
-            // enables reuse with applications that set one or both options.
-            int err = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &value, (socklen_t)optionLen);
-            if (err == 0)
+            int err = 0;
+            if (protocolType == ProtocolType_PT_UDP)
             {
+                // Last bound port receives unicast traffic.
+                // Multicast and broadcast are delivered to all bound ports.
+#ifdef __linux__
                 err = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &value, (socklen_t)optionLen);
+#else
+                err = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &value, (socklen_t)optionLen);
+#endif // __linux__
+            }
+            else
+            {
+                err = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &value, (socklen_t)optionLen);
+                if (err == 0)
+                {
+                    err = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &value, (socklen_t)optionLen);
+                }
             }
             return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 #else // !SO_REUSEPORT

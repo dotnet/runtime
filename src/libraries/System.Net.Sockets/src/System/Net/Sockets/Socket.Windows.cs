@@ -101,7 +101,7 @@ namespace System.Net.Sockets
             protocolType = info.iProtocol;
 
             isListening =
-                SocketPal.GetSockOpt(_handle, SocketOptionLevel.Socket, SocketOptionName.AcceptConnection, out int isListeningValue) == SocketError.Success &&
+                SocketPal.GetSockOpt(_handle, protocolType, SocketOptionLevel.Socket, SocketOptionName.AcceptConnection, out int isListeningValue) == SocketError.Success &&
                 isListeningValue != 0;
 
             // There's no API to retrieve this (WSAIsBlocking isn't supported any more).  Assume it's blocking, but we might be wrong.
