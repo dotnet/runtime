@@ -1069,7 +1069,6 @@ namespace Internal.JitInterface
                     if (helperId != ReadyToRunHelperId.Invalid)
                     {
                         if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
-                        if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
                         {
                             // ENCODE_CHECK_FIELD_OFFSET
                             _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));

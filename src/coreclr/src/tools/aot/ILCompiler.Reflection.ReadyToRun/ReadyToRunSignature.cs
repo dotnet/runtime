@@ -1302,6 +1302,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunFixupKind.Verify_FieldOffset:
                     builder.Append($"{ReadUInt()} ");
+                    builder.Append($"{ReadUInt()} ");
                     ParseField(builder);
                     builder.Append(" (VERIFY_FIELD_OFFSET)");
                     break;
