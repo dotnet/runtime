@@ -1,5 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Diagnostics;
@@ -33,6 +34,8 @@ namespace System.IO
 
             int prefixLength = isDevicePath ? PathInternal.DevicePrefixLength : 0;
             ReadOnlySpan<char> pathWithoutPrefix = originalPath.Slice(prefixLength);
+            int rootLength = PathInternal.GetRootLength(pathWithoutPrefix);
+            int prefixAndRootLength = prefixLength + rootLength;
 
             // In a path like "\\.\C:..\folder\subfolder\file.txt":
             // - PathInternal.GetRootLength(originalPath) will return "\\.\C:..\", which includes the extra redundant segment.
@@ -280,6 +283,21 @@ namespace System.IO
                 totalDots++;
             }
             return totalDots > 0;
+        }
+
+        // CHecks if the segment after the specified position in the path is a "." segment.
+        private static bool IsNextSegmentSingleDot(ReadOnlySpan<char> path, int currPos)
+        {
+            return (currPos + 2 == path.Length || PathInternal.IsDirectorySeparator(path[currPos + 2])) &&
+                path[currPos + 1] == '.';
+        }
+
+        // CHecks if the segment after the specified position in the path is a ".." segment.
+        private static bool IsNextSegmentDoubleDot(ReadOnlySpan<char> path, int currPos)
+        {
+            return currPos + 2 < path.Length &&
+                (currPos + 3 == path.Length || PathInternal.IsDirectorySeparator(path[currPos + 3])) &&
+                path[currPos + 1] == '.' && path[currPos + 2] == '.';
         }
     }
 }
