@@ -118,155 +118,141 @@ namespace System.Net.WebSockets
             // For Abort/Dispose.  Calling Abort on the request at any point will close the connection.
             _cts.Token.Register(s => ((BrowserWebSocket)s!).AbortRequest(), this);
 
-            // Wrap the cancellationToken in a using so that it can be disposed of whether
-            // we successfully connected or failed trying.
-            // Otherwise any timeout/cancellation would apply to the full session.
-            // In the failure case we need to release the references and dispose of the objects.
-            using (cancellationToken.Register(() => tcsConnect.TrySetCanceled()))
+            try
             {
-                try
+                if (requestedSubProtocols?.Count > 0)
                 {
-                    if (requestedSubProtocols?.Count > 0)
+                    using (JavaScript.Array subProtocols = new JavaScript.Array())
                     {
-                        using (JavaScript.Array subProtocols = new JavaScript.Array())
+                        foreach (var item in requestedSubProtocols)
                         {
-                            foreach (var item in requestedSubProtocols)
+                            subProtocols.Push(item);
+                        }
+                        _innerWebSocket = new HostObject("WebSocket", uri.ToString(), subProtocols);
+                    }
+                }
+                else
+                {
+                    _innerWebSocket = new HostObject("WebSocket", uri.ToString());
+                }
+                _innerWebSocket.SetObjectProperty("binaryType", "arraybuffer");
+
+                // Setup the onError callback
+                _onError = new Action<JSObject>((errorEvt) =>
+                {
+                    errorEvt.Dispose();
+                });
+
+                // Attach the onError callback
+                _innerWebSocket.SetObjectProperty("onerror", _onError);
+
+                // Setup the onClose callback
+                _onClose = new Action<JSObject>((closeEvt) =>
+                {
+                    _innerWebSocketCloseStatus = (WebSocketCloseStatus)closeEvt.GetObjectProperty("code");
+                    _innerWebSocketCloseStatusDescription = closeEvt.GetObjectProperty("reason")?.ToString();
+                    _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(Array.Empty<byte>(), WebSocketMessageType.Close));
+
+                    _tcsClose?.SetResult(true);
+
+                    closeEvt.Dispose();
+                });
+
+                // Attach the onClose callback
+                _innerWebSocket.SetObjectProperty("onclose", _onClose);
+
+                // Setup the onOpen callback
+                _onOpen = new Action<JSObject> ((evt) =>
+                {
+                    using (evt)
+                    {
+                        if (!cancellationToken.IsCancellationRequested)
+                        {
+                            // Change internal _state to 'Connected' to enable the other methods
+                            if (Interlocked.CompareExchange(ref _state, (int)InternalState.Connected, (int)InternalState.Connecting) != (int)InternalState.Connecting)
                             {
-                                subProtocols.Push(item);
+                                // Aborted/Disposed during connect.
+                                throw new ObjectDisposedException(GetType().FullName);
                             }
-                            _innerWebSocket = new HostObject("WebSocket", uri.ToString(), subProtocols);
+                            tcsConnect.SetResult(true);
                         }
                     }
-                    else
+                });
+
+                // Attach the onOpen callback
+                _innerWebSocket.SetObjectProperty("onopen", _onOpen);
+
+                // Setup the onMessage callback
+                _onMessage = new Action<JSObject>((messageEvent) =>
+                {
+                    // get the events "data"
+                    using (messageEvent)
                     {
-                        _innerWebSocket = new HostObject("WebSocket", uri.ToString());
-                    }
-                    _innerWebSocket.SetObjectProperty("binaryType", "arraybuffer");
-
-                    // Setup the onError callback
-                    _onError = new Action<JSObject>((errorEvt) =>
-                    {
-                        errorEvt.Dispose();
-                    });
-
-                    // Attach the onError callback
-                    _innerWebSocket.SetObjectProperty("onerror", _onError);
-
-                    // Setup the onClose callback
-                    _onClose = new Action<JSObject>((closeEvt) =>
-                    {
-                        _innerWebSocketCloseStatus = (WebSocketCloseStatus)closeEvt.GetObjectProperty("code");
-                        _innerWebSocketCloseStatusDescription = closeEvt.GetObjectProperty("reason")?.ToString();
-                        _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(Array.Empty<byte>(), WebSocketMessageType.Close));
-
-                        if (!tcsConnect.Task.IsCanceled && !tcsConnect.Task.IsCompleted && !tcsConnect.Task.IsFaulted)
+                        ThrowIfNotConnected();
+                        // If the messageEvent's data property is marshalled as a JSObject then we are dealing with
+                        // binary data
+                        var eventData = messageEvent.GetObjectProperty("data");
+                        switch (eventData)
                         {
-                            tcsConnect.SetException(new WebSocketException(WebSocketError.NativeError));
-                        }
-                        else
-                        {
-                            _tcsClose?.SetResult(true);
-                        }
-
-                        closeEvt.Dispose();
-                    });
-
-                    // Attach the onClose callback
-                    _innerWebSocket.SetObjectProperty("onclose", _onClose);
-
-                    // Setup the onOpen callback
-                    _onOpen = new Action<JSObject> ((evt) =>
-                    {
-                        using (evt)
-                        {
-                            if (!cancellationToken.IsCancellationRequested)
-                            {
-                                // Change internal _state to 'Connected' to enable the other methods
-                                if (Interlocked.CompareExchange(ref _state, (int)InternalState.Connected, (int)InternalState.Connecting) != (int)InternalState.Connecting)
+                            case ArrayBuffer buffer:
+                                using (buffer)
                                 {
-                                    // Aborted/Disposed during connect.
-                                    throw new ObjectDisposedException(GetType().FullName);
+                                    var mess = new ReceivePayload(buffer, WebSocketMessageType.Binary);
+                                    _receiveMessageQueue.Writer.TryWrite(mess);
+                                    break;
                                 }
-                                tcsConnect.SetResult(true);
-                            }
-                        }
-                    });
-
-                    // Attach the onOpen callback
-                    _innerWebSocket.SetObjectProperty("onopen", _onOpen);
-
-                    // Setup the onMessage callback
-                    _onMessage = new Action<JSObject>((messageEvent) =>
-                    {
-                        // get the events "data"
-                        using (messageEvent)
-                        {
-                            ThrowIfNotConnected();
-                            // If the messageEvent's data property is marshalled as a JSObject then we are dealing with
-                            // binary data
-                            var eventData = messageEvent.GetObjectProperty("data");
-                            switch (eventData)
-                            {
-                                case ArrayBuffer buffer:
-                                    using (buffer)
+                            case JSObject blobData:
+                                using (blobData)
+                                {
+                                    Action<JSObject>? loadend = null;
+                                    // Create a new "FileReader" object
+                                    using (var reader = new HostObject("FileReader"))
                                     {
-                                        var mess = new ReceivePayload(buffer, WebSocketMessageType.Binary);
-                                        _receiveMessageQueue.Writer.TryWrite(mess);
-                                        break;
-                                    }
-                                case JSObject blobData:
-                                    using (blobData)
-                                    {
-                                        Action<JSObject>? loadend = null;
-                                        // Create a new "FileReader" object
-                                        using (var reader = new HostObject("FileReader"))
+                                        loadend = (loadEvent) =>
                                         {
-                                            loadend = (loadEvent) =>
+                                            using (loadEvent)
+                                            using (var target = (JSObject)loadEvent.GetObjectProperty("target"))
                                             {
-                                                using (loadEvent)
-                                                using (var target = (JSObject)loadEvent.GetObjectProperty("target"))
+                                                // https://developer.mozilla.org/en-US/docs/Web/API/FileReader/readyState
+                                                if ((int)target.GetObjectProperty("readyState") == 2) // DONE - The operation is complete.
                                                 {
-                                                    // https://developer.mozilla.org/en-US/docs/Web/API/FileReader/readyState
-                                                    if ((int)target.GetObjectProperty("readyState") == 2) // DONE - The operation is complete.
+                                                    using (var binResult = (ArrayBuffer)target.GetObjectProperty("result"))
                                                     {
-                                                        using (var binResult = (ArrayBuffer)target.GetObjectProperty("result"))
-                                                        {
-                                                            var mess = new ReceivePayload(binResult, WebSocketMessageType.Binary);
-                                                            _receiveMessageQueue.Writer.TryWrite(mess);
-                                                            if (loadend != null)
-                                                                JavaScript.Runtime.FreeObject(loadend);
-                                                        }
+                                                        var mess = new ReceivePayload(binResult, WebSocketMessageType.Binary);
+                                                        _receiveMessageQueue.Writer.TryWrite(mess);
+                                                        if (loadend != null)
+                                                            JavaScript.Runtime.FreeObject(loadend);
                                                     }
                                                 }
-                                            };
+                                            }
+                                        };
 
-                                            reader.Invoke("addEventListener", "loadend", loadend);
-                                            reader.Invoke("readAsArrayBuffer", blobData);
-                                        }
-                                        break;
+                                        reader.Invoke("addEventListener", "loadend", loadend);
+                                        reader.Invoke("readAsArrayBuffer", blobData);
                                     }
-                                case string message:
-                                    {
-                                        var mess = new ReceivePayload(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text);
-                                        _receiveMessageQueue.Writer.TryWrite(mess);
-                                        break;
-                                    }
-                                default:
-                                    throw new NotImplementedException($"WebSocket bynary type '{_innerWebSocket.GetObjectProperty("binaryType").ToString()}' not supported.");
-                            }
+                                    break;
+                                }
+                            case string message:
+                                {
+                                    var mess = new ReceivePayload(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text);
+                                    _receiveMessageQueue.Writer.TryWrite(mess);
+                                    break;
+                                }
+                            default:
+                                throw new NotImplementedException($"WebSocket bynary type '{_innerWebSocket.GetObjectProperty("binaryType").ToString()}' not supported.");
                         }
-                    });
+                    }
+                });
 
-                    // Attach the onMessage callaback
-                    _innerWebSocket.SetObjectProperty("onmessage", _onMessage);
-                    await tcsConnect.Task.ConfigureAwait(continueOnCapturedContext: true);
-                }
-                catch (Exception wse)
-                {
-                    ConnectExceptionCleanup();
-                    WebSocketException wex = new WebSocketException(SR.net_webstatus_ConnectFailure, wse);
-                    throw wex;
-                }
+                // Attach the onMessage callaback
+                _innerWebSocket.SetObjectProperty("onmessage", _onMessage);
+                await tcsConnect.Task.ConfigureAwait(continueOnCapturedContext: true);
+            }
+            catch (Exception wse)
+            {
+                ConnectExceptionCleanup();
+                WebSocketException wex = new WebSocketException(SR.net_webstatus_ConnectFailure, wse);
+                throw wex;
             }
         }
 
