@@ -998,14 +998,19 @@ namespace System.IO
         public static string? RemoveRedundantSegments(string? path)
         {
             if (path == null)
+            {
                 return null;
+            }
 
-            if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
+            var spanPath = path.AsSpan();
+            if (PathInternal.IsEffectivelyEmpty(spanPath))
+            {
                 return string.Empty;
+            }
 
             ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[InitialValueStringBuilderBufferLength]);
 
-            if (!RedundantSegmentHelper.TryRemoveRedundantSegments(path.AsSpan(), ref sb))
+            if (!RedundantSegmentHelper.TryRemoveRedundantSegments(spanPath, ref sb))
             {
                 sb.Dispose();
                 return path;
@@ -1022,7 +1027,9 @@ namespace System.IO
         public static string RemoveRedundantSegments(ReadOnlySpan<char> path)
         {
             if (PathInternal.IsEffectivelyEmpty(path))
+            {
                 return string.Empty;
+            }
 
             ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[InitialValueStringBuilderBufferLength]);
 
@@ -1049,21 +1056,26 @@ namespace System.IO
             charsWritten = 0;
 
             if (PathInternal.IsEffectivelyEmpty(path))
+            {
                 return false;
+            }
 
             ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[InitialValueStringBuilderBufferLength]);
 
             bool result = false;
 
-            if (RedundantSegmentHelper.TryRemoveRedundantSegments(path, ref sb))
+            if (!RedundantSegmentHelper.TryRemoveRedundantSegments(path, ref sb))
+            {
+                if (path.TryCopyTo(destination))
+                {
+                    charsWritten = path.Length;
+                    result = true;
+                    sb.Dispose();
+                }
+            }
+            else
             {
                 result = sb.TryCopyTo(destination, out charsWritten); // Disposes
-            }
-            else if (path.TryCopyTo(destination))
-            {
-                charsWritten = path.Length;
-                result = true;
-                sb.Dispose();
             }
 
             return result;
