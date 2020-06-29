@@ -1291,8 +1291,7 @@ namespace Internal.JitInterface
                 // CG2 checks a method cache that it builds with a bunch of new code.
                 if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod) ||
                     // check the Typical TargetMethod, not the Instantiation
-                    !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(targetMethod.IsTypicalMethodDefinition ?
-                                                                                            targetMethod: targetMethod.GetTypicalMethodDefinition()))
+                    !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(targetMethod.GetTypicalMethodDefinition()))
                 {
                     // For version resiliency we won't de-virtualize all final/sealed method calls.  Because during a 
                     // servicing event it is legal to unseal a method or type.
