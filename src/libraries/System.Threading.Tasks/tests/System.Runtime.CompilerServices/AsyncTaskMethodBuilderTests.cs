@@ -454,7 +454,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Running tasks with exceptions.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void FaultedTaskExceptions()
         {
             var twa1 = Task.Run(() => { throw new Exception("uh oh"); });
@@ -487,7 +487,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test that OCEs don't result in the unobserved event firing
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancellationDoesntResultInEventFiring()
         {
             var cts = new CancellationTokenSource();

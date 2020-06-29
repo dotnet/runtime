@@ -23,7 +23,7 @@ namespace System.Xml.Schema
 
         private XmlSchema? _schema;
         private string? _targetNamespace;
-        private bool _buildinIncluded = false;
+        private bool _buildinIncluded;
         private XmlSchemaForm _elementFormDefault;
         private XmlSchemaForm _attributeFormDefault;
         private XmlSchemaDerivationMethod _blockDefault;
@@ -41,7 +41,7 @@ namespace System.Xml.Schema
         private const XmlSchemaDerivationMethod complexTypeBlockAllowed = XmlSchemaDerivationMethod.Restriction | XmlSchemaDerivationMethod.Extension;
         private const XmlSchemaDerivationMethod complexTypeFinalAllowed = XmlSchemaDerivationMethod.Restriction | XmlSchemaDerivationMethod.Extension;
 
-        private XmlResolver? _xmlResolver = null;
+        private XmlResolver? _xmlResolver;
 
         public SchemaCollectionPreprocessor(XmlNameTable nameTable, SchemaNames? schemaNames, ValidationEventHandler? eventHandler)
             : base(nameTable, schemaNames, eventHandler)

@@ -78,7 +78,7 @@
       <Rule Id="CA1725" Action="Info" />             <!-- Parameter names should match base declaration -->
       <Rule Id="CA1801" Action="None" />             <!-- Review unused parameters -->
       <Rule Id="CA1802" Action="Warning" />          <!-- Use literals where appropriate -->
-      <Rule Id="CA1805" Action="Info" />             <!-- Do not initialize unnecessarily -->
+      <Rule Id="CA1805" Action="Warning" />          <!-- Do not initialize unnecessarily -->
       <Rule Id="CA1806" Action="None" />             <!-- Do not ignore method results -->
       <Rule Id="CA1810" Action="Warning" />          <!-- Initialize reference type static fields inline -->
       <Rule Id="CA1812" Action="None" />             <!-- Avoid uninstantiated internal classes -->

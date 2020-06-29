@@ -19,8 +19,8 @@ namespace System.Net
         private readonly NetworkStream _networkStream;
         private bool _writeable;
         private bool _readable;
-        private bool _isFullyRead = false;
-        private bool _closing = false;
+        private bool _isFullyRead;
+        private bool _closing;
 
         private const int DefaultCloseTimeout = -1;
 

@@ -144,8 +144,8 @@ namespace System.Security.Cryptography
             _group = group;
         }
 
-        private string? _value = null;
-        private string? _friendlyName = null;
+        private string? _value;
+        private string? _friendlyName;
         private readonly OidGroup _group = OidGroup.All;
     }
 }

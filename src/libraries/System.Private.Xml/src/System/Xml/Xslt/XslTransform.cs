@@ -13,8 +13,8 @@ namespace System.Xml.Xsl
 
     public sealed class XslTransform
     {
-        private XmlResolver _documentResolver = null;
-        private bool _isDocumentResolverSet = false;
+        private XmlResolver _documentResolver;
+        private bool _isDocumentResolverSet;
         private XmlResolver _DocumentResolver
         {
             get

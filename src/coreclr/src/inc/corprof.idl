@@ -640,11 +640,14 @@ typedef enum
     // Enables the large object allocation monitoring according to the LOH threshold.
     COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED      = 0x00000040,
 
+    COR_PRF_HIGH_MONITOR_EVENT_PIPE                 = 0x00000080,
+
     COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH             = COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED |
                                                       COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS |
                                                       COR_PRF_HIGH_BASIC_GC |
                                                       COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS |
-                                                      COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED,
+                                                      COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED |
+                                                      COR_PRF_HIGH_MONITOR_EVENT_PIPE,
 
     // MONITOR_IMMUTABLE represents all flags that may only be set during initialization.
     // Trying to change any of these flags elsewhere will result in a
@@ -738,9 +741,11 @@ typedef enum
 
 typedef UINT_PTR EVENTPIPE_PROVIDER;
 typedef UINT_PTR EVENTPIPE_EVENT;
+typedef UINT64   EVENTPIPE_SESSION;
 
 typedef enum
 {
+    COR_PRF_EVENTPIPE_OBJECT = 1,         // Instance that isn't a value
     COR_PRF_EVENTPIPE_BOOLEAN = 3,        // Boolean
     COR_PRF_EVENTPIPE_CHAR = 4,           // Unicode character
     COR_PRF_EVENTPIPE_SBYTE = 5,          // Signed 8-bit integer
@@ -769,6 +774,18 @@ typedef enum
     COR_PRF_EVENTPIPE_INFORMATIONAL = 4,
     COR_PRF_EVENTPIPE_VERBOSE = 5
 } COR_PRF_EVENTPIPE_LEVEL;
+
+typedef struct
+{
+    const WCHAR* providerName;
+    UINT64       keywords;
+    UINT32       loggingLevel;
+    // filterData expects a semicolon delimited string that defines key value pairs
+    // such as "key1=value1;key2=value2;". Quotes can be used to escape the '=' and ';'
+    // characters. These key value pairs will be passed in the enable callback to event
+    // providers
+    const WCHAR* filterData;
+} COR_PRF_EVENTPIPE_PROVIDER_CONFIG;
 
 typedef struct
 {
@@ -2510,6 +2527,34 @@ interface ICorProfilerCallback9 : ICorProfilerCallback8
     HRESULT DynamicMethodUnloaded([in] FunctionID functionId);
 }
 
+[
+    object,
+    uuid(CEC5B60E-C69C-495F-87F6-84D28EE16FFB),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback10 : ICorProfilerCallback9
+{
+    // This event is triggered whenever an EventPipe event is configured to be delivered.
+    //
+    // Documentation Note: All pointers are only valid during the callback
+
+    HRESULT EventPipeEventDelivered(
+        [in] EVENTPIPE_PROVIDER provider,
+        [in] DWORD eventId,
+        [in] DWORD eventVersion,
+        [in] ULONG cbMetadataBlob,
+        [in, size_is(cbMetadataBlob)] LPCBYTE metadataBlob,
+        [in] ULONG cbEventData,
+        [in, size_is(cbEventData)] LPCBYTE eventData,
+        [in] LPCGUID pActivityId,
+        [in] LPCGUID pRelatedActivityId,
+        [in] ThreadID eventThread,
+        [in] ULONG numStackFrames,
+        [in, length_is(numStackFrames)] UINT_PTR stackFrames[]);
+
+    HRESULT EventPipeProviderCreated([in] EVENTPIPE_PROVIDER provider);
+}
 
 /*
  * COR_PRF_CODEGEN_FLAGS controls various flags and hooks for a specific
@@ -4076,13 +4121,34 @@ interface ICorProfilerInfo11 : ICorProfilerInfo10
 ]
 interface ICorProfilerInfo12 : ICorProfilerInfo11
 {
+    HRESULT EventPipeStartSession(
+        [in]  UINT32                            cProviderConfigs,
+        [in, size_is(cProviderConfigs)]
+              COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[],
+        [in]  BOOL                              requestRundown,
+        [out] EVENTPIPE_SESSION*                pSession);
+
+    HRESULT EventPipeAddProviderToSession(
+        [in] EVENTPIPE_SESSION                 session,
+        [in] COR_PRF_EVENTPIPE_PROVIDER_CONFIG providerConfig);
+
+    HRESULT EventPipeStopSession(
+        [in] EVENTPIPE_SESSION session);
+
     HRESULT EventPipeCreateProvider(
-                [in, string] const WCHAR    *szName,
-                [out] EVENTPIPE_PROVIDER    *pProviderHandle);
+                [in, string] const WCHAR    *providerName,
+                [out] EVENTPIPE_PROVIDER    *pProvider);
+
+    HRESULT EventPipeGetProviderInfo(
+                [in] EVENTPIPE_PROVIDER provider,
+                [in]  ULONG      cchName,
+                [out] ULONG      *pcchName,
+                [out, annotation("_Out_writes_to_(cchName, *pcchName)")]
+                      WCHAR      providerName[]);
 
     HRESULT EventPipeDefineEvent(
-                [in] EVENTPIPE_PROVIDER     provHandle,
-                [in, string] const WCHAR   *szName,
+                [in] EVENTPIPE_PROVIDER     provider,
+                [in, string] const WCHAR   *eventName,
                 [in] UINT32                 eventID,
                 [in] UINT64                 keywords,
                 [in] UINT32                 eventVersion,
@@ -4092,10 +4158,10 @@ interface ICorProfilerInfo12 : ICorProfilerInfo11
                 [in] UINT32                 cParamDescs,
                 [in, size_is(cParamDescs)]
                      COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
-                [out] EVENTPIPE_EVENT      *pEventHandle);
+                [out] EVENTPIPE_EVENT      *pEvent);
 
     HRESULT EventPipeWriteEvent(
-                [in] EVENTPIPE_EVENT    eventHandle,
+                [in] EVENTPIPE_EVENT    event,
                 [in] UINT32             cData,
                 [in, size_is(cData)]
                      COR_PRF_EVENT_DATA data[],

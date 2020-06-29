@@ -84,6 +84,23 @@ namespace System.Formats.Cbor
             };
         }
 
+        public static bool RequiresPreservingFloatPrecision(CborConformanceMode conformanceMode)
+        {
+            switch (conformanceMode)
+            {
+                case CborConformanceMode.Lax:
+                case CborConformanceMode.Strict:
+                case CborConformanceMode.Canonical:
+                    return false;
+
+                case CborConformanceMode.Ctap2Canonical:
+                    return true;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(conformanceMode));
+            };
+        }
+
         public static bool RequiresUtf8Validation(CborConformanceMode conformanceMode)
         {
             switch (conformanceMode)

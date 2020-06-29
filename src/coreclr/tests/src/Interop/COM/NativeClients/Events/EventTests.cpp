@@ -16,28 +16,89 @@
 #define THROW_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { ::printf("FAILURE: 0x%08x = %s\n", hr, #exp); throw hr; } }
 #define THROW_FAIL_IF_FALSE(exp) { if (!(exp)) { ::printf("FALSE: %s\n", #exp); throw E_FAIL; } }
 
-#include <map>
 #include <string>
 
 namespace
 {
+    class DispIDToStringMap
+    {
+        struct Pair
+        {
+            DISPID id;
+            WCHAR value[128];
+        };
+        Pair _pairs[8];
+        const Pair* _end;
+
+    public:
+        DispIDToStringMap()
+            : _pairs{}
+            , _end{ _pairs + ARRAYSIZE(_pairs) }
+        {
+            for (auto curr = _pairs; curr != _end; ++curr)
+                curr->id = DISPID_UNKNOWN;
+        }
+
+        const WCHAR* Find(_In_ DISPID id)
+        {
+            for (auto curr = _pairs; curr != _end; ++curr)
+            {
+                if (curr->id == id)
+                    return curr->value;
+            }
+
+            return nullptr;
+        }
+
+        void Insert(_In_ DISPID id, _In_z_ const WCHAR* value)
+        {
+            if (id == DISPID_UNKNOWN)
+                throw E_UNEXPECTED;
+
+            for (auto curr = _pairs; curr != _end; ++curr)
+            {
+                if (curr->id == DISPID_UNKNOWN)
+                {
+                    curr->id = id;
+                    size_t len = ::wcslen(value) + 1; // Include null
+                    ::memcpy(curr->value, value, len * sizeof(value[0]));
+                    return;
+                }
+            }
+
+            throw E_UNEXPECTED;
+        }
+
+        void Erase(_In_ DISPID id)
+        {
+            for (auto curr = _pairs; curr != _end; ++curr)
+            {
+                if (curr->id == id)
+                {
+                    curr->id = DISPID_UNKNOWN;
+                    break;
+                }
+            }
+        }
+    };
+
     class EventSink : public UnknownImpl, public TestingEvents
     {
-        std::map<DISPID, std::wstring> _firedEvents;
+        DispIDToStringMap _firedEvents;
 
     public:
         void ResetFiredState(_In_ DISPID id)
         {
-            _firedEvents.erase(id);
+            _firedEvents.Erase(id);
         }
 
         bool DidFire(_In_ DISPID id, _Out_ std::wstring& message)
         {
-            auto iter = _firedEvents.find(id);
-            if (iter == std::end(_firedEvents))
+            auto value = _firedEvents.Find(id);
+            if (value == nullptr)
                 return false;
 
-            message = iter->second;
+            message = value;
             return true;
         }
 
@@ -112,7 +173,7 @@ namespace
             if (msgMaybe->vt != VT_BSTR)
                 return E_INVALIDARG;
 
-            _firedEvents.insert({ dispId, msgMaybe->bstrVal });
+            _firedEvents.Insert(dispId, msgMaybe->bstrVal);
             return S_OK;
         }
 

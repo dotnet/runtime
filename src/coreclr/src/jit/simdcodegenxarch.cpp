@@ -2144,6 +2144,17 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
             bool     isEBPbased;
             unsigned varNum = op1->AsLclVarCommon()->GetLclNum();
             offset += compiler->lvaFrameAddress(varNum, &isEBPbased);
+
+#if !FEATURE_FIXED_OUT_ARGS
+            if (!isEBPbased)
+            {
+                // Adjust the offset by the amount currently pushed on the CPU stack
+                offset += genStackLevel;
+            }
+#else
+            assert(genStackLevel == 0);
+#endif // !FEATURE_FIXED_OUT_ARGS
+
             if (op1->OperGet() == GT_LCL_FLD)
             {
                 offset += op1->AsLclFld()->GetLclOffs();
@@ -2192,8 +2203,19 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
     {
         unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
         noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
-        bool      isEBPbased;
-        unsigned  offs     = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
+        bool     isEBPbased;
+        unsigned offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
+
+#if !FEATURE_FIXED_OUT_ARGS
+        if (!isEBPbased)
+        {
+            // Adjust the offset by the amount currently pushed on the CPU stack
+            offs += genStackLevel;
+        }
+#else
+        assert(genStackLevel == 0);
+#endif // !FEATURE_FIXED_OUT_ARGS
+
         regNumber indexReg = op2->GetRegNum();
 
         // Store the vector to the temp location.

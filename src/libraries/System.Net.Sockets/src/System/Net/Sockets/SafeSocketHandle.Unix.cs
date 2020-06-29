@@ -179,7 +179,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal bool IsDisconnected { get; private set; } = false;
+        internal bool IsDisconnected { get; private set; }
 
         internal void SetToDisconnected()
         {

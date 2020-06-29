@@ -15,8 +15,8 @@ namespace System.Threading
         private Delegate _start;
         internal CultureInfo? _startCulture;
         internal CultureInfo? _startUICulture;
-        private object? _startArg = null;
-        private ExecutionContext? _executionContext = null;
+        private object? _startArg;
+        private ExecutionContext? _executionContext;
 
         internal ThreadHelper(Delegate start)
         {

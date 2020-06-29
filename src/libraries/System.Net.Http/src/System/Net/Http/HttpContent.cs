@@ -254,6 +254,36 @@ namespace System.Net.Http
             return _bufferedContent.ToArray();
         }
 
+        public Stream ReadAsStream() =>
+            ReadAsStream(CancellationToken.None);
+
+        public Stream ReadAsStream(CancellationToken cancellationToken)
+        {
+            CheckDisposed();
+
+            // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
+            // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized
+            // in ReadAsStreamAsync).
+
+            if (_contentReadStream == null) // don't yet have a Stream
+            {
+                Stream s = TryGetBuffer(out ArraySegment<byte> buffer) ?
+                    new MemoryStream(buffer.Array!, buffer.Offset, buffer.Count, writable: false) :
+                    CreateContentReadStream(cancellationToken);
+                _contentReadStream = s;
+                return s;
+            }
+            else if (_contentReadStream is Stream stream) // have a Stream
+            {
+                return stream;
+            }
+            else // have a Task<Stream>
+            {
+                // Throw if ReadAsStreamAsync has been called previously since _contentReadStream contains a cached task.
+                throw new HttpRequestException(SR.net_http_content_read_as_stream_has_task);
+            }
+        }
+
         public Task<Stream> ReadAsStreamAsync() =>
             ReadAsStreamAsync(CancellationToken.None);
 
@@ -262,7 +292,7 @@ namespace System.Net.Http
             CheckDisposed();
 
             // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
-            // initialized in TryReadAsStream), or a Task<Stream> (it was previously initialized here
+            // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized here
             // in ReadAsStreamAsync).
 
             if (_contentReadStream == null) // don't yet have a Stream
@@ -291,7 +321,7 @@ namespace System.Net.Http
             CheckDisposed();
 
             // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
-            // initialized here in TryReadAsStream), or a Task<Stream> (it was previously initialized
+            // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized here
             // in ReadAsStreamAsync).
 
             if (_contentReadStream == null) // don't yet have a Stream
@@ -526,6 +556,12 @@ namespace System.Net.Http
                 if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
                 throw;
             }
+        }
+
+        protected virtual Stream CreateContentReadStream(CancellationToken cancellationToken)
+        {
+            LoadIntoBuffer(MaxBufferSize, cancellationToken);
+            return _bufferedContent!;
         }
 
         protected virtual Task<Stream> CreateContentReadStreamAsync()

@@ -32,6 +32,9 @@ public:
     // Disable profiling.
     static void Disable();
 
+    // Let the sampler know it's safe to start sampling
+    static void CanStartSampling();
+
     // Set the sampling rate.
     static void SetSamplingRate(unsigned long nanoseconds);
 
@@ -70,6 +73,8 @@ private:
     static bool LoadDependencies();
     static void UnloadDependencies();
 
+    static void EnableInternal();
+
 #ifndef TARGET_UNIX
     static HINSTANCE s_hMultimediaLib;
     static PVOID s_timeBeginPeriodFn;
@@ -106,7 +111,9 @@ private:
     // Whether or not timeBeginPeriod has been used to set the scheduler period
     static bool s_timePeriodIsSet;
 
-    static int32_t s_RefCount;
+    static Volatile<BOOL> s_canStartSampling;
+
+    static int32_t s_refCount;
 };
 
 #endif // FEATURE_PERFTRACING

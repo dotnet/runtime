@@ -12,7 +12,7 @@ namespace System.Reflection.Internal
     {
         // internal for testing
         internal static bool readFileNotAvailable = Path.DirectorySeparatorChar != '\\'; // Available on Windows only
-        internal static bool safeFileHandleNotAvailable = false;
+        internal static bool safeFileHandleNotAvailable;
 
         internal static bool IsFileStream(Stream stream) => stream is FileStream;
 

@@ -22,7 +22,7 @@ namespace System.Net.Http
         private readonly DiagnosticsHandler _diagnosticsHandler;
         private ClientCertificateOption _clientCertificateOptions;
 
-        private volatile bool _disposed = false;
+        private volatile bool _disposed;
 
         public HttpClientHandler()
         {
