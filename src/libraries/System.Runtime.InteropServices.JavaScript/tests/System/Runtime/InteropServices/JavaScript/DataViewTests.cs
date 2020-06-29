@@ -18,10 +18,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             // Create a couple of views
             var view1 = new DataView(buffer);
-            var view2 = new DataView(buffer,12,4); //from byte 12 for the next 4 bytes
+            var view2 = new DataView(buffer, 12, 4); //from byte 12 for the next 4 bytes
             view1.SetInt8(12, 42); // put 42 in slot 12 
-            
-            Assert.Equal(42, view2.GetInt8(0));           
+
+            Assert.Equal(42, view2.GetInt8(0));
         }
 
         public static IEnumerable<object[]> ArrayBuffer_Test_Data()
@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Theory]
         [MemberData(nameof(ArrayBuffer_Test_Data))]
-        public static void DataViewArrayBuffer (ArrayBuffer buffer) 
+        public static void DataViewArrayBuffer(ArrayBuffer buffer)
         {
             var x = new DataView(buffer);
             Assert.True(buffer == x.Buffer);
@@ -39,15 +39,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Theory]
         [MemberData(nameof(ArrayBuffer_Test_Data))]
-        public static void DataViewByteLength (ArrayBuffer buffer) 
+        public static void DataViewByteLength(ArrayBuffer buffer)
         {
             var x = new DataView(buffer, 4, 2);
-            Assert.Equal(2,  x.ByteLength);
+            Assert.Equal(2, x.ByteLength);
         }
 
         [Theory]
         [MemberData(nameof(ArrayBuffer_Test_Data))]
-        public static void DataViewByteOffset (ArrayBuffer buffer) 
+        public static void DataViewByteOffset(ArrayBuffer buffer)
         {
             var x = new DataView(buffer, 4, 2);
             Assert.Equal(4, x.ByteOffset);
@@ -61,23 +61,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory]
         [MemberData(nameof(DataView_Test_Data))]
 
-        public static void DataViewGetFloat32 (DataView view) 
+        public static void DataViewGetFloat32(DataView view)
         {
             view.SetFloat32(1, (float)Math.PI);
-            Assert.Equal((float)Math.Round(Math.PI, 5), (float)Math.Round(view.GetFloat32(1),5));
+            Assert.Equal((float)Math.Round(Math.PI, 5), (float)Math.Round(view.GetFloat32(1), 5));
         }
 
         [Theory]
         [MemberData(nameof(DataView_Test_Data))]
-        public static void DataViewGetFloat64 (DataView view) 
+        public static void DataViewGetFloat64(DataView view)
         {
             view.SetFloat64(1, (float)Math.PI);
-            Assert.Equal(Math.Round(Math.PI, 5), Math.Round(view.GetFloat64(1),5));
+            Assert.Equal(Math.Round(Math.PI, 5), Math.Round(view.GetFloat64(1), 5));
         }
 
         [Theory]
         [MemberData(nameof(DataView_Test_Data))]
-        public static void DataViewGetInt16 (DataView view) 
+        public static void DataViewGetInt16(DataView view)
         {
             view.SetInt16(1, 1234);
             Assert.Equal(1234, view.GetInt16(1));
@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Theory]
         [MemberData(nameof(DataView_Test_Data))]
-        public static void DataViewGetInt32 (DataView view) 
+        public static void DataViewGetInt32(DataView view)
         {
             view.SetInt32(1, 1234);
             Assert.Equal(1234, view.GetInt32(1));
@@ -99,7 +99,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Theory]
         [MemberData(nameof(DataView_Test_Data))]
-        public static void DataViewGetInt8 (DataView view) 
+        public static void DataViewGetInt8(DataView view)
         {
             view.SetInt8(1, 123);
             Assert.Equal(123, view.GetInt8(1));
@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Theory]
         [MemberData(nameof(DataView_Test_Data))]
-        public static void DataViewGetUint16 (DataView view) 
+        public static void DataViewGetUint16(DataView view)
         {
             view.SetUint16(1, 1234);
             Assert.Equal(1234, view.GetUint16(1));
@@ -119,7 +119,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Theory]
         [MemberData(nameof(DataView_Test_Data))]
-        public static void DataViewGetUint32 (DataView view) 
+        public static void DataViewGetUint32(DataView view)
         {
             view.SetUint32(1, 1234);
             Assert.Equal(1234u, view.GetUint32(1));
@@ -127,7 +127,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Theory]
         [MemberData(nameof(DataView_Test_Data))]
-        public static void DataViewGetUint8 (DataView view) 
+        public static void DataViewGetUint8(DataView view)
         {
             view.SetUint8(1, 123);
             Assert.Equal(123u, view.GetUint8(1));
