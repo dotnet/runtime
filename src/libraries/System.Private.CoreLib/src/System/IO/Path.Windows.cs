@@ -128,9 +128,7 @@ namespace System.IO
             // to Windows APIs won't do anything by design. Additionally, GetFullPathName() in Windows doesn't root
             // them properly. As such we need to manually remove segments and not use GetFullPath().
 
-            return PathInternal.IsDevice(combinedPath.AsSpan())
-                ? PathInternal.RemoveRelativeSegments(combinedPath, PathInternal.GetRootLength(combinedPath.AsSpan()))
-                : GetFullPath(combinedPath);
+            return PathInternal.IsDevice(combinedPath.AsSpan()) ? RemoveRedundantSegments(combinedPath.AsSpan()) : GetFullPath(combinedPath);
         }
 
         public static string GetTempPath()
