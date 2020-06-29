@@ -112,6 +112,7 @@ namespace System
         private const ulong FlagsMask = 0xC000000000000000;
         private const ulong LocalMask = 0x8000000000000000;
         private const long TicksCeiling = 0x4000000000000000;
+        private const ulong KindUnspecified = 0x0000000000000000;
         private const ulong KindUtc = 0x4000000000000000;
         private const ulong KindLocal = 0x8000000000000000;
         private const ulong KindLocalAmbiguousDst = 0xC000000000000000;
@@ -1046,25 +1047,14 @@ namespace System
         internal bool IsAmbiguousDaylightSavingTime() =>
             InternalKind == KindLocalAmbiguousDst;
 
-        public DateTimeKind Kind
-        {
-            get
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public DateTimeKind Kind =>
+            InternalKind switch
             {
-                //This algorithm works because values defined in DateTimeKind
-                //correspond to the internal represenation
-                //stored in the most significant bits of _dateData.
-                //The exception is the 4th kind
-                //which we need to coerce to DateTimeKind.Local.
-                var kind = (DateTimeKind)(_dateData >> KindShift);
-                var isAmbiguousLocalDst = kind > DateTimeKind.Local;
-                if (isAmbiguousLocalDst)
-                {
-                    kind = DateTimeKind.Local;
-                }
-
-                return kind;
-            }
-        }
+                KindUnspecified => DateTimeKind.Unspecified,
+                KindUtc => DateTimeKind.Utc,
+                _ => DateTimeKind.Local,
+            };
 
         // Returns the millisecond part of this DateTime. The returned value
         // is an integer between 0 and 999.
