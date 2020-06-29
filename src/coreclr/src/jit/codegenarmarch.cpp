@@ -2477,8 +2477,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         // Generate a direct call to a non-virtual user defined or helper method
         assert(callType == CT_HELPER || callType == CT_USER_FUNC);
+#ifdef FEATURE_READYTORUN_COMPILER
         assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
                ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
+#endif // FEATURE_READYTORUN_COMPILER
         assert(call->gtControlExpr == nullptr);
         assert(!call->IsTailCall());
 

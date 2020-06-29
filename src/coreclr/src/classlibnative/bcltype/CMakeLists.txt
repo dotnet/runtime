@@ -11,7 +11,7 @@ set(BCLTYPE_SOURCES
 )
 
 add_library_clr(bcltype
-    STATIC
+    OBJECT
     ${BCLTYPE_SOURCES}
 )
 

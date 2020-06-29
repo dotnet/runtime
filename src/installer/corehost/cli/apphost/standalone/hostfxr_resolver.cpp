@@ -7,7 +7,7 @@
 #include "pal.h"
 #include "fxr_resolver.h"
 #include "trace.h"
-#include "hostfxr_resolver_t.h"
+#include "hostfxr_resolver.h"
 
 hostfxr_main_bundle_startupinfo_fn hostfxr_resolver_t::resolve_main_bundle_startupinfo()
 {
