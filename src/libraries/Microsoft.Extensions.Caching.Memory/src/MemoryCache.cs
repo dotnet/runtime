@@ -287,7 +287,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void RemoveEntry(CacheEntry entry)
         {
-            if (EntriesCollection.Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
+            if (_entries.TryRemove(entry.Key, out _))
             {
                 if (_options.SizeLimit.HasValue)
                 {
