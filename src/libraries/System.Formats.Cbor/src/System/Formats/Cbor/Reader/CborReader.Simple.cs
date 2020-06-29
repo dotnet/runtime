@@ -37,6 +37,7 @@ namespace System.Formats.Cbor
                     AdvanceDataItemCounters();
                     return result;
 
+                case CborAdditionalInfo.Additional32BitData:
                 case CborAdditionalInfo.Additional64BitData:
                     throw new InvalidOperationException(SR.Cbor_Reader_ReadingAsLowerPrecision);
 
