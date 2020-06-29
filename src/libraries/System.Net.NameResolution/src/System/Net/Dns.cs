@@ -540,19 +540,23 @@ namespace System.Net
                         throw;
                     }
 
-                    coreTask.ContinueWith(
-                        (task, state) =>
-                        {
-                            var tuple = (Tuple<string, ValueStopwatch>)state!;
-                            NameResolutionTelemetry.Log.AfterResolution(
-                                hostNameOrAddress: tuple.Item1,
-                                stopwatch: tuple.Item2,
-                                successful: task.IsCompletedSuccessfully);
-                        },
-                        state: Tuple.Create(hostName, stopwatch),
-                        cancellationToken: default,
-                        TaskContinuationOptions.ExecuteSynchronously,
-                        TaskScheduler.Default);
+                    // Only pay for the overhead if events will be fired
+                    if (stopwatch.IsActive)
+                    {
+                        coreTask.ContinueWith(
+                            (task, state) =>
+                            {
+                                var tuple = (Tuple<string, ValueStopwatch>)state!;
+                                NameResolutionTelemetry.Log.AfterResolution(
+                                    hostNameOrAddress: tuple.Item1,
+                                    stopwatch: tuple.Item2,
+                                    successful: task.IsCompletedSuccessfully);
+                            },
+                            state: Tuple.Create(hostName, stopwatch),
+                            cancellationToken: default,
+                            TaskContinuationOptions.ExecuteSynchronously,
+                            TaskScheduler.Default);
+                    }
 
                     // coreTask is not actually a base Task, but Task<IPHostEntry> / Task<IPAddress[]>
                     // We have to return it and not the continuation
