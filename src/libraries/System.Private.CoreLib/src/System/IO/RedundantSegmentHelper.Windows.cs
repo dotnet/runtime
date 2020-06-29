@@ -284,20 +284,5 @@ namespace System.IO
             }
             return totalDots > 0;
         }
-
-        // CHecks if the segment after the specified position in the path is a "." segment.
-        private static bool IsNextSegmentSingleDot(ReadOnlySpan<char> path, int currPos)
-        {
-            return (currPos + 2 == path.Length || PathInternal.IsDirectorySeparator(path[currPos + 2])) &&
-                path[currPos + 1] == '.';
-        }
-
-        // CHecks if the segment after the specified position in the path is a ".." segment.
-        private static bool IsNextSegmentDoubleDot(ReadOnlySpan<char> path, int currPos)
-        {
-            return currPos + 2 < path.Length &&
-                (currPos + 3 == path.Length || PathInternal.IsDirectorySeparator(path[currPos + 3])) &&
-                path[currPos + 1] == '.' && path[currPos + 2] == '.';
-        }
     }
 }
