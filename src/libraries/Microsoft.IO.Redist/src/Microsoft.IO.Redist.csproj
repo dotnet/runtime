@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net472</TargetFrameworks>
     <DefineConstants>$(DefineConstants);MS_IO_REDIST</DefineConstants>
@@ -120,6 +120,10 @@
              Link="System\IO\PathInternal.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs"
              Link="System\IO\PathInternal.Windows.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\RedundantSegmentHelper.cs"
+             Link="System\IO\RedundantSegmentHelper.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\RedundantSegmentHelper.Windows.cs"
+             Link="System\IO\RedundantSegmentHelper.Windows.cs" />
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs"
              Link="Common\System\IO\Win32Marshal.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
