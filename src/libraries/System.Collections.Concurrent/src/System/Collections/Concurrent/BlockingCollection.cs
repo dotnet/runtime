@@ -1038,7 +1038,7 @@ namespace System.Collections.Concurrent
                     return OPERATION_FAILED;
 
                 //If the timeout period was not exhausted and the appropriate operation succeeded.
-                if (collections[index].TryAdd(item, 0, externalCancellationToken)) //case#1
+                if (collections[index].TryAdd(item)) //case#1
                     return index;
 
                 // Update the timeout
@@ -1352,7 +1352,7 @@ namespace System.Collections.Concurrent
             for (int i = 0; i < collections.Length; i++)
             {
                 // Check if the collection is not completed, and potentially has at least one element by checking the semaphore count
-                if (!collections[i].IsCompleted && collections[i]._occupiedNodes.CurrentCount > 0 && collections[i].TryTake(out item, 0, externalCancellationToken))
+                if (!collections[i].IsCompleted && collections[i]._occupiedNodes.CurrentCount > 0 && collections[i].TryTake(out item))
                     return i;
             }
 
@@ -1446,7 +1446,7 @@ namespace System.Collections.Concurrent
                             }
                         }
 
-                        if (collections[index].TryTake(out item, 0, externalCancellationToken)) //case#1
+                        if (collections[index].TryTake(out item)) //case#1
                             return index;
                     }
                 }

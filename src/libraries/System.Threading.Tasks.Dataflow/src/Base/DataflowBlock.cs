@@ -2182,7 +2182,7 @@ namespace System.Threading.Tasks.Dataflow
                     state =>
                     {
                         var thisChooseTarget = (ChooseTarget<T>)state!;
-                        lock (thisChooseTarget._completed) thisChooseTarget.TrySetCanceled(cancellationToken);
+                        lock (thisChooseTarget._completed) thisChooseTarget.TrySetCanceled();
                     }, this);
             }
 
