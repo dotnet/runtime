@@ -156,8 +156,8 @@ namespace Internal.Cryptography.Pal
                 PropertyInfo? requestUriProp = httpRequestMessageType.GetProperty("RequestUri");
                 MethodInfo? sendMethod = httpClientType.GetMethod("Send", new Type[] { httpRequestMessageType, typeof(CancellationToken) });
                 PropertyInfo? responseContentProp = httpResponseMessageType.GetProperty("Content");
-                MethodInfo? readAsStreamAsyncMethod = httpContentType.GetMethod("ReadAsStream", Type.EmptyTypes);
-                if (pooledConnectionIdleTimeoutProp == null || requestUriProp == null || sendMethod == null || responseContentProp == null || readAsStreamAsyncMethod == null)
+                MethodInfo? readAsStreamMethod = httpContentType.GetMethod("ReadAsStream", Type.EmptyTypes);
+                if (pooledConnectionIdleTimeoutProp == null || requestUriProp == null || sendMethod == null || responseContentProp == null || readAsStreamMethod == null)
                 {
                     Debug.Fail("Unable to load required member.");
                     return null;
@@ -184,7 +184,7 @@ namespace Internal.Cryptography.Pal
                     requestUriProp.SetValue(requestMessage, new Uri(uri));
                     object responseMessage = sendMethod.Invoke(httpClient, new object[] { requestMessage, cancellationToken })!;
                     object content = responseContentProp.GetValue(responseMessage)!;
-                    using Stream responseStream = (Stream)readAsStreamAsyncMethod.Invoke(content, null)!;
+                    using Stream responseStream = (Stream)readAsStreamMethod.Invoke(content, null)!;
 
                     var result = new MemoryStream();
                     responseStream.CopyTo(result);
