@@ -116,7 +116,7 @@ namespace System.Net.WebSockets
             var tcsConnect = new TaskCompletionSource<bool>();
 
             // For Abort/Dispose.  Calling Abort on the request at any point will close the connection.
-            _cts.Token.Register(s => ((BrowserWebSocket)s).AbortRequest(), this);
+            _cts.Token.Register(s => ((BrowserWebSocket)s!).AbortRequest(), this);
 
             // Wrap the cancellationToken in a using so that it can be disposed of whether
             // we successfully connected or failed trying.
