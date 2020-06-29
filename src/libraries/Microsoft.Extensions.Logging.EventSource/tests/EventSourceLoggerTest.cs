@@ -452,7 +452,7 @@ namespace Microsoft.Extensions.Logging.Test
                     {
                         containsNullEventName = true;
                     }
-                    if (eventJson.Contains(@"""FormattedMessage"":""formattedMessage"""))
+                    if (eventJson.Contains(@"""FormattedMessage"":""Logger1 Event1 Debug 1"""))
                     {
                         containsFormattedMessage = true;
                     }
