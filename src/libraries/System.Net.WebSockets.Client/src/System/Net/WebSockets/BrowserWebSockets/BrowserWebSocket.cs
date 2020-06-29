@@ -51,10 +51,15 @@ namespace System.Net.WebSockets
 
         // Stages of this class.
         private int _state;
-        private const int _created = 0;
-        private const int _connecting = 1;
-        private const int _connected = 2;
-        private const int _disposed = 3;
+
+        private enum InternalState
+        {
+            Created = 0,
+            Connecting = 1,
+            Connected = 2,
+            Disposed = 3
+        }
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="System.Net.WebSockets.BrowserWebSocket"/> class.
@@ -78,11 +83,10 @@ namespace System.Net.WebSockets
                 {
                     return ReadyStateToDotNetState((int)_innerWebSocket.GetObjectProperty("readyState"));
                 }
-                return _state switch
+                return (InternalState)_state switch
                 {
-                    _created => WebSocketState.None,
-                    _connecting => WebSocketState.Connecting,
-                    _disposed => WebSocketState.Closed, // We only get here if disposed before connecting
+                    InternalState.Created => WebSocketState.None,
+                    InternalState.Connecting => WebSocketState.Connecting,
                     _ => WebSocketState.Closed
                 };
             }
@@ -177,8 +181,8 @@ namespace System.Net.WebSockets
                         {
                             if (!cancellationToken.IsCancellationRequested)
                             {
-                                // Change internal _state to '_connected' to enable the other methods
-                                if (Interlocked.CompareExchange(ref _state, _connected, _connecting) != _connecting)
+                                // Change internal _state to 'Connected' to enable the other methods
+                                if (Interlocked.CompareExchange(ref _state, (int)InternalState.Connected, (int)InternalState.Connecting) != (int)InternalState.Connecting)
                                 {
                                     // Aborted/Disposed during connect.
                                     throw new ObjectDisposedException(GetType().FullName);
@@ -273,8 +277,8 @@ namespace System.Net.WebSockets
 
         public override void Dispose()
         {
-            int priorState = Interlocked.Exchange(ref _state, _disposed);
-            if (priorState == _disposed)
+            int priorState = Interlocked.Exchange(ref _state, (int)InternalState.Disposed);
+            if (priorState == (int)InternalState.Disposed)
             {
                 // No cleanup required.
                 return;
@@ -378,13 +382,13 @@ namespace System.Net.WebSockets
                             using (var uint8Buffer = Uint8Array.From(buffer))
                             {
                                 _innerWebSocket!.Invoke("send", uint8Buffer);
-                                tcsSend.SetResult(true);
+                                tcsSend.TrySetResult(true);
                             }
                             break;
                         default:
                             string strBuffer = buffer.Array == null ? string.Empty : Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
                             _innerWebSocket!.Invoke("send", strBuffer);
-                            tcsSend.SetResult(true);
+                            tcsSend.TrySetResult(true);
                             break;
                     }
                 }
@@ -432,7 +436,7 @@ namespace System.Net.WebSockets
         /// </summary>
         public override void Abort()
         {
-            if (_state == _disposed)
+            if (_state == (int)InternalState.Disposed)
             {
                 return;
             }
@@ -474,7 +478,7 @@ namespace System.Net.WebSockets
 
         private void ThrowIfNotConnected()
         {
-            if (_state == _disposed)
+            if (_state == (int)InternalState.Disposed)
             {
                 throw new ObjectDisposedException(GetType().FullName);
             }
@@ -486,7 +490,7 @@ namespace System.Net.WebSockets
 
         private void ThrowIfDisposed()
         {
-            if (_state == _disposed)
+            if (_state == (int)InternalState.Disposed)
             {
                 throw new ObjectDisposedException(GetType().FullName);
             }
