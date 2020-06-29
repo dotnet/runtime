@@ -34,7 +34,7 @@ namespace System.Net.WebSockets
             SingleWriter = true,
         });
 
-        private TaskCompletionSource<bool>? _tcsClose;
+        private TaskCompletionSource? _tcsClose;
         private WebSocketCloseStatus? _innerWebSocketCloseStatus;
         private string? _innerWebSocketCloseStatusDescription;
 
@@ -113,7 +113,7 @@ namespace System.Net.WebSockets
 
         internal async Task ConnectAsyncJavaScript(Uri uri, CancellationToken cancellationToken, List<string>? requestedSubProtocols)
         {
-            var tcsConnect = new TaskCompletionSource<bool>();
+            TaskCompletionSource tcsConnect = new TaskCompletionSource();
 
             // For Abort/Dispose.  Calling Abort on the request at any point will close the connection.
             _cts.Token.Register(s => ((BrowserWebSocket)s!).AbortRequest(), this);
@@ -153,7 +153,7 @@ namespace System.Net.WebSockets
                     _innerWebSocketCloseStatusDescription = closeEvt.GetObjectProperty("reason")?.ToString();
                     _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(Array.Empty<byte>(), WebSocketMessageType.Close));
 
-                    _tcsClose?.SetResult(true);
+                    _tcsClose?.SetResult();
 
                     closeEvt.Dispose();
                 });
@@ -174,7 +174,7 @@ namespace System.Net.WebSockets
                                 // Aborted/Disposed during connect.
                                 throw new ObjectDisposedException(GetType().FullName);
                             }
-                            tcsConnect.SetResult(true);
+                            tcsConnect.SetResult();
                         }
                     }
                 });
@@ -351,43 +351,38 @@ namespace System.Net.WebSockets
                     throw new WebSocketException(WebSocketError.NativeError);
             }
 
-            var tcsSend = new TaskCompletionSource<bool>();
-            // Wrap the cancellationToken in a using so that it can be disposed of whether
-            // we successfully send or not.
-            // Otherwise any timeout/cancellation would apply to the full session.
-            var writtenBuffer = _writeBuffer;
+            TaskCompletionSource tcsSend = new TaskCompletionSource();
+
+            MemoryStream writtenBuffer = _writeBuffer;
             _writeBuffer = null;
 
-            using (cancellationToken.Register(() => tcsSend.TrySetCanceled()))
+            try
             {
-                try
+                switch (messageType)
                 {
-                    switch (messageType)
-                    {
-                        case WebSocketMessageType.Binary:
-                            using (var uint8Buffer = Uint8Array.From(buffer))
-                            {
-                                _innerWebSocket!.Invoke("send", uint8Buffer);
-                                tcsSend.TrySetResult(true);
-                            }
-                            break;
-                        default:
-                            string strBuffer = buffer.Array == null ? string.Empty : Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
-                            _innerWebSocket!.Invoke("send", strBuffer);
-                            tcsSend.TrySetResult(true);
-                            break;
-                    }
+                    case WebSocketMessageType.Binary:
+                        using (Uint8Array uint8Buffer = Uint8Array.From(buffer))
+                        {
+                            _innerWebSocket!.Invoke("send", uint8Buffer);
+                            tcsSend.TrySetResult();
+                        }
+                        break;
+                    default:
+                        string strBuffer = buffer.Array == null ? string.Empty : Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
+                        _innerWebSocket!.Invoke("send", strBuffer);
+                        tcsSend.TrySetResult();
+                        break;
                 }
-                catch (Exception excb)
-                {
-                    tcsSend.TrySetException(new WebSocketException(WebSocketError.NativeError, excb));
-                }
-                finally
-                {
-                    writtenBuffer?.Dispose();
-                }
-                await tcsSend.Task.ConfigureAwait(continueOnCapturedContext: true);
             }
+            catch (Exception excb)
+            {
+                tcsSend.TrySetException(new WebSocketException(WebSocketError.NativeError, excb));
+            }
+            finally
+            {
+                writtenBuffer?.Dispose();
+            }
+            await tcsSend.Task.ConfigureAwait(continueOnCapturedContext: true);
         }
 
         /// <summary>
@@ -446,7 +441,7 @@ namespace System.Net.WebSockets
 
             WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
 
-            _tcsClose = new TaskCompletionSource<bool>();
+            _tcsClose = new TaskCompletionSource();
             // Wrap the cancellationToken in a using so that it can be disposed of whether
             // we successfully connected or failed trying.
             // Otherwise any timeout/cancellation would apply to the full session.
