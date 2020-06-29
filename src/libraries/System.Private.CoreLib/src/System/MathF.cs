@@ -335,12 +335,14 @@ namespace System
             return Round(x, digits, MidpointRounding.ToEven);
         }
 
+        [Obsolete("MidpointRounding is buggy"]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Round(float x, MidpointRounding mode)
         {
             return Round(x, 0, mode);
         }
 
+        [Obsolete("MidpointRounding is buggy"]
         public static unsafe float Round(float x, int digits, MidpointRounding mode)
         {
             if ((digits < 0) || (digits > maxRoundingDigits))
@@ -409,6 +411,77 @@ namespace System
             }
 
             return x;
+        }
+        
+        public static unsafe double Round(float value, int digits, RoundingMode rounding) 
+        { 
+	        if ((digits < 0) || (digits > maxRoundingDigits))
+	        {
+		        throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
+	        }
+	        if (digits == 0)
+	        {
+		        return Round(value, rounding);
+	        }
+	        float fraction = ModF(value, &value);
+	        float power10 = roundPower10Single[digits];
+	        fraction *= power10;
+	        return value + Round(fraction, rounding) / power10;
+        }
+        
+        public static unsafe double Round(float value, RoundingMode rounding)
+        {
+	        if (rounding < RoundingMode.HalfToEven || rounding > RoundingMode.HalfTowardsZero)
+	        {
+		        throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(RoundingMode)), nameof(mode));
+	        }
+	        if (Abs(value) < singleRoundLimit)
+	        {
+		        if (rounding == RoundingMode.Down)
+		        {
+			        return Floor(value);
+		        }
+		        else if (rounding == RoundingMode.Up)
+		        {
+			        return Ceiling(value);
+		        }
+		        else if (rounding == RoundingMode.TowardsZero)
+		        {
+			        return Truncate(value);
+		        }
+        		else if (rounding == RoundingMode.AwayZero)
+		        {
+			        return Sign(value) < 0 ? Floor(value) : Ceiling(value);
+		        }
+        		else if (rounding == RoundingMode.HalfToEven)
+		        {
+			        return Round(value);
+		        }
+        		else
+		        {
+			        float fraction = ModF(value, &value);
+			        float absoluteFrac = Abs(fraction);
+			        if (absoluteFrac < 0.5F)
+			        {
+				        return value;
+			        }
+			        int signFrac = Sign(fraction);
+			        switch (rounding)
+			        {
+				        case RoundingMode.HalfAwayZero:
+					        return value + signFrac;
+				        case RoundingMode.HalfDown:
+					        return (signFrac < 0) ? value + signFrac : (absoluteFrac > 0.5F) ? value + signFrac : value;
+				        case RoundingMode.HalfUp:
+					        return (signFrac > 0) ? value + signFrac : (absoluteFrac > 0.5F) ? value + signFrac : value;
+				        case RoundingMode.HalfTowardsZero:
+					        return (absoluteFrac > 0.5F) ? value + signFrac : value;
+				        default:
+					        throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(RoundingMode)), nameof(mode));
+			        }
+		        }
+	        }
+	        return value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
