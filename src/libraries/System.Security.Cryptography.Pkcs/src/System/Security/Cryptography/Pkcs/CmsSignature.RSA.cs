@@ -133,7 +133,7 @@ namespace System.Security.Cryptography.Pkcs
                 X509Certificate2 certificate,
                 AsymmetricAlgorithm? key,
                 bool silent,
-                [NotNullWhen(true)] out Oid? signatureAlgorithm,
+                [NotNullWhen(true)] out string? signatureAlgorithm,
                 [NotNullWhen(true)] out byte[]? signatureValue)
             {
                 RSA certPublicKey = certificate.GetRSAPublicKey()!;
@@ -150,7 +150,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                signatureAlgorithm = new Oid(Oids.Rsa, Oids.Rsa);
+                signatureAlgorithm = Oids.Rsa;
 
 #if NETCOREAPP || NETSTANDARD2_1
                 byte[] signature = new byte[privateKey.KeySize / 8];
@@ -277,7 +277,7 @@ namespace System.Security.Cryptography.Pkcs
                 X509Certificate2 certificate,
                 AsymmetricAlgorithm? key,
                 bool silent,
-                out Oid signatureAlgorithm,
+                out string signatureAlgorithm,
                 out byte[] signatureValue)
             {
                 Debug.Fail("RSA-PSS requires building parameters, which has no API.");
