@@ -15,7 +15,7 @@ namespace System.ComponentModel.Composition.Registration
         private static readonly Type s_exportAttributeType = typeof(ExportAttribute);
         private readonly List<ExportBuilder> _typeExportBuilders;
         private readonly List<ImportBuilder> _constructorImportBuilders;
-        private bool _setCreationPolicy = false;
+        private bool _setCreationPolicy;
         private CreationPolicy _creationPolicy;
 
         // Metadata selection

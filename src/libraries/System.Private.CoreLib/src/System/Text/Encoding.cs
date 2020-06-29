@@ -110,9 +110,9 @@ namespace System.Text
         private const int CodePageUTF32 = 12000;
         private const int CodePageUTF32BE = 12001;
 
-        internal int _codePage = 0;
+        internal int _codePage;
 
-        internal CodePageDataItem? _dataItem = null;
+        internal CodePageDataItem? _dataItem;
 
         // Because of encoders we may be read only
         [OptionalField(VersionAdded = 2)]
@@ -1263,7 +1263,7 @@ namespace System.Text
             private unsafe char* _chars;
             private readonly unsafe char* _charStart;
             private readonly unsafe char* _charEnd;
-            private int _charCountResult = 0;
+            private int _charCountResult;
             private readonly Encoding _enc;
             private readonly DecoderNLS? _decoder;
             private readonly unsafe byte* _byteStart;
@@ -1414,7 +1414,7 @@ namespace System.Text
             private unsafe char* _chars;
             private readonly unsafe char* _charStart;
             private readonly unsafe char* _charEnd;
-            private int _byteCountResult = 0;
+            private int _byteCountResult;
             private readonly Encoding _enc;
             private readonly EncoderNLS? _encoder;
             internal EncoderFallbackBuffer fallbackBuffer;

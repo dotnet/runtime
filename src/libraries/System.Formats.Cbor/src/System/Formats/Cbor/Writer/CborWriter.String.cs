@@ -13,7 +13,7 @@ namespace System.Formats.Cbor
         // Implements major type 2,3 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
         // keeps track of chunk offsets for written indefinite-length string ranges
-        private List<(int Offset, int Length)>? _currentIndefiniteLengthStringRanges = null;
+        private List<(int Offset, int Length)>? _currentIndefiniteLengthStringRanges;
 
         /// <summary>
         ///   Writes a buffer as a byte string encoding (major type 2).

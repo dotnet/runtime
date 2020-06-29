@@ -1644,6 +1644,33 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
 {
     assert(lclVarNode != nullptr);
 
+    bool isDef = ((lclVarNode->gtFlags & GTF_VAR_DEF) != 0);
+
+    // We have accurate ref counts when running late liveness so we can eliminate
+    // some stores if the lhs local has a ref count of 1.
+    if (isDef && compRationalIRForm && (varDsc.lvRefCnt() == 1) && !varDsc.lvPinned)
+    {
+        if (varDsc.lvIsStructField)
+        {
+            if ((lvaGetDesc(varDsc.lvParentLcl)->lvRefCnt() == 1) &&
+                (lvaGetParentPromotionType(&varDsc) == PROMOTION_TYPE_DEPENDENT))
+            {
+                return true;
+            }
+        }
+        else if (varTypeIsStruct(varDsc.lvType))
+        {
+            if (lvaGetPromotionType(&varDsc) != PROMOTION_TYPE_INDEPENDENT)
+            {
+                return true;
+            }
+        }
+        else
+        {
+            return true;
+        }
+    }
+
     if (!varTypeIsStruct(varDsc.lvType) || (lvaGetPromotionType(&varDsc) == PROMOTION_TYPE_NONE))
     {
         return false;
@@ -1651,7 +1678,6 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
 
     VARSET_TP fieldSet(VarSetOps::MakeEmpty(this));
     bool      fieldsAreTracked = true;
-    bool      isDef            = ((lclVarNode->gtFlags & GTF_VAR_DEF) != 0);
 
     for (unsigned i = varDsc.lvFieldLclStart; i < varDsc.lvFieldLclStart + varDsc.lvFieldCnt; ++i)
     {
@@ -1682,8 +1708,12 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
     if (isDef)
     {
         VARSET_TP liveFields(VarSetOps::Intersection(this, life, fieldSet));
-        VarSetOps::DiffD(this, fieldSet, keepAliveVars);
-        VarSetOps::DiffD(this, life, fieldSet);
+        if ((lclVarNode->gtFlags & GTF_VAR_USEASG) == 0)
+        {
+            VarSetOps::DiffD(this, fieldSet, keepAliveVars);
+            VarSetOps::DiffD(this, life, fieldSet);
+        }
+
         if (fieldsAreTracked && VarSetOps::IsEmpty(this, liveFields))
         {
             // None of the fields were live, so this is a dead store.
@@ -1693,12 +1723,14 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
                 VARSET_TP keepAliveFields(VarSetOps::Intersection(this, fieldSet, keepAliveVars));
                 noway_assert(VarSetOps::IsEmpty(this, keepAliveFields));
 
-                // Do not consider this store dead if the parent local variable is an address exposed local.
-                return !varDsc.lvAddrExposed;
+                // Do not consider this store dead if the parent local variable is an address exposed local or
+                // if the struct has a custom layout and holes.
+                return !(varDsc.lvAddrExposed || (varDsc.lvCustomLayout && varDsc.lvContainsHoles));
             }
         }
         return false;
     }
+
     // This is a use.
 
     // Are the variables already known to be alive?
@@ -1934,10 +1966,11 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     if (isDeadStore)
                     {
                         LIR::Use addrUse;
-                        if (blockRange.TryGetUse(node, &addrUse) && (addrUse.User()->OperGet() == GT_STOREIND))
+                        if (blockRange.TryGetUse(node, &addrUse) &&
+                            (addrUse.User()->OperIs(GT_STOREIND, GT_STORE_BLK, GT_STORE_OBJ)))
                         {
                             // Remove the store. DCE will iteratively clean up any ununsed operands.
-                            GenTreeStoreInd* const store = addrUse.User()->AsStoreInd();
+                            GenTreeIndir* const store = addrUse.User()->AsIndir();
 
                             JITDUMP("Removing dead indirect store:\n");
                             DISPNODE(store);
@@ -1945,7 +1978,15 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                             assert(store->Addr() == node);
                             blockRange.Delete(this, block, node);
 
-                            store->Data()->SetUnusedValue();
+                            GenTree* data =
+                                store->OperIs(GT_STOREIND) ? store->AsStoreInd()->Data() : store->AsBlk()->Data();
+                            data->SetUnusedValue();
+                            if (data->isIndir())
+                            {
+                                // This is a block assignment. An indirection of the rhs is not considered
+                                // to happen until the assignment so mark it as non-faulting.
+                                data->gtFlags |= GTF_IND_NONFAULTING;
+                            }
 
                             blockRange.Remove(store);
 
@@ -1965,39 +2006,41 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 if (varDsc.lvTracked)
                 {
                     isDeadStore = fgComputeLifeTrackedLocalDef(life, keepAliveVars, varDsc, lclVarNode);
-                    if (isDeadStore)
-                    {
-                        JITDUMP("Removing dead store:\n");
-                        DISPNODE(lclVarNode);
-
-                        // Remove the store. DCE will iteratively clean up any ununsed operands.
-                        lclVarNode->gtOp1->SetUnusedValue();
-
-                        // If the store is marked as a late argument, it is referenced by a call. Instead of removing
-                        // it, bash it to a NOP.
-                        if ((node->gtFlags & GTF_LATE_ARG) != 0)
-                        {
-                            JITDUMP("node is a late arg; replacing with NOP\n");
-                            node->gtBashToNOP();
-
-                            // NOTE: this is a bit of a hack. We need to keep these nodes around as they are
-                            // referenced by the call, but they're considered side-effect-free non-value-producing
-                            // nodes, so they will be removed if we don't do this.
-                            node->gtFlags |= GTF_ORDER_SIDEEFF;
-                        }
-                        else
-                        {
-                            blockRange.Remove(node);
-                        }
-
-                        assert(!opts.MinOpts());
-                        fgStmtRemoved = true;
-                    }
                 }
                 else
                 {
-                    fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode);
+                    isDeadStore = fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode);
                 }
+
+                if (isDeadStore)
+                {
+                    JITDUMP("Removing dead store:\n");
+                    DISPNODE(lclVarNode);
+
+                    // Remove the store. DCE will iteratively clean up any ununsed operands.
+                    lclVarNode->gtOp1->SetUnusedValue();
+
+                    // If the store is marked as a late argument, it is referenced by a call. Instead of removing
+                    // it, bash it to a NOP.
+                    if ((node->gtFlags & GTF_LATE_ARG) != 0)
+                    {
+                        JITDUMP("node is a late arg; replacing with NOP\n");
+                        node->gtBashToNOP();
+
+                        // NOTE: this is a bit of a hack. We need to keep these nodes around as they are
+                        // referenced by the call, but they're considered side-effect-free non-value-producing
+                        // nodes, so they will be removed if we don't do this.
+                        node->gtFlags |= GTF_ORDER_SIDEEFF;
+                    }
+                    else
+                    {
+                        blockRange.Remove(node);
+                    }
+
+                    assert(!opts.MinOpts());
+                    fgStmtRemoved = true;
+                }
+
                 break;
             }
 
@@ -2533,7 +2576,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
             if (isFinallyVar)
             {
                 // Set lvMustInit only if we have a non-arg, GC pointer.
-                if (!varDsc->lvIsParam && varTypeIsGC(varDsc->TypeGet()) && !fieldOfDependentlyPromotedStruct)
+                if (!varDsc->lvIsParam && varTypeIsGC(varDsc->TypeGet()))
                 {
                     varDsc->lvMustInit = true;
                 }

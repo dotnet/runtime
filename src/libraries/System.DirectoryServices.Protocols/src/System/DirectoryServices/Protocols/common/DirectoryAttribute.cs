@@ -12,7 +12,7 @@ namespace System.DirectoryServices.Protocols
     public class DirectoryAttribute : CollectionBase
     {
         private string _attributeName = "";
-        internal bool _isSearchResult = false;
+        internal bool _isSearchResult;
         // Does not request Unicode byte order mark prefix be emitted, but turn on error detection.
         private static readonly UTF8Encoding s_utf8EncoderWithErrorDetection = new UTF8Encoding(false, true);
         // No Error detection.

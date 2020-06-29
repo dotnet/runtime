@@ -17,7 +17,7 @@ namespace System.Net
         private static readonly ConcurrentDictionary<string, WeakReference<ServicePoint>> s_servicePointTable = new ConcurrentDictionary<string, WeakReference<ServicePoint>>();
         private static SecurityProtocolType s_securityProtocolType = SecurityProtocolType.SystemDefault;
         private static int s_connectionLimit = 2;
-        private static int s_maxServicePoints = 0;
+        private static int s_maxServicePoints;
         private static int s_maxServicePointIdleTime = 100 * 1000;
         private static int s_dnsRefreshTimeout = 2 * 60 * 1000;
 

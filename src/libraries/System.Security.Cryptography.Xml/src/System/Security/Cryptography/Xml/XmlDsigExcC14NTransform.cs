@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Xml
     {
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlDocument), typeof(XmlNodeList) };
         private readonly Type[] _outputTypes = { typeof(Stream) };
-        private readonly bool _includeComments = false;
+        private readonly bool _includeComments;
         private string _inclusiveNamespacesPrefixList;
         private ExcCanonicalXml _excCanonicalXml;
 

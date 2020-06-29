@@ -16,8 +16,8 @@ namespace System.ComponentModel.Composition.Hosting
     public class ComposablePartExportProvider : ExportProvider, IDisposable
     {
         private List<ComposablePart> _parts = new List<ComposablePart>();
-        private volatile bool _isDisposed = false;
-        private volatile bool _isRunning = false;
+        private volatile bool _isDisposed;
+        private volatile bool _isRunning;
         private readonly CompositionLock _lock;
         private ExportProvider? _sourceProvider;
         private ImportEngine? _importEngine;

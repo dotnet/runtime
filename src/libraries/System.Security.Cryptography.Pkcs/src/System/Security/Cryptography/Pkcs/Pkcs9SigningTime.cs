@@ -72,6 +72,6 @@ namespace System.Security.Cryptography.Pkcs
             return PkcsHelpers.EncodeUtcTime(signingTime);
         }
 
-        private DateTime? _lazySigningTime = default(DateTime?);
+        private DateTime? _lazySigningTime;
     }
 }

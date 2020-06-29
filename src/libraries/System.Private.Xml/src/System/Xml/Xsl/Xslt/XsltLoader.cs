@@ -1354,7 +1354,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         private const int MAX_LOADINSTRUCTIONS_DEPTH = 1024;
-        private int _loadInstructionsDepth = 0;
+        private int _loadInstructionsDepth;
         private List<XslNode> LoadInstructions(List<XslNode> content, InstructionFlags flags)
         {
             if (++_loadInstructionsDepth > MAX_LOADINSTRUCTIONS_DEPTH)

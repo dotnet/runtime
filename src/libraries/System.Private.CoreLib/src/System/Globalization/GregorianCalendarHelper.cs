@@ -102,7 +102,7 @@ namespace System.Globalization
         internal Calendar m_Cal;
 
         internal EraInfo[] m_EraInfo;
-        internal int[]? m_eras = null;
+        internal int[]? m_eras;
 
         // Construct an instance of gregorian calendar.
         internal GregorianCalendarHelper(Calendar cal, EraInfo[] eraInfo)

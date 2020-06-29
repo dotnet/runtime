@@ -28,14 +28,14 @@ namespace Microsoft.Win32
         private static volatile Thread? s_windowThread;
         private static volatile ManualResetEvent? s_eventWindowReady;
         private static readonly Random s_randomTimerId = new Random();
-        private static volatile bool s_registeredSessionNotification = false;
+        private static volatile bool s_registeredSessionNotification;
         private static volatile IntPtr s_defWindowProc;
 
         private static volatile string? s_className;
 
         // cross-thread marshaling
         private static volatile Queue<Delegate>? s_threadCallbackList; // list of Delegates
-        private static volatile int s_threadCallbackMessage = 0;
+        private static volatile int s_threadCallbackMessage;
         private static volatile ManualResetEvent? s_eventThreadTerminated;
 
         // Per-instance data that is isolated to the window thread.
@@ -71,7 +71,7 @@ namespace Microsoft.Win32
         // stole from SystemInformation... if we get SystemInformation moved
         // to somewhere that we can use it... rip this!
         private static volatile IntPtr s_processWinStation = IntPtr.Zero;
-        private static volatile bool s_isUserInteractive = false;
+        private static volatile bool s_isUserInteractive;
         private static unsafe bool UserInteractive
         {
             get

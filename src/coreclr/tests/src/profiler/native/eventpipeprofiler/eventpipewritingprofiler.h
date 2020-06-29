@@ -6,10 +6,10 @@
 
 #include "../profiler.h"
 
-class EventPipeProfiler : public Profiler
+class EventPipeWritingProfiler : public Profiler
 {
 public:
-    EventPipeProfiler() : Profiler(),
+    EventPipeWritingProfiler() : Profiler(),
         _failures(0),
         _provider(0),
         _allTypesEvent(0),

@@ -39,13 +39,13 @@ namespace System.Data
 
         private XmlDocument _dc;
         private XmlElement _sRoot;
-        private int _prefixCount = 0;
+        private int _prefixCount;
         private readonly SchemaFormat _schFormat = SchemaFormat.Public;
-        private string _filePath = null;
-        private string _fileName = null;
-        private string _fileExt = null;
-        private XmlElement _dsElement = null;
-        private XmlElement _constraintSeparator = null;
+        private string _filePath;
+        private string _fileName;
+        private string _fileExt;
+        private XmlElement _dsElement;
+        private XmlElement _constraintSeparator;
 
         /// <summary>
         /// This converter allows new versions of the framework to write
@@ -2239,11 +2239,11 @@ namespace System.Data
         internal DataSet _ds;
         internal DataTable _dt;
         internal XmlWriter _xmlw;
-        private bool _fBefore = false;
-        private bool _fErrors = false;
-        internal Hashtable _rowsOrder = null;
+        private bool _fBefore;
+        private bool _fErrors;
+        internal Hashtable _rowsOrder;
         private readonly ArrayList _tables = new ArrayList();
-        private readonly bool _writeHierarchy = false;
+        private readonly bool _writeHierarchy;
 
 
         internal NewDiffgramGen(DataSet ds)
@@ -2642,16 +2642,16 @@ namespace System.Data
     {
         private XmlWriter _xmlw;
 
-        private readonly DataSet _ds = null;
-        private readonly DataTable _dt = null;
+        private readonly DataSet _ds;
+        private readonly DataTable _dt;
 
         private readonly ArrayList _dTables = new ArrayList();
         private readonly DataTable[] _topLevelTables;
 
-        private readonly bool _fFromTable = false; // also means no hierarchy
-        private bool _isDiffgram = false;
-        private Hashtable _rowsOrder = null;
-        private readonly bool _writeHierarchy = false;
+        private readonly bool _fFromTable; // also means no hierarchy
+        private bool _isDiffgram;
+        private Hashtable _rowsOrder;
+        private readonly bool _writeHierarchy;
 
 
 

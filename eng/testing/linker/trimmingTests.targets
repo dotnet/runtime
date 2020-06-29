@@ -57,6 +57,10 @@
       <_projectSourceFile>%(TestConsoleApps.ProjectCompileItems)</_projectSourceFile>
     </PropertyGroup>
 
+    <ItemGroup>
+      <_additionalProjectSourceFiles Include="%(TestConsoleApps.AdditionalSourceFiles)" />
+    </ItemGroup>
+
     <MakeDir Directories="$(_projectDir)" />
     <WriteLinesToFile File="$(_projectFile)"
                       Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)')
@@ -68,6 +72,9 @@
                       Overwrite="true" />
     <Copy SourceFiles="$(_projectSourceFile)"
           DestinationFolder="$(_projectDir)" />
+    <Copy SourceFiles="@(_additionalProjectSourceFiles)"
+          DestinationFolder="$(_projectDir)"
+          Condition="'@(_additionalProjectSourceFiles)' != ''" />
     <Message Text="Generated $(_projectFile)" />
   </Target>
 

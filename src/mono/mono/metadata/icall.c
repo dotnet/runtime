@@ -2086,16 +2086,6 @@ handle_enum:
 }
 #endif
 
-static MonoType*
-mono_type_get_underlying_type_ignore_byref (MonoType *type)
-{
-	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass))
-		return mono_class_enum_basetype_internal (type->data.klass);
-	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class))
-		return mono_class_enum_basetype_internal (type->data.generic_class->container_class);
-	return type;
-}
-
 guint32
 ves_icall_RuntimeTypeHandle_type_is_assignable_from (MonoReflectionTypeHandle ref_type, MonoReflectionTypeHandle ref_c, MonoError *error)
 {
@@ -2110,26 +2100,7 @@ ves_icall_RuntimeTypeHandle_type_is_assignable_from (MonoReflectionTypeHandle re
 		return FALSE;
 
 	if (type->byref) {
-		MonoType *t = mono_type_get_underlying_type_ignore_byref (type);
-		MonoType *ot = mono_type_get_underlying_type_ignore_byref (ctype);
-
-		klass = mono_class_from_mono_type_internal (t);
-		klassc = mono_class_from_mono_type_internal (ot);
-
-		if (mono_type_is_primitive (t)) {
-			return mono_type_is_primitive (ot) && m_class_get_instance_size (klass) == m_class_get_instance_size (klassc);
-		} else if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) {
-			return t->type == ot->type && t->data.generic_param->num == ot->data.generic_param->num;
-		} else if (t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR) {
-			return t->type == ot->type;
-		} else {
-			 if (ot->type == MONO_TYPE_VAR || ot->type == MONO_TYPE_MVAR)
-				 return FALSE;
-
-			 if (m_class_is_valuetype (klass))
-				return klass == klassc;
-			 return m_class_is_valuetype (klass) == m_class_is_valuetype (klassc);
-		}
+		return mono_byref_type_is_assignable_from (type, ctype, FALSE);
 	}
 
 	gboolean result;

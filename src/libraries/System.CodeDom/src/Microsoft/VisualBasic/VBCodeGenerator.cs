@@ -46,7 +46,7 @@ namespace Microsoft.VisualBasic
                                                          GeneratorSupport.GenericTypeDeclaration |
                                                          GeneratorSupport.DeclareIndexerProperties;
 
-        private int _statementDepth = 0;
+        private int _statementDepth;
         private readonly IDictionary<string, string> _provOptions;
 
         // This is the keyword list. To minimize search time and startup time, this is stored by length

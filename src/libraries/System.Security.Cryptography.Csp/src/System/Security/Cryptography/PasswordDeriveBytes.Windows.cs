@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
 {
     public partial class PasswordDeriveBytes : DeriveBytes
     {
-        private SafeProvHandle? _safeProvHandle = null;
+        private SafeProvHandle? _safeProvHandle;
 
         public byte[] CryptDeriveKey(string? algname, string? alghashname, int keySize, byte[] rgbIV)
         {

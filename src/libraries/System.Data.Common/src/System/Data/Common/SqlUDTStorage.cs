@@ -17,8 +17,8 @@ namespace System.Data.Common
     internal sealed class SqlUdtStorage : DataStorage
     {
         private object[] _values;
-        private readonly bool _implementsIXmlSerializable = false;
-        private readonly bool _implementsIComparable = false;
+        private readonly bool _implementsIXmlSerializable;
+        private readonly bool _implementsIComparable;
 
         private static readonly ConcurrentDictionary<Type, object> s_typeToNull = new ConcurrentDictionary<Type, object>();
 

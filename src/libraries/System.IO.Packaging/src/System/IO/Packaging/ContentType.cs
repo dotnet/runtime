@@ -562,7 +562,7 @@ namespace System.IO.Packaging
         private string _subType = string.Empty;
         private readonly string _originalString;
         private Dictionary<string, string>? _parameterDictionary;
-        private readonly bool _isInitialized = false;
+        private readonly bool _isInitialized;
 
         private const string Quote = "\"";
         private const char SemicolonSeparator = ';';

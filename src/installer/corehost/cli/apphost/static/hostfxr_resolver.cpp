@@ -5,7 +5,7 @@
 #include <assert.h>
 #include "trace.h"
 #include "hostfxr.h"
-#include "hostfxr_resolver_t.h"
+#include "hostfxr_resolver.h"
 
 extern "C"
 {
