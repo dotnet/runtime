@@ -191,7 +191,7 @@ namespace System.Net.Http.Functional.Tests
 
                             // Wait a small amount of time before sending the first response, so the connection lifetime will expire.
                             Debug.Assert(lifetimeMilliseconds < 100);
-                            await Task.Delay(100);
+                            await Task.Delay(1000);
 
                             // Second request should not have completed yet, as we haven't completed the first yet.
                             Assert.False(request2.IsCompleted);
