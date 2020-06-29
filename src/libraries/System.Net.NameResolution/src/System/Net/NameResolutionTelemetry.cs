@@ -17,7 +17,7 @@ namespace System.Net
 
         public static new bool IsEnabled => Log.IsEnabled();
 
-        private const int ResolutionStartEventId = 1;
+        private const int ResolutionStartingEventId = 1;
         private const int ResolutionSuccessEventId = 2;
         private const int ResolutionFailureEventId = 3;
 
@@ -30,7 +30,7 @@ namespace System.Net
         {
             if (command.Command == EventCommand.Enable)
             {
-                // The cumulative number of name resolution requests started since the process started.
+                // The cumulative number of name resolution requests started since events were enabled
                 _lookupsRequestedCounter ??= new PollingCounter("dns-lookups-requested", this, () => Interlocked.Read(ref _lookupsRequested))
                 {
                     DisplayName = "DNS Lookups Requested"
@@ -44,33 +44,54 @@ namespace System.Net
             }
         }
 
+
         private const int MaxIPFormattedLength = 128;
 
-        [Event(ResolutionStartEventId, Level = EventLevel.Informational)]
-        public ValueStopwatch ResolutionStart(string hostNameOrAddress)
+        // Methods below assume that ResolutionSuccess and ResolutionFailure have the same signature
+
+        [Event(ResolutionStartingEventId, Level = EventLevel.Informational)]
+        private void ResolutionStarting(string hostNameOrAddress) => WriteEvent(ResolutionStartingEventId, hostNameOrAddress);
+
+        [Event(ResolutionSuccessEventId, Level = EventLevel.Informational)]
+        private void ResolutionSuccess(string hostNameOrAddress, double duration) => WriteEvent(ResolutionSuccessEventId, hostNameOrAddress, duration);
+
+        [Event(ResolutionFailureEventId, Level = EventLevel.Informational)]
+        private void ResolutionFailure(string hostNameOrAddress, double duration) => WriteEvent(ResolutionFailureEventId, hostNameOrAddress, duration);
+
+
+        [NonEvent]
+        public ValueStopwatch BeforeResolution(string hostNameOrAddress)
         {
             Debug.Assert(hostNameOrAddress != null);
 
             if (IsEnabled())
             {
                 Interlocked.Increment(ref _lookupsRequested);
-                WriteEvent(ResolutionStartEventId, hostNameOrAddress);
-                return ValueStopwatch.StartNew();
+
+                if (IsEnabled(EventLevel.Informational, EventKeywords.None))
+                {
+                    ResolutionStarting(hostNameOrAddress);
+                    return ValueStopwatch.StartNew();
+                }
             }
 
             return default;
         }
 
         [NonEvent]
-        public ValueStopwatch ResolutionStart(IPAddress address)
+        public ValueStopwatch BeforeResolution(IPAddress address)
         {
             Debug.Assert(address != null);
 
             if (IsEnabled())
             {
                 Interlocked.Increment(ref _lookupsRequested);
-                WriteEvent(ResolutionStartEventId, FormatIPAddressNullTerminated(address, stackalloc char[MaxIPFormattedLength]));
-                return ValueStopwatch.StartNew();
+
+                if (IsEnabled(EventLevel.Informational, EventKeywords.None))
+                {
+                    WriteEvent(ResolutionStartingEventId, FormatIPAddressNullTerminated(address, stackalloc char[MaxIPFormattedLength]));
+                    return ValueStopwatch.StartNew();
+                }
             }
 
             return default;
@@ -113,13 +134,6 @@ namespace System.Net
         }
 
 
-        [Event(ResolutionSuccessEventId, Level = EventLevel.Informational)]
-        private void ResolutionSuccess(string hostNameOrAddress, double duration) => WriteEvent(ResolutionSuccessEventId, hostNameOrAddress, duration);
-
-        [Event(ResolutionFailureEventId, Level = EventLevel.Informational)]
-        private void ResolutionFailure(string hostNameOrAddress, double duration) => WriteEvent(ResolutionFailureEventId, hostNameOrAddress, duration);
-
-
         [NonEvent]
         private static Span<char> FormatIPAddressNullTerminated(IPAddress address, Span<char> destination)
         {
@@ -135,10 +149,13 @@ namespace System.Net
         }
 
 
+        // WriteEvent overloads taking Span<char> are imitating string arguments
+        // Span arguments are expected to be null-terminated
+
         [NonEvent]
         private unsafe void WriteEvent(int eventId, Span<char> arg1)
         {
-            Debug.Assert(!arg1.IsEmpty && arg1[^1] == '\0', "Expecting a null-terminated ROS<char>");
+            Debug.Assert(!arg1.IsEmpty && arg1.IndexOf('\0') == arg1.Length - 1, "Expecting a null-terminated ROS<char>");
 
             if (IsEnabled())
             {
@@ -151,6 +168,34 @@ namespace System.Net
                     };
 
                     WriteEventCore(eventId, eventDataCount: 1, &descr);
+                }
+            }
+        }
+
+        [NonEvent]
+        private unsafe void WriteEvent(int eventId, Span<char> arg1, double arg2)
+        {
+            Debug.Assert(!arg1.IsEmpty && arg1.IndexOf('\0') == arg1.Length - 1, "Expecting a null-terminated ROS<char>");
+
+            if (IsEnabled())
+            {
+                fixed (char* arg1Ptr = &MemoryMarshal.GetReference(arg1))
+                {
+                    const int NumEventDatas = 2;
+                    EventData* descrs = stackalloc EventData[NumEventDatas];
+
+                    descrs[0] = new EventData
+                    {
+                        DataPointer = (IntPtr)(arg1Ptr),
+                        Size = arg1.Length * sizeof(char)
+                    };
+                    descrs[1] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg2),
+                        Size = sizeof(double)
+                    };
+
+                    WriteEventCore(eventId, NumEventDatas, descrs);
                 }
             }
         }
@@ -171,34 +216,6 @@ namespace System.Net
                     {
                         DataPointer = (IntPtr)(arg1Ptr),
                         Size = (arg1.Length + 1) * sizeof(char)
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg2),
-                        Size = sizeof(double)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
-            }
-        }
-
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, Span<char> arg1, double arg2)
-        {
-            Debug.Assert(!arg1.IsEmpty && arg1[^1] == '\0', "Expecting a null-terminated ROS<char>");
-
-            if (IsEnabled())
-            {
-                fixed (char* arg1Ptr = &MemoryMarshal.GetReference(arg1))
-                {
-                    const int NumEventDatas = 2;
-                    EventData* descrs = stackalloc EventData[NumEventDatas];
-
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg1Ptr),
-                        Size = arg1.Length * sizeof(char)
                     };
                     descrs[1] = new EventData
                     {

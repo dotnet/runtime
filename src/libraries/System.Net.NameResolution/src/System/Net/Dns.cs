@@ -20,7 +20,7 @@ namespace System.Net
         {
             NameResolutionPal.EnsureSocketsAreInitialized();
 
-            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.ResolutionStart(string.Empty);
+            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(string.Empty);
 
             string name;
             try
@@ -376,7 +376,7 @@ namespace System.Net
         {
             ValidateHostName(hostName);
 
-            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.ResolutionStart(hostName);
+            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
 
             object result;
             try
@@ -423,7 +423,7 @@ namespace System.Net
             // will only return that address and not the full list.
 
             // Do a reverse lookup to get the host name.
-            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.ResolutionStart(address);
+            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(address);
 
             SocketError errorCode;
             string? name;
@@ -446,7 +446,7 @@ namespace System.Net
             NameResolutionTelemetry.Log.AfterResolution(address, stopwatch, successful: true);
 
             // Do the forward lookup to get the IPs for that host name
-            stopwatch = NameResolutionTelemetry.Log.ResolutionStart(name);
+            stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
 
             object result;
             try
@@ -527,7 +527,7 @@ namespace System.Net
 
                 if (NameResolutionTelemetry.IsEnabled)
                 {
-                    ValueStopwatch stopwatch = NameResolutionTelemetry.Log.ResolutionStart(hostName);
+                    ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
 
                     Task coreTask;
                     try
