@@ -138,6 +138,7 @@ OPDEF(MINT_STFLD_R4, "stfld.r4", 2, Pop2, Push0, MintOpUShortInt)
 OPDEF(MINT_STFLD_R8, "stfld.r8", 2, Pop2, Push0, MintOpUShortInt)
 OPDEF(MINT_STFLD_O, "stfld.o", 2, Pop2, Push0, MintOpUShortInt)
 OPDEF(MINT_STFLD_VT, "stfld.vt", 3, Pop2, Push0, MintOpTwoShorts)
+OPDEF(MINT_STFLD_VT_NOREF, "stfld.vt.noref", 3, Pop2, Push0, MintOpTwoShorts)
 OPDEF(MINT_STFLD_I8_UNALIGNED, "stfld.i8.unaligned", 2, Pop2, Push0, MintOpUShortInt)
 OPDEF(MINT_STFLD_R8_UNALIGNED, "stfld.r8.unaligned", 2, Pop2, Push0, MintOpUShortInt)
 

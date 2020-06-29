@@ -4987,8 +4987,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						/* the vtable of the field might not be initialized at this point */
 						mono_class_vtable_checked (domain, field_klass, error);
 						goto_if_nok (error, exit);
-
-						td->last_ins->data [1] = get_data_item_index (td, field_klass);
+						if (m_class_has_references (field_klass)) {
+							td->last_ins->data [1] = get_data_item_index (td, field_klass);
+						} else {
+							td->last_ins->opcode = MINT_STFLD_VT_NOREF;
+							td->last_ins->data [1] = mono_class_value_size (field_klass, NULL);
+						}
 					}
 				}
 			}
