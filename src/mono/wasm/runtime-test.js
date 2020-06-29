@@ -206,39 +206,9 @@ var Module = {
 			f ();
 		}
 		if (enable_zoneinfo) {
-			FS.mkdir("usr");
-			Module['FS_createPath']('/', 'usr', true, true);
-			FS.mkdir("share");
-			Module['FS_createPath']('/usr', 'share', true, true);
-			FS.mkdir("/usr/share/zoneinfo")
-			Module['FS_createPath']('/usr/share/zoneinfo', 'Indian', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'Atlantic', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'US', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'Brazil', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'Pacific', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'Arctic', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'America', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo/America', 'Indiana', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo/America', 'Argentina', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo/America', 'Kentucky', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo/America', 'North_Dakota', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'Australia', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'Etc', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'Asia', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'Antarctica', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'Europe', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'Mexico', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'Africa', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'Chile', true, true);
-			Module['FS_createPath']('/usr/share/zoneinfo', 'Canada', true, true);
-			var zoneInfoData = new Uint8Array(read ('supportFiles/zoneinfo/zoneinfo.data', 'binary'));
-			var metadata = JSON.parse(read ("supportFiles/zoneinfo/mono-webassembly-zoneinfo-fs-smd.js.metadata", 'utf-8'));
-			var files = metadata.files;
-			for (var i = 0; i < files.length; ++i) {
-				var byteArray = zoneInfoData.subarray(files[i].start, files[i].end);
-				writeContentToFile(byteArray, `/usr/share${files[i].filename}`);
-			}
+			MONO.wasm_load_timezone_data ("dotnet.timezones.blat");
 		}
+
 		MONO.mono_load_runtime_and_bcl (
 			config.vfs_prefix,
 			config.deploy_prefix,

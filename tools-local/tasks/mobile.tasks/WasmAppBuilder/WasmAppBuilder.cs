@@ -71,7 +71,7 @@ public class WasmAppBuilder : Task
         Directory.CreateDirectory(Path.Join(AppDir, "managed"));
         foreach (var assembly in _assemblies!.Values)
             File.Copy(assembly.Location, Path.Join(AppDir, "managed", Path.GetFileName(assembly.Location)), true);
-        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js" })
+        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat" })
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
