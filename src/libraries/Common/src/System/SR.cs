@@ -11,11 +11,11 @@ namespace System
     internal partial class SR
     {
 #if (!NETSTANDARD1_0 && !NETSTANDARD1_1 && !NET45) // AppContext is not supported on < NetStandard1.3 or < .NET Framework 4.5
-        private static readonly bool s_usingResourceKeys = AppContext.TryGetSwitch("System.Resources.UseResourceKeys", out bool usingResourceKeys) ? usingResourceKeys : false;
+        private static readonly bool s_usingResourceKeys = AppContext.TryGetSwitch("System.Resources.UseSystemResourceKeys", out bool usingResourceKeys) ? usingResourceKeys : false;
 #endif
 
         // This method is used to decide if we need to append the exception message parameters to the message when calling SR.Format.
-        // by default it returns the value of System.Resources.UseResourceKeys AppContext switch or false if not specified.
+        // by default it returns the value of System.Resources.UseSystemResourceKeys AppContext switch or false if not specified.
         // Native code generators can replace the value this returns based on user input at the time of native code generation.
         // The Linker is also capable of replacing the value of this method when the application is being trimmed.
         private static bool UsingResourceKeys() =>

@@ -135,6 +135,7 @@
     <Compile Include="System\TypeLoadExceptionTests.cs" />
     <Compile Include="System\TypeUnloadedExceptionTests.cs" />
     <Compile Include="System\TupleTests.cs" />
+    <Compile Include="System\UseResourceKeysTest.cs" />
     <Compile Include="System\UInt16Tests.cs" />
     <Compile Include="System\UInt32Tests.cs" />
     <Compile Include="System\UInt64Tests.cs" />
