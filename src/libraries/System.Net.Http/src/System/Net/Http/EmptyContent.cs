@@ -27,6 +27,9 @@ namespace System.Net.Http
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
             SerializeToStreamAsync(stream, context);
 
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
+            EmptyReadStream.Instance;
+
         protected override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(EmptyReadStream.Instance);
 
