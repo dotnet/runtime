@@ -546,10 +546,6 @@ namespace System.Diagnostics
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Finalizable holder for the underlying shared wait state object.</summary>
         private ProcessWaitState.Holder? _waitStateHolder;
 

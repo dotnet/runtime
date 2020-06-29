@@ -101,10 +101,6 @@ namespace System.Diagnostics
             return modules;
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>
         /// Creates a ProcessInfo from the specified process ID.
         /// </summary>

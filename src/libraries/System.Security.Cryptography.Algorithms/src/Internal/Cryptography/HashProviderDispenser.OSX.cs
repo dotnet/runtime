@@ -49,10 +49,6 @@ namespace Internal.Cryptography
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private sealed class AppleHmacProvider : HashProvider
         {
             private readonly byte[] _key;
