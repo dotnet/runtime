@@ -236,7 +236,7 @@ namespace System.Net.WebSockets
                                     break;
                                 }
                             default:
-                                throw new NotImplementedException($"WebSocket bynary type '{_innerWebSocket.GetObjectProperty("binaryType").ToString()}' not supported.");
+                                throw new NotImplementedException(SR.Format(SR.net_WebSockets_Invalid_Binary_Type, _innerWebSocket.GetObjectProperty("binaryType").ToString()));
                         }
                     }
                 });
@@ -304,7 +304,7 @@ namespace System.Net.WebSockets
         {
             if (State == WebSocketState.Open)
             {
-                await CloseAsyncCore(WebSocketCloseStatus.NormalClosure, "Connection was aborted", CancellationToken.None).ConfigureAwait(continueOnCapturedContext: true);
+                await CloseAsyncCore(WebSocketCloseStatus.NormalClosure, SR.net_WebSockets_Connection_Aborted, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: true);
             }
         }
 
@@ -462,7 +462,7 @@ namespace System.Net.WebSockets
             }
             else if (State != WebSocketState.Open)
             {
-                throw new InvalidOperationException("WebSocket is not connected");
+                throw new InvalidOperationException(SR.net_WebSockets_NotConnected);
             }
         }
 
