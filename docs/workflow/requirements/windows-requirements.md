@@ -19,7 +19,7 @@ git config --system core.longpaths true
 
 ## Visual Studio
 
-- Install [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/). The Community version is completely free.
+- Install [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/). The Community edition is available free of charge.
 
 Visual Studio 2019 installation process:
 - It's recommended to use 'Workloads' installation approach. The following are the minimum requirements:
