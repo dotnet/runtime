@@ -247,15 +247,10 @@ namespace System.Net.WebSockets
             }
             catch (Exception wse)
             {
-                ConnectExceptionCleanup();
+                Dispose();
                 WebSocketException wex = new WebSocketException(SR.net_webstatus_ConnectFailure, wse);
                 throw wex;
             }
-        }
-
-        private void ConnectExceptionCleanup()
-        {
-            Dispose();
         }
 
         public override void Dispose()
