@@ -29,16 +29,11 @@ namespace System.Net.WebSockets
 
         public bool BufferPayload(ArraySegment<byte> arraySegment, out WebSocketReceiveResult receiveResult)
         {
-            var bytesTransferred = Math.Min(_dataMessageReceived.Length - _unconsumedDataOffset, arraySegment.Count);
-            var endOfMessage = (_dataMessageReceived.Length - _unconsumedDataOffset) <= arraySegment.Count;
-
+            int bytesTransferred = Math.Min(_dataMessageReceived.Length - _unconsumedDataOffset, arraySegment.Count);
+            bool endOfMessage = (_dataMessageReceived.Length - _unconsumedDataOffset) <= arraySegment.Count;
             Buffer.BlockCopy(_dataMessageReceived, _unconsumedDataOffset, arraySegment.Array!, arraySegment.Offset, bytesTransferred);
-
-            if (!endOfMessage)
-                _unconsumedDataOffset += arraySegment.Count;
-
+            _unconsumedDataOffset += arraySegment.Count;
             receiveResult = new WebSocketReceiveResult(bytesTransferred, _messageType, endOfMessage);
-
             return endOfMessage;
         }
     }
