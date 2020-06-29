@@ -27,14 +27,17 @@ namespace System.Net.Http
         }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
-            SerializeToStreamAsync(stream, context, CancellationToken.None);
+            SerializeToStreamAsyncCore(stream, context, async: true, CancellationToken.None);
 
 #if NETCOREAPP
-        protected override
-#else
-        internal
+        protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+            SerializeToStreamAsyncCore(stream, context, async: true, cancellationToken);
+
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
+            SerializeToStreamAsyncCore(stream, context, async: false, cancellationToken).GetAwaiter().GetResult();
 #endif
-            Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+
+        private Task SerializeToStreamAsyncCore(Stream stream, TransportContext? context, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(stream != null);
 
@@ -45,7 +48,25 @@ namespace System.Net.Http
             _contentConsumed = true;
 
             const int BufferSize = 8192;
-            Task copyTask = _content.CopyToAsync(stream, BufferSize, cancellationToken);
+
+            Task copyTask;
+            if (async)
+            {
+                copyTask = _content.CopyToAsync(stream, BufferSize, cancellationToken);
+            }
+            else
+            {
+                try
+                {
+                    _content.CopyTo(stream, BufferSize);
+                    copyTask = Task.CompletedTask;
+                }
+                catch (Exception ex)
+                {
+                    copyTask = Task.FromException(ex);
+                }
+            }
+
             if (copyTask.IsCompleted)
             {
                 try { _content.Dispose(); } catch { } // same as StreamToStreamCopy behavior
@@ -60,17 +81,17 @@ namespace System.Net.Http
             }
             return copyTask;
         }
-
-#if WINHTTPHANDLER_DLL
-        protected
-#else
-        protected internal
-#endif
-            override bool TryComputeLength(out long length)
+        protected override bool TryComputeLength(out long length)
         {
             length = 0;
             return false;
         }
+
+        protected override Task<Stream> CreateContentReadStreamAsync() => Task.FromResult(_content);
+
+#if NETCOREAPP
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken) => _content;
+#endif
 
         protected override void Dispose(bool disposing)
         {
@@ -80,13 +101,5 @@ namespace System.Net.Http
             }
             base.Dispose(disposing);
         }
-
-        protected override Task<Stream> CreateContentReadStreamAsync() => Task.FromResult(_content);
-
-#if !WINHTTPHANDLER_DLL
-        internal override Stream TryCreateContentReadStream() => _content;
-
-        internal override bool AllowDuplex => false;
-#endif
     }
 }

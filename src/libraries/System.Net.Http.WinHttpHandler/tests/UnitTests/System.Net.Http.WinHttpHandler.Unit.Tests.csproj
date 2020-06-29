@@ -4,7 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
-    <DefineConstants>$(DefineConstants);WINHTTPHANDLER_DLL</DefineConstants>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
