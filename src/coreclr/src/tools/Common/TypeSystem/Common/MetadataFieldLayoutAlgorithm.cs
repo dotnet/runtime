@@ -412,6 +412,8 @@ namespace Internal.TypeSystem
                 cumulativeInstanceFieldPos = LayoutInt.Max(cumulativeInstanceFieldPos, new LayoutInt(layoutMetadata.Size));
             }
 
+            largestAlignmentRequirement = FixDecimalOnARM32Alignment(type, largestAlignmentRequirement);
+
             SizeAndAlignment instanceByteSizeAndAlignment;
             var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos, largestAlignmentRequirement, out instanceByteSizeAndAlignment);
 
@@ -424,6 +426,38 @@ namespace Internal.TypeSystem
 
             return computedLayout;
         }
+
+        //From InteropTypes.cs
+        protected static bool IsSystemDecimal(TypeSystemContext context, TypeDesc type)
+        {
+            bool IsCoreNamedType(TypeSystemContext context, TypeDesc type, string @namespace, string name)
+            {
+                return type is MetadataType mdType &&
+                    mdType.Name == name &&
+                    mdType.Namespace == @namespace &&
+                    mdType.Module == context.SystemModule;
+            }
+
+            return IsCoreNamedType(context, type, "System", "Decimal");
+        }
+
+        protected static LayoutInt FixDecimalOnARM32Alignment(MetadataType type, LayoutInt alignment)
+        {
+            /* ./vm/methodtablebuilder.cpp
+            // This is required because native layout of System.Decimal causes it to be aligned
+            // differently to the layout of the native DECIMAL structure, which will cause
+            // data misalignent exceptions if Decimal is embedded in another type.
+
+            if (strcmp(name, g_DecimalName) == 0) {
+              pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = sizeof(ULONGLONG);
+            */
+            if (type.IsValueType && type.Context.Target.Architecture == TargetArchitecture.ARM && IsSystemDecimal(type.Context, type))
+            {
+                return new LayoutInt(8);
+            }
+            return alignment;
+        }
+
 
         protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8)
         {
