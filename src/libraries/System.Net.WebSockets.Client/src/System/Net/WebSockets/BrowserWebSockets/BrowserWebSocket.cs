@@ -124,7 +124,7 @@ namespace System.Net.WebSockets
                 {
                     using (JavaScript.Array subProtocols = new JavaScript.Array())
                     {
-                        foreach (var item in requestedSubProtocols)
+                        foreach (string item in requestedSubProtocols)
                         {
                             subProtocols.Push(item);
                         }
@@ -191,14 +191,13 @@ namespace System.Net.WebSockets
                         ThrowIfNotConnected();
                         // If the messageEvent's data property is marshalled as a JSObject then we are dealing with
                         // binary data
-                        var eventData = messageEvent.GetObjectProperty("data");
+                        object eventData = messageEvent.GetObjectProperty("data");
                         switch (eventData)
                         {
                             case ArrayBuffer buffer:
                                 using (buffer)
                                 {
-                                    var mess = new ReceivePayload(buffer, WebSocketMessageType.Binary);
-                                    _receiveMessageQueue.Writer.TryWrite(mess);
+                                    _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(buffer, WebSocketMessageType.Binary));
                                     break;
                                 }
                             case JSObject blobData:
@@ -206,20 +205,19 @@ namespace System.Net.WebSockets
                                 {
                                     Action<JSObject>? loadend = null;
                                     // Create a new "FileReader" object
-                                    using (var reader = new HostObject("FileReader"))
+                                    using (HostObject reader = new HostObject("FileReader"))
                                     {
                                         loadend = (loadEvent) =>
                                         {
                                             using (loadEvent)
-                                            using (var target = (JSObject)loadEvent.GetObjectProperty("target"))
+                                            using (JSObject target = (JSObject)loadEvent.GetObjectProperty("target"))
                                             {
                                                 // https://developer.mozilla.org/en-US/docs/Web/API/FileReader/readyState
                                                 if ((int)target.GetObjectProperty("readyState") == 2) // DONE - The operation is complete.
                                                 {
-                                                    using (var binResult = (ArrayBuffer)target.GetObjectProperty("result"))
+                                                    using (ArrayBuffer binResult = (ArrayBuffer)target.GetObjectProperty("result"))
                                                     {
-                                                        var mess = new ReceivePayload(binResult, WebSocketMessageType.Binary);
-                                                        _receiveMessageQueue.Writer.TryWrite(mess);
+                                                        _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(binResult, WebSocketMessageType.Binary));
                                                         if (loadend != null)
                                                             JavaScript.Runtime.FreeObject(loadend);
                                                     }
@@ -234,8 +232,7 @@ namespace System.Net.WebSockets
                                 }
                             case string message:
                                 {
-                                    var mess = new ReceivePayload(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text);
-                                    _receiveMessageQueue.Writer.TryWrite(mess);
+                                    _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text));
                                     break;
                                 }
                             default:
@@ -401,7 +398,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                var endOfMessage = _bufferedPayload.BufferPayload(buffer, out WebSocketReceiveResult receiveResult);
+                bool endOfMessage = _bufferedPayload.BufferPayload(buffer, out WebSocketReceiveResult receiveResult);
                 if (endOfMessage)
                     _bufferedPayload = null;
                 return receiveResult;
