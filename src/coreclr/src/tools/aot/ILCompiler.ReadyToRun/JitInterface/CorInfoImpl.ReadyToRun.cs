@@ -1286,6 +1286,9 @@ namespace Internal.JitInterface
                 // we have to apply more restrictive rules
                 // These rules are related to the "inlining rules" as far as the
                 // boundaries of a version bubble are concerned.
+                // This check is different between CG1 and CG2. CG1 considers two types in the same version bubble
+                // if their assemblies are in the same bubble, or if the NonVersionableTypeAttribute is present on the type.
+                // CG2 checks a method cache that it builds with a bunch of new code.
                 if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod) ||
                     // check the Typical TargetMethod, not the Instantiation
                     !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(targetMethod.IsTypicalMethodDefinition ?
