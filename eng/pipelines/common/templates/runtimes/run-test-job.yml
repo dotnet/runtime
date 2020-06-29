@@ -11,8 +11,6 @@ parameters:
   crossgen2: false
   compositeBuildMode: false
   helixQueues: ''
-  # If true, run the corefx tests instead of the coreclr ones
-  corefxTests: false
   condition: true
   stagedBuild: false
   displayNameArgs: ''
@@ -38,7 +36,6 @@ jobs:
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
-    corefxTests: ${{ parameters.corefxTests }}
     stagedBuild: ${{ parameters.stagedBuild }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     helixType: 'build/tests/'
@@ -51,11 +48,10 @@ jobs:
       continueOnError: true
 
     dependsOn:
-    - ${{ if ne(parameters.corefxTests, true) }}:
-      - ${{ if eq(parameters.testGroup, 'innerloop') }}:
-        - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
-      - ${{ if ne(parameters.testGroup, 'innerloop') }}:
-        - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
+    - ${{ if eq(parameters.testGroup, 'innerloop') }}:
+      - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
+    - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
     - ${{ if ne(parameters.stagedBuild, true) }}:
       - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
@@ -71,11 +67,6 @@ jobs:
       displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeVariant }} Pri1 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     variables:
-    - name: testhostArg
-      value: 'generatetesthostonly'
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - name: testhostArg
-        value: 'buildtesthostonly'
 
     - name: runtimeFlavorArgs
       value: ''
@@ -110,7 +101,7 @@ jobs:
     #
     # "timeoutPerTestInMinutes" corresponds to individual test running time. This is implemented by setting
     # the __TestTimeout variable, which is later read by the coreclr xunit test wrapper code (the code in the
-    # xunit test dlls that invokes the actual tests). Note this doesn't apply to CoreFX testing.
+    # xunit test dlls that invokes the actual tests).
     #
     # Please note that for Crossgen / Crossgen2 R2R runs, the "test running time" also includes the
     # time needed to compile the test into native code with the Crossgen compiler.
@@ -119,9 +110,6 @@ jobs:
       value: 10
     - name: timeoutPerTestCollectionInMinutes
       value: 30
-    - ${{ if eq(parameters.corefxTests, true) }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 10
     - ${{ if in(parameters.testGroup, 'outerloop') }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 120
@@ -187,13 +175,12 @@ jobs:
 
 
     # Download and unzip managed test artifacts
-    - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: '$(managedTestArtifactRootFolderPath)'
-          artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
-          artifactName: '$(managedGenericTestArtifactName)'
-          displayName: 'generic managed test artifacts'
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: '$(managedTestArtifactRootFolderPath)'
+        artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
+        artifactName: '$(managedGenericTestArtifactName)'
+        displayName: 'generic managed test artifacts'
 
 
     # Download product binaries directory
@@ -217,23 +204,21 @@ jobs:
 
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
-    - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: '$(microsoftNetSdkIlFolderPath)'
-          artifactFileName: '$(microsoftNetSdkIlArtifactName).tar.gz'
-          artifactName: '$(microsoftNetSdkIlArtifactName)'
-          displayName: 'Microsoft.NET.Sdk.IL package'
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: '$(microsoftNetSdkIlFolderPath)'
+        artifactFileName: '$(microsoftNetSdkIlArtifactName).tar.gz'
+        artifactName: '$(microsoftNetSdkIlArtifactName)'
+        displayName: 'Microsoft.NET.Sdk.IL package'
 
 
     # Download and unzip native test artifacts
-    - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: '$(nativeTestArtifactRootFolderPath)'
-          artifactFileName: '$(nativeTestArtifactName)$(archiveExtension)'
-          artifactName: '$(nativeTestArtifactName)'
-          displayName: 'native test artifacts'
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: '$(nativeTestArtifactRootFolderPath)'
+        artifactFileName: '$(nativeTestArtifactName)$(archiveExtension)'
+        artifactName: '$(nativeTestArtifactName)'
+        displayName: 'native test artifacts'
 
 
     # Publish native test components to test output folder. Sadly we cannot do this
@@ -241,15 +226,8 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
-    - ${{ if ne(parameters.corefxTests, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipstressdependencies copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
-        displayName: Copy native test components to test output folder
-
-
-    # Generate test host
-    - ${{ if eq(parameters.corefxTests, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
-        displayName: Generate test host
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipstressdependencies copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+      displayName: Copy native test components to test output folder
 
 
     # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
@@ -296,13 +274,9 @@ jobs:
 
         # REVIEW: not sure why "cli" is part of the names here. Leave it for the ones that already had it,
         # but don't add it to new ones.
-        ${{ if and(eq(parameters.corefxTests, true), eq(parameters.readyToRun, true)) }}:
-          helixType: 'test/functional/r2r_corefx/'
-        ${{ if and(eq(parameters.corefxTests, true), ne(parameters.readyToRun, true)) }}:
-          helixType: 'test/functional/corefx/'
-        ${{ if and(ne(parameters.corefxTests, true), eq(parameters.readyToRun, true)) }}:
+        ${{ if eq(parameters.readyToRun, true) }}:
           helixType: 'test/functional/r2r/cli/'
-        ${{ if and(ne(parameters.corefxTests, true), ne(parameters.readyToRun, true)) }}:
+        ${{ if ne(parameters.readyToRun, true) }}:
           helixType: 'test/functional/cli/'
 
         helixQueues: ${{ parameters.helixQueues }}
@@ -326,11 +300,7 @@ jobs:
           # DotNet-HelixApi-Access variable group
           helixAccessToken: $(HelixApiAccessToken)
 
-        # Choose which tests to send to Helix: CoreFX or CoreCLR.
-        ${{ if eq(parameters.corefxTests, true) }}:
-          helixProjectArguments: '$(Build.SourcesDirectory)/eng/helixcorefxtests.proj'
-        ${{ if ne(parameters.corefxTests, true) }}:
-          helixProjectArguments: '$(coreClrRepoRoot)/tests/helixpublishwitharcade.proj'
+        helixProjectArguments: '$(coreClrRepoRoot)/tests/helixpublishwitharcade.proj'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           scenarios:

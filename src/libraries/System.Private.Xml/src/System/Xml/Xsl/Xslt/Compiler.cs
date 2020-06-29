@@ -47,7 +47,7 @@ namespace System.Xml.Xsl.Xslt
         public string inputTypeAnnotations;   // null - "unspecified"; "preserve"; "strip"
 
         public CompilerErrorCollection CompilerErrorColl;        // Results of the compilation
-        public int CurrentPrecedence = 0;  // Decreases by 1 with each import
+        public int CurrentPrecedence;  // Decreases by 1 with each import
         public XslNode StartApplyTemplates;
         public RootLevel Root;
         public Scripts Scripts;
@@ -255,7 +255,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         public readonly string PhantomNCName = "error";
-        private int _phantomNsCounter = 0;
+        private int _phantomNsCounter;
 
         public string CreatePhantomNamespace()
         {

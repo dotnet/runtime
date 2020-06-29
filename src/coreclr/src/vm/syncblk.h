@@ -602,6 +602,8 @@ class ComClassFactory;
 struct RCW;
 class RCWHolder;
 typedef DPTR(class ComCallWrapper)        PTR_ComCallWrapper;
+
+#include "shash.h"
 #endif // FEATURE_COMINTEROP
 
 class InteropSyncBlockInfo
@@ -791,22 +793,65 @@ public:
 #endif
 
 public:
-    bool TryGetManagedObjectComWrapper(_Out_ void** mocw)
+    bool TryGetManagedObjectComWrapper(_In_ INT64 wrapperId, _Out_ void** mocw)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        *mocw = m_managedObjectComWrapper;
-        return (*mocw != NULL);
+
+        *mocw = NULL;
+        if (m_managedObjectComWrapperMap == NULL)
+            return false;
+
+        CrstHolder lock(&m_managedObjectComWrapperLock);
+        return m_managedObjectComWrapperMap->Lookup(wrapperId, mocw);
     }
 
 #ifndef DACCESS_COMPILE
-    bool TrySetManagedObjectComWrapper(_In_ void* mocw, _In_ void* curr = NULL)
+    bool TrySetManagedObjectComWrapper(_In_ INT64 wrapperId, _In_ void* mocw, _In_ void* curr = NULL)
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (FastInterlockCompareExchangePointer(
-                        &m_managedObjectComWrapper,
-                        mocw,
-                        curr) == curr);
+        if (m_managedObjectComWrapperMap == NULL)
+        {
+            NewHolder<ManagedObjectComWrapperByIdMap> map = new ManagedObjectComWrapperByIdMap();
+            if (FastInterlockCompareExchangePointer((ManagedObjectComWrapperByIdMap**)&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
+            {
+                map.SuppressRelease();
+                m_managedObjectComWrapperLock.Init(CrstLeafLock);
+            }
+
+            _ASSERTE(m_managedObjectComWrapperMap != NULL);
+        }
+
+        CrstHolder lock(&m_managedObjectComWrapperLock);
+
+        if (m_managedObjectComWrapperMap->LookupPtr(wrapperId) != curr)
+            return false;
+
+        m_managedObjectComWrapperMap->Add(wrapperId, mocw);
+        return true;
+    }
+
+    using EnumWrappersCallback = void(void* mocw);
+    void ClearManagedObjectComWrappers(EnumWrappersCallback* callback)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        if (m_managedObjectComWrapperMap == NULL)
+            return;
+
+        CrstHolder lock(&m_managedObjectComWrapperLock);
+
+        if (callback != NULL)
+        {
+            ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
+            while (iter != m_managedObjectComWrapperMap->End())
+            {
+                callback(iter->Value());
+                ++iter;
+            }
+        }
+
+        m_managedObjectComWrapperMap->RemoveAll();
     }
 #endif // !DACCESS_COMPILE
 
@@ -831,8 +876,11 @@ public:
 
 private:
     // See InteropLib API for usage.
-    void* m_managedObjectComWrapper;
     void* m_externalComObjectContext;
+
+    using ManagedObjectComWrapperByIdMap = MapSHash<INT64, void*>;
+    CrstExplicitInit m_managedObjectComWrapperLock;
+    NewHolder<ManagedObjectComWrapperByIdMap> m_managedObjectComWrapperMap;
 #endif // FEATURE_COMINTEROP
 
 };

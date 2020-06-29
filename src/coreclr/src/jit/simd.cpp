@@ -1822,7 +1822,9 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
     unsigned                 argCount = 0;
     const SIMDIntrinsicInfo* intrinsicInfo =
         getSIMDIntrinsicInfo(&clsHnd, methodHnd, sig, (opcode == CEE_NEWOBJ), &argCount, &baseType, &size);
-    if (intrinsicInfo == nullptr || intrinsicInfo->id == SIMDIntrinsicInvalid)
+
+    // Exit early if the intrinsic is invalid or unrecognized
+    if ((intrinsicInfo == nullptr) || (intrinsicInfo->id == SIMDIntrinsicInvalid))
     {
         return nullptr;
     }

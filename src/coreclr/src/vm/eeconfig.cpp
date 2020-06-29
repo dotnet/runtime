@@ -11,9 +11,6 @@
 
 
 #include "common.h"
-#ifdef FEATURE_COMINTEROP
-#include <appxutil.h>
-#endif
 #include "eeconfig.h"
 #include "method.hpp"
 #include "eventtrace.h"

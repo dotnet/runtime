@@ -384,7 +384,7 @@ namespace System.Threading
 
         private readonly Internal.PaddingFor32 pad1;
 
-        private volatile int numOutstandingThreadRequests = 0;
+        private volatile int numOutstandingThreadRequests;
 
         private readonly Internal.PaddingFor32 pad2;
 

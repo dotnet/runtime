@@ -76,8 +76,6 @@
              Link="Common\System\Marvin.cs" />
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
              Link="Common\System\Text\StringBuilderCache.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs"
-             Link="Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
     <!-- Logging -->

@@ -395,7 +395,7 @@ namespace System.Xml
             {
                 try
                 {
-                    return XmlUntypedStringConverter.Instance.FromString(strContentValue, returnType, (namespaceResolver == null ? this as IXmlNamespaceResolver : namespaceResolver));
+                    return XmlUntypedStringConverter.Instance.FromString(strContentValue, returnType, (namespaceResolver == null ? (this as IXmlNamespaceResolver)! : namespaceResolver));
                 }
                 catch (FormatException e)
                 {

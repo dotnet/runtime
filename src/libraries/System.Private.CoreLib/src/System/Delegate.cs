@@ -42,11 +42,15 @@ namespace System
         public static Delegate CreateDelegate(Type type, MethodInfo method) => CreateDelegate(type, method, throwOnBindFailure: true)!;
 
         // V1 api: Creates closed delegates to instance methods only, relaxed signature checking disallowed.
+        [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate CreateDelegate(Type type, object target, string method) => CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true)!;
+        [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true)!;
 
         // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
+        [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate CreateDelegate(Type type, Type target, string method) => CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true)!;
+        [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true)!;
 
 #if !CORERT

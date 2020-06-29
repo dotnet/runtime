@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Xml
 {
     public class KeyInfo : IEnumerable
     {
-        private string _id = null;
+        private string _id;
         private readonly ArrayList _keyInfoClauses;
 
         //

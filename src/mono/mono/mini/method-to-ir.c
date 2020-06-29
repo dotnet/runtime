@@ -1428,10 +1428,10 @@ type_from_stack_type (MonoInst *ins) {
 	return NULL;
 }
 
-static G_GNUC_UNUSED int
-type_to_stack_type (MonoCompile *cfg, MonoType *t)
+MonoStackType
+mini_type_to_stack_type (MonoCompile *cfg, MonoType *t)
 {
-	t = mono_type_get_underlying_type (t);
+	t = mini_type_get_underlying_type (t);
 	switch (t->type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
@@ -1455,7 +1455,7 @@ type_to_stack_type (MonoCompile *cfg, MonoType *t)
 	case MONO_TYPE_U8:
 		return STACK_I8;
 	case MONO_TYPE_R4:
-		return cfg->r4_stack_type;
+		return (MonoStackType)cfg->r4_stack_type;
 	case MONO_TYPE_R8:
 		return STACK_R8;
 	case MONO_TYPE_VALUETYPE:
@@ -1471,7 +1471,7 @@ type_to_stack_type (MonoCompile *cfg, MonoType *t)
 		g_assert_not_reached ();
 	}
 
-	return -1;
+	return (MonoStackType)-1;
 }
 
 static MonoClass*
@@ -4409,8 +4409,8 @@ check_inline_caller_method_name_limit (MonoMethod *caller_method)
 }
 #endif
 
-static void
-emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
+void
+mini_emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 {
 	static double r8_0 = 0.0;
 	static float r4_0 = 0.0;
@@ -4472,7 +4472,7 @@ emit_dummy_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 	} else if (((t == MONO_TYPE_VAR) || (t == MONO_TYPE_MVAR)) && mini_type_var_is_vt (rtype)) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_VZERO);
 	} else {
-		emit_init_rvar (cfg, dreg, rtype);
+		mini_emit_init_rvar (cfg, dreg, rtype);
 	}
 }
 
@@ -4484,11 +4484,11 @@ emit_init_local (MonoCompile *cfg, int local, MonoType *type, gboolean init)
 	if (COMPILE_SOFT_FLOAT (cfg)) {
 		MonoInst *store;
 		int reg = alloc_dreg (cfg, (MonoStackType)var->type);
-		emit_init_rvar (cfg, reg, type);
+		mini_emit_init_rvar (cfg, reg, type);
 		EMIT_NEW_LOCSTORE (cfg, store, local, cfg->cbb->last_ins);
 	} else {
 		if (init)
-			emit_init_rvar (cfg, var->dreg, type);
+			mini_emit_init_rvar (cfg, var->dreg, type);
 		else
 			emit_dummy_init_rvar (cfg, var->dreg, type);
 	}
@@ -4678,7 +4678,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 					if (bb->last_ins && bb->last_ins->opcode == OP_NOT_REACHED) {
 						cfg->cbb = bb;
 
-						emit_init_rvar (cfg, rvar->dreg, fsig->ret);
+						mini_emit_init_rvar (cfg, rvar->dreg, fsig->ret);
 					}
 				}
 			}
@@ -4692,7 +4692,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 			 * set, so set it to a dummy value.
 			 */
 			if (!ret_var_set)
-				emit_init_rvar (cfg, rvar->dreg, fsig->ret);
+				mini_emit_init_rvar (cfg, rvar->dreg, fsig->ret);
 
 			EMIT_NEW_TEMPLOAD (cfg, ins, rvar->inst_c0);
 			*sp++ = ins;
@@ -8797,7 +8797,7 @@ calli_end:
 			} else {
 				if (m_class_is_valuetype (cmethod->klass)) {
 					iargs [0] = mono_compile_create_var (cfg, m_class_get_byval_arg (cmethod->klass), OP_LOCAL);
-					emit_init_rvar (cfg, iargs [0]->dreg, m_class_get_byval_arg (cmethod->klass));
+					mini_emit_init_rvar (cfg, iargs [0]->dreg, m_class_get_byval_arg (cmethod->klass));
 					EMIT_NEW_TEMPLOADA (cfg, *sp, iargs [0]->inst_c0);
 
 					alloc = NULL;
@@ -8839,7 +8839,13 @@ calli_end:
 					MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, alloc->dreg);
 
 				/* Now call the actual ctor */
-				handle_ctor_call (cfg, cmethod, fsig, context_used, sp, ip, &inline_costs);
+				int ctor_inline_costs = 0;
+				handle_ctor_call (cfg, cmethod, fsig, context_used, sp, ip, &ctor_inline_costs);
+
+				// don't contribute to inline_const if ctor has [MethodImpl(MethodImplOptions.AggressiveInlining)]
+				if (!COMPILE_LLVM(cfg) || !(cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
+					inline_costs += ctor_inline_costs;
+
 				CHECK_CFG_EXCEPTION;
 			}
 

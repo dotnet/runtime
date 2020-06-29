@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Converters
         : DictionaryDefaultConverter<TCollection, TValue>
         where TCollection : IReadOnlyDictionary<string, TValue>
     {
-        protected override void Add(TValue value, JsonSerializerOptions options, ref ReadStack state)
+        protected override void Add(in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
             string key = state.Current.JsonPropertyNameAsString!;
             ((Dictionary<string, TValue>)state.Current.ReturnValue!)[key] = value;

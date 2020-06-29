@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -14,7 +15,7 @@ namespace System
         private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void BulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
+        private static extern void BulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint len, IntPtr type_handle);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static unsafe void _ZeroMemory(ref byte b, nuint byteLength)
@@ -27,5 +28,27 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void __ZeroMemory(void* p, nuint byteLength);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void Memmove<T>(ref T destination, ref T source, nuint elementCount)
+        {
+            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                // Blittable memmove
+                Memmove(
+                    ref Unsafe.As<T, byte>(ref destination),
+                    ref Unsafe.As<T, byte>(ref source),
+                    elementCount * (nuint)Unsafe.SizeOf<T>());
+            }
+            else if (elementCount > 0)
+            {
+                // Non-blittable memmove
+                BulkMoveWithWriteBarrier(
+                    ref Unsafe.As<T, byte>(ref destination),
+                    ref Unsafe.As<T, byte>(ref source),
+                    elementCount,
+                    typeof(T).TypeHandle.Value);
+            }
+        }
     }
 }

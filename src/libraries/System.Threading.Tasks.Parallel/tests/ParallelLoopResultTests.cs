@@ -11,7 +11,7 @@ namespace System.Threading.Tasks.Tests
 {
     public static class ParallelLoopResultTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ForPLRTests()
         {
             ParallelLoopResult plr =
@@ -45,7 +45,7 @@ namespace System.Threading.Tasks.Tests
             PLRcheck(plr, "For-Completion", true, null);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ForPLR64Tests()
         {
             ParallelLoopResult plr =
@@ -79,7 +79,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
             PLRcheck(plr, "For64-Completion", true, null);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ForEachPLRTests()
         {
             Dictionary<string, string> dict = new Dictionary<string, string>();
@@ -123,7 +123,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
             PLRcheck(plr, "ForEach-Complete", true, null);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void PartitionerForEachPLRTests()
         {
             //
@@ -145,7 +145,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
             PLRcheck(plr, "Partitioner-ForEach-Complete", true, null);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void OrderablePartitionerForEachTests()
         {
             List<int> intlist = new List<int>();
@@ -373,7 +373,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
         }
 
         // Perform tests on various combinations of Stop()/Break()
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void SimultaneousStopBreakTests()
         {
             //

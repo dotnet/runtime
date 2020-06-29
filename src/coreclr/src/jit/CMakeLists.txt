@@ -305,13 +305,15 @@ convert_to_absolute_path(JIT_ARM_SOURCES ${JIT_ARM_SOURCES})
 convert_to_absolute_path(JIT_I386_SOURCES ${JIT_I386_SOURCES})
 convert_to_absolute_path(JIT_ARM64_SOURCES ${JIT_ARM64_SOURCES})
 
+set(JIT_DLL_MAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/dllmain.cpp)
 
 if(CLR_CMAKE_TARGET_WIN32)
   set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports)
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
   preprocess_file (${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
 
-  set(SHARED_LIB_SOURCES ${SOURCES} ${JIT_EXPORTS_FILE})
+  set(JIT_CORE_SOURCES ${SOURCES})
+  set(JIT_DEF_FILE ${JIT_EXPORTS_FILE})
 else()
   set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.PAL.exports)
 
@@ -321,17 +323,11 @@ else()
   if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
     # This is required to force using our own PAL, not one that we are loaded with.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
-
-    if(CLR_CMAKE_TARGET_SUNOS)
-        set(JIT_EXPORTS_LINKER_OPTION -Wl,-M,${JIT_EXPORTS_FILE})
-    else(CLR_CMAKE_TARGET_SUNOS)
-        set(JIT_EXPORTS_LINKER_OPTION -Wl,--version-script=${JIT_EXPORTS_FILE})
-    endif(CLR_CMAKE_TARGET_SUNOS)
-  elseif(CLR_CMAKE_TARGET_OSX)
-    set(JIT_EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${JIT_EXPORTS_FILE})
   endif()
 
-  set(SHARED_LIB_SOURCES ${SOURCES})
+  set_exports_linker_option(${JIT_EXPORTS_FILE})
+  set(JIT_EXPORTS_LINKER_OPTION ${EXPORTS_LINKER_OPTION})
+  set(JIT_CORE_SOURCES ${SOURCES})
 endif()
 
 add_custom_target(jit_exports DEPENDS ${JIT_EXPORTS_FILE})
@@ -379,8 +375,10 @@ function(add_jit jitName)
 
     add_library_clr(${jitName}
         SHARED
-        ${SHARED_LIB_SOURCES}
+        ${JIT_CORE_SOURCES}
         ${JIT_ARCH_SOURCES}
+        ${JIT_DEF_FILE}
+        ${JIT_DLL_MAIN_FILE}
     )
 
     target_precompile_header(TARGET ${jitName} HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})
@@ -402,10 +400,11 @@ endfunction()
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (FEATURE_MERGE_JIT_AND_ENGINE)
-  # Despite the directory being named "dll", it creates a static library "clrjit_static" to link into the VM.
-  add_subdirectory(dll)
   add_subdirectory(crossgen)
 endif (FEATURE_MERGE_JIT_AND_ENGINE)
+
+# Creates a static library "clrjit_static" to link into the VM.
+add_subdirectory(static)
 
 add_subdirectory(standalone)
 

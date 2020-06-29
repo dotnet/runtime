@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -48,10 +49,10 @@ namespace System.Text.Json.Serialization.Converters
                     // Read method would have thrown if otherwise.
                     Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
+                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
                     JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                         obj,
-                        ref reader,
-                        options,
+                        unescapedPropertyName,
                         ref state,
                         out bool useExtensionProperty);
 
@@ -152,10 +153,10 @@ namespace System.Text.Json.Serialization.Converters
                         // Read method would have thrown if otherwise.
                         Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj,
-                            ref reader,
-                            options,
+                            unescapedPropertyName,
                             ref state,
                             out bool useExtensionProperty);
 
@@ -229,7 +230,11 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal sealed override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        internal sealed override bool OnTryWrite(
+            Utf8JsonWriter writer,
+            T value,
+            JsonSerializerOptions options,
+            ref WriteStack state)
         {
             // Minimize boxing for structs by only boxing once here
             object objectValue = value!;
@@ -356,6 +361,8 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
+        // AggressiveInlining since this method is only called from two locations and is on a hot path.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void ReadPropertyValue(
             object obj,
             ref ReadStack state,

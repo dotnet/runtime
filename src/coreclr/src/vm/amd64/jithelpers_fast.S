@@ -33,8 +33,13 @@ LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
         // See if this is in GCHeap
         PREPARE_EXTERNAL_VAR g_lowest_address, rax
         cmp     rdi, [rax]
+#ifdef FEATURE_WRITEBARRIER_COPY
+        // jb      NotInHeap
+        .byte 0x72, 0x12
+#else
         // jb      NotInHeap
         .byte 0x72, 0x0e
+#endif
         PREPARE_EXTERNAL_VAR g_highest_address, rax
         cmp     rdi, [rax]
 

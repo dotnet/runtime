@@ -34,8 +34,6 @@
 #include "multicorejit.h"
 #endif
 
-#include "appxutil.h"
-
 #include "tieredcompilation.h"
 
 #include "codeversion.h"
@@ -1099,10 +1097,10 @@ public:
         return ::CreateRefcountedHandle(m_handleStore, object);
     }
 
-    OBJECTHANDLE CreateNativeComWeakHandle(OBJECTREF object, IWeakReference* pComWeakReference)
+    OBJECTHANDLE CreateNativeComWeakHandle(OBJECTREF object, NativeComWeakHandleInfo* pComWeakHandleInfo)
     {
         WRAPPER_NO_CONTRACT;
-        return ::CreateNativeComWeakHandle(m_handleStore, object, pComWeakReference);
+        return ::CreateNativeComWeakHandle(m_handleStore, object, pComWeakHandleInfo);
     }
 #endif // FEATURE_COMINTEROP
 
@@ -1559,6 +1557,10 @@ public:
     OBJECTREF GetRawExposedObject() { LIMITED_METHOD_CONTRACT; return NULL; }
     OBJECTHANDLE GetRawExposedObjectHandleForDebugger() { LIMITED_METHOD_DAC_CONTRACT; return NULL; }
 
+#ifndef DACCESS_COMPILE
+    PTR_NativeImage GetNativeImage(LPCUTF8 compositeFileName);
+    PTR_NativeImage SetNativeImage(LPCUTF8 compositeFileName, PTR_NativeImage pNativeImage);
+#endif // DACCESS_COMPILE
 
     //****************************************************************************************
 
@@ -1997,37 +1999,10 @@ public:
 
     void SetupSharedStatics();
 
-    //****************************************************************************************
-    //
-    // Create a quick lookup for classes loaded into this domain based on their GUID.
-    //
-    void InsertClassForCLSID(MethodTable* pMT, BOOL fForceInsert = FALSE);
-
 #ifdef FEATURE_COMINTEROP
 public:
-    MethodTable *LoadCOMClass(GUID clsid, BOOL bLoadRecord = FALSE, BOOL* pfAssemblyInReg = NULL);
     OBJECTREF GetMissingObject();    // DispatchInfo will call function to retrieve the Missing.Value object.
 #endif // FEATURE_COMINTEROP
-
-#ifndef DACCESS_COMPILE
-    MethodTable* LookupClass(REFIID iid)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        MethodTable *pMT = (MethodTable*) m_clsidHash.LookupValue((UPTR) GetKeyFromGUID(&iid), (LPVOID)&iid);
-        return (pMT == (MethodTable*) INVALIDENTRY
-            ? NULL
-            : pMT);
-    }
-#endif // DACCESS_COMPILE
-
-    //<TODO>@todo get a better key</TODO>
-    ULONG GetKeyFromGUID(const GUID *pguid)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return *(ULONG *) pguid;
-    }
 
 #ifdef FEATURE_COMINTEROP
     RCWCache *GetRCWCache()
@@ -2061,7 +2036,7 @@ public:
         return m_tpIndex;
     }
 
-    IUnknown *CreateBinderContext();
+    CLRPrivBinderCoreCLR *CreateBinderContext();
 
     void SetIgnoreUnhandledExceptions()
     {
@@ -2315,8 +2290,9 @@ private:
     // by one. For it to hit zero an explicit close must have happened.
     LONG        m_cRef;                    // Ref count.
 
-    // Hash table that maps a clsid to a type
-    PtrHashMap          m_clsidHash;
+    // Map of loaded composite native images indexed by base load addresses
+    CrstExplicitInit m_nativeImageLoadCrst;
+    MapSHash<LPCUTF8, PTR_NativeImage, NativeImageIndexTraits> m_nativeImageMap;
 
 #ifdef FEATURE_COMINTEROP
     // this cache stores the RCWs in this domain

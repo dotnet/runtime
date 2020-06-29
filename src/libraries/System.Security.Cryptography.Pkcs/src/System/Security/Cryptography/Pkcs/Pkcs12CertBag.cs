@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Pkcs
                 EncodeBagValue(certificateType, encodedCertificate),
                 skipCopy: true)
         {
-            _certTypeOid = new Oid(certificateType);
+            _certTypeOid = certificateType.CopyOid();
 
             _decoded = CertBagAsn.Decode(EncodedBagValue, AsnEncodingRules.BER);
 
@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Pkcs
                 _certTypeOid = new Oid(_decoded.CertId);
             }
 
-            return new Oid(_certTypeOid);
+            return _certTypeOid.CopyOid();
         }
 
         public ReadOnlyMemory<byte> EncodedCertificate => _decoded.CertValue;

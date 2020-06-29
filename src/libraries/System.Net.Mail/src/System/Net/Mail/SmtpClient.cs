@@ -740,7 +740,7 @@ namespace System.Net.Mail
         private bool IsSystemNetworkCredentialInCache(CredentialCache cache)
         {
             // Check if SystemNetworkCredential is in given cache.
-            foreach (NetworkCredential? credential in cache) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
+            foreach (NetworkCredential credential in cache)
             {
                 if (ReferenceEquals(credential, CredentialCache.DefaultNetworkCredentials))
                 {

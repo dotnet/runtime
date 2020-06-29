@@ -23,6 +23,7 @@ namespace System.Net.Sockets
         internal bool LastConnectFailed { get; set; }
         internal bool DualMode { get; set; }
         internal bool ExposedHandleOrUntrackedConfiguration { get; private set; }
+        internal bool PreferInlineCompletions { get; set; } = SocketAsyncEngine.InlineSocketCompletionsEnabled;
 
         internal void RegisterConnectResult(SocketError error)
         {
@@ -178,7 +179,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal bool IsDisconnected { get; private set; } = false;
+        internal bool IsDisconnected { get; private set; }
 
         internal void SetToDisconnected()
         {

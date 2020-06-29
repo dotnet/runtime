@@ -6,8 +6,8 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -25,23 +25,23 @@ namespace System.Text.Json.Serialization.Converters
             return typeof(IEnumerable).IsAssignableFrom(typeToConvert);
         }
 
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.ArrayConverter`2")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.ConcurrentQueueOfTConverter`2")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.ConcurrentStackOfTConverter`2")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.DictionaryOfStringTValueConverter`2")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.ICollectionOfTConverter`2")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.IDictionaryOfStringTValueConverter`2")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.IEnumerableOfTConverter`2")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.IEnumerableWithAddMethodConverter`1")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.IListConverter`1")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.IListOfTConverter`2")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.ImmutableDictionaryOfStringTValueConverter`2")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.ImmutableEnumerableOfTConverter`2")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.IReadOnlyDictionaryOfStringTValueConverter`2")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.ISetOfTConverter`2")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.ListOfTConverter`2")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.QueueOfTConverter`2")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.StackOfTConverter`2")]
+        [DynamicDependency("#ctor", typeof(ArrayConverter<,>))]
+        [DynamicDependency("#ctor", typeof(ConcurrentQueueOfTConverter<,>))]
+        [DynamicDependency("#ctor", typeof(ConcurrentStackOfTConverter<,>))]
+        [DynamicDependency("#ctor", typeof(DictionaryOfStringTValueConverter<,>))]
+        [DynamicDependency("#ctor", typeof(ICollectionOfTConverter<,>))]
+        [DynamicDependency("#ctor", typeof(IDictionaryOfStringTValueConverter<,>))]
+        [DynamicDependency("#ctor", typeof(IEnumerableOfTConverter<,>))]
+        [DynamicDependency("#ctor", typeof(IEnumerableWithAddMethodConverter<>))]
+        [DynamicDependency("#ctor", typeof(IListConverter<>))]
+        [DynamicDependency("#ctor", typeof(IListOfTConverter<,>))]
+        [DynamicDependency("#ctor", typeof(ImmutableDictionaryOfStringTValueConverter<,>))]
+        [DynamicDependency("#ctor", typeof(ImmutableEnumerableOfTConverter<,>))]
+        [DynamicDependency("#ctor", typeof(IReadOnlyDictionaryOfStringTValueConverter<,>))]
+        [DynamicDependency("#ctor", typeof(ISetOfTConverter<,>))]
+        [DynamicDependency("#ctor", typeof(ListOfTConverter<,>))]
+        [DynamicDependency("#ctor", typeof(QueueOfTConverter<,>))]
+        [DynamicDependency("#ctor", typeof(StackOfTConverter<,>))]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             Type converterType = null!;

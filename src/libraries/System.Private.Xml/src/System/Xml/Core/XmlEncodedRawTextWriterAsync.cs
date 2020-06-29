@@ -671,6 +671,7 @@ namespace System.Xml
                                    // close an empty element or in CDATA section detection of double ]; _BUFFER[0] will always be 0
             }
         }
+
         private async Task EncodeCharsAsync(int startOffset, int endOffset, bool writeAllToStream)
         {
             // Write encoded text to stream
@@ -947,6 +948,7 @@ namespace System.Xml
                         pDst++;
                         pSrc++;
                     }
+
                     Debug.Assert(pSrc <= pSrcEnd);
 
                     // end of value

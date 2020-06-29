@@ -26,7 +26,7 @@ namespace System.Xml.Schema
                 return XmlReservedNs.NsXml;
             }
             Dictionary<string, string> namespaces;
-            for (XmlSchemaObject current = _node; current != null; current = current.Parent)
+            for (XmlSchemaObject? current = _node; current != null; current = current.Parent)
             {
                 namespaces = current.Namespaces.Namespaces;
                 if (namespaces != null && namespaces.Count > 0)
@@ -46,7 +46,7 @@ namespace System.Xml.Schema
                 return "xml";
             }
             Dictionary<string, string> namespaces;
-            for (XmlSchemaObject current = _node; current != null; current = current.Parent)
+            for (XmlSchemaObject? current = _node; current != null; current = current.Parent)
             {
                 namespaces = current.Namespaces.Namespaces;
                 if (namespaces != null && namespaces.Count > 0)

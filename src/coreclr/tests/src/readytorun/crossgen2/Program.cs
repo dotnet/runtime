@@ -1237,6 +1237,31 @@ internal class Program
         return file;
     }
 
+    private static bool DelegateFromAnotherModuleTest()
+    {
+        // This test tests referencing a method from another module while creating a delegate.
+        Action del = HelperClass.DelegateReferencedMethod;
+        string delegateMethodString = del.Method.ToString();
+        Console.WriteLine(delegateMethodString);
+        if (!delegateMethodString.Contains("DelegateReferencedMethod"))
+            return false;
+        else
+            return true;
+    }
+
+    private static bool FunctionPointerFromAnotherModuleTest()
+    {
+        // This test tests referencing a method from another module while creating a function pointer.
+        // Function pointers to managed functions should be stable, and result in calling the right function
+        IntPtr initialFunctionPointer = HelperILCode.GetFunctionPointerFromOtherModule();
+        HelperILCode.CallFunctionPointer(initialFunctionPointer);
+        HelperILCode.CallFunctionPointer(initialFunctionPointer);
+        HelperILCode.CallFunctionPointer(initialFunctionPointer);
+        IntPtr finalFunctionPointer = HelperILCode.GetFunctionPointerFromOtherModule();
+
+        return finalFunctionPointer == initialFunctionPointer;
+    }
+
     public static int Main(string[] args)
     {
         _passedTests = new List<string>();
@@ -1296,6 +1321,8 @@ internal class Program
         RunTest("ObjectToStringOnGenericParamTestSByte", ObjectToStringOnGenericParamTestSByte());
         RunTest("ObjectToStringOnGenericParamTestVersionBubbleLocalStruct", ObjectToStringOnGenericParamTestVersionBubbleLocalStruct());
         RunTest("EnumValuesToStringTest", EnumValuesToStringTest());
+        RunTest("DelegateFromAnotherModuleTest", DelegateFromAnotherModuleTest());
+        RunTest("FunctionPointerFromAnotherModuleTest", FunctionPointerFromAnotherModuleTest());
 
         File.Delete(TextFileName);
 

@@ -24,6 +24,7 @@ set(SOURCES
     ../../bundle/file_entry.cpp
     ../../bundle/manifest.cpp
     ../../bundle/runner.cpp
+    ./coreclr_resolver.cpp
 )
 
 set(HEADERS
@@ -40,6 +41,7 @@ set(HEADERS
     ../../bundle/file_entry.h
     ../../bundle/manifest.h
     ../../bundle/runner.h
+    ../../../coreclr_resolver.h
 )
 
 set(SKIP_VERSIONING 1)

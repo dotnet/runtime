@@ -58,7 +58,7 @@ namespace System.Text.Json
             return Serialize<object?>(value, inputType, options);
         }
 
-        private static string Serialize<TValue>(TValue value, Type inputType, JsonSerializerOptions? options)
+        private static string Serialize<TValue>(in TValue value, Type inputType, JsonSerializerOptions? options)
         {
             if (options == null)
             {

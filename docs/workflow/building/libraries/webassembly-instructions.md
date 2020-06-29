@@ -91,7 +91,31 @@ The WebAssembly implementation files are built and made available in the artifac
 
 For Linux and MacOSX:
 ```bash
-./dotnet.sh build --configuration release /p:TargetArchitecture=wasm /p:TargetOS=Browser src/libraries/src.proj /t:NativeBinPlace 
+./dotnet.sh build /p:Configuration=Debug|Release /p:TargetArchitecture=wasm /p:TargetOS=Browser src/libraries/src.proj /t:NativeBinPlace 
+```
+
+__Note__: A `Debug` build sets the following environment variables by default.  When built from the command line this way the `Configuration` value is case sensitive.
+
+- debugging and logging which will log garbage collection information to the console.
+
+```
+   monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
+   monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
+```
+
+  #### Example:
+```
+L: GC_MAJOR_SWEEP: major size: 752K in use: 39K 
+L: GC_MAJOR: (user request) time 3.00ms, stw 3.00ms los size: 0K in use: 0K
+```
+
+- Redirects the `System.Diagnostics.Debug` output to `stderr` which will show up on the console.
+
+```
+    // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
+    // output will be sent to the console.  Right now this is the only way to emit debug logging from
+    // corlib assemblies.
+    monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 ```
 
 ## Updating Emscripten version in Docker image

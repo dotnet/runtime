@@ -22,7 +22,7 @@ namespace System.Drawing.Internal
         private const int EXPAND_FACTOR = 2;
 
         private static WeakReference[] list = new WeakReference[INITIAL_SIZE];
-        private static int count = 0;
+        private static int count;
         private static bool addedTracker;
         private static readonly object lockObject = new object();
 

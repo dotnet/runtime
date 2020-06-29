@@ -351,7 +351,7 @@ namespace System.Data.ProviderBase
         private readonly ConcurrentStack<DbConnectionInternal> _stackNew = new ConcurrentStack<DbConnectionInternal>();
 
         private readonly ConcurrentQueue<PendingGetConnection> _pendingOpens = new ConcurrentQueue<PendingGetConnection>();
-        private int _pendingOpensWaiting = 0;
+        private int _pendingOpensWaiting;
 
         private readonly WaitCallback _poolCreateRequest;
 
