@@ -412,34 +412,18 @@ namespace System.Net.WebSockets
 
             ThrowIfDisposed();
             ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseSent);
+            _bufferedPayload ??= await _receiveMessageQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
 
-            var tcsReceive = new TaskCompletionSource<WebSocketReceiveResult>();
-
-            // Wrap the cancellationToken in a using so that it can be disposed of whether
-            // we successfully receive or not.
-            // Otherwise any timeout/cancellation would apply to the full session.
-            using (cancellationToken.Register(() => tcsReceive.TrySetCanceled()))
+            try
             {
-                if (_bufferedPayload == null)
-                {
-                    _bufferedPayload = await _receiveMessageQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
-                }
-
-                try
-                {
-                    var endOfMessage = _bufferedPayload.BufferPayload(buffer, out WebSocketReceiveResult receiveResult);
-
-                    tcsReceive.SetResult(receiveResult);
-
-                    if (endOfMessage)
-                        _bufferedPayload = null;
-                }
-                catch (Exception exc)
-                {
-                    throw new WebSocketException(WebSocketError.NativeError, exc);
-                }
-
-                return await tcsReceive.Task.ConfigureAwait(continueOnCapturedContext: true);
+                var endOfMessage = _bufferedPayload.BufferPayload(buffer, out WebSocketReceiveResult receiveResult);
+                if (endOfMessage)
+                    _bufferedPayload = null;
+                return receiveResult;
+            }
+            catch (Exception exc)
+            {
+                throw new WebSocketException(WebSocketError.NativeError, exc);
             }
         }
 
