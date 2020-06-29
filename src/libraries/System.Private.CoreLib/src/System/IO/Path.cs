@@ -32,6 +32,11 @@ namespace System.IO
         // 8 random bytes provides 12 chars in our encoding for the 8.3 name.
         private const int KeyLength = 8;
 
+        // Initial cross-platform length for a buffer that is to be passed to the ValueStringBuilder constructor.
+        // The ValueStringBuilder will increase the internal buffer length when necessary.
+        // The value is equivalent to PathInternal.MaxShortPath, a limitation that only exists in older Windows versions.
+        private const int InitialValueStringBuilderBufferLength = 260;
+
         [Obsolete("Please use GetInvalidPathChars or GetInvalidFileNameChars instead.")]
         public static readonly char[] InvalidPathChars = GetInvalidPathChars();
 
@@ -383,7 +388,7 @@ namespace System.IO
                     maxSize++;
             }
 
-            var builder = new ValueStringBuilder(stackalloc char[260]); // MaxShortPath on Windows
+            var builder = new ValueStringBuilder(stackalloc char[InitialValueStringBuilderBufferLength]);
             builder.EnsureCapacity(maxSize);
 
             for (int i = firstComponent; i < paths.Length; i++)
@@ -490,7 +495,7 @@ namespace System.IO
             }
             maxSize += paths.Length - 1;
 
-            var builder = new ValueStringBuilder(stackalloc char[260]); // MaxShortPath on Windows
+            var builder = new ValueStringBuilder(stackalloc char[InitialValueStringBuilderBufferLength]);
             builder.EnsureCapacity(maxSize);
 
             for (int i = 0; i < paths.Length; i++)
@@ -916,7 +921,7 @@ namespace System.IO
             //  C:\Foo\Bar C:\Bar\Bar L3, S2 -> ..\..\Bar\Bar
             //  C:\Foo\Foo C:\Foo\Bar L7, S1 -> ..\Bar
 
-            var sb = new ValueStringBuilder(stackalloc char[260]);
+            var sb = new ValueStringBuilder(stackalloc char[InitialValueStringBuilderBufferLength]);
             sb.EnsureCapacity(Math.Max(relativeTo.Length, path.Length));
 
             // Add parent segments for segments past the common on the "from" path
@@ -983,5 +988,85 @@ namespace System.IO
         /// Returns true if the path ends in a directory separator.
         /// </summary>
         public static bool EndsInDirectorySeparator(string path) => PathInternal.EndsInDirectorySeparator(path);
+
+        /// <summary>
+        /// Removes redundant segments from the specified path string.
+        /// </summary>
+        /// <param name="path">The path to analyze.</param>
+        /// <returns>A string without redundant segments.</returns>
+        [return: NotNullIfNotNull("path")]
+        public static string? RemoveRedundantSegments(string? path)
+        {
+            if (path == null)
+                return null;
+
+            if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
+                return string.Empty;
+
+            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[InitialValueStringBuilderBufferLength]);
+
+            if (!RedundantSegmentHelper.TryRemoveRedundantSegments(path.AsSpan(), ref sb))
+            {
+                sb.Dispose();
+                return path;
+            }
+
+            return sb.ToString(); // Disposes
+        }
+
+        /// <summary>
+        /// Removes redundant segments from the specified path read-only span.
+        /// </summary>
+        /// <param name="path">The path to analyze.</param>
+        /// <returns>A string without redundant segments.</returns>
+        public static string RemoveRedundantSegments(ReadOnlySpan<char> path)
+        {
+            if (PathInternal.IsEffectivelyEmpty(path))
+                return string.Empty;
+
+            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[InitialValueStringBuilderBufferLength]);
+
+            if (!RedundantSegmentHelper.TryRemoveRedundantSegments(path, ref sb))
+            {
+                sb.Dispose();
+                return path.ToString();
+            }
+            else
+            {
+                return sb.ToString(); // Disposes
+            }
+        }
+
+        /// <summary>
+        /// Tries to remove redundant segments from the specified path read-only span.
+        /// </summary>
+        /// <param name="path">The path to analyze.</param>
+        /// <param name="destination">A span where the output is saved.</param>
+        /// <param name="charsWritten">The total number of characters written to <paramref name="destination" />, which is less or equal than the length of <paramref name="path" />.</param>
+        /// <returns><see langword="true" /> if the original path was modified and writing into <paramref name="destination" /> was successful; <see langword="false" /> otherwise.</returns>
+        public static bool TryRemoveRedundantSegments(ReadOnlySpan<char> path, Span<char> destination, out int charsWritten)
+        {
+            charsWritten = 0;
+
+            if (PathInternal.IsEffectivelyEmpty(path))
+                return false;
+
+            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[InitialValueStringBuilderBufferLength]);
+
+            bool result = false;
+
+            if (RedundantSegmentHelper.TryRemoveRedundantSegments(path, ref sb))
+            {
+                result = sb.TryCopyTo(destination, out charsWritten); // Disposes
+            }
+            else if (path.TryCopyTo(destination))
+            {
+                charsWritten = path.Length;
+                result = true;
+                sb.Dispose();
+            }
+
+            return result;
+        }
     }
 }
