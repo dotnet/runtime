@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable enable
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -110,9 +107,9 @@ namespace System.Formats.Cbor.Tests
         [Theory]
         [InlineData(1363896240, "c1fb41d452d9ec000000")]
         [InlineData(1586439081, "c1fb41d7a3c8ea400000")]
-        [InlineData(0, "c1fb0000000000000000")]
-        [InlineData(-1, "c1fbbff0000000000000")]
-        [InlineData(-315619200, "c1fbc1b2cff780000000")]
+        [InlineData(0, "c1f90000")]
+        [InlineData(-1, "c1f9bc00")]
+        [InlineData(-315619200, "c1facd967fbc")]
         [InlineData(1363896240.5, "c1fb41d452d9ec200000")]
         [InlineData(15870467036.15, "c1fb420d8fa0dee13333")]
         public static void WriteUnixTimeSeconds_Double_SingleValue_HappyPath(double value, string expectedHexEncoding)
