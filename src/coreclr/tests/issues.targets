@@ -984,6 +984,49 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/AnsiBSTR/AnsiBStrTest/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/BSTR/BSTRTest/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Regression/GitHub_17073/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse3/LoadDquVector128_r/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse3/LoadDquVector128_ro/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorArray_r/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorArray_ro/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorRet_r/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorRet_ro/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorUnused_r/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorUnused_ro/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128/Vector128_ro/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128/Vector128_r/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+
         <ExcludeList Include="$(XunitTestBinBase)/GC/Features/Finalizer/finalizeother/finalizeexcep/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
