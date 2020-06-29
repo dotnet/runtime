@@ -461,6 +461,7 @@ LclSsaVarDsc* RangeCheck::GetSsaDefAsg(GenTreeLclVarCommon* lclUse)
 
 #ifdef DEBUG
     Location* loc = GetDef(lclUse);
+    assert(loc != nullptr);
     assert(loc->parent == ssaDef->GetAssignment());
     assert(loc->block == ssaDef->GetBlock());
 #endif

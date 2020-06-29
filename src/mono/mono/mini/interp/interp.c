@@ -1575,6 +1575,9 @@ interp_init_delegate (MonoDelegate *del, MonoError *error)
 	if (del->interp_method) {
 		/* Delegate created by a call to ves_icall_mono_delegate_ctor_interp () */
 		del->method = ((InterpMethod *)del->interp_method)->method;
+	} if (del->method_ptr && !del->method) {
+		/* Delegate created from methodInfo.MethodHandle.GetFunctionPointer() */
+		del->interp_method = (InterpMethod *)del->method_ptr;
 	} else if (del->method) {
 		/* Delegate created dynamically */
 		del->interp_method = mono_interp_get_imethod (del->object.vtable->domain, del->method, error);

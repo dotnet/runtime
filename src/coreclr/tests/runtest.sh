@@ -73,11 +73,15 @@ function check_cpu_architecture {
     local CPUName=$(uname -m)
     local __arch=
 
+    if [[ "$(uname -s)" == "SunOS" ]]; then
+        CPUName=$(isainfo -n)
+    fi
+
     case $CPUName in
         i686)
             __arch=x86
             ;;
-        x86_64)
+        amd64|x86_64)
             __arch=x64
             ;;
         armv7l)

@@ -19,8 +19,6 @@ namespace System.Data.Common
 
         private NameValuePermission[] _tree; // with branches
 
-        internal static readonly NameValuePermission Default = null; // = new NameValuePermission(String.Empty, new string[] { "File Name" }, KeyRestrictionBehavior.AllowOnly);
-
         internal NameValuePermission()
         { // root node
         }

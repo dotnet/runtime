@@ -3031,7 +3031,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/36614", RuntimeTestModes.JitStress)]
         public void NarrowDouble()
         {
             double[] source1 = GenerateRandomValuesForVector<double>();

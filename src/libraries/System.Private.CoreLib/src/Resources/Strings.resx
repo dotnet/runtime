@@ -3751,4 +3751,7 @@
   <data name="IDynamicInterfaceCastable_NotInterface" xml:space="preserve">
     <value>Type '{0}' returned by IDynamicInterfaceCastable is not an interface.</value>
   </data>
+  <data name="Arg_MustBeHalf" xml:space="preserve">
+    <value>Object must be of type Half.</value>
+  </data>
 </root>

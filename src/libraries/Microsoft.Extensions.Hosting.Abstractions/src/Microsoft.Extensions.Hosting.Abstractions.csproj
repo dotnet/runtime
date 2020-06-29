@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0</TargetFrameworks>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
     <RootNamespace>Microsoft.Extensions.Hosting</RootNamespace>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>

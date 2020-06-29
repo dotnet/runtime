@@ -1301,12 +1301,5 @@ namespace System.Net.Security
             // a Handshake message up, and we only have a Warning message.
             return Done ? null : SslStreamPal.GetException(Status);
         }
-
-#if TRACE_VERBOSE
-        public override string ToString()
-        {
-            return "Status=" + Status.ToString() + ", data size=" + Size;
-        }
-#endif
     }
 }

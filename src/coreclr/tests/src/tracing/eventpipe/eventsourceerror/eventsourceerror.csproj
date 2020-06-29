@@ -4,6 +4,8 @@
     <OutputType>exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Disable for GCStress due to test failure: https://github.com/dotnet/runtime/issues/35884 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>

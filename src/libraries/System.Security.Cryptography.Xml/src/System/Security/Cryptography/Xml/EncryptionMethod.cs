@@ -8,8 +8,8 @@ namespace System.Security.Cryptography.Xml
 {
     public class EncryptionMethod
     {
-        private XmlElement _cachedXml = null;
-        private int _keySize = 0;
+        private XmlElement _cachedXml;
+        private int _keySize;
         private string _algorithm;
 
         public EncryptionMethod()

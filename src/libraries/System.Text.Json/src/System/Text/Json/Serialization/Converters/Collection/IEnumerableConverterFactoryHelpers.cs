@@ -254,13 +254,32 @@ namespace System.Text.Json.Serialization
 
         public static bool IsNonGenericStackOrQueue(this Type type)
         {
-            Type? typeOfStack = Type.GetType("System.Collections.Stack, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
-            Type? typeOfQueue = Type.GetType("System.Collections.Queue, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
+#if BUILDING_INBOX_LIBRARY
+            // Optimize for linking scenarios where mscorlib is trimmed out.
+            const string stackTypeName = "System.Collections.Stack, System.Collections.NonGeneric";
+            const string queueTypeName = "System.Collections.Queue, System.Collections.NonGeneric";
+#else
+            const string stackTypeName = "System.Collections.Stack, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+            const string queueTypeName = "System.Collections.Queue, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+#endif
 
-            Debug.Assert(typeOfStack != null);
-            Debug.Assert(typeOfQueue != null);
+            Type? stackType = GetTypeIfExists(stackTypeName);
+            if (stackType?.IsAssignableFrom(type) == true)
+            {
+                return true;
+            }
 
-            return typeOfStack.IsAssignableFrom(type) || typeOfQueue.IsAssignableFrom(type);
+            Type? queueType = GetTypeIfExists(queueTypeName);
+            if (queueType?.IsAssignableFrom(type) == true)
+            {
+                return true;
+            }
+
+            return false;
         }
+
+        // This method takes an unannotated string which makes linker reflection analysis lose track of the type we are
+        // looking for. This indirection allows the removal of the type if it is not used in the calling application.
+        private static Type? GetTypeIfExists(string name) => Type.GetType(name, false);
     }
 }

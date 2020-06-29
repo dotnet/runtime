@@ -27,7 +27,7 @@ namespace System.DirectoryServices
         private readonly IntPtr _adsDirsynCookieName = Marshal.StringToCoTaskMemUni(ADS_DIRSYNC_COOKIE);
         private const string ADS_VLV_RESPONSE = "fc8cb04d-311d-406c-8cb9-1ae8b843b419";
         private readonly IntPtr _adsVLVResponseName = Marshal.StringToCoTaskMemUni(ADS_VLV_RESPONSE);
-        internal DirectorySearcher srch = null;
+        internal DirectorySearcher srch;
 
         internal SearchResultCollection(DirectoryEntry root, IntPtr searchHandle, string[] propertiesLoaded, DirectorySearcher srch)
         {
@@ -235,7 +235,6 @@ namespace System.DirectoryServices
             private bool _initialized;
             private SearchResult _currentResult;
             private bool _eof;
-            private readonly bool _waitForResult = false;
 
             internal ResultsEnumerator(SearchResultCollection results, string parentUserName, string parentPassword, AuthenticationTypes parentAuthenticationType)
             {
@@ -382,17 +381,9 @@ namespace System.DirectoryServices
                         }
                         else
                         {
-                            // if user chooses to wait to continue the search
-                            if (_waitForResult)
-                            {
-                                continue;
-                            }
-                            else
-                            {
-                                uint temp = (uint)errorCode;
-                                temp = ((((temp) & 0x0000FFFF) | (7 << 16) | 0x80000000));
-                                throw COMExceptionHelper.CreateFormattedComException((int)temp);
-                            }
+                            uint temp = (uint)errorCode;
+                            temp = (temp & 0x0000FFFF) | (7 << 16) | 0x80000000;
+                            throw COMExceptionHelper.CreateFormattedComException((int)temp);
                         }
                     }
                     //throw a clearer exception if the filter was invalid

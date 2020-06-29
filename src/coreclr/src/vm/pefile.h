@@ -581,6 +581,7 @@ public:
 
 #endif //!DACCESS_COMPILE
 
+    // Returns AssemblyLoadContext into which the current PEFile was loaded.
     PTR_AssemblyLoadContext GetAssemblyLoadContext()
     {
         LIMITED_METHOD_CONTRACT;

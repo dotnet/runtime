@@ -25,7 +25,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // The PrincipalContext object to which this StoreCtx belongs.  Initialized by PrincipalContext after it creates
         // this StoreCtx instance.
-        private PrincipalContext _owningContext = null;
+        private PrincipalContext _owningContext;
         internal PrincipalContext OwningContext
         {
             get

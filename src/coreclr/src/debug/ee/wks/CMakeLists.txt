@@ -9,9 +9,9 @@ if (CLR_CMAKE_TARGET_WIN32)
 
   if(CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64)
 
-    preprocess_compile_asm(ASM_FILES ${ASM_FILE} OUTPUT_OBJECTS ASM_OBJECTS)
+    preprocess_compile_asm(TARGET cordbee_wks ASM_FILES ${ASM_FILE} OUTPUT_OBJECTS ASM_OBJECTS)
 
-    add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS} ${ASM_OBJECTS})
+    add_library_clr(cordbee_wks OBJECT ${CORDBEE_SOURCES_WKS} ${ASM_FILE} ${ASM_OBJECTS})
 
   else ()
 
@@ -23,14 +23,14 @@ if (CLR_CMAKE_TARGET_WIN32)
 
     set_source_files_properties(${ASM_FILE} PROPERTIES COMPILE_OPTIONS "${ASM_OPTIONS}")
 
-    add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS} ${ASM_FILE})
+    add_library_clr(cordbee_wks OBJECT ${CORDBEE_SOURCES_WKS} ${ASM_FILE})
 
   endif()
 
 else ()
 
   if(CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_I386)
-    add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS} ../${ARCH_SOURCES_DIR}/dbghelpers.S)
+    add_library_clr(cordbee_wks OBJECT ${CORDBEE_SOURCES_WKS} ../${ARCH_SOURCES_DIR}/dbghelpers.S)
   else()
     message(FATAL_ERROR "Unknown platform")
   endif()

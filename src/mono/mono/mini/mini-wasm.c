@@ -761,24 +761,24 @@ ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
 
 ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count)
 {
-	g_error ("sendfile");
-	return 0;
+	errno = ENOTSUP;
+	return -1;
 }
 
 int
 getpwnam_r (const char *name, struct passwd *pwd, char *buffer, size_t bufsize,
 			struct passwd **result)
 {
-	g_error ("getpwnam_r");
-	return 0;
+	*result = NULL;
+	return ENOTSUP;
 }
 
 int
 getpwuid_r (uid_t uid, struct passwd *pwd, char *buffer, size_t bufsize,
 			struct passwd **result)
 {
-	g_error ("getpwuid_r");
-	return 0;
+	*result = NULL;
+	return ENOTSUP;
 }
 
 G_END_DECLS

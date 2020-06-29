@@ -351,36 +351,30 @@ namespace ILCompiler.DependencyAnalysis
             bool isInstantiatingStub = key.IsInstantiatingStub;
             bool isPrecodeImportRequired = key.IsPrecodeImportRequired;
             MethodDesc compilableMethod = method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            MethodWithGCInfo methodWithGCInfo = null;
+
             if (CompilationModuleGroup.ContainsMethodBody(compilableMethod, false))
             {
-                if (isPrecodeImportRequired)
-                {
-                    return new PrecodeMethodImport(
-                        this,
-                        ReadyToRunFixupKind.MethodEntry,
-                        method,
-                        CompiledMethodNode(compilableMethod),
-                        isUnboxingStub,
-                        isInstantiatingStub);
-                }
-                else
-                {
-                    return new LocalMethodImport(
-                        this,
-                        ReadyToRunFixupKind.MethodEntry,
-                        method,
-                        CompiledMethodNode(compilableMethod),
-                        isUnboxingStub,
-                        isInstantiatingStub);
-                }
+                methodWithGCInfo = CompiledMethodNode(compilableMethod);
             }
-            else
+
+            if (isPrecodeImportRequired)
             {
-                // First time we see a given external method - emit indirection cell and the import entry
-                return new ExternalMethodImport(
+                return new PrecodeMethodImport(
                     this,
                     ReadyToRunFixupKind.MethodEntry,
                     method,
+                    methodWithGCInfo,
+                    isUnboxingStub,
+                    isInstantiatingStub);
+            }
+            else
+            {
+                return new DelayLoadMethodImport(
+                    this,
+                    ReadyToRunFixupKind.MethodEntry,
+                    method,
+                    methodWithGCInfo,
                     isUnboxingStub,
                     isInstantiatingStub);
             }
@@ -409,9 +403,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null), false, false, false);
                 MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
-                if (methodCodeNodeDebug == null && methodNodeDebug is LocalMethodImport localMethodImport)
+                if (methodCodeNodeDebug == null && methodNodeDebug is DelayLoadMethodImport DelayLoadMethodImport)
                 {
-                    methodCodeNodeDebug = localMethodImport.MethodCodeNode;
+                    methodCodeNodeDebug = DelayLoadMethodImport.MethodCodeNode;
                 }
                 if (methodCodeNodeDebug == null && methodNodeDebug is PrecodeMethodImport precodeMethodImport)
                 {
