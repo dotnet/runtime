@@ -1010,8 +1010,10 @@ namespace Internal.JitInterface
                 else
                 {
                     var methodContext = (MethodDesc)typeOrMethodContext;
-                    Debug.Assert(methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition() ||
+                    Debug.Assert((!methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
+                        methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition() ||
                         (owningMethod.Name == "CreateDefaultInstance" && methodContext.Name == "CreateInstance"));
+                    Debug.Assert(methodContext.OwningType.HasSameTypeDefinition(owningMethod.OwningType));
                     typeInst = methodContext.OwningType.Instantiation;
                     methodInst = methodContext.Instantiation;
                 }
