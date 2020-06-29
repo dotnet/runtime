@@ -2954,10 +2954,15 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
         return;
     }
 
-    if (addr->OperGet() == GT_LCL_VAR_ADDR)
+    if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-        emitIns_R_S(ins, attr, dstReg, varNode->GetLclNum(), 0);
+        unsigned             offset  = 0;
+        if (addr->OperIs(GT_LCL_FLD_ADDR))
+        {
+            offset = varNode->AsLclFld()->GetLclOffs();
+        }
+        emitIns_R_S(ins, attr, dstReg, varNode->GetLclNum(), offset);
 
         // Updating variable liveness after instruction was emitted
         codeGen->genUpdateLife(varNode);
@@ -3006,17 +3011,22 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         return;
     }
 
-    if (addr->OperGet() == GT_LCL_VAR_ADDR)
+    if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
+        unsigned             offset  = 0;
+        if (addr->OperIs(GT_LCL_FLD_ADDR))
+        {
+            offset = varNode->AsLclFld()->GetLclOffs();
+        }
         if (data->isContainedIntOrIImmed())
         {
-            emitIns_S_I(ins, attr, varNode->GetLclNum(), 0, (int)data->AsIntConCommon()->IconValue());
+            emitIns_S_I(ins, attr, varNode->GetLclNum(), offset, (int)data->AsIntConCommon()->IconValue());
         }
         else
         {
             assert(!data->isContained());
-            emitIns_S_R(ins, attr, data->GetRegNum(), varNode->GetLclNum(), 0);
+            emitIns_S_R(ins, attr, data->GetRegNum(), varNode->GetLclNum(), offset);
         }
 
         // Updating variable liveness after instruction was emitted

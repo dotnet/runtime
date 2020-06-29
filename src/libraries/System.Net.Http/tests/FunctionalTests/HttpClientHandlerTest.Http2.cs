@@ -2271,7 +2271,7 @@ namespace System.Net.Http.Functional.Tests
                     cancellationTokenSource.Cancel();
 
                     // Cancellation may not propagate immediately. So wait a brief time to try to ensure it propagates.
-                    await Task.Delay(500);
+                    await Task.Delay(3000);
 
                     // Attempting to write on the request body should now fail with OperationCanceledException.
                     Exception e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });

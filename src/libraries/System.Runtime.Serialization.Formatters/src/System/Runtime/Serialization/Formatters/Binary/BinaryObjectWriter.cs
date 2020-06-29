@@ -20,7 +20,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private readonly SerializationObjectManager _objectManager;
 
         private long _topId;
-        private readonly string? _topName = null;
 
         private readonly InternalFE _formatterEnums;
         private readonly SerializationBinder? _binder;
@@ -29,13 +28,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private IFormatterConverter? _formatterConverter;
 
-        internal object[]? _crossAppDomainArray = null;
-        internal List<object>? _internalCrossAppDomainArray = null;
+#pragma warning disable 0649 // Field is never assigned to, and will always have its default value null
+        internal object[]? _crossAppDomainArray;
+#pragma warning restore 0649
 
-        private object? _previousObj = null;
-        private long _previousId = 0;
+        private object? _previousObj;
+        private long _previousId;
 
-        private Type? _previousType = null;
+        private Type? _previousType;
         private InternalPrimitiveTypeE _previousCode = InternalPrimitiveTypeE.Invalid;
 
         internal ObjectWriter(ISurrogateSelector? selector, StreamingContext context, InternalFE formatterEnums, SerializationBinder? binder)
@@ -208,7 +208,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
                            WriteObjectInfo[] memberObjectInfos)
         {
             int numItems = memberNames.Length;
-            NameInfo? topNameInfo = null;
 
             Debug.Assert(_serWriter != null);
             if (memberNameInfo != null)
@@ -216,19 +215,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 memberNameInfo._objectId = objectInfo._objectId;
                 _serWriter.WriteObject(memberNameInfo, typeNameInfo, numItems, memberNames, memberTypes, memberObjectInfos);
             }
-            else if ((objectInfo._objectId == _topId) && (_topName != null))
+            else if (!ReferenceEquals(objectInfo._objectType, Converter.s_typeofString))
             {
-                topNameInfo = MemberToNameInfo(_topName);
-                topNameInfo._objectId = objectInfo._objectId;
-                _serWriter.WriteObject(topNameInfo, typeNameInfo, numItems, memberNames, memberTypes, memberObjectInfos);
-            }
-            else
-            {
-                if (!ReferenceEquals(objectInfo._objectType, Converter.s_typeofString))
-                {
-                    typeNameInfo._objectId = objectInfo._objectId;
-                    _serWriter.WriteObject(typeNameInfo, null, numItems, memberNames, memberTypes, memberObjectInfos);
-                }
+                typeNameInfo._objectId = objectInfo._objectId;
+                _serWriter.WriteObject(typeNameInfo, null, numItems, memberNames, memberTypes, memberObjectInfos);
             }
 
             Debug.Assert(memberNameInfo != null);
@@ -252,11 +242,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 memberNameInfo._objectId = objectInfo._objectId;
                 _serWriter.WriteObjectEnd(memberNameInfo, typeNameInfo);
-            }
-            else if ((objectInfo._objectId == _topId) && (_topName != null))
-            {
-                _serWriter.WriteObjectEnd(topNameInfo!, typeNameInfo);
-                PutNameInfo(topNameInfo!);
             }
             else if (!ReferenceEquals(objectInfo._objectType, Converter.s_typeofString))
             {
@@ -973,7 +958,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        private Dictionary<string, long>? _assemblyToIdTable = null;
+        private Dictionary<string, long>? _assemblyToIdTable;
         private long GetAssemblyId(WriteObjectInfo objectInfo)
         {
             //use objectInfo to get assembly string with new criteria

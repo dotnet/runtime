@@ -133,7 +133,17 @@ namespace System.Net.Http
                 }
             }
 
-            protected override async Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken)
+            protected override Stream CreateContentReadStream(CancellationToken cancellationToken)
+            {
+                ValueTask<Stream> task = CreateContentReadStreamAsyncCore(async: false, cancellationToken);
+                Debug.Assert(task.IsCompleted);
+                return task.GetAwaiter().GetResult();
+            }
+
+            protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
+                CreateContentReadStreamAsyncCore(async: true, cancellationToken).AsTask();
+
+            private async ValueTask<Stream> CreateContentReadStreamAsyncCore(bool async, CancellationToken cancellationToken)
             {
                 if (_contentConsumed)
                 {
@@ -142,7 +152,15 @@ namespace System.Net.Http
 
                 _contentConsumed = true;
 
-                Stream originalStream = _originalContent.TryReadAsStream() ?? await _originalContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                Stream originalStream;
+                if (async)
+                {
+                    originalStream = _originalContent.TryReadAsStream() ?? await _originalContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    originalStream = _originalContent.ReadAsStream();
+                }
                 return GetDecompressedStream(originalStream);
             }
 

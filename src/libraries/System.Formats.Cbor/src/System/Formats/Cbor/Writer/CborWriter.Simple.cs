@@ -3,12 +3,31 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 
 namespace System.Formats.Cbor
 {
     public partial class CborWriter
     {
         // Implements major type 7 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
+
+        /// <summary>
+        ///   Writes a half-precision floating point number (major type 7).
+        /// </summary>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="InvalidOperationException">
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance mode
+        /// </exception>
+        internal void WriteHalf(Half value)
+        {
+            EnsureWriteCapacity(1 + HalfHelpers.SizeOfHalf);
+            WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional16BitData));
+            HalfHelpers.WriteHalfBigEndian(_buffer.AsSpan(_offset), value);
+            _offset += HalfHelpers.SizeOfHalf;
+            AdvanceDataItemCounters();
+        }
 
         /// <summary>
         ///   Writes a single-precision floating point number (major type 7).
@@ -21,11 +40,15 @@ namespace System.Formats.Cbor
         /// </exception>
         public void WriteSingle(float value)
         {
-            EnsureWriteCapacity(5);
-            WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional32BitData));
-            BinaryPrimitives.WriteSingleBigEndian(_buffer.AsSpan(_offset), value);
-            _offset += 4;
-            AdvanceDataItemCounters();
+            if (!CborConformanceModeHelpers.RequiresPreservingFloatPrecision(ConformanceMode) &&
+                 FloatSerializationHelpers.TryConvertSingleToHalf(value, out Half half))
+            {
+                WriteHalf(half);
+            }
+            else
+            {
+                WriteSingleCore(value);
+            }
         }
 
         /// <summary>
@@ -39,10 +62,39 @@ namespace System.Formats.Cbor
         /// </exception>
         public void WriteDouble(double value)
         {
-            EnsureWriteCapacity(9);
+            if (!CborConformanceModeHelpers.RequiresPreservingFloatPrecision(ConformanceMode) &&
+                 FloatSerializationHelpers.TryConvertDoubleToSingle(value, out float single))
+            {
+                if (FloatSerializationHelpers.TryConvertSingleToHalf(single, out Half half))
+                {
+                    WriteHalf(half);
+                }
+                else
+                {
+                    WriteSingleCore(single);
+                }
+            }
+            else
+            {
+                WriteDoubleCore(value);
+            }
+        }
+
+        private void WriteSingleCore(float value)
+        {
+            EnsureWriteCapacity(1 + sizeof(float));
+            WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional32BitData));
+            BinaryPrimitives.WriteSingleBigEndian(_buffer.AsSpan(_offset), value);
+            _offset += sizeof(float);
+            AdvanceDataItemCounters();
+        }
+
+        private void WriteDoubleCore(double value)
+        {
+            EnsureWriteCapacity(1 + sizeof(double));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional64BitData));
             BinaryPrimitives.WriteDoubleBigEndian(_buffer.AsSpan(_offset), value);
-            _offset += 8;
+            _offset += sizeof(double);
             AdvanceDataItemCounters();
         }
 
@@ -105,6 +157,23 @@ namespace System.Formats.Cbor
             }
 
             AdvanceDataItemCounters();
+        }
+
+        private static class FloatSerializationHelpers
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool TryConvertDoubleToSingle(double value, out float result)
+            {
+                result = (float)value;
+                return BitConverter.DoubleToInt64Bits(result) == BitConverter.DoubleToInt64Bits(value);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool TryConvertSingleToHalf(float value, out Half result)
+            {
+                result = (Half)value;
+                return BitConverter.SingleToInt32Bits((float)result) == BitConverter.SingleToInt32Bits(value);
+            }
         }
     }
 }

@@ -20,7 +20,7 @@ namespace System.Runtime.Serialization
         private SerializationEventHandler? _onDeserializedHandler;
 
         internal ObjectHolder[] _objects;
-        internal object? _topObject = null;
+        internal object? _topObject;
         internal ObjectHolderList? _specialFixupObjects; //This is IObjectReference, ISerializable, or has a Surrogate.
         internal long _fixupCount;
         internal readonly ISurrogateSelector? _selector;
@@ -1017,8 +1017,8 @@ namespace System.Runtime.Serialization
         internal int _flags;
         private bool _markForFixupWhenAvailable;
         private ValueTypeFixupInfo? _valueFixup;
-        private TypeLoadExceptionHolder? _typeLoad = null;
-        private bool _reachable = false;
+        private TypeLoadExceptionHolder? _typeLoad;
+        private bool _reachable;
 
         internal ObjectHolder(long objID) : this(null, objID, null, null, 0, null, null)
         {

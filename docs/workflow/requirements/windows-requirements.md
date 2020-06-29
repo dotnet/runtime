@@ -19,7 +19,7 @@ git config --system core.longpaths true
 
 ## Visual Studio
 
-- Install [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/). The Community version is completely free.
+- Install [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/). The Community edition is available free of charge.
 
 Visual Studio 2019 installation process:
 - It's recommended to use 'Workloads' installation approach. The following are the minimum requirements:
@@ -34,7 +34,7 @@ Visual Studio 2019 installation process:
 
 A `.vsconfig` file is included in the root of the dotnet/runtime repository that includes all components needed to build the dotnet/runtime repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations?view=vs-2019#import-a-configuration) to install all necessary components.
 
-The dotnet/runtime repository requires at least Visual Studio 2019 16.6 Preview 2.
+The dotnet/runtime repository requires at least Visual Studio 2019 16.6.
 
 ## CMake
 
