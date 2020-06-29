@@ -14930,9 +14930,14 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         (emitLastIns->idOpSize() == size))   // Don't optimize if operand size is different than previous instruction.
     {
         // Check if we did same move in prev instruction except dst/src were switched.
-        regNumber prevDst = emitLastIns->idReg1();
-        regNumber prevSrc = emitLastIns->idReg2();
+        regNumber prevDst    = emitLastIns->idReg1();
+        regNumber prevSrc    = emitLastIns->idReg2();
+        insFormat lastInsfmt = emitLastIns->idInsFmt();
 
+        // Sometimes emitLastIns can be a mov with single register e.g. "mov reg, #imm". So ensure to
+        // optimize formats that does vector-to-vector or scalar-to-scalar register movs.
+        bool isValidLastInsFormats = ((lastInsfmt == IF_DV_3C) || (lastInsfmt == IF_DR_2G) || (lastInsfmt == IF_DR_2E));
+ 
         if ((prevDst == dst) && (prevSrc == src))
         {
             assert(emitLastIns->idOpSize() == size);
@@ -14940,7 +14945,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
             return true;
         }
 
-        if ((prevDst == src) && (prevSrc == dst))
+        if ((prevDst == src) && (prevSrc == dst) && isValidLastInsFormats)
         {
             // For mov with EA_8BYTE, ensure src/dst are both scalar or both vector.
             if (size == EA_8BYTE)
@@ -14957,6 +14962,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
             else if (size == EA_16BYTE)
             {
                 assert(isVectorRegister(src) && isVectorRegister(dst));
+                assert(lastInsfmt == IF_DR_3C);
 
                 JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst to "
                         "src register.\n");
