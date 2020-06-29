@@ -113,6 +113,10 @@ namespace Internal.Cryptography.Pal
 
         public void Dispose()
         {
+            // Generally, having a MemoryManager cleaned up in a Dispose is a bad practice.
+            // In this case, the UnixPkcs12Reader is only ever created in a using statement,
+            // never accessed by a second thread, and there isn't a manual call to Dispose
+            // mixed in anywhere.
             if (_tmpManager != null)
             {
                 unsafe

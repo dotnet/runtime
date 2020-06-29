@@ -144,9 +144,6 @@ namespace System.Security.Cryptography.Pkcs
         /// </exception>
         public void Decode(ReadOnlySpan<byte> encodedMessage)
         {
-            if (encodedMessage == null)
-                throw new ArgumentNullException(nameof(encodedMessage));
-
             if (_decryptorPal != null)
             {
                 _decryptorPal.Dispose();

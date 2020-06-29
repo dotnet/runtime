@@ -31,8 +31,13 @@ namespace Microsoft.Win32.SafeHandles
             // "".AsSpan() is not default, so this is compat for "null tries NULL first".
             if (password != default)
             {
-                int spanLen = password.Length + 1;
-                handle = Marshal.AllocHGlobal(spanLen * sizeof(char));
+                int spanLen;
+
+                checked
+                {
+                    spanLen = password.Length + 1;
+                    handle = Marshal.AllocHGlobal(spanLen * sizeof(char));
+                }
 
                 unsafe
                 {

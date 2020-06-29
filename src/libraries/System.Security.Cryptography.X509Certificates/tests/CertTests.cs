@@ -285,10 +285,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void X509Cert2CreateFromPfxWithSpanPassword()
         {
-            Span<char> pw = stackalloc char[4];
-            pw[0] = pw[3] = 't';
-            pw[1] = 'e';
-            pw[2] = 's';
+            Span<char> pw = stackalloc char[] { 't', 'e', 's', 't' };
 
             using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "test.pfx"), pw))
             {
