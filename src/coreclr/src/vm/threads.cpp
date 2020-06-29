@@ -511,10 +511,14 @@ void Thread::ChooseThreadCPUGroupAffinity()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-#ifndef TARGET_UNIX
-    if (!CPUGroupInfo::CanEnableGCCPUGroups() || !CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-         return;
 
+#ifndef TARGET_UNIX
+    if (!CPUGroupInfo::CanEnableGCCPUGroups() ||
+        !CPUGroupInfo::CanEnableThreadUseAllCpuGroups() ||
+        !CPUGroupInfo::CanAssignCpuGroupsToThreads())
+    {
+        return;
+    }
 
     //Borrow the ThreadStore Lock here: Lock ThreadStore before distributing threads
     ThreadStoreLockHolder TSLockHolder(TRUE);
@@ -542,10 +546,14 @@ void Thread::ClearThreadCPUGroupAffinity()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-#ifndef TARGET_UNIX
-    if (!CPUGroupInfo::CanEnableGCCPUGroups() || !CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-         return;
 
+#ifndef TARGET_UNIX
+    if (!CPUGroupInfo::CanEnableGCCPUGroups() ||
+        !CPUGroupInfo::CanEnableThreadUseAllCpuGroups() ||
+        !CPUGroupInfo::CanAssignCpuGroupsToThreads())
+    {
+        return;
+    }
 
     ThreadStoreLockHolder TSLockHolder(TRUE);
 

@@ -1273,6 +1273,7 @@ private:
     static WORD m_nProcessors;
     static BOOL m_enableGCCPUGroups;
     static BOOL m_threadUseAllCpuGroups;
+    static BOOL m_threadAssignCpuGroups;
     static WORD m_initialGroup;
     static CPU_Group_Info *m_CPUGroupInfoArray;
     static bool s_hadSingleProcessorAtStartup;
@@ -1286,6 +1287,7 @@ public:
     static void EnsureInitialized();
     static BOOL CanEnableGCCPUGroups();
     static BOOL CanEnableThreadUseAllCpuGroups();
+    static BOOL CanAssignCpuGroupsToThreads();
     static WORD GetNumActiveProcessors();
     static void GetGroupForProcessor(WORD processor_number,
 		    WORD *group_number, WORD *group_processor_number);
