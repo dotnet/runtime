@@ -235,6 +235,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData("f6")] // null
         [InlineData("f4")] // false
         [InlineData("c202")] // tagged value
+        [InlineData("fb7ff0000000000000")] // double-precision float encoding
         public static void ReadSingle_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
