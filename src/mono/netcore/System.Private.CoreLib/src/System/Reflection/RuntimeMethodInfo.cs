@@ -134,6 +134,7 @@ namespace System.Reflection
         }
     }
 
+#region Sync with _MonoReflectionMethod in object-internals.h
     [StructLayout(LayoutKind.Sequential)]
     internal class RuntimeMethodInfo : MethodInfo
     {
@@ -142,6 +143,8 @@ namespace System.Reflection
         private string? name;
         private Type? reftype;
 #pragma warning restore 649
+#endregion
+        private string? toString;
 
         internal BindingFlags BindingFlags
         {
@@ -192,9 +195,28 @@ namespace System.Reflection
             return Delegate.CreateDelegate(delegateType, target, this);
         }
 
+        // copied from CoreCLR's RuntimeMethodInfo
         public override string ToString()
         {
-            return ReturnType.FormatTypeName() + " " + FormatNameAndSig();
+            if (toString == null)
+            {
+                var sbName = new ValueStringBuilder(MethodNameBufferSize);
+
+                sbName.Append(ReturnType.FormatTypeName());
+                sbName.Append(' ');
+                sbName.Append(Name);
+
+                if (IsGenericMethod)
+                    sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this, TypeNameFormatFlags.FormatBasic));
+
+                sbName.Append('(');
+                AppendParameters(ref sbName, GetParameterTypes(), CallingConvention);
+                sbName.Append(')');
+
+                toString = sbName.ToString();
+            }
+
+            return toString;
         }
 
         internal RuntimeModule GetRuntimeModule()
