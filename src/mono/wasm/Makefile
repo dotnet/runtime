@@ -16,7 +16,7 @@ MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
 SYS_NATIVE_DIR?=$(OBJDIR)/native/net5.0-Browser-$(CONFIG)-wasm/System.Native
 BUILDS_BIN_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm
 
-all: build-native
+all: build-native timezone-data
 
 #
 # EMSCRIPTEN SETUP
@@ -111,6 +111,9 @@ clean:
 
 # Helper targets
 .PHONY: runtime
+
+timezone-data:
+	cp runtime/dotnet.timezones.blat $(BUILDS_BIN_DIR)
 
 runtime:
 	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono --arch wasm --os Browser -c $(CONFIG)
