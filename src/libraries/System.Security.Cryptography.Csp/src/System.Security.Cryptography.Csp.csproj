@@ -8,7 +8,7 @@
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.Cryptography_PlatformNotSupported_Browser</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Security\Cryptography\AesCryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.Shared.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.Shared.cs" />
@@ -30,7 +30,7 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs"
              Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Security\Cryptography\CapiHelper.Unix.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.Unix.cs" />
     <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.Unix.cs" />

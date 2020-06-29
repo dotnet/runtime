@@ -15,7 +15,7 @@
          without a RID so that it applies in desktop packages.config projects as well -->
     <PackageTargetRuntime />
   </PropertyGroup>
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' " />
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(TargetsUnix)' == 'true'" />
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Security\Cryptography\DSAOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanOpenSsl.cs" />

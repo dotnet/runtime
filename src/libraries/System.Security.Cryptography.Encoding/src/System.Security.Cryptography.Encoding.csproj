@@ -10,7 +10,7 @@
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="Internal\Cryptography\AsnFormatter.cs" />
     <Compile Include="Internal\Cryptography\OidLookup.cs" />
     <Compile Include="System\Security\Cryptography\AsnEncodedData.cs" />
@@ -53,7 +53,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="Internal\Cryptography\AsnFormatter.Unix.cs" />
     <Compile Include="Internal\Cryptography\OidLookup.Unix.cs" />
     <Compile Include="Internal\Cryptography\OpenSslAsnFormatter.cs" />
