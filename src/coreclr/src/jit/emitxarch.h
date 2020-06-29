@@ -97,6 +97,8 @@ bool Is4ByteSSEInstruction(instruction ins);
 
 bool AreUpper32BitsZero(regNumber reg);
 
+bool IsZeroFlagSet(regNumber reg, emitAttr opSize);
+
 bool hasRexPrefix(code_t code)
 {
 #ifdef TARGET_AMD64

@@ -215,6 +215,65 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 }
 
 //------------------------------------------------------------------------
+// IsZeroFlagSet: Checks if the previous instruction set the zero flag for
+//                reg of opSize size to zero.
+//
+// Arguments:
+//    reg - register of interest
+//    opSize - size of register
+//
+// Return Value:
+//    true if the previous instruction set the zero flag for reg
+//    false if not, or if we can't safely determine
+//
+// Notes:
+//    Currently only looks back one instruction.
+bool emitter::IsZeroFlagSet(regNumber reg, emitAttr opSize)
+{
+    // Don't look back across IG boundaries (possible control flow)
+    if (emitCurIGinsCnt == 0)
+    {
+        return false;
+    }
+    else if (reg == REG_NA)
+    {
+        return false;
+    }
+
+    instrDesc* id = emitLastIns;
+
+    if (id->idReg1() != reg)
+    {
+        return false;
+    }
+
+    switch (id->idIns())
+    {
+        case INS_adc:
+        case INS_add:
+        case INS_and:
+        case INS_dec:
+        case INS_dec_l:
+        case INS_inc:
+        case INS_inc_l:
+        case INS_neg:
+        case INS_or:
+        case INS_shl_1:
+        case INS_sar_1:
+        case INS_sbb:
+        case INS_sub:
+        case INS_xadd:
+        case INS_xor:
+            return id->idOpSize() == opSize;
+
+        default:
+            break;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // IsDstSrcImmAvxInstruction: Checks if the instruction has a "reg, reg/mem, imm" or
 //                            "reg/mem, reg, imm" form for the legacy, VEX, and EVEX
 //                            encodings.

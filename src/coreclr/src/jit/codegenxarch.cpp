@@ -5908,12 +5908,14 @@ void CodeGen::genCompareInt(GenTree* treeNode)
 {
     assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP));
 
-    GenTreeOp* tree      = treeNode->AsOp();
-    GenTree*   op1       = tree->gtOp1;
-    GenTree*   op2       = tree->gtOp2;
-    var_types  op1Type   = op1->TypeGet();
-    var_types  op2Type   = op2->TypeGet();
-    regNumber  targetReg = tree->GetRegNum();
+    GenTreeOp* tree             = treeNode->AsOp();
+    GenTree*   op1              = tree->gtOp1;
+    GenTree*   op2              = tree->gtOp2;
+    var_types  op1Type          = op1->TypeGet();
+    var_types  op2Type          = op2->TypeGet();
+    regNumber  targetReg        = tree->GetRegNum();
+    emitter*   emit             = GetEmitter();
+    bool       canReuseZeroFlag = false;
 
     genConsumeOperands(tree);
 
@@ -5945,6 +5947,10 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
+        if ((treeNode->OperIs(GT_EQ) || treeNode->OperIs(GT_NE)) && compiler->opts.OptimizationEnabled())
+        {
+            canReuseZeroFlag = true;
+        }
         // We're comparing a register to 0 so we can generate "test reg1, reg1"
         // instead of the longer "cmp reg1, 0"
         ins = INS_test;
@@ -5995,7 +6001,14 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
 
-    GetEmitter()->emitInsBinary(ins, emitTypeSize(type), op1, op2);
+    if (canReuseZeroFlag && emit->IsZeroFlagSet(op1->GetRegNum(), emitTypeSize(type)))
+    {
+        JITDUMP("Not emitting compare due to flags being already set\n");
+    }
+    else
+    {
+        emit->emitInsBinary(ins, emitTypeSize(type), op1, op2);
+    }
 
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
