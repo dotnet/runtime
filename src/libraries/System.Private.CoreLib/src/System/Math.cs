@@ -1019,7 +1019,7 @@ namespace System
         
         public static unsafe double Round(double value, int digits, RoundingMode rounding) 
         { 
-	        if ((digits < 0) || (digits > kMaxDoubleDigits))
+	        if ((digits < 0) || (digits > maxRoundingDigits))
 	        {
 		        throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
 	        }
@@ -1039,37 +1039,37 @@ namespace System
 	        {
 		        throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(RoundingMode)), nameof(mode));
 	        }
-	        if (System.Math.Abs(value) < kRoundDoubleLimit)
+	        if (Abs(value) < doubleRoundLimit)
 	        {
 		        if (rounding == RoundingMode.Down)
 		        {
-			        return System.Math.Floor(value);
+			        return Floor(value);
 		        }
 		        else if (rounding == RoundingMode.Up)
 		        {
-			        return System.Math.Ceiling(value);
+			        return Ceiling(value);
 		        }
 		        else if (rounding == RoundingMode.TowardsZero)
 		        {
-			        return System.Math.Truncate(value);
+			        return Truncate(value);
 		        }
         		else if (rounding == RoundingMode.AwayZero)
 		        {
-			        return System.Math.Sign(value) < 0 ? System.Math.Floor(value) : System.Math.Ceiling(value);
+			        return Sign(value) < 0 ? Floor(value) : Ceiling(value);
 		        }
         		else if (rounding == RoundingMode.HalfToEven)
 		        {
-			        return System.Math.Round(value);
+			        return Round(value);
 		        }
         		else
 		        {
 			        double fraction = ModF(value, &value);
-			        double absoluteFrac = System.Math.Abs(fraction);
+			        double absoluteFrac = Abs(fraction);
 			        if (absoluteFrac < 0.5D)
 			        {
 				        return value;
 			        }
-			        int signFrac = System.Math.Sign(fraction);
+			        int signFrac = Sign(fraction);
 			        switch (rounding)
 			        {
 				        case RoundingMode.HalfAwayZero:
