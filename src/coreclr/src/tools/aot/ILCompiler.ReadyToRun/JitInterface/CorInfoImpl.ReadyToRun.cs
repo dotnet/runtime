@@ -1280,21 +1280,16 @@ namespace Internal.JitInterface
             {
                 bool devirt;
 
-                // Check For interfaces before the bubble check
-                // since interface methods 
-                if (targetMethod.OwningType.IsInterface)
-                {
-                    // Handle interface methods specially because the Sealed bit has no meaning on interfaces.
-                    devirt = !targetMethod.IsVirtual;
-                }
                 // if we are generating version resilient code
                 // AND
                 //    caller/callee are in different version bubbles
                 // we have to apply more restrictive rules
                 // These rules are related to the "inlining rules" as far as the
                 // boundaries of a version bubble are concerned.
-                else if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod) ||
-                    !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(targetMethod))
+                if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod) ||
+                    // check the Typical TargetMethod, not the Instantiation
+                    !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(targetMethod.IsTypicalMethodDefinition ?
+                                                                                            targetMethod: targetMethod.GetTypicalMethodDefinition()))
                 {
                     // For version resiliency we won't de-virtualize all final/sealed method calls.  Because during a 
                     // servicing event it is legal to unseal a method or type.
@@ -1308,6 +1303,11 @@ namespace Internal.JitInterface
                         (targetMethod.IsIntrinsic && getIntrinsicID(targetMethod, null) != CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal);
 
                     callVirtCrossingVersionBubble = true;
+                }
+                else if (targetMethod.OwningType.IsInterface)
+                {
+                    // Handle interface methods specially because the Sealed bit has no meaning on interfaces.
+                    devirt = !targetMethod.IsVirtual;
                 }
                 else
                 {
