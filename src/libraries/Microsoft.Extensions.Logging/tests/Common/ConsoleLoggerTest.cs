@@ -2,15 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging.Test.Console;
 using Microsoft.Extensions.Options;
 using Xunit;
+#pragma warning disable CS0618
 
 namespace Microsoft.Extensions.Logging.Test
 {
@@ -20,6 +23,16 @@ namespace Microsoft.Extensions.Logging.Test
         private const string _loggerName = "test";
         private const string _state = "This is a test, and {curly braces} are just fine!";
         private readonly Func<object, Exception, string> _defaultFormatter = (state, exception) => state.ToString();
+
+        internal static IEnumerable<ConsoleFormatter> GetFormatters()
+        {
+            var defaultMonitor = new FormatterOptionsMonitor<SimpleConsoleFormatterOptions>(new SimpleConsoleFormatterOptions());
+            var systemdMonitor = new FormatterOptionsMonitor<ConsoleFormatterOptions>(new ConsoleFormatterOptions());
+            var formatters = new List<ConsoleFormatter>() { 
+                new SimpleConsoleFormatter(defaultMonitor),
+                new SystemdConsoleFormatter(systemdMonitor) };
+            return formatters;
+        }
 
         private static (ConsoleLogger Logger, ConsoleSink Sink, ConsoleSink ErrorSink, Func<LogLevel, string> GetLevelPrefix, int WritesPerMsg) SetUp(ConsoleLoggerOptions options = null)
         {
@@ -35,6 +48,8 @@ namespace Microsoft.Extensions.Logging.Test
             var logger = new ConsoleLogger(_loggerName, consoleLoggerProcessor);
             logger.ScopeProvider = new LoggerExternalScopeProvider();
             logger.Options = options ?? new ConsoleLoggerOptions();
+            var formatters = new ConcurrentDictionary<string, ConsoleFormatter>(GetFormatters().ToDictionary(f => f.Name));
+
             Func<LogLevel, string> levelAsString;
             int writesPerMsg;
             switch (logger.Options.Format)
@@ -42,15 +57,42 @@ namespace Microsoft.Extensions.Logging.Test
                 case ConsoleLoggerFormat.Default:
                     levelAsString = LogLevelAsStringDefault;
                     writesPerMsg = 2;
+                    logger.Formatter = formatters[ConsoleFormatterNames.Simple];
                     break;
                 case ConsoleLoggerFormat.Systemd:
                     levelAsString = GetSyslogSeverityString;
                     writesPerMsg = 1;
+                    logger.Formatter = formatters[ConsoleFormatterNames.Systemd];
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(logger.Options.Format));
             }
+
+            UpdateFormatterOptions(logger.Formatter, logger.Options);
+            if (ConsoleLoggerFormat.Default == logger.Options.Format)
+            {
+                Assert.Equal((logger.Formatter as SimpleConsoleFormatter).FormatterOptions.IncludeScopes, logger.Options.IncludeScopes);
+            }
             return (logger, sink, errorSink, levelAsString, writesPerMsg);
+        }
+
+        private static void UpdateFormatterOptions(ConsoleFormatter formatter, ConsoleLoggerOptions deprecatedFromOptions)
+        {
+            // kept for deprecated apis:
+            if (formatter is SimpleConsoleFormatter defaultFormatter)
+            {
+                defaultFormatter.FormatterOptions.DisableColors = deprecatedFromOptions.DisableColors;
+                defaultFormatter.FormatterOptions.IncludeScopes = deprecatedFromOptions.IncludeScopes;
+                defaultFormatter.FormatterOptions.TimestampFormat = deprecatedFromOptions.TimestampFormat;
+                defaultFormatter.FormatterOptions.UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp;
+            }
+            else
+            if (formatter is SystemdConsoleFormatter systemdFormatter)
+            {
+                systemdFormatter.FormatterOptions.IncludeScopes = deprecatedFromOptions.IncludeScopes;
+                systemdFormatter.FormatterOptions.TimestampFormat = deprecatedFromOptions.TimestampFormat;
+                systemdFormatter.FormatterOptions.UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp;
+            }
         }
 
         private static string LogLevelAsStringDefault(LogLevel level)
@@ -112,17 +154,17 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(6, sink.Writes.Count);
             Assert.Equal(
                 "crit: test[0]" + Environment.NewLine +
-                "      [null]" + Environment.NewLine,
+                _paddingString + "[null]" + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg)));
             Assert.Equal(
                 "crit: test[0]" + Environment.NewLine +
-                "      [null]" + Environment.NewLine,
+                _paddingString + "[null]" + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(1 * t.WritesPerMsg, t.WritesPerMsg)));
 
             Assert.Equal(
                 "crit: test[0]" + Environment.NewLine +
-                "      [null]" + Environment.NewLine +
-                "System.InvalidOperationException: Invalid value" + Environment.NewLine,
+                _paddingString + "[null]" + Environment.NewLine +
+                _paddingString + "System.InvalidOperationException: Invalid value" + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(2 * t.WritesPerMsg, t.WritesPerMsg)));
         }
 
@@ -133,12 +175,12 @@ namespace Microsoft.Extensions.Logging.Test
             var t = SetUp();
             var logger = (ILogger)t.Logger;
             var sink = t.Sink;
-            var logMessage = "Route with name 'Default' was not found.";
+            var logMessage = "Route with name 'Simple' was not found.";
             var expected1 = @"crit: test[0]" + Environment.NewLine +
-                            "      Route with name 'Default' was not found." + Environment.NewLine;
+                            _paddingString + "Route with name 'Simple' was not found." + Environment.NewLine;
 
             var expected2 = @"crit: test[10]" + Environment.NewLine +
-                            "      Route with name 'Default' was not found." + Environment.NewLine;
+                            _paddingString + "Route with name 'Simple' was not found." + Environment.NewLine;
 
             // Act
             logger.LogCritical(logMessage);
@@ -155,7 +197,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [InlineData("Route with name 'Default' was not found.")]
+        [InlineData("Route with name 'Simple' was not found.")]
         public void Writes_NewLine_WhenExceptionIsProvided(string message)
         {
             // Arrange
@@ -168,7 +210,7 @@ namespace Microsoft.Extensions.Logging.Test
             var expectedMessage =
                 _paddingString + message + Environment.NewLine;
             var expectedExceptionMessage =
-                exception.ToString() + Environment.NewLine;
+                _paddingString + exception.ToString() + Environment.NewLine;
 
             // Act
             logger.LogCritical(eventId, exception, message);
@@ -352,7 +394,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
 
             // Assert
-            Assert.Equal(2 * levelSequence, sink.Writes.Count);
+            Assert.Equal(levelSequence, sink.Writes.Count);
             foreach (ConsoleContext write in sink.Writes)
             {
                 Assert.Null(write.ForegroundColor);
@@ -464,9 +506,9 @@ namespace Microsoft.Extensions.Logging.Test
                     Assert.Equal(2, sink.Writes.Count);
                     Assert.Equal(
                         levelPrefix + ": test[0]" + Environment.NewLine +
-                        "      This is a test, and {curly braces} are just fine!" + Environment.NewLine +
-                        "System.Exception: Exception message" + Environment.NewLine +
-                        "with a second line" + Environment.NewLine,
+                        _paddingString + "This is a test, and {curly braces} are just fine!" + Environment.NewLine +
+                        _paddingString + "System.Exception: Exception message" + Environment.NewLine +
+                        _paddingString + "with a second line" + Environment.NewLine,
                         GetMessage(sink.Writes));
                 }
                 break;
@@ -660,6 +702,7 @@ namespace Microsoft.Extensions.Logging.Test
             {
                 case ConsoleLoggerFormat.Default:
                 {
+                    Assert.True((logger.Formatter as SimpleConsoleFormatter).FormatterOptions.IncludeScopes);
                     // Assert
                     Assert.Equal(2, sink.Writes.Count);
                     // scope
@@ -811,13 +854,13 @@ namespace Microsoft.Extensions.Logging.Test
                     Assert.Equal(2, sink.Writes.Count);
                     Assert.Equal(
                         "info: test[0]" + Environment.NewLine +
-                        "      Info" + Environment.NewLine,
+                        _paddingString + "Info" + Environment.NewLine,
                         GetMessage(sink.Writes));
 
                     Assert.Equal(2, errorSink.Writes.Count);
                     Assert.Equal(
                         "warn: test[0]" + Environment.NewLine +
-                        "      Warn" + Environment.NewLine,
+                        _paddingString + "Warn" + Environment.NewLine,
                         GetMessage(errorSink.Writes));
                 }
                 break;
@@ -863,8 +906,8 @@ namespace Microsoft.Extensions.Logging.Test
                     Assert.Equal(2, sink.Writes.Count);
                     Assert.Equal(
                         levelPrefix + ": test[0]" + Environment.NewLine +
-                        "System.Exception: Exception message" + Environment.NewLine +
-                        "with a second line" + Environment.NewLine,
+                        _paddingString + "System.Exception: Exception message" + Environment.NewLine +
+                        _paddingString + "with a second line" + Environment.NewLine,
                         GetMessage(sink.Writes));
                 }
                 break;
@@ -906,8 +949,8 @@ namespace Microsoft.Extensions.Logging.Test
                     Assert.Equal(2, sink.Writes.Count);
                     Assert.Equal(
                         levelPrefix + ": test[0]" + Environment.NewLine +
-                        "System.Exception: Exception message" + Environment.NewLine +
-                        "with a second line" + Environment.NewLine,
+                        _paddingString + "System.Exception: Exception message" + Environment.NewLine +
+                        _paddingString + "with a second line" + Environment.NewLine,
                         GetMessage(sink.Writes));
                 }
                 break;
@@ -948,7 +991,7 @@ namespace Microsoft.Extensions.Logging.Test
                     Assert.Equal(2, sink.Writes.Count);
                     Assert.Equal(
                         levelPrefix + ": test[0]" + Environment.NewLine +
-                        "      This is a test, and {curly braces} are just fine!" + Environment.NewLine,
+                        _paddingString + "This is a test, and {curly braces} are just fine!" + Environment.NewLine,
                         GetMessage(sink.Writes));
                 }
                 break;
@@ -992,9 +1035,13 @@ namespace Microsoft.Extensions.Logging.Test
             var console = new TestConsole(sink);
             var processor = new ConsoleLoggerProcessor();
             processor.Console = console;
+            var formatters = new ConcurrentDictionary<string, ConsoleFormatter>(GetFormatters().ToDictionary(f => f.Name));
 
             var logger = new ConsoleLogger(_loggerName, loggerProcessor: processor);
             logger.Options = new ConsoleLoggerOptions();
+            Assert.Null(logger.Options.FormatterName);
+            logger.Formatter = formatters[ConsoleFormatterNames.Simple];
+            UpdateFormatterOptions(logger.Formatter, logger.Options);
             // Act
             processor.Dispose();
             logger.LogInformation("Logging after dispose");
@@ -1167,6 +1214,7 @@ namespace Microsoft.Extensions.Logging.Test
             var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
             var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
             Assert.NotNull(logger.ScopeProvider);
+            Assert.False((logger.Formatter as SimpleConsoleFormatter).FormatterOptions.IncludeScopes);
         }
 
         public static TheoryData<ConsoleLoggerFormat, LogLevel> FormatsAndLevels
@@ -1275,3 +1323,4 @@ namespace Microsoft.Extensions.Logging.Test
         }
     }
 }
+#pragma warning restore CS0618
