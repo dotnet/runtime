@@ -6,7 +6,7 @@ namespace System.Runtime.InteropServices
 {
 
     /// <summary>
-    /// Records the minimum platform that is required in order to the marked thing.
+    /// Records the minimum platform that is required in order to [something goes here] the marked thing.
     /// <list type="bullet">
     /// <item>
     /// <description>When applied to an assembly, it means the entire assembly cannot be called
