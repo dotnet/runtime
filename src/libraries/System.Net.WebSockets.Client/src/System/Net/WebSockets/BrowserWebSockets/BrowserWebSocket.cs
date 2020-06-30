@@ -113,6 +113,17 @@ namespace System.Net.WebSockets
 
         internal async Task ConnectAsyncJavaScript(Uri uri, CancellationToken cancellationToken, List<string>? requestedSubProtocols)
         {
+            // Check that we have not started already
+            int priorState = Interlocked.CompareExchange(ref _state, (int)InternalState.Connecting, (int)InternalState.Created);
+            if (priorState == (int)InternalState.Disposed)
+            {
+                throw new ObjectDisposedException(GetType().FullName);
+            }
+            else if (priorState != (int)InternalState.Created)
+            {
+                throw new InvalidOperationException(SR.net_WebSockets_AlreadyStarted);
+            }
+
             TaskCompletionSource tcsConnect = new TaskCompletionSource();
 
             // For Abort/Dispose.  Calling Abort on the request at any point will close the connection.
@@ -162,7 +173,7 @@ namespace System.Net.WebSockets
                 _innerWebSocket.SetObjectProperty("onclose", _onClose);
 
                 // Setup the onOpen callback
-                _onOpen = new Action<JSObject> ((evt) =>
+                _onOpen = new Action<JSObject>((evt) =>
                 {
                     using (evt)
                     {
