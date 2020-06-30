@@ -889,7 +889,7 @@ namespace DebuggerTests
                 var ss_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ss_local");
                 await CheckProps(ss_local_props, new
                 {
-                    V          = TSymbol("uint { get; }"),
+                    V          = TGetter("V"),
                     str_member = TString("set in MethodWithLocalStructs#SimpleStruct#str_member"),
                     dt         = TValueType("System.DateTime", dt.ToString()),
                     gs         = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
@@ -897,6 +897,8 @@ namespace DebuggerTests
                 }, "ss_local");
 
                 {
+                    var gres = await InvokeGetter(GetAndAssertObjectWithName(locals, "ss_local"), "V");
+                    await CheckValue(gres.Value["result"], TNumber(0xDEADBEEF + 2), $"ss_local#V");
                     // Check ss_local.dt
                     await CheckDateTime(ss_local_props, "dt", dt);
 
@@ -929,15 +931,17 @@ namespace DebuggerTests
                     var ssp_props = await CompareObjectPropertiesFor(vt_local_props, name,
                         new
                         {
-                            V = TSymbol("uint { get; }"),
-                                str_member = TString($"{name}#string#0#SimpleStruct#str_member"),
-                                dt = TValueType("System.DateTime", dt.ToString()),
-                                gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
-                                Kind = TEnum("System.DateTimeKind", dt_kind)
+                            V          = TGetter("V"),
+                            str_member = TString($"{name}#string#0#SimpleStruct#str_member"),
+                            dt         = TValueType("System.DateTime", dt.ToString()),
+                            gs         = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
+                            Kind       = TEnum("System.DateTimeKind", dt_kind)
                         },
                         label: $"vt_local_props.{name}");
 
                     await CheckDateTime(ssp_props, "dt", dt);
+                    var gres = await InvokeGetter(GetAndAssertObjectWithName(vt_local_props, name), "V");
+                    await CheckValue(gres.Value["result"], TNumber(0xDEADBEEF + (uint) dt.Month), $"{name}#V");
                 }
 
                 // FIXME: check ss_local.gs.List's members
@@ -976,7 +980,7 @@ namespace DebuggerTests
                 var dt = new DateTime(2025, 6, 7, 8, 10, 11);
                 var ss_local_as_ss_arg = new
                 {
-                    V = TSymbol("uint { get; }"),
+                    V = TGetter("V"),
                     str_member = TString("ss_local#SimpleStruct#string#0#SimpleStruct#str_member"),
                     dt = TValueType("System.DateTime", dt.ToString()),
                     gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
@@ -992,6 +996,9 @@ namespace DebuggerTests
                 // Check ss_arg's properties
                 var ss_arg_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ss_arg");
                 await CheckProps(ss_arg_props, ss_local_as_ss_arg, "ss_arg");
+
+                var res = await InvokeGetter(GetAndAssertObjectWithName(locals, "ss_arg"), "V");
+                await CheckValue(res.Value["result"], TNumber(0xDEADBEEF + (uint) dt.Month), "ss_arg#V");
 
                 {
                     // Check ss_local.dt
@@ -1014,7 +1021,7 @@ namespace DebuggerTests
 
                 var ss_arg_updated = new
                 {
-                    V = TSymbol("uint { get; }"),
+                    V = TGetter("V"),
                     str_member = TString("ValueTypesTest#MethodWithStructArgs#updated#ss_arg#str_member"),
                     dt = TValueType("System.DateTime", dt.ToString()),
                     gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
@@ -1023,6 +1030,9 @@ namespace DebuggerTests
 
                 ss_arg_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ss_arg");
                 await CheckProps(ss_arg_props, ss_arg_updated, "ss_arg");
+
+                res = await InvokeGetter(GetAndAssertObjectWithName(locals, "ss_arg"), "V");
+                await CheckValue(res.Value["result"], TNumber(0xDEADBEEF + (uint) dt.Month), "ss_arg#V");
 
                 {
                     // Check ss_local.gs
@@ -1252,7 +1262,7 @@ namespace DebuggerTests
                 var ss_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ss_local");
                 await CheckProps(ss_local_props, new
                 {
-                    V          = TSymbol("uint { get; }"),
+                    V          = TGetter("V"),
                     str_member = TString("set in MethodWithLocalStructsStaticAsync#SimpleStruct#str_member"),
                     dt         = TValueType("System.DateTime", dt.ToString()),
                     gs         = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
@@ -1260,6 +1270,9 @@ namespace DebuggerTests
                 }, "ss_local");
 
                 {
+                    var gres = await InvokeGetter(GetAndAssertObjectWithName(locals, "ss_local"), "V");
+                    await CheckValue(gres.Value["result"], TNumber(0xDEADBEEF + 2), $"ss_local#V");
+
                     // Check ss_local.dt
                     await CheckDateTime(ss_local_props, "dt", dt);
 

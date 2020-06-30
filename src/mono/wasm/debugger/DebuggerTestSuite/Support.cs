@@ -301,6 +301,7 @@ namespace DebuggerTests
                 var val = l["value"];
                 Assert.Equal("number", val["type"]?.Value<string>());
                 Assert.Equal(value, val["value"].Value<T>());
+                Assert.Equal(value.ToString(), val["description"].Value<T>().ToString());
                 return;
             }
             Assert.True(false, $"Could not find variable '{name}'");
@@ -324,6 +325,7 @@ namespace DebuggerTests
             var l = GetAndAssertObjectWithName(locals, name);
             var val = l["value"];
             CheckValue(val, TObject(class_name, is_null: is_null), name).Wait();
+            Assert.True(val["isValueType"] == null || !val["isValueType"].Value<bool>());
 
             return l;
         }
@@ -343,20 +345,28 @@ namespace DebuggerTests
 
         internal async Task CheckDateTimeValue(JToken value, DateTime expected)
         {
-            AssertEqual("System.DateTime", value["className"]?.Value<string>(), "className");
-            AssertEqual(expected.ToString(), value["description"]?.Value<string>(), "description");
+            await CheckDateTimeMembers(value, expected);
 
-            var members = await GetProperties(value["objectId"]?.Value<string>());
-
-            // not checking everything
-            CheckNumber(members, "Year", expected.Year);
-            CheckNumber(members, "Month", expected.Month);
-            CheckNumber(members, "Day", expected.Day);
-            CheckNumber(members, "Hour", expected.Hour);
-            CheckNumber(members, "Minute", expected.Minute);
-            CheckNumber(members, "Second", expected.Second);
+            var res = await InvokeGetter(JObject.FromObject(new { value = value }), "Date");
+            await CheckDateTimeMembers(res.Value["result"], expected.Date);
 
             // FIXME: check some float properties too
+
+            async Task CheckDateTimeMembers(JToken v, DateTime exp_dt)
+            {
+                AssertEqual("System.DateTime", v["className"]?.Value<string>(), "className");
+                AssertEqual(exp_dt.ToString(), v["description"]?.Value<string>(), "description");
+
+                var members = await GetProperties(v["objectId"]?.Value<string>());
+
+                // not checking everything
+                CheckNumber(members, "Year", exp_dt.Year);
+                CheckNumber(members, "Month", exp_dt.Month);
+                CheckNumber(members, "Day", exp_dt.Day);
+                CheckNumber(members, "Hour", exp_dt.Hour);
+                CheckNumber(members, "Minute", exp_dt.Minute);
+                CheckNumber(members, "Second", exp_dt.Second);
+            }
         }
 
         internal JToken CheckBool(JToken locals, string name, bool expected)
@@ -432,7 +442,7 @@ namespace DebuggerTests
             return wait_res;
         }
 
-        internal async Task<Result> InvokeGetter(JToken obj, object arguments, string fn = "function(e){return this[e]}",bool expect_ok = true)
+        internal async Task<Result> InvokeGetter(JToken obj, object arguments, string fn = "function(e){return this[e]}", bool expect_ok = true)
         {
             var req = JObject.FromObject(new
             {

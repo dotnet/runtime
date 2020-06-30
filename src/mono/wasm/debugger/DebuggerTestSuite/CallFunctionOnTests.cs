@@ -586,8 +586,8 @@ namespace DebuggerTests
         [Theory]
         [MemberData(nameof(GettersTestData), "ptd", false)]
         [MemberData(nameof(GettersTestData), "ptd", true)]
-        // [MemberData (nameof (GettersTestData), "swp", false)]
-        // [MemberData (nameof (GettersTestData), "swp", true)]
+        [MemberData(nameof (GettersTestData), "swp", false)]
+        [MemberData(nameof (GettersTestData), "swp", true)]
         public async Task PropertyGettersTest(string eval_fn, string method_name, int line, int col, string cfo_fn, Func<string[], object> get_args_fn, string local_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-cfo-test.cs", line, col,
             method_name,
@@ -671,50 +671,19 @@ namespace DebuggerTests
                     };
 
                     await CheckProps(arr_elems, exp_elems, $"{local_name}.DTArray");
+
+                    res = await InvokeGetter(arr_elems[0], "Date");
+                    await CheckDateTimeValue(res.Value["result"], dt0.Date);
                 }
             });
 
         [Theory]
-        [InlineData("invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');", "MoveNext", 38, 12)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');", "PropertyGettersTest", 30, 12)]
-        public async Task PropertyGettersOnStructsTest(string eval_fn, string method_name, int line, int col) => await CheckInspectLocalsAtBreakpointSite(
-            "dotnet://debugger-test.dll/debugger-cfo-test.cs", line, col,
-            method_name,
-            $"window.setTimeout(function() {{ {eval_fn} }}, 1);",
-            wait_for_event_fn : async(pause_location) =>
-            {
-                var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                await CheckProps(frame_locals, new
-                {
-                    ptd = TObject("DebuggerTests.ClassWithProperties"),
-                        swp = TObject("DebuggerTests.StructWithProperties"),
-                }, "locals#0");
-
-                var swp = GetAndAssertObjectWithName(frame_locals, "swp");
-
-                var dt = new DateTime(4, 5, 6, 7, 8, 9);
-                var swp_props = await GetProperties(swp?["value"] ? ["objectId"]?.Value<string>());
-                await CheckProps(swp_props, new
-                {
-                    V              = TNumber(0xDEADBEEF),
-                    Int            = TSymbol("uint { get; }"),
-                    String         = TSymbol("string { get; }"),
-                    DT             = TSymbol("System.DateTime { get; }"),
-                    IntArray       = TSymbol("int[] { get; }"),
-                    DTArray        = TSymbol("System.DateTime[] { get; }"),
-                    StringField    = TString(null),
-
-                    // Auto properties show w/o getters, because they have
-                    // a backing field
-                    DTAutoProperty = TValueType("System.DateTime", dt.ToString())
-                }, "swp");
-            });
-
-        [Theory]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 30, 12, false)]
+        [InlineData("invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 38, 12, true)]
+        [InlineData("invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 38, 12, false)]
         [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 30, 12, true)]
-        [InlineData("invoke_getters_js_test ();", "/other.js", 29, 1, false)]
-        [InlineData("invoke_getters_js_test ();", "/other.js", 29, 1, true)]
+        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 30, 12, false)]
+        [InlineData("invoke_getters_js_test ();", "/other.js", 30, 1, false)]
+        [InlineData("invoke_getters_js_test ();", "/other.js", 30, 1, true)]
         public async Task CheckAccessorsOnObjectsWithCFO(string eval_fn, string bp_loc, int line, int col, bool roundtrip)
         {
             await RunCallFunctionOn(

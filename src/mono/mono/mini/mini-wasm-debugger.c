@@ -44,6 +44,7 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_pause_on_exceptions (int state);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_object_properties (int object_id, gboolean expand_value_types);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_values (int object_id, int start_idx, int count, gboolean expand_value_types);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_invoke_getter_on_object (int object_id, const char* name);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
 
 //JS functions imported that we use
@@ -51,9 +52,6 @@ extern void mono_wasm_add_frame (int il_offset, int method_token, const char *as
 extern void mono_wasm_fire_bp (void);
 extern void mono_wasm_fire_exception (int exception_obj_id, const char* message, const char* class_name, gboolean uncaught);
 extern void mono_wasm_add_obj_var (const char*, const char*, guint64);
-extern void mono_wasm_add_value_type_unexpanded_var (const char*, const char*);
-extern void mono_wasm_begin_value_type_var (const char*, const char*);
-extern void mono_wasm_end_value_type_var (void);
 extern void mono_wasm_add_enum_var (const char*, const char*, guint64);
 extern void mono_wasm_add_func_var (const char*, const char*, guint64);
 extern void mono_wasm_add_properties_var (const char*, gint32);
@@ -983,17 +981,28 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 
 				mono_wasm_add_enum_var (class_name, enum_members->str, value__);
 				g_string_free (enum_members, TRUE);
-			} else if (expandValueType) {
-				char *to_string_val = get_to_string_description (class_name, klass, addr);
-				mono_wasm_begin_value_type_var (class_name, to_string_val);
-				g_free (to_string_val);
-
-				// FIXME: isAsyncLocalThis
-				describe_object_properties_for_klass ((MonoObject*)addr, klass, FALSE, expandValueType);
-				mono_wasm_end_value_type_var ();
 			} else {
 				char *to_string_val = get_to_string_description (class_name, klass, addr);
-				mono_wasm_add_value_type_unexpanded_var (class_name, to_string_val);
+
+				if (expandValueType) {
+					int32_t size = mono_class_value_size (klass, NULL);
+					void *value_buf = g_malloc0 (size);
+					mono_value_copy_internal (value_buf, addr, klass);
+
+					EM_ASM ({
+						MONO.mono_wasm_add_typed_value ($0, $1, { toString: $2, value_addr: $3, value_size: $4, klass: $5 });
+					}, "begin_vt", class_name, to_string_val, value_buf, size, klass);
+
+					g_free (value_buf);
+
+					// FIXME: isAsyncLocalThis
+					describe_object_properties_for_klass (addr, klass, FALSE, expandValueType);
+					mono_wasm_add_typed_value ("end_vt", NULL, 0);
+				} else {
+					EM_ASM ({
+						MONO.mono_wasm_add_typed_value ($0, $1, { toString: $2 });
+					}, "unexpanded_vt", class_name, to_string_val);
+				}
 				g_free (to_string_val);
 			}
 			g_free (class_name);
@@ -1051,7 +1060,7 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 	gboolean is_valuetype;
 	int pnum;
 	char *klass_name;
-	gboolean getters_allowed;
+	gboolean auto_invoke_getters;
 
 	g_assert (klass);
 	is_valuetype = m_class_is_valuetype(klass);
@@ -1084,7 +1093,7 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 	}
 
 	klass_name = mono_class_full_name (klass);
-	getters_allowed = are_getters_allowed (klass_name);
+	auto_invoke_getters = are_getters_allowed (klass_name);
 
 	iter = NULL;
 	pnum = 0;
@@ -1096,29 +1105,24 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 			mono_wasm_add_properties_var (p->name, pnum);
 			sig = mono_method_signature_internal (p->get);
 
-			// automatic properties will get skipped
-			if (!getters_allowed) {
+			gboolean vt_self_type_getter = is_valuetype && mono_class_from_mono_type_internal (sig->ret) == klass;
+			if (auto_invoke_getters && !vt_self_type_getter) {
+				invoke_and_describe_getter_value (obj, p);
+			} else {
 				// not allowed to call the getter here
 				char *ret_class_name = mono_class_full_name (mono_class_from_mono_type_internal (sig->ret));
 
-				// getters not supported for valuetypes, yet
-				gboolean invokable = !is_valuetype && sig->param_count == 0;
+				gboolean invokable = sig->param_count == 0;
 				mono_wasm_add_typed_value ("getter", ret_class_name, invokable);
 
 				g_free (ret_class_name);
 				continue;
 			}
-
-			if (is_valuetype && mono_class_from_mono_type_internal (sig->ret) == klass) {
-				// Property of the same valuetype, avoid endlessly recursion!
-				mono_wasm_add_typed_value ("getter", klass_name, 0);
-				continue;
-			}
-
-			invoke_and_describe_getter_value (obj, p);
 		}
 		pnum ++;
 	}
+
+	g_free (klass_name);
 }
 
 /*
@@ -1163,13 +1167,13 @@ describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis, gboolea
 }
 
 static gboolean
-invoke_getter_on_object (guint64 objectId, const char *name)
+invoke_getter (void *obj_or_value, MonoClass *klass, const char *name)
 {
-	MonoObject *obj = get_object_from_id (objectId);
-	if (!obj)
+	if (!obj_or_value || !klass || !name) {
+		DEBUG_PRINTF (2, "invoke_getter: none of the arguments can be null");
 		return FALSE;
+	}
 
-	MonoClass *klass = mono_object_class (obj);
 	gpointer iter = NULL;
 	MonoProperty *p;
 	while ((p = mono_class_get_properties (klass, &iter))) {
@@ -1177,7 +1181,7 @@ invoke_getter_on_object (guint64 objectId, const char *name)
 		if (!p->get->name || strcasecmp (p->name, name) != 0)
 			continue;
 
-		invoke_and_describe_getter_value (obj, p);
+		invoke_and_describe_getter_value (obj_or_value, p);
 		return TRUE;
 	}
 
@@ -1374,8 +1378,20 @@ mono_wasm_get_array_values (int object_id, int start_idx, int count, gboolean ex
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_invoke_getter_on_object (int object_id, const char* name)
 {
-	invoke_getter_on_object (object_id, name);
+	MonoObject *obj = get_object_from_id (object_id);
+	if (!obj)
+		return;
+
+	invoke_getter (obj, mono_object_class (obj), name);
 }
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name)
+{
+	DEBUG_PRINTF (2, "mono_wasm_invoke_getter_on_value: v: %p klass: %p, name: %s\n", value, klass, name);
+	invoke_getter (value, klass, name);
+}
+
 // Functions required by debugger-state-machine.
 gsize
 mono_debugger_tls_thread_id (DebuggerTlsData *debuggerTlsData)
