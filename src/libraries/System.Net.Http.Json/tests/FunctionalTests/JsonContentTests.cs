@@ -11,8 +11,9 @@ using Xunit;
 
 namespace System.Net.Http.Json.Functional.Tests
 {
-    public class JsonContentTests
+    public abstract class JsonContentTestsBase
     {
+        protected abstract Task<HttpResponseMessage> SendAsync(HttpClient client, HttpRequestMessage request);
 
         private class Foo { }
         private class Bar { }
@@ -223,5 +224,14 @@ namespace System.Net.Http.Json.Functional.Tests
                     Assert.Equal(0, req.GetHeaderValueCount("Content-Type"));
                 });
         }
+    }
+
+    public class JsonContentTests_Async : JsonContentTestsBase
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpClient client, HttpRequestMessage request) => client.SendAsync(request);
+    }
+    public class JsonContentTests_Sync : JsonContentTestsBase
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpClient client, HttpRequestMessage request) => Task.Run(() => client.Send(request));
     }
 }
