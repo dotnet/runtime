@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices
     /// </summary>
     [AttributeUsage(AttributeTargets.Assembly,
                     AllowMultiple = false, Inherited = false)]
-    public sealed class TargetPlatformAttribute : PlatformAttribute
+    public sealed class TargetPlatformAttribute : OSPlatformAttribute
     {
         public TargetPlatformAttribute(string platformName) : base(platformName)
         {

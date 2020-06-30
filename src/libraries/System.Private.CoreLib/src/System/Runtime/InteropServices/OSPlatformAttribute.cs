@@ -4,14 +4,12 @@
 
 namespace System.Runtime.InteropServices
 {
-
     /// <summary>
-    /// Base type for all platform-specific attributes. Primarily used to allow grouping
-    /// in documentation.
+    /// Base type for all platform-specific API attributes.
     /// </summary>
-    public abstract class PlatformAttribute : Attribute
+    public abstract class OSPlatformAttribute : Attribute
     {
-        internal PlatformAttribute(string platformName)
+        private protected OSPlatformAttribute(string platformName)
         {
             PlatformName = platformName;
         }

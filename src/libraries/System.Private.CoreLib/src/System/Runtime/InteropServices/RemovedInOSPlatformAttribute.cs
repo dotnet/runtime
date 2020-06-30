@@ -5,10 +5,10 @@
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    /// Marks APIs that were obsoleted in a given operating system version.
+    /// Marks APIs that were removed in a given operating system version.
     /// </summary>
     /// <remarks>
-    /// Primarily used by OS bindings to indicate APIs that should only be used in
+    /// Primarily used by OS bindings to indicate APIs that are only available in
     /// earlier versions.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Assembly |
@@ -20,15 +20,10 @@ namespace System.Runtime.InteropServices
                     AttributeTargets.Property |
                     AttributeTargets.Struct,
                     AllowMultiple = true, Inherited = false)]
-    public sealed class ObsoletedInPlatformAttribute : PlatformAttribute
+    public sealed class RemovedInOSPlatformAttribute : OSPlatformAttribute
     {
-        public ObsoletedInPlatformAttribute(string platformName, string url, string message) : base(platformName)
+        public RemovedInOSPlatformAttribute(string platformName) : base(platformName)
         {
-            Url = url;
-            Message = message;
         }
-
-        public string Url { get; set; }
-        public string Message { get; }
     }
 }

@@ -4,13 +4,16 @@
 
 namespace System.Runtime.InteropServices
 {
-
     /// <summary>
-    /// Marks APIs that were removed in a given operating system version.
-    ///
-    /// Primarily used by OS bindings to indicate APIs that are only available in
-    /// earlier versions.
+    /// Records the operating system (and minimum version) that supports an API. Multiple attributes can be
+    /// applied to indicate support on multiple operating systems.
     /// </summary>
+    /// <remarks>
+    /// Callers can apply a <see cref="System.Runtime.InteropServices.MinimumOSPlatformAttribute" />
+    /// or use guards to prevent calls to APIs on unsupported operating systems.
+    ///
+    /// A given platform should only be specified once.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Assembly |
                     AttributeTargets.Class |
                     AttributeTargets.Constructor |
@@ -20,9 +23,9 @@ namespace System.Runtime.InteropServices
                     AttributeTargets.Property |
                     AttributeTargets.Struct,
                     AllowMultiple = true, Inherited = false)]
-    public sealed class RemovedInPlatformAttribute : PlatformAttribute
+    public sealed class MinimumOSPlatformAttribute : OSPlatformAttribute
     {
-        public RemovedInPlatformAttribute(string platformName) : base(platformName)
+        public MinimumOSPlatformAttribute(string platformName) : base(platformName)
         {
         }
     }
