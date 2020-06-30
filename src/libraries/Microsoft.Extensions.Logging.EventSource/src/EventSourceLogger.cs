@@ -57,11 +57,11 @@ namespace Microsoft.Extensions.Logging.EventSource
             {
                 return;
             }
+            string message = formatter(state, exception);
 
             // See if they want the formatted message
             if (_eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.FormattedMessage))
             {
-                string message = formatter(state, exception);
                 _eventSource.FormattedMessage(
                     logLevel,
                     _factoryID,
@@ -104,7 +104,6 @@ namespace Microsoft.Extensions.Logging.EventSource
                     exceptionJson = ToJson(exceptionInfoData);
                 }
                 IReadOnlyList<KeyValuePair<string, string>> arguments = GetProperties(state);
-                string message = formatter(state, exception);
                 _eventSource.MessageJson(
                     logLevel,
                     _factoryID,

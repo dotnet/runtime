@@ -444,7 +444,8 @@ namespace Microsoft.Extensions.Logging.Test
 
                 LogStuff(factory);
 
-                bool containsNullEventName = false, containsFormattedMessage = false;
+                bool containsNullEventName = false;
+                bool containsFormattedMessage = false;
 
                 foreach (var eventJson in testListener.Events)
                 {
@@ -480,7 +481,8 @@ namespace Microsoft.Extensions.Logging.Test
                     LoggingEventSource.Instance.MessageJson(LogLevel.Trace, 1, "MyLogger", 5, null, null, "testJson", "formattedMessage");
                 }
 
-                bool containsNullEventName = false, containsFormattedMessage = false;
+                bool containsNullEventName = false;
+                bool containsFormattedMessage = false;
                 foreach (var eventJson in testListener.Events)
                 {
                     if (eventJson.Contains(@"""__EVENT_NAME"":""MessageJson""") && eventJson.Contains(@"""EventName"":"""","))
