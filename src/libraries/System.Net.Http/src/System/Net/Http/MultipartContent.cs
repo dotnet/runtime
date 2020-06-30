@@ -293,7 +293,7 @@ namespace System.Net.Http
                         // as we don't necessarily own them yet.
 
                         // Do not pass a cancellationToken to base.CreateContentReadStreamAsync() as it would trigger an infinite loop => StackOverflow
-                        return async ? await base.CreateContentReadStreamAsync().ConfigureAwait(false) : base.CreateContentReadStream(cancellationToken);
+                        return async ? await base.CreateContentReadStreamAsync(CancellationToken.None).ConfigureAwait(false) : base.CreateContentReadStream(cancellationToken);
                     }
                     streams[streamIndex++] = readStream;
                 }
