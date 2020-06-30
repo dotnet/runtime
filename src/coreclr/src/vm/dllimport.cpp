@@ -4191,15 +4191,21 @@ static void CreateNDirectStubAccessMetadata(
     }
 
     int lcidArg = -1;
+
+    // Check if we have a MethodDesc to query for additional data.
     if (pSigDesc->m_pMD != NULL)
     {
-        lcidArg = GetLCIDParameterIndex(pSigDesc->m_pMD);
+        MethodDesc* pMD = pSigDesc->m_pMD;
+
+        // P/Invoke marked with UnmanagedCallersOnlyAttribute is not
+        // presently supported.
+        if (pMD->HasUnmanagedCallersOnlyAttribute())
+            COMPlusThrow(kNotSupportedException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);
 
         // Check to see if we need to do LCID conversion.
+        lcidArg = GetLCIDParameterIndex(pMD);
         if (lcidArg != -1 && lcidArg > (*pNumArgs))
-        {
             COMPlusThrow(kIndexOutOfRangeException, IDS_EE_INVALIDLCIDPARAM);
-        }
     }
 
     (*piLCIDArg) = lcidArg;
@@ -5279,8 +5285,6 @@ PCODE NDirect::GetStubForILStub(MethodDesc* pManagedMD, MethodDesc** ppStubMD, D
 PCODE NDirect::GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, DWORD dwStubFlags)
 {
     STANDARD_VM_CONTRACT;
-
-    _ASSERTE(!pNMD->HasUnmanagedCallersOnlyAttribute());
 
     PCODE pStub = NULL;
 

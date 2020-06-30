@@ -89,6 +89,9 @@ namespace Internal.TypeSystem.Interop
         {
             Debug.Assert(targetMethod.IsPInvoke);
 
+            if (targetMethod.IsUnmanagedCallersOnly)
+                return true;
+
             PInvokeFlags flags = targetMethod.GetPInvokeMethodMetadata().Flags;
 
             if (flags.SetLastError)

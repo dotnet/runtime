@@ -2169,11 +2169,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             }
         }
 
-        // P/Invoke marked with UnmanagedCallersOnlyAttribute is not
-        // presently supported.
-        if (HasUnmanagedCallersOnlyAttribute())
-            COMPlusThrow(kNotSupportedException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);
-
         if (pCode == NULL)
             pCode = GetStubForInteropMethod(this);
 
