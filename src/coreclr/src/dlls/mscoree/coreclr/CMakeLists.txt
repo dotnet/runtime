@@ -132,6 +132,10 @@ else()
     list(APPEND CORECLR_LIBRARIES
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
+        System.IO.Compression.Native-Static
+        System.Native-Static
+        System.Net.Security.Native-Static
+        System.Security.Cryptography.Native.OpenSsl-Static
         ${END_WHOLE_ARCHIVE}
         mscorrc
         palrt

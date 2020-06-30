@@ -60,8 +60,7 @@ jobs:
     - subset: coreclr
       include:
       - src/libraries/System.Private.CoreLib/*
-      - src/libraries/Native/Unix/System.Globalization.Native/*
-      - src/libraries/Native/Unix/Common/*
+      - src/libraries/Native/Unix/*
       exclude:
       - eng/Version.Details.xml
       - '*.md'
