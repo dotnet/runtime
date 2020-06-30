@@ -4,22 +4,28 @@
 
 namespace System.Runtime.InteropServices
 {
-    // Records the minimum platform that is required in order to the marked thing.
-    //
-    // * When applied to an assembly, it means the entire assembly cannot be called
-    //   into on earlier versions. It records the TargetPlatformMinVersion property.
-    //
-    // * When applied to an API, it means the API cannot be called from an earlier
-    //   version.
-    //
-    // In either case, the caller can either mark itself with MinimumPlatformAttribute
-    // or guard the call with a platform check.
-    //
-    // The attribute can be applied multiple times for different operating systems.
-    // That means the API is supported on multiple operating systems.
-    //
-    // A given platform should only be specified once.
 
+    /// <summary>
+    /// Records the minimum platform that is required in order to the marked thing.
+    /// <list type="bullet">
+    /// <item>
+    /// <description>When applied to an assembly, it means the entire assembly cannot be called
+    /// into on earlier versions. It records the TargetPlatformMinVersion property.</description>
+    /// </item>
+    /// <item>
+    /// <description> When applied to an API, it means the API cannot be called from an earlier
+    /// version.</description>
+    /// </item>
+    /// </list>
+    ///
+    /// In either case, the caller can either mark itself with MinimumPlatformAttribute
+    /// or guard the call with a platform check.
+    ///
+    /// The attribute can be applied multiple times for different operating systems.
+    /// That means the API is supported on multiple operating systems.
+    ///
+    /// A given platform should only be specified once.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Assembly |
                     AttributeTargets.Class |
                     AttributeTargets.Constructor |

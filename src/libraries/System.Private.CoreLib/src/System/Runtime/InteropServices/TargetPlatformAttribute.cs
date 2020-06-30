@@ -4,7 +4,9 @@
 
 namespace System.Runtime.InteropServices
 {
-    // Records the platform that the project targeted.
+    /// <summary>
+    /// Records the platform that the project targeted.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Assembly,
                     AllowMultiple = false, Inherited = false)]
     public sealed class TargetPlatformAttribute : PlatformAttribute

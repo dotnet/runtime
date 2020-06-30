@@ -4,10 +4,13 @@
 
 namespace System.Runtime.InteropServices
 {
-    // Marks APIs that were removed in a given operating system version.
-    //
-    // Primarily used by OS bindings to indicate APIs that are only available in
-    // earlier versions.
+
+    /// <summary>
+    /// Marks APIs that were removed in a given operating system version.
+    ///
+    /// Primarily used by OS bindings to indicate APIs that are only available in
+    /// earlier versions.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Assembly |
                     AttributeTargets.Class |
                     AttributeTargets.Constructor |
