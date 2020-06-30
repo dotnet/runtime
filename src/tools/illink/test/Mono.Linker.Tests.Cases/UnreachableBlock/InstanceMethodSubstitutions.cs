@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Mono.Linker.Tests.Cases.Expectations.Assertions;
+﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.UnreachableBlock
@@ -24,6 +21,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			instance.TestCallOnInstance ();
 			instance.TestInstanceMethodWithoutSubstitution ();
 			instance.TestPropagation ();
+			instance.TestStaticPropagation ();
 			instance.TestVirtualMethod ();
 		}
 
@@ -109,6 +107,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		void TestPropagation ()
 		{
+			// Propagation of return value across instance method is not supported
+			// (propagation of return value from a method which has call in the body is not supported)
 			if (PropagateIsEnabled ())
 				Propagation_Reached1 ();
 			else
@@ -132,9 +132,40 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
+		void TestStaticPropagation ()
+		{
+			// Propagation of return value across static method is not supported
+			// (propagation of return value from a method which has call in the body is not supported)
+			if (PropagateStaticIsEnabled ())
+				StaticPropagation_Reached1 ();
+			else
+				StaticPropagation_Reached2 ();
+		}
+
+		[Kept]
+		private static InstanceMethodSubstitutions _staticInstance;
+
+		[Kept]
+		static bool PropagateStaticIsEnabled ()
+		{
+			return _staticInstance.IsEnabled ();
+		}
+
+		[Kept]
+		void StaticPropagation_Reached1 ()
+		{
+		}
+
+		[Kept]
+		void StaticPropagation_Reached2 ()
+		{
+		}
+
+		[Kept]
 		void TestVirtualMethod ()
 		{
 			TestVirtualMethodBase instance = new TestVirtualMethodType ();
+			// Virtual method return value inlining not supported
 			if (instance.IsEnabled ())
 				VirtualMethod_Reached1 ();
 			else

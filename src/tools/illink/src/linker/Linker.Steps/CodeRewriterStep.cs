@@ -149,7 +149,7 @@ namespace Mono.Linker.Steps
 			var body = new MethodBody (method);
 
 			if (method.HasParameters && method.Parameters.Any (l => l.IsOut))
-				throw new NotImplementedException ();
+				throw new NotSupportedException ($"Cannot replace body of method '{method.GetDisplayName ()}' because it has an out parameter.");
 
 			var il = body.GetILProcessor ();
 			if (method.IsInstanceConstructor () && !method.DeclaringType.IsValueType) {
