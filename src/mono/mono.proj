@@ -40,12 +40,10 @@
   </PropertyGroup>
 
   <Target Name="CheckMonoEnv">
-	<!-- EMSDK_PATH is set by CI or we set it to the location of a local copy -->
+    <!-- Provision a local copy if EMSDK_PATH is not set -->
     <Exec Command="make -C $(MonoProjectRoot)wasm check-provision-wasm" Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == ''" />
 
-    <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
-      <EMSDK_PATH Condition="'$(EMSDK_PATH)' == ''">$(MonoProjectRoot)wasm/emsdk</EMSDK_PATH>
-    </PropertyGroup>
+    <Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir ('$(MonoProjectRoot)wasm/emsdk')"/>
   </Target>
 
   <!-- OSX/iOS/tvOS/Android/Linux Mono runtime build -->
@@ -751,7 +749,7 @@
     <Touch Condition="'$(_MonoAotCrossConfigureCommand)' != ''" Files="$(MonoObjDir)cross/config.h" />
   </Target>
 
-  <Target Name="BuildMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" DependsOnTargets="CheckMonoEnv;ConfigureMonoRuntimeUnix">
+  <Target Name="BuildMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" DependsOnTargets="ConfigureMonoRuntimeUnix">
     <Message Text="--- Building Mono ---" Importance="High" />
     <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="make -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
     <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; make -j$([System.Environment]::ProcessorCount)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
