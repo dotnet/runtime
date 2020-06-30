@@ -242,6 +242,7 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeWrappedExceptionTests.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfoTests.cs" />
     <Compile Include="System\Text\ASCIIUtilityTests.cs" />
+    <Compile Include="System\Text\EncodingTests.cs" />
     <Compile Include="System\Text\RuneTests.cs" />
     <Compile Include="System\Text\RuneTests.TestData.cs" />
     <Compile Include="System\Text\Unicode\Utf16UtilityTests.ValidateChars.cs" />
@@ -273,5 +274,8 @@
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
     <ProjectReference Include="TestStructs\System.TestStructs.ilproj" />
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
   </ItemGroup>
 </Project>
