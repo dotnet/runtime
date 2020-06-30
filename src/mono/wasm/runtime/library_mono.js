@@ -200,7 +200,7 @@ var MonoSupportLib = {
 				return entry.members;
 
 			if (!isNaN (id.o.containerId))
-				this._post_process_details (this.mono_wasm_get_object_properties (id.o.containerId, true));
+				this._get_object_properties (id.o.containerId, true);
 			else if (!isNaN (id.o.arrayId))
 				this._get_array_values (id, id.o.arrayIdx, 1, true);
 			else
@@ -210,7 +210,37 @@ var MonoSupportLib = {
 			if (entry !== undefined && entry.members !== undefined)
 				return entry.members;
 
-			throw new Error (`Unknown valuetype id format: ${id.idStr}`);
+			throw new Error (`Unknown valuetype id: ${id.idStr}`);
+		},
+
+		/**
+		 *
+		 * @callback GetIdArgsCallback
+		 * @param {object} var
+		 * @param {number} idx
+		 * @returns {object}
+		 */
+
+		/**
+		 * @param  {object[]} vars
+		 * @param  {GetIdArgsCallback} getIdArgs
+		 * @returns {object}
+		 */
+		_assign_vt_ids: function (vars, getIdArgs)
+		{
+			vars.forEach ((v, i) => {
+				// we might not have a `.value`, like in case of getters which have a `.get` instead
+				const value = v.value;
+				if (value === undefined || !value.isValueType)
+					return;
+
+				if (value.objectId !== undefined)
+					throw new Error (`Bug: Trying to assign valuetype id, but the var already has one: ${v}`);
+
+				value.objectId = this._new_or_add_id_props ({ scheme: 'valuetype', idArgs: getIdArgs (v, i) });
+			});
+
+			return vars;
 		},
 
 		//
@@ -232,6 +262,9 @@ var MonoSupportLib = {
 			Module._free(heapBytes.byteOffset);
 			var res = MONO._fixup_name_value_objects (this.var_info);
 
+			if (this._async_method_objectId != 0)
+				this._assign_vt_ids (res, v => ({ containerId: this._async_method_objectId, fieldOffset: v.fieldOffset }));
+
 			for (let i in res) {
 				var res_name = res [i].name;
 
@@ -244,9 +277,6 @@ var MonoSupportLib = {
 						// ALTHOUGH, the name wouldn't have `<>` for method args
 						res [i].name = res_name.substring (1, res_name.indexOf ('>'));
 					}
-
-					if (value.isValueType)
-						value.objectId = this._new_id ('valuetype', {}, { containerId: this._async_method_objectId, fieldOffset: res [i].fieldOffset });
 				} else if (res_name === undefined && var_list [i] !== undefined) {
 					// For non-async methods, we just have the var id, but we have the name
 					// from the caller
@@ -260,26 +290,26 @@ var MonoSupportLib = {
 			return res;
 		},
 
-
-		mono_wasm_get_object_properties: function(objId, expandValueTypes) {
+		/**
+		 * @param  {number} idNum
+		 * @param  {boolean} expandValueTypes
+		 */
+		_get_object_properties: function(idNum, expandValueTypes) {
 			if (!this.mono_wasm_get_object_properties_info)
 				this.mono_wasm_get_object_properties_info = Module.cwrap ("mono_wasm_get_object_properties", null, [ 'number', 'bool' ]);
 
 			this.var_info = [];
-			this.mono_wasm_get_object_properties_info (objId, expandValueTypes);
+			this.mono_wasm_get_object_properties_info (idNum, expandValueTypes);
 
 			var res = MONO._filter_automatic_properties (MONO._fixup_name_value_objects (this.var_info));
-			for (var i = 0; i < res.length; i++) {
-				var res_val = res [i].value;
-				// we might not have a `.value`, like in case of getters which have a `.get` instead
-				if (res_val !== undefined && res_val.isValueType)
-					res_val.objectId = this._new_id ('valuetype', {}, { containerId: objId, fieldOffset: res [i].fieldOffset} );
-			}
+			res = this._assign_vt_ids (res, v => ({ containerId: idNum, fieldOffset: v.fieldOffset }));
+			res = this._post_process_details (res);
 
 			this.var_info = [];
 
 			return res;
 		},
+
 		/**
 		 * @param  {WasmId} id
 		 * @param  {number} startIdx=0
@@ -297,12 +327,12 @@ var MonoSupportLib = {
 			this.mono_wasm_get_array_values_info (id.o.arrayId, startIdx, count, expandValueTypes);
 
 			let res = MONO._fixup_name_value_objects (this.var_info);
+			res = this._assign_vt_ids (res, (_, i) => ({ arrayId: id.o.arrayId, arrayIdx: Number (startIdx) + i}));
+
 			for (let i = 0; i < res.length; i ++) {
 				let value = res [i].value;
-				if (value !== undefined && value.isValueType)
-					value.objectId = this._new_id ('valuetype', {}, { arrayId: id.o.arrayId, arrayIdx: Number (startIdx) + i});
-				else if (value.objectId !== undefined && value.objectId.startsWith("dotnet:pointer"))
-					this._update_id_props (value.objectId, { varName: `[${i}]` });
+				if (value.objectId !== undefined && value.objectId.startsWith("dotnet:pointer"))
+					this._new_or_add_id_props ({ objectId: value.objectId, props: { varName: `[${i}]` } });
 			}
 			res = this._post_process_details (res);
 
@@ -347,18 +377,18 @@ var MonoSupportLib = {
 					// It might have been already set in some cases, like arrays
 					// where the name would be `0`, but we want `[0]` for pointers,
 					// so the deref would look like `*[0]`
-					ptr_args.varName = ptr_args.varName || var_list [i].name;
+					ptr_args.varName = ptr_args.varName || var_list [i].name;dd_t
 				}
 
 				if (value.type != "object" || value.isValueType != true || value.expanded != true) // undefined would also give us false
 					continue;
 
 				// Generate objectId for expanded valuetypes
-				value.objectId = value.objectId || this._new_id ('valuetype');
+				value.objectId = value.objectId || this._new_or_add_id_props ({ scheme: 'valuetype' });
 
 				this._extract_and_cache_value_types (value.members);
 
-				this._update_id_props (value.objectId, { members: value.members });
+				this._new_or_add_id_props ({ objectId: value.objectId, props: { members: value.members } });
 				delete value.members;
 			}
 
@@ -436,26 +466,49 @@ var MonoSupportLib = {
 		/**
 		 * Generates a new id, and a corresponding entry for associated properties
 		 *    like `dotnet:pointer:{ a: 4 }`
-		 * The third segment of that `{a:4}` is the idObj parameter
+		 * The third segment of that `{a:4}` is the idArgs parameter
 		 *
-		 * @param  {string} scheme second part of `dotnet:pointer:..`
-		 * @param  {object} [props={}] Properties for the generated id
-		 * @param  {object} [idObj={}] The third segment of the objectId
-		 * @returns {string} new generated objectId string
+		 * Only `scheme` or `objectId` can be set.
+		 * if `scheme`, then a new id is generated, and it's properties set
+		 * if `objectId`, then it's properties are updated
+		 *
+		 * @param {object} args
+		 * @param  {string} [args.scheme=undefined] scheme second part of `dotnet:pointer:..`
+		 * @param  {string} [args.objectId=undefined] objectId
+		 * @param  {object} [args.idArgs={}] The third segment of the objectId
+		 * @param  {object} [args.props={}] Properties for the generated id
+		 *
+		 * @returns {string} generated/updated id string
 		 */
-		_new_id: function (scheme, props = {}, idObj = {}) {
-			if (typeof idObj !== 'object')
-				throw new Error (`Expected an object argument for 'id_o', but got ${typeof idObj}`);
+		_new_or_add_id_props: function ({ scheme = undefined, objectId = undefined, idArgs = {}, props = {} }) {
+			if (scheme === undefined && objectId === undefined)
+				throw new Error (`Either scheme or objectId must be given`);
 
-			if (Object.entries (idObj).length == 0) {
+			if (scheme !== undefined && objectId !== undefined)
+				throw new Error (`Both scheme, and objectId cannot be given`);
+
+			if (objectId !== undefined && Object.entries (idArgs).length > 0)
+				throw new Error (`Both objectId, and idArgs cannot be given`);
+
+			if (Object.entries (idArgs).length == 0) {
 				// We want to generate a new id, only if it doesn't have other
 				// attributes that it can use to uniquely identify.
 				// Eg, we don't do this for `dotnet:valuetype:{containerId:4, fieldOffset: 24}`
-				idObj.num = this._next_id ();
+				idArgs.num = this._next_id ();
 			}
 
-			const idStr = `dotnet:${scheme}:${JSON.stringify (idObj)}`;
-			this._id_table [idStr] = props;
+			let idStr;
+			if (objectId !== undefined) {
+				idStr = objectId;
+				const old_props = this._id_table [idStr];
+				if (old_props === undefined)
+					throw new Error (`ObjectId not found in the id table: ${idStr}`);
+
+				this._id_table [idStr] = Object.assign (old_props, props);
+			} else {
+				idStr = `dotnet:${scheme}:${JSON.stringify (idArgs)}`;
+				this._id_table [idStr] = props;
+			}
 
 			return idStr;
 		},
@@ -466,15 +519,6 @@ var MonoSupportLib = {
 		 */
 		_get_id_props: function (objectId) {
 			return this._id_table [objectId];
-		},
-
-		/**
-		 * @param  {string} objectId
-		 * @param  {object} add_props
-		 */
-		_update_id_props: function (objectId, add_props) {
-			let props = this._get_id_props (objectId);
-			this._id_table [objectId] = Object.assign (props, add_props);
 		},
 
 		_get_deref_ptr_value: function (objectId) {
@@ -509,8 +553,13 @@ var MonoSupportLib = {
 			let id = this._split_object_id (objectId, true);
 
 			switch (id.scheme) {
-				case "object":
-					return this._post_process_details(this.mono_wasm_get_object_properties(id.value, false));
+				case "object": {
+					const id_num = Number (id.value);
+					if (id_num === undefined)
+						throw new Error (`Invalid objectId: ${objectId}. Expected a numeric id.`);
+
+					return this._get_object_properties(id_num, false);
+				}
 
 				case "array":
 					return this._get_array_values (id);
@@ -1252,7 +1301,7 @@ var MonoSupportLib = {
 					subtype: "array",
 					className: fixed_class_name,
 					description: `${fixed_class_name}(${length})`,
-					objectId: this._new_id ('array', {}, { arrayId: objectId })
+					objectId: this._new_or_add_id_props ({ scheme: 'array', idArgs: { arrayId: objectId } })
 				}
 			});
 		},
@@ -1327,7 +1376,7 @@ var MonoSupportLib = {
 							type: "object",
 							className: fixed_value_str,
 							description: fixed_value_str,
-							objectId: this._new_id ('pointer', value)
+							objectId: this._new_or_add_id_props ({ scheme: 'pointer', props: value })
 						}
 					});
 				}
