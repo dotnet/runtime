@@ -75,6 +75,8 @@ namespace System
 
     internal static class ConsolePal
     {
+        private static Encoding? s_OutputEncoding;
+
         internal static void EnsureConsoleInitialized() { }
 
         public static Stream OpenStandardInput() => throw new PlatformNotSupportedException();
@@ -93,9 +95,9 @@ namespace System
 
         public static void SetConsoleInputEncoding(Encoding enc) => throw new PlatformNotSupportedException();
 
-        public static Encoding OutputEncoding => Encoding.Unicode;
+        public static Encoding OutputEncoding => s_OutputEncoding ?? Encoding.UTF8;
 
-        public static void SetConsoleOutputEncoding(Encoding enc) => throw new PlatformNotSupportedException();
+        public static void SetConsoleOutputEncoding(Encoding enc) => s_OutputEncoding = enc;
 
         public static bool IsInputRedirectedCore() => false;
 
