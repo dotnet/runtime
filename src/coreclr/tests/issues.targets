@@ -2,7 +2,7 @@
 <Project DefaultTargets = "GetListOfTestCmds" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <!-- All OS/Arch/Runtime excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/reverse/*">
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/reverse/reverse/*">
             <Issue>https://github.com/dotnet/runtime/issues/38156</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/tracecontrol/tracecontrol/*">
