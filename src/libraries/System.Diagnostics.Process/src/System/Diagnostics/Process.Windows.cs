@@ -661,10 +661,6 @@ namespace System.Diagnostics
             return new ConsoleEncoding(enc); // ensure encoding doesn't output a preamble
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private bool _signaled;
 
         private static StringBuilder BuildCommandLine(ProcessStartInfo startInfo)
