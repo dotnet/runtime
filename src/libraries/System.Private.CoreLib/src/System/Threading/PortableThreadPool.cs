@@ -38,7 +38,7 @@ namespace System.Threading
         public static readonly PortableThreadPool ThreadPoolInstance = new PortableThreadPool();
 #pragma warning restore IDE1006 // Naming Styles
 
-        private int _cpuUtilization = 0; // SOS's ThreadPool command depends on this name
+        private int _cpuUtilization; // SOS's ThreadPool command depends on this name
         private short _minThreads;
         private short _maxThreads;
         private readonly LowLevelLock _maxMinThreadLock = new LowLevelLock();
