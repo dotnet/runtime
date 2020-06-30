@@ -28,6 +28,21 @@ namespace System.Net.Http
         protected abstract HttpResponseMessage ProcessResponse(HttpResponseMessage response,
             CancellationToken cancellationToken);
 
+        protected internal sealed override HttpResponseMessage Send(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
+            }
+
+            // Since most of the SendAsync code is just Task handling, there's no reason to share the code.
+            HttpRequestMessage newRequestMessage = ProcessRequest(request, cancellationToken);
+            HttpResponseMessage response = base.Send(newRequestMessage, cancellationToken);
+            HttpResponseMessage newResponseMessage = ProcessResponse(response, cancellationToken);
+            return newResponseMessage;
+        }
+
         protected internal sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {

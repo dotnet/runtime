@@ -1,10 +1,20 @@
-set -ev
+#!/usr/bin/env bash
 
 EXECUTION_DIR=$(dirname $0)
 
-echo "Test: $1"
-
 cd $EXECUTION_DIR
-v8 --expose_wasm runtime.js -- --enable-gc --run WasmTestRunner.dll $*
 
-exit 0
+XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+
+if [ ! -x "$(command -v xharness)" ]; then
+	HARNESS_RUNNER="dotnet"
+fi
+
+# RunCommands defined in tests.mobile.targets
+[[RunCommands]]
+
+_exitCode=$?
+
+echo "Xharness artifacts: $XHARNESS_OUT"
+
+exit $_exitCode

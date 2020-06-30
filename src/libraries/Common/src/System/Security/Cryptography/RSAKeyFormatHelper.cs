@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Diagnostics;
-using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
@@ -148,61 +145,70 @@ namespace System.Security.Cryptography
                 out key);
         }
 
-        internal static AsnWriter WriteSubjectPublicKeyInfo(in ReadOnlySpan<byte> pkcs1PublicKey)
+        internal static AsnWriter WriteSubjectPublicKeyInfo(ReadOnlySpan<byte> pkcs1PublicKey)
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
-            try
-            {
-                writer.PushSequence();
-                WriteAlgorithmIdentifier(writer);
-                writer.WriteBitString(pkcs1PublicKey);
-                writer.PopSequence();
-            }
-            catch
-            {
-                writer.Dispose();
-                throw;
-            }
+            writer.PushSequence();
+            WriteAlgorithmIdentifier(writer);
+            writer.WriteBitString(pkcs1PublicKey);
+            writer.PopSequence();
 
             return writer;
         }
 
         internal static AsnWriter WriteSubjectPublicKeyInfo(in RSAParameters rsaParameters)
         {
-            using (AsnWriter pkcs1PublicKey = WritePkcs1PublicKey(rsaParameters))
+            AsnWriter pkcs1PublicKey = WritePkcs1PublicKey(rsaParameters);
+            byte[] rented = CryptoPool.Rent(pkcs1PublicKey.GetEncodedLength());
+
+            if (!pkcs1PublicKey.TryEncode(rented, out int written))
             {
-                return WriteSubjectPublicKeyInfo(pkcs1PublicKey.EncodeAsSpan());
+                Debug.Fail("TryEncode failed with a presized buffer");
+                throw new CryptographicException();
             }
+
+            AsnWriter ret = WriteSubjectPublicKeyInfo(rented.AsSpan(0, written));
+
+            // Only public key data data
+            CryptoPool.Return(rented, clearSize: 0);
+            return ret;
         }
 
-        internal static AsnWriter WritePkcs8PrivateKey(in ReadOnlySpan<byte> pkcs1PrivateKey)
+        internal static AsnWriter WritePkcs8PrivateKey(
+            ReadOnlySpan<byte> pkcs1PrivateKey,
+            AsnWriter? copyFrom=null)
         {
+            Debug.Assert(copyFrom == null || pkcs1PrivateKey.IsEmpty);
+
             AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
 
-            try
+            using (writer.PushSequence())
             {
-                writer.PushSequence();
                 // Version 0 format (no attributes)
                 writer.WriteInteger(0);
                 WriteAlgorithmIdentifier(writer);
-                writer.WriteOctetString(pkcs1PrivateKey);
-                writer.PopSequence();
-                return writer;
+
+                if (copyFrom != null)
+                {
+                    using (writer.PushOctetString())
+                    {
+                        copyFrom.CopyTo(writer);
+                    }
+                }
+                else
+                {
+                    writer.WriteOctetString(pkcs1PrivateKey);
+                }
             }
-            catch
-            {
-                writer.Dispose();
-                throw;
-            }
+
+            return writer;
         }
 
         internal static AsnWriter WritePkcs8PrivateKey(in RSAParameters rsaParameters)
         {
-            using (AsnWriter pkcs1PrivateKey = WritePkcs1PrivateKey(rsaParameters))
-            {
-                return WritePkcs8PrivateKey(pkcs1PrivateKey.EncodeAsSpan());
-            }
+            AsnWriter pkcs1PrivateKey = WritePkcs1PrivateKey(rsaParameters);
+            return WritePkcs8PrivateKey(ReadOnlySpan<byte>.Empty, pkcs1PrivateKey);
         }
 
         private static void WriteAlgorithmIdentifier(AsnWriter writer)

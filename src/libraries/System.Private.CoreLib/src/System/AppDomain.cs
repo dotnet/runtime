@@ -5,9 +5,9 @@
 #pragma warning disable CS0067 // events are declared but not used
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
 using System.Runtime.Remoting;
@@ -99,8 +99,10 @@ namespace System
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_AppDomains);
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public int ExecuteAssembly(string assemblyFile) => ExecuteAssembly(assemblyFile, null);
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public int ExecuteAssembly(string assemblyFile, string?[]? args)
         {
             if (assemblyFile == null)
@@ -112,6 +114,7 @@ namespace System
             return ExecuteAssembly(assembly, args);
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public int ExecuteAssembly(string assemblyFile, string?[]? args, byte[]? hashValue, Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // This api is only meaningful for very specific partial trust/CAS scenarios
@@ -169,8 +172,10 @@ namespace System
             throw new CannotUnloadAppDomainException(SR.Arg_PlatformNotSupported);
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public Assembly Load(byte[] rawAssembly) => Assembly.Load(rawAssembly);
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public Assembly Load(byte[] rawAssembly, byte[]? rawSymbolStore) => Assembly.Load(rawAssembly, rawSymbolStore);
 
         public Assembly Load(AssemblyName assemblyRef) => Assembly.Load(assemblyRef);
@@ -278,6 +283,7 @@ namespace System
             }
         }
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstance(string assemblyName, string typeName)
         {
             if (assemblyName == null)
@@ -288,6 +294,7 @@ namespace System
             return Activator.CreateInstance(assemblyName, typeName);
         }
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstance(string assemblyName, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
         {
             if (assemblyName == null)
@@ -305,6 +312,7 @@ namespace System
                                             activationAttributes);
         }
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstance(string assemblyName, string typeName, object?[]? activationAttributes)
         {
             if (assemblyName == null)
@@ -315,12 +323,14 @@ namespace System
             return Activator.CreateInstance(assemblyName, typeName, activationAttributes);
         }
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public object? CreateInstanceAndUnwrap(string assemblyName, string typeName)
         {
             ObjectHandle? oh = CreateInstance(assemblyName, typeName);
             return oh?.Unwrap();
         }
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public object? CreateInstanceAndUnwrap(string assemblyName, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
         {
             ObjectHandle? oh = CreateInstance(assemblyName,
@@ -334,17 +344,20 @@ namespace System
             return oh?.Unwrap();
         }
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public object? CreateInstanceAndUnwrap(string assemblyName, string typeName, object?[]? activationAttributes)
         {
             ObjectHandle? oh = CreateInstance(assemblyName, typeName, activationAttributes);
             return oh?.Unwrap();
         }
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName)
         {
             return Activator.CreateInstanceFrom(assemblyFile, typeName);
         }
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
         {
             return Activator.CreateInstanceFrom(assemblyFile,
@@ -357,17 +370,20 @@ namespace System
                                                 activationAttributes);
         }
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, object?[]? activationAttributes)
         {
             return Activator.CreateInstanceFrom(assemblyFile, typeName, activationAttributes);
         }
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public object? CreateInstanceFromAndUnwrap(string assemblyFile, string typeName)
         {
             ObjectHandle? oh = CreateInstanceFrom(assemblyFile, typeName);
             return oh?.Unwrap();
         }
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public object? CreateInstanceFromAndUnwrap(string assemblyFile, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
         {
             ObjectHandle? oh = CreateInstanceFrom(assemblyFile,
@@ -381,14 +397,16 @@ namespace System
             return oh?.Unwrap();
         }
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public object? CreateInstanceFromAndUnwrap(string assemblyFile, string typeName, object?[]? activationAttributes)
         {
             ObjectHandle? oh = CreateInstanceFrom(assemblyFile, typeName, activationAttributes);
             return oh?.Unwrap();
         }
 
-        [PreserveDependency("GetDefaultInstance", "System.Security.Principal.GenericPrincipal", "System.Security.Claims")]
-        [PreserveDependency("GetDefaultInstance", "System.Security.Principal.WindowsPrincipal", "System.Security.Principal.Windows")]
+        // TODO: Remove these DynamicDependencyAttributes when https://github.com/mono/linker/issues/943 is fixed.
+        [DynamicDependency("GetDefaultInstance", "System.Security.Principal.GenericPrincipal", "System.Security.Claims")]
+        [DynamicDependency("GetDefaultInstance", "System.Security.Principal.WindowsPrincipal", "System.Security.Principal.Windows")]
         internal IPrincipal? GetThreadPrincipal()
         {
             IPrincipal? principal = _defaultPrincipal;

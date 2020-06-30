@@ -22,13 +22,7 @@ namespace Internal.TypeSystem
             // TODO: need to implement deduplication
             // https://github.com/dotnet/corert/issues/208
 
-            if (type.IsInterface)
-            {
-                // For interfaces, the set of interfaces implemented directly matches the
-                // explicitly implemented interface list
-                return type.ExplicitlyImplementedInterfaces;
-            }
-            else if (type is InstantiatedType)
+            if (type is InstantiatedType)
             {
                 return ComputeRuntimeInterfacesForInstantiatedType((InstantiatedType)type);
             }

@@ -439,10 +439,10 @@ namespace System.Net.Security.Tests
                 await DoHandshake(clientSslStream, serverSslStream);
 
                 var serverBuffer = new byte[1];
-                var tcs = new TaskCompletionSource<object>();
+                var tcs = new TaskCompletionSource();
                 serverStream.OnRead += (buffer, offset, count) =>
                 {
-                    tcs.TrySetResult(null);
+                    tcs.TrySetResult();
                 };
                 Task readTask = ReadAsync(serverSslStream, serverBuffer, 0, serverBuffer.Length);
 
@@ -593,6 +593,7 @@ namespace System.Net.Security.Tests
             using (var stream = new VirtualNetworkStream(network, isServer: false))
             using (var sslStream = new SslStream(stream, false, AllowAnyServerCertificate))
             {
+                stream.DelayFlush = true;
                 Task task = sslStream.FlushAsync();
 
                 Assert.False(task.IsCompleted);

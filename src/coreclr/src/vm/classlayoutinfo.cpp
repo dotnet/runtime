@@ -526,8 +526,8 @@ namespace
         if (pMT->GetClass()->HasExplicitFieldOffsetLayout())
             return;
 
-        CorElementType hfaType = pNativeLayoutInfo->GetNativeHFATypeRaw();
-        if (hfaType == ELEMENT_TYPE_END)
+        CorInfoHFAElemType hfaType = pNativeLayoutInfo->GetNativeHFATypeRaw();
+        if (hfaType == CORINFO_HFA_ELEM_NONE)
         {
             return;
         }
@@ -997,20 +997,20 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
 
 #endif // DACCESS_COMPILE
 
-CorElementType EEClassNativeLayoutInfo::GetNativeHFATypeRaw() const
+CorInfoHFAElemType EEClassNativeLayoutInfo::GetNativeHFATypeRaw() const
 {
     LIMITED_METHOD_CONTRACT;
 
     uint32_t numReferenceFields = GetNumFields();
 
-    CorElementType hfaType = ELEMENT_TYPE_END;
+    CorInfoHFAElemType hfaType = CORINFO_HFA_ELEM_NONE;
 
 #ifndef DACCESS_COMPILE
     const NativeFieldDescriptor* pNativeFieldDescriptorsBegin = GetNativeFieldDescriptors();
     const NativeFieldDescriptor* pNativeFieldDescriptorsEnd = pNativeFieldDescriptorsBegin + numReferenceFields;
     for (const NativeFieldDescriptor* pCurrNFD = pNativeFieldDescriptorsBegin; pCurrNFD < pNativeFieldDescriptorsEnd; ++pCurrNFD)
     {
-        CorElementType fieldType = ELEMENT_TYPE_END;
+        CorInfoHFAElemType fieldType = CORINFO_HFA_ELEM_NONE;
 
         NativeFieldCategory category = pCurrNFD->GetCategory();
 
@@ -1018,22 +1018,22 @@ CorElementType EEClassNativeLayoutInfo::GetNativeHFATypeRaw() const
         {
             if (pCurrNFD->NativeSize() == 4)
             {
-                fieldType = ELEMENT_TYPE_R4;
+                fieldType = CORINFO_HFA_ELEM_FLOAT;
             }
             else if (pCurrNFD->NativeSize() == 8)
             {
-                fieldType = ELEMENT_TYPE_R8;
+                fieldType = CORINFO_HFA_ELEM_DOUBLE;
             }
             else
             {
                 UNREACHABLE_MSG("Invalid NativeFieldCategory.");
-                fieldType = ELEMENT_TYPE_END;
+                fieldType = CORINFO_HFA_ELEM_NONE;
             }
 
             // An HFA can only have aligned float and double fields.
             if (pCurrNFD->GetExternalOffset() % pCurrNFD->AlignmentRequirement() != 0)
             {
-                fieldType = ELEMENT_TYPE_END;
+                fieldType = CORINFO_HFA_ELEM_NONE;
             }
         }
         else if (category == NativeFieldCategory::NESTED)
@@ -1042,37 +1042,38 @@ CorElementType EEClassNativeLayoutInfo::GetNativeHFATypeRaw() const
         }
         else
         {
-            return ELEMENT_TYPE_END;
+            return CORINFO_HFA_ELEM_NONE;
         }
 
         // Field type should be a valid HFA type.
-        if (fieldType == ELEMENT_TYPE_END)
+        if (fieldType == CORINFO_HFA_ELEM_NONE)
         {
-            return ELEMENT_TYPE_END;
+            return CORINFO_HFA_ELEM_NONE;
         }
 
         // Initialize with a valid HFA type.
-        if (hfaType == ELEMENT_TYPE_END)
+        if (hfaType == CORINFO_HFA_ELEM_NONE)
         {
             hfaType = fieldType;
         }
         // All field types should be equal.
         else if (fieldType != hfaType)
         {
-            return ELEMENT_TYPE_END;
+            return CORINFO_HFA_ELEM_NONE;
         }
     }
 
-    if (hfaType == ELEMENT_TYPE_END)
-        return ELEMENT_TYPE_END;
+    if (hfaType == CORINFO_HFA_ELEM_NONE)
+        return CORINFO_HFA_ELEM_NONE;
 
     int elemSize = 1;
     switch (hfaType)
     {
-    case ELEMENT_TYPE_R4: elemSize = sizeof(float); break;
-    case ELEMENT_TYPE_R8: elemSize = sizeof(double); break;
+    case CORINFO_HFA_ELEM_FLOAT: elemSize = sizeof(float); break;
+    case CORINFO_HFA_ELEM_DOUBLE: elemSize = sizeof(double); break;
 #ifdef TARGET_ARM64
-    case ELEMENT_TYPE_VALUETYPE: elemSize = 16; break;
+    case CORINFO_HFA_ELEM_VECTOR64: elemSize = 8; break;
+    case CORINFO_HFA_ELEM_VECTOR128: elemSize = 16; break;
 #endif
     default: _ASSERTE(!"Invalid HFA Type");
     }
@@ -1085,11 +1086,11 @@ CorElementType EEClassNativeLayoutInfo::GetNativeHFATypeRaw() const
     DWORD totalSize = GetSize();
 
     if (totalSize % elemSize != 0)
-        return ELEMENT_TYPE_END;
+        return CORINFO_HFA_ELEM_NONE;
 
     // On ARM, HFAs can have a maximum of four fields regardless of whether those are float or double.
     if (totalSize / elemSize > 4)
-        return ELEMENT_TYPE_END;
+        return CORINFO_HFA_ELEM_NONE;
 
 #endif // !DACCESS_COMPILE
 

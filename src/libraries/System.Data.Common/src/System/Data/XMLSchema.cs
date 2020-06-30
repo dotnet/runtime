@@ -128,10 +128,10 @@ namespace System.Data
 
     internal sealed class XSDSchema : XMLSchema
     {
-        private XmlSchemaSet _schemaSet = null;
-        private XmlSchemaElement _dsElement = null;
-        private DataSet _ds = null;
-        private string _schemaName = null;
+        private XmlSchemaSet _schemaSet;
+        private XmlSchemaElement _dsElement;
+        private DataSet _ds;
+        private string _schemaName;
         private ArrayList _columnExpressions;
         private Hashtable _constraintNodes;
         private ArrayList _refTables;
@@ -149,7 +149,7 @@ namespace System.Data
 
         private Hashtable _existingSimpleTypeMap;
 
-        private bool _fromInference = false;
+        private bool _fromInference;
 
         internal bool FromInference
         {
@@ -251,8 +251,7 @@ namespace System.Data
 
         internal static string QualifiedName(string name)
         {
-            int iStart = name.IndexOf(':');
-            if (iStart == -1)
+            if (!name.Contains(':'))
                 return Keywords.XSD_PREFIXCOLON + name;
             else
                 return name;

@@ -189,7 +189,7 @@ namespace System.Reflection
         {
             private readonly AssemblyBuilder _ab;
             private readonly ModuleBuilder _mb;
-            private int _typeId = 0;
+            private int _typeId;
 
             // Maintain a MethodBase-->int, int-->MethodBase mapping to permit generated code
             // to pass methods by token

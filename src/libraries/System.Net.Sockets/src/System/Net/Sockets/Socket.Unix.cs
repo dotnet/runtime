@@ -26,6 +26,12 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
         }
 
+        internal bool PreferInlineCompletions
+        {
+            get => _handle.PreferInlineCompletions;
+            set => _handle.PreferInlineCompletions = value;
+        }
+
         partial void ValidateForMultiConnect(bool isMultiEndpoint)
         {
             // ValidateForMultiConnect is called before any {Begin}Connect{Async} call,

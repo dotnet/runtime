@@ -18,9 +18,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private readonly Type _type;
         private readonly bool _isAssignableCollectionType;
-        private Type _contractType = null!; // Initialized in Initialize()
+        private Type _contractType;
         private Func<Export, object>? _castSingleValue;
-        private readonly bool _isOpenGeneric = false;
+        private readonly bool _isOpenGeneric;
 
         [ThreadStatic]
         internal static Dictionary<Type, Func<Export, object>?>? _castSingleValueCache;
@@ -129,6 +129,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return IsGenericDescendentOf(type, baseType.GetGenericTypeDefinition());
         }
 
+        [MemberNotNull(nameof(_contractType))]
         private void Initialize(Type type)
         {
             if (!type.IsGenericType)

@@ -48,6 +48,7 @@ using System;
 using System.Collections.Generic;   // For Dictionary<string, string>
 using System.Text;                  // For StringBuilder
 using System.Diagnostics;           // For Debug.Assert
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Packaging
 {
@@ -543,6 +544,7 @@ namespace System.IO.Packaging
         /// <summary>
         /// Lazy initialization for the ParameterDictionary
         /// </summary>
+        [MemberNotNull(nameof(_parameterDictionary))]
         private void EnsureParameterDictionary()
         {
             if (_parameterDictionary == null)
@@ -555,12 +557,12 @@ namespace System.IO.Packaging
 
         #region Private Members
 
-        private string _contentType = null;
+        private string? _contentType;
         private string _type = string.Empty;
         private string _subType = string.Empty;
         private readonly string _originalString;
-        private Dictionary<string, string> _parameterDictionary = null;
-        private readonly bool _isInitialized = false;
+        private Dictionary<string, string>? _parameterDictionary;
+        private readonly bool _isInitialized;
 
         private const string Quote = "\"";
         private const char SemicolonSeparator = ';';

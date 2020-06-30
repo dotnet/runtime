@@ -22,6 +22,8 @@
     <MonoSourceLocation>..\..\..</MonoSourceLocation>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="ep-buffer-manager-tests.c" />
+    <ClCompile Include="ep-buffer-tests.c" />
     <ClCompile Include="ep-fake-tests.c" />
     <ClCompile Include="ep-fastserializer-tests.c" />
     <ClCompile Include="ep-file-tests.c" />

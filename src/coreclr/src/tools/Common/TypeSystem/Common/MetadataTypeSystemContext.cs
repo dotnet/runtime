@@ -100,5 +100,13 @@ namespace Internal.TypeSystem
             }
             return false;
         }
+
+        protected sealed internal override bool IsIDynamicInterfaceCastableInterface(DefType type)
+        {
+            MetadataType t = (MetadataType)type;
+            return t.Module == SystemModule
+                && t.Name == "IDynamicInterfaceCastable"
+                && t.Namespace == "System.Runtime.InteropServices";
+        }
     }
 }

@@ -69,7 +69,7 @@ namespace System.IO.Packaging
         /// <summary>
         /// The title.
         /// </summary>
-        public abstract string Title
+        public abstract string? Title
         {
             get; set;
         }
@@ -77,7 +77,7 @@ namespace System.IO.Packaging
         /// <summary>
         /// The topic of the contents.
         /// </summary>
-        public abstract string Subject
+        public abstract string? Subject
         {
             get; set;
         }
@@ -88,7 +88,7 @@ namespace System.IO.Packaging
         /// recommended that this value be only as verbose as necessary to
         /// identify the individual.
         /// </summary>
-        public abstract string Creator
+        public abstract string? Creator
         {
             get; set;
         }
@@ -98,7 +98,7 @@ namespace System.IO.Packaging
         /// is typically a list of terms that are not available elsewhere in the
         /// properties.
         /// </summary>
-        public abstract string Keywords
+        public abstract string? Keywords
         {
             get; set;
         }
@@ -106,7 +106,7 @@ namespace System.IO.Packaging
         /// <summary>
         /// The description or abstract of the contents.
         /// </summary>
-        public abstract string Description
+        public abstract string? Description
         {
             get; set;
         }
@@ -117,7 +117,7 @@ namespace System.IO.Packaging
         /// employee ID, etc. It is recommended that this value be only as
         /// verbose as necessary to identify the individual.
         /// </summary>
-        public abstract string LastModifiedBy
+        public abstract string? LastModifiedBy
         {
             get; set;
         }
@@ -127,7 +127,7 @@ namespace System.IO.Packaging
         /// revisions. The application is responsible for updating this value
         /// after each revision.
         /// </summary>
-        public abstract string Revision
+        public abstract string? Revision
         {
             get; set;
         }
@@ -164,7 +164,7 @@ namespace System.IO.Packaging
         /// The category. This value is typically used by UI applications to create navigation
         /// controls.
         /// </summary>
-        public abstract string Category
+        public abstract string? Category
         {
             get; set;
         }
@@ -172,7 +172,7 @@ namespace System.IO.Packaging
         /// <summary>
         /// A unique identifier.
         /// </summary>
-        public abstract string Identifier
+        public abstract string? Identifier
         {
             get; set;
         }
@@ -183,7 +183,7 @@ namespace System.IO.Packaging
         /// "Security Bulletin", and "Exam". (This property is distinct from
         /// MIME content types as defined in RFC 2045.)
         /// </summary>
-        public abstract string ContentType
+        public abstract string? ContentType
         {
             get; set;
         }
@@ -194,7 +194,7 @@ namespace System.IO.Packaging
         /// (possibly empty) series of subsequent subtags, for example, "EN-US".
         /// These values MUST follow the convention specified in RFC 3066.
         /// </summary>
-        public abstract string Language
+        public abstract string? Language
         {
             get; set;
         }
@@ -202,7 +202,7 @@ namespace System.IO.Packaging
         /// <summary>
         /// The version number. This value is set by the user or by the application.
         /// </summary>
-        public abstract string Version
+        public abstract string? Version
         {
             get; set;
         }
@@ -211,7 +211,7 @@ namespace System.IO.Packaging
         /// The status of the content. Example values include "Draft",
         /// "Reviewed", and "Final".
         /// </summary>
-        public abstract string ContentStatus
+        public abstract string? ContentStatus
         {
             get; set;
         }

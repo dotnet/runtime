@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -12,9 +11,24 @@ namespace System.Security.Cryptography
     {
         protected AsnEncodedData()
         {
+            // Initialize _rawData to an empty array so that RawData may reasonably be a non-nullable byte[].
+            // It naturally is for the base type as well as for derived types behaving as intended.
+            // This, however, is a deviation from the original .NET Framework behavior.
+            _rawData = Array.Empty<byte>();
         }
 
         public AsnEncodedData(byte[] rawData)
+        {
+            Reset(null, rawData);
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="AsnEncodedData"/> class from existing encoded data.
+        /// </summary>
+        /// <param name="rawData">
+        ///   The Abstract Syntax Notation One (ASN.1)-encoded data.
+        /// </param>
+        public AsnEncodedData(ReadOnlySpan<byte> rawData)
         {
             Reset(null, rawData);
         }
@@ -36,17 +50,40 @@ namespace System.Security.Cryptography
             Reset(new Oid(oid), rawData);
         }
 
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="AsnEncodedData"/> class from an object identifier
+        ///   (OID) and existing encoded data.
+        /// </summary>
+        /// <param name="oid">
+        ///   The object identifier for this data.
+        /// </param>
+        /// <param name="rawData">
+        ///   The Abstract Syntax Notation One (ASN.1)-encoded data.
+        /// </param>
+        public AsnEncodedData(Oid? oid, ReadOnlySpan<byte> rawData)
+        {
+            Reset(oid, rawData);
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="AsnEncodedData"/> class from an object identifier
+        ///   (OID) and existing encoded data.
+        /// </summary>
+        /// <param name="oid">
+        ///   The object identifier for this data.
+        /// </param>
+        /// <param name="rawData">
+        ///   The Abstract Syntax Notation One (ASN.1)-encoded data.
+        /// </param>
+        public AsnEncodedData(string oid, ReadOnlySpan<byte> rawData)
+        {
+            Reset(new Oid(oid), rawData);
+        }
+
         public Oid? Oid
         {
-            get
-            {
-                return _oid;
-            }
-
-            set
-            {
-                _oid = (value == null) ? null : new Oid(value);
-            }
+            get => _oid;
+            set => _oid = value;
         }
 
         public byte[] RawData
@@ -57,6 +94,7 @@ namespace System.Security.Cryptography
                 return _rawData;
             }
 
+            [MemberNotNull(nameof(_rawData))]
             set
             {
                 if (value == null)
@@ -81,13 +119,21 @@ namespace System.Security.Cryptography
             return AsnFormatter.Instance.Format(_oid, _rawData, multiLine);
         }
 
+        [MemberNotNull(nameof(_rawData))]
         private void Reset(Oid? oid, byte[] rawData)
         {
             this.Oid = oid;
             this.RawData = rawData;
         }
 
-        private Oid? _oid = null;
-        private byte[] _rawData = null!; // initialized in helper method Reset for all public constuctors
+        [MemberNotNull(nameof(_rawData))]
+        private void Reset(Oid? oid, ReadOnlySpan<byte> rawData)
+        {
+            Oid = oid;
+            _rawData = rawData.ToArray();
+        }
+
+        private Oid? _oid;
+        private byte[] _rawData;
     }
 }

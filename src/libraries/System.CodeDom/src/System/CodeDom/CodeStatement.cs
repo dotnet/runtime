@@ -6,8 +6,8 @@ namespace System.CodeDom
 {
     public class CodeStatement : CodeObject
     {
-        private CodeDirectiveCollection _startDirectives = null;
-        private CodeDirectiveCollection _endDirectives = null;
+        private CodeDirectiveCollection _startDirectives;
+        private CodeDirectiveCollection _endDirectives;
 
         public CodeLinePragma LinePragma { get; set; }
 

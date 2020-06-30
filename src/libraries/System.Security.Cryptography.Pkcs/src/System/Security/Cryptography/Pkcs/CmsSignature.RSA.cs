@@ -5,8 +5,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
-using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
 
@@ -133,7 +133,7 @@ namespace System.Security.Cryptography.Pkcs
                 X509Certificate2 certificate,
                 AsymmetricAlgorithm? key,
                 bool silent,
-                [NotNullWhen(true)] out Oid? signatureAlgorithm,
+                [NotNullWhen(true)] out string? signatureAlgorithm,
                 [NotNullWhen(true)] out byte[]? signatureValue)
             {
                 RSA certPublicKey = certificate.GetRSAPublicKey()!;
@@ -150,7 +150,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                signatureAlgorithm = new Oid(Oids.Rsa, Oids.Rsa);
+                signatureAlgorithm = Oids.Rsa;
 
 #if NETCOREAPP || NETSTANDARD2_1
                 byte[] signature = new byte[privateKey.KeySize / 8];
@@ -215,12 +215,12 @@ namespace System.Security.Cryptography.Pkcs
 
                 PssParamsAsn pssParams = PssParamsAsn.Decode(signatureParameters.Value, AsnEncodingRules.DER);
 
-                if (pssParams.HashAlgorithm.Algorithm.Value != digestAlgorithmOid)
+                if (pssParams.HashAlgorithm.Algorithm != digestAlgorithmOid)
                 {
                     throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_Pkcs_PssParametersHashMismatch,
-                            pssParams.HashAlgorithm.Algorithm.Value,
+                            pssParams.HashAlgorithm.Algorithm,
                             digestAlgorithmOid));
                 }
 
@@ -238,11 +238,11 @@ namespace System.Security.Cryptography.Pkcs
                             digestAlgorithmName.Name));
                 }
 
-                if (pssParams.MaskGenAlgorithm.Algorithm.Value != Oids.Mgf1)
+                if (pssParams.MaskGenAlgorithm.Algorithm != Oids.Mgf1)
                 {
                     throw new CryptographicException(
                         SR.Cryptography_Pkcs_PssParametersMgfNotSupported,
-                        pssParams.MaskGenAlgorithm.Algorithm.Value);
+                        pssParams.MaskGenAlgorithm.Algorithm);
                 }
 
                 if (pssParams.MaskGenAlgorithm.Parameters == null)
@@ -254,12 +254,12 @@ namespace System.Security.Cryptography.Pkcs
                     pssParams.MaskGenAlgorithm.Parameters.Value,
                     AsnEncodingRules.DER);
 
-                if (mgfParams.Algorithm.Value != digestAlgorithmOid)
+                if (mgfParams.Algorithm != digestAlgorithmOid)
                 {
                     throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_Pkcs_PssParametersMgfHashMismatch,
-                            mgfParams.Algorithm.Value,
+                            mgfParams.Algorithm,
                             digestAlgorithmOid));
                 }
 
@@ -277,7 +277,7 @@ namespace System.Security.Cryptography.Pkcs
                 X509Certificate2 certificate,
                 AsymmetricAlgorithm? key,
                 bool silent,
-                out Oid signatureAlgorithm,
+                out string signatureAlgorithm,
                 out byte[] signatureValue)
             {
                 Debug.Fail("RSA-PSS requires building parameters, which has no API.");

@@ -31,7 +31,7 @@ public class MonoRunner extends Instrumentation
     static MonoRunner inst;
 
     static {
-        System.loadLibrary("runtime-android");
+        System.loadLibrary("monodroid");
     }
 
     @Override

@@ -1114,35 +1114,58 @@ exit:
 	HANDLE_FUNCTION_RETURN_REF (MonoException, MONO_HANDLE_CAST (MonoException, o));
 }
 
+typedef struct {
+	GString *text;
+	const char *prefix;
+} AppendFrameData;
+
 static gboolean
 append_frame_and_continue (MonoMethod *method, gpointer ip, size_t native_offset, gboolean managed, gpointer user_data)
 {
 	MONO_ENTER_GC_UNSAFE;
 	MonoDomain *domain = mono_domain_get ();
-	GString *text = (GString*)user_data;
+	AppendFrameData *data = (AppendFrameData *)user_data;
 
+	if (data->prefix)
+		g_string_append (data->text, data->prefix);
 	if (method) {
 		char *msg = mono_debug_print_stack_frame (method, native_offset, domain);
-		g_string_append_printf (text, "%s\n", msg);
+		g_string_append_printf (data->text, "%s\n", msg);
 		g_free (msg);
 	} else {
-		g_string_append_printf (text, "<unknown native frame 0x%p>\n", ip);
+		g_string_append_printf (data->text, "at <unknown native frame 0x%p>\n", ip);
 	}
 	MONO_EXIT_GC_UNSAFE;
 	return FALSE;
 }
 
+gboolean
+mono_exception_try_get_managed_backtrace (MonoException *exc, const char *prefix, char **result)
+{
+	AppendFrameData data;
+
+	data.text = g_string_new_len (NULL, 20);
+	data.prefix = prefix;
+
+	if (!mono_get_eh_callbacks ()->mono_exception_walk_trace (exc, append_frame_and_continue, &data)) {
+		g_string_free (data.text, TRUE);
+		*result = NULL;
+		return FALSE;
+	}
+
+	*result = g_string_free (data.text, FALSE);
+	return TRUE;
+}
+
 char *
 mono_exception_get_managed_backtrace (MonoException *exc)
 {
-	GString *text;
+	char *result;
 
-	text = g_string_new_len (NULL, 20);
+	if (!mono_exception_try_get_managed_backtrace (exc, NULL, &result))
+		return g_strdup ("managed backtrace not available\n");
 
-	if (!mono_get_eh_callbacks ()->mono_exception_walk_trace (exc, append_frame_and_continue, text))
-		g_string_append (text, "managed backtrace not available\n");
-
-	return g_string_free (text, FALSE);
+	return result;
 }
 
 char *

@@ -679,15 +679,46 @@ UINT64   GCInterface::m_remPressure[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // his
 // (m_iteration % MEM_PRESSURE_COUNT) is used as an index into m_addPressure and m_remPressure
 UINT     GCInterface::m_iteration = 0;
 
-FCIMPL6(void, GCInterface::GetMemoryInfo, UINT64* highMemLoadThreshold, UINT64* totalAvailableMemoryBytes, UINT64* lastRecordedMemLoadBytes, UINT32* lastRecordedMemLoadPct, size_t* lastRecordedHeapSizeBytes, size_t* lastRecordedFragmentationBytes)
+FCIMPL2(void, GCInterface::GetMemoryInfo, Object* objUNSAFE, int kind)
 {
     FCALL_CONTRACT;
 
     FC_GC_POLL_NOT_NEEDED();
 
-    return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(highMemLoadThreshold, totalAvailableMemoryBytes,
-                                                       lastRecordedMemLoadBytes, lastRecordedMemLoadPct,
-                                                       lastRecordedHeapSizeBytes, lastRecordedFragmentationBytes);
+    GCMEMORYINFODATAREF objGCMemoryInfo = (GCMEMORYINFODATAREF)(ObjectToOBJECTREF (objUNSAFE));
+
+    UINT64* genInfoRaw = (UINT64*)&(objGCMemoryInfo->generationInfo0);
+    UINT64* pauseInfoRaw = (UINT64*)&(objGCMemoryInfo->pauseDuration0);
+
+    return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(
+        &(objGCMemoryInfo->highMemLoadThresholdBytes),
+        &(objGCMemoryInfo->totalAvailableMemoryBytes),
+        &(objGCMemoryInfo->lastRecordedMemLoadBytes),
+        &(objGCMemoryInfo->lastRecordedHeapSizeBytes),
+        &(objGCMemoryInfo->lastRecordedFragmentationBytes),
+        &(objGCMemoryInfo->totalCommittedBytes),
+        &(objGCMemoryInfo->promotedBytes),
+        &(objGCMemoryInfo->pinnedObjectCount),
+        &(objGCMemoryInfo->finalizationPendingCount),
+        &(objGCMemoryInfo->index),
+        &(objGCMemoryInfo->generation),
+        &(objGCMemoryInfo->pauseTimePercent),
+        (bool*)&(objGCMemoryInfo->isCompaction),
+        (bool*)&(objGCMemoryInfo->isConcurrent),
+        genInfoRaw,
+        pauseInfoRaw,
+        kind);
+}
+FCIMPLEND
+
+FCIMPL0(UINT32, GCInterface::GetMemoryLoad)
+{
+    FCALL_CONTRACT;
+
+    FC_GC_POLL_NOT_NEEDED();
+
+    int result = (INT32)GCHeapUtilities::GetGCHeap()->GetMemoryLoad();
+    return result;
 }
 FCIMPLEND
 
@@ -1382,7 +1413,7 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
             if (newMemValue >= budget)
             {
                 // last check - if we would exceed 20% of GC "duty cycle", do not trigger GC at this time
-                if ((pGCHeap->GetNow() - pGCHeap->GetLastGCStartTime(2)) > (pGCHeap->GetLastGCDuration(2) * 5))
+                if ((size_t)(pGCHeap->GetNow() - pGCHeap->GetLastGCStartTime(2)) > (pGCHeap->GetLastGCDuration(2) * 5))
                 {
                     STRESS_LOG6(LF_GCINFO, LL_INFO10000, "AMP Budget: pressure=%I64u ? budget=%I64u (total_added=%I64u, total_removed=%I64u, mng_heap=%I64u) pos=%d",
                         newMemValue, budget, add, rem, heapOver3 * 3, m_iteration);

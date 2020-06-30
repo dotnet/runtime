@@ -5,8 +5,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Numerics;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Security.Cryptography.Pkcs
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Pkcs
             X509Certificate2 certificate,
             AsymmetricAlgorithm? key,
             bool silent,
-            [NotNullWhen(true)] out Oid? signatureAlgorithm,
+            [NotNullWhen(true)] out string? signatureAlgorithm,
             [NotNullWhen(true)] out byte[]? signatureValue);
 
         internal static CmsSignature? ResolveAndVerifyKeyType(string signatureAlgorithmOid, AsymmetricAlgorithm? key)
@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.Pkcs
             X509Certificate2 certificate,
             AsymmetricAlgorithm? key,
             bool silent,
-            out Oid? oid,
+            out string? oid,
             out ReadOnlyMemory<byte> signatureValue)
         {
             CmsSignature? processor = ResolveAndVerifyKeyType(certificate.GetKeyAlgorithm(), key);
@@ -149,6 +149,10 @@ namespace System.Security.Cryptography.Pkcs
 
                 return !sequence.HasData;
             }
+            catch (AsnContentException)
+            {
+                return false;
+            }
             catch (CryptographicException)
             {
                 return false;
@@ -163,7 +167,7 @@ namespace System.Security.Cryptography.Pkcs
                 fieldSize * 2 == ieeeSignature.Length,
                 $"ieeeSignature.Length ({ieeeSignature.Length}) must be even");
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
             {
                 writer.PushSequence();
 

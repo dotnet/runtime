@@ -359,7 +359,7 @@ namespace System.Globalization
         }
 
         // EnumSystemLocaleEx callback.
-        // [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
+        // [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
         private static unsafe Interop.BOOL EnumSystemLocalesProc(char* lpLocaleString, uint flags, void* contextHandle)
         {
             ref EnumLocaleData context = ref Unsafe.As<byte, EnumLocaleData>(ref *(byte*)contextHandle);
@@ -382,7 +382,7 @@ namespace System.Globalization
         }
 
         // EnumSystemLocaleEx callback.
-        // [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
+        // [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
         private static unsafe Interop.BOOL EnumAllSystemLocalesProc(char* lpLocaleString, uint flags, void* contextHandle)
         {
             ref EnumData context = ref Unsafe.As<byte, EnumData>(ref *(byte*)contextHandle);
@@ -404,7 +404,7 @@ namespace System.Globalization
         }
 
         // EnumTimeFormatsEx callback itself.
-        // [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
+        // [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
         private static unsafe Interop.BOOL EnumTimeCallback(char* lpTimeFormatString, void* lParam)
         {
             ref EnumData context = ref Unsafe.As<byte, EnumData>(ref *(byte*)lParam);
@@ -464,22 +464,6 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             return Interop.Kernel32.LocaleNameToLCID(cultureName, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
-        }
-
-        private static unsafe string? NlsLCIDToLocaleName(int culture)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseNls);
-
-            char* pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1]; // +1 for the null termination
-            int length = Interop.Kernel32.LCIDToLocaleName(culture, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
-
-            if (length > 0)
-            {
-                return new string(pBuffer);
-            }
-
-            return null;
         }
 
         private int NlsGetAnsiCodePage(string cultureName)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
@@ -105,18 +106,73 @@ namespace System.Text
         // Return a list of all EncodingInfo objects describing all of our encodings
         internal static EncodingInfo[] GetEncodings()
         {
-            EncodingInfo[] arrayEncodingInfo = new EncodingInfo[s_mappedCodePages.Length];
+            // If UTF-7 encoding is not enabled, we adjust the return array length by -1
+            // to account for the skipped EncodingInfo element.
 
-            for (int i = 0; i < s_mappedCodePages.Length; i++)
+            ushort[] mappedCodePages = s_mappedCodePages;
+            EncodingInfo[] arrayEncodingInfo = new EncodingInfo[(LocalAppContextSwitches.EnableUnsafeUTF7Encoding) ? mappedCodePages.Length : (mappedCodePages.Length - 1)];
+            string webNames = s_webNames;
+            int[] webNameIndices = s_webNameIndices;
+            int arrayEncodingInfoIdx = 0;
+
+            for (int i = 0; i < mappedCodePages.Length; i++)
             {
-                arrayEncodingInfo[i] = new EncodingInfo(
-                    s_mappedCodePages[i],
-                    s_webNames[s_webNameIndices[i]..s_webNameIndices[i + 1]],
-                    GetDisplayName(s_mappedCodePages[i], i)
+                int codePage = mappedCodePages[i];
+                if (codePage == Encoding.CodePageUTF7 && !LocalAppContextSwitches.EnableUnsafeUTF7Encoding)
+                {
+                    continue; // skip this entry; UTF-7 is disabled
+                }
+
+                arrayEncodingInfo[arrayEncodingInfoIdx++] = new EncodingInfo(
+                    codePage,
+                    webNames[webNameIndices[i]..webNameIndices[i + 1]],
+                    GetDisplayName(codePage, i)
                     );
             }
 
+            Debug.Assert(arrayEncodingInfoIdx == arrayEncodingInfo.Length);
             return arrayEncodingInfo;
+        }
+
+        internal static EncodingInfo[] GetEncodings(Dictionary<int, EncodingInfo> encodingInfoList)
+        {
+            Debug.Assert(encodingInfoList != null);
+            ushort[] mappedCodePages = s_mappedCodePages;
+            string webNames = s_webNames;
+            int[] webNameIndices = s_webNameIndices;
+
+            for (int i = 0; i < mappedCodePages.Length; i++)
+            {
+                int codePage = mappedCodePages[i];
+                if (!encodingInfoList.ContainsKey(codePage))
+                {
+                    // If UTF-7 encoding is not enabled, don't add it to the provided dictionary instance.
+                    // Exception: If somebody already registered a custom UTF-7 provider, the dictionary
+                    // will already contain an entry for the UTF-7 code page key, and we'll let it go through.
+
+                    if (codePage != Encoding.CodePageUTF7 || LocalAppContextSwitches.EnableUnsafeUTF7Encoding)
+                    {
+                        encodingInfoList[codePage] = new EncodingInfo(codePage, webNames[webNameIndices[i]..webNameIndices[i + 1]],
+                                                                                GetDisplayName(codePage, i));
+                    }
+                }
+            }
+
+            // Just in case a provider registered UTF-7 without the application's consent
+
+            if (!LocalAppContextSwitches.EnableUnsafeUTF7Encoding)
+            {
+                encodingInfoList.Remove(Encoding.CodePageUTF7); // won't throw if doesn't exist
+            }
+
+            var result = new EncodingInfo[encodingInfoList.Count];
+            int j = 0;
+            foreach (KeyValuePair<int, EncodingInfo> pair in encodingInfoList)
+            {
+                result[j++] = pair.Value;
+            }
+
+            return result;
         }
 
         internal static CodePageDataItem? GetCodePageDataItem(int codePage)

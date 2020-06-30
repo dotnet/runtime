@@ -853,13 +853,15 @@ MethodTableBuilder::MethodSignature::NamesEqual(
 /*static*/ bool
 MethodTableBuilder::MethodSignature::SignaturesEquivalent(
     const MethodSignature & sig1,
-    const MethodSignature & sig2)
+    const MethodSignature & sig2,
+    BOOL allowCovariantReturn)
 {
     STANDARD_VM_CONTRACT;
 
     return !!MetaSig::CompareMethodSigs(
         sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(),
-        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution());
+        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution(),
+        allowCovariantReturn);
 }
 
 //*******************************************************************************
@@ -874,7 +876,7 @@ MethodTableBuilder::MethodSignature::SignaturesExactlyEqual(
     return !!MetaSig::CompareMethodSigs(
         sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(),
         sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution(),
-        &newVisited);
+        FALSE, &newVisited);
 }
 
 //*******************************************************************************
@@ -884,7 +886,7 @@ MethodTableBuilder::MethodSignature::Equivalent(
 {
     STANDARD_VM_CONTRACT;
 
-    return NamesEqual(*this, rhs) && SignaturesEquivalent(*this, rhs);
+    return NamesEqual(*this, rhs) && SignaturesEquivalent(*this, rhs, FALSE);
 }
 
 //*******************************************************************************
@@ -1479,10 +1481,10 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #endif
         {
 #if defined(CROSSGEN_COMPILE)
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
             if ((!IsNgenPDBCompilationProcess()
                 && GetAppDomain()->ToCompilationDomain()->GetTargetModule() != g_pObjectClass->GetModule()))
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
             {
                 // Disable AOT compiling for managed implementation of hardware intrinsics.
                 // We specially treat them here to ensure correct ISA features are set during compilation
@@ -1957,12 +1959,20 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
-#ifdef FEATURE_ICASTABLE
-    if (!IsValueClass() && g_pICastableInterface != NULL && pMT->CanCastToInterface(g_pICastableInterface))
+    if (!IsValueClass())
     {
-        pMT->SetICastable();
-    }
+#ifdef FEATURE_ICASTABLE
+        if (g_pICastableInterface != NULL && pMT->CanCastToInterface(g_pICastableInterface))
+        {
+            pMT->SetICastable();
+        }
 #endif // FEATURE_ICASTABLE
+
+        if (g_pIDynamicInterfaceCastableInterface != NULL && pMT->CanCastToInterface(g_pIDynamicInterfaceCastableInterface))
+        {
+            pMT->SetIDynamicInterfaceCastable();
+        }
+    }
 
     // Grow the typedef ridmap in advance as we can't afford to
     // fail once we set the resolve bit
@@ -2099,6 +2109,83 @@ BOOL MethodTableBuilder::bmtMetaDataInfo::MethodImplTokenPair::Equal(
 }
 
 //*******************************************************************************
+BOOL MethodTableBuilder::IsEligibleForCovariantReturns(mdToken methodDeclToken)
+{
+    STANDARD_VM_CONTRACT;
+
+    //
+    // Note on covariant return types: right now we only support covariant returns for MethodImpls on
+    // classes, where the MethodDecl is also on a class. Interface methods are not supported. 
+    // We will also allow covariant return types if both the MethodImpl and MethodDecl are not on the same type.
+    //
+
+    HRESULT hr = S_OK;
+    IMDInternalImport* pMDInternalImport = GetMDImport();
+
+    // First, check if the type with the MethodImpl is a class.
+    if (IsValueClass() || IsInterface())
+        return FALSE;
+
+    mdToken tkParent;
+    hr = pMDInternalImport->GetParentToken(methodDeclToken, &tkParent);
+    if (FAILED(hr))
+        BuildMethodTableThrowException(hr, *bmtError);
+
+    // Second, check that the type with the MethodImpl is not the same as the type with the MethodDecl
+    if (GetCl() == tkParent)
+        return FALSE;
+
+    // Finally, check that the type with the MethodDecl is not an interface. To do so, we need to compute the TypeDef
+    // token of the type with the MethodDecl, as well as its module, in order to use the metadata to check if the type
+    // is an interface.
+    mdToken declTypeDefToken = mdTokenNil;
+    Module* pDeclModule = GetModule();
+    if (TypeFromToken(tkParent) == mdtTypeRef || TypeFromToken(tkParent) == mdtTypeDef)
+    {
+        if (!ClassLoader::ResolveTokenToTypeDefThrowing(GetModule(), tkParent, &pDeclModule, &declTypeDefToken))
+            return FALSE;
+    }
+    else if (TypeFromToken(tkParent) == mdtTypeSpec)
+    {
+        ULONG cbTypeSig;
+        PCCOR_SIGNATURE pTypeSig;
+        hr = pMDInternalImport->GetSigFromToken(tkParent, &cbTypeSig, &pTypeSig);
+        if (FAILED(hr))
+            BuildMethodTableThrowException(hr, *bmtError);
+
+        SigParser parser(pTypeSig, cbTypeSig);
+
+        CorElementType elementType;
+        IfFailThrow(parser.GetElemType(&elementType));
+
+        if (elementType == ELEMENT_TYPE_GENERICINST)
+        {
+            IfFailThrow(parser.GetElemType(&elementType));
+        }
+
+        if (elementType == ELEMENT_TYPE_CLASS)
+        {
+            mdToken declTypeDefOrRefToken;
+            IfFailThrow(parser.GetToken(&declTypeDefOrRefToken));
+            if (!ClassLoader::ResolveTokenToTypeDefThrowing(GetModule(), declTypeDefOrRefToken, &pDeclModule, &declTypeDefToken))
+                return FALSE;
+        }
+    }
+
+    if (declTypeDefToken == mdTokenNil)
+        return FALSE;
+
+    // Now that we have computed the TypeDef token and the module, check its attributes to verify it is not an interface.
+
+    DWORD attr;
+    hr = pDeclModule->GetMDImport()->GetTypeDefProps(declTypeDefToken, &attr, NULL);
+    if (FAILED(hr))
+        BuildMethodTableThrowException(hr, *bmtError);
+
+    return !IsTdInterface(attr);
+}
+
+//*******************************************************************************
 VOID
 MethodTableBuilder::EnumerateMethodImpls()
 {
@@ -2138,6 +2225,7 @@ MethodTableBuilder::EnumerateMethodImpls()
             bmtMetaData->rgMethodImplTokens[i].fConsiderDuringInexactMethodImplProcessing = false;
             bmtMetaData->rgMethodImplTokens[i].fThrowIfUnmatchedDuringInexactMethodImplProcessing = false;
             bmtMetaData->rgMethodImplTokens[i].interfaceEquivalenceSet = 0;
+            bmtMetaData->rgMethodImplTokens[i].fRequiresCovariantReturnTypeChecking = false;
 
             if (FAILED(hr))
             {
@@ -2307,17 +2395,26 @@ MethodTableBuilder::EnumerateMethodImpls()
                 {
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MISSING_SIG_BODY);
                 }
+
                 // Can't use memcmp because there may be two AssemblyRefs
                 // in this scope, pointing to the same assembly, etc.).
-                if (!MetaSig::CompareMethodSigs(
-                        pSigDecl,
-                        cbSigDecl,
-                        GetModule(),
-                        &theDeclSubst,
-                        pSigBody,
-                        cbSigBody,
-                        GetModule(),
-                        NULL))
+                BOOL compatibleSignatures = MetaSig::CompareMethodSigs(pSigDecl, cbSigDecl, GetModule(), &theDeclSubst, pSigBody, cbSigBody, GetModule(), NULL, FALSE);
+
+                if (!compatibleSignatures && IsEligibleForCovariantReturns(theDecl))
+                {
+                    if (MetaSig::CompareMethodSigs(pSigDecl, cbSigDecl, GetModule(), &theDeclSubst, pSigBody, cbSigBody, GetModule(), NULL, TRUE))
+                    {
+                        // Signatures matched, except for the return type. Flag that MethodImpl to check the return type at a later
+                        // stage for compatibility, and treat it as compatible for now.
+                        // For compatibility rules, see ECMA I.8.7.1. We will use the MethodTable::CanCastTo() at a later stage to validate
+                        // compatibilities of the return types according to these rules.
+
+                        compatibleSignatures = TRUE;
+                        bmtMetaData->rgMethodImplTokens[i].fRequiresCovariantReturnTypeChecking = true;
+                    }
+                }
+
+                if (!compatibleSignatures)
                 {
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_BODY_DECL_MISMATCH);
                 }
@@ -3574,10 +3671,10 @@ BOOL MethodTableBuilder::IsSelfReferencingStaticValueTypeField(mdToken     dwByV
 
     PCCOR_SIGNATURE pFieldSig = pMemberSignature + 1; // skip the CALLCONV_FIELD
 
-    return MetaSig::CompareElementType(pFakeSig,             pFieldSig,
+    return MetaSig::CompareElementType(pFakeSig, pFieldSig,
                                        pFakeSig + cFakeSig,  pMemberSignature + cMemberSignature,
                                        GetModule(), GetModule(),
-                                       NULL,                 NULL);
+                                       NULL, NULL, FALSE);
 
 }
 
@@ -5292,7 +5389,7 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
     {
         bmtRTMethod * pCurDeclMethod = slotIt->Decl().AsRTMethod();
 
-        if (declSig.ExactlyEqual(pCurDeclMethod->GetMethodSignature()))
+        if (declSig.ExactlyEqual(pCurDeclMethod->GetMethodSignature().GetSignatureWithoutSubstitution()))
         {
             declMethod = slotIt->Decl();
             break;
@@ -5308,7 +5405,7 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
             bmtRTMethod * pCurDeclMethod = slotIt->Decl().AsRTMethod();
 
             // Type Equivalence is forbidden in MethodImpl MemberRefs
-            if (declSig.Equivalent(pCurDeclMethod->GetMethodSignature()))
+            if (declSig.Equivalent(pCurDeclMethod->GetMethodSignature().GetSignatureWithoutSubstitution()))
             {
                 declMethod = slotIt->Decl();
                 break;
@@ -5426,8 +5523,7 @@ MethodTableBuilder::ProcessInexactMethodImpls()
                 }
             }
 
-            Substitution *pDeclSubst = &bmtMetaData->pMethodDeclSubsts[m];
-            MethodSignature declSig(GetModule(), szName, pSig, cbSig, pDeclSubst);
+            MethodSignature declSig(GetModule(), szName, pSig, cbSig, NULL);
             bmtInterfaceEntry * pItfEntry = NULL;
 
             for (DWORD i = 0; i < bmtInterface->dwInterfaceMapSize; i++)
@@ -5467,6 +5563,11 @@ MethodTableBuilder::ProcessInexactMethodImpls()
                 // Search for other matches
                 if (fPreexistingImplFound)
                     continue;
+
+                if (bmtMetaData->rgMethodImplTokens[m].fRequiresCovariantReturnTypeChecking)
+                {
+                    it->GetMethodDesc()->SetRequiresCovariantReturnTypeChecking();
+                }
 
                 // Otherwise, record the method impl discovery if the match is
                 bmtMethodImpl->AddMethodImpl(*it, declMethod, bmtMetaData->rgMethodImplTokens[m].methodDecl, GetStackingAllocator());
@@ -5581,7 +5682,7 @@ MethodTableBuilder::ProcessMethodImpls()
 
                         Substitution *pDeclSubst = &bmtMetaData->pMethodDeclSubsts[m];
                         MethodTable * pDeclMT = NULL;
-                        MethodSignature declSig(GetModule(), szName, pSig, cbSig, pDeclSubst);
+                        MethodSignature declSig(GetModule(), szName, pSig, cbSig, NULL);
 
                         {   // 1. Load the approximate type.
                             // Block for the LoadsTypeViolation.
@@ -5598,13 +5699,12 @@ MethodTableBuilder::ProcessMethodImpls()
                         }
 
                         {   // 2. Get or create the correct substitution
-                            bmtRTType * pDeclType = NULL;
-
                             if (pDeclMT->IsInterface())
-                            {   // If the declaration method is a part of an interface, search through
+                            {   
+                                // If the declaration method is a part of an interface, search through
                                 // the interface map to find the matching interface so we can provide
                                 // the correct substitution chain.
-                                pDeclType = NULL;
+                                bmtRTType *pDeclType = NULL;
 
                                 bmtInterfaceEntry * pItfEntry = NULL;
                                 for (DWORD i = 0; i < bmtInterface->dwInterfaceMapSize; i++)
@@ -5684,77 +5784,8 @@ MethodTableBuilder::ProcessMethodImpls()
                                 declMethod = FindDeclMethodOnInterfaceEntry(pItfEntry, declSig);
                             }
                             else
-                            {   // Assume the MethodTable is a parent of the current type,
-                                // and create the substitution chain to match it.
-
-                                pDeclType = NULL;
-
-                                for (bmtRTType *pCur = GetParentType();
-                                     pCur != NULL;
-                                     pCur = pCur->GetParentType())
-                                {
-                                    if (pCur->GetMethodTable() == pDeclMT)
-                                    {
-                                        pDeclType = pCur;
-                                        break;
-                                    }
-                                }
-
-                                if (pDeclType == NULL)
-                                {   // Method's type is not a parent.
-                                    BuildMethodTableThrowException(IDS_CLASSLOAD_MI_DECLARATIONNOTFOUND, it.Token());
-                                }
-
-                                // 3. Find the matching method.
-                                bmtRTType *pCurDeclType = pDeclType;
-                                do
-                                {
-                                    // two pass algorithm. search for exact matches followed
-                                    // by equivalent matches.
-                                    for (int iPass = 0; (iPass < 2) && (declMethod.IsNull()); iPass++)
-                                    {
-                                        MethodTable *pCurDeclMT = pCurDeclType->GetMethodTable();
-
-                                        MethodTable::IntroducedMethodIterator methIt(pCurDeclMT);
-                                        for(; methIt.IsValid(); methIt.Next())
-                                        {
-                                            MethodDesc * pCurMD = methIt.GetMethodDesc();
-
-                                            if (pCurDeclMT != pDeclMT)
-                                            {
-                                                // If the method isn't on the declaring type, then it must be virtual.
-                                                if (!pCurMD->IsVirtual())
-                                                    continue;
-                                            }
-                                            if (strcmp(szName, pCurMD->GetName()) == 0)
-                                            {
-                                                PCCOR_SIGNATURE pCurMDSig;
-                                                DWORD cbCurMDSig;
-                                                pCurMD->GetSig(&pCurMDSig, &cbCurMDSig);
-
-                                                // First pass searches for declaration methods should not use type equivalence
-                                                TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
-
-                                                if (MetaSig::CompareMethodSigs(
-                                                    declSig.GetSignature(),
-                                                    static_cast<DWORD>(declSig.GetSignatureLength()),
-                                                    declSig.GetModule(),
-                                                    &declSig.GetSubstitution(),
-                                                    pCurMDSig,
-                                                    cbCurMDSig,
-                                                    pCurMD->GetModule(),
-                                                    &pCurDeclType->GetSubstitution(),
-                                                    iPass == 0 ? &newVisited : NULL))
-                                                {
-                                                    declMethod = (*bmtParent->pSlotTable)[pCurMD->GetSlot()].Decl();
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    pCurDeclType = pCurDeclType->GetParentType();
-                                } while ((pCurDeclType != NULL) && (declMethod.IsNull()));
+                            {
+                                declMethod = FindDeclMethodOnClassInHierarchy(it, pDeclMT, declSig);
                             }
 
                             if (declMethod.IsNull())
@@ -5784,6 +5815,11 @@ MethodTableBuilder::ProcessMethodImpls()
                         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL, it.Token());
                     }
 
+                    if (bmtMetaData->rgMethodImplTokens[m].fRequiresCovariantReturnTypeChecking)
+                    {
+                        it->GetMethodDesc()->SetRequiresCovariantReturnTypeChecking();
+                    }
+
                     bmtMethodImpl->AddMethodImpl(*it, declMethod, mdDecl, GetStackingAllocator());
                 }
             }
@@ -5791,6 +5827,105 @@ MethodTableBuilder::ProcessMethodImpls()
     } /* end ... for each member */
 }
 
+
+MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInHierarchy(const DeclaredMethodIterator& it, MethodTable * pDeclMT, MethodSignature &declSig)
+{
+    bmtRTType * pDeclType = NULL;
+    bmtMethodHandle declMethod;
+    // Assume the MethodTable is a parent of the current type,
+    // and create the substitution chain to match it.
+
+    for (bmtRTType *pCur = GetParentType();
+            pCur != NULL;
+            pCur = pCur->GetParentType())
+    {
+        if (pCur->GetMethodTable() == pDeclMT)
+        {
+            pDeclType = pCur;
+            break;
+        }
+    }
+
+    // Instead of using the Substitution chain that reaches back to the type being loaded, instead
+    // use a substitution chain that points back to the open type associated with the memberref of the declsig.
+    Substitution emptySubstitution;
+    Substitution* pDeclTypeSubstitution = &emptySubstitution;
+    DWORD lengthOfSubstitutionChainHandled = pDeclType->GetSubstitution().GetLength();
+
+    if (pDeclType == NULL)
+    {   // Method's type is not a parent.
+        BuildMethodTableThrowException(IDS_CLASSLOAD_MI_DECLARATIONNOTFOUND, it.Token());
+    }
+
+    // 3. Find the matching method.
+    bmtRTType *pCurDeclType = pDeclType;
+    do
+    {
+        // Update the substitution in use for matching the method. If the substitution length is greater
+        // than the previously processed data, add onto the end of the chain.
+        {
+            DWORD declTypeSubstitionLength = pCurDeclType->GetSubstitution().GetLength();
+            if (declTypeSubstitionLength > lengthOfSubstitutionChainHandled)
+            {
+                void *pNewSubstitutionMem = _alloca(sizeof(Substitution));
+                Substitution substitutionToClone = pCurDeclType->GetSubstitution();
+
+                Substitution *pNewSubstitution = new(pNewSubstitutionMem) Substitution(substitutionToClone.GetModule(), substitutionToClone.GetInst(), pDeclTypeSubstitution);
+                pDeclTypeSubstitution = pNewSubstitution;
+                lengthOfSubstitutionChainHandled = declTypeSubstitionLength;
+            }
+        }
+
+        // two pass algorithm. search for exact matches followed
+        // by equivalent matches.
+        for (int iPass = 0; (iPass < 2) && (declMethod.IsNull()); iPass++)
+        {
+            MethodTable *pCurDeclMT = pCurDeclType->GetMethodTable();
+
+            MethodTable::IntroducedMethodIterator methIt(pCurDeclMT);
+            for(; methIt.IsValid(); methIt.Next())
+            {
+                MethodDesc * pCurMD = methIt.GetMethodDesc();
+
+                if (pCurDeclMT != pDeclMT)
+                {
+                    // If the method isn't on the declaring type, then it must be virtual.
+                    if (!pCurMD->IsVirtual())
+                        continue;
+                }
+                if (strcmp(declSig.GetName(), pCurMD->GetName()) == 0)
+                {
+                    PCCOR_SIGNATURE pCurMDSig;
+                    DWORD cbCurMDSig;
+                    pCurMD->GetSig(&pCurMDSig, &cbCurMDSig);
+
+                    // First pass searches for declaration methods should not use type equivalence
+                    TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
+
+                    if (MetaSig::CompareMethodSigs(
+                        declSig.GetSignature(),
+                        static_cast<DWORD>(declSig.GetSignatureLength()),
+                        declSig.GetModule(),
+                        NULL, // Do not use the substitution of declSig, as we have adjusted the pDeclTypeSubstitution such that it must not be used.
+                        pCurMDSig,
+                        cbCurMDSig,
+                        pCurMD->GetModule(),
+                        pDeclTypeSubstitution,
+                        FALSE,
+                        iPass == 0 ? &newVisited : NULL))
+                    {
+                        declMethod = (*bmtParent->pSlotTable)[pCurMD->GetSlot()].Decl();
+                        break;
+                    }
+                }
+            }
+        }
+
+        pCurDeclType = pCurDeclType->GetParentType();
+    } while ((pCurDeclType != NULL) && (declMethod.IsNull()));
+
+    return declMethod;
+}
 //*******************************************************************************
 // InitMethodDesc takes a pointer to space that's already allocated for the
 // particular type of MethodDesc, and initializes based on the other info.
@@ -6044,6 +6179,7 @@ VOID
 MethodTableBuilder::MethodImplCompareSignatures(
     bmtMethodHandle     hDecl,
     bmtMethodHandle     hImpl,
+    BOOL                allowCovariantReturn,
     DWORD               dwConstraintErrorCode)
 {
     CONTRACTL {
@@ -6057,7 +6193,7 @@ MethodTableBuilder::MethodImplCompareSignatures(
     const MethodSignature &declSig(hDecl.GetMethodSignature());
     const MethodSignature &implSig(hImpl.GetMethodSignature());
 
-    if (!MethodSignature::SignaturesEquivalent(declSig, implSig))
+    if (!MethodSignature::SignaturesEquivalent(declSig, implSig, allowCovariantReturn))
     {
         LOG((LF_CLASSLOADER, LL_INFO1000, "BADSIG placing MethodImpl: %x\n", declSig.GetToken()));
         BuildMethodTableThrowException(COR_E_TYPELOAD, IDS_CLASSLOAD_MI_BADSIGNATURE, declSig.GetToken());
@@ -6305,6 +6441,7 @@ MethodTableBuilder::PlaceLocalDeclarationOnClass(
         MethodImplCompareSignatures(
             pDecl,
             pImpl,
+            FALSE /* allowCovariantReturn */,
             IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_LOCAL_METHOD_IMPL);
 
         ///////////////////////////////
@@ -6376,6 +6513,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnClass(
         MethodImplCompareSignatures(
             pDecl,
             pImpl,
+            FALSE /* allowCovariantReturn */,
             IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_INTERFACE_METHOD_IMPL);
 
         ///////////////////////////////
@@ -6464,6 +6602,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnInterface(
         MethodImplCompareSignatures(
             hDecl,
             bmtMethodHandle(pImpl),
+            FALSE /* allowCovariantReturn */,
             IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_INTERFACE_METHOD_IMPL);
 
         ///////////////////////////////
@@ -6512,6 +6651,7 @@ MethodTableBuilder::PlaceParentDeclarationOnClass(
         MethodImplCompareSignatures(
             pDecl,
             pImpl,
+            TRUE /* allowCovariantReturn */,
             IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_PARENT_METHOD_IMPL);
 
         ////////////////////////////////
@@ -7142,7 +7282,7 @@ MethodTableBuilder::PlaceMethodFromParentEquivalentInterfaceIntoInterfaceSlot(
             // Check to verify that the equivalent slot on the equivalent interface actually matches the method
             // on the current interface. If not, then the slot is not a match, and we should search other interfaces
             // for an implementation of the method.
-            if (!MethodSignature::SignaturesEquivalent(pCurItfMethod->GetMethodSignature(), parentImplementation.GetMethodSignature()))
+            if (!MethodSignature::SignaturesEquivalent(pCurItfMethod->GetMethodSignature(), parentImplementation.GetMethodSignature(), FALSE))
             {
                 continue;
             }
@@ -9584,23 +9724,6 @@ void MethodTableBuilder::CheckForSystemTypes()
             pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
         }
 #endif
-#if defined(ALIGN_ACCESS) || defined(FEATURE_64BIT_ALIGNMENT)
-        else if (strcmp(name, g_DecimalName) == 0)
-        {
-            // This is required because native layout of System.Decimal causes it to be aligned
-            // differently to the layout of the native DECIMAL structure, which will cause
-            // data misalignent exceptions if Decimal is embedded in another type.
-
-            EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
-            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = sizeof(ULONGLONG);
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-            // Also need to mark the type so it will be allocated on a 64-bit boundary for
-            // platforms that won't do this naturally.
-            SetAlign8Candidate();
-#endif
-        }
-#endif // ALIGN_ACCESS || FEATURE_64BIT_ALIGNMENT
     }
     else
     {
@@ -9666,20 +9789,20 @@ void MethodTableBuilder::CheckForSystemTypes()
 // way to allocate a new MT. Don't try calling new / ctor.
 // Called from SetupMethodTable
 // This needs to be kept consistent with MethodTable::GetSavedExtent()
-MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
-                                         DWORD dwVtableSlots,
-                                         DWORD dwVirtuals,
-                                         DWORD dwGCSize,
-                                         DWORD dwNumInterfaces,
-                                         DWORD dwNumDicts,
-                                         DWORD cbInstAndDict,
-                                         MethodTable *pMTParent,
-                                         ClassLoader *pClassLoader,
-                                         LoaderAllocator *pAllocator,
-                                         BOOL isInterface,
-                                         BOOL fDynamicStatics,
-                                         BOOL fHasGenericsStaticsInfo,
-                                         BOOL fNeedsRCWPerTypeData
+MethodTable * MethodTableBuilder::AllocateNewMT(
+    Module *pLoaderModule,
+    DWORD dwVtableSlots,
+    DWORD dwVirtuals,
+    DWORD dwGCSize,
+    DWORD dwNumInterfaces,
+    DWORD dwNumDicts,
+    DWORD cbInstAndDict,
+    MethodTable *pMTParent,
+    ClassLoader *pClassLoader,
+    LoaderAllocator *pAllocator,
+    BOOL isInterface,
+    BOOL fDynamicStatics,
+    BOOL fHasGenericsStaticsInfo
 #ifdef FEATURE_COMINTEROP
         , BOOL fHasDynamicInterfaceMap
 #endif
@@ -9709,7 +9832,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
     // vtable
     cbTotalSize += MethodTable::GetNumVtableIndirections(dwVirtuals) * sizeof(MethodTable::VTableIndir_t);
 
-
     DWORD dwMultipurposeSlotsMask = 0;
     if (dwNumInterfaces != 0)
         dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasInterfaceMap;
@@ -9725,9 +9847,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
     // Add space for optional members here. Same as GetOptionalMembersSize()
     cbTotalSize += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
                                                       fHasGenericsStaticsInfo,
-                                                      FALSE, // no GuidInfo needed for canonical instantiations
-                                                      FALSE, // no CCW template needed for canonical instantiations
-                                                      fNeedsRCWPerTypeData,
                                                       RidFromToken(GetCl()) >= METHODTABLE_TOKEN_OVERFLOW);
 
     // Interface map starts here
@@ -9963,9 +10082,6 @@ MethodTableBuilder::SetupMethodTable2(
     BOOL fHasDynamicInterfaceMap = bmtInterface->dwInterfaceMapSize > 0 &&
                                    bmtProp->fIsComObjectType &&
                                    (GetParentMethodTable() != g_pObjectClass);
-    BOOL fNeedsRCWPerTypeData = bmtProp->fNeedsRCWPerTypeData;
-#else // FEATURE_COMINTEROP
-    BOOL fNeedsRCWPerTypeData = FALSE;
 #endif // FEATURE_COMINTEROP
 
     EEClass *pClass = GetHalfBakedClass();
@@ -10013,7 +10129,6 @@ MethodTableBuilder::SetupMethodTable2(
                                    IsInterface(),
                                    bmtProp->fDynamicStatics,
                                    bmtProp->fGenericsStatics,
-                                   fNeedsRCWPerTypeData,
 #ifdef FEATURE_COMINTEROP
                                    fHasDynamicInterfaceMap,
 #endif
@@ -10029,12 +10144,6 @@ MethodTableBuilder::SetupMethodTable2(
 #ifdef _DEBUG
     pMT->SetDebugClassName(GetDebugClassName());
 #endif
-
-#ifdef FEATURE_COMINTEROP
-    if (fNeedsRCWPerTypeData)
-        pMT->SetHasRCWPerTypeData();
-#endif // FEATURE_COMINTEROP
-
 
     if (IsInterface())
         pMT->SetIsInterface();

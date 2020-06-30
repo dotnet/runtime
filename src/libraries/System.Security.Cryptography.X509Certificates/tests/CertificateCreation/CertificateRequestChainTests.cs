@@ -391,17 +391,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 rootCertWithKey = rootRequest.CreateSelfSigned(now, rootEnd);
 
-                byte[] intermed1Serial = new byte[10];
-                byte[] intermed2Serial = new byte[10];
-                byte[] leafSerial = new byte[10];
+                Span<byte> intermed1Serial = stackalloc byte[10];
+                Span<byte> intermed2Serial = stackalloc byte[10];
+                Span<byte> leafSerial = stackalloc byte[10];
+
+                intermed1Serial[0] = intermed2Serial[0] = leafSerial[0] = 0;
 
                 intermed1Serial[1] = 1;
                 intermed2Serial[1] = 2;
                 leafSerial[1] = 1;
 
-                RandomNumberGenerator.Fill(intermed1Serial.AsSpan(2));
-                RandomNumberGenerator.Fill(intermed2Serial.AsSpan(2));
-                RandomNumberGenerator.Fill(leafSerial.AsSpan(2));
+                RandomNumberGenerator.Fill(intermed1Serial.Slice(2));
+                RandomNumberGenerator.Fill(intermed2Serial.Slice(2));
+                RandomNumberGenerator.Fill(leafSerial.Slice(2));
 
                 X509Certificate2 intermed1Tmp =
                     intermed1Request.Create(rootCertWithKey.SubjectName, rootGenerator, now, intermedEnd, intermed1Serial);

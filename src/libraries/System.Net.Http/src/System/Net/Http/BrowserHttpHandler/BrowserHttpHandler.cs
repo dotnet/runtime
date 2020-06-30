@@ -36,12 +36,11 @@ namespace System.Net.Http
         /// <summary>
         /// Gets whether the current Browser supports streaming responses
         /// </summary>
-        private static bool StreamingSupported { get; }
-
-        static BrowserHttpHandler()
+        private static bool StreamingSupported { get; } = GetIsStreamingSupported();
+        private static bool GetIsStreamingSupported()
         {
             using (var streamingSupported = new Function("return typeof Response !== 'undefined' && 'body' in Response.prototype && typeof ReadableStream === 'function'"))
-                StreamingSupported = (bool)streamingSupported.Call();
+                return (bool)streamingSupported.Call();
         }
 
         public bool UseCookies
@@ -122,7 +121,8 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException();
+        private Dictionary<string, object?>? _properties;
+        public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -281,6 +281,7 @@ namespace System.Net.Http
             private readonly JSObject _abortController;
             private readonly CancellationTokenSource _abortCts;
             private readonly CancellationTokenRegistration _abortRegistration;
+            private bool _isDisposed;
 
             public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenSource abortCts, CancellationTokenRegistration abortRegistration)
             {
@@ -313,17 +314,17 @@ namespace System.Net.Http
             // Protected implementation of Dispose pattern.
             protected virtual void Dispose(bool disposing)
             {
+                if (_isDisposed)
+                    return;
+
+                _isDisposed = true;
                 if (disposing)
                 {
-                    // Free any other managed objects here.
-                    //
                     _abortCts.Cancel();
                     _abortCts.Dispose();
                     _abortRegistration.Dispose();
                 }
 
-                // Free any unmanaged objects here.
-                //
                 _fetchResponse?.Dispose();
                 _abortController?.Dispose();
             }
@@ -367,10 +368,10 @@ namespace System.Net.Http
 
             protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
                 SerializeToStreamAsync(stream, context, CancellationToken.None);
-            protected sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
                 byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
-                await stream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
+                await stream.WriteAsync(data, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
             }
             protected internal override bool TryComputeLength(out long length)
             {

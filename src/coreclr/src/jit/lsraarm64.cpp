@@ -76,28 +76,14 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_LCL_VAR:
-        {
-            // We handle tracked variables differently from non-tracked ones.  If it is tracked,
-            // we will simply add a use of the tracked variable at its parent/consumer.
-            // Otherwise, for a use we need to actually add the appropriate references for loading
-            // or storing the variable.
-            //
-            // A tracked variable won't actually get used until the appropriate ancestor tree node
-            // is processed, unless this is marked "isLocalDefUse" because it is a stack-based argument
-            // to a call or an orphaned dead node.
-            //
-            bool isCandidate = compiler->lvaGetDesc(tree->AsLclVar())->lvLRACandidate;
-            if (tree->IsRegOptional() && !isCandidate)
-            {
-                tree->ClearRegOptional();
-                tree->SetContained();
-                return 0;
-            }
-            if (isCandidate)
+            // We make a final determination about whether a GT_LCL_VAR is a candidate or contained
+            // after liveness. In either case we don't build any uses or defs. Otherwise, this is a
+            // load of a stack-based local into a register and we'll fall through to the general
+            // local case below.
+            if (checkContainedOrCandidateLclVar(tree->AsLclVar()))
             {
                 return 0;
             }
-        }
             __fallthrough;
 
         case GT_LCL_FLD:
@@ -118,10 +104,14 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-        case GT_STORE_LCL_FLD:
         case GT_STORE_LCL_VAR:
-            srcCount = 1;
-            assert(dstCount == 0);
+            if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
+            {
+                dstCount = compiler->lvaGetDesc(tree->AsLclVar()->GetLclNum())->lvFieldCnt;
+            }
+            __fallthrough;
+
+        case GT_STORE_LCL_FLD:
             srcCount = BuildStoreLoc(tree->AsLclVarCommon());
             break;
 
@@ -727,16 +717,8 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
         case GT_NULLCHECK:
-            // Unlike ARM, ARM64 implements NULLCHECK as a load to REG_ZR, so no internal register
-            // is required, and it is not a localDefUse.
-            assert(dstCount == 0);
-            assert(!tree->gtGetOp1()->isContained());
-            BuildUse(tree->gtGetOp1());
-            srcCount = 1;
-            break;
-
         case GT_IND:
-            assert(dstCount == 1);
+            assert(dstCount == (tree->OperIs(GT_NULLCHECK) ? 0 : 1));
             srcCount = BuildIndir(tree->AsIndir());
             break;
 
@@ -775,10 +757,10 @@ int LinearScan::BuildNode(GenTree* tree)
         isLocalDefUse = true;
     }
     // We need to be sure that we've set srcCount and dstCount appropriately
-    assert((dstCount < 2) || tree->IsMultiRegCall());
+    assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsUnusedValue() || (dstCount != 0));
-    assert(dstCount == tree->GetRegisterDstCount());
+    assert(dstCount == tree->GetRegisterDstCount(compiler));
     return srcCount;
 }
 
@@ -985,92 +967,84 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     int srcCount = 0;
     int dstCount = intrinsicTree->IsValue() ? 1 : 0;
 
-    bool mayNeedBranchTargetReg = false;
+    const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
 
-    if ((intrin.category == HW_Category_IMM) && !HWIntrinsicInfo::NoJmpTableImm(intrin.id))
+    if (hasImmediateOperand && !HWIntrinsicInfo::NoJmpTableImm(intrin.id))
     {
         // We may need to allocate an additional general-purpose register when an intrinsic has a non-const immediate
         // operand and the intrinsic does not have an alternative non-const fallback form.
         // However, for a case when the operand can take only two possible values - zero and one
-        // the codegen will use cbnz to do conditional branch.
+        // the codegen can use cbnz to do conditional branch, so such register is not needed.
+
+        bool needBranchTargetReg = false;
 
         int immLowerBound = 0;
         int immUpperBound = 0;
 
-        HWIntrinsicInfo::lookupImmBounds(intrin.id, intrinsicTree->gtSIMDSize, intrinsicTree->gtSIMDBaseType,
-                                         &immLowerBound, &immUpperBound);
-        mayNeedBranchTargetReg = (immLowerBound != 0) || (immUpperBound != 1);
-    }
-
-    if (mayNeedBranchTargetReg)
-    {
-        bool needBranchTargetReg = false;
-
-        switch (intrin.id)
+        if (intrin.category == HW_Category_SIMDByIndexedElement)
         {
-            case NI_AdvSimd_DuplicateSelectedScalarToVector64:
-            case NI_AdvSimd_DuplicateSelectedScalarToVector128:
-            case NI_AdvSimd_Extract:
-            case NI_AdvSimd_Insert:
-            case NI_AdvSimd_ShiftLeftLogical:
-            case NI_AdvSimd_ShiftLeftLogicalSaturate:
-            case NI_AdvSimd_ShiftLeftLogicalSaturateScalar:
-            case NI_AdvSimd_ShiftLeftLogicalSaturateUnsigned:
-            case NI_AdvSimd_ShiftLeftLogicalSaturateUnsignedScalar:
-            case NI_AdvSimd_ShiftLeftLogicalScalar:
-            case NI_AdvSimd_ShiftLeftLogicalWideningLower:
-            case NI_AdvSimd_ShiftLeftLogicalWideningUpper:
-            case NI_AdvSimd_ShiftRightArithmetic:
-            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateLower:
-            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUnsignedLower:
-            case NI_AdvSimd_ShiftRightArithmeticRounded:
-            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateLower:
-            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower:
-            case NI_AdvSimd_ShiftRightArithmeticRoundedScalar:
-            case NI_AdvSimd_ShiftRightArithmeticScalar:
-            case NI_AdvSimd_ShiftRightLogical:
-            case NI_AdvSimd_ShiftRightLogicalNarrowingLower:
-            case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateLower:
-            case NI_AdvSimd_ShiftRightLogicalRounded:
-            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingLower:
-            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingSaturateLower:
-            case NI_AdvSimd_ShiftRightLogicalRoundedScalar:
-            case NI_AdvSimd_ShiftRightLogicalScalar:
-            case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
-            case NI_AdvSimd_Arm64_ShiftLeftLogicalSaturateScalar:
-            case NI_AdvSimd_Arm64_ShiftLeftLogicalSaturateUnsignedScalar:
-            case NI_AdvSimd_Arm64_ShiftRightArithmeticNarrowingSaturateScalar:
-            case NI_AdvSimd_Arm64_ShiftRightArithmeticNarrowingSaturateUnsignedScalar:
-            case NI_AdvSimd_Arm64_ShiftRightArithmeticRoundedNarrowingSaturateScalar:
-            case NI_AdvSimd_Arm64_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedScalar:
-            case NI_AdvSimd_Arm64_ShiftRightLogicalNarrowingSaturateScalar:
-            case NI_AdvSimd_Arm64_ShiftRightLogicalRoundedNarrowingSaturateScalar:
-                needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
-                break;
+            const unsigned int indexedElementSimdSize = genTypeSize(intrinsicTree->GetAuxiliaryType());
+            HWIntrinsicInfo::lookupImmBounds(intrin.id, indexedElementSimdSize, intrin.baseType, &immLowerBound,
+                                             &immUpperBound);
+        }
+        else
+        {
+            HWIntrinsicInfo::lookupImmBounds(intrin.id, intrinsicTree->gtSIMDSize, intrin.baseType, &immLowerBound,
+                                             &immUpperBound);
+        }
 
-            case NI_AdvSimd_ExtractVector64:
-            case NI_AdvSimd_ExtractVector128:
-            case NI_AdvSimd_ShiftRightArithmeticAdd:
-            case NI_AdvSimd_ShiftRightArithmeticAddScalar:
-            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUnsignedUpper:
-            case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUpper:
-            case NI_AdvSimd_ShiftRightArithmeticRoundedAdd:
-            case NI_AdvSimd_ShiftRightArithmeticRoundedAddScalar:
-            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper:
-            case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUpper:
-            case NI_AdvSimd_ShiftRightLogicalAdd:
-            case NI_AdvSimd_ShiftRightLogicalAddScalar:
-            case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateUpper:
-            case NI_AdvSimd_ShiftRightLogicalNarrowingUpper:
-            case NI_AdvSimd_ShiftRightLogicalRoundedAdd:
-            case NI_AdvSimd_ShiftRightLogicalRoundedAddScalar:
-            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingSaturateUpper:
-            case NI_AdvSimd_ShiftRightLogicalRoundedNarrowingUpper:
-                needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
-                break;
+        if ((immLowerBound != 0) || (immUpperBound != 1))
+        {
+            if ((intrin.category == HW_Category_SIMDByIndexedElement) ||
+                (intrin.category == HW_Category_ShiftLeftByImmediate) ||
+                (intrin.category == HW_Category_ShiftRightByImmediate))
+            {
+                switch (intrin.numOperands)
+                {
+                    case 4:
+                        needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
+                        break;
 
-            default:
-                unreached();
+                    case 3:
+                        needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
+                        break;
+
+                    case 2:
+                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+            else
+            {
+                switch (intrin.id)
+                {
+                    case NI_AdvSimd_DuplicateSelectedScalarToVector64:
+                    case NI_AdvSimd_DuplicateSelectedScalarToVector128:
+                    case NI_AdvSimd_Extract:
+                    case NI_AdvSimd_Insert:
+                    case NI_AdvSimd_LoadAndInsertScalar:
+                    case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
+                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
+                        break;
+
+                    case NI_AdvSimd_ExtractVector64:
+                    case NI_AdvSimd_ExtractVector128:
+                    case NI_AdvSimd_StoreSelectedScalar:
+                        needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
+                        break;
+
+                    case NI_AdvSimd_Arm64_InsertSelectedScalar:
+                        assert(intrin.op2->isContainedIntOrIImmed());
+                        assert(intrin.op4->isContainedIntOrIImmed());
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
         }
 
         if (needBranchTargetReg)
@@ -1109,24 +1083,77 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         }
     }
 
-    if (intrin.op2 != nullptr)
+    if ((intrin.category == HW_Category_SIMDByIndexedElement) && (genTypeSize(intrin.baseType) == 2))
     {
-        if (isRMW)
-        {
-            srcCount += BuildDelayFreeUses(intrin.op2);
+        // Some "Advanced SIMD scalar x indexed element" and "Advanced SIMD vector x indexed element" instructions (e.g.
+        // "MLA (by element)") have encoding that restricts what registers that can be used for the indexed element when
+        // the element size is H (i.e. 2 bytes).
+        assert(intrin.op2 != nullptr);
 
-            if (intrin.op3 != nullptr)
+        if ((intrin.op4 != nullptr) || ((intrin.op3 != nullptr) && !hasImmediateOperand))
+        {
+            if (isRMW)
             {
-                srcCount += BuildDelayFreeUses(intrin.op3);
+                srcCount += BuildDelayFreeUses(intrin.op2);
+                srcCount += BuildDelayFreeUses(intrin.op3, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS);
+            }
+            else
+            {
+                srcCount += BuildOperandUses(intrin.op2);
+                srcCount += BuildOperandUses(intrin.op3, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS);
+            }
+
+            if (intrin.op4 != nullptr)
+            {
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op4));
+
+                srcCount += BuildOperandUses(intrin.op4);
             }
         }
         else
         {
-            srcCount += BuildOperandUses(intrin.op2);
+            assert(!isRMW);
+
+            srcCount += BuildOperandUses(intrin.op2, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS);
 
             if (intrin.op3 != nullptr)
             {
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op3));
+
                 srcCount += BuildOperandUses(intrin.op3);
+            }
+        }
+    }
+    else
+    {
+        if (intrin.op2 != nullptr)
+        {
+            if (isRMW)
+            {
+                srcCount += BuildDelayFreeUses(intrin.op2);
+
+                if (intrin.op3 != nullptr)
+                {
+                    srcCount += BuildDelayFreeUses(intrin.op3);
+
+                    if (intrin.op4 != nullptr)
+                    {
+                        srcCount += BuildDelayFreeUses(intrin.op4);
+                    }
+                }
+            }
+            else
+            {
+                srcCount += BuildOperandUses(intrin.op2);
+
+                if (intrin.op3 != nullptr)
+                {
+                    assert(intrin.op4 == nullptr);
+
+                    srcCount += BuildOperandUses(intrin.op3);
+                }
             }
         }
     }

@@ -62,11 +62,18 @@
         <PackageTargetRuntime>netbsd</PackageTargetRuntime>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'SunOS'">
+    <When Condition="'$(TargetFrameworkSuffix)' == 'illumos'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
-        <TargetsSunOS>true</TargetsSunOS>
-        <PackageTargetRuntime>sunos</PackageTargetRuntime>
+        <TargetsIllumos>true</TargetsIllumos>
+        <PackageTargetRuntime>illumos</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'Solaris'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsSolaris>true</TargetsSolaris>
+        <PackageTargetRuntime>solaris</PackageTargetRuntime>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetFrameworkSuffix)' == 'Browser'">

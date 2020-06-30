@@ -941,11 +941,6 @@ void InvokeUtil::SetValidField(CorElementType fldType,
     }
     CONTRACTL_END;
 
-    // We don't allow setting the field of nullable<T> (hasValue and value)
-    // Because you can't independantly set them for this type.
-    if (!declaringType.IsNull() && Nullable::IsNullableType(declaringType.GetMethodTable()))
-        COMPlusThrow(kNotSupportedException);
-
     // call the <cinit>
     OBJECTREF Throwable = NULL;
 
@@ -954,26 +949,27 @@ void InvokeUtil::SetValidField(CorElementType fldType,
     {
         pDeclMT = declaringType.GetMethodTable();
 
+        // We don't allow setting the field of nullable<T> (hasValue and value)
+        // Because you can't independently set them for this type.
+        if (Nullable::IsNullableType(pDeclMT))
+            COMPlusThrow(kNotSupportedException);
+
         if (pDeclMT->IsSharedByGenericInstantiations())
             COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
+    }
+    else
+    {
+        pDeclMT = pField->GetModule()->GetGlobalMethodTable();
     }
 
     if (*pDomainInitialized == FALSE)
     {
         EX_TRY
         {
-        if (declaringType.IsNull())
-        {
-            pField->GetModule()->GetGlobalMethodTable()->EnsureInstanceActive();
-            pField->GetModule()->GetGlobalMethodTable()->CheckRunClassInitThrowing();
-        }
-        else
-        {
             pDeclMT->EnsureInstanceActive();
             pDeclMT->CheckRunClassInitThrowing();
 
             *pDomainInitialized = TRUE;
-        }
         }
         EX_CATCH_THROWABLE(&Throwable);
     }
@@ -988,6 +984,18 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         OBJECTREF except = CreateTargetExcept(&Throwable);
         COMPlusThrow(except);
         GCPROTECT_END();
+    }
+
+    // Verify we're not trying to set the value of a static initonly field
+    // once the class has been initialized.
+    if (pField->IsStatic() && pDeclMT->IsClassInited() && IsFdInitOnly(pField->GetAttributes()))
+    {
+        DefineFullyQualifiedNameForClassW();
+        SString ssFieldName(SString::Utf8, pField->GetName());
+        COMPlusThrow(kFieldAccessException,
+            IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD,
+            ssFieldName.GetUnicode(),
+            GetFullyQualifiedNameForClassW(pDeclMT));
     }
 
     // Set the field
@@ -1162,26 +1170,28 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
     {
         pDeclMT = declaringType.GetMethodTable();
 
+        // We don't allow getting the field just so we don't have more specical
+        // cases than we need to.  Then we need at least the throw check to ensure
+        // we don't allow data corruption.
+        if (Nullable::IsNullableType(pDeclMT))
+            COMPlusThrow(kNotSupportedException);
+
         if (pDeclMT->IsSharedByGenericInstantiations())
             COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
+    }
+    else
+    {
+        pDeclMT = pField->GetModule()->GetGlobalMethodTable();
     }
 
     if (*pDomainInitialized == FALSE)
     {
         EX_TRY
         {
-        if (declaringType.IsNull())
-        {
-            pField->GetModule()->GetGlobalMethodTable()->EnsureInstanceActive();
-            pField->GetModule()->GetGlobalMethodTable()->CheckRunClassInitThrowing();
-        }
-        else
-        {
             pDeclMT->EnsureInstanceActive();
             pDeclMT->CheckRunClassInitThrowing();
 
             *pDomainInitialized = TRUE;
-        }
         }
         EX_CATCH_THROWABLE(&Throwable);
     }
@@ -1198,12 +1208,6 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
         COMPlusThrow(except);
         GCPROTECT_END();
     }
-
-    // We don't allow getting the field just so we don't have more specical
-    // cases than we need to.  The we need at least the throw check to insure
-    // we don't allow data corruption, but
-    if (!declaringType.IsNull() && Nullable::IsNullableType(pDeclMT))
-        COMPlusThrow(kNotSupportedException);
 
     CorElementType fieldElementType = pField->GetFieldType();
 

@@ -3290,6 +3290,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface7*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface8)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface8*>(this);
+    }
     else
     {
         *iface = NULL;

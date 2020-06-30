@@ -3,6 +3,8 @@
 
   <ItemGroup Condition="'$(TargetsWindows)'=='true' OR '$(DotNetBuildFromSource)'=='true'">
     <ProjectReference Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.pkgproj" />
+    <ProjectReference Include="Microsoft.ILVerification\Microsoft.ILVerification.pkgproj" />
+    <ProjectReference Include="dotnet-ilverify\dotnet-ilverify.pkgproj" />
   </ItemGroup>
 
   <ItemGroup>

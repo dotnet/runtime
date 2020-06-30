@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Logging
 
         public void Configure(LoggerFilterOptions options)
         {
-            foreach (var rule in _eventSource.GetFilterRules())
+            foreach (LoggerFilterRule rule in _eventSource.GetFilterRules())
             {
                 options.Rules.Add(rule);
             }

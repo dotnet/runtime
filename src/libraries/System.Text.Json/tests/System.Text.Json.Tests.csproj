@@ -101,9 +101,9 @@
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="Serialization\ReadScenarioTests.cs" />
     <Compile Include="Serialization\ReadValueTests.cs" />
-    <Compile Include="Serialization\ReferenceHandlingTests.cs" />
-    <Compile Include="Serialization\ReferenceHandlingTests.Deserialize.cs" />
-    <Compile Include="Serialization\ReferenceHandlingTests.Serialize.cs" />
+    <Compile Include="Serialization\ReferenceHandlerTests.cs" />
+    <Compile Include="Serialization\ReferenceHandlerTests.Deserialize.cs" />
+    <Compile Include="Serialization\ReferenceHandlerTests.Serialize.cs" />
     <Compile Include="Serialization\SampleTestData.OrderPayload.cs" />
     <Compile Include="Serialization\SerializationWrapper.cs" />
     <Compile Include="Serialization\SpanTests.cs" />

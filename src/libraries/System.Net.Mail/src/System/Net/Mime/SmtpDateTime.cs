@@ -108,7 +108,7 @@ namespace System.Net.Mime
 
         // true if the time zone is unspecified i.e. -0000
         // the time zone will usually be specified
-        private readonly bool _unknownTimeZone = false;
+        private readonly bool _unknownTimeZone;
 
         #endregion
 

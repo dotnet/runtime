@@ -1028,23 +1028,7 @@ public:
         PARENT::Add(KeyValuePair<KEY,VALUE>(key, value));
     }
 
-    BOOL Lookup(KEY key, VALUE* pValue) const
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            PRECONDITION(key != (KEY)0);
-        }
-        CONTRACTL_END;
-
-        const KeyValuePair<KEY,VALUE> *pRet = PARENT::LookupPtr(key);
-        if (pRet == NULL)
-            return FALSE;
-
-        *pValue = pRet->Value();
-        return TRUE;
-    }
+    BOOL Lookup(KEY key, VALUE* pValue) const;
 };
 
 template <typename KEY, typename VALUE>

@@ -4,9 +4,8 @@
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.Pkcs.Asn1
 {
@@ -53,7 +52,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 if (wroteValue)
                     throw new CryptographicException();
 
-                writer.WriteOctetString(new Asn1Tag(TagClass.ContextSpecific, 0), SubjectKeyIdentifier.Value.Span);
+                writer.WriteOctetString(SubjectKeyIdentifier.Value.Span, new Asn1Tag(TagClass.ContextSpecific, 0));
                 wroteValue = true;
             }
 
@@ -65,14 +64,33 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
         internal static SignerIdentifierAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, encoded, out SignerIdentifierAsn decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                Decode(ref reader, encoded, out SignerIdentifierAsn decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out SignerIdentifierAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out SignerIdentifierAsn decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
@@ -90,7 +108,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             else if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
 
-                if (reader.TryReadPrimitiveOctetStringBytes(new Asn1Tag(TagClass.ContextSpecific, 0), out tmpSpan))
+                if (reader.TryReadPrimitiveOctetString(out tmpSpan, new Asn1Tag(TagClass.ContextSpecific, 0)))
                 {
                     decoded.SubjectKeyIdentifier = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
                 }

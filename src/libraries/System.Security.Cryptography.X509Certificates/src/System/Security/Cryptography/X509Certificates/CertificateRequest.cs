@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using Internal.Cryptography;
@@ -383,13 +384,64 @@ namespace System.Security.Cryptography.X509Certificates
             DateTimeOffset notAfter,
             byte[] serialNumber)
         {
+            // The null case for serialNumber is the same exception type and message as an empty array,
+            // so just let it turn into the empty span and call the span overload.
+            return Create(issuerCertificate, notBefore, notAfter, new ReadOnlySpan<byte>(serialNumber));
+        }
+
+        /// <summary>
+        /// Create a certificate using the established subject, key, and optional extensions using
+        /// the provided certificate as the issuer.
+        /// </summary>
+        /// <param name="issuerCertificate">
+        ///   An X509Certificate2 instance representing the issuing Certificate Authority (CA).
+        /// </param>
+        /// <param name="notBefore">
+        ///   The oldest date and time where this certificate is considered valid.
+        ///   Typically <see cref="DateTimeOffset.UtcNow"/>, plus or minus a few seconds.
+        /// </param>
+        /// <param name="notAfter">
+        ///   The date and time where this certificate is no longer considered valid.
+        /// </param>
+        /// <param name="serialNumber">
+        ///   The serial number to use for the new certificate. This value should be unique per issuer.
+        ///   The value is interpreted as an unsigned (big) integer in big endian byte ordering.
+        /// </param>
+        /// <returns>
+        ///   An <see cref="X509Certificate2"/> with the specified values. The returned object will
+        ///   not assert <see cref="X509Certificate2.HasPrivateKey" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="issuerCertificate"/> is null.</exception>
+        /// <exception cref="ArgumentException">
+        ///   The <see cref="X509Certificate2.HasPrivateKey"/> value for <paramref name="issuerCertificate"/> is false.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The type of signing key represented by <paramref name="issuerCertificate"/> could not be determined.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="notAfter"/> represents a date and time before <paramref name="notBefore"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException"><paramref name="serialNumber"/> has length 0.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="issuerCertificate"/> has a different key algorithm than the requested certificate.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   <paramref name="issuerCertificate"/> is an RSA certificate and this object was created via a constructor
+        ///   which does not accept a <see cref="RSASignaturePadding"/> value.
+        /// </exception>
+        public X509Certificate2 Create(
+            X509Certificate2 issuerCertificate,
+            DateTimeOffset notBefore,
+            DateTimeOffset notAfter,
+            ReadOnlySpan<byte> serialNumber)
+        {
             if (issuerCertificate == null)
                 throw new ArgumentNullException(nameof(issuerCertificate));
             if (!issuerCertificate.HasPrivateKey)
                 throw new ArgumentException(SR.Cryptography_CertReq_IssuerRequiresPrivateKey, nameof(issuerCertificate));
             if (notAfter < notBefore)
                 throw new ArgumentException(SR.Cryptography_CertReq_DatesReversed);
-            if (serialNumber == null || serialNumber.Length < 1)
+            if (serialNumber.IsEmpty)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(serialNumber));
 
             if (issuerCertificate.PublicKey.Oid.Value != PublicKey.Oid.Value)
@@ -504,7 +556,8 @@ namespace System.Security.Cryptography.X509Certificates
         ///   The value is interpreted as an unsigned (big) integer in big endian byte ordering.
         /// </param>
         /// <returns>
-        ///   The ASN.1 DER-encoded certificate, suitable to be passed to <see cref="X509Certificate2(byte[])"/>.
+        ///   An <see cref="X509Certificate2"/> with the specified values. The returned object will
+        ///   not assert <see cref="X509Certificate2.HasPrivateKey" />.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="issuerName"/> is null.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="generator"/> is null.</exception>
@@ -519,6 +572,47 @@ namespace System.Security.Cryptography.X509Certificates
             DateTimeOffset notBefore,
             DateTimeOffset notAfter,
             byte[] serialNumber)
+        {
+            // The null case for serialNumber is the same exception type and message as an empty array,
+            // so just let it turn into the empty span and call the span overload.
+            return Create(issuerName, generator, notBefore, notAfter, new ReadOnlySpan<byte>(serialNumber));
+        }
+
+        /// <summary>
+        /// Sign the current certificate request to create a chain-signed or self-signed certificate.
+        /// </summary>
+        /// <param name="issuerName">The X500DistinguishedName for the Issuer</param>
+        /// <param name="generator">
+        ///   An <see cref="X509SignatureGenerator"/> representing the issuing certificate authority.
+        /// </param>
+        /// <param name="notBefore">
+        ///   The oldest date and time where this certificate is considered valid.
+        ///   Typically <see cref="DateTimeOffset.UtcNow"/>, plus or minus a few seconds.
+        /// </param>
+        /// <param name="notAfter">
+        ///   The date and time where this certificate is no longer considered valid.
+        /// </param>
+        /// <param name="serialNumber">
+        ///   The serial number to use for the new certificate. This value should be unique per issuer.
+        ///   The value is interpreted as an unsigned (big) integer in big endian byte ordering.
+        /// </param>
+        /// <returns>
+        ///   An <see cref="X509Certificate2"/> with the specified values. The returned object will
+        ///   not assert <see cref="X509Certificate2.HasPrivateKey" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="issuerName"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="generator"/> is null.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="notAfter"/> represents a date and time before <paramref name="notBefore"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException"><paramref name="serialNumber"/> has length 0.</exception>
+        /// <exception cref="CryptographicException">Any error occurs during the signing operation.</exception>
+        public X509Certificate2 Create(
+            X500DistinguishedName issuerName,
+            X509SignatureGenerator generator,
+            DateTimeOffset notBefore,
+            DateTimeOffset notAfter,
+            ReadOnlySpan<byte> serialNumber)
         {
             if (issuerName == null)
                 throw new ArgumentNullException(nameof(issuerName));
@@ -539,17 +633,19 @@ namespace System.Security.Cryptography.X509Certificates
                 Helpers.ValidateDer(signatureAlgorithmAsn.Parameters.Value);
             }
 
+            ArraySegment<byte> normalizedSerial = NormalizeSerialNumber(serialNumber);
+
             TbsCertificateAsn tbsCertificate = new TbsCertificateAsn
             {
                 Version = 2,
-                SerialNumber = NormalizeSerialNumber(serialNumber),
+                SerialNumber = normalizedSerial,
                 SignatureAlgorithm = signatureAlgorithmAsn,
                 Issuer = issuerName.RawData,
                 SubjectPublicKeyInfo = new SubjectPublicKeyInfoAsn
                 {
                     Algorithm = new AlgorithmIdentifierAsn
                     {
-                        Algorithm = PublicKey.Oid,
+                        Algorithm = PublicKey.Oid!.Value!,
                         Parameters = PublicKey.EncodedParameters.RawData,
                     },
                     SubjectPublicKey = PublicKey.EncodedKeyValue.RawData,
@@ -586,44 +682,49 @@ namespace System.Security.Cryptography.X509Certificates
                 tbsCertificate.Extensions = extensionAsns.ToArray();
             }
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            using (AsnWriter signedWriter = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            tbsCertificate.Encode(writer);
+
+            byte[] encodedTbsCertificate = writer.Encode();
+            writer.Reset();
+
+            CertificateAsn certificate = new CertificateAsn
             {
-                tbsCertificate.Encode(writer);
+                TbsCertificate = tbsCertificate,
+                SignatureAlgorithm = signatureAlgorithmAsn,
+                SignatureValue = generator.SignData(encodedTbsCertificate, HashAlgorithm),
+            };
 
-                byte[] encodedTbsCertificate = writer.Encode();
-                CertificateAsn certificate = new CertificateAsn
-                {
-                    TbsCertificate = tbsCertificate,
-                    SignatureAlgorithm = signatureAlgorithmAsn,
-                    SignatureValue = generator.SignData(encodedTbsCertificate, HashAlgorithm),
-                };
-
-                certificate.Encode(signedWriter);
-                return new X509Certificate2(signedWriter.Encode());
-            }
+            certificate.Encode(writer);
+            X509Certificate2 ret = new X509Certificate2(writer.Encode());
+            CryptoPool.Return(normalizedSerial);
+            return ret;
         }
 
-        private ReadOnlyMemory<byte> NormalizeSerialNumber(byte[] serialNumber)
+        private ArraySegment<byte> NormalizeSerialNumber(ReadOnlySpan<byte> serialNumber)
         {
+            byte[] newSerialNumber;
+
             if (serialNumber[0] >= 0x80)
             {
                 // Keep the serial number unsigned by prepending a zero.
-                var newSerialNumber = new byte[serialNumber.Length + 1];
+                newSerialNumber = CryptoPool.Rent(serialNumber.Length + 1);
                 newSerialNumber[0] = 0;
-                serialNumber.CopyTo(newSerialNumber, 1);
-                return newSerialNumber;
+                serialNumber.CopyTo(newSerialNumber.AsSpan(1));
+                return new ArraySegment<byte>(newSerialNumber, 0, serialNumber.Length + 1);
             }
-            else
+
+            // Strip any unnecessary zeros from the beginning.
+            int leadingZeros = 0;
+            while (leadingZeros < serialNumber.Length - 1 && serialNumber[leadingZeros] == 0 && serialNumber[leadingZeros + 1] < 0x80)
             {
-                // Strip any unnecessary zeros from the beginning.
-                int leadingZeros = 0;
-                while (leadingZeros < serialNumber.Length - 1 && serialNumber[leadingZeros] == 0 && serialNumber[leadingZeros + 1] < 0x80)
-                {
-                    leadingZeros++;
-                }
-                return new ReadOnlyMemory<byte>(serialNumber, leadingZeros, serialNumber.Length - leadingZeros);
+                leadingZeros++;
             }
+
+            int contentLength = serialNumber.Length - leadingZeros;
+            newSerialNumber = CryptoPool.Rent(contentLength);
+            serialNumber.Slice(leadingZeros).CopyTo(newSerialNumber);
+            return new ArraySegment<byte>(newSerialNumber, 0, contentLength);
         }
     }
 }

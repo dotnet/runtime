@@ -127,6 +127,11 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.HostFactoryResolver.Sources",
+    "Description": "Internal package for sharing Microsoft.Extensions.Hosting.HostFactoryResolver type.",
+    "CommonTypes": []
+  },
+  {
     "Name": "Microsoft.Extensions.Hosting",
     "Description": "Hosting and startup infrastructures for applications.",
     "CommonTypes": []
@@ -936,6 +941,22 @@
     ]
   },
   {
+    "Name": "System.Formats.Asn1",
+    "Description": "Provides classes that can read and write the ASN.1 BER, CER, and DER data formats.",
+    "CommonTypes": [
+        "System.Formats.Asn1.AsnReader",
+        "System.Formats.Asn1.AsnWriter"
+    ]
+  },
+  {
+    "Name": "System.Formats.Cbor",
+    "Description": "Provides classes that can read and write the CBOR data format.",
+    "CommonTypes": [
+        "System.Formats.Cbor.CborReader",
+        "System.Formats.Cbor.CborWriter"
+    ]
+  },
+  {
     "Name": "System.Globalization",
     "Description": "Provides classes that define culture-related information, including language, country/region, calendars in use, format patterns for dates, currency, and numbers, and sort order for strings.",
     "CommonTypes": [
@@ -1681,13 +1702,6 @@
       "System.Runtime.Versioning.FrameworkName",
       "System.StringComparer",
       "System.IO.Path"
-    ]
-  },
-  {
-    "Name": "System.Runtime.Intrinsics.Experimental",
-    "Description": "Provides APIs for accessing processor specific instructions.",
-    "CommonTypes": [
-        "System.Runtime.Intrinsics.Arm.Arm64"
     ]
   },
   {

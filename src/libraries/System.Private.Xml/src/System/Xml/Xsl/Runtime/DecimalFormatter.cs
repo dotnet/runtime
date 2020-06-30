@@ -180,7 +180,7 @@ namespace System.Xml.Xsl.Runtime
                     }
                 }
                 // Escape characters having special meaning for CLR
-                if (ClrSpecialChars.IndexOf(ch) >= 0)
+                if (ClrSpecialChars.Contains(ch))
                 {
                     temp.Append('\\');
                 }

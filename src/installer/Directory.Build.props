@@ -81,7 +81,8 @@
     <OutputRid Condition="'$(TargetOS)' == 'Linux'">linux-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'FreeBSD'">freebsd-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'NetBSD'">netbsd-$(TargetArchitecture)</OutputRid>
-    <OutputRid Condition="'$(TargetOS)' == 'SunOS'">sunos-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(TargetOS)' == 'illumos'">illumos-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(TargetOS)' == 'Solaris'">solaris-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'iOS'">ios-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'tvOS'">tvos-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'Android'">android-$(TargetArchitecture)</OutputRid>
@@ -124,8 +125,8 @@
   <PropertyGroup>
     <DisableCrossgen>false</DisableCrossgen>
     <DisableCrossgen Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableCrossgen>
-    <!-- Disable cross-gen on FreeBSD, NetBSD and SunOS for now. This can be revisited when we have full support. -->
-    <DisableCrossgen Condition="'$(TargetOS)'=='FreeBSD' Or '$(TargetOS)'=='NetBSD' Or '$(TargetOS)'=='SunOS'">true</DisableCrossgen>
+    <!-- Disable cross-gen on FreeBSD, NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
+    <DisableCrossgen Condition="'$(TargetOS)'=='FreeBSD' Or '$(TargetOS)'=='NetBSD' Or '$(TargetOS)'=='illumos' Or '$(TargetOS)'=='Solaris'">true</DisableCrossgen>
     <OutputVersionBadge>$(AssetOutputPath)sharedfx_$(OutputRid)_$(Configuration)_version_badge.svg</OutputVersionBadge>
   </PropertyGroup>
 
@@ -291,9 +292,15 @@
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
-    <When Condition="$(OutputRid.StartsWith('sunos'))">
+    <When Condition="$(OutputRid.StartsWith('illumos'))">
       <PropertyGroup>
-        <TargetsSunOS>true</TargetsSunOS>
+        <TargetsIllumos>true</TargetsIllumos>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(OutputRid.StartsWith('solaris'))">
+      <PropertyGroup>
+        <TargetsSolaris>true</TargetsSolaris>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>

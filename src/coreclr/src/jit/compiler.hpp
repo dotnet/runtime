@@ -4197,6 +4197,13 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
 
+    if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+    {
+        // Fields of dependently promoted structs may only be initialized in the prolog when the whole
+        // struct is initialized in the prolog.
+        return fgVarNeedsExplicitZeroInit(varDsc->lvParentLcl, bbInALoop, bbIsReturn);
+    }
+
     if (bbInALoop && !bbIsReturn)
     {
         return true;
@@ -4668,6 +4675,11 @@ inline static bool StructHasOverlappingFields(DWORD attribs)
 inline static bool StructHasCustomLayout(DWORD attribs)
 {
     return ((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0);
+}
+
+inline static bool StructHasNoPromotionFlagSet(DWORD attribs)
+{
+    return ((attribs & CORINFO_FLG_DONT_PROMOTE) != 0);
 }
 
 /*****************************************************************************

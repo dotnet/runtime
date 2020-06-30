@@ -61,6 +61,7 @@
 #include "typedesc.h"
 #include "array.h"
 #include "castcache.h"
+#include "dynamicinterfacecastable.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -605,6 +606,17 @@ BOOL MethodTable::IsICastable()
 #endif
 }
 
+void MethodTable::SetIDynamicInterfaceCastable()
+{
+    LIMITED_METHOD_CONTRACT;
+    SetFlag(enum_flag_IDynamicInterfaceCastable);
+}
+
+BOOL MethodTable::IsIDynamicInterfaceCastable()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetFlag(enum_flag_IDynamicInterfaceCastable);
+}
 
 #endif // !DACCESS_COMPILE
 
@@ -759,6 +771,27 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         RETURN(pResultMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
     }
 #endif
+
+    // For IDynamicInterfaceCastable, instead of trying to find method implementation in the real object type
+    // we call GetInterfaceImplementation on the object and call GetMethodDescForInterfaceMethod
+    // with whatever type it returns.
+    if (pServerMT->IsIDynamicInterfaceCastable()
+        && !pItfMD->HasMethodInstantiation()
+        && !TypeHandle(pServerMT).CanCastTo(ownerType)) // we need to make sure object doesn't implement this interface in a natural way
+    {
+        TypeHandle implTypeHandle;
+        OBJECTREF obj = *pServer;
+
+        GCPROTECT_BEGIN(obj);
+        OBJECTREF implTypeRef = DynamicInterfaceCastable::GetInterfaceImplementation(&obj, ownerType);
+        _ASSERTE(implTypeRef != NULL);
+
+        ReflectClassBaseObject *implTypeObj = ((ReflectClassBaseObject *)OBJECTREFToObject(implTypeRef));
+        implTypeHandle = implTypeObj->GetType();
+        GCPROTECT_END();
+
+        RETURN(implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
+    }
 
 #ifdef FEATURE_COMINTEROP
     if (pServerMT->IsComObjectType() && !pItfMD->HasMethodInstantiation())
@@ -1673,8 +1706,8 @@ BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited
                                 CanCastToClass(pTargetMT, pVisited);
 
     // We only consider type-based conversion rules here.
-    // Therefore a negative result cannot rule out convertibility for ICastable and COM objects
-    if (result || !(pTargetMT->IsInterface() && (this->IsComObjectType() || this->IsICastable())))
+    // Therefore a negative result cannot rule out convertibility for ICastable, IDynamicInterfaceCastable, and COM objects
+    if (result || !(pTargetMT->IsInterface() && (this->IsComObjectType() || this->IsICastable() || this->IsIDynamicInterfaceCastable())))
     {
         CastCache::TryAddToCache(this, pTargetMT, (BOOL)result);
     }
@@ -3944,31 +3977,6 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
 
     GetSavedExtent(&start, &end);
 
-#ifdef FEATURE_COMINTEROP
-    if (HasGuidInfo())
-    {
-        // Make sure our GUID is computed
-        GUID dummy;
-        if (SUCCEEDED(GetGuidNoThrow(&dummy, TRUE, FALSE)))
-        {
-            GuidInfo* pGuidInfo = GetGuidInfo();
-            _ASSERTE(pGuidInfo != NULL);
-
-            image->StoreStructure(pGuidInfo,
-                                    sizeof(GuidInfo),
-                                    DataImage::ITEM_GUID_INFO);
-
-            Module *pModule = GetModule();
-        }
-        else
-        {
-            GuidInfo** ppGuidInfo = GetGuidInfoPtr();
-            *ppGuidInfo = NULL;
-        }
-    }
-#endif // FEATURE_COMINTEROP
-
-
 #ifdef _DEBUG
     if (GetDebugClassName() != NULL && !image->IsStored(GetDebugClassName()))
         image->StoreStructure(debug_m_szClassName, (ULONG)(strlen(GetDebugClassName())+1),
@@ -4385,15 +4393,6 @@ BOOL MethodTable::IsWriteable()
     // (see code:MethodTable::AddDynamicInterface)
     if (HasDynamicInterfaceMap())
         return TRUE;
-
-    // CCW template is created lazily and when that happens, the
-    // pointer is written directly into the method table.
-    if (HasCCWTemplate())
-        return TRUE;
-
-    // RCW per-type data is created lazily at run-time.
-    if (HasRCWPerTypeData())
-        return TRUE;
 #endif
 
     return FALSE;
@@ -4588,35 +4587,6 @@ void MethodTable::Fixup(DataImage *image)
     _ASSERTE(GetWriteableData());
     image->FixupPlainOrRelativePointerField(this, &MethodTable::m_pWriteableData);
     m_pWriteableData.GetValue()->Fixup(image, this, needsRestore);
-
-#ifdef FEATURE_COMINTEROP
-    if (HasGuidInfo())
-    {
-        GuidInfo **ppGuidInfo = GetGuidInfoPtr();
-        if (*ppGuidInfo != NULL)
-        {
-            image->FixupPointerField(this, (BYTE *)ppGuidInfo - (BYTE *)this);
-        }
-        else
-        {
-            image->ZeroPointerField(this, (BYTE *)ppGuidInfo - (BYTE *)this);
-        }
-    }
-
-    if (HasCCWTemplate())
-    {
-        ComCallWrapperTemplate **ppTemplate = GetCCWTemplatePtr();
-        image->ZeroPointerField(this, (BYTE *)ppTemplate - (BYTE *)this);
-    }
-
-    if (HasRCWPerTypeData())
-    {
-        // it would be nice to save these but the impact on mscorlib.ni size is prohibitive
-        RCWPerTypeData **ppData = GetRCWPerTypeDataPtr();
-        image->ZeroPointerField(this, (BYTE *)ppData - (BYTE *)this);
-    }
-#endif // FEATURE_COMINTEROP
-
 
     //
     // Fix flags
@@ -6594,6 +6564,130 @@ void ThrowExceptionForConflictingOverride(
         assemblyName);
 }
 
+namespace
+{
+    bool TryGetCandidateImplementation(
+        MethodTable *pMT,
+        MethodDesc *interfaceMD,
+        MethodTable *interfaceMT,
+        BOOL allowVariance,
+        MethodDesc **candidateMD)
+    {
+        *candidateMD = NULL;
+
+        MethodDesc *candidateMaybe = NULL;
+        if (pMT == interfaceMT)
+        {
+            if (!interfaceMD->IsAbstract())
+            {
+                // exact match
+                candidateMaybe = interfaceMD;
+            }
+        }
+        else if (pMT->CanCastToInterface(interfaceMT))
+        {
+            if (pMT->HasSameTypeDefAs(interfaceMT))
+            {
+                if (allowVariance && !interfaceMD->IsAbstract())
+                {
+                    // Generic variance match - we'll instantiate pCurMD with the right type arguments later
+                    candidateMaybe = interfaceMD;
+                }
+            }
+            else
+            {
+                //
+                // A more specific interface - search for an methodimpl for explicit override
+                // Implicit override in default interface methods are not allowed
+                //
+                MethodTable::MethodIterator methodIt(pMT);
+                for (; methodIt.IsValid() && candidateMaybe == NULL; methodIt.Next())
+                {
+                    MethodDesc *pMD = methodIt.GetMethodDesc();
+                    int targetSlot = interfaceMD->GetSlot();
+
+                    // If this is not a MethodImpl, it can't be implementing the method we're looking for
+                    if (!pMD->IsMethodImpl())
+                        continue;
+
+                    // We have a MethodImpl - iterate over all the declarations it's implementing,
+                    // looking for the interface method we need.
+                    MethodImpl::Iterator it(pMD);
+                    for (; it.IsValid() && candidateMaybe == NULL; it.Next())
+                    {
+                        MethodDesc *pDeclMD = it.GetMethodDesc();
+
+                        // Is this the right slot?
+                        if (pDeclMD->GetSlot() != targetSlot)
+                            continue;
+
+                        // Is this the right interface?
+                        if (!pDeclMD->HasSameMethodDefAs(interfaceMD))
+                            continue;
+
+                        if (interfaceMD->HasClassInstantiation())
+                        {
+                            // pInterfaceMD will be in the canonical form, so we need to check the specific
+                            // instantiation against pInterfaceMT.
+                            //
+                            // The parent of pDeclMD is unreliable for this purpose because it may or
+                            // may not be canonicalized. Let's go from the metadata.
+
+                            SigTypeContext typeContext = SigTypeContext(pMT);
+
+                            mdTypeRef tkParent;
+                            IfFailThrow(pMD->GetModule()->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
+
+                            MethodTable *pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
+                                pMD->GetModule(),
+                                tkParent,
+                                &typeContext).AsMethodTable();
+
+                            // We do CanCastToInterface to also cover variance.
+                            // We already know this is a method on the same type definition as the (generic)
+                            // interface but we need to make sure the instantiations match.
+                            if ((allowVariance && pDeclMT->CanCastToInterface(interfaceMT))
+                                || pDeclMT == interfaceMT)
+                            {
+                                // We have a match
+                                candidateMaybe = pMD;
+                            }
+                        }
+                        else
+                        {
+                            // No generics involved. If the method definitions match, it's a match.
+                            candidateMaybe = pMD;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (candidateMaybe == NULL)
+            return false;
+
+        if (candidateMaybe->HasClassOrMethodInstantiation())
+        {
+            // Instantiate the MethodDesc
+            // We don't want generic dictionary from this pointer - we need pass secret type argument
+            // from instantiating stubs to resolve ambiguity
+            candidateMaybe = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                candidateMaybe,
+                pMT,
+                FALSE,                  // forceBoxedEntryPoint
+                candidateMaybe->HasMethodInstantiation() ?
+                candidateMaybe->AsInstantiatedMethodDesc()->IMD_GetMethodInstantiation() :
+                Instantiation(),    // for method themselves that are generic
+                FALSE,                  // allowInstParam
+                TRUE                    // forceRemoteableMethod
+            );
+        }
+
+        *candidateMD = candidateMaybe;
+        return true;
+    }
+}
+
 // Find the default interface implementation method for interface dispatch
 // It is either the interface method with default interface method implementation,
 // or an most specific interface with an explicit methodimpl overriding the method
@@ -6621,7 +6715,22 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 
     CQuickArray<MatchCandidate> candidates;
     unsigned candidatesCount = 0;
-    candidates.AllocThrows(this->GetNumInterfaces());
+
+    // Check the current method table itself
+    MethodDesc *candidateMaybe = NULL;
+    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, allowVariance, &candidateMaybe))
+    {
+        _ASSERTE(candidateMaybe != NULL);
+
+        candidates.AllocThrows(this->GetNumInterfaces() + 1);
+        candidates[candidatesCount].pMT = this;
+        candidates[candidatesCount].pMD = candidateMaybe;
+        candidatesCount++;
+    }
+    else
+    {
+        candidates.AllocThrows(this->GetNumInterfaces());
+    }
 
     //
     // Walk interface from derived class to parent class
@@ -6630,6 +6739,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     // interface methods in highly complex interface hierarchies we can revisit this
     //
     MethodTable *pMT = this;
+
     while (pMT != NULL)
     {
         MethodTable *pParentMT = pMT->GetParentMethodTable();
@@ -6646,117 +6756,13 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             while (!it.Finished())
             {
                 MethodTable *pCurMT = it.GetInterface();
-
                 MethodDesc *pCurMD = NULL;
-                if (pCurMT == pInterfaceMT)
-                {
-                    if (!pInterfaceMD->IsAbstract())
-                    {
-                        // exact match
-                        pCurMD = pInterfaceMD;
-                    }
-                }
-                else if (pCurMT->CanCastToInterface(pInterfaceMT))
-                {
-                    if (pCurMT->HasSameTypeDefAs(pInterfaceMT))
-                    {
-                        if (allowVariance && !pInterfaceMD->IsAbstract())
-                        {
-                            // Generic variance match - we'll instantiate pCurMD with the right type arguments later
-                            pCurMD = pInterfaceMD;
-                        }
-                    }
-                    else
-                    {
-                        //
-                        // A more specific interface - search for an methodimpl for explicit override
-                        // Implicit override in default interface methods are not allowed
-                        //
-                        MethodIterator methodIt(pCurMT);
-                        for (; methodIt.IsValid() && pCurMD == NULL; methodIt.Next())
-                        {
-                            MethodDesc *pMD = methodIt.GetMethodDesc();
-                            int targetSlot = pInterfaceMD->GetSlot();
-
-                            // If this is not a MethodImpl, it can't be implementing the method we're looking for
-                            if (!pMD->IsMethodImpl())
-                                continue;
-
-                            // We have a MethodImpl - iterate over all the declarations it's implementing,
-                            // looking for the interface method we need.
-                            MethodImpl::Iterator it(pMD);
-                            for (; it.IsValid() && pCurMD == NULL; it.Next())
-                            {
-                                MethodDesc *pDeclMD = it.GetMethodDesc();
-
-                                // Is this the right slot?
-                                if (pDeclMD->GetSlot() != targetSlot)
-                                    continue;
-
-                                // Is this the right interface?
-                                if (!pDeclMD->HasSameMethodDefAs(pInterfaceMD))
-                                    continue;
-
-                                if (pInterfaceMD->HasClassInstantiation())
-                                {
-                                    // pInterfaceMD will be in the canonical form, so we need to check the specific
-                                    // instantiation against pInterfaceMT.
-                                    //
-                                    // The parent of pDeclMD is unreliable for this purpose because it may or
-                                    // may not be canonicalized. Let's go from the metadata.
-
-                                    SigTypeContext typeContext = SigTypeContext(pCurMT);
-
-                                    mdTypeRef tkParent;
-                                    IfFailThrow(pMD->GetModule()->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
-
-                                    MethodTable* pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
-                                        pMD->GetModule(),
-                                        tkParent,
-                                        &typeContext).AsMethodTable();
-
-                                    // We do CanCastToInterface to also cover variance.
-                                    // We already know this is a method on the same type definition as the (generic)
-                                    // interface but we need to make sure the instantiations match.
-                                    if ((allowVariance && pDeclMT->CanCastToInterface(pInterfaceMT))
-                                        || pDeclMT == pInterfaceMT)
-                                    {
-                                        // We have a match
-                                        pCurMD = pMD;
-                                    }
-                                }
-                                else
-                                {
-                                    // No generics involved. If the method definitions match, it's a match.
-                                    pCurMD = pMD;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (pCurMD != NULL)
+                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD))
                 {
                     //
                     // Found a match. But is it a more specific match (we want most specific interfaces)
                     //
-                    if (pCurMD->HasClassOrMethodInstantiation())
-                    {
-                        // Instantiate the MethodDesc
-                        // We don't want generic dictionary from this pointer - we need pass secret type argument
-                        // from instantiating stubs to resolve ambiguity
-                        pCurMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                            pCurMD,
-                            pCurMT,
-                            FALSE,                  // forceBoxedEntryPoint
-                            pCurMD->HasMethodInstantiation() ?
-                                pCurMD->AsInstantiatedMethodDesc()->IMD_GetMethodInstantiation() :
-                                Instantiation(),    // for method themselves that are generic
-                            FALSE,                  // allowInstParam
-                            TRUE                    // forceRemoteableMethod
-                        );
-                    }
-
+                    _ASSERTE(pCurMD != NULL);
                     bool needToInsert = true;
                     bool seenMoreSpecific = false;
 
@@ -7223,7 +7229,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
 #ifdef DACCESS_COMPILE
 
     _ASSERTE(pGuid != NULL);
-    PTR_GuidInfo pGuidInfo = (bClassic ? GetClass()->GetGuidInfo() : GetGuidInfo());
+    PTR_GuidInfo pGuidInfo = GetClass()->GetGuidInfo();
     if (pGuidInfo != NULL)
        *pGuid = pGuidInfo->m_Guid;
     else
@@ -7351,35 +7357,18 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     if ((IsInterface()) && (pInfo == NULL) && (*pGuid != GUID_NULL))
     {
         AllocMemTracker amTracker;
-        BOOL bStoreGuidInfoOnEEClass = false;
-        PTR_LoaderAllocator pLoaderAllocator;
 
-#if FEATURE_COMINTEROP
-        if ((bClassic) || !HasGuidInfo())
-        {
-            bStoreGuidInfoOnEEClass = true;
-        }
-#else
         // We will always store the GuidInfo on the methodTable.
-        bStoreGuidInfoOnEEClass = true;
-#endif
-        if(bStoreGuidInfoOnEEClass)
-        {
-            // Since the GUIDInfo will be stored on the EEClass,
-            // the memory should be allocated on the loaderAllocator of the class.
-            // The definining module and the loaded module could be different in some scenarios.
-            // For example - in case of shared generic instantiations
-            // a shared generic i.e. System.__Canon which would be loaded in shared domain
-            // but the this->GetLoaderAllocator will be the loader allocator for the definining
-            // module which can get unloaded anytime.
-            _ASSERTE(GetClass());
-            _ASSERTE(GetClass()->GetMethodTable());
-            pLoaderAllocator = GetClass()->GetMethodTable()->GetLoaderAllocator();
-        }
-        else
-        {
-            pLoaderAllocator = GetLoaderAllocator();
-        }
+        // Since the GUIDInfo will be stored on the EEClass,
+        // the memory should be allocated on the loaderAllocator of the class.
+        // The definining module and the loaded module could be different in some scenarios.
+        // For example - in case of shared generic instantiations
+        // a shared generic i.e. System.__Canon which would be loaded in shared domain
+        // but the this->GetLoaderAllocator will be the loader allocator for the definining
+        // module which can get unloaded anytime.
+        _ASSERTE(GetClass());
+        _ASSERTE(GetClass()->GetMethodTable());
+        PTR_LoaderAllocator pLoaderAllocator = GetClass()->GetMethodTable()->GetLoaderAllocator();
 
         _ASSERTE(pLoaderAllocator);
 
@@ -7389,24 +7378,10 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
         pInfo->m_Guid = *pGuid;
         pInfo->m_bGeneratedFromName = bGenerated;
 
-        // Set in in the interface method table.
-        if (bClassic)
-        {
-            // Set the per-EEClass GuidInfo if we are asked for the "classic" non-WinRT GUID.
-            // The MethodTable may be NGENed and read-only - and there's no point in saving
-            // classic GUIDs in non-WinRT MethodTables anyway.
-            _ASSERTE(bStoreGuidInfoOnEEClass);
-            GetClass()->SetGuidInfo(pInfo);
-        }
-        else
-        {
-#if FEATURE_COMINTEROP
-            _ASSERTE(bStoreGuidInfoOnEEClass || HasGuidInfo());
-#else
-            _ASSERTE(bStoreGuidInfoOnEEClass);
-#endif
-            SetGuidInfo(pInfo);
-        }
+        // Set the per-EEClass GuidInfo
+        // The MethodTable may be NGENed and read-only - and there's no point in saving
+        // classic GUIDs in non-WinRT MethodTables anyway.
+        GetClass()->SetGuidInfo(pInfo);
 
         amTracker.SuppressRelease();
     }
@@ -8136,6 +8111,22 @@ MethodDesc *MethodTable::MethodDataObject::GetImplMethodDesc(UINT32 slotNumber)
 }
 
 //==========================================================================================
+void MethodTable::MethodDataObject::UpdateImplMethodDesc(MethodDesc* pMD, UINT32 slotNumber)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(slotNumber < GetNumVirtuals());
+    _ASSERTE(pMD->IsMethodImpl());
+
+    MethodDataObjectEntry* pEntry = GetEntry(slotNumber);
+
+    // Fill the entries one level of inheritance at a time,
+    // stopping when we have filled the MD we are looking for.
+    while (!pEntry->GetImplMethodDesc() && PopulateNextLevel());
+
+    pEntry->SetImplMethodDesc(pMD);
+}
+
+//==========================================================================================
 void MethodTable::MethodDataObject::InvalidateCachedVirtualSlot(UINT32 slotNumber)
 {
     WRAPPER_NO_CONTRACT;
@@ -8707,129 +8698,6 @@ MethodDesc * MethodTable::IntroducedMethodIterator::GetNext(MethodDesc * pMD)
 
     return pMD;
 }
-
-//==========================================================================================
-PTR_GuidInfo MethodTable::GetGuidInfo()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_COMINTEROP
-    if (HasGuidInfo())
-    {
-        return *GetGuidInfoPtr();
-    }
-#endif // FEATURE_COMINTEROP
-    _ASSERTE(GetClass());
-    return GetClass()->GetGuidInfo();
-}
-
-//==========================================================================================
-void MethodTable::SetGuidInfo(GuidInfo* pGuidInfo)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_COMINTEROP
-    if (HasGuidInfo())
-    {
-        *GetGuidInfoPtr() = pGuidInfo;
-        return;
-    }
-#endif // FEATURE_COMINTEROP
-    _ASSERTE(GetClass());
-    GetClass()->SetGuidInfo (pGuidInfo);
-
-#endif // DACCESS_COMPILE
-}
-
-#if defined(FEATURE_COMINTEROP) && !defined(DACCESS_COMPILE)
-
-//==========================================================================================
-RCWPerTypeData *MethodTable::CreateRCWPerTypeData(bool bThrowOnOOM)
-{
-    CONTRACTL
-    {
-        if (bThrowOnOOM) THROWS; else NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(HasRCWPerTypeData());
-    }
-    CONTRACTL_END;
-
-    AllocMemTracker amTracker;
-
-    RCWPerTypeData *pData;
-    if (bThrowOnOOM)
-    {
-        TaggedMemAllocPtr ptr = GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(RCWPerTypeData)));
-        pData = (RCWPerTypeData *)amTracker.Track(ptr);
-    }
-    else
-    {
-        TaggedMemAllocPtr ptr = GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem_NoThrow(S_SIZE_T(sizeof(RCWPerTypeData)));
-        pData = (RCWPerTypeData *)amTracker.Track_NoThrow(ptr);
-        if (pData == NULL)
-        {
-            return NULL;
-        }
-    }
-
-    // memory is zero-inited which means that nothing has been computed yet
-    _ASSERTE(pData->m_dwFlags == 0);
-
-    RCWPerTypeData **pDataPtr = GetRCWPerTypeDataPtr();
-
-    if (InterlockedCompareExchangeT(pDataPtr, pData, NULL) == NULL)
-    {
-        amTracker.SuppressRelease();
-    }
-    else
-    {
-        // another thread already published the pointer
-        pData = *pDataPtr;
-    }
-
-    return pData;
-}
-
-//==========================================================================================
-RCWPerTypeData *MethodTable::GetRCWPerTypeData(bool bThrowOnOOM /*= true*/)
-{
-    CONTRACTL
-    {
-        if (bThrowOnOOM) THROWS; else NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!HasRCWPerTypeData())
-        return NULL;
-
-    RCWPerTypeData *pData = *GetRCWPerTypeDataPtr();
-    if (pData == NULL)
-    {
-        // creation is factored out into a separate routine to avoid paying the EH cost here
-        pData = CreateRCWPerTypeData(bThrowOnOOM);
-    }
-
-    return pData;
-}
-
-#endif // FEATURE_COMINTEROP && !DACCESS_COMPILE
 
 //==========================================================================================
 CHECK MethodTable::CheckActivated()

@@ -85,7 +85,7 @@ Written in 2006, by:
     * [2.10.6 For more details...](#2.10.6)
   * [2.11 Is your code DAC compliant?](#2.11)
 
-# <a name="1"/>1 Why you must read this document
+# <a name="1"></a>1 Why you must read this document
 
 Like most large codebases, the CLR codebase has many internal invariants and an extensive debug build infrastructure for detecting problems. Clearly, it is important that developers working on the CLR understand these rules and conventions.
 
@@ -93,7 +93,7 @@ The information contained here is considered the minimum set of knowledge requir
 
 This document is divided into the following sections.
 
-## <a name="1.1"/>1.1 Rules of the Code
+## <a name="1.1"></a>1.1 Rules of the Code
 
 This is the most important section. Think of the chapter headings as a checklist to use while designing and writing your code. This section is divided into sections for managed and unmanaged code as they face quite different issues.
 
@@ -113,17 +113,17 @@ One type of rule you won't find here are purely syntactic "code formatting" rule
 - Significantly increase the risk of a serious bug slipping through.
 - Frustrate our automated bug-detection infrastructure.
 
-## <a name="1.2"/>1.2 How do I &lt;insert common task&gt;?
+## <a name="1.2"></a>1.2 How do I &lt;insert common task&gt;?
 
 The chapter headings in this section can be regarded as a FAQ. If you have a specific need, look here for "best practices" guidance on how to get something. Also, if you're thinking of adding yet another hash table implementation to the code base, check here first as there's a good chance there's already existing code that can be adapted or used as is.
 
 This section will also be divided into managed and unmanaged sections.
 
-# <a name="2"/>2 Rules of the Code (Unmanaged)
+# <a name="2"></a>2 Rules of the Code (Unmanaged)
 
-## <a name="2.1"/>2.1 Is your code GC-safe?
+## <a name="2.1"></a>2.1 Is your code GC-safe?
 
-### <a name="2.1.1"/>2.1.1 How GC holes are created
+### <a name="2.1.1"></a>2.1.1 How GC holes are created
 
 The term "GC hole" refers to a special class of bugs that bedevils the CLR. The GC hole is a pernicious bug because it is easy to introduce by accident, repros rarely and is very tedious to debug. A single GC hole can suck up weeks of dev and test time.
 
@@ -137,7 +137,7 @@ Any time a new object is allocated, a GC may occur. GC can also be explicitly re
 
 A GC hole occurs when code inside the CLR creates a reference to a GC object, neglects to tell the GC about that reference, performs some operation that directly or indirectly triggers a GC, then tries to use the original reference. At this point, the reference points to garbage memory and the CLR will either read out a wrong value or corrupt whatever that reference is pointing to.
 
-### <a name="2.1.2"/>2.1.2 Your First GC hole
+### <a name="2.1.2"></a>2.1.2 Your First GC hole
 
 The code fragment below is the simplest way to introduce a GC hole into the system.
 
@@ -162,7 +162,7 @@ Why? If the second call to AllocateObject() triggers a GC, that GC discards the 
 
 This point is worth repeating. The GC has no intrinsic knowledge of root references stored in local variables or non-GC data structures maintained by the CLR itself. You must explicitly tell the GC about them.
 
-### <a name="2.1.3"/>2.1.3 Use GCPROTECT_BEGIN to keep your references up to date
+### <a name="2.1.3"></a>2.1.3 Use GCPROTECT_BEGIN to keep your references up to date
 
 Here's how to fix our buggy code fragment.
 
@@ -194,7 +194,7 @@ Having said that, no one should complain if you play it safe and GCPROTECT "b" a
 
 Every GCPROTECT_BEGIN must have a matching GCPROTECT_END, which terminates the protected status of "a". As an additional safeguard, GCPROTECT_END overwrites "a" with garbage so that any attempt to use "a" afterward will fault. GCPROTECT_BEGIN introduces a new C scoping level that GCPROTECT_END closes, so if you use one without the other, you'll probably experience severe build errors.
 
-### <a name="2.1.4"/>2.1.4 Don't do nonlocal returns from within GCPROTECT blocks
+### <a name="2.1.4"></a>2.1.4 Don't do nonlocal returns from within GCPROTECT blocks
 
 Never do a "return", "goto" or other non-local return from between a GCPROTECT_BEGIN/END pair. This will leave the thread's frame chain corrupted.
 
@@ -202,7 +202,7 @@ One exception: it is explicitly allowed to leave a GCPROTECT block by throwing a
 
 Why is GCPROTECT not implemented via a C++ smart pointer? The GCPROTECT macro originates in .NET Framework v1. All error handling was done explicitly at that time, without any use C++ exception handling or stack allocated holders.
 
-### <a name="2.1.5"/>2.1.5 Do not GCPROTECT the same location twice
+### <a name="2.1.5"></a>2.1.5 Do not GCPROTECT the same location twice
 
 The following is illegal and will cause some sort of crash:
 
@@ -226,11 +226,11 @@ Don't confuse the reference with a copy of the reference. It's not illegal to pr
 	    GCPROTECT_END();
 	}
 
-### <a name="2.1.6"/>2.1.6 Protecting multiple OBJECTREF's
+### <a name="2.1.6"></a>2.1.6 Protecting multiple OBJECTREF's
 
 You can protect multiple OBJECTREF locations using one GCPROTECT. Group them all into a structure and pass the structure to GCPROTECT_BEGIN. GCPROTECT_BEGIN applies a sizeof to determine how many locations you want to protect. Do not mix any non-OBJECTREF fields into the struct!
 
-### <a name="2.1.7"/>2.1.7 Use OBJECTHANDLES for non-scoped protection
+### <a name="2.1.7"></a>2.1.7 Use OBJECTHANDLES for non-scoped protection
 
 GCPROTECT_BEGIN is very handy, as we've seen, but its protection is limited to a C++ nesting scope. Suppose you need to store a root reference inside a non-GC data structure that lives for an arbitrary amount of time?
 
@@ -271,7 +271,7 @@ There are actually several flavors of handles. This section lists the most commo
 
 NOTE: PINNING AN OBJECT IS EXPENSIVE AS IT PREVENTS THE GC FROM ACHIEVING OPTIMAL PACKING OF OBJECTS DURING EPHEMERAL COLLECTIONS. THIS TYPE OF HANDLE SHOULD BE USED SPARINGLY!
 
-### <a name="2.1.8"/>2.1.8 Use the right GC Mode – Preemptive vs. Cooperative
+### <a name="2.1.8"></a>2.1.8 Use the right GC Mode – Preemptive vs. Cooperative
 
 Earlier, we implied that GC doesn't occur spontaneously. This is true... for a given thread. But the CLR is multithreaded. Even if your thread does all the right things, it has no control over other threads.
 
@@ -371,7 +371,7 @@ There are also standalone versions:
 
 You'll notice that the standalone versions are actually holders rather than simple statements. The intention was that these holders would assert again on scope exit to ensure that any backout holders are correctly restoring the mode. However, that exit check was disabled initially with the idea of enabling it eventually once all the backout code was clean. Unfortunately, the "eventually" has yet to arrive. As long as you use the GCX holders to manage mode changes, this shouldn't really be a problem.
 
-### <a name="2.1.9"/>2.1.9 Use OBJECTREF to refer to object references as it does automatic sanity checking
+### <a name="2.1.9"></a>2.1.9 Use OBJECTREF to refer to object references as it does automatic sanity checking
 
 The checked build inserts automatic sanity-checking every single time an OBJECTREF is manipulated. Under the retail build, OBJECTREF is defined as a pointer exactly as you'd expect. But under the checked build, OBJECTREF is defined as a "smart-pointer" class that sanity-checks the pointer on every operation. Also, the current thread is validated to be in cooperative GC mode.
 
@@ -396,7 +396,7 @@ compiles fine under retail but breaks under checked. The usual workaround is som
 
 	pv = (LPVOID)OBJECTREFToObject(o);
 
-### <a name="2.1.10"/>2.1.10 How to know if a function can trigger a GC
+### <a name="2.1.10"></a>2.1.10 How to know if a function can trigger a GC
 
 The GC behavior of every function in the source base must be documented in its contract. Every function must have a contract that declares one of the following:
 
@@ -445,7 +445,7 @@ Why do we use GC_NOTRIGGERS rather than GC_FORBID? Because forcing every functio
 
 **Important:** The notrigger thread state is implemented as a counter rather than boolean. This is unfortunate as this should not be necessary and exposes us to nasty ref-counting style bugs. What is important that contracts intentionally do not support unscoped trigger/notrigger transitions. That is, a GC_NOTRIGGER inside a contract will **increment** the thread's notrigger count on entry to the function but on exit, **it will not decrement the count , instead it will restore the count from a saved value.** Thus, any _net_ changes in the trigger state caused within the body of the function will be wiped out. This is good unless your function was designed to make a net change to the trigger state. If you have such a need, you'll just have to work around it somehow because we actively discourage such things in the first place. Ideally, we'd love to replace that counter with a Boolean at sometime.
 
-#### <a name="2.1.10.1"/>2.1.10.1 GC_NOTRIGGER/TRIGGERSGC on a scope
+#### <a name="2.1.10.1"></a>2.1.10.1 GC_NOTRIGGER/TRIGGERSGC on a scope
 
 Sometimes you want to mark a scope rather than a function. For that purpose, GC_TRIGGERS and TRIGGERSGC also exist as standalone holders. These holders are also visible to the static contract scanner.
 
@@ -459,9 +459,9 @@ Sometimes you want to mark a scope rather than a function. For that purpose, GC_
 
 One difference between the standalone TRIGGERSGC and the contract GC_TRIGGERS: the standalone version also performs a "phantom" GC that poisons all unreachable OBJECTREFs. The contract version does not do this mainly for checked build perf concerns.
 
-## <a name="2.2"/>2.2 Are you using holders to track your resources?
+## <a name="2.2"></a>2.2 Are you using holders to track your resources?
 
-### <a name="2.2.1"/>2.2.1 What are holders and why are they important?
+### <a name="2.2.1"></a>2.2.1 What are holders and why are they important?
 
 The CLR team has coined the name **holder** to refer to the infrastructure that encapsulates the common grunt work of writing robust **backout code**. **Backout code** is code that deallocate resources or restore CLR data structure consistency when we abort an operation due to an error or an asynchronous event. Oftentimes, the same backout code will execute in non-error paths for resources allocated for use of a single scope, but error-time backout is still needed even for longer lived resources.
 
@@ -471,7 +471,7 @@ Due to the no-compromise robustness requirements that the CLR Hosting model (wit
 
 Thus, we have centralized cleanup around C++ destructor technology. Instead of declaring a HANDLE, you declare a HandleHolder. The holder wraps a HANDLE and its destructor closes the handle no matter how control leaves the scope. We have already implemented standard holders for common resources (arrays, memory allocated with C++ new, Win32 handles and locks.) The Holder mechanism is extensible so you can add new types of holders as you need them.
 
-### <a name="2.2.2"/>2.2.2 An example of holder usage
+### <a name="2.2.2"></a>2.2.2 An example of holder usage
 
 The following shows explicit backout vs. holders:
 
@@ -533,7 +533,7 @@ Suppose you want to auto-close the handle if an error occurs but keep the handle
 	hFile.SuppressRelease();
 	return hFile;
 
-### <a name="2.2.3"/>2.2.3 Common Features of Holders
+### <a name="2.2.3"></a>2.2.3 Common Features of Holders
 
 All holders, no matter how complex or simple, offer these basic services:
 
@@ -545,7 +545,7 @@ All holders, no matter how complex or simple, offer these basic services:
 
 In addition, some holders derive from the Wrapper class. Wrappers are like holders but also implement operator overloads for type casting, assignment, comparison, etc. so that the holder proxies the object smart-pointer style. The HandleHolder object is actually a wrapper.
 
-### <a name="2.2.4"/>2.2.4 Where do I find a holder?
+### <a name="2.2.4"></a>2.2.4 Where do I find a holder?
 
 First, look for a prebaked holder that does what you want. Some common ones are described below.
 
@@ -557,13 +557,13 @@ Instantiate the holder or wrapper template with the required parameters. You mus
 
 Publish the holder in the most global header file possible. [src\inc\holder.h][holder.h] is ideal for OS-type resources. Otherwise, put it in the header file that owns the type being managed.
 
-### <a name="2.2.5"/>2.2.5 Can I bake my own holder?
+### <a name="2.2.5"></a>2.2.5 Can I bake my own holder?
 
 When we first put holders into the code, we encouraged developers to inherit from the base holder class rather than writing their own. But the reality has been that many holders only need destruction and SuppressRelease() and it's proven easier for developers to write them from scratch rather than try to master the formidable C++ template magic that goes on in [holder.h][holder.h] It is better that you write your own holders than give up the design pattern altogether because you don't want to tackle [holder.h].
 
 But however you decide to implement it, if you call your object a "holder", please make sure its external behavior conforms to the conventions listed above in "Common Features of Holders."
 
-### <a name="2.2.6"/>2.2.6 What if my backout code throws an exception?
+### <a name="2.2.6"></a>2.2.6 What if my backout code throws an exception?
 
 All holders wrap an implicit NOTHROW contract around your backout code. Thus, you must write your backout code only using primitives that are guaranteed not to throw. If you absolutely have no choice but to violate this (say, you're calling Release() on a COM object that you didn't write), you must catch the exception yourself.
 
@@ -571,13 +571,13 @@ This may sound draconian but consider the real implications of throwing out of y
 
 Often, you can avoid failures in backout code by designing a better data structure. For example, implementers of common data structures such as hash tables and collections should provide backout holders for undoing operations as inserts. When creating globally visible data structures such as EEClass objects, you should initialize the object in private and allocate everything needed before "publishing it." In some cases, this may require significant rethinking of your data structures and code. But the upshot is that you won't have to undo global data structure changes in backout code.
 
-### <a name="2.2.7"/>2.2.7 Pay attention to holder initialization semantics
+### <a name="2.2.7"></a>2.2.7 Pay attention to holder initialization semantics
 
 Holders consistently release on destruction – that's their whole purpose. Sadly, we are not so consistent when it comes the initialization semantics. Some holders, such as the Crst holder, do an implicit Acquire on initialization. Others, such as the ComHolder do not (initializing a ComHolder does _not_ do an AddRef.) The BaseHolder class constructor leaves it up to the holder designer to make the choice. This is an easy source of bugs so pay attention to this.
 
-### <a name="2.2.8"/>2.2.8 Some generally useful prebaked holders
+### <a name="2.2.8"></a>2.2.8 Some generally useful prebaked holders
 
-#### <a name="2.2.8.1"/>2.2.8.1 New'ed memory
+#### <a name="2.2.8.1"></a>2.2.8.1 New'ed memory
 
 **Wrong:**
 
@@ -588,7 +588,7 @@ Holders consistently release on destruction – that's their whole purpose. Sadl
 
 	NewHolder<Foo> pFoo = new Foo();
 
-#### <a name="2.2.8.2"/>2.2.8.2 New'ed array
+#### <a name="2.2.8.2"></a>2.2.8.2 New'ed array
 
 **Wrong:**
 
@@ -599,7 +599,7 @@ Holders consistently release on destruction – that's their whole purpose. Sadl
 
 	NewArrayHolder<Foo> pFoo = new Foo[30];
 
-#### <a name="2.2.8.3"/>2.2.8.3 COM Interface Holder
+#### <a name="2.2.8.3"></a>2.2.8.3 COM Interface Holder
 
 **Wrong:**
 
@@ -612,7 +612,7 @@ Holders consistently release on destruction – that's their whole purpose. Sadl
 	ComHolder<IFoo> pFoo;  // declaring ComHolder does not insert AddRef!
 	FunctionToGetRefOfFoo(&pFoo);
 
-#### <a name="2.2.8.4"/>2.2.8.4 Critical Section Holder
+#### <a name="2.2.8.4"></a>2.2.8.4 Critical Section Holder
 
 **Wrong:**
 
@@ -625,9 +625,9 @@ Holders consistently release on destruction – that's their whole purpose. Sadl
 	    CrstHolder(pCrst);	//implicit Enter
 	}			       		//implicit Leave
 
-## <a name="2.3"/>2.3 Does your code follow our OOM rules?
+## <a name="2.3"></a>2.3 Does your code follow our OOM rules?
 
-### <a name="2.3.1"/>2.3.1 What is OOM and why is it important?
+### <a name="2.3.1"></a>2.3.1 What is OOM and why is it important?
 
 OOM stands for "Out of Memory." The CLR must be fully robust in the face of OOM errors. For us, OOM is not an obscure corner case. SQL Server runs its processes in low-memory conditions as normal practice. OOM exceptions are a regular occurrence when hosted under SQL Server and we are required to handle every single one correctly.
 
@@ -637,7 +637,7 @@ This means that:
 - OOM failures must be distinguishable from other error results. OOM's must never be transformed into some other error code. Doing so may cause some operations to cache the error and return the same error on each retry.
 - Every function must declare whether or not it can generate an OOM error. We cannot write OOM-safe code if we have no way to know what calls can generate OOM's. This declaration is done by the INJECT_FAULT and FORBID_FAULT contract annotations.
 
-### <a name="2.3.2"/>2.3.2 Documenting where OOM's can happen
+### <a name="2.3.2"></a>2.3.2 Documenting where OOM's can happen
 
 Sometimes, a code sequence requires that no opportunities for OOM occur. Backout code is the most common example. This can become hard to maintain if the code calls out to other functions. Because of this, it is very important that every function document in its contract whether or not it can fail due to OOM. We do this using the (poorly named) INJECT_FAULT and FORBID_FAULT annotations.
 
@@ -685,7 +685,7 @@ INJECT_FAULT()'s argument is the code that executes when the function reports an
 
 The CLR asserts if you invoke an INJECT_FAULT function under the scope of a FORBID_FAULT. All our allocation functions, including the C++ new operator, are declared INJECT_FAULT.
 
-#### <a name="2.3.2.1"/>2.3.2.1 Functions that handle OOM's internally
+#### <a name="2.3.2.1"></a>2.3.2.1 Functions that handle OOM's internally
 
 Sometimes, a function handles an internal OOM without needing to notify the caller. For example, perhaps the additional memory was used to implement an internal cache but your function can still do its job without it. Or perhaps the function is a logging function in which case, it can silently NOP – the caller doesn't care. In such cases, wrap the allocation in the FAULT_NOT_FATAL holder which temporarily lifts the FORBID_FAULT state.
 
@@ -696,21 +696,21 @@ Sometimes, a function handles an internal OOM without needing to notify the call
 
 FAULT_NOT_FATAL() is almost identical to a CONTRACT_VIOLATION() but the name indicates that it is by design, not a bug. It is analogous to TRY/CATCH for exceptions.
 
-#### <a name="2.3.2.2"/>2.3.2.2 OOM state control outside of contracts
+#### <a name="2.3.2.2"></a>2.3.2.2 OOM state control outside of contracts
 
 If you wish to set the OOM state for a scope rather than a function, use the FAULT_FORBID() holder. To test the current state, use the ARE_FAULTS_FORBIDDEN() predicate.
 
-#### <a name="2.3.2.3"/>2.3.2.3 Remember...
+#### <a name="2.3.2.3"></a>2.3.2.3 Remember...
 
 - Do not use INJECT_FAULT to indicate the possibility of non-OOM errors such as entries not existing in a hash table or a COM object not supporting an interface. INJECT_FAULT indicates OOM errors and no other type.
 - Be very suspicious if your INJECT_FAULT() argument is anything other than throwing an OOM exception or returning E_OUTOFMEMORY. OOM errors must distinguishable from other types of errors so if you're merely returning NULL without indicating the type of error, you'd better be a simple memory allocator or some other function that will never fail for any reason other than an OOM.
 - THROWS and INJECT_FAULT correlate strongly but are independent. A NOTHROW/INJECT_FAULT combo might indicate a function that returns HRESULTs including E_OUTOFMEMORY. A THROWS/FORBID_FAULT however indicate a function that can throw an exception but not an OutOfMemoryException. While theoretically possible, such a contract is probably a bug.
 
-## <a name="2.4"/>2.4 Are you using SString and/or the safe string manipulation functions?
+## <a name="2.4"></a>2.4 Are you using SString and/or the safe string manipulation functions?
 
 The native C implementation of strings as raw char* buffers is a well-known breeding ground for buffer overflow bugs. While acknowledging that there's still a ton of legacy char*'s in the code, new code and new data structures should use the SString class rather than raw C strings whenever possible.
 
-### <a name="2.4.1"/>2.4.1 SString
+### <a name="2.4.1"></a>2.4.1 SString
 
 SString is the abstraction to use for unmanaged strings in CLR code. It is important that as much code is possible uses the SString abstraction rather than raw character arrays, because of the danger of buffer overrun related to direct manipulation of arrays. Code which does not use SString must be manually reviewed for the possibility of buffer overrun or corruption during every security review.
 
@@ -736,7 +736,7 @@ If you need to use the string in the context of an external API (either to get t
 
 For easy creation of an SString for a string literal, use the SL macro. This can be used around either a normal (ASCII characters only) or wide string constant.
 
-## <a name="2.5"/>2.5 Are you using safemath.h for pointer and memory size allocations?
+## <a name="2.5"></a>2.5 Are you using safemath.h for pointer and memory size allocations?
 
 Integer overflow bugs are an insidious source of buffer overrun vulnerabilities.Here is a simple example of how such a bug can occur:
 
@@ -789,14 +789,14 @@ Currently, the "S_" types are available only for unsigned ints and SIZE_T. Check
 
 **Note:** If you've worked on other projects that use the SafeInt class, you might be wondering why we don't do that here. The reason is that we needed something that could be used easily from exception-intolerant code.
 
-## <a name="2.6"/>2.6 Are you using the right type of Critical Section?
+## <a name="2.6"></a>2.6 Are you using the right type of Critical Section?
 
 Synchronization in the CLR is challenging because we must support the strong requirements of the CLR Hosting API. This has two implications:
 
 - Hosting availability goals require that we eliminate all races and deadlocks. We need to maintain a healthy process under significant load for weeks and months at a time. Miniscule races will eventually be revealed.
 - Hosting requires that we often execute on non-preemptively scheduled threads. If we block a non-preemptively scheduled thread, we idle a CPU and possibly deadlock the process.
 
-### <a name="2.6.1"/>2.6.1 Use only the official synchronization mechanisms
+### <a name="2.6.1"></a>2.6.1 Use only the official synchronization mechanisms
 
 First, the most important rule. If you learn nothing else here, learn this:
 
@@ -812,7 +812,7 @@ We have the following approved synchronization mechanisms in the CLR:
 
 Make sure you aren't using events to build the equivalent of a critical section. The problem with this is that we cannot identify the thread that "owns" the critical section and hence, the host cannot trace and break deadlocks. In general, if you're creating a situation that could result in a deadlock, even if only due to bad user code, you must ensure that a CLR host can detect and break the deadlock.
 
-### <a name="2.6.2"/>2.6.2 Using Crsts
+### <a name="2.6.2"></a>2.6.2 Using Crsts
 
 The Crst class ([crst.h][crst.h]) is a replacement for the standard Win32 CRITICAL_SECTION. It has all the properties and features of a CRITICAL_SECTION, plus a few extra nice features. We should be using Crst's pretty much everywhere we need a lock in the CLR.
 
@@ -824,7 +824,7 @@ Instead we now record the explicit dependencies as a set of rules in the src\inc
 
 [crst.h]: https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/crst.h
 
-### <a name="2.6.3"/>2.6.3 Creating Crsts
+### <a name="2.6.3"></a>2.6.3 Creating Crsts
 
 To create a Crst:
 
@@ -844,7 +844,7 @@ A CrstStatic must be destroyed with the Destroy() method as follows:
 
 [2]: In fact, you should generally avoid use of static instances that require construction and destruction. This can have an impact on startup time, it can affect our shutdown robustness, and it will eventually limit our ability to recycle the CLR within a running process.
 
-### <a name="2.6.4"/>2.6.4 Entering and Leaving Crsts
+### <a name="2.6.4"></a>2.6.4 Entering and Leaving Crsts
 
 To enter or leave a crst, you must wrap the crst inside a CrstHolder. All operations on crsts are available only through the CrstHolder. To enter the crst, create a local CrstHolder and pass the crst as an argument. The crst is automatically released by the CrstHolder's destructor when control leaves the scope either normally or via an exception:
 
@@ -888,7 +888,7 @@ If you want to exit the scope without leaving the Crst, call SuppressRelease() o
 	    ch.SuppressRelease();
 	}							// no implicit leave
 
-### <a name="2.6.5"/>2.6.5 Other Crst Operations
+### <a name="2.6.5"></a>2.6.5 Other Crst Operations
 
 If you want to validate that you own no other locks at the same or lower level, assert the debug-only IsSafeToTake() method:
 
@@ -896,7 +896,7 @@ If you want to validate that you own no other locks at the same or lower level, 
 
 Entering a crst always calls IsSafeToTake() for you but calling it manually is useful for functions that acquire a lock only some of the time.
 
-### <a name="2.6.6"/>2.6.6 Advice on picking a level for your Crst
+### <a name="2.6.6"></a>2.6.6 Advice on picking a level for your Crst
 
 The point of giving your critical section a level is to help us prevent deadlocks by detecting cycles early in the development process. We try to group critical sections that protect low-level data structures and don't use other services into the lower levels, and ones that protect higher-level data structures and broad code paths into higher levels.
 
@@ -906,7 +906,7 @@ If your lock is protecting large sections of code that call into many other part
 
 Add a new definition for your level rather than using an existing definition, even if there is an existing definition with the level you need. Giving each lock its own level in the enum will allow us to easily change the levels of specific locks at a later time.
 
-### <a name="2.6.7"/>2.6.7 Can waiting on a Crst generate an exception?
+### <a name="2.6.7"></a>2.6.7 Can waiting on a Crst generate an exception?
 
 It depends.
 
@@ -921,7 +921,7 @@ There are several ways we enforce this.
 
 You may be wondering why we invest so much effort into the discipline of deadlock avoidance, and then also require everyone to tolerate deadlock breaking by the host. Sometimes we are unhosted, so we must avoid deadlocks. Some deadlocks involve user code (like class constructors) and cannot be avoided. Some exceptions from lock attempts are due to resource constraints, rather than deadlocks.
 
-### <a name="2.6.8"/>2.6.8 CRITSECT_UNSAFE Flags
+### <a name="2.6.8"></a>2.6.8 CRITSECT_UNSAFE Flags
 
 By default, Crsts can only be acquired and released in preemptive GC mode and threads can only own one lock at any given level at a given time. Some locks need to bypass these restrictions. To do so, you must pass the appropriate flag when you create the critical section. (This is the optional third parameter to the Crst constructor.)
 
@@ -955,11 +955,11 @@ Under no circumstances may you use CRST_UNSAFE_SAMELEVEL for a non-host-breakabl
 
 [3] More precisely, you cannot allow a GC to block your thread at a GC-safe point. If it does, the GC could deadlock because the GC thread itself blocks waiting for a third cooperative mode thread to reach its GC-safe point... which it can't do because it's trying to acquire the very lock that your first thread owns. This wouldn't be an issue if acquiring a coop-mode lock was itself a GC-safe point. But too much code relies on this not being a GC-safe point to fix this easily
 
-### <a name="2.6.9"/>2.6.9 Bypassing leveling (CRSTUNORDEREDnordered)
+### <a name="2.6.9"></a>2.6.9 Bypassing leveling (CRSTUNORDEREDnordered)
 
 CrstUnordered (used in rules inside CrstTypes.def) is a special level that says that the lock does not participate in any of the leveling required for deadlock avoidance. This is the most heinous of the ways you can construct a Crst. Though there are still some uses of this in the CLR, it should be avoided by any means possible.
 
-### <a name="2.6.10"/>2.6.10 So what _are_ the prerequisites and side-effects of entering a Crst?
+### <a name="2.6.10"></a>2.6.10 So what _are_ the prerequisites and side-effects of entering a Crst?
 
 The following matrix lists the effective contract and side-effects of entering a crst for all combinations of CRST_HOST_BREAKABLE and CRST_UNSAFE_\* flags. The SAMELEVEL flag has no effect on any of these parameters.
 
@@ -969,7 +969,7 @@ The following matrix lists the effective contract and side-effects of entering a
 | CRST_UNSAFE_COOPGC  | NOTHROW<br>FORBID_FAULT<br>GC_NOTRIGGER<br>MODE_COOP<br>(puts thread in GCNoTrigger mode) | THROWS<br>INJECT_FAULT<br>GC_NOTRIGGER<br>MODE_COOP<br>(puts thread in GCNoTrigger mode) |
 | CRST_UNSAFE_ANYMODE | NOTHROW<br>FORBID_FAULT<br>GC_NOTRIGGER<br>MODE_ANY<br>(puts thread in GCNoTrigger mode)  | THROWS<br>INJECT_FAULT<br>GC_NOTRIGGER<br>MODE_ANY<br>(puts thread in GCNoTrigger mode)  |
 
-### <a name="2.6.11"/>2.6.11 Using Events and Waitable Handles
+### <a name="2.6.11"></a>2.6.11 Using Events and Waitable Handles
 
 In typical managed app scenarios, services like WszCreateEvent are thin wrappers over OS services like ::CreateEvent. But in hosted scenarios, these calls may be redirected through an abstraction layer to the host. If that's the case, they may return handles that behave somewhat like OS events, but do not support coordination with unmanaged code. Nor can we provide WaitForMultipleHandles support on these handles. You are strictly limited to waiting on a single handle.
 
@@ -977,7 +977,7 @@ If you need to coordinate with unmanaged code, or if you need to do WaitForMulti
 
 Sometimes you might find yourself building the equivalent of a critical section, but using an event directly. The problem here is that we cannot identify the thread that owns the lock, because the owner isn't identified until they "leave'" the lock by calling SetEvent or Pulse. Consider whether a Crst might be more appropriate.
 
-### <a name="2.6.12"/>2.6.12 Do not get clever with "lockless" reader-writer data structures
+### <a name="2.6.12"></a>2.6.12 Do not get clever with "lockless" reader-writer data structures
 
 Earlier, we had several hashtable structures that attempted to be "clever" and allow lockless reading. Of course, these structures didn't take into account multiprocessors and the other memory models. Even on single-proc x86, stress uncovered exotic race conditions. This wasted a lot of developer time debugging stress crashes.
 
@@ -985,13 +985,13 @@ We finally stopped being clever and added proper synchronization, with no seriou
 
 So if you are tempted to get clever in this way again, **stop and do something else until the urge passes.**
 
-### <a name="2.6.13"/>2.6.13 Yes, your thread could be running non-preemptively!
+### <a name="2.6.13"></a>2.6.13 Yes, your thread could be running non-preemptively!
 
 Under hosted scenarios, your thread could actually be scheduled non-preemptively (do not confuse this with "GC preemptive mode.".) Blocking a thread without yielding back to the host could have consequences ranging from CPU starvation (perf) to an actual deadlock. You are particularly vulnerable when calling OS apis that block.
 
 Unfortunately, there is no official list of "safe" OS apis. The safest approach is to stick to the officially approved synchronization mechanisms documented in this chapter and be extra careful when invoking OS api.
 
-### <a name="2.6.14"/>2.6.14 Dos and Don'ts for Synchronization
+### <a name="2.6.14"></a>2.6.14 Dos and Don'ts for Synchronization
 
 - Don't build your own lock or use OS locks. Only use Crst or host events and waitable handles. A host must know who owns what to detect and break deadlocks.
 - Don't use events to simulate locks or any other synchronization mechanism that could lead to deadlocks. Again, if a host doesn't know about a deadlock situation, it can't break it.
@@ -1005,11 +1005,11 @@ Unfortunately, there is no official list of "safe" OS apis. The safest approach 
 - Don't block a thread without yielding back to the host. Your "thread" may actually be a nonpreemptive thread. Always stick to the approved synchronization primitives.
 - Do document your locking model. If your locking model involves protecting a resource with a critical section, maybe you don't have to mention that in a comment. But if you have an elaborate mechanism where half your synchronization comes from GC guarantees and being in cooperative mode, while the other half is based on taking a spin lock in preemptive mode – then you really need to write this down. Nobody (not even you) can debug or maintain your code unless you have left a detailed comment.
 
-## <a name="2.7"/>2.7 Are you making hidden assumptions about the order of memory writes?
+## <a name="2.7"></a>2.7 Are you making hidden assumptions about the order of memory writes?
 
 _Issues: X86 processors have a very predictable memory order that 64-bit chips or multiprocs don't observe. We've gotten burned in the past because of attempts to be clever at writing thread-safe data structures without crsts. The best advice here is "don't be so clever, the perf improvements usually don't justify the risk." (look for Vance's writeup on memory models for a start.) _
 
-## <a name="2.8"/>2.8 Is your code compatible with managed debugging?
+## <a name="2.8"></a>2.8 Is your code compatible with managed debugging?
 
 The managed debugging services have some very unique properties in the CLR, and take a heavy dependency on the rest of the system. This makes it very easy to break managed debugging without even touching a line of debugger code. Here are some key trivia and tips to help you play well with the managed-debugging services.
 
@@ -1051,9 +1051,9 @@ Here are some immediate tips for working well with the managed-debugging service
 - Step-in through a stub: Any time you add a new stub or new way of calling managed code, you might break stepping.
 - Versioning: You could write a debugger in managed code targeting CLR version X, but debugging a process that's loaded CLR version Y. Now that's some versioning nightmares.
 
-## <a name="2.9"/>2.9 Does your code work on 64-bit?
+## <a name="2.9"></a>2.9 Does your code work on 64-bit?
 
-### <a name="2.9.1"/>2.9.1 Primitive Types
+### <a name="2.9.1"></a>2.9.1 Primitive Types
 
 Because the CLR is ultimately compiled on several different platforms, we have to be careful about the primitive types which are used in our code. Some compilers can have slightly different declarations in standard header files, and different processor word sizes can require values to have different representations on different platforms.
 
@@ -1070,7 +1070,7 @@ The types are grouped into several categories.
 
 All standard integral types have *_MIN and *_MAX values declared as well.
 
-## <a name="2.10"/>2.10 Does your function declare a CONTRACT?
+## <a name="2.10"></a>2.10 Does your function declare a CONTRACT?
 
 Every function in the CLR must declare a contract. A contract enumerates important behavioral facts such as whether a function throws or whether it can trigger gc. It also a general container for expressing preconditions and postconditions specific to that function.
 
@@ -1109,35 +1109,35 @@ At the start of Foo(), it validates that it's safe to throw, safe to generate an
 
 On a retail build, CONTRACT expands to nothing.
 
-### <a name="2.10.1"/>2.10.1 What can be said in a contract?
+### <a name="2.10.1"></a>2.10.1 What can be said in a contract?
 
 As you can see, a contract is a laundry list of "items" that either assert some requirement on the current thread state or impose a requirement on downstream callees. The following is a whirlwind tour of the supported annotations. The nuances of each one are explained in more detail in their individual chapters.
 
-#### <a name="2.10.1.1"/>2.10.1.1 THROWS/NOTHROW
+#### <a name="2.10.1.1"></a>2.10.1.1 THROWS/NOTHROW
 
 Declares whether an exception can be thrown out of this function. Declaring **NOTHROW** puts the thread in a NOTHROW state for the duration of the function call. You will get an assert if you throw an exception or call a function declared THROWS. An EX_TRY/EX_CATCH construct however will lift the NOTHROW state for the duration of the TRY body.
 
-#### <a name="2.10.1.2"/>2.10.1.2 INJECT_FAULT(_handler-stmt_)/FORBID_FAULT
+#### <a name="2.10.1.2"></a>2.10.1.2 INJECT_FAULT(_handler-stmt_)/FORBID_FAULT
 
 This is a poorly named item. INJECT_FAULT declares that the function can **fail** due to an out of memory (OOM) condition. FORBID_FAULT means that the function promises never to fail due to OOM. FORBID_FAULT puts the thread in a FORBID_FAULT state for the duration of the function call. You will get an assert if you allocate memory (even with the C++ new operator) or call a function declared INJECT_FAULT.
 
-#### <a name="2.10.1.3"/>2.10.1.3 GC_TRIGGERS/GC_NOTRIGGER
+#### <a name="2.10.1.3"></a>2.10.1.3 GC_TRIGGERS/GC_NOTRIGGER
 
 Declares whether the function is allowed to trigger a GC. GC_NOTRIGGER puts the thread in a NOTRIGGER state where any call to a GC_TRIGGERS function will assert.
 
 **Observation:** THROWS does not necessarily imply GC_TRIGGERS. COMPlusThrow does not trigger GC.
 
-#### <a name="2.10.1.4"/>2.10.1.4 MODE_PREEMPTIVE/ MODE_COOPERATIVE/ MODE_ANY
+#### <a name="2.10.1.4"></a>2.10.1.4 MODE_PREEMPTIVE/ MODE_COOPERATIVE/ MODE_ANY
 
 This item asserts that the thread is in a particular mode or declares that the function is mode-agnostic. It does not change the state of the thread in any way.
 
-#### <a name="2.10.1.5"/>2.10.1.5 LOADS_TYPE(_loadlevel_)
+#### <a name="2.10.1.5"></a>2.10.1.5 LOADS_TYPE(_loadlevel_)
 
 This item asserts that the function may invoke the loader and cause a type to loaded up to (and including) the indicated loadlevel. Valid load levels are taken from ClassLoadLevel enumerationin [classLoadLevel.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/classloadlevel.h).
 
 The CLR asserts if any attempt is made to load a type past the current limit set by LOADS_TYPE. A call to any function that has a LOADS_TYPE contract is treated as an attempt to load a type up to that limit.
 
-#### <a name="2.10.1.6"/>2.10.1.6 CAN_TAKE_LOCK / CANNOT_TAKE_LOCK
+#### <a name="2.10.1.6"></a>2.10.1.6 CAN_TAKE_LOCK / CANNOT_TAKE_LOCK
 
 These declare whether a function or callee takes any kind of EE or user lock: Crst, SpinLock, readerwriter, clr critical section, or even your own home-grown spin lock (e.g., ExecutionManager::IncrementReader).
 
@@ -1156,7 +1156,7 @@ In TLS we keep track of the current intent (whether to lock), and actual reality
     - Remembers stack of lock pointers for diagnosis
   - ASSERT_NO_EE_LOCKS_HELD(): Handy way for you to verify no locks are held right now on this thread (i.e., lock count == 0)
 
-#### <a name="2.10.1.7"/>2.10.1.7 EE_THREAD_REQUIRED / EE_THREAD_NOT_REQUIRED
+#### <a name="2.10.1.7"></a>2.10.1.7 EE_THREAD_REQUIRED / EE_THREAD_NOT_REQUIRED
 
 These declare whether a function or callee deals with the case "GetThread() == NULL".
 
@@ -1206,21 +1206,21 @@ You should only use BEGIN/END_GETTHREAD_ALLOWED(_IN_NO_THROW_REGION) if:
 
 If the latter is true, it's generally best to push BEGIN/END_GETTHREAD_ALLOWED down the callee chain so all callers benefit.
 
-#### <a name="2.10.1.8"/>2.10.1.8 PRECONDITION(_expr_)
+#### <a name="2.10.1.8"></a>2.10.1.8 PRECONDITION(_expr_)
 
 This is pretty self-explanatory. It is basically an **_ASSERTE.** Both _ASSERTE's and PRECONDITIONS are used widely in the codebase. The expression can evaluate to either a Boolean or a Check.
 
-#### <a name="2.10.1.9"/>2.10.1.9 POSTCONDITION(_expr_)
+#### <a name="2.10.1.9"></a>2.10.1.9 POSTCONDITION(_expr_)
 
 This is an expression that's tested on a _normal_ function exit. It will not be tested if an exception is thrown out of the function. Postconditions can access the function's locals provided that the locals were declared at the top level scope of the function. C++ objects will not have been destructed yet.
 
 Because of the limitations of our macro infrastructure, this item imposes some syntactic ugliness into the function. More on this below.
 
-### <a name="2.10.2"/>2.10.2 Is order important?
+### <a name="2.10.2"></a>2.10.2 Is order important?
 
 Preconditions and postconditions will execute in the order declared. The "intrinsic" items will execute before any preconditions regardless of where they appear.
 
-### <a name="2.10.3"/>2.10.3 Using the right form of contract.
+### <a name="2.10.3"></a>2.10.3 Using the right form of contract.
 
 Contracts come in several forms:
 
@@ -1231,7 +1231,7 @@ Contracts come in several forms:
 - LIMITED_METHOD_CONTRACT: A static contract equivalent to NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY/CANNOT_TAKE_LOCK. Use this form only for trivial one-liner functions. Remember it does not do runtime checks so it should not be used for complex functions.
 - WRAPPER_NO_CONTRACT: A static no-op contract for functions that trivially wrap another. This was invented back when we didn't have static contracts and we now wish it hadn't been invented. Please don't use this in new code.
 
-### <a name="2.10.4"/>2.10.4 When is it safe to use a runtime contract?
+### <a name="2.10.4"></a>2.10.4 When is it safe to use a runtime contract?
 
 Contracts do not require that current thread have a Thread structure. Even those annotations that explicitly check Thread bits (the GC and MODE annotations) will correctly handle the NULL ThreadState case.
 
@@ -1242,17 +1242,17 @@ You cannot use runtime contracts if:
 - Your code is callable from the implementation of FLS (Fiber Local Storage). This may result in an infinite recursion as the contract infrastructure itself uses FLS.
 - Your code makes a net change to the ClrDebugState. Only the contract infrastructure should be doing this but see below for more details.
 
-### <a name="2.10.5"/>2.10.5 Do not make unscoped changes to the ClrDebugState.
+### <a name="2.10.5"></a>2.10.5 Do not make unscoped changes to the ClrDebugState.
 
 The ClrDebugState is the per-thread data structure that houses all of the flag bits set and tested by contracts (i.e. NOTHROW, NOTRIGGER.). You should never modify this data directly. Always go through contracts or the specific holders (such as GCX_NOTRIGGER.)
 
 This data is meant to be changed in a scoped manner only. In particular, the CONTRACT destructor always restores the _entire_ ClrDebugState from a copy saved on function entry. This means that any net changes made by the function body itself will be wiped out when the function exits via local _or_ non-local control. The same caveat is true for holders such as GCX_NOTRIGGER.
 
-### <a name="2.10.6"/>2.10.6 For more details...
+### <a name="2.10.6"></a>2.10.6 For more details...
 
 See the big block comment at the start of [src\inc\contract.h][contract.h].
 
-## <a name="2.11"/>2.11 Is your code DAC compliant?
+## <a name="2.11"></a>2.11 Is your code DAC compliant?
 
 At a high level, DAC is a technique to enable execution of CLR algorithms from out-of-process (eg. on a memory dump). Core CLR code is compiled in a special mode (with DACCESS_COMPILE defined) where all pointer dereferences are intercepted.
 

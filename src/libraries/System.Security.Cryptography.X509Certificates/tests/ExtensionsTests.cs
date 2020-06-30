@@ -123,8 +123,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509KeyUsageExtension e = new X509KeyUsageExtension();
             string oidValue = e.Oid.Value;
             Assert.Equal("2.5.29.15", oidValue);
-            byte[] r = e.RawData;
-            Assert.Null(r);
+            Assert.Empty(e.RawData);
             X509KeyUsageFlags keyUsages = e.KeyUsages;
             Assert.Equal(X509KeyUsageFlags.None, keyUsages);
         }
@@ -217,8 +216,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string oidValue = e.Oid.Value;
             Assert.Equal("2.5.29.19", oidValue);
 
-            byte[] rawData = e.RawData;
-            Assert.Null(rawData);
+            Assert.Empty(e.RawData);
 
             Assert.False(e.CertificateAuthority);
             Assert.False(e.HasPathLengthConstraint);
@@ -291,8 +289,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string oidValue = e.Oid.Value;
             Assert.Equal("2.5.29.37", oidValue);
 
-            byte[] rawData = e.RawData;
-            Assert.Null(rawData);
+            Assert.Empty(e.RawData);
 
             OidCollection usages = e.EnhancedKeyUsages;
             Assert.Equal(0, usages.Count);
@@ -353,23 +350,43 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string oidValue = e.Oid.Value;
             Assert.Equal("2.5.29.14", oidValue);
 
-            byte[] rawData = e.RawData;
-            Assert.Null(rawData);
+            Assert.Empty(e.RawData);
 
             string skid = e.SubjectKeyIdentifier;
             Assert.Null(skid);
         }
 
-        [Fact]
-        public static void SubjectKeyIdentifierExtension_Bytes()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void SubjectKeyIdentifierExtension_Bytes(bool fromSpan)
         {
             byte[] sk = { 1, 2, 3, 4 };
-            X509SubjectKeyIdentifierExtension e = new X509SubjectKeyIdentifierExtension(sk, false);
+            X509SubjectKeyIdentifierExtension e;
+
+            if (fromSpan)
+            {
+                e = new X509SubjectKeyIdentifierExtension(new ReadOnlySpan<byte>(sk), false);
+            }
+            else
+            {
+                e = new X509SubjectKeyIdentifierExtension(sk, false);
+            }
 
             byte[] rawData = e.RawData;
             Assert.Equal("040401020304".HexToByteArray(), rawData);
 
-            e = new X509SubjectKeyIdentifierExtension(new AsnEncodedData(rawData), false);
+            if (fromSpan)
+            {
+                e = new X509SubjectKeyIdentifierExtension(
+                    new AsnEncodedData(new ReadOnlySpan<byte>(rawData)),
+                    false);
+            }
+            else
+            {
+                e = new X509SubjectKeyIdentifierExtension(new AsnEncodedData(rawData), false);
+            }
+
             string skid = e.SubjectKeyIdentifier;
             Assert.Equal("01020304", skid);
         }

@@ -449,7 +449,7 @@ namespace System.Xml
 
             if (_elementPropertySearch == null)
             {
-                //_elementPropertySearch should be init last for the mutli thread safe situation.
+                // _elementPropertySearch should be init last for the mutli thread safe situation.
                 _attributePropertySearch = new TernaryTreeReadOnly(HtmlTernaryTree.htmlAttributes);
                 _elementPropertySearch = new TernaryTreeReadOnly(HtmlTernaryTree.htmlElements);
             }

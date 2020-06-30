@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public SharedArrayBuffer(int length) : base(Interop.Runtime.New<SharedArrayBuffer>(length))
         { }
 
-        internal SharedArrayBuffer(IntPtr js_handle) : base(js_handle)
+        internal SharedArrayBuffer(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
         { }
 
         /// <summary>

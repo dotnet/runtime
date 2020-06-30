@@ -52,9 +52,15 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-init.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-init-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-private-definition.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\class-setup-vtable.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\cominterop.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
@@ -73,10 +79,10 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\coree-internals.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\culture-info.h">
+    <ClInclude Include="$(MonoSourceLocation)\mono\culture\culture-info.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\culture-info-tables.h">
+    <ClInclude Include="$(MonoSourceLocation)\mono\culture\culture-info-tables.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\debug-helpers.c">
@@ -175,7 +181,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loader-internals.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\locales.c">
+    <ClCompile Include="$(MonoSourceLocation)\mono\culture\locales.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\locales.h">
@@ -547,6 +553,12 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\native-library.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\native-library-qcall.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\native-library.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>    
   </ItemGroup>
   <ItemGroup Label="config_sources">
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-config-dirs.h">

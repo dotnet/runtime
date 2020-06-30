@@ -67,8 +67,8 @@ if "%VisualStudioVersion%"=="16.0" (
 )
 
 :MissingVersion
-:: Can't find VS 2017, 2019
-echo Error: Visual Studio 2017 or 2019 required
+:: Can't find appropriate VS install
+echo Error: Visual Studio 2019 required
 echo        Please see https://github.com/dotnet/runtime/tree/master/docs/workflow/building/libraries for build instructions.
 exit /b 1
 

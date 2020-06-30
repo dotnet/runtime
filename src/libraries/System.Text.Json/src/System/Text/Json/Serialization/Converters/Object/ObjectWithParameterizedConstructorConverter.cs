@@ -21,10 +21,9 @@ namespace System.Text.Json.Serialization.Converters
     {
         internal sealed override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
-            bool shouldReadPreservedReferences = options.ReferenceHandling.ShouldReadPreservedReferences();
             object obj;
 
-            if (!state.SupportContinuation && !shouldReadPreservedReferences)
+            if (state.UseFastPath)
             {
                 // Fast path that avoids maintaining state variables.
 
@@ -189,10 +188,10 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
+                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
                     JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                         obj: null!,
-                        ref reader,
-                        options,
+                        unescapedPropertyName,
                         ref state,
                         out _,
                         createExtensionProperty: false);
@@ -274,10 +273,10 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj: null!,
-                            ref reader,
-                            options,
+                            unescapedPropertyName,
                             ref state,
                             out bool useExtensionProperty,
                             createExtensionProperty: false);

@@ -8,16 +8,11 @@ class DumpDataTarget : public ICLRDataTarget
 {
 private:
     LONG m_ref;                         // reference count
-    pid_t m_pid;                        // process id
-#ifndef HAVE_PROCESS_VM_READV
-    int m_fd;                           // /proc/<pid>/mem handle
-#endif
-    CrashInfo* m_crashInfo;
+    CrashInfo& m_crashInfo;
 
 public:
-    DumpDataTarget(pid_t pid);
+    DumpDataTarget(CrashInfo& crashInfo);
     virtual ~DumpDataTarget();
-    bool Initialize(CrashInfo* crashInfo);
 
     //
     // IUnknown

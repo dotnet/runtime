@@ -75,7 +75,8 @@ struct _MonoMethod {
 	unsigned int skip_visibility:1; /* whenever to skip JIT visibility checks */
 	unsigned int verification_success:1; /* whether this method has been verified successfully.*/
 	unsigned int is_reabstracted:1; /* whenever this is a reabstraction of another interface */
-	signed int slot : 16;
+	unsigned int is_covariant_override_impl:1; /* whether this is an override with a signature different from its declared method */
+	signed int slot : 15;
 
 	/*
 	 * If is_generic is TRUE, the generic_container is stored in image->property_hash, 
@@ -973,6 +974,10 @@ typedef struct {
 	MonoClass *critical_finalizer_object; /* MAYBE NULL */
 	MonoClass *generic_ireadonlylist_class;
 	MonoClass *generic_ienumerator_class;
+#ifdef ENABLE_NETCORE
+	MonoClass *alc_class;
+	MonoClass *appcontext_class;
+#endif
 #ifndef ENABLE_NETCORE
 	MonoMethod *threadpool_perform_wait_callback_method;
 #endif
@@ -1244,6 +1249,9 @@ mono_class_vtable_checked (MonoDomain *domain, MonoClass *klass, MonoError *erro
 void
 mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error);
 
+void
+mono_class_signature_is_assignable_from (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error);
+
 gboolean
 mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate);
 
@@ -1258,6 +1266,9 @@ mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc, gboolea
 
 mono_bool
 mono_class_is_assignable_from_internal (MonoClass *klass, MonoClass *oklass);
+
+gboolean
+mono_byref_type_is_assignable_from (MonoType *type, MonoType *ctype, gboolean signature_assignment);
 
 gboolean mono_is_corlib_image (MonoImage *image);
 

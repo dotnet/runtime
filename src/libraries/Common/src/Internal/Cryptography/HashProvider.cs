@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 
 namespace Internal.Cryptography
 {
@@ -34,9 +35,31 @@ namespace Internal.Cryptography
         public abstract void AppendHashData(ReadOnlySpan<byte> data);
 
         // Compute the hash based on the appended data and resets the HashProvider for more hashing.
-        public abstract byte[] FinalizeHashAndReset();
+        public abstract int FinalizeHashAndReset(Span<byte> destination);
 
-        public abstract bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten);
+        public abstract int GetCurrentHash(Span<byte> destination);
+
+        public byte[] FinalizeHashAndReset()
+        {
+            byte[] ret = new byte[HashSizeInBytes];
+
+            int written = FinalizeHashAndReset(ret);
+            Debug.Assert(written == HashSizeInBytes);
+
+            return ret;
+        }
+
+        public bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length < HashSizeInBytes)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            bytesWritten = FinalizeHashAndReset(destination);
+            return true;
+        }
 
         // Returns the length of the byte array returned by FinalizeHashAndReset.
         public abstract int HashSizeInBytes { get; }

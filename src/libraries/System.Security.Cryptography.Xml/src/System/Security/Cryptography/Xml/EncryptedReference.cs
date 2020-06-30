@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Xml
         private string _uri;
         private string _referenceType;
         private TransformChain _transformChain;
-        internal XmlElement _cachedXml = null;
+        internal XmlElement _cachedXml;
 
         protected EncryptedReference() : this(string.Empty, new TransformChain())
         {

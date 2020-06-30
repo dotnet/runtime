@@ -48,6 +48,15 @@ if (typeof crypto == 'undefined') {
 	}
 }
 
+if (typeof performance == 'undefined') {
+	// performance.now() is used by emscripten and doesn't work in JSC
+	var performance = {
+		now: function () {
+			return Date.now ();
+		}
+	}
+}
+
 try {
 	if (typeof arguments == "undefined")
 		arguments = WScript.Arguments;
@@ -98,7 +107,7 @@ print("Arguments: " + testArguments);
 profilers = [];
 setenv = {};
 runtime_args = [];
-enable_gc = false;
+enable_gc = true;
 enable_zoneinfo = false;
 while (true) {
 	if (args [0].startsWith ("--profile=")) {
@@ -118,8 +127,8 @@ while (true) {
 		var arg = args [0].substring ("--runtime-arg=".length);
 		runtime_args.push (arg);
 		args = args.slice (1);
-	} else if (args [0] == "--enable-gc") {
-		enable_gc = true;
+	} else if (args [0] == "--disable-on-demand-gc") {
+		enable_gc = false;
 		args = args.slice (1);
 	} else if (args [0] == "--enable-zoneinfo") {
 		enable_zoneinfo = true;
@@ -130,13 +139,20 @@ while (true) {
 }
 testArguments = args;
 
+function writeContentToFile(content, path)
+{
+	var stream = FS.open(path, 'w+');
+	FS.write(stream, content, 0, content.length, 0);
+	FS.close(stream);
+}
+
 if (typeof window == "undefined")
   load ("mono-config.js");
 
 var Module = { 
 	mainScriptUrlOrBlob: "dotnet.js",
 
-	print: function(x) { print ("WASM: " + x) },
+	print: print,
 	printErr: function(x) { print ("WASM-ERR: " + x) },
 
 	onAbort: function(x) {
@@ -154,9 +170,39 @@ var Module = {
 			MONO.mono_wasm_setenv (variable, setenv [variable]);
 		}
 
-		if (enable_gc) {
-			var f = Module.cwrap ('mono_wasm_enable_on_demand_gc', 'void', []);
-			f ();
+		// Read and write files to virtual file system listed in mono-config
+		if (typeof config.files_to_map != 'undefined') {
+			Module.print("Mapping test support files listed in config.files_to_map to VFS");
+			const files_to_map = config.files_to_map;
+			try {
+				for (var i = 0; i < files_to_map.length; i++)
+				{
+					if (typeof files_to_map[i].directory != 'undefined')
+					{
+						var directory = files_to_map[i].directory == '' ? '/' : files_to_map[i].directory;
+						if (directory != '/') {
+							Module['FS_createPath']('/', directory, true, true);
+						}
+
+						const files = files_to_map[i].files;
+						for (var j = 0; j < files.length; j++)
+						{
+							var fullPath = directory != '/' ? directory + '/' + files[j] : files[j];
+							var content = new Uint8Array (read ("supportFiles/" + fullPath, 'binary'));
+							writeContentToFile(content, fullPath);
+						}
+					}
+				}
+			}
+			catch (err) {
+				Module.printErr(err);
+				Module.printErr(err.stack);
+				test_exit(1);
+			}
+		}
+
+		if (!enable_gc) {
+			Module.ccall ('mono_wasm_enable_on_demand_gc', 'void', ['number'], [0]);
 		}
 		if (enable_zoneinfo) {
 			// Load the zoneinfo data into the VFS rooted at /zoneinfo
@@ -187,21 +233,25 @@ var Module = {
 			var files = metadata.files;
 			for (var i = 0; i < files.length; ++i) {
 				var byteArray = zoneInfoData.subarray(files[i].start, files[i].end);
-				var stream = FS.open(files[i].filename, 'w+');
-				FS.write(stream, byteArray, 0, byteArray.length, 0);
-				FS.close(stream);
+				writeContentToFile(byteArray, files[i].filename);
 			}
 		}
 		MONO.mono_load_runtime_and_bcl (
 			config.vfs_prefix,
 			config.deploy_prefix,
 			config.enable_debugging,
-			config.file_list,
+			config.assembly_list,
 			function () {
 				App.init ();
 			},
 			function (asset)
 			{
+			  // for testing purposes add BCL assets to VFS until we special case File.Open
+			  // to identify when an assembly from the BCL is being open and resolve it correctly.
+			  var content = new Uint8Array (read (asset, 'binary'));
+			  var path = asset.substr(config.deploy_prefix.length);
+			  writeContentToFile(content, path);
+
 			  if (typeof window != 'undefined') {
 				return fetch (asset, { credentials: 'same-origin' });
 			  } else {
@@ -211,10 +261,10 @@ var Module = {
 				// Here we wrap the file read in a promise and fake a fetch response
 				// structure.
 				return new Promise((resolve, reject) => {
-					 var response = { ok: true, url: asset, 
+						var response = { ok: true, url: asset,
 							arrayBuffer: function() {
 								return new Promise((resolve2, reject2) => {
-									resolve2(new Uint8Array (read (asset, 'binary')));
+									resolve2(content);
 							}
 						)}
 					}
@@ -327,6 +377,20 @@ var App = {
 				print (ex.stack);
 				test_exit (1);
 			}
+
+/*
+			// For testing tp/timers etc.
+			while (true) {
+				// Sleep by busy waiting
+				var start = performance.now ();
+				useconds = 1e6 / 10;
+				while (performance.now() - start < useconds / 1000) {
+					// Do nothing.
+				}
+
+				Module.pump_message ();
+			}
+*/
 
 			if (is_browser)
 				test_exit (0);

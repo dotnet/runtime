@@ -20,16 +20,18 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-inlines.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\class-init.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-init.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-init-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\class-accessors.c" />
     <ClInclude Include="$(MonosourceLocation)\mono\metadata\class-private-definition.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\class-setup-vtable.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\cominterop.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\cominterop.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\console-io.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\coree.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\coree.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\coree-internals.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\culture-info.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\culture-info-tables.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\culture\culture-info.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\culture\culture-info-tables.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\debug-helpers.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\debug-mono-symfile.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\debug-mono-ppdb.h" />
@@ -62,7 +64,7 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loaded-images-netcore.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loader.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loader-internals.h" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\locales.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\culture\locales.c" Condition="Exists('$(MonoSourceLocation)\mono\culture\locales.c')" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\locales.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\lock-tracer.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\lock-tracer.h" />
@@ -106,6 +108,8 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-route.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\monitor.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\native-library.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\native-library.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\native-library-qcall.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\normalization-tables.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\number-formatter.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\number-ms.h" />

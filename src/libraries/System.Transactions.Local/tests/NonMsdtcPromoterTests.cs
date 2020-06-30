@@ -2216,7 +2216,7 @@ namespace System.Transactions.Tests
         /// <summary>
         /// PSPE Non-MSDTC Completed Event.
         /// </summary>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void PSPENonMsdtcCompletedEvent(bool promote)

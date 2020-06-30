@@ -28,7 +28,10 @@ namespace System.Globalization.Tests
             {
                 try
                 {
-                    var map = new IdnMapping();
+                    var map = new IdnMapping()
+                    {
+                        UseStd3AsciiRules = true
+                    };
                     var asciiResult = map.GetAscii(entry.Source);
                     Assert.Equal(entry.ASCIIResult.Value, asciiResult, StringComparer.OrdinalIgnoreCase);
                 }
@@ -36,7 +39,7 @@ namespace System.Globalization.Tests
                 {
                     string actualCodePoints = GetCodePoints(entry.Source);
                     string expectedCodePoints = GetCodePoints(entry.ASCIIResult.Value);
-                    throw new Exception($"Expected IdnMapping.GetAscii(\"{actualCodePoints}\" to return \"{expectedCodePoints}\".");
+                    throw new Exception($"Expected IdnMapping.GetAscii(\"{actualCodePoints}\" to return \"{expectedCodePoints}\". Line Number: {entry.LineNumber}");
                 }
             });
         }
@@ -66,7 +69,7 @@ namespace System.Globalization.Tests
                     {
                         string actualCodePoints = GetCodePoints(entry.Source);
                         string expectedCodePoints = GetCodePoints(entry.UnicodeResult.Value);
-                        throw new Exception($"Expected IdnMapping.GetUnicode(\"{actualCodePoints}\" to return \"{expectedCodePoints}\".");
+                        throw new Exception($"Expected IdnMapping.GetUnicode(\"{actualCodePoints}\" to return \"{expectedCodePoints}\". Line Number: {entry.LineNumber}");
                     }
                 }
             });
@@ -87,13 +90,16 @@ namespace System.Globalization.Tests
             {
                 try
                 {
-                    var map = new IdnMapping();
+                    var map = new IdnMapping()
+                    {
+                        UseStd3AsciiRules = true
+                    };
                     AssertExtensions.Throws<ArgumentException>("unicode", () => map.GetAscii(entry.Source));
                 }
                 catch (ThrowsException)
                 {
                     string codePoints = GetCodePoints(entry.Source);
-                    throw new Exception($"Expected IdnMapping.GetAscii(\"{codePoints}\") to throw an ArgumentException.");
+                    throw new Exception($"Expected IdnMapping.GetAscii(\"{codePoints}\") to throw an ArgumentException. Line Number: {entry.LineNumber}");
                 }
             });
         }
@@ -113,13 +119,16 @@ namespace System.Globalization.Tests
             {
                 try
                 {
-                    var map = new IdnMapping();
+                    var map = new IdnMapping()
+                    {
+                        UseStd3AsciiRules = true
+                    };
                     AssertExtensions.Throws<ArgumentException>("ascii", () => map.GetUnicode(entry.Source));
                 }
                 catch (ThrowsException)
                 {
                     string codePoints = GetCodePoints(entry.Source);
-                    throw new Exception($"Expected IdnMapping.GetUnicode(\"{codePoints}\") to throw an ArgumentException.");
+                    throw new Exception($"Expected IdnMapping.GetUnicode(\"{codePoints}\") to throw an ArgumentException. Line Number: {entry.LineNumber}");
                 }
             });
         }

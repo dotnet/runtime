@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -25,7 +24,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Initializes a new instance of the Map class.
         /// </summary>
         /// <param name="jsHandle">Js handle.</param>
-        internal Map(IntPtr jsHandle) : base(jsHandle)
+        /// <param name="ownsHandle">Whether or not the handle is owned by the clr or not.</param>
+        internal Map(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
         { }
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             #region IDisposable Support
-            private bool _disposedValue = false; // To detect redundant calls
+            private bool _disposedValue; // To detect redundant calls
 
             private void Dispose(bool disposing)
             {
@@ -230,26 +230,19 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
 
                 #region IDisposable Support
-                private bool _disposedValue = false; // To detect redundant calls
+                private bool _disposedValue; // To detect redundant calls
 
                 private void Dispose(bool disposing)
                 {
                     if (!_disposedValue)
                     {
-                        if (disposing)
-                        {
-                            // TODO: dispose managed state (managed objects).
-                        }
 
-                        // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                        // TODO: set large fields to null.
                         _mapItemIterator?.Dispose();
                         _mapItemIterator = null;
                         _disposedValue = true;
                     }
                 }
 
-                //TODO: override a finalizer only if Dispose (bool disposing) above has code to free unmanaged resources.
                 ~MapItemEnumerator()
                 {
                     // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
