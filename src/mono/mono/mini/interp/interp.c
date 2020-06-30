@@ -5220,6 +5220,14 @@ call_newobj:
 			++ip;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_INTRINS_CLEAR_WITH_REFERENCES) {
+			sp -= 2;
+			gpointer p = sp [0].data.p;
+			size_t size = sp [1].data.nati * sizeof (gpointer);
+			mono_gc_bzero_aligned (p, size);
+			++ip;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_INTRINS_UNSAFE_BYTE_OFFSET) {
 			sp -= 2;
 			sp [0].data.nati = (guint8*)sp [1].data.p - (guint8*)sp [0].data.p;

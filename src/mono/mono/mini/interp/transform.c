@@ -1471,6 +1471,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			if (mini_should_insert_breakpoint (td->method))
 				*op = MINT_BREAK;
 		}
+	} else if (in_corlib &&
+			!strcmp (klass_name_space, "System") &&
+			!strcmp (klass_name, "SpanHelpers") &&
+			!strcmp (tm, "ClearWithReferences")) {
+		*op = MINT_INTRINS_CLEAR_WITH_REFERENCES;
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "ByReference`1")) {
 		g_assert (!strcmp (tm, "get_Value"));
 		*op = MINT_INTRINS_BYREFERENCE_GET_VALUE;
