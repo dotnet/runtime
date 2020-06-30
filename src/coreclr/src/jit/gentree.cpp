@@ -3301,8 +3301,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 //  applied to it.
                 // Any constant that requires a reloc must use the movw/movt sequence
                 //
-                GenTreeIntConCommon* con = tree->AsIntConCommon();
-                INT32 conVal = con->IconValue();
+                GenTreeIntConCommon* con    = tree->AsIntConCommon();
+                INT32                conVal = con->IconValue();
 
                 if (con->ImmedValNeedsReloc(this))
                 {
@@ -3313,13 +3313,13 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 else if (codeGen->validImmForInstr(INS_add, (target_ssize_t)conVal))
                 {
                     // Typically included with parent oper
-                    costSz = 1;
+                    costSz = 2;
                     costEx = 1;
                 }
                 else if (codeGen->validImmForInstr(INS_mov, (target_ssize_t)conVal) &&
                          codeGen->validImmForInstr(INS_mvn, (target_ssize_t)conVal))
                 {
-                    // Uses mov ot mvn
+                    // Uses mov or mvn
                     costSz = 4;
                     costEx = 1;
                 }
@@ -3397,63 +3397,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
 #endif // TARGET_X86
 
-                // If JitDisableConstCSE is set to 4 or 5 we change the costs of the GT_CNS_INT
-                // to match that used by ARM64, so that we get a similar set of CSE performed
-                // when running on x64
-                //
-                int configValue = JitConfig.JitDisableConstCSE();
-                if ((configValue == 4) || (configValue == 5))
-                {
-                    GenTreeIntConCommon* con = tree->AsIntConCommon();
-                    bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
-                    INT64                imm = con->LngValue();
-                    emitAttr             size = EA_8BYTE;
-
-                    if (iconNeedsReloc)
-                    {
-                        costSz = 8;
-                        costEx = 2;
-                    }
-                    else if ((imm >= -256) && (imm < 1024))
-                    {
-                        costSz = 2;
-                        costEx = 1;
-                    }
-                    else
-                    {
-                        // Arm64 allows any arbitrary 16-bit constant to be loaded into a register halfword
-                        // There are three forms
-                        //    movk which loads into any halfword preserving the remaining halfwords
-                        //    movz which loads into any halfword zeroing the remaining halfwords
-                        //    movn which loads into any halfword zeroing the remaining halfwords then bitwise inverting
-                        //    the register
-                        // In some cases it is preferable to use movn, because it has the side effect of filling the
-                        // other halfwords
-                        // with ones
-
-                        // Determine whether movn or movz will require the fewest instructions to populate the immediate
-                        bool preferMovz = false;
-                        bool preferMovn = false;
-                        int  instructionCount = 4;
-
-                        for (int i = (size == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
-                        {
-                            if (!preferMovn && (uint16_t(imm >> i) == 0x0000))
-                            {
-                                preferMovz = true; // by using a movk to start we can save one instruction
-                                instructionCount--;
-                            }
-                            else if (!preferMovz && (uint16_t(imm >> i) == 0xffff))
-                            {
-                                preferMovn = true; // by using a movn to start we can save one instruction
-                                instructionCount--;
-                            }
-                        }
-
-                        costSz = 4 * instructionCount;
-                        costEx = instructionCount;
-                    }
-                }
                 goto COMMON_CNS;
             }
 
@@ -3462,62 +3405,62 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_CNS_STR:
             case GT_CNS_LNG:
             case GT_CNS_INT:
+            {
+                GenTreeIntConCommon* con            = tree->AsIntConCommon();
+                bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
+                INT64                imm            = con->LngValue();
+                emitAttr             size           = emitActualTypeSize(tree);
+
+                if (iconNeedsReloc)
                 {
-                    GenTreeIntConCommon* con            = tree->AsIntConCommon();
-                    bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
-                    INT64                imm            = con->LngValue();
-                    emitAttr             size           = EA_8BYTE;
-
-                    if (iconNeedsReloc)
-                    {
-                        costSz = 8;
-                        costEx = 2;
-                    }
-                    else if ((imm >= -256) && (imm < 1024))
-                    {
-                        costSz = 2;
-                        costEx = 1;
-                    }
-                    else if (emitter::emitIns_valid_imm_for_mov(imm, size))
-                    {
-                        costSz = 4;
-                        costEx = 1;
-                    }
-                    else
-                    {
-                        // Arm64 allows any arbitrary 16-bit constant to be loaded into a register halfword
-                        // There are three forms
-                        //    movk which loads into any halfword preserving the remaining halfwords
-                        //    movz which loads into any halfword zeroing the remaining halfwords
-                        //    movn which loads into any halfword zeroing the remaining halfwords then bitwise inverting
-                        //    the register
-                        // In some cases it is preferable to use movn, because it has the side effect of filling the
-                        // other halfwords
-                        // with ones
-
-                        // Determine whether movn or movz will require the fewest instructions to populate the immediate
-                        bool preferMovz       = false;
-                        bool preferMovn       = false;
-                        int  instructionCount = 4;
-
-                        for (int i = (size == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
-                        {
-                            if (!preferMovn && (uint16_t(imm >> i) == 0x0000))
-                            {
-                                preferMovz = true; // by using a movk to start we can save one instruction
-                                instructionCount--;
-                            }
-                            else if (!preferMovz && (uint16_t(imm >> i) == 0xffff))
-                            {
-                                preferMovn = true; // by using a movn to start we can save one instruction
-                                instructionCount--;
-                            }
-                        }
-
-                        costEx = instructionCount;
-                        costSz = 4 * instructionCount;
-                    }
+                    costSz = 8;
+                    costEx = 2;
                 }
+                else if (emitter::emitIns_valid_imm_for_add(imm, size))
+                {
+                    costSz = 2;
+                    costEx = 1;
+                }
+                else if (emitter::emitIns_valid_imm_for_mov(imm, size))
+                {
+                    costSz = 4;
+                    costEx = 1;
+                }
+                else
+                {
+                    // Arm64 allows any arbitrary 16-bit constant to be loaded into a register halfword
+                    // There are three forms
+                    //    movk which loads into any halfword preserving the remaining halfwords
+                    //    movz which loads into any halfword zeroing the remaining halfwords
+                    //    movn which loads into any halfword zeroing the remaining halfwords then bitwise inverting
+                    //    the register
+                    // In some cases it is preferable to use movn, because it has the side effect of filling the
+                    // other halfwords
+                    // with ones
+
+                    // Determine whether movn or movz will require the fewest instructions to populate the immediate
+                    bool preferMovz       = false;
+                    bool preferMovn       = false;
+                    int  instructionCount = 4;
+
+                    for (int i = (size == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
+                    {
+                        if (!preferMovn && (uint16_t(imm >> i) == 0x0000))
+                        {
+                            preferMovz = true; // by using a movk to start we can save one instruction
+                            instructionCount--;
+                        }
+                        else if (!preferMovz && (uint16_t(imm >> i) == 0xffff))
+                        {
+                            preferMovn = true; // by using a movn to start we can save one instruction
+                            instructionCount--;
+                        }
+                    }
+
+                    costEx = instructionCount;
+                    costSz = 4 * instructionCount;
+                }
+            }
                 goto COMMON_CNS;
 
 #else

@@ -410,14 +410,15 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     int      configValue          = JitConfig.JitDisableConstCSE();
 
 #if defined(TARGET_ARM64)
+    // ARM64 - allow to combine with nearby offsets, when config is not 2
     if (configValue != 2)
     {
         enableSharedConstCSE = true;
     }
 #endif // TARGET_ARM64
 
-    // All Platforms - don't combine with nearby offsets
-    if (configValue == 5)
+    // All Platforms - also allow to combine with nearby offsets, when config is 3
+    if (configValue == 3)
     {
         enableSharedConstCSE = true;
     }
@@ -725,12 +726,14 @@ unsigned Compiler::optValnumCSE_Locate()
 
     int configValue = JitConfig.JitDisableConstCSE();
 
+    // all platforms - disable CSE of constant values when config is 1
     if (configValue == 1)
     {
         disableConstCSE = true;
     }
 #if !defined(TARGET_ARM64)
-    if (configValue == 0)
+    // non-ARM64 platforms - also disable CSE of constant values when config is 0 or 2
+    if ((configValue == 0) || (configValue == 2))
     {
         disableConstCSE = true;
     }
@@ -2320,12 +2323,6 @@ public:
             // because it doesn't take into account that we might use a vector register for struct copies.
             slotCount = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
         }
-#if 0 //ndef TARGET_64BIT
-        if (candidate->Expr()->TypeGet() == TYP_LONG)
-        {
-            slotCount = 2; // on 32-bit targets longs use two registers
-        }
-#endif
 
         if (CodeOptKind() == Compiler::SMALL_CODE)
         {
