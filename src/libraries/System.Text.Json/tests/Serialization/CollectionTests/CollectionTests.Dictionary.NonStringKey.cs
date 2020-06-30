@@ -327,91 +327,6 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Contains(typeToConvert.ToString(), ex.Message);
             }
 
-            [Theory]
-            [InlineData(@"{""\u0041"":1}", typeof(Dictionary<string, int>), "A")]
-            [InlineData(@"{""\u0066\u006f\u006f"":1}", typeof(Dictionary<MyEnum, int>), MyEnum.Foo)]
-            [InlineData(@"{""\u0066\u006f\u006f\u002c\u0020\u0062\u0061\u0072"":1}", typeof(Dictionary<MyEnumFlags, int>), MyEnumFlags.Foo | MyEnumFlags.Bar)]
-            public static void TestUnescapedKeys(string json, Type typeToConvert, object keyAsType)
-            {
-                object result = JsonSerializer.Deserialize(json, typeToConvert);
-
-                IDictionary dictionary = (IDictionary)result;
-                Assert.True(dictionary.Contains(keyAsType));
-            }
-
-            [Fact]
-            public static void TestMoreUnescapedKeys()
-            {
-                // Test types that cannot be passed as InlineData in above method.
-
-                Dictionary<Guid, int> result = JsonSerializer.Deserialize<Dictionary<Guid, int>>(@"{""\u0036bb67e4e-9780-4895-851b-75f72ac34c5a"":1}");
-                Guid guid = new Guid("6bb67e4e-9780-4895-851b-75f72ac34c5a");
-                Assert.Equal(1, result[guid]);
-
-                Dictionary<DateTime, int> result2 = JsonSerializer.Deserialize<Dictionary<DateTime, int>>(@"{""\u0032\u0030\u0030\u0039\u002d\u0030\u0036\u002d\u0031\u0035\u0054\u0031\u0033\u003a\u0034\u0035\u003a\u0033\u0030\u002e\u0030\u0030\u0030\u0030\u0030\u0030\u0030"":1}");
-                // 2009-06-15T13:45:30.0000000
-                DateTime dateTime = new DateTime(2009, 6, 15, 13, 45, 30, DateTimeKind.Unspecified);
-                Assert.Equal(1, result2[dateTime]);
-
-                Dictionary<DateTime, int> result3 = JsonSerializer.Deserialize<Dictionary<DateTime, int>>(@"{""\u0032\u0030\u0030\u0039\u002d\u0030\u0036\u002d\u0031\u0035\u0054\u0031\u0033\u003a\u0034\u0035\u003a\u0033\u0030\u002e\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u005a"":1}");
-                // 2009-06-15T13:45:30.0000000Z
-                dateTime = new DateTime(2009, 6, 15, 13, 45, 30, DateTimeKind.Utc);
-                Assert.Equal(1, result3[dateTime]);
-
-                Dictionary<DateTimeOffset, int> result4 = JsonSerializer.Deserialize<Dictionary<DateTimeOffset, int>>(@"{""\u0032\u0030\u0030\u0039\u002d\u0030\u0036\u002d\u0031\u0035\u0054\u0031\u0033\u003a\u0034\u0035\u003a\u0033\u0030\u002e\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u002d\u0030\u0037\u003a\u0030\u0030"":1}");
-                // 2009-06-15T13:45:30.0000000-07:00
-                DateTimeOffset dateTimeOffset = new DateTimeOffset(2009, 6, 15, 13, 45, 30, new TimeSpan(-7, 0, 0));
-                Assert.Equal(1, result4[dateTimeOffset]);
-            }
-
-            [Theory]
-            [InlineData(@"{""\u0041"":1}", typeof(Dictionary<string, int>), "A")]
-            [InlineData(@"{""\u0066\u006f\u006f"":1}", typeof(Dictionary<MyEnum, int>), MyEnum.Foo)]
-            [InlineData(@"{""\u0066\u006f\u006f\u002c\u0020\u0062\u0061\u0072"":1}", typeof(Dictionary<MyEnumFlags, int>), MyEnumFlags.Foo | MyEnumFlags.Bar)]
-            public static async Task TestUnescapedKeysAsync(string json, Type typeToConvert, object keyAsType)
-            {
-                byte[] utf8Json = Encoding.UTF8.GetBytes(json);
-                MemoryStream stream = new MemoryStream(utf8Json);
-
-                object result = await JsonSerializer.DeserializeAsync(stream, typeToConvert);
-
-                IDictionary dictionary = (IDictionary)result;
-                Assert.True(dictionary.Contains(keyAsType));
-            }
-
-            [Fact]
-            public static async Task TestMoreUnescapedKeyAsync()
-            {
-                // Test types that cannot be passed as InlineData in above method.
-
-                byte[] utf8Json = Encoding.UTF8.GetBytes(@"{""\u0036bb67e4e-9780-4895-851b-75f72ac34c5a"":1}");
-                MemoryStream stream = new MemoryStream(utf8Json);
-                Dictionary<Guid, int> result = await JsonSerializer.DeserializeAsync<Dictionary<Guid, int>>(stream);
-                Guid myGuid = new Guid("6bb67e4e-9780-4895-851b-75f72ac34c5a");
-                Assert.Equal(1, result[myGuid]);
-
-                utf8Json = Encoding.UTF8.GetBytes(@"{""\u0032\u0030\u0030\u0039\u002d\u0030\u0036\u002d\u0031\u0035\u0054\u0031\u0033\u003a\u0034\u0035\u003a\u0033\u0030\u002e\u0030\u0030\u0030\u0030\u0030\u0030\u0030"":1}");
-                stream = new MemoryStream(utf8Json);
-                Dictionary<DateTime, int> result2 = await JsonSerializer.DeserializeAsync<Dictionary<DateTime, int>>(stream);
-                // 2009-06-15T13:45:30.0000000
-                DateTime myDate = new DateTime(2009, 6, 15, 13, 45, 30, DateTimeKind.Unspecified);
-                Assert.Equal(1, result2[myDate]);
-
-                utf8Json = Encoding.UTF8.GetBytes(@"{""\u0032\u0030\u0030\u0039\u002d\u0030\u0036\u002d\u0031\u0035\u0054\u0031\u0033\u003a\u0034\u0035\u003a\u0033\u0030\u002e\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u005a"":1}");
-                stream = new MemoryStream(utf8Json);
-                Dictionary<DateTime, int> result3 = await JsonSerializer.DeserializeAsync<Dictionary<DateTime, int>>(stream);
-                // 2009-06-15T13:45:30.0000000Z
-                myDate = new DateTime(2009, 6, 15, 13, 45, 30, DateTimeKind.Utc);
-                Assert.Equal(1, result3[myDate]);
-
-                utf8Json = Encoding.UTF8.GetBytes(@"{""\u0032\u0030\u0030\u0039\u002d\u0030\u0036\u002d\u0031\u0035\u0054\u0031\u0033\u003a\u0034\u0035\u003a\u0033\u0030\u002e\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u002d\u0030\u0037\u003a\u0030\u0030"":1}");
-                stream = new MemoryStream(utf8Json);
-                Dictionary<DateTimeOffset, int> result4 = await JsonSerializer.DeserializeAsync<Dictionary<DateTimeOffset, int>>(stream);
-                // 2009-06-15T13:45:30.0000000-07:00
-                DateTimeOffset dateTimeOffset = new DateTimeOffset(2009, 6, 15, 13, 45, 30, new TimeSpan(-7, 0, 0));
-                Assert.Equal(1, result4[dateTimeOffset]);
-            }
-
             [Fact]
             public static void TestNotSuportedExceptionIsThrown()
             {
@@ -548,6 +463,19 @@ namespace System.Text.Json.Serialization.Tests
             {
                 string json = $@"{{""{escapedPropertyName}"":1}}";
                 IDictionary root = (IDictionary)JsonSerializer.Deserialize(json, dictionaryType);
+
+                bool containsKey = root.Contains(expectedDictionaryKey);
+                Assert.True(containsKey);
+                Assert.Equal(1, root[expectedDictionaryKey]);
+            }
+
+            [Theory]
+            [MemberData(nameof(EscapedMemberData))]
+            public async Task TestEscapedValuesOnDeserializeAsync(string escapedPropertyName, object expectedDictionaryKey, Type dictionaryType)
+            {
+                string json = $@"{{""{escapedPropertyName}"":1}}";
+                MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+                IDictionary root = (IDictionary)await JsonSerializer.DeserializeAsync(stream, dictionaryType);
 
                 bool containsKey = root.Contains(expectedDictionaryKey);
                 Assert.True(containsKey);
