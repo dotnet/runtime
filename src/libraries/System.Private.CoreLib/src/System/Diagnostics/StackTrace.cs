@@ -201,10 +201,11 @@ namespace System.Diagnostics
 
         internal void ToString(TraceFormat traceFormat, StringBuilder sb)
         {
-            // Adding a default string for "at" in case we are using Resource Keys instead of resources
+            // Passing a default string for "at" in case we are using Resource Keys instead of resources
             // as this is a special case and we don't want to have "Word_At" on stack traces.
             string word_At = SR.GetResourceString(nameof(SR.Word_At), defaultString: "at");
-            string inFileLineNum = SR.StackTrace_InFileLineNumber;
+            // We also want to pass in a default for inFileLineNumber.
+            string inFileLineNum = SR.GetResourceString(nameof(SR.StackTrace_InFileLineNumber), defaultString: "in {0}:line {1}");
             bool fFirstFrame = true;
             for (int iFrameIndex = 0; iFrameIndex < _numOfFrames; iFrameIndex++)
             {
@@ -328,7 +329,9 @@ namespace System.Diagnostics
                     if (sf.IsLastFrameFromForeignExceptionStackTrace && !isAsync)
                     {
                         sb.AppendLine();
-                        sb.Append(SR.Exception_EndStackTraceFromPreviousThrow);
+                        // Passing default for Exception_EndStackTraceFromPreviousThrow in case UsingResourceKeys is set.
+                        sb.Append(SR.GetResourceString(nameof(SR.Exception_EndStackTraceFromPreviousThrow),
+                            defaultString: "--- End of stack trace from previous location ---"));
                     }
                 }
             }
