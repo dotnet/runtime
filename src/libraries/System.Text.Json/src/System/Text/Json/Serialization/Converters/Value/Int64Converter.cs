@@ -18,12 +18,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override long ReadWithQuotes(ref Utf8JsonReader reader)
         {
-            if (!reader.TryGetInt64Core(out long value))
-            {
-                throw ThrowHelper.GetFormatException(NumericType.Int64);
-            }
-
-            return value;
+            return reader.GetInt64WithQuotes();
         }
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, long value, JsonSerializerOptions options, ref WriteStack state)

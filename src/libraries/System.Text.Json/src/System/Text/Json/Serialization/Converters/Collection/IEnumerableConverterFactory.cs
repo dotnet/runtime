@@ -68,7 +68,7 @@ namespace System.Text.Json.Serialization.Converters
                 converterType = typeof(ListOfTConverter<,>);
                 elementType = actualTypeToConvert.GetGenericArguments()[0];
             }
-            // Dictionary<TKey,> or deriving from Dictionary<TKey,>
+            // Dictionary<TKey, TValue> or deriving from Dictionary<TKey, TValue>
             else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericBaseClass(typeof(Dictionary<,>))) != null)
             {
                 genericArgs = actualTypeToConvert.GetGenericArguments();
@@ -84,7 +84,7 @@ namespace System.Text.Json.Serialization.Converters
                 dictionaryKeyType = genericArgs[0];
                 elementType = genericArgs[1];
             }
-            // IDictionary<TKey,> or deriving from IDictionary<TKey,>
+            // IDictionary<TKey, TValue> or deriving from IDictionary<TKey, TValue>
             else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(IDictionary<,>))) != null)
             {
                 genericArgs = actualTypeToConvert.GetGenericArguments();
@@ -92,7 +92,7 @@ namespace System.Text.Json.Serialization.Converters
                 dictionaryKeyType = genericArgs[0];
                 elementType = genericArgs[1];
             }
-            // IReadOnlyDictionary<TKey,> or deriving from IReadOnlyDictionary<TKey,>
+            // IReadOnlyDictionary<TKey, TValue> or deriving from IReadOnlyDictionary<TKey, TValue>
             else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(IReadOnlyDictionary<,>))) != null)
             {
                 genericArgs = actualTypeToConvert.GetGenericArguments();

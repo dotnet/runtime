@@ -18,12 +18,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override sbyte ReadWithQuotes(ref Utf8JsonReader reader)
         {
-            if (!reader.TryGetSByteCore(out sbyte value))
-            {
-                throw ThrowHelper.GetFormatException(NumericType.SByte);
-            }
-
-            return value;
+            return reader.GetSByteWithQuotes();
         }
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, sbyte value, JsonSerializerOptions options, ref WriteStack state)

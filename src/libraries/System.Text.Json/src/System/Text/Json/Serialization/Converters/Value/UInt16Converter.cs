@@ -18,12 +18,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override ushort ReadWithQuotes(ref Utf8JsonReader reader)
         {
-            if (!reader.TryGetUInt16Core(out ushort value))
-            {
-                throw ThrowHelper.GetFormatException(NumericType.UInt16);
-            }
-
-            return value;
+            return reader.GetUInt16WithQuotes();
         }
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, ushort value, JsonSerializerOptions options, ref WriteStack state)

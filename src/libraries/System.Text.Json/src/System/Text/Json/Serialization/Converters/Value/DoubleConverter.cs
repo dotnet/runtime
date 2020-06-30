@@ -18,12 +18,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override double ReadWithQuotes(ref Utf8JsonReader reader)
         {
-            if (!reader.TryGetDoubleCore(out double value))
-            {
-                throw ThrowHelper.GetFormatException(NumericType.Double);
-            }
-
-            return value;
+            return reader.GetDoubleWithQuotes();
         }
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, double value, JsonSerializerOptions options, ref WriteStack state)

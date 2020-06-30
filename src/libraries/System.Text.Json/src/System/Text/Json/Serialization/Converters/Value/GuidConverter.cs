@@ -18,17 +18,12 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override Guid ReadWithQuotes(ref Utf8JsonReader reader)
         {
-            if (!reader.TryGetGuidCore(out Guid value))
-            {
-                throw ThrowHelper.GetFormatException(DataType.Guid);
-            }
-
-            return value;
+            return reader.GetGuidNoValidation();
         }
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, Guid value, JsonSerializerOptions options, ref WriteStack state)
         {
             writer.WritePropertyName(value);
-        }
+        }
     }
 }

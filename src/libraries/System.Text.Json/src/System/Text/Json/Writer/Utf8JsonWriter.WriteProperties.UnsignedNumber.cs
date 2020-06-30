@@ -452,7 +452,7 @@ namespace System.Text.Json
             bool result = Utf8Formatter.TryFormat(value, utf8PropertyName, out int bytesWritten);
             Debug.Assert(result);
 
-            WritePropertyName(utf8PropertyName.Slice(0, bytesWritten));
+            WritePropertyNameUnescaped(utf8PropertyName.Slice(0, bytesWritten));
         }
     }
 }

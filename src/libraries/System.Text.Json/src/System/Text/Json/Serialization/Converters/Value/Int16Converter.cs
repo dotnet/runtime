@@ -20,15 +20,10 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override short ReadWithQuotes(ref Utf8JsonReader reader)
         {
-            if (!reader.TryGetInt16Core(out short value))
-            {
-                throw ThrowHelper.GetFormatException(NumericType.Int16);
-            }
-
-            return value;
+            return reader.GetInt16WithQuotes();
         }
 
-        internal override void WriteWithQuotes(Utf8JsonWriter writer, [DisallowNull] short value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, short value, JsonSerializerOptions options, ref WriteStack state)
         {
             writer.WritePropertyName(value);
         }

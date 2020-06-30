@@ -18,12 +18,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override uint ReadWithQuotes(ref Utf8JsonReader reader)
         {
-            if (!reader.TryGetUInt32Core(out uint value))
-            {
-                throw ThrowHelper.GetFormatException(NumericType.UInt16);
-            }
-
-            return value;
+            return reader.GetUInt32WithQuotes();
         }
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, uint value, JsonSerializerOptions options, ref WriteStack state)

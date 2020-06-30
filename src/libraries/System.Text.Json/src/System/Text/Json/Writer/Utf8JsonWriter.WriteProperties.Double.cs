@@ -373,7 +373,7 @@ namespace System.Text.Json
             Span<byte> utf8PropertyName = stackalloc byte[JsonConstants.MaximumFormatDoubleLength];
             bool result = TryFormatDouble(value, utf8PropertyName, out int bytesWritten);
             Debug.Assert(result);
-            WritePropertyName(utf8PropertyName.Slice(0, bytesWritten));
+            WritePropertyNameUnescaped(utf8PropertyName.Slice(0, bytesWritten));
         }
     }
 }

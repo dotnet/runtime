@@ -379,7 +379,7 @@ namespace System.Text.Json
         {
             Span<byte> buffer = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
             JsonWriterHelper.WriteDateTimeOffsetTrimmed(buffer, value, out int bytesWritten);
-            WritePropertyName(buffer.Slice(0, bytesWritten));
+            WritePropertyNameUnescaped(buffer.Slice(0, bytesWritten));
         }
     }
 }

@@ -16,10 +16,15 @@ namespace System.Text.Json.Serialization.Converters
         : DictionaryDefaultConverter<TCollection, string, object?>
         where TCollection : IDictionary
     {
-        protected override void Add(in string key, in object? value, JsonSerializerOptions options, ref ReadStack state)
+        protected override void Add(string key, in object? value, JsonSerializerOptions options, ref ReadStack state)
         {
             ((IDictionary)state.Current.ReturnValue!)[key] = value;
         }
+
+        private JsonConverter<object>? _objectConverter;
+
+        private JsonConverter<object> GetObjectKeyConverter(JsonSerializerOptions options)
+            => _objectConverter ??= (JsonConverter<object>)options.GetDictionaryKeyConverter(typeof(object));
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
@@ -68,7 +73,7 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (IDictionaryEnumerator)state.Current.CollectionEnumerator;
             }
 
-            JsonConverter<object?> converter = GetValueConverter(ref state);
+            JsonConverter<object?> converter = GetValueConverter(state.Current.JsonClassInfo);
             do
             {
                 if (ShouldFlush(writer, ref state))
@@ -89,12 +94,9 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
-                        // IDictionary is a spacial case since it has polymorphic object semantics on serialization
+                        // IDictionary is a special case since it has polymorphic object semantics on serialization
                         // but needs to use JsonConverter<string> on deserialization.
-                        JsonConverter? keyConverter = options.GetDictionaryKeyConverter(typeof(object));
-                        Debug.Assert(keyConverter != null);
-
-                        JsonConverter<object> objectKeyConverter = (JsonConverter<object>)keyConverter;
+                        JsonConverter<object> objectKeyConverter = GetObjectKeyConverter(options);
                         objectKeyConverter.WriteWithQuotes(writer, key, options, ref state);
                     }
                 }

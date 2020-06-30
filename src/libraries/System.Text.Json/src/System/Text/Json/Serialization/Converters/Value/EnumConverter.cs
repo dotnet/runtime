@@ -83,15 +83,7 @@ namespace System.Text.Json.Serialization.Converters
                     return default;
                 }
 
-                // Try parsing case sensitive first
-                string? enumString = reader.GetString();
-                if (!Enum.TryParse(enumString, out T value)
-                    && !Enum.TryParse(enumString, ignoreCase: true, out value))
-                {
-                    ThrowHelper.ThrowJsonException();
-                    return default;
-                }
-                return value;
+                return ReadWithQuotes(ref reader);
             }
 
             if (token != JsonTokenType.Number || !_converterOptions.HasFlag(EnumConverterOptions.AllowNumbers))
@@ -321,8 +313,8 @@ namespace System.Text.Json.Serialization.Converters
         internal override T ReadWithQuotes(ref Utf8JsonReader reader)
         {
             string? enumString = reader.GetString();
-            Debug.Assert(enumString != null);
 
+            // Try parsing case sensitive first
             if (!Enum.TryParse(enumString, out T value)
                 && !Enum.TryParse(enumString, ignoreCase: true, out value))
             {

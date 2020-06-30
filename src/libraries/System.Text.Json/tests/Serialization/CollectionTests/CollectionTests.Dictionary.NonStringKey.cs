@@ -84,17 +84,16 @@ namespace System.Text.Json.Serialization.Tests
 
         public class DictionaryDateTimeKey : DictionaryKeyTestsBase<DateTime, int>
         {
-            protected override string _expectedJson => $@"{{""{DateTime.MaxValue.ToString("O")}"":1}}";
+            protected override string _expectedJson => $@"{{""{DateTime.MaxValue:O}"":1}}";
             protected override DateTime Key => DateTime.MaxValue;
             protected override int Value => 1;
         }
 
-        public class DictionaryDateTimeOffsetKey : DictionaryKeyTestsBase<DateTimeOffset, DateTimeOffset>
+        public class DictionaryDateTimeOffsetKey : DictionaryKeyTestsBase<DateTimeOffset, int>
         {
-            //TODO: The plus sign is escaped for the key but not for the value. Is this correct?
-            protected override string _expectedJson => $@"{{""9999-12-31T23:59:59.9999999\u002B00:00"":""{DateTimeOffset.MaxValue.ToString("O")}""}}";
+            protected override string _expectedJson => $@"{{""{DateTimeOffset.MaxValue:O}"":1}}";
             protected override DateTimeOffset Key => DateTimeOffset.MaxValue;
-            protected override DateTimeOffset Value => DateTimeOffset.MaxValue;
+            protected override int Value => 1;
         }
 
         public class DictionaryDecimalKey : DictionaryKeyTestsBase<decimal, int>
@@ -103,17 +102,9 @@ namespace System.Text.Json.Serialization.Tests
             protected override int Value => 1;
         }
 
-        //public class DictionaryDoubleKey : DictionaryKeyTestsBase<double, double>
-        //{
-        //    //TODO: The plus sign is escaped for the key but not for the value. Is this correct?
-        //    protected override string _expectedJson => $@"{{""1.7976931348623157E\u002B308"":{double.MaxValue}}}";
-        //    protected override double Key => double.MaxValue;
-        //    protected override double Value => double.MaxValue;
-        //}
-
         public class DictionaryDoubleKey : DictionaryKeyTestsBase<double, int>
         {
-            protected override double Key => 1;
+            protected override double Key => double.MaxValue;
             protected override int Value => 1;
         }
 
@@ -160,16 +151,9 @@ namespace System.Text.Json.Serialization.Tests
             protected override int Value => 1;
         }
 
-        //public class DictionarySingleKey : DictionaryKeyTestsBase<float, float>
-        //{
-        //    //TODO: The plus sign is escaped for the key but not for the value. Is this correct?
-        //    protected override float Key => float.MaxValue;
-        //    protected override float Value => float.MaxValue;
-        //}
-
         public class DictionarySingleKey : DictionaryKeyTestsBase<float, int>
         {
-            protected override float Key => 1;
+            protected override float Key => float.MaxValue;
             protected override int Value => 1;
         }
 
@@ -538,12 +522,80 @@ namespace System.Text.Json.Serialization.Tests
                 myEnumFlagsIntDictionary = JsonSerializer.Deserialize<Dictionary<MyEnumFlags, int>>(json);
                 Assert.Equal(1, myEnumFlagsIntDictionary[(MyEnumFlags)(-1)]);
             }
+
+            [Theory]
+            [MemberData(nameof(DictionaryKeysWithSpecialCharacters))]
+            public void EnsureNonStringKeysDontGetEscapedOnSerialize(object key, string expectedKeySerialized)
+            {
+                Dictionary<object, int> root = new Dictionary<object, int>();
+                root.Add(key, 1);
+
+                string json = JsonSerializer.Serialize(root);
+                Assert.Contains(expectedKeySerialized, json);
+            }
+
+            public static IEnumerable<object[]> DictionaryKeysWithSpecialCharacters =>
+                new List<object[]>
+                {
+                    new object[] { float.MaxValue, "3.4028235E+38" },
+                    new object[] { double.MaxValue, "1.7976931348623157E+308" },
+                    new object[] { DateTimeOffset.MaxValue, "9999-12-31T23:59:59.9999999+00:00" }
+                };
+
+            [Theory]
+            [MemberData(nameof(EscapedMemberData))]
+            public void TestEscapedValuesOnDeserialize(string escapedPropertyName, object expectedDictionaryKey, Type dictionaryType)
+            {
+                string json = $@"{{""{escapedPropertyName}"":1}}";
+                IDictionary root = (IDictionary)JsonSerializer.Deserialize(json, dictionaryType);
+
+                bool containsKey = root.Contains(expectedDictionaryKey);
+                Assert.True(containsKey);
+                Assert.Equal(1, root[expectedDictionaryKey]);
+            }
+
+            public static IEnumerable<object[]> EscapedMemberData =>
+                new List<object[]>
+                {
+                    new object[] { @"\u0031\u0032\u0037",
+                        sbyte.MaxValue, typeof(Dictionary<sbyte, int>) },
+                    new object[] { @"\u0032\u0035\u0035",
+                        byte.MaxValue, typeof(Dictionary<byte, int>) },
+                    new object[] { @"\u0033\u0032\u0037\u0036\u0037",
+                        short.MaxValue, typeof(Dictionary<short, int>) },
+                    new object[] { @"\u0036\u0035\u0035\u0033\u0035",
+                        ushort.MaxValue, typeof(Dictionary<ushort, int>) },
+                    new object[] { @"\u0032\u0031\u0034\u0037\u0034\u0038\u0033\u0036\u0034\u0037",
+                        int.MaxValue, typeof(Dictionary<int, int>) },
+                    new object[] { @"\u0034\u0032\u0039\u0034\u0039\u0036\u0037\u0032\u0039\u0035",
+                        uint.MaxValue, typeof(Dictionary<uint, int>) },
+                    new object[] { @"\u0039\u0032\u0032\u0033\u0033\u0037\u0032\u0030\u0033\u0036\u0038\u0035\u0034\u0037\u0037\u0035\u0038\u0030\u0037",
+                        long.MaxValue, typeof(Dictionary<long, int>) },
+                    new object[] { @"\u0031\u0038\u0034\u0034\u0036\u0037\u0034\u0034\u0030\u0037\u0033\u0037\u0030\u0039\u0035\u0035\u0031\u0036\u0031\u0035",
+                        ulong.MaxValue, typeof(Dictionary<ulong, int>) },
+                    new object[] { @"\u0033\u002e\u0034\u0030\u0032\u0038\u0032\u0033\u0034\u0037\u0045\u002b\u0033\u0038",
+                        float.MaxValue, typeof(Dictionary<float, int>) },
+                    new object[] { @"\u0031\u002e\u0037\u0039\u0037\u0036\u0039\u0033\u0031\u0033\u0034\u0038\u0036\u0032\u0033\u0031\u0035\u0037\u0045\u002b\u0033\u0030\u0038",
+                        double.MaxValue, typeof(Dictionary<double, int>) },
+                    new object[] { @"\u0037\u0039\u0032\u0032\u0038\u0031\u0036\u0032\u0035\u0031\u0034\u0032\u0036\u0034\u0033\u0033\u0037\u0035\u0039\u0033\u0035\u0034\u0033\u0039\u0035\u0030\u0033\u0033\u0035",
+                        decimal.MaxValue, typeof(Dictionary<decimal, int>) },
+                    new object[] { @"\u0039\u0039\u0039\u0039\u002d\u0031\u0032\u002d\u0033\u0031\u0054\u0032\u0033\u003a\u0035\u0039\u003a\u0035\u0039\u002e\u0039\u0039\u0039\u0039\u0039\u0039\u0039",
+                        DateTime.MaxValue, typeof(Dictionary<DateTime, int>) },
+                    new object[] { @"\u0039\u0039\u0039\u0039\u002d\u0031\u0032\u002d\u0033\u0031\u0054\u0032\u0033\u003a\u0035\u0039\u003a\u0035\u0039\u002e\u0039\u0039\u0039\u0039\u0039\u0039\u0039\u002b\u0030\u0030\u003a\u0030\u0030",
+                        DateTimeOffset.MaxValue, typeof(Dictionary<DateTimeOffset, int>) },
+                    new object[] { @"\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u002d\u0030\u0030\u0030\u0030\u002d\u0030\u0030\u0030\u0030\u002d\u0030\u0030\u0030\u0030\u002d\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u0030\u0030",
+                        Guid.Empty, typeof(Dictionary<Guid, int>) },
+                    new object[] { @"\u0042\u0061\u0072",
+                        MyEnum.Bar, typeof(Dictionary<MyEnum, int>) },
+                    new object[] { @"\u0042\u0061\u0072\u002c\u0042\u0061\u007a",
+                        MyEnumFlags.Bar | MyEnumFlags.Baz, typeof(Dictionary<MyEnumFlags, int>) },
+                    new object[] { @"\u002b", '+', typeof(Dictionary<char, int>) }
+                };
         }
 
         public class MyPublicClass { }
 
         public struct MyPublicStruct { }
-
 
         public enum MyEnum
         {

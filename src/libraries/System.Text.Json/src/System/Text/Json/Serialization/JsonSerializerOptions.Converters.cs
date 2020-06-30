@@ -75,11 +75,16 @@ namespace System.Text.Json
 
         internal JsonConverter GetDictionaryKeyConverter(Type keyType)
         {
+            if (_dictionaryKeyConverters == null)
+            {
+                _dictionaryKeyConverters = GetDictionaryKeyConverters();
+            }
+
             if (!_dictionaryKeyConverters.TryGetValue(keyType, out JsonConverter? converter)){
                 if (keyType.IsEnum)
                 {
                     converter = GetEnumConverter();
-                    _dictionaryKeyConverters.Add(keyType, converter);
+                    _dictionaryKeyConverters[keyType] = converter;
                 }
                 else
                 {
@@ -98,12 +103,12 @@ namespace System.Text.Json
                         culture: null)!;
         }
 
-        private readonly Dictionary<Type, JsonConverter> _dictionaryKeyConverters = GetDictionaryKeyConverters();
+        private ConcurrentDictionary<Type, JsonConverter>? _dictionaryKeyConverters;
 
-        private static Dictionary<Type, JsonConverter> GetDictionaryKeyConverters()
+        private static ConcurrentDictionary<Type, JsonConverter> GetDictionaryKeyConverters()
         {
             const int NumberOfConverters = 18;
-            var converters = new Dictionary<Type, JsonConverter>(NumberOfConverters);
+            var converters = new ConcurrentDictionary<Type, JsonConverter>(Environment.ProcessorCount, NumberOfConverters);
 
             // When adding to this, update NumberOfConverters above.
             Add(new BooleanConverter());
@@ -130,7 +135,7 @@ namespace System.Text.Json
             return converters;
 
             void Add(JsonConverter converter) =>
-                converters.Add(converter.TypeToConvert, converter);
+                converters[converter.TypeToConvert] = converter;
         }
 
         /// <summary>

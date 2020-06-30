@@ -18,12 +18,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override DateTime ReadWithQuotes(ref Utf8JsonReader reader)
         {
-            if (!reader.TryGetDateTimeCore(out DateTime value))
-            {
-                throw ThrowHelper.GetFormatException(DataType.DateTime);
-            }
-
-            return value;
+            return reader.GetDateTimeNoValidation();
         }
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options, ref WriteStack state)

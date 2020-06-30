@@ -18,12 +18,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override float ReadWithQuotes(ref Utf8JsonReader reader)
         {
-            if (!reader.TryGetSingleCore(out float value))
-            {
-                throw ThrowHelper.GetFormatException(NumericType.Single);
-            }
-
-            return value;
+            return reader.GetSingleWithQuotes();
         }
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, float value, JsonSerializerOptions options, ref WriteStack state)
