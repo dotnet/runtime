@@ -1483,6 +1483,7 @@ ves_pinvoke_method (
 	InterpFrame *parent_frame,
 	stackval *retval,
 	gboolean save_last_error,
+	gpointer *cache,
 	stackval *sp)
 {
 	InterpFrame frame = {parent_frame, NULL, sp, retval};
@@ -1501,6 +1502,19 @@ ves_pinvoke_method (
 	 */
 	MONO_REQ_GC_NEUTRAL_MODE;
 
+#ifdef HOST_WASM
+	/*
+	 * Use a per-signature entry function.
+	 * Cache it in imethod->data_items.
+	 * This is GC safe.
+	 */
+	MonoPIFunc entry_func = *cache;
+	if (!entry_func) {
+		entry_func = (MonoPIFunc)mono_wasm_get_interp_to_native_trampoline (sig);
+		mono_memory_barrier ();
+		*cache = entry_func;
+	}
+#else
 	static MonoPIFunc entry_func = NULL;
 	if (!entry_func) {
 		MONO_ENTER_GC_UNSAFE;
@@ -1514,6 +1528,7 @@ ves_pinvoke_method (
 		mono_memory_barrier ();
 		MONO_EXIT_GC_UNSAFE;
 	}
+#endif
 
 #ifdef ENABLE_NETCORE
 	if (save_last_error) {
@@ -3748,9 +3763,10 @@ main_loop:
 			retval.data.p = vt_sp;
 
 			gboolean save_last_error = ip [4];
+			gpointer *cache = (gpointer*)&frame->imethod->data_items [ip [5]];
 			/* for calls, have ip pointing at the start of next instruction */
-			frame->state.ip = ip + 5;
-			ves_pinvoke_method (csignature, (MonoFuncV)code, context, frame, &retval, save_last_error, sp);
+			frame->state.ip = ip + 6;
+			ves_pinvoke_method (csignature, (MonoFuncV)code, context, frame, &retval, save_last_error, cache, sp);
 
 			CHECK_RESUME_STATE (context);
 
@@ -3759,7 +3775,7 @@ main_loop:
 				vt_sp += ip [3];
 				sp++;
 			}
-			ip += 5;
+			ip += 6;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLVIRT_FAST) {
