@@ -29,12 +29,6 @@ namespace Internal.IL.Stubs
         {
             Debug.Assert(targetMethod.IsPInvoke);
             _targetMethod = targetMethod;
-
-            // P/Invoke marked with UnmanagedCallersOnlyAttribute is not
-            // presently supported.
-            if (_targetMethod.IsUnmanagedCallersOnly)
-                throw new NotSupportedException();
-
             _importMetadata = targetMethod.GetPInvokeMethodMetadata();
             _marshallers = Marshaller.GetMarshallersForMethod(targetMethod);
         }
@@ -83,6 +77,9 @@ namespace Internal.IL.Stubs
         private MethodIL EmitIL()
         {
             if (!_importMetadata.Flags.PreserveSig)
+                throw new NotSupportedException();
+
+            if (_targetMethod.IsUnmanagedCallersOnly)
                 throw new NotSupportedException();
 
             if (_targetMethod.HasCustomAttribute("System.Runtime.InteropServices", "LCIDConversionAttribute"))
