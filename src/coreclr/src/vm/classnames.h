@@ -48,7 +48,6 @@
 #define g_DateClassName "System.DateTime"
 #define g_DateTimeOffsetClassName "System.DateTimeOffset"
 #define g_DecimalClassName "System.Decimal"
-#define g_DecimalName "Decimal"
 
 #define g_Vector64ClassName "System.Runtime.Intrinsics.Vector64`1"
 #define g_Vector64Name "Vector64`1"
