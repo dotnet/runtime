@@ -20,7 +20,7 @@ namespace SerializerTrimmingTest
             string json = "[1]";
             Utf8JsonReader reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
             int[] arr = JsonSerializer.Deserialize<int[]>(ref reader);
-            if (arr[0] != 1)
+            if (!TestHelper.VerifyWithSerialize(arr, json))
             {
                 return -1;
             }
@@ -28,7 +28,7 @@ namespace SerializerTrimmingTest
             json = @"{""X"":1,""Y"":2}";
             reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
             MyStruct obj = JsonSerializer.Deserialize<MyStruct>(ref reader);
-            if (obj.X != 1 || obj.Y != 2)
+            if (!TestHelper.VerifyWithSerialize(obj, json))
             {
                 return -1;
             }

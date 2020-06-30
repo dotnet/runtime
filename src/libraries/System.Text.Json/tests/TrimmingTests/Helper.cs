@@ -11,9 +11,11 @@ namespace SerializerTrimmingTest
 {
     internal static class TestHelper
     {
-        // Used when comparing JSON payloads with more than two properties.
-        // We cannot check for string equality since property ordering depends
-        // on reflection ordering which is not guaranteed.
+        /// <summary>
+        /// Used when comparing JSON payloads with more than two properties.
+        /// We cannot check for string equality since property ordering depends
+        /// on reflection ordering which is not guaranteed.
+        /// </summary>
         public static bool JsonEqual(string expected, string actual)
         {
             using JsonDocument expectedDom = JsonDocument.Parse(expected);
@@ -81,6 +83,16 @@ namespace SerializerTrimmingTest
                 default:
                     throw new NotSupportedException($"Unexpected JsonValueKind: JsonValueKind.{valueKind}.");
             }
+        }
+
+        /// <summary>
+        /// Verifies the result of deserialization by serializing and comparing the output
+        /// with the expected payload. With this call pattern, the serialize should preserve
+        /// properties on typeof(object), but that would not be helpful to the calling test.
+        /// </summary>
+        public static bool VerifyWithSerialize(object obj, string expected)
+        {
+            return JsonEqual(expected, JsonSerializer.Serialize(obj));
         }
     }
 

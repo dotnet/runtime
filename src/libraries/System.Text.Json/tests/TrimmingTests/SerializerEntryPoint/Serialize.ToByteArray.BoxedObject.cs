@@ -24,8 +24,8 @@ namespace SerializerTrimmingTest
                 return -1;
             }
 
-            MyStruct obj = new MyStruct(1, 2);
-            expected = @"{""X"":1,""Y"":2}";
+            MyStruct obj = default;
+            expected = @"{""X"":0,""Y"":0}";
             actual = Encoding.UTF8.GetString(JsonSerializer.SerializeToUtf8Bytes(obj, typeof(MyStruct)));
             if (!TestHelper.JsonEqual(expected, actual))
             {

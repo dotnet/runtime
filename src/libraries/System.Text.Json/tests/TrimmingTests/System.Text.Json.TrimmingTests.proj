@@ -58,6 +58,7 @@
     <TestConsoleAppSourceFiles Include="ObjectConvertersTest.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="StackOrQueueNotRootedTest.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

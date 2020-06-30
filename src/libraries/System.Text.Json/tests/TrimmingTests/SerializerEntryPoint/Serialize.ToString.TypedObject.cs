@@ -22,8 +22,8 @@ namespace SerializerTrimmingTest
                 return -1;
             }
 
-            MyStruct obj = new MyStruct(1, 2);
-            if (!TestHelper.JsonEqual(@"{""X"":1,""Y"":2}", JsonSerializer.Serialize(obj)))
+            MyStruct obj = default;
+            if (!TestHelper.JsonEqual(@"{""X"":0,""Y"":0}", JsonSerializer.Serialize(obj)))
             {
                 return -1;
             }

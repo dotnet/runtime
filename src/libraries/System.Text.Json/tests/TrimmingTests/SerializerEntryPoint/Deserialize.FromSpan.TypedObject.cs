@@ -19,14 +19,14 @@ namespace SerializerTrimmingTest
         {
             string json = "[1]";
             int[] arr = JsonSerializer.Deserialize<int[]>(Encoding.UTF8.GetBytes(json));
-            if (arr[0] != 1)
+            if (!TestHelper.VerifyWithSerialize(arr, json))
             {
                 return -1;
             }
 
             json = @"{""X"":1,""Y"":2}";
             MyStruct obj = JsonSerializer.Deserialize<MyStruct>(Encoding.UTF8.GetBytes(json));
-            if (obj.X != 1 || obj.Y != 2)
+            if (!TestHelper.VerifyWithSerialize(obj, json))
             {
                 return -1;
             }

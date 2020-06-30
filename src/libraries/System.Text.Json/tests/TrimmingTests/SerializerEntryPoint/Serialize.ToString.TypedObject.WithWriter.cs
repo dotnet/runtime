@@ -30,12 +30,12 @@ namespace SerializerTrimmingTest
             }
 
             {
-                MyStruct obj = new MyStruct(1, 2);
+                MyStruct obj = default;
                 using var stream = new MemoryStream();
                 using var writer = new Utf8JsonWriter(stream);
                 JsonSerializer.Serialize(writer, obj);
                 string actual = Encoding.UTF8.GetString(stream.ToArray());
-                if (!TestHelper.JsonEqual(@"{""X"":1,""Y"":2}", actual))
+                if (!TestHelper.JsonEqual(@"{""X"":0,""Y"":0}", actual))
                 {
                     return -1;
                 }

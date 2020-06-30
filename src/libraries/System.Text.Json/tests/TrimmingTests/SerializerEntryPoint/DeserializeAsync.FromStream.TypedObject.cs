@@ -17,35 +17,26 @@ namespace SerializerTrimmingTest
     /// </summary>
     internal class Program
     {
-        static int Main(string[] args)
+        static async Task<int> Main(string[] args)
         {
             string json = "[1]";
-
-            int[] arr = (int[])Task.Run(async () =>
+            using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
             {
-                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                int[] arr = (int[])(await JsonSerializer.DeserializeAsync<int[]>(stream));
+                if (!TestHelper.VerifyWithSerialize(arr, json))
                 {
-                    return await JsonSerializer.DeserializeAsync<int[]>(stream);
+                    return -1;
                 }
-            }).GetAwaiter().GetResult();
-
-            if (arr[0] != 1)
-            {
-                return -1;
             }
 
             json = @"{""X"":1,""Y"":2}";
-            MyStruct obj = (MyStruct)Task.Run(async () =>
+            using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
             {
-                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                MyStruct obj = (MyStruct)(await JsonSerializer.DeserializeAsync<MyStruct>(stream));
+                if (!TestHelper.VerifyWithSerialize(obj, json))
                 {
-                    return await JsonSerializer.DeserializeAsync<MyStruct>(stream);
+                    return -1;
                 }
-            }).GetAwaiter().GetResult();
-
-            if (obj.X != 1 || obj.Y != 2)
-            {
-                return -1;
             }
 
             return 100;

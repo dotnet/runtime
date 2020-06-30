@@ -16,35 +16,25 @@ namespace SerializerTrimmingTest
     /// </summary>
     internal class Program
     {
-        static int Main(string[] args)
+        static async Task<int> Main(string[] args)
         {
+            using (var stream = new MemoryStream())
             {
                 int[] arr = new [] { 1 };
-
-                string actual = Task.Run(async () =>
-                {
-                    using var stream = new MemoryStream();
-                    await JsonSerializer.SerializeAsync(stream, arr, typeof(int[]));
-                    return Encoding.UTF8.GetString(stream.ToArray());
-                }).GetAwaiter().GetResult();
-
+                await JsonSerializer.SerializeAsync(stream, arr, typeof(int[]));
+                string actual = Encoding.UTF8.GetString(stream.ToArray());
                 if ("[1]" != actual)
                 {
                     return -1;
                 }
             }
 
+            using (var stream = new MemoryStream())
             {
-                MyStruct obj = new MyStruct(1, 2);
-
-                string actual = Task.Run(async () =>
-                {
-                    using var stream = new MemoryStream();
-                    await JsonSerializer.SerializeAsync(stream, obj, typeof(MyStruct));
-                    return Encoding.UTF8.GetString(stream.ToArray());
-                }).GetAwaiter().GetResult();
-
-                if (!TestHelper.JsonEqual(@"{""X"":1,""Y"":2}", actual))
+                MyStruct obj = default;
+                await JsonSerializer.SerializeAsync(stream, obj, typeof(MyStruct));
+                string actual = Encoding.UTF8.GetString(stream.ToArray());
+                if (!TestHelper.JsonEqual(@"{""X"":0,""Y"":0}", actual))
                 {
                     return -1;
                 }

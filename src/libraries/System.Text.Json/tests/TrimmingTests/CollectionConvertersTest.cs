@@ -15,8 +15,7 @@ using System.Text.Json.Serialization;
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests the serializer (de)serializes collections appropriately,
-    /// and that the collection converter factory is linker-safe.
+    /// Tests that the collection converter factory is linker-safe.
     /// </summary>
     internal class Program
     {
