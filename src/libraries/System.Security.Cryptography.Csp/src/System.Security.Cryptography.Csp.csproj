@@ -8,7 +8,7 @@
   <!-- <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.Cryptography_PlatformNotSupported_Browser</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup> -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="System\Security\Cryptography\System.Security.Cryptography.Csp.notsupported.cs"/>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
