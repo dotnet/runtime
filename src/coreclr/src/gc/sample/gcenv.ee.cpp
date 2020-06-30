@@ -344,8 +344,3 @@ inline void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
 {
 
 }
-
-bool GCToEEInterface::HasInstructionSet(InstructionSet requestedInstructionSet)
-{
-    return false;
-}

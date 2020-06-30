@@ -1654,18 +1654,3 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
     }
 #endif // __linux__ && FEATURE_EVENT_TRACE
 }
-
-bool GCToEEInterface::HasInstructionSet(InstructionSet requestedInstructionSet)
-{
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    CORJIT_FLAGS cpuCompileFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
-    switch (requestedInstructionSet)
-    {
-    case kInstructionSetAVX2:       return cpuCompileFlags.IsSet(InstructionSet_AVX2);
-    case kInstructionSetAVX512F:    return cpuCompileFlags.IsSet(InstructionSet_AVX512F);
-    default:                        return false;
-    }
-#else
-    return false;
-#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
-}

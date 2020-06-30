@@ -83,8 +83,6 @@ public:
     void VerifySyncTableEntry();
 
     void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLevel, int privateKeywords);
-
-    bool HasInstructionSet(InstructionSet requestedInstructionSet);
 };
 
 } // namespace standalone

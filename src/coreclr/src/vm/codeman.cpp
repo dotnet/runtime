@@ -1232,38 +1232,27 @@ EEJitManager::EEJitManager()
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
-#ifndef TARGET_UNIX
-static DWORD64 GetEnabledXStateFeaturesHelper()
+bool DoesOSSupportAVX()
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifndef TARGET_UNIX
     // On Windows we have an api(GetEnabledXStateFeatures) to check if AVX is supported
     typedef DWORD64 (WINAPI *PGETENABLEDXSTATEFEATURES)();
     PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
 
     HMODULE hMod = WszLoadLibraryEx(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if(hMod == NULL)
-        return 0;
+        return FALSE;
 
     pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hMod, "GetEnabledXStateFeatures");
 
     if (pfnGetEnabledXStateFeatures == NULL)
     {
-        return 0;
+        return FALSE;
     }
 
     DWORD64 FeatureMask = pfnGetEnabledXStateFeatures();
-
-    return FeatureMask;
-}
-#endif // !TARGET_UNIX
-
-bool DoesOSSupportAVX()
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifndef TARGET_UNIX
-    DWORD64 FeatureMask = GetEnabledXStateFeaturesHelper();
     if ((FeatureMask & XSTATE_MASK_AVX) == 0)
     {
         return FALSE;
@@ -1272,21 +1261,6 @@ bool DoesOSSupportAVX()
 
     return TRUE;
 }
-
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-bool DoesOSSupportAVX512()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    DWORD64 FeatureMask = GetEnabledXStateFeaturesHelper();
-    if ((FeatureMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
-    {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-#endif //defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
@@ -1447,13 +1421,6 @@ void EEJitManager::SetCpuInfo()
                                         {
                                             CPUCompileFlags.Set(InstructionSet_AVX2);
                                         }
-
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-                                        if (DoesOSSupportAVX512() && zmmStateSupport() == 1 && (buffer[6] & 0x01) != 0)
-                                        {
-                                            CPUCompileFlags.Set(InstructionSet_AVX512F);
-                                        }
-#endif //defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
                                     }
                                 }
                             }

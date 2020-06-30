@@ -73,7 +73,6 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_POPCNT_X64: return ReadyToRunInstructionSet.Popcnt;
                             case InstructionSet.X64_Vector128: return null;
                             case InstructionSet.X64_Vector256: return null;
-                            case InstructionSet.X64_AVX512F: return null;
 
                             default: throw new Exception("Unknown instruction set");
                         }
@@ -101,7 +100,6 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_POPCNT: return ReadyToRunInstructionSet.Popcnt;
                             case InstructionSet.X86_Vector128: return null;
                             case InstructionSet.X86_Vector256: return null;
-                            case InstructionSet.X86_AVX512F: return null;
 
                             default: throw new Exception("Unknown instruction set");
                         }

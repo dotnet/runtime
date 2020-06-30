@@ -51,8 +51,6 @@ implication        ,X86   ,POPCNT    ,SSE42
 instructionset     ,X86   ,          ,        ,   ,Vector128,
 instructionset     ,X86   ,          ,        ,   ,Vector256,
 implication        ,X86   ,Vector256 ,AVX
-instructionset     ,X86   ,          ,        ,   ,AVX512F   ,avx512f
-implication        ,X86   ,AVX512F   ,AVX2
 
 ; Definition of X64 instruction sets (Define )
 definearch         ,X64   ,64Bit     ,X64

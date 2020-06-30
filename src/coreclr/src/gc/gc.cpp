@@ -2088,8 +2088,8 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address);
 #ifdef USE_VXSORT
 void do_vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
 {
-    assert(GCToEEInterface::HasInstructionSet(kInstructionSetAVX2));
-    if (GCToEEInterface::HasInstructionSet(kInstructionSetAVX512F))
+    assert(SupportsInstructionSet(InstructionSet::AVX2));
+    if (SupportsInstructionSet(InstructionSet::AVX512F))
     {
         do_vxsort_avx512(low, high);
     }
@@ -2107,8 +2107,8 @@ void do_vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
 
 void do_vxsort(uint32_t* low, uint32_t* high, unsigned int depth)
 {
-    assert(GCToEEInterface::HasInstructionSet(kInstructionSetAVX2));
-    if (GCToEEInterface::HasInstructionSet(kInstructionSetAVX512F))
+    assert(SupportsInstructionSet(InstructionSet::AVX2));
+    if (SupportsInstructionSet(InstructionSet::AVX512F))
     {
         do_vxsort_avx512(low, high);
     }
@@ -8352,7 +8352,7 @@ void gc_heap::sort_mark_list()
 
 #ifdef USE_VXSORT
     // runtime test if AVX2 is indeed available
-    if (GCToEEInterface::HasInstructionSet(kInstructionSetAVX2))
+    if (SupportsInstructionSet(InstructionSet::AVX2))
     {
         // is the range small enough for a 32-bit sort?
         ptrdiff_t range = high - low;
@@ -22267,7 +22267,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
     {
 #ifndef MULTIPLE_HEAPS
 #ifdef USE_VXSORT
-        if (GCToEEInterface::HasInstructionSet(kInstructionSetAVX2))
+        if (SupportsInstructionSet(InstructionSet::AVX2))
         {
             ptrdiff_t entry_count = mark_list_index - mark_list;
             uint32_t* mark_list_32 = (uint32_t*)mark_list;

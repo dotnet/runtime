@@ -540,12 +540,12 @@ set(GC_SOURCES_WKS
     ../gc/gceewks.cpp
     ../gc/gcload.cpp
     ../gc/softwarewritewatch.cpp
-    ../gc/handletablecache.cpp
-)
+    ../gc/handletablecache.cpp)
 
 if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
   set ( GC_SOURCES_WKS
     ${GC_SOURCES_WKS}
+    ../gc/vxsort/isa_detection.cpp
     ../gc/vxsort/do_vxsort_avx2.cpp
     ../gc/vxsort/do_vxsort_avx512.cpp
     ../gc/vxsort/machine_traits.avx2.cpp
