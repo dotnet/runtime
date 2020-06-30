@@ -33,11 +33,21 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public static async Task Ctor_GetStream()
+        public static async Task Ctor_CopyToAsync_GetStream()
         {
             MemoryStream memoryStream = new MemoryStream();
 
             await new Utf8StringContent(u8("Hello")).CopyToAsync(memoryStream);
+
+            Assert.Equal(u8("Hello").ToByteArray(), memoryStream.ToArray());
+        }
+
+        [Fact]
+        public static void Ctor_CopyTo_GetStream()
+        {
+            MemoryStream memoryStream = new MemoryStream();
+
+            new Utf8StringContent(u8("Hello")).CopyTo(memoryStream, default, default);
 
             Assert.Equal(u8("Hello").ToByteArray(), memoryStream.ToArray());
         }
