@@ -195,9 +195,7 @@ namespace System.Text.RegularExpressions
         IEnumerator<KeyValuePair<string, Group>> IEnumerable<KeyValuePair<string, Group>>.GetEnumerator() =>
             new Enumerator(this);
 
-#pragma warning disable CS8614 // Nullability of reference types in type of parameter doesn't match implicitly implemented member.
         public bool TryGetValue(string key, [NotNullWhen(true)] out Group? value)
-#pragma warning restore CS8614
         {
             Group group = this[key];
             if (group == Group.s_emptyGroup)
