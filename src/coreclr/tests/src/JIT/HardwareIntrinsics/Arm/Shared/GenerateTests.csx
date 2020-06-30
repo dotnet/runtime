@@ -2184,126 +2184,18 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
     ("SecureHashTernOpTest.template",     new Dictionary<string, string> { ["TestName"] = "ScheduleUpdate1_Vector128_UInt32",                                                      ["Isa"] = "Sha256",        ["LoadIsa"] = "AdvSimd", ["Method"] = "ScheduleUpdate1",                                            ["RetVectorType"] = "Vector128", ["RetBaseType"] = "UInt32",  ["Op1VectorType"] = "Vector128", ["Op1BaseType"] = "UInt32", ["Op2VectorType"] = "Vector128", ["Op2BaseType"] = "UInt32", ["Op3VectorType"] = "Vector128", ["Op3BaseType"] = "UInt32", ["LargestVectorSize"] = "16", ["NextValueOp1"] = "0x00112233",                               ["NextValueOp2"] = "0x44556677",                               ["NextValueOp3"] = "0x8899AABB",                               ["ExpectedResult"] = "{0x248F1BDF, 0x248F1BDF, 0xB303DDBA, 0xF74821FE}"}),
 };
 
-private static void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
+private static string GetMethodName((string templateFileName, Dictionary<string, string> templateData) input) => input.templateData["Method"];
+
+private static string GetTestName((string templateFileName, Dictionary<string, string> templateData) input) => input.templateData["TestName"];
+
+private static void ProcessInput(string templateFileName, Dictionary<string, string> templateData, string outputFileName)
 {
-    // Too many tests may time out in CI or various stress modes
-    const int MaxGroupSize = 256;
-
-    var numGroups = (inputs.Length + (MaxGroupSize - 1)) / MaxGroupSize;
-
-    if (numGroups == 1)
-    {
-        ProcessInputGroup(groupName, -1, inputs);
-    }
-    else
-    {
-        for (var i = 0; i < numGroups; i++)
-        {
-            var groupStart = i * MaxGroupSize;
-            var groupSize = Math.Min(MaxGroupSize, inputs.Length - groupStart);
-
-            var inputGroup = inputs.Skip(groupStart).Take(groupSize).ToArray();
-            ProcessInputGroup(groupName, i, inputGroup);
-        }
-    }
-}
-
-private static void ProcessInputGroup(string groupName, int index, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
-{
-    var directoryName = Path.Combine("..", groupName);
-    Directory.CreateDirectory(directoryName);
-
-    var fileGroupName = (index >= 0) ? $"{groupName}_Part{index}" : groupName;
-
-    var debugProjectFileName = Path.Combine(directoryName, $"{fileGroupName}_r.csproj");
-    var releaseProjectFileName = Path.Combine(directoryName, $"{fileGroupName}_ro.csproj");
-
-    var testListFileName = Path.Combine(directoryName, $"Program.{fileGroupName}.cs");
-
-    using (var debugProjectFile = new StreamWriter(debugProjectFileName, append: false))
-    using (var releaseProjectFile = new StreamWriter(releaseProjectFileName, append: false))
-    using (var testListFile = new StreamWriter(testListFileName, append: false))
-    {
-        debugProjectFile.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup>
-    <DebugType>Embedded</DebugType>
-    <Optimize />
-  </PropertyGroup>
-  <ItemGroup>");
-
-        releaseProjectFile.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup>
-    <DebugType>Embedded</DebugType>
-    <Optimize>True</Optimize>
-  </PropertyGroup>
-  <ItemGroup>");
-
-        testListFile.WriteLine(@"// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-using System;
-using System.Collections.Generic;
-
-namespace JIT.HardwareIntrinsics.Arm
-{
-    public static partial class Program
-    {
-        static Program()
-        {
-            TestList = new Dictionary<string, Action>() {");
-
-        foreach (var input in inputs)
-        {
-            ProcessInput(debugProjectFile, releaseProjectFile, testListFile, groupName, input);
-        }
-
-        debugProjectFile.WriteLine($@"    <Compile Include=""Program.{fileGroupName}.cs"" />
-    <Compile Include=""..\Shared\Helpers.cs"" />
-    <Compile Include=""..\Shared\Program.cs"" />
-  </ItemGroup>
-</Project>");
-
-        releaseProjectFile.WriteLine($@"    <Compile Include=""Program.{fileGroupName}.cs"" />
-    <Compile Include=""..\Shared\Helpers.cs"" />
-    <Compile Include=""..\Shared\Program.cs"" />
-  </ItemGroup>
-</Project>");
-
-        testListFile.WriteLine(@"            };
-        }
-    }
-}");
-    }
-}
-
-private static void ProcessInput(StreamWriter debugProjectFile, StreamWriter releaseProjectFile, StreamWriter testListFile, string groupName, (string templateFileName, Dictionary<string, string> templateData) input)
-{
-    var testName = input.templateData["TestName"];
-    var fileName = testName.Replace('_', '.');
-
-    // Ex: <Compile Include="Add.Vector128.Single" />
-    debugProjectFile.WriteLine($@"    <Compile Include=""{fileName}.cs"" />");
-    releaseProjectFile.WriteLine($@"    <Compile Include=""{fileName}.cs"" />");
-
-    // Ex: ["Add.Vector128.Single"] = Add_Vector128_Single
-    testListFile.WriteLine($@"                [""{fileName}""] = {testName},");
-
-    var testFileName = Path.Combine("..", groupName, $"{fileName}.cs");
-    var matchingTemplate = Templates.Where((t) => t.outputTemplateName.Equals(input.templateFileName)).SingleOrDefault();
-    var template = string.Empty;
+    var matchingTemplate = Templates.Where((t) => t.outputTemplateName.Equals(templateFileName)).SingleOrDefault();
+    string template = string.Empty;
 
     if (matchingTemplate.templateFileName is null)
     {
-        template = File.ReadAllText(input.templateFileName);
+        template = File.ReadAllText(templateFileName);
     }
     else
     {
@@ -2315,16 +2207,49 @@ private static void ProcessInput(StreamWriter debugProjectFile, StreamWriter rel
         }
     }
 
-    foreach (var kvp in input.templateData)
+    foreach (var kvp in templateData)
     {
         template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
     }
 
-    File.WriteAllText(testFileName, template);
+    File.WriteAllText(outputFileName, template);
 }
 
-ProcessInputs("AdvSimd", AdvSimdInputs);
-ProcessInputs("AdvSimd.Arm64", AdvSimd_Arm64Inputs);
+private static void ProcessInputs(string groupName, IEnumerable<(string templateFileName, Dictionary<string, string> templateData)> inputs, bool createMSBuildProjectFiles = false)
+{
+    List<string> testNames = new List<string>();
+
+    foreach (var input in inputs)
+    {
+        string testName = GetTestName(input);
+        testNames.Add(testName);
+        string testFileName = testName.Replace('_', '.');
+        testFileName = Path.Combine("..", groupName, $"{testFileName}.cs");
+        ProcessInput(input.templateFileName, input.templateData, testFileName);
+    }
+
+    string testList = string.Join(",\n", testNames.Select(testName => string.Format("                [\"{0}\"] = {1}", testName.Replace('_', '.'), testName)));
+    string testListFileName = Path.Combine("..", groupName, $"Program.{groupName}.cs");
+
+    ProcessInput("_TestListTemplate.template", new Dictionary<string, string> { ["TestList"] = testList }, testListFileName);
+
+    if (createMSBuildProjectFiles)
+    {
+        foreach (var grouping in inputs.GroupBy(GetMethodName))
+        {
+            string dbgProjectFile = Path.Combine("..", groupName, $"{grouping.Key}_r.csproj");
+            string relProjectFile = Path.Combine("..", groupName, $"{grouping.Key}_ro.csproj");
+
+            string clrTestExecutionArguments = string.Join(" ", grouping.Select(item => GetTestName(item).Replace('_', '.')));
+
+            ProcessInput("_TestProjectTemplate.template", new Dictionary<string, string> { ["CLRTestProjectToRun"] = $"{groupName}_r.csproj",  ["CLRTestExecutionArguments"] = clrTestExecutionArguments }, dbgProjectFile);
+            ProcessInput("_TestProjectTemplate.template", new Dictionary<string, string> { ["CLRTestProjectToRun"] = $"{groupName}_ro.csproj", ["CLRTestExecutionArguments"] = clrTestExecutionArguments }, relProjectFile);
+        }
+    }
+}
+
+ProcessInputs("AdvSimd", AdvSimdInputs, createMSBuildProjectFiles: true);
+ProcessInputs("AdvSimd.Arm64", AdvSimd_Arm64Inputs, createMSBuildProjectFiles: true);
 ProcessInputs("Aes", AesInputs);
 ProcessInputs("ArmBase", ArmBaseInputs);
 ProcessInputs("ArmBase.Arm64", ArmBase_Arm64Inputs);
