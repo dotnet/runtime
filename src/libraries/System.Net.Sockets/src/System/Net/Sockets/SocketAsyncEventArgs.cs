@@ -554,6 +554,9 @@ namespace System.Net.Sockets
             _multipleConnect = multipleConnect;
             _connectSocket = null;
             _userSocket = userSocket;
+
+            // Log only the actual connect operation to a remote endpoint.
+            if (multipleConnect == null) SocketsTelemetry.Log.ConnectStart(_socketAddress!);
         }
 
         internal void CancelConnectAsync()
@@ -567,6 +570,9 @@ namespace System.Net.Sockets
                 }
                 else
                 {
+                    SocketsTelemetry.Log.ConnectCancelled();
+                    SocketsTelemetry.Log.ConnectStop();
+
                     // Otherwise we're doing a normal ConnectAsync - cancel it by closing the socket.
                     // _currentSocket will only be null if _multipleConnect was set, so we don't have to check.
                     if (_currentSocket == null)
@@ -581,6 +587,12 @@ namespace System.Net.Sockets
         internal void FinishOperationSyncFailure(SocketError socketError, int bytesTransferred, SocketFlags flags)
         {
             SetResults(socketError, bytesTransferred, flags);
+
+            if (_multipleConnect == null && _completedOperation == SocketAsyncOperation.Connect)
+            {
+                SocketsTelemetry.Log.ConnectFailed();
+                SocketsTelemetry.Log.ConnectStop();
+            }
 
             // This will be null if we're doing a static ConnectAsync to a DnsEndPoint with AddressFamily.Unspecified;
             // the attempt socket will be closed anyways, so not updating the state is OK.
@@ -720,12 +732,17 @@ namespace System.Net.Sockets
                             catch (ObjectDisposedException) { }
                         }
 
+                        SocketsTelemetry.Log.ConnectStop();
+
                         // Mark socket connected.
                         _currentSocket!.SetToConnected();
                         _connectSocket = _currentSocket;
                     }
                     else
                     {
+                        SocketsTelemetry.Log.ConnectFailed();
+                        SocketsTelemetry.Log.ConnectStop();
+
                         SetResults(socketError, bytesTransferred, flags);
                         _currentSocket!.UpdateStatusAfterSocketError(socketError);
                     }
