@@ -5202,8 +5202,8 @@ call_newobj:
 			gpointer *byreference_this = (gpointer*)vt_sp;
 			*byreference_this = arg0;
 
-			/* Followed by a VTRESULT opcode which will push the result on the stack */
-			/* FIXME kill MINT_VTRESULT */
+			sp [-1].data.p = vt_sp;
+			vt_sp += MINT_VT_ALIGNMENT;
 			ip++;
 			MINT_IN_BREAK;
 		}
@@ -5513,6 +5513,21 @@ call_newobj:
 		}
 		MINT_IN_CASE(MINT_STFLD_I8_UNALIGNED) STFLD_UNALIGNED(l, gint64, TRUE); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_R8_UNALIGNED) STFLD_UNALIGNED(f, double, TRUE); MINT_IN_BREAK;
+
+		MINT_IN_CASE(MINT_STFLD_VT_NOREF) {
+			MonoObject* const o = sp [-2].data.o;
+			NULL_CHECK (o);
+			sp -= 2;
+
+			guint16 offset = ip [1];
+			guint16 vtsize = ip [2];
+
+			memcpy ((char *) o + offset, sp [1].data.p, vtsize);
+
+			vt_sp -= ALIGN_TO (vtsize, MINT_VT_ALIGNMENT);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
 
 		MINT_IN_CASE(MINT_STFLD_VT) {
 			MonoObject* const o = sp [-2].data.o;

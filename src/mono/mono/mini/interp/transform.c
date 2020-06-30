@@ -4731,7 +4731,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						vt_stack_used += size;
 					}
 				}
-				if (vt_stack_used != 0 || vt_res_size != 0) {
+				if ((vt_stack_used != 0 || vt_res_size != 0) &&
+						td->last_ins->opcode != MINT_INTRINS_BYREFERENCE_CTOR) {
+					/* FIXME Remove this once vtsp and sp are unified */
 					interp_add_ins (td, MINT_VTRESULT);
 					td->last_ins->data [0] = vt_res_size;
 					WRITE32_INS (td->last_ins, 1, &vt_stack_used);
@@ -5008,8 +5010,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						/* the vtable of the field might not be initialized at this point */
 						mono_class_vtable_checked (domain, field_klass, error);
 						goto_if_nok (error, exit);
-
-						td->last_ins->data [1] = get_data_item_index (td, field_klass);
+						if (m_class_has_references (field_klass)) {
+							td->last_ins->data [1] = get_data_item_index (td, field_klass);
+						} else {
+							td->last_ins->opcode = MINT_STFLD_VT_NOREF;
+							td->last_ins->data [1] = mono_class_value_size (field_klass, NULL);
+						}
 					}
 				}
 			}
