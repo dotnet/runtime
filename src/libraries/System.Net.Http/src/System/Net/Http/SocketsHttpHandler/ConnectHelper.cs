@@ -217,7 +217,7 @@ namespace System.Net.Http
         {
             return CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken) ?
                 CancellationHelper.CreateOperationCanceledException(error, cancellationToken) :
-                new HttpRequestException($"{error.Message} {host}:{port}", error, RequestRetryType.RetryOnNextProxy);
+                new HttpRequestException($"{error.Message} ({host}:{port})", error, RequestRetryType.RetryOnNextProxy);
         }
     }
 }
