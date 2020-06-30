@@ -142,11 +142,14 @@ namespace System.Text.Json
         internal byte GetByteWithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-            if (!TryGetByteCore(out byte value, span))
+
+            if (Utf8Parser.TryParse(span, out byte tmp, out int bytesConsumed)
+                && span.Length == bytesConsumed)
             {
-                throw ThrowHelper.GetFormatException(NumericType.Byte);
+                return tmp;
             }
-            return value;
+
+            throw ThrowHelper.GetFormatException(NumericType.Byte);
         }
 
         /// <summary>
@@ -177,11 +180,14 @@ namespace System.Text.Json
         internal sbyte GetSByteWithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-            if (!TryGetSByteCore(out sbyte value, span))
+
+            if (Utf8Parser.TryParse(span, out sbyte tmp, out int bytesConsumed)
+                && span.Length == bytesConsumed)
             {
-                throw ThrowHelper.GetFormatException(NumericType.SByte);
+                return tmp;
             }
-            return value;
+
+            throw ThrowHelper.GetFormatException(NumericType.SByte);
         }
 
         /// <summary>
@@ -211,11 +217,14 @@ namespace System.Text.Json
         internal short GetInt16WithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-            if (!TryGetInt16Core(out short value, span))
+
+            if (Utf8Parser.TryParse(span, out short tmp, out int bytesConsumed)
+                && span.Length == bytesConsumed)
             {
-                throw ThrowHelper.GetFormatException(NumericType.Int16);
+                return tmp;
             }
-            return value;
+
+            throw ThrowHelper.GetFormatException(NumericType.Int16);
         }
 
         /// <summary>
@@ -245,11 +254,14 @@ namespace System.Text.Json
         internal int GetInt32WithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-            if (!TryGetInt32Core(out int value, span))
+
+            if (Utf8Parser.TryParse(span, out int tmp, out int bytesConsumed)
+                && span.Length == bytesConsumed)
             {
-                throw ThrowHelper.GetFormatException(NumericType.Int32);
+                return tmp;
             }
-            return value;
+
+            throw ThrowHelper.GetFormatException(NumericType.Int32);
         }
 
         /// <summary>
@@ -279,11 +291,14 @@ namespace System.Text.Json
         internal long GetInt64WithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-            if (!TryGetInt64Core(out long value, span))
+
+            if (Utf8Parser.TryParse(span, out long tmp, out int bytesConsumed)
+                && span.Length == bytesConsumed)
             {
-                throw ThrowHelper.GetFormatException(NumericType.Int64);
+                return tmp;
             }
-            return value;
+
+            throw ThrowHelper.GetFormatException(NumericType.Int64);
         }
 
         /// <summary>
@@ -314,11 +329,14 @@ namespace System.Text.Json
         internal ushort GetUInt16WithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-            if (!TryGetUInt16Core(out ushort value, span))
+
+            if (Utf8Parser.TryParse(span, out ushort tmp, out int bytesConsumed)
+                && span.Length == bytesConsumed)
             {
-                throw ThrowHelper.GetFormatException(NumericType.UInt16);
+                return tmp;
             }
-            return value;
+
+            throw ThrowHelper.GetFormatException(NumericType.UInt16);
         }
 
         /// <summary>
@@ -349,11 +367,14 @@ namespace System.Text.Json
         internal uint GetUInt32WithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-            if (!TryGetUInt32Core(out uint value, span))
+
+            if (Utf8Parser.TryParse(span, out uint tmp, out int bytesConsumed)
+                && span.Length == bytesConsumed)
             {
-                throw ThrowHelper.GetFormatException(NumericType.UInt32);
+                return tmp;
             }
-            return value;
+
+            throw ThrowHelper.GetFormatException(NumericType.UInt32);
         }
 
         /// <summary>
@@ -384,11 +405,14 @@ namespace System.Text.Json
         internal ulong GetUInt64WithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-            if (!TryGetUInt64Core(out ulong value, span))
+
+            if (Utf8Parser.TryParse(span, out ulong tmp, out int bytesConsumed)
+                && span.Length == bytesConsumed)
             {
-                throw ThrowHelper.GetFormatException(NumericType.UInt64);
+                return tmp;
             }
-            return value;
+
+            throw ThrowHelper.GetFormatException(NumericType.UInt64);
         }
 
         /// <summary>
@@ -417,11 +441,14 @@ namespace System.Text.Json
         internal float GetSingleWithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-            if (!TryGetSingleCore(out float value, span))
+
+            if (Utf8Parser.TryParse(span, out float tmp, out int bytesConsumed, _numberFormat)
+                && span.Length == bytesConsumed)
             {
-                throw ThrowHelper.GetFormatException(NumericType.Single);
+                return tmp;
             }
-            return value;
+
+            throw ThrowHelper.GetFormatException(NumericType.Single);
         }
 
         /// <summary>
@@ -450,11 +477,14 @@ namespace System.Text.Json
         internal double GetDoubleWithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-            if (!TryGetDoubleCore(out double value, span))
+
+            if (Utf8Parser.TryParse(span, out double tmp, out int bytesConsumed, _numberFormat)
+                && span.Length == bytesConsumed)
             {
-                throw ThrowHelper.GetFormatException(NumericType.Double);
+                return tmp;
             }
-            return value;
+
+            throw ThrowHelper.GetFormatException(NumericType.Double);
         }
 
         /// <summary>
@@ -483,11 +513,14 @@ namespace System.Text.Json
         internal decimal GetDecimalWithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-            if (!TryGetDecimalCore(out decimal value, span))
+
+            if (Utf8Parser.TryParse(span, out decimal tmp, out int bytesConsumed, _numberFormat)
+                && span.Length == bytesConsumed)
             {
-                throw ThrowHelper.GetFormatException(NumericType.Decimal);
+                return tmp;
             }
-            return value;
+
+            throw ThrowHelper.GetFormatException(NumericType.Decimal);
         }
 
         /// <summary>
@@ -637,12 +670,6 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return TryGetByteCore(out value, span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetByteCore(out byte value, ReadOnlySpan<byte> span)
-        {
             if (Utf8Parser.TryParse(span, out byte tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
             {
@@ -673,12 +700,6 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return TryGetSByteCore(out value, span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetSByteCore(out sbyte value, ReadOnlySpan<byte> span)
-        {
             if (Utf8Parser.TryParse(span, out sbyte tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
             {
@@ -708,12 +729,6 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return TryGetInt16Core(out value, span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetInt16Core(out short value, ReadOnlySpan<byte> span)
-        {
             if (Utf8Parser.TryParse(span, out short tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
             {
@@ -743,12 +758,6 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return TryGetInt32Core(out value, span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetInt32Core(out int value, ReadOnlySpan<byte> span)
-        {
             if (Utf8Parser.TryParse(span, out int tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
             {
@@ -778,12 +787,6 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return TryGetInt64Core(out value, span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetInt64Core(out long value, ReadOnlySpan<byte> span)
-        {
             if (Utf8Parser.TryParse(span, out long tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
             {
@@ -814,12 +817,6 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return TryGetUInt16Core(out value, span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetUInt16Core(out ushort value, ReadOnlySpan<byte> span)
-        {
             if (Utf8Parser.TryParse(span, out ushort tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
             {
@@ -850,12 +847,6 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return TryGetUInt32Core(out value, span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetUInt32Core(out uint value, ReadOnlySpan<byte> span)
-        {
             if (Utf8Parser.TryParse(span, out uint tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
             {
@@ -886,12 +877,6 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return TryGetUInt64Core(out value, span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetUInt64Core(out ulong value, ReadOnlySpan<byte> span)
-        {
             if (Utf8Parser.TryParse(span, out ulong tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
             {
@@ -921,12 +906,6 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return TryGetSingleCore(out value, span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetSingleCore(out float value, ReadOnlySpan<byte> span)
-        {
             if (Utf8Parser.TryParse(span, out float tmp, out int bytesConsumed, _numberFormat)
                 && span.Length == bytesConsumed)
             {
@@ -956,12 +935,6 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return TryGetDoubleCore(out value, span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetDoubleCore(out double value, ReadOnlySpan<byte> span)
-        {
             if (Utf8Parser.TryParse(span, out double tmp, out int bytesConsumed, _numberFormat)
                 && span.Length == bytesConsumed)
             {
@@ -991,12 +964,6 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return TryGetDecimalCore(out value, span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetDecimalCore(out decimal value, ReadOnlySpan<byte> span)
-        {
             if (Utf8Parser.TryParse(span, out decimal tmp, out int bytesConsumed, _numberFormat)
                 && span.Length == bytesConsumed)
             {
@@ -1030,7 +997,6 @@ namespace System.Text.Json
 
         internal bool TryGetDateTimeCore(out DateTime value)
         {
-
             ReadOnlySpan<byte> span = stackalloc byte[0];
 
             if (HasValueSequence)
