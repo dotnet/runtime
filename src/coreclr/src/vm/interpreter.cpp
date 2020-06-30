@@ -6410,8 +6410,10 @@ void Interpreter::LdVirtFtn()
         GCX_PREEMP();
         ResolveToken(&tok, tokVal, CORINFO_TOKENKIND_Method InterpTracingArg(RTK_LdVirtFtn));
         m_interpCeeInfo.getCallInfo(&tok, NULL, m_methInfo->m_method,
-                                  combine(CORINFO_CALLINFO_SECURITYCHECKS,CORINFO_CALLINFO_LDFTN),
-                                  &callInfo);
+                                    combine(CORINFO_CALLINFO_CALLVIRT,
+                                            combine(CORINFO_CALLINFO_SECURITYCHECKS,
+                                                    CORINFO_CALLINFO_LDFTN)),
+                                    &callInfo);
 
 
         classHnd = tok.hClass;

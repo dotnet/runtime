@@ -46,9 +46,9 @@ namespace System.Net.Http
         private int _maximumHeadersLength = int.MaxValue; // TODO: this is not yet observed by Http3Stream when buffering headers.
 
         // Once the server's streams are received, these are set to 1. Further receipt of these streams results in a connection error.
-        private int _haveServerControlStream = 0;
-        private int _haveServerQpackDecodeStream = 0;
-        private int _haveServerQpackEncodeStream = 0;
+        private int _haveServerControlStream;
+        private int _haveServerQpackDecodeStream;
+        private int _haveServerQpackEncodeStream;
 
         // Manages MAX_STREAM count from server.
         private long _maximumRequestStreams;

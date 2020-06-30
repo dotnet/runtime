@@ -293,7 +293,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class EnterTryCatchFinallyInstruction : IndexedBranchInstruction
     {
-        private readonly bool _hasFinally = false;
+        private readonly bool _hasFinally;
         private TryCatchFinallyHandler? _tryHandler;
 
         internal void SetTryHandler(TryCatchFinallyHandler tryHandler)

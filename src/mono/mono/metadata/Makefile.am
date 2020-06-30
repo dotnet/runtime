@@ -249,9 +249,11 @@ common_sources = \
 	class-getters.h		\
 	class-init.h		\
 	class-init.c		\
+	class-init-internals.h	\
 	class-internals.h	\
 	class-inlines.h		\
 	class-private-definition.h	\
+	class-setup-vtable.c	\
 	class-accessors.c	\
 	cominterop.c		\
 	cominterop.h		\

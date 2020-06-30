@@ -101,13 +101,7 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 socket.Dispose();
-
-                if (CancellationHelper.ShouldWrapInOperationCanceledException(e, cancellationToken))
-                {
-                    throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
-                }
-
-                throw;
+                throw CreateWrappedException(e, cancellationToken);
             }
 
             return new NetworkStream(socket, ownsSocket: true);

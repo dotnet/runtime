@@ -17,21 +17,21 @@ namespace System.Formats.Cbor
         private static readonly ArrayPool<byte> s_bufferPool = ArrayPool<byte>.Create();
 
         private byte[] _buffer = null!;
-        private int _offset = 0;
+        private int _offset;
 
         private Stack<StackFrame>? _nestedDataItems;
-        private CborMajorType? _currentMajorType = null; // major type of the current data item context
+        private CborMajorType? _currentMajorType; // major type of the current data item context
         private int? _definiteLength; // predetermined definite-length of current data item context
-        private int _itemsWritten = 0; // number of items written in the current context
-        private int _frameOffset = 0; // buffer offset particular to the current data item context
-        private bool _isTagContext = false; // true if writer is expecting a tagged value
+        private int _itemsWritten; // number of items written in the current context
+        private int _frameOffset; // buffer offset particular to the current data item context
+        private bool _isTagContext; // true if writer is expecting a tagged value
 
         // Map-specific book-keeping
-        private int? _currentKeyOffset = null; // offset for the current key encoding
-        private int? _currentValueOffset = null; // offset for the current value encoding
-        private bool _keysRequireSorting = false; // tracks whether key/value pair encodings need to be sorted
-        private List<KeyValuePairEncodingRange>? _keyValuePairEncodingRanges = null; // all key/value pair encoding ranges
-        private HashSet<(int Offset, int Length)>? _keyEncodingRanges = null; // all key encoding ranges up to encoding equality
+        private int? _currentKeyOffset; // offset for the current key encoding
+        private int? _currentValueOffset; // offset for the current value encoding
+        private bool _keysRequireSorting; // tracks whether key/value pair encodings need to be sorted
+        private List<KeyValuePairEncodingRange>? _keyValuePairEncodingRanges; // all key/value pair encoding ranges
+        private HashSet<(int Offset, int Length)>? _keyEncodingRanges; // all key encoding ranges up to encoding equality
 
         /// <summary>
         ///   The conformance mode used by this writer.

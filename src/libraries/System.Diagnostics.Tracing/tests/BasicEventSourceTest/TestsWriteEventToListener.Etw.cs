@@ -68,9 +68,6 @@ namespace BasicEventSourceTests
                     Assert.True((bool)LoudListener.LastEvent.Payload[1]);
                     Assert.Equal(MyLongEnum.LongVal1, (MyLongEnum)LoudListener.LastEvent.Payload[2]);
                     // Assert.Equal(9999999999999999999999999999m, (decimal)LoudListener.LastEvent.Payload[3]);
-
-                    actid = Guid.NewGuid();
-                    Assert.Throws<EventSourceException>(() => log.LogTransferNoOpcode(actid));
                 }
             }
             TestUtilities.CheckNoEventSourcesRunning("Stop");

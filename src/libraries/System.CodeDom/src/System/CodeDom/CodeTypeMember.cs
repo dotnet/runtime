@@ -7,9 +7,9 @@ namespace System.CodeDom
     public class CodeTypeMember : CodeObject
     {
         private string _name;
-        private CodeAttributeDeclarationCollection _customAttributes = null;
-        private CodeDirectiveCollection _startDirectives = null;
-        private CodeDirectiveCollection _endDirectives = null;
+        private CodeAttributeDeclarationCollection _customAttributes;
+        private CodeDirectiveCollection _startDirectives;
+        private CodeDirectiveCollection _endDirectives;
 
         public string Name
         {

@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Xml
         private XmlNodeList _xslNodes;
         private string _xslFragment;
         private Stream _inputStream;
-        private readonly bool _includeComments = false;
+        private readonly bool _includeComments;
 
         public XmlDsigXsltTransform()
         {

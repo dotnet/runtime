@@ -367,10 +367,13 @@ namespace Microsoft.Extensions.Configuration
                 return Array.CreateInstance(typeInfo.GetElementType(), 0);
             }
 
-            bool hasDefaultConstructor = typeInfo.DeclaredConstructors.Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
-            if (!hasDefaultConstructor)
+            if (!typeInfo.IsValueType)
             {
-                throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
+                bool hasDefaultConstructor = typeInfo.DeclaredConstructors.Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
+                if (!hasDefaultConstructor)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
+                }
             }
 
             try

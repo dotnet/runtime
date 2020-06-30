@@ -945,9 +945,7 @@ namespace System.Management
              */
             if (!IsConnected)
             {
-#pragma warning disable CA2002
                 lock (this)
-#pragma warning restore CA2002
                 {
                     if (!IsConnected)
                     {
@@ -1389,7 +1387,7 @@ namespace System.Management
 
     internal class SecurityHandler
     {
-        private bool needToReset = false;
+        private bool needToReset;
         private readonly IntPtr handle;
         private readonly ManagementScope scope;
 

@@ -621,7 +621,7 @@ namespace System.Threading.Tasks
     public class UnobservedTaskExceptionEventArgs : EventArgs
     {
         private readonly AggregateException m_exception;
-        internal bool m_observed = false;
+        internal bool m_observed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UnobservedTaskExceptionEventArgs"/> class

@@ -46,6 +46,7 @@ namespace System.Numerics
         public override bool Equals(object? obj) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public bool Equals(ulong other) { throw null; }
+        public long GetBitLength() { throw null; }
         public int GetByteCount(bool isUnsigned = false) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Numerics.BigInteger GreatestCommonDivisor(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }

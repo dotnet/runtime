@@ -176,10 +176,10 @@ namespace System.Reflection.Emit
         {
             //IEnumerable`1 get_Item(TKey)
             StringBuilder sb = new StringBuilder(ReturnType.ToString());
-            sb.Append(" ");
+            sb.Append(' ');
             sb.Append(base_method.Name);
-            sb.Append("(");
-            sb.Append(")");
+            sb.Append('(');
+            sb.Append(')');
             return sb.ToString();
         }
         //

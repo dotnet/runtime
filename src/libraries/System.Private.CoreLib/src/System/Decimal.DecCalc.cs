@@ -14,19 +14,15 @@ namespace System
     public partial struct Decimal
     {
         // Low level accessors used by a DecCalc and formatting
-        internal uint High => (uint)hi;
-        internal uint Low => (uint)lo;
-        internal uint Mid => (uint)mid;
+        internal uint High => _hi32;
+        internal uint Low => (uint)_lo64;
+        internal uint Mid => (uint)(_lo64 >> 32);
 
-        internal bool IsNegative => flags < 0;
+        internal bool IsNegative => _flags < 0;
 
-        internal int Scale => (byte)(flags >> ScaleShift);
+        internal int Scale => (byte)(_flags >> ScaleShift);
 
-#if BIGENDIAN
-        private ulong Low64 => ((ulong)Mid << 32) | Low;
-#else
-        private ulong Low64 => Unsafe.As<int, ulong>(ref Unsafe.AsRef(in lo));
-#endif
+        private ulong Low64 => _lo64;
 
         private static ref DecCalc AsMutable(ref decimal d) => ref Unsafe.As<decimal, DecCalc>(ref d);
 
@@ -50,16 +46,23 @@ namespace System
             private uint uflags;
             [FieldOffset(4)]
             private uint uhi;
+#if BIGENDIAN
+            [FieldOffset(8)]
+            private uint umid;
+            [FieldOffset(12)]
+            private uint ulo;
+#else
             [FieldOffset(8)]
             private uint ulo;
             [FieldOffset(12)]
             private uint umid;
+#endif
 
             /// <summary>
-            /// The low and mid fields combined in little-endian order
+            /// The low and mid fields combined
             /// </summary>
             [FieldOffset(8)]
-            private ulong ulomidLE;
+            private ulong ulomid;
 
             private uint High
             {
@@ -85,13 +88,8 @@ namespace System
 
             private ulong Low64
             {
-#if BIGENDIAN
-                get { return ((ulong)umid << 32) | ulo; }
-                set { umid = (uint)(value >> 32); ulo = (uint)value; }
-#else
-                get => ulomidLE;
-                set => ulomidLE = value;
-#endif
+                get => ulomid;
+                set => ulomid = value;
             }
 
             private const uint SignMask = 0x80000000;
@@ -163,7 +161,7 @@ namespace System
                 MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref s, 1)).Fill(0xCD);
             }
 
-            #region Decimal Math Helpers
+#region Decimal Math Helpers
 
             private static unsafe uint GetExponent(float f)
             {
@@ -1249,16 +1247,16 @@ ThrowOverflow:
             /// </summary>
             internal static int VarDecCmp(in decimal d1, in decimal d2)
             {
-                if ((d2.Low | d2.Mid | d2.High) == 0)
+                if ((d2.Low64 | d2.High) == 0)
                 {
-                    if ((d1.Low | d1.Mid | d1.High) == 0)
+                    if ((d1.Low64 | d1.High) == 0)
                         return 0;
-                    return (d1.flags >> 31) | 1;
+                    return (d1._flags >> 31) | 1;
                 }
-                if ((d1.Low | d1.Mid | d1.High) == 0)
-                    return -((d2.flags >> 31) | 1);
+                if ((d1.Low64 | d1.High) == 0)
+                    return -((d2._flags >> 31) | 1);
 
-                int sign = (d1.flags >> 31) - (d2.flags >> 31);
+                int sign = (d1._flags >> 31) - (d2._flags >> 31);
                 if (sign != 0)
                     return sign;
                 return VarDecCmpSub(in d1, in d2);
@@ -1266,9 +1264,9 @@ ThrowOverflow:
 
             private static int VarDecCmpSub(in decimal d1, in decimal d2)
             {
-                int flags = d2.flags;
+                int flags = d2._flags;
                 int sign = (flags >> 31) | 1;
-                int scale = flags - d1.flags;
+                int scale = flags - d1._flags;
 
                 ulong low64 = d1.Low64;
                 uint high = d1.High;
@@ -1899,10 +1897,10 @@ ReturnZero:
 
             internal static int GetHashCode(in decimal d)
             {
-                if ((d.Low | d.Mid | d.High) == 0)
+                if ((d.Low64 | d.High) == 0)
                     return 0;
 
-                uint flags = (uint)d.flags;
+                uint flags = (uint)d._flags;
                 if ((flags & ScaleMask) == 0 || (d.Low & 1) != 0)
                     return (int)(flags ^ d.High ^ d.Mid ^ d.Low);
 

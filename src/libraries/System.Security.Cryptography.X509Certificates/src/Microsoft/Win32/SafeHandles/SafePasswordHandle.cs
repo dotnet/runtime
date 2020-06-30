@@ -25,6 +25,31 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
+        public SafePasswordHandle(ReadOnlySpan<char> password)
+            : base(ownsHandle: true)
+        {
+            // "".AsSpan() is not default, so this is compat for "null tries NULL first".
+            if (password != default)
+            {
+                int spanLen;
+
+                checked
+                {
+                    spanLen = password.Length + 1;
+                    handle = Marshal.AllocHGlobal(spanLen * sizeof(char));
+                }
+
+                unsafe
+                {
+                    Span<char> dest = new Span<char>((void*)handle, spanLen);
+                    password.CopyTo(dest);
+                    dest[password.Length] = '\0';
+                }
+
+                Length = password.Length;
+            }
+        }
+
         public SafePasswordHandle(SecureString? password)
             : base(ownsHandle: true)
         {

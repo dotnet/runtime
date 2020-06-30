@@ -32,6 +32,9 @@ namespace System.Net.Http
             return true;
         }
 
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
+            new ReadOnlyMemoryStream(_content);
+
         protected override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(new ReadOnlyMemoryStream(_content));
 

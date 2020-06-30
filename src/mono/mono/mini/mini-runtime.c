@@ -4519,10 +4519,6 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
 	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
 
-#ifdef ENABLE_PERFTRACING
-	ep_init ();
-#endif
-
 	mono_profiler_state.context_enable = mini_profiler_context_enable;
 	mono_profiler_state.context_get_this = mini_profiler_context_get_this;
 	mono_profiler_state.context_get_argument = mini_profiler_context_get_argument;
@@ -4543,6 +4539,10 @@ mini_init (const char *filename, const char *runtime_version)
 		domain = mono_init_version (filename, runtime_version);
 	else
 		domain = mono_init_from_assembly (filename, filename);
+
+#ifdef ENABLE_PERFTRACING
+	ep_init ();
+#endif
 
 	if (mono_aot_only) {
 		/* This helps catch code allocation requests */

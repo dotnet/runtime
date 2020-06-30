@@ -111,10 +111,6 @@ namespace System.IO
             StopRaisingEvents();
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Path to the procfs file that contains the maximum number of inotify instances an individual user may create.</summary>
         private const string MaxUserInstancesPath = "/proc/sys/fs/inotify/max_user_instances";
 

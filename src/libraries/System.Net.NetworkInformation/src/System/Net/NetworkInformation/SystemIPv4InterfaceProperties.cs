@@ -14,10 +14,10 @@ namespace System.Net.NetworkInformation
         private readonly bool _haveWins;
         private readonly bool _dhcpEnabled;
         private readonly bool _routingEnabled;
-        private readonly uint _index = 0;
-        private readonly uint _mtu = 0;
-        private bool _autoConfigEnabled = false;
-        private bool _autoConfigActive = false;
+        private readonly uint _index;
+        private readonly uint _mtu;
+        private bool _autoConfigEnabled;
+        private bool _autoConfigActive;
 
         internal SystemIPv4InterfaceProperties(Interop.IpHlpApi.FIXED_INFO fixedInfo, Interop.IpHlpApi.IpAdapterAddresses ipAdapterAddresses)
         {

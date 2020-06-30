@@ -227,7 +227,6 @@ protected:
         MAX_ARGS = 6
     };
 
-    unsigned    m_Depth;
     unsigned    m_BlockCount;
     unsigned    m_Maxstack;
     unsigned    m_ArgCount;

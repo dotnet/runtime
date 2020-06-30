@@ -2,6 +2,8 @@
   <PropertyGroup>
     <HasSharedItems>true</HasSharedItems>
     <SharedGUID>c5ed3c1d-b572-46f1-8f96-522a85ce1179</SharedGUID>
+    <StringResourcesName Condition="'$(StringResourcesName)' == ''">System.Private.CoreLib.Strings</StringResourcesName>
+    <GenerateResourcesSubstitutions>true</GenerateResourcesSubstitutions>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
     <Import_RootNamespace />
@@ -338,6 +340,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\UmAlQuraCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\UnicodeCategory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Guid.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Half.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\HashCode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IAsyncDisposable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IAsyncResult.cs" />
@@ -452,6 +455,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Object.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ObjectDisposedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ObsoleteAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Obsoletions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\OperatingSystem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\OperationCanceledException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\OutOfMemoryException.cs" />
@@ -620,6 +624,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerFilePathAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerLineNumberAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerMemberNameAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallingConventions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilationRelaxations.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilationRelaxationsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilerGeneratedAttribute.cs" />
@@ -1596,9 +1601,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Win32.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeatureAsyncCausalityTracer)' != 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\AsyncCausalityTracer.Noop.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComWrappers.PlatformNotSupported.cs" />

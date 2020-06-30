@@ -13,8 +13,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         private readonly ExportDefinition _definition;
         private readonly ReflectionMember _member;
-        private object? _cachedValue = null;
-        private volatile bool _isValueCached = false;
+        private object? _cachedValue;
+        private volatile bool _isValueCached;
 
         public ExportingMember(ExportDefinition definition, ReflectionMember member)
         {

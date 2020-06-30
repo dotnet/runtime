@@ -131,7 +131,7 @@ namespace System.Runtime.Serialization.Json
             private static readonly object s_createDataContractLock = new object();
 
             private static JsonDataContract[] s_dataContractCache = new JsonDataContract[32];
-            private static int s_dataContractID = 0;
+            private static int s_dataContractID;
 
             private static readonly TypeHandleRef s_typeHandleRef = new TypeHandleRef();
             private static readonly Dictionary<TypeHandleRef, IntRef> s_typeToIDCache = new Dictionary<TypeHandleRef, IntRef>(new TypeHandleRefEqualityComparer());
