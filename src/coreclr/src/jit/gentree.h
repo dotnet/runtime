@@ -2959,6 +2959,24 @@ struct GenTreeIntCon : public GenTreeIntConCommon
     // sequence of fields.
     FieldSeqNode* gtFieldSeq;
 
+#ifdef DEBUG
+    // If the value represents target address, holds the method handle to that target which is used
+    // to fetch target method name and display in the disassembled code.
+    CORINFO_METHOD_HANDLE gtMethodHandle = (CORINFO_METHOD_HANDLE) Unknown;
+
+    enum MethodHandleType
+    {
+        Unknown = 0,
+        StringLiteralNode,
+        StaticLookupTree,
+        RuntimeLookupTree,
+        IntializeArrayIntrinsics,
+        StaticFieldAccess,
+        GCCookieCheck,
+        SetGCCookie
+    };
+#endif
+
     GenTreeIntCon(var_types type, ssize_t value DEBUGARG(bool largeNode = false))
         : GenTreeIntConCommon(GT_CNS_INT, type DEBUGARG(largeNode))
         , gtIconVal(value)

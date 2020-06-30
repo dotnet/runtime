@@ -7807,7 +7807,7 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 // This computes address from the immediate which is relocatable.
-void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize_t addr)
+void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize_t addr DEBUGARG(CORINFO_METHOD_HANDLE methodHandle))
 {
     assert(EA_IS_RELOC(attr));
     emitAttr      size    = EA_SIZE(attr);
@@ -7835,6 +7835,9 @@ void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize
     id->idAddr()->iiaAddr = (BYTE*)addr;
     id->idReg1(ireg);
     id->idSetIsDspReloc();
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = (size_t)methodHandle;
+#endif
 
     dispIns(id);
     appendToCurIG(id);
@@ -11946,6 +11949,7 @@ void emitter::emitDispIns(
         ssize_t      index;
         ssize_t      index2;
         unsigned     registerListSize;
+        const char* targetName;
 
         case IF_BI_0A: // BI_0A   ......iiiiiiiiii iiiiiiiiiiiiiiii               simm26:00
         case IF_BI_0B: // BI_0B   ......iiiiiiiiii iiiiiiiiiii.....               simm19:00
@@ -12052,6 +12056,7 @@ void emitter::emitDispIns(
             assert(insOptsNone(id->idInsOpt()));
             emitDispReg(id->idReg1(), size, true);
             imm = emitGetInsSC(id);
+            targetName = nullptr;
 
             /* Is this actually a reference to a data section? */
             if (fmt == IF_LARGEADR)
@@ -12066,6 +12071,7 @@ void emitter::emitDispIns(
             printf("[");
             if (id->idAddr()->iiaIsJitDataOffset())
             {
+                printf("[");
                 doffs = Compiler::eeGetJitDataOffs(id->idAddr()->iiaFieldHnd);
                 /* Display a data section reference */
 
@@ -12084,6 +12090,37 @@ void emitter::emitDispIns(
                 {
                     printf("HIGH RELOC ");
                     emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
+                    size_t methodHandle = id->idDebugOnlyInfo()->idMemCookie;
+
+                    switch (methodHandle) {
+                        case GenTreeIntCon::MethodHandleType::Unknown:
+                            targetName = "Unknown";
+                            break;
+                        case GenTreeIntCon::MethodHandleType::StringLiteralNode:
+                            targetName = "Access_To_StringLiteralNode";
+                            break;
+                        case GenTreeIntCon::MethodHandleType::StaticLookupTree:
+                            targetName = "Static_LookupTree";
+                            break;
+                        case GenTreeIntCon::MethodHandleType::RuntimeLookupTree:
+                            targetName = "Runtime_LookupTree";
+                            break;
+                        case GenTreeIntCon::MethodHandleType::IntializeArrayIntrinsics:
+                            targetName = "IntializeArrayIntrinsics";
+                            break;
+                        case GenTreeIntCon::MethodHandleType::StaticFieldAccess:
+                            targetName = "StaticFieldAccess";
+                            break;
+                        case GenTreeIntCon::MethodHandleType::GCCookieCheck:
+                            targetName = "GlobalSecurityCookieCheck";
+                            break;
+                        case GenTreeIntCon::MethodHandleType::SetGCCookie:
+                            targetName = "SetGlobalSecurityCookie";
+                            break;
+                        default:
+                            targetName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)methodHandle);
+                            break;
+                    }
                 }
                 else if (id->idIsBound())
                 {
@@ -12095,6 +12132,10 @@ void emitter::emitDispIns(
                 }
             }
             printf("]");
+            if (targetName != nullptr)
+            {
+                printf("      // [%s]", targetName);
+            }
             break;
 
         case IF_LS_2A: // LS_2A   .X.......X...... ......nnnnnttttt      Rt Rn

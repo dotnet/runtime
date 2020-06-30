@@ -437,7 +437,7 @@ void CodeGen::genEHFinallyOrFilterRet(BasicBlock* block)
 
 //  Move an immediate value into an integer register
 
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, insFlags flags)
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, insFlags flags DEBUGARG(CORINFO_METHOD_HANDLE methodHandle))
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));

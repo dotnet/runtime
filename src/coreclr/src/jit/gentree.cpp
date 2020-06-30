@@ -5928,11 +5928,19 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
         case IAT_PVALUE: // The value needs to be accessed via an indirection
             // Create an indirection
             tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, false);
+#ifdef DEBUG
+            tree->gtGetOp1()->AsIntCon()->gtMethodHandle =
+                (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::StringLiteralNode;
+#endif
             break;
 
         case IAT_PPVALUE: // The value needs to be accessed via a double indirection
             // Create the first indirection
             tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_PSTR_HDL, true);
+#ifdef DEBUG
+            tree->gtGetOp1()->AsIntCon()->gtMethodHandle =
+                (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::StringLiteralNode;
+#endif
 
             // Create the second indirection
             tree = gtNewOperNode(GT_IND, TYP_REF, tree);
@@ -7189,6 +7197,9 @@ GenTree* Compiler::gtCloneExpr(
 #endif
                 {
                     copy                                  = gtNewIconNode(tree->AsIntCon()->gtIconVal, tree->gtType);
+#ifdef DEBUG
+                    copy->AsIntCon()->gtMethodHandle = tree->AsIntCon()->gtMethodHandle;
+#endif
                     copy->AsIntCon()->gtCompileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
                     copy->AsIntCon()->gtFieldSeq          = tree->AsIntCon()->gtFieldSeq;
                 }
