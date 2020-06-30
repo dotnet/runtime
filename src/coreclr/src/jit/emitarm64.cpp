@@ -14894,9 +14894,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 //         mov Ry, Rx  # <-- current instruction can be omitted.
 //
 // Arguments:
-//    ins - The current instruction
-//    dst - The current destination
-//    src - The current source
+//    ins  - The current instruction
+//    size - Operand size of current instruction
+//    dst  - The current destination
+//    src  - The current source
 //
 // Return Value:
 //    true if previous instruction moved from current dst to src.
@@ -14934,16 +14935,16 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         regNumber prevSrc    = emitLastIns->idReg2();
         insFormat lastInsfmt = emitLastIns->idInsFmt();
 
-        // Sometimes emitLastIns can be a mov with single register e.g. "mov reg, #imm". So ensure to
-        // optimize formats that does vector-to-vector or scalar-to-scalar register movs.
-        bool isValidLastInsFormats = ((lastInsfmt == IF_DV_3C) || (lastInsfmt == IF_DR_2G) || (lastInsfmt == IF_DR_2E));
- 
         if ((prevDst == dst) && (prevSrc == src))
         {
             assert(emitLastIns->idOpSize() == size);
             JITDUMP("\n -- suppressing mov because previous instruction already moved from src to dst register.\n");
             return true;
         }
+
+        // Sometimes emitLastIns can be a mov with single register e.g. "mov reg, #imm". So ensure to
+        // optimize formats that does vector-to-vector or scalar-to-scalar register movs.
+        bool isValidLastInsFormats = ((lastInsfmt == IF_DV_3C) || (lastInsfmt == IF_DR_2G) || (lastInsfmt == IF_DR_2E));
 
         if ((prevDst == src) && (prevSrc == dst) && isValidLastInsFormats)
         {
