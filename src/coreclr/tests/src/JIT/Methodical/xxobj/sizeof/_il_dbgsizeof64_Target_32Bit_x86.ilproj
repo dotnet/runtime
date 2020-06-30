@@ -3,12 +3,11 @@
     <OutputType>Exe</OutputType>
     <RestorePackages>true</RestorePackages>
     <CLRTestPriority>1</CLRTestPriority>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>Full</DebugType>
+    <!-- There are arch-specific versions of this test to allow it to be compiled for all targets -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x86'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Condition="'$(TargetArchitecture)' == 'x86'" Include="sizeof64.il" />
-    <Compile Condition="'$(TargetArchitecture)' != 'x86'" Include="64sizeof64.il" />
+    <Compile Include="sizeof64.il" />
   </ItemGroup>
 </Project>

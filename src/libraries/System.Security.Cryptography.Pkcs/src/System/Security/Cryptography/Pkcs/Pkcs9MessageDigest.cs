@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Pkcs
         //
 
         public Pkcs9MessageDigest() :
-            base(Oid.FromOidValue(Oids.MessageDigest, OidGroup.ExtensionOrAttribute))
+            base(Oids.MessageDigestOid.CopyOid())
         {
         }
 

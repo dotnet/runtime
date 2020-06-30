@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.X509Certificates
     internal sealed class Pkcs9ExtensionRequest : X501Attribute
     {
         internal Pkcs9ExtensionRequest(IEnumerable<X509Extension> extensions)
-            : base(Oids.Pkcs9ExtensionRequest, EncodeAttribute(extensions))
+            : base(Oids.Pkcs9ExtensionRequestOid, EncodeAttribute(extensions))
         {
         }
 

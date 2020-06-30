@@ -1271,11 +1271,6 @@ namespace Internal.JitInterface
             {
                 directCall = true;
             }
-            else if (targetMethod.OwningType.IsInterface && targetMethod.IsAbstract)
-            {
-                // Backwards compat: calls to abstract interface methods are treated as callvirt
-                directCall = false;
-            }
             else
             {
                 bool devirt;

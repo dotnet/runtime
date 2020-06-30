@@ -1182,7 +1182,7 @@ namespace System.Net.Http
                 return (null, tunnelResponse);
             }
 
-            return (await tunnelResponse.Content!.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false), null);
+            return (tunnelResponse.Content!.ReadAsStream(cancellationToken), null);
         }
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>
