@@ -726,6 +726,20 @@ get_data_item_index (TransformData *td, void *ptr)
 	return index;
 }
 
+static guint16
+get_data_item_index_nonshared (TransformData *td, void *ptr)
+{
+	guint index;
+	if (td->max_data_items == td->n_data_items) {
+		td->max_data_items = td->n_data_items == 0 ? 16 : 2 * td->max_data_items;
+		td->data_items = (gpointer*)g_realloc (td->data_items, td->max_data_items * sizeof(td->data_items [0]));
+	}
+	index = td->n_data_items;
+	td->data_items [index] = ptr;
+	++td->n_data_items;
+	return index;
+}
+
 gboolean
 mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 {
@@ -2493,6 +2507,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				td->last_ins->data [1] = vt_stack_used;
 				td->last_ins->data [2] = vt_res_size;
 				td->last_ins->data [3] = save_last_error;
+				/* Cache slot */
+				td->last_ins->data [4] = get_data_item_index_nonshared (td, NULL);
 			} else {
 				interp_add_ins (td, MINT_CALLI);
 				td->last_ins->data [1] = vt_stack_used;
