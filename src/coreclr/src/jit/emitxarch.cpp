@@ -215,27 +215,25 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 }
 
 //------------------------------------------------------------------------
-// IsZeroFlagSet: Checks if the previous instruction set the zero flag for
-//                reg of opSize size to zero.
+// IsZeroFlagSet: Checks if the previous instruction set the SZO flags and optionally CF for
+//                reg of opSize size
 //
 // Arguments:
 //    reg - register of interest
 //    opSize - size of register
+//    needsCF - also check the carry flag
 //
 // Return Value:
-//    true if the previous instruction set the zero flag for reg
+//    true if the previous instruction set the flags for reg
 //    false if not, or if we can't safely determine
 //
 // Notes:
 //    Currently only looks back one instruction.
-bool emitter::IsZeroFlagSet(regNumber reg, emitAttr opSize)
+bool emitter::AreSZOFlagsSet(regNumber reg, emitAttr opSize, bool needsCF)
 {
+    assert(reg != REG_NA);
     // Don't look back across IG boundaries (possible control flow)
-    if (emitCurIGinsCnt == 0)
-    {
-        return false;
-    }
-    else if (reg == REG_NA)
+    if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
     {
         return false;
     }
@@ -249,15 +247,20 @@ bool emitter::IsZeroFlagSet(regNumber reg, emitAttr opSize)
 
     switch (id->idIns())
     {
-        case INS_adc:
-        case INS_add:
-        case INS_and:
         case INS_dec:
         case INS_dec_l:
         case INS_inc:
         case INS_inc_l:
+            if (needsCF)
+            {
+                return false;
+            }
+        case INS_adc:
+        case INS_add:
+        case INS_and:
         case INS_neg:
         case INS_or:
+        case INS_shr_1:
         case INS_shl_1:
         case INS_sar_1:
         case INS_sbb:
