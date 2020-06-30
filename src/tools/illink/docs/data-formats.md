@@ -55,6 +55,7 @@ The `required` attribute specifies that if the type is not marked, during the ma
 
     <!-- Type with generics in the signature -->
     <type fullname="Assembly.G`1" />
+  </assembly>
 </linker>
 ```
 
@@ -87,6 +88,7 @@ The `required` attribute specifies that if the type is not marked, during the ma
       <!-- Field with generics in the signature -->
       <field signature="System.Collections.Generic.List`1&lt;System.Int32&gt; field3" />
       <field signature="System.Collections.Generic.List`1&lt;T&gt; field4" />
+    </type>
   </assembly>
 </linker>
 ```
@@ -108,6 +110,7 @@ The `required` attribute specifies that if the type is not marked, during the ma
 
        <!-- Preserve the method if the type is used. If the type is not used it will be removed -->
       <method signature="System.Void Method4()" required="false" />
+    </type>
   </assembly>
 </linker>
 ```
@@ -134,6 +137,7 @@ The `required` attribute specifies that if the type is not marked, during the ma
 
        <!-- Preserve the property if the type is used. If the type is not used it will be removed -->
       <property signature="System.Int32 Property6" required="false" />
+    </type>
   </assembly>
 </linker>
 ```
@@ -214,19 +218,37 @@ The `initialize` attribute is optional and when not specified the code to set th
 </linker>
 ```
 
-### Conditional substitutions
+### Conditional substitutions and descriptors
 
 The `feature` and `featurevalue` attributes are optional, but must be used together when used.
-They can be applied to any element to specify conditions under which the contained substitutions
-are applied.
+They can be applied to any element to specify conditions under which the contained substitutions or descriptors
+are applied, based on feature settings passed via `--feature FeatureName bool`
 
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <!-- The substitution will apply only if "--feature EnableOptionalFeature false" are also used -->
+    <!-- This substitution will apply only if "EnableOptionalFeature" is set to "false" -->
     <type fullname="Assembly.A" feature="EnableOptionalFeature" featurevalue="false">
-      <method signature="System.String TestMethod()" body="stub">
-      </method>
+      <method signature="System.String TestMethod()" body="stub" />
+    </type>
+  </assembly>
+</linker>
+```
+
+`featuredefault="true"` can be used to indicate that this `featurevalue` is the default value for `feature`,
+causing the contained substitutions or descriptors to be applied even when the feature setting is not passed to the linker.
+Note that this will only have an effect where it is applied - the default value is not remembered or reused for other elements.
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <!-- This method will be preserved if "EnableDefaultFeature" is "true" or unspecified -->
+    <type fullname="Assembly.A" feature="EnableDefaultFeature" featurevalue="true" featuredefault="true">
+      <method signature="System.String TestMethod()" />
+    </type>
+    <!-- This method will only be preserved if "EnableDefaultFeature" is "true", not if it is unspecified-->
+    <type fullname="Assembly.A" feature="EnableDefaultFeature" featurevalue="true">
+      <method signature="System.String TestMethod2()" />
     </type>
   </assembly>
 </linker>

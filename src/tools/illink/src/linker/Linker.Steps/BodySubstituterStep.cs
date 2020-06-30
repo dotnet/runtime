@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Globalization;
 using System.Xml.XPath;
@@ -6,130 +7,38 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class BodySubstituterStep : BaseStep
+	public class BodySubstituterStep : ProcessLinkerXmlStepBase
 	{
-		readonly XPathDocument _document;
-		readonly string _xmlDocumentLocation;
-		readonly EmbeddedResource _resource;
-		readonly AssemblyDefinition _resourceAssembly;
-
 		public BodySubstituterStep (XPathDocument document, string xmlDocumentLocation)
+			: base (document, xmlDocumentLocation)
 		{
-			_document = document;
-			_xmlDocumentLocation = xmlDocumentLocation;
 		}
 
 		public BodySubstituterStep (XPathDocument document, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "")
-			: this (document, xmlDocumentLocation)
+			: base (document, resource, resourceAssembly, xmlDocumentLocation)
 		{
-			if (resource == null)
-				throw new ArgumentNullException (nameof (resource));
-
-			_resource = resource;
-			_resourceAssembly = resourceAssembly ?? throw new ArgumentNullException (nameof (resourceAssembly));
 		}
 
 		protected override void Process ()
 		{
-			if (_resource != null) {
-				if (Context.StripSubstitutions)
-					Context.Annotations.AddResourceToRemove (_resourceAssembly, _resource);
-				if (Context.IgnoreSubstitutions)
-					return;
-			}
-
-			ReadSubstitutions (_document);
+			ProcessXml (Context.StripSubstitutions, Context.IgnoreSubstitutions);
 		}
 
-		bool ShouldProcessSubstitutions (XPathNavigator nav)
+		protected override void ProcessAssembly (AssemblyDefinition assembly, XPathNodeIterator iterator, bool warnOnUnresolvedTypes)
 		{
-			var feature = GetAttribute (nav, "feature");
-			if (string.IsNullOrEmpty (feature))
-				return true;
-
-			var value = GetAttribute (nav, "featurevalue");
-			if (string.IsNullOrEmpty (value)) {
-				Context.LogError ($"Failed to process XML substitution: '{_xmlDocumentLocation}'. Feature {feature} does not specify a 'featurevalue' attribute", 1001);
-				return false;
-			}
-
-			if (!bool.TryParse (value, out bool bValue)) {
-				Context.LogError ($"Failed to process XML substitution: '{_xmlDocumentLocation}'. Unsupported non-boolean feature definition {feature}", 1002);
-				return false;
-			}
-
-			if (Context.FeatureSettings == null || !Context.FeatureSettings.TryGetValue (feature, out bool featureSetting))
-				return false;
-
-			return bValue == featureSetting;
-		}
-
-		void ReadSubstitutions (XPathDocument document)
-		{
-			XPathNavigator nav = document.CreateNavigator ();
-
-			// Initial structure check
-			if (!nav.MoveToChild ("linker", ""))
-				return;
-
-			if (!ShouldProcessSubstitutions (nav))
-				return;
-
-			ProcessAssemblies (nav.SelectChildren ("assembly", ""));
-		}
-
-		void ProcessAssemblies (XPathNodeIterator iterator)
-		{
-			while (iterator.MoveNext ()) {
-				var name = GetAssemblyName (iterator.Current);
-
-				if (!ShouldProcessSubstitutions (iterator.Current))
-					continue;
-
-				AssemblyDefinition assembly = Context.GetLoadedAssembly (name.Name);
-
-				if (assembly == null) {
-					Context.LogWarning ($"Could not resolve assembly {GetAssemblyName (iterator.Current).Name} specified in {_xmlDocumentLocation}", 2007, _xmlDocumentLocation);
-					continue;
-				}
-
-				ProcessAssembly (assembly, iterator);
-			}
-		}
-
-		void ProcessAssembly (AssemblyDefinition assembly, XPathNodeIterator iterator)
-		{
-			ProcessTypes (assembly, iterator.Current.SelectChildren ("type", ""));
+			ProcessTypes (assembly, iterator, warnOnUnresolvedTypes);
 			ProcessResources (assembly, iterator.Current.SelectChildren ("resource", ""));
 		}
 
-		void ProcessTypes (AssemblyDefinition assembly, XPathNodeIterator iterator)
+		protected override TypeDefinition ProcessExportedType (ExportedType exported, AssemblyDefinition assembly) => null;
+
+		protected override bool ProcessTypePattern (string fullname, AssemblyDefinition assembly, XPathNavigator nav) => false;
+
+		protected override void ProcessType (TypeDefinition type, XPathNavigator nav)
 		{
-			while (iterator.MoveNext ()) {
-				XPathNavigator nav = iterator.Current;
+			Debug.Assert (ShouldProcessElement (nav));
 
-				if (!ShouldProcessSubstitutions (nav))
-					continue;
-
-				string fullname = GetAttribute (nav, "fullname");
-
-				TypeDefinition type = assembly.MainModule.GetType (fullname);
-
-				if (type == null) {
-					Context.LogWarning ($"Could not resolve type '{fullname}' specified in {_xmlDocumentLocation}", 2008, _xmlDocumentLocation);
-					continue;
-				}
-
-				ProcessType (type, nav);
-			}
-		}
-
-		void ProcessType (TypeDefinition type, XPathNavigator nav)
-		{
 			if (!nav.HasChildren)
-				return;
-
-			if (!ShouldProcessSubstitutions (nav))
 				return;
 
 			XPathNodeIterator methods = nav.SelectChildren ("method", "");
@@ -139,7 +48,7 @@ namespace Mono.Linker.Steps
 			var fields = nav.SelectChildren ("field", "");
 			if (fields.Count > 0) {
 				while (fields.MoveNext ()) {
-					if (!ShouldProcessSubstitutions (fields.Current))
+					if (!ShouldProcessElement (fields.Current))
 						continue;
 
 					ProcessField (type, fields);
@@ -150,7 +59,7 @@ namespace Mono.Linker.Steps
 		void ProcessMethods (TypeDefinition type, XPathNodeIterator iterator)
 		{
 			while (iterator.MoveNext ()) {
-				if (!ShouldProcessSubstitutions (iterator.Current))
+				if (!ShouldProcessElement (iterator.Current))
 					continue;
 
 				ProcessMethod (type, iterator);
@@ -178,7 +87,7 @@ namespace Mono.Linker.Steps
 				string value = GetAttribute (iterator.Current, "value");
 				if (value != "") {
 					if (!TryConvertValue (value, method.ReturnType, out object res)) {
-						Context.LogWarning ($"Invalid value for '{signature}' stub", 2010, _xmlDocumentLocation);
+						Context.LogWarning ($"Invalid value for '{method.GetDisplayName ()}' stub", 2010, _xmlDocumentLocation);
 						return;
 					}
 
@@ -188,7 +97,7 @@ namespace Mono.Linker.Steps
 				Annotations.SetAction (method, MethodAction.ConvertToStub);
 				return;
 			default:
-				Context.LogWarning ($"Unknown body modification '{action}' for '{signature}'", 2011, _xmlDocumentLocation);
+				Context.LogWarning ($"Unknown body modification '{action}' for '{method.GetDisplayName ()}'", 2011, _xmlDocumentLocation);
 				return;
 			}
 		}
@@ -233,7 +142,7 @@ namespace Mono.Linker.Steps
 			while (iterator.MoveNext ()) {
 				XPathNavigator nav = iterator.Current;
 
-				if (!ShouldProcessSubstitutions (nav))
+				if (!ShouldProcessElement (nav))
 					continue;
 
 				string name = GetAttribute (nav, "name");
@@ -371,14 +280,9 @@ namespace Mono.Linker.Steps
 			return null;
 		}
 
-		static AssemblyNameReference GetAssemblyName (XPathNavigator nav)
+		protected override AssemblyDefinition GetAssembly (LinkContext context, AssemblyNameReference assemblyName)
 		{
-			return AssemblyNameReference.Parse (GetAttribute (nav, "fullname"));
-		}
-
-		static string GetAttribute (XPathNavigator nav, string attribute)
-		{
-			return nav.GetAttribute (attribute, "");
+			return context.GetLoadedAssembly (assemblyName.Name);
 		}
 	}
 }

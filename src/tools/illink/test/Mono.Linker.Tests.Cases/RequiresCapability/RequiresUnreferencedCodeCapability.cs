@@ -19,11 +19,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestRequiresWithMessageAndUrlOnMethod ();
 			TestRequiresOnConstructor ();
 			TestRequiresOnPropertyGetterAndSetter ();
-			TestRequiresSuppressesReflectionAnalysis ();
+			TestRequiresSuppressesWarningsFromReflectionAnalysis ();
 		}
 
 		[LogContains (
-			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::TestRequiresWithMessageOnlyOnMethod(): " +
+			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresWithMessageOnlyOnMethod(): " +
 			"Calling 'System.Void Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::RequiresWithMessageOnly()' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --RequiresWithMessageOnly--.")]
@@ -38,7 +38,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[LogContains (
-			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::TestRequiresWithMessageAndUrlOnMethod(): " +
+			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresWithMessageAndUrlOnMethod(): " +
 			"Calling 'System.Void Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::RequiresWithMessageAndUrl()' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --RequiresWithMessageAndUrl--. " +
@@ -54,7 +54,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[LogContains (
-			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::TestRequiresOnConstructor(): " +
+			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresOnConstructor(): " +
 			"Calling 'System.Void Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability/ConstructorRequires::.ctor()' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --ConstructorRequires--.")]
@@ -72,12 +72,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[LogContains (
-			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::TestRequiresOnPropertyGetterAndSetter(): " +
+			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresOnPropertyGetterAndSetter(): " +
 			"Calling 'System.Int32 Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::get_PropertyRequires()' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --getter PropertyRequires--.")]
 		[LogContains (
-			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::TestRequiresOnPropertyGetterAndSetter(): " +
+			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresOnPropertyGetterAndSetter(): " +
 			"Calling 'System.Void Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::set_PropertyRequires(System.Int32)' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --setter PropertyRequires--.")]
@@ -96,25 +96,29 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[LogContains (
-			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::TestRequiresSuppressesReflectionAnalysis(): " +
+			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresSuppressesWarningsFromReflectionAnalysis(): " +
 			"Calling 'System.Void Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::RequiresAndCallsOtherRequiresMethods()' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --RequiresAndCallsOtherRequiresMethods--.")]
-		static void TestRequiresSuppressesReflectionAnalysis ()
+		static void TestRequiresSuppressesWarningsFromReflectionAnalysis ()
 		{
-			RequiresAndCallsOtherRequiresMethods ();
+			RequiresAndCallsOtherRequiresMethods<TestType> ();
 		}
 
 		[RequiresUnreferencedCode ("Message for --RequiresAndCallsOtherRequiresMethods--")]
 		[LogDoesNotContain ("Message for --RequiresUnreferencedCodeMethod--")]
 		[RecognizedReflectionAccessPattern]
-		static void RequiresAndCallsOtherRequiresMethods ()
+		static void RequiresAndCallsOtherRequiresMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods> ()
 		{
 			// Normally this would warn, but with the attribute on this method it should be auto-suppressed
 			RequiresUnreferencedCodeMethod ();
 
 			// Normally this would warn due to incompatible annotations, but with the attribute on this method it should be auto-suppressed
 			RequiresPublicFields (GetTypeWithPublicMethods ());
+
+			TypeRequiresPublicFields<TPublicMethods>.Method ();
+
+			MethodRequiresPublicFields<TPublicMethods> ();
 		}
 
 		[RequiresUnreferencedCode ("Message for --RequiresUnreferencedCodeMethod--")]
@@ -131,5 +135,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 			return null;
 		}
+
+		class TypeRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
+		{
+			public static void Method () { }
+		}
+
+		static void MethodRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> () { }
+
+		class TestType { }
 	}
 }

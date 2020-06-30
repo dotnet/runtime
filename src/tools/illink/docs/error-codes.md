@@ -7,21 +7,17 @@ error and warning codes.
 
 ## Error Codes
 
-#### `IL1001`: Failed to process XML substitution: 'XML document location'. Feature 'feature' does not specify a "featurevalue" attribute
+#### `IL1001`: Failed to process 'XML document location'. Feature 'feature' does not specify a "featurevalue" attribute
 
-- The substitution in 'XML document location' with feature value 'feature' does not use the `featurevalue` attribute. These attributes have to be used together.
+- The substitution or descriptor in 'XML document location' with feature value 'feature' does not use the `featurevalue` attribute. These attributes have to be used together.
 
-#### `IL1002`: Failed to process XML substitution: 'XML document location'. Unsupported non-boolean feature definition 'feature'
+#### `IL1002`: Failed to process 'XML document location'. Unsupported non-boolean feature definition 'feature'
 
-- The substitution in 'XML document location' with feature value 'feature' sets the attribute `featurevalue` to a non-boolean value. Only boolean values are supported for this attribute.
+- The substitution or descriptor in 'XML document location' with feature value 'feature' sets the attribute `featurevalue` to a non-boolean value. Only boolean values are supported for this attribute.
 
 #### `IL1003`: Error processing 'XML document name': 'XmlException'
 
 - There was an error processing a resource linker descriptor, embedded resource linker descriptor or external substitution XML (`ILLink.Substitutions.xml`). The most likely reason for this is that the descriptor file has syntactical errors.
-
-#### `IL1004`: Failed to process description file 'XML document location': 'XmlException'
-
-- There was an error processing an XML descriptor. The most likely reason for this is that the descriptor file has syntactical errors.
 
 #### `IL1005`: Error processing method 'method' in assembly 'assembly'
 
@@ -53,7 +49,11 @@ error and warning codes.
 
 #### `IL1013`: Error processing 'XML document location': 'XmlException'
 
-- There was an error processing 'XML document location' xml file. The most likely reason for this is that the descriptor file has syntactical errors.
+- There was an error processing 'XML document location' xml file. The most likely reason for this is that the XML file has syntactical errors.
+
+#### `IL1014`: Failed to process 'XML document location`. Unsupported value for featuredefault attribute
+
+- Element in 'XML document location' contains a 'featuredefault' attribute with an invalid value. This attribute only supports the true value, to indicate that this is the default behavior for a feature when a value is not given.
 
 ----
 ## Warning Codes
@@ -202,7 +202,7 @@ error and warning codes.
 
 - The type in a DynamicDependencyAttribute constructor could not be resolved. Ensure that the argument specifies a valid type name or type reference, that the type exists in the specified assembly, and that the assembly is available to the linker.
 
-### `IL2037`: No members were resolved for 'memberSignature/memberTypes'.
+#### `IL2037`: No members were resolved for 'memberSignature/memberTypes'.
 
 - The member signature or DynamicallyAccessedMemberTypes in a DynamicDependencyAttribute constructor did not resolve to any members on the type. If you using a signature, ensure that it refers to an existing member, and that it uses the format defined at https://github.com/dotnet/csharplang/blob/master/spec/documentation-comments.md#id-string-format. If using DynamicallyAccessedMemberTypes, ensure that the type contains members of the specified member types.
 
@@ -230,6 +230,10 @@ error and warning codes.
 
 - Propagating DynamicallyAccessedMembersAttribute from property 'property' to its getter 'method' found that the getter already has such an attribute. The existing attribute will be used.
 
-#### `IL2044`: Custom Attribute 'type' is being instanciated after LinkerRemovableAttribute was used on the Custom Attribute type
+#### `IL2044`: Could not find any type in namespace 'namespace' specified in 'XML document location'
 
-- CustomAttribute 'type' is being instanciated with reflection but the 'type' has been removed from non reflection calls using the LinkerRemovableAttribute
+- The 'XML document location' specifies a namespace 'namespace' but there are no types found in such namespace.
+
+#### `IL2045`: Custom Attribute 'type' is being referenced in code after LinkerRemovableAttribute was used on the Custom Attribute type
+
+- CustomAttribute 'type' is being referenced in the code but the 'type' has been removed using the LinkerRemovableAttribute

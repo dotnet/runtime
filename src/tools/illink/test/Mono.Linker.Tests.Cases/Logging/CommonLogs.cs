@@ -7,14 +7,14 @@ namespace Mono.Linker.Tests.Cases.Logging
 #if !NETCOREAPP
 	[IgnoreTestCase ("Can be enabled once MonoBuild produces a dll from which we can grab the types in the Mono.Linker namespace.")]
 #else
-	[SetupCompileBefore ("LogStep.dll", new [] { "Dependencies/LogStep.cs" }, new [] { "illink.dll" })]
+	[SetupCompileBefore ("LogStep.dll", new[] { "Dependencies/LogStep.cs" }, new[] { "illink.dll" })]
 #endif
 	[SetupLinkerArgument ("--custom-step", "Log.LogStep,LogStep.dll")]
 
-	[LogContains ("ILlinker: error IL1004: Error")]
+	[LogContains ("ILLinker: error IL1004: Error")]
 	[LogContains ("logtest(1,1): warning IL2001: Warning")]
-	[LogContains ("ILlinker: Info")]
-	[LogContains ("ILlinker: Diagnostics")]
+	[LogContains ("ILLinker: Info")]
+	[LogContains ("ILLinker: Diagnostics")]
 	public class CommonLogs
 	{
 		public static void Main ()

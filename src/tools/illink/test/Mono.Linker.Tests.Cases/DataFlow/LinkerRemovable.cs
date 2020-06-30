@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[SetupLinkAttributesFile ("LinkerRemovable.xml")]
 	[IgnoreLinkAttributes (false)]
 	[KeptMember (".ctor()")]
-	[LogContains ("IL2044: Mono.Linker.Tests.Cases.DataFlow.LinkerRemovable::TestType(): Custom Attribute System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute is being instanciated after LinkerRemovableAttribute was used on the Custom Attribute type")]
+	[LogContains ("IL2044: Mono.Linker.Tests.Cases.DataFlow.LinkerRemovable::TestType(): Custom Attribute System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute is being referenced in code after LinkerRemovableAttribute was used on the Custom Attribute type")]
 	class LinkerRemovable
 	{
 		public static void Main ()

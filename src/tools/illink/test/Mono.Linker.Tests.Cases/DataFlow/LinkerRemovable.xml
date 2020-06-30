@@ -1,8 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <linker>
   <assembly fullname="*">
-    <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
-      <attribute fullname="System.Diagnostics.CodeAnalysis.LinkerRemovableAttribute"></attribute>
+    <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" remove="true">
     </type>
   </assembly>
 </linker>
