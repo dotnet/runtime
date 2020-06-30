@@ -201,7 +201,9 @@ namespace System.Diagnostics
 
         internal void ToString(TraceFormat traceFormat, StringBuilder sb)
         {
-            string word_At = SR.Word_At;
+            // Adding a default string for "at" in case we are using Resource Keys instead of resources
+            // as this is a special case and we don't want to have "Word_At" on stack traces.
+            string word_At = SR.GetResourceString(nameof(SR.Word_At), defaultString: "at");
             string inFileLineNum = SR.StackTrace_InFileLineNumber;
             bool fFirstFrame = true;
             for (int iFrameIndex = 0; iFrameIndex < _numOfFrames; iFrameIndex++)
