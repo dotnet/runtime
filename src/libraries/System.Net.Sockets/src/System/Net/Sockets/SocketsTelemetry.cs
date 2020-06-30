@@ -14,7 +14,7 @@ namespace System.Net.Sockets
         [NonEvent]
         public void ConnectStart(Internals.SocketAddress address)
         {
-            if (IsEnabled())
+            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
             {
                 ConnectStart(address.ToString());
             }
@@ -23,7 +23,7 @@ namespace System.Net.Sockets
         [NonEvent]
         public void ConnectStart(EndPoint address)
         {
-            if (IsEnabled())
+            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
             {
                 var addressString = address.ToString();
                 if (addressString != null)
@@ -36,7 +36,7 @@ namespace System.Net.Sockets
         [Event(1, Level = EventLevel.Informational)]
         public void ConnectStart(string address)
         {
-            WriteSocketEvent(eventId: 1, address);
+            WriteSocketEvent(EventLevel.Informational, eventId: 1, address);
         }
 
         [Event(2, Level = EventLevel.Informational)]
@@ -58,9 +58,9 @@ namespace System.Net.Sockets
         }
 
         [NonEvent]
-        private unsafe void WriteSocketEvent(int eventId, string address)
+        private unsafe void WriteSocketEvent(EventLevel level, int eventId, string address)
         {
-            if (IsEnabled())
+            if (IsEnabled(level, EventKeywords.All))
             {
                 if (address == null) address = "";
 
