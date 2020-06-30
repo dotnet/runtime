@@ -33,7 +33,6 @@ using System.Linq;
 using System.Runtime.Serialization.Json;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using Mono.Cecil.PE;
 
 namespace Mono.Linker.Steps
 {
@@ -81,6 +80,7 @@ namespace Mono.Linker.Steps
 		{
 			CheckOutputDirectory ();
 			OutputPInvokes ();
+			OutputSuppressions ();
 			Tracer.Finish ();
 		}
 
@@ -174,6 +174,14 @@ namespace Mono.Linker.Steps
 				var jsonSerializer = new DataContractJsonSerializer (typeof (List<PInvokeInfo>));
 				jsonSerializer.WriteObject (fs, Context.PInvokes);
 			}
+		}
+
+		public void OutputSuppressions ()
+		{
+			if (!Context.OutputWarningSuppressions)
+				return;
+
+			Context.WarningSuppressionWriter.OutputSuppressions ();
 		}
 
 		protected virtual void DeleteAssembly (AssemblyDefinition assembly, string directory)

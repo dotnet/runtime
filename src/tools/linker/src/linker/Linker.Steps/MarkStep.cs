@@ -1340,7 +1340,7 @@ namespace Mono.Linker.Steps
 
 			// Check type being used was not removed by the LinkerRemovableAttribute
 			if (_context.Annotations.HasLinkerAttribute<LinkerRemovableAttribute> (type))
-				_context.LogWarning ($"Custom Attribute {type} is being instanciated after LinkerRemovableAttribute was used on the Custom Attribute type", 2044, sourceLocationMember);
+				_context.LogWarning ($"Custom Attribute {type} is being referenced in code after LinkerRemovableAttribute was used on the Custom Attribute type", 2044, sourceLocationMember);
 
 			if (CheckProcessed (type))
 				return null;
@@ -2577,9 +2577,6 @@ namespace Mono.Linker.Steps
 				ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody (_flowAnnotations, body.Method);
 			foreach (Instruction instruction in body.Instructions)
 				MarkInstruction (instruction, body.Method, ref requiresReflectionMethodBodyScanner);
-
-			if (ReflectionMethodBodyScanner.AutomaticallySuppressReflectionMethodBodyScannerForMethod (_context, body.Method))
-				requiresReflectionMethodBodyScanner = false;
 
 			MarkInterfacesNeededByBodyStack (body);
 

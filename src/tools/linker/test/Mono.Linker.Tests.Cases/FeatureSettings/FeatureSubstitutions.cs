@@ -1,7 +1,8 @@
+using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Substitutions
+namespace Mono.Linker.Tests.Cases.FeatureSettings
 {
 	[SetupLinkerSubstitutionFile ("FeatureSubstitutions.xml")]
 	[SetupLinkerArgument ("--feature", "OptionalFeature", "false")]
@@ -20,6 +21,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		public static void Main ()
 		{
 			TestOptionalFeature ();
+			_ = IsDefaultFeatureEnabled;
 		}
 
 		[Kept]
@@ -46,6 +48,16 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		[Kept]
 		static void UseFallback ()
 		{
+		}
+
+		[Kept]
+		static bool IsDefaultFeatureEnabled {
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"ldc.i4.1",
+				"ret",
+			})]
+			get => throw new NotImplementedException ();
 		}
 	}
 }

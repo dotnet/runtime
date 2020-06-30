@@ -218,6 +218,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.FeatureSettingsTests))]
+		public void FeatureSettingsTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.DataFlowTests))]
 		public void DataFlowTests (TestCase testCase)
 		{

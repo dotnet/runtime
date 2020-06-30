@@ -193,6 +193,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("Extensibility");
 		}
 
+		public static IEnumerable<TestCaseData> FeatureSettingsTests ()
+		{
+			return NUnitCasesBySuiteName ("FeatureSettings");
+		}
+
 		public static TestCaseCollector CreateCollector ()
 		{
 			GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyPath);

@@ -147,6 +147,14 @@ control options listed below.
 | Substition  | ILLink.Substitution.xml  |  --ignore-substitutions |
 | LinkAttributes  | ILLink.LinkAttributes.xml    |  --ignore-link-attributes |
 
+### Generating warning suppressions
+
+For each of the linked assemblies that triggered any warnings during the linking, the
+`--generate-warning-suppressions` option will generate a file containing a list with the
+necessary attributes to suppres these. The attributes contained in this files are
+assembly-level attributes of type `UnconditionalSuppressMessage` specifying the required
+`Scope` and `Target` properties for each of the warnings seen. The generated files are
+saved in the ouput directory and named `<AssemblyName>.WarningSuppressions.cs`.
 
 ## monolinker specific options
 

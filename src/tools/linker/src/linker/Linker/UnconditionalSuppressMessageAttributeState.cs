@@ -137,7 +137,7 @@ namespace Mono.Linker
 		private void DecodeModuleLevelAndGlobalSuppressMessageAttributes (ModuleDefinition module)
 		{
 			AssemblyDefinition assembly = module.Assembly;
-			if (!InitializedAssemblies.Contains (assembly)) {
+			if (InitializedAssemblies.Add (assembly)) {
 				LookForModuleLevelAndGlobalSuppressions (module, assembly);
 				foreach (var _module in assembly.Modules)
 					LookForModuleLevelAndGlobalSuppressions (_module, _module);
@@ -165,7 +165,7 @@ namespace Mono.Linker
 				case "type":
 				case "member":
 					foreach (var result in DocumentationSignatureParser.GetMembersForDocumentationSignature (info.Target, module))
-						AddSuppression (info, provider);
+						AddSuppression (info, result);
 
 					break;
 				default:
