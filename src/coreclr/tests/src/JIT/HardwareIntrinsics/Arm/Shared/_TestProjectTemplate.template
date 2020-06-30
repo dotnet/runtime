@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>{CLRTestProjectToRun}</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>{CLRTestExecutionArguments}</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>
