@@ -5,6 +5,7 @@
 using Microsoft.DotNet.RemoteExecutor;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
@@ -206,12 +207,16 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [OuterLoop("Slow - Negative connection test")]
+        [OuterLoop("Failing connection attempts take long on windows")]
         public async Task GetContentAsync_WhenCanNotConnect_ExceptionContainsHostInfo()
         {
+            using Socket portReserver = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            portReserver.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            IPEndPoint ep = (IPEndPoint)portReserver.LocalEndPoint;
+
             using var client = new HttpClient(new SocketsHttpHandler());
-            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync("http://localhost:4242"));
-            Assert.Contains("localhost:4242", ex.Message);
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync($"http://localhost:{ep.Port}"));
+            Assert.Contains($"localhost:{ep.Port}", ex.Message);
         }
 
         [Fact]
