@@ -36,25 +36,25 @@ namespace System.Tests
         [Fact]
         public static void InvalidInputBuffer()
         {
-            Assert.Throws<ArgumentNullException>(() => Convert.ToHexString(null));
-            Assert.Throws<ArgumentNullException>(() => Convert.ToHexString(null, 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("inArray", () => Convert.ToHexString(null));
+            AssertExtensions.Throws<ArgumentNullException>("inArray", () => Convert.ToHexString(null, 0, 0));
         }
 
         [Fact]
         public static void InvalidOffset()
         {
             byte[] inputBytes = Convert.FromHexString("000102FDFEFF");
-            Assert.Throws<ArgumentOutOfRangeException>(() => Convert.ToHexString(inputBytes, -1, inputBytes.Length));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Convert.ToHexString(inputBytes, inputBytes.Length, inputBytes.Length));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => Convert.ToHexString(inputBytes, -1, inputBytes.Length));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => Convert.ToHexString(inputBytes, inputBytes.Length, inputBytes.Length));
         }
 
         [Fact]
         public static void InvalidLength()
         {
             byte[] inputBytes = Convert.FromHexString("000102FDFEFF");
-            Assert.Throws<ArgumentOutOfRangeException>(() => Convert.ToHexString(inputBytes, 0, -1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Convert.ToHexString(inputBytes, 0, inputBytes.Length + 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Convert.ToHexString(inputBytes, 1, inputBytes.Length));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Convert.ToHexString(inputBytes, 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => Convert.ToHexString(inputBytes, 0, inputBytes.Length + 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => Convert.ToHexString(inputBytes, 1, inputBytes.Length));
         }
 
         [Fact]

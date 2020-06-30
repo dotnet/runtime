@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -152,6 +153,9 @@ namespace System
 
         public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes)
         {
+            Debug.Assert(chars.Length / 2 == bytes.Length);
+            Debug.Assert(chars.Length % 2 == 0);
+
             int i = 0;
             int j = 0;
 

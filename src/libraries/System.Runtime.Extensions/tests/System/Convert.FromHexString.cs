@@ -40,7 +40,7 @@ namespace System.Tests
         [Fact]
         public static void InvalidInputString_Null()
         {
-            Assert.Throws<ArgumentNullException>(() => Convert.FromHexString(null));
+            AssertExtensions.Throws<ArgumentNullException>("s", () => Convert.FromHexString(null));
         }
 
         [Fact]
