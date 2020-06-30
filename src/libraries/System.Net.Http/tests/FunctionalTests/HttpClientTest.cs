@@ -214,7 +214,8 @@ namespace System.Net.Http.Functional.Tests
             portReserver.Bind(new IPEndPoint(IPAddress.Loopback, 0));
             IPEndPoint ep = (IPEndPoint)portReserver.LocalEndPoint;
 
-            using var client = new HttpClient(new SocketsHttpHandler());
+            using var client = CreateHttpClient();
+
             HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync($"http://localhost:{ep.Port}"));
             Assert.Contains($"localhost:{ep.Port}", ex.Message);
         }
