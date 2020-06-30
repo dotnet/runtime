@@ -31,97 +31,43 @@
 using System;
 using System.Diagnostics;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Xml.XPath;
 
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class ResolveFromXmlStep : BaseStep
+	public class ResolveFromXmlStep : ProcessLinkerXmlStepBase
 	{
+		const string NamespaceElementName = "namespace";
 
-		static readonly string _signature = "signature";
-		static readonly string _fullname = "fullname";
 		static readonly string _required = "required";
 		static readonly string _preserve = "preserve";
 		static readonly string _accessors = "accessors";
-		static readonly string _ns = string.Empty;
 
 		static readonly string[] _accessorsAll = new string[] { "all" };
 		static readonly char[] _accessorsSep = new char[] { ';' };
 
-		readonly XPathDocument _document;
-		readonly string _xmlDocumentLocation;
-		readonly EmbeddedResource _resource;
-		readonly AssemblyDefinition _resourceAssembly;
-
 		public ResolveFromXmlStep (XPathDocument document, string xmlDocumentLocation)
+			: base (document, xmlDocumentLocation)
 		{
-			_document = document;
-			_xmlDocumentLocation = xmlDocumentLocation;
 		}
 
 		public ResolveFromXmlStep (XPathDocument document, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "<unspecified>")
-			: this (document, xmlDocumentLocation)
+			: base (document, resource, resourceAssembly, xmlDocumentLocation)
 		{
-			if (resource == null)
-				throw new ArgumentNullException (nameof (resource));
-
-			_resource = resource;
-			_resourceAssembly = resourceAssembly ?? throw new ArgumentNullException (nameof (resourceAssembly));
 		}
 
-		bool ShouldProcessElement (XPathNavigator nav) =>
-#if FEATURE_ILLINK
-			FeatureSettings.ShouldProcessElement (nav, Context, _xmlDocumentLocation);
-#else
-			true;
+#if !FEATURE_ILLINK
+		protected override bool ShouldProcessElement (XPathNavigator nav) => true;
 #endif
 
 		protected override void Process ()
 		{
-			XPathNavigator nav = _document.CreateNavigator ();
-
-			// This step can be created with XML files that aren't necessarily
-			// linker descriptor files. So bail if we don't have a <linker> element.
-			if (!nav.MoveToChild ("linker", _ns))
-				return;
-
-			if (_resource != null) {
-				if (Context.StripDescriptors)
-					Context.Annotations.AddResourceToRemove (_resourceAssembly, _resource);
-				if (Context.IgnoreDescriptors)
-					return;
-			}
-
-			if (!ShouldProcessElement (nav))
-				return;
-
-			try {
-				ProcessAssemblies (nav.SelectChildren ("assembly", _ns));
-			} catch (Exception ex) when (!(ex is LinkerFatalErrorException)) {
-				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Failed to process description file '{_xmlDocumentLocation}'", 1004), ex);
-			}
+			ProcessXml (Context.StripDescriptors, Context.IgnoreDescriptors);
 		}
 
-		protected virtual void ProcessAssemblies (XPathNodeIterator iterator)
-		{
-			while (iterator.MoveNext ()) {
-				// Errors for invalid assembly names should show up even if this element will be
-				// skipped due to feature conditions.
-				var name = GetAssemblyName (iterator.Current);
-
-				if (!ShouldProcessElement (iterator.Current))
-					continue;
-
-				AssemblyDefinition assembly = GetAssembly (Context, name);
-				if (assembly != null)
-					ProcessAssembly (assembly, iterator);
-			}
-		}
-
-		protected virtual void ProcessAssembly (AssemblyDefinition assembly, XPathNodeIterator iterator)
+		protected override void ProcessAssembly (AssemblyDefinition assembly, XPathNodeIterator iterator, bool warnOnUnresolvedTypes)
 		{
 #if !FEATURE_ILLINK
 			if (IsExcluded (iterator.Current))
@@ -132,23 +78,30 @@ namespace Mono.Linker.Steps
 				foreach (var type in assembly.MainModule.Types)
 					MarkAndPreserveAll (type);
 			} else {
-				ProcessTypes (assembly, iterator.Current.SelectChildren ("type", _ns));
-				ProcessNamespaces (assembly, iterator.Current.SelectChildren ("namespace", _ns));
+				ProcessTypes (assembly, iterator, warnOnUnresolvedTypes);
+				ProcessNamespaces (assembly, iterator);
 			}
 		}
 
 		void ProcessNamespaces (AssemblyDefinition assembly, XPathNodeIterator iterator)
 		{
+			iterator = iterator.Current.SelectChildren (NamespaceElementName, XmlNamespace);
 			while (iterator.MoveNext ()) {
 				if (!ShouldProcessElement (iterator.Current))
 					continue;
 
 				string fullname = GetFullName (iterator.Current);
+				bool foundMatch = false;
 				foreach (TypeDefinition type in assembly.MainModule.Types) {
 					if (type.Namespace != fullname)
 						continue;
 
+					foundMatch = true;
 					MarkAndPreserveAll (type);
+				}
+
+				if (!foundMatch) {
+					Context.LogWarning ($"Could not find any type in namespace '{fullname}' specified in '{_xmlDocumentLocation}'", 2044, _xmlDocumentLocation);
 				}
 			}
 		}
@@ -165,95 +118,13 @@ namespace Mono.Linker.Steps
 				MarkAndPreserveAll (nested);
 		}
 
-		void ProcessTypes (AssemblyDefinition assembly, XPathNodeIterator iterator)
+		protected override TypeDefinition ProcessExportedType (ExportedType exported, AssemblyDefinition assembly)
 		{
-			while (iterator.MoveNext ()) {
-				XPathNavigator nav = iterator.Current;
-
-				if (!ShouldProcessElement (nav))
-					continue;
-
-				string fullname = GetFullName (nav);
-
-				if (IsTypePattern (fullname)) {
-					ProcessTypePattern (fullname, assembly, nav);
-					continue;
-				}
-
-				TypeDefinition type = assembly.MainModule.GetType (fullname);
-
-				if (type == null) {
-					if (assembly.MainModule.HasExportedTypes) {
-						foreach (var exported in assembly.MainModule.ExportedTypes) {
-							if (fullname == exported.FullName) {
-								MarkingHelpers.MarkExportedType (exported, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
-								var resolvedExternal = exported.Resolve ();
-								if (resolvedExternal != null) {
-									type = resolvedExternal;
-									break;
-								}
-							}
-						}
-					}
-				}
-
-				if (type == null)
-					continue;
-
-				ProcessType (type, nav);
-			}
+			MarkingHelpers.MarkExportedType (exported, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
+			return base.ProcessExportedType (exported, assembly);
 		}
 
-		static bool IsTypePattern (string fullname)
-		{
-			return fullname.IndexOf ("*") != -1;
-		}
-
-		static Regex CreateRegexFromPattern (string pattern)
-		{
-			return new Regex (pattern.Replace (".", @"\.").Replace ("*", "(.*)"));
-		}
-
-		void MatchType (TypeDefinition type, Regex regex, XPathNavigator nav)
-		{
-			if (regex.Match (type.FullName).Success)
-				ProcessType (type, nav);
-
-			if (!type.HasNestedTypes)
-				return;
-
-			foreach (var nt in type.NestedTypes)
-				MatchType (nt, regex, nav);
-		}
-
-		void MatchExportedType (ExportedType exportedType, ModuleDefinition module, Regex regex, XPathNavigator nav)
-		{
-			if (regex.Match (exportedType.FullName).Success) {
-				MarkingHelpers.MarkExportedType (exportedType, module, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
-				TypeDefinition type = exportedType.Resolve ();
-				if (type != null) {
-					ProcessType (type, nav);
-				}
-			}
-		}
-
-
-		void ProcessTypePattern (string fullname, AssemblyDefinition assembly, XPathNavigator nav)
-		{
-			Regex regex = CreateRegexFromPattern (fullname);
-
-			foreach (TypeDefinition type in assembly.MainModule.Types) {
-				MatchType (type, regex, nav);
-			}
-
-			if (assembly.MainModule.HasExportedTypes) {
-				foreach (var exported in assembly.MainModule.ExportedTypes) {
-					MatchExportedType (exported, assembly.MainModule, regex, nav);
-				}
-			}
-		}
-
-		protected virtual void ProcessType (TypeDefinition type, XPathNavigator nav)
+		protected override void ProcessType (TypeDefinition type, XPathNavigator nav)
 		{
 			Debug.Assert (ShouldProcessElement (nav));
 
@@ -267,7 +138,7 @@ namespace Mono.Linker.Steps
 				Annotations.SetPreserve (type, preserve);
 
 			bool required = IsRequired (nav);
-			MarkChildren (type, nav, required);
+			ProcessTypeChildren (type, nav, required);
 
 			if (!required)
 				return;
@@ -288,52 +159,6 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		void MarkSelectedFields (XPathNavigator nav, TypeDefinition type)
-		{
-			XPathNodeIterator fields = nav.SelectChildren ("field", _ns);
-			if (fields.Count == 0)
-				return;
-
-			ProcessFields (type, fields);
-		}
-
-		void MarkChildren (TypeDefinition type, XPathNavigator nav, bool required)
-		{
-			if (nav.HasChildren) {
-				MarkSelectedFields (nav, type);
-				MarkSelectedMethods (nav, type, required);
-				MarkSelectedEvents (nav, type, required);
-				MarkSelectedProperties (nav, type, required);
-			}
-		}
-
-		void MarkSelectedMethods (XPathNavigator nav, TypeDefinition type, bool required)
-		{
-			XPathNodeIterator methods = nav.SelectChildren ("method", _ns);
-			if (methods.Count == 0)
-				return;
-
-			ProcessMethods (type, methods, required);
-		}
-
-		void MarkSelectedEvents (XPathNavigator nav, TypeDefinition type, bool required)
-		{
-			XPathNodeIterator events = nav.SelectChildren ("event", _ns);
-			if (events.Count == 0)
-				return;
-
-			ProcessEvents (type, events, required);
-		}
-
-		void MarkSelectedProperties (XPathNavigator nav, TypeDefinition type, bool required)
-		{
-			XPathNodeIterator properties = nav.SelectChildren ("property", _ns);
-			if (properties.Count == 0)
-				return;
-
-			ProcessProperties (type, properties, required);
-		}
-
 		static TypePreserve GetTypePreserve (XPathNavigator nav)
 		{
 			string attribute = GetAttribute (nav, _preserve);
@@ -345,43 +170,17 @@ namespace Mono.Linker.Steps
 			return TypePreserve.Nothing;
 		}
 
-		void ProcessFields (TypeDefinition type, XPathNodeIterator iterator)
-		{
-			while (iterator.MoveNext ()) {
-				if (!ShouldProcessElement (iterator.Current))
-					continue;
-				ProcessField (type, iterator.Current);
-			}
-		}
-
-		protected virtual void ProcessField (TypeDefinition type, XPathNavigator nav)
-		{
 #if !FEATURE_ILLINK
+		protected override void ProcessField (TypeDefinition type, XPathNavigator nav)
+		{
 			if (IsExcluded (nav))
 				return;
+
+			base.ProcessField (type, nav);
+		}
 #endif
 
-			string value = GetSignature (nav);
-			if (!String.IsNullOrEmpty (value))
-				ProcessFieldSignature (type, value);
-
-			value = GetAttribute (nav, "name");
-			if (!String.IsNullOrEmpty (value))
-				ProcessFieldName (type, value);
-		}
-
-		void ProcessFieldSignature (TypeDefinition type, string signature)
-		{
-			FieldDefinition field = GetField (type, signature);
-			if (field == null) {
-				Context.LogWarning ($"Could not find field '{signature}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2012, _xmlDocumentLocation);
-				return;
-			}
-
-			MarkField (type, field);
-		}
-
-		void MarkField (TypeDefinition type, FieldDefinition field)
+		protected override void ProcessField (TypeDefinition type, FieldDefinition field, XPathNavigator nav)
 		{
 			if (Annotations.IsMarked (field))
 				Context.LogWarning ($"Duplicate preserve of '{field.FullName}' in '{_xmlDocumentLocation}'", 2025, _xmlDocumentLocation);
@@ -389,70 +188,17 @@ namespace Mono.Linker.Steps
 			Context.Annotations.Mark (field, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 		}
 
-		void ProcessFieldName (TypeDefinition type, string name)
-		{
-			if (!type.HasFields)
-				return;
-
-			foreach (FieldDefinition field in type.Fields)
-				if (field.Name == name)
-					MarkField (type, field);
-		}
-
-		protected static FieldDefinition GetField (TypeDefinition type, string signature)
-		{
-			if (!type.HasFields)
-				return null;
-
-			foreach (FieldDefinition field in type.Fields)
-				if (signature == GetFieldSignature (field))
-					return field;
-
-			return null;
-		}
-
-		static string GetFieldSignature (FieldDefinition field)
-		{
-			return field.FieldType.FullName + " " + field.Name;
-		}
-
-		void ProcessMethods (TypeDefinition type, XPathNodeIterator iterator, bool required)
-		{
-			while (iterator.MoveNext ()) {
-				if (!ShouldProcessElement (iterator.Current))
-					continue;
-				ProcessMethod (type, iterator.Current, required);
-			}
-		}
-
-		protected virtual void ProcessMethod (TypeDefinition type, XPathNavigator nav, bool required)
-		{
 #if !FEATURE_ILLINK
+		protected override void ProcessMethod (TypeDefinition type, XPathNavigator nav, object customData)
+		{
 			if (IsExcluded (nav))
 				return;
+
+			base.ProcessMethod (type, nav, customData);
+		}
 #endif
 
-			string value = GetSignature (nav);
-			if (!String.IsNullOrEmpty (value))
-				ProcessMethodSignature (type, value, required);
-
-			value = GetAttribute (nav, "name");
-			if (!String.IsNullOrEmpty (value))
-				ProcessMethodName (type, value, required);
-		}
-
-		void ProcessMethodSignature (TypeDefinition type, string signature, bool required)
-		{
-			MethodDefinition method = GetMethod (type, signature);
-			if (method == null) {
-				Context.LogWarning ($"Could not find method '{signature}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2009, _xmlDocumentLocation);
-				return;
-			}
-
-			MarkMethod (type, method, required);
-		}
-
-		void MarkMethod (TypeDefinition type, MethodDefinition method, bool required)
+		protected override void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object customData)
 		{
 			if (Annotations.IsMarked (method))
 				Context.LogWarning ($"Duplicate preserve of '{method.GetDisplayName ()}' in '{_xmlDocumentLocation}'", 2025, _xmlDocumentLocation);
@@ -461,29 +207,19 @@ namespace Mono.Linker.Steps
 			Annotations.MarkIndirectlyCalledMethod (method);
 			Annotations.SetAction (method, MethodAction.Parse);
 
-			if (!required)
+			if (!(bool) customData)
 				Annotations.AddPreservedMethod (type, method);
 		}
 
-		void MarkMethodIfNotNull (TypeDefinition type, MethodDefinition method, bool required)
+		void ProcessMethodIfNotNull (TypeDefinition type, MethodDefinition method, object customData)
 		{
 			if (method == null)
 				return;
 
-			MarkMethod (type, method, required);
+			ProcessMethod (type, method, null, customData);
 		}
 
-		void ProcessMethodName (TypeDefinition type, string name, bool required)
-		{
-			if (!type.HasMethods)
-				return;
-
-			foreach (MethodDefinition method in type.Methods)
-				if (name == method.Name)
-					MarkMethod (type, method, required);
-		}
-
-		protected static MethodDefinition GetMethod (TypeDefinition type, string signature)
+		protected override MethodDefinition GetMethod (TypeDefinition type, string signature)
 		{
 			if (type.HasMethods)
 				foreach (MethodDefinition meth in type.Methods)
@@ -517,183 +253,74 @@ namespace Mono.Linker.Steps
 			return sb.ToString ();
 		}
 
-		void ProcessEvents (TypeDefinition type, XPathNodeIterator iterator, bool required)
-		{
-			while (iterator.MoveNext ()) {
-				if (!ShouldProcessElement (iterator.Current))
-					continue;
-				ProcessEvent (type, iterator.Current, required);
-			}
-		}
-
-		protected virtual void ProcessEvent (TypeDefinition type, XPathNavigator nav, bool required)
-		{
 #if !FEATURE_ILLINK
+		protected override void ProcessEvent (TypeDefinition type, XPathNavigator nav, object customData)
+		{
 			if (IsExcluded (nav))
 				return;
+
+			base.ProcessEvent (type, nav, customData);
+		}
 #endif
 
-			string value = GetSignature (nav);
-			if (!String.IsNullOrEmpty (value))
-				ProcessEventSignature (type, value, required);
-
-			value = GetAttribute (nav, "name");
-			if (!String.IsNullOrEmpty (value))
-				ProcessEventName (type, value, required);
-		}
-
-		void ProcessEventSignature (TypeDefinition type, string signature, bool required)
-		{
-			EventDefinition @event = GetEvent (type, signature);
-			if (@event == null) {
-				Context.LogWarning ($"Could not find event '{signature}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2016, _xmlDocumentLocation);
-				return;
-			}
-
-			MarkEvent (type, @event, required);
-		}
-
-		void MarkEvent (TypeDefinition type, EventDefinition @event, bool required)
+		protected override void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object customData)
 		{
 			if (Annotations.IsMarked (@event))
 				Context.LogWarning ($"Duplicate preserve of '{@event.FullName}' in '{_xmlDocumentLocation}'", 2025, _xmlDocumentLocation);
 
 			Annotations.Mark (@event, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 
-			MarkMethod (type, @event.AddMethod, required);
-			MarkMethod (type, @event.RemoveMethod, required);
-			MarkMethodIfNotNull (type, @event.InvokeMethod, required);
+			ProcessMethod (type, @event.AddMethod, null, customData);
+			ProcessMethod (type, @event.RemoveMethod, null, customData);
+			ProcessMethodIfNotNull (type, @event.InvokeMethod, customData);
 		}
 
-		void ProcessEventName (TypeDefinition type, string name, bool required)
-		{
-			if (!type.HasEvents)
-				return;
-
-			foreach (EventDefinition @event in type.Events)
-				if (@event.Name == name)
-					MarkEvent (type, @event, required);
-		}
-
-		protected static EventDefinition GetEvent (TypeDefinition type, string signature)
-		{
-			if (!type.HasEvents)
-				return null;
-
-			foreach (EventDefinition @event in type.Events)
-				if (signature == GetEventSignature (@event))
-					return @event;
-
-			return null;
-		}
-
-		static string GetEventSignature (EventDefinition @event)
-		{
-			return @event.EventType.FullName + " " + @event.Name;
-		}
-
-		void ProcessProperties (TypeDefinition type, XPathNodeIterator iterator, bool required)
-		{
-			while (iterator.MoveNext ()) {
-				if (!ShouldProcessElement (iterator.Current))
-					continue;
-				ProcessProperty (type, iterator.Current, required);
-			}
-		}
-
-		protected virtual void ProcessProperty (TypeDefinition type, XPathNavigator nav, bool required)
-		{
 #if !FEATURE_ILLINK
+		protected override void ProcessProperty (TypeDefinition type, XPathNavigator nav, object customData)
+		{
 			if (IsExcluded (nav))
 				return;
+
+			base.ProcessProperty (type, nav, customData);
+		}
 #endif
 
-			string value = GetSignature (nav);
-			if (!String.IsNullOrEmpty (value))
-				ProcessPropertySignature (type, value, GetAccessors (nav), required);
-
-			value = GetAttribute (nav, "name");
-			if (!String.IsNullOrEmpty (value))
-				ProcessPropertyName (type, value, _accessorsAll, required);
-		}
-
-		void ProcessPropertySignature (TypeDefinition type, string signature, string[] accessors, bool required)
+		protected override void ProcessProperty (TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object customData, bool fromSignature)
 		{
-			PropertyDefinition property = GetProperty (type, signature);
-			if (property == null) {
-				Context.LogWarning ($"Could not find property '{signature}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2017, _xmlDocumentLocation);
-				return;
-			}
+			string[] accessors = fromSignature ? GetAccessors (nav) : _accessorsAll;
 
-			MarkProperty (type, property, accessors, required);
-		}
-
-		void MarkProperty (TypeDefinition type, PropertyDefinition property, string[] accessors, bool required)
-		{
 			if (Annotations.IsMarked (property))
 				Context.LogWarning ($"Duplicate preserve of '{property.FullName}' in '{_xmlDocumentLocation}'", 2025, _xmlDocumentLocation);
 
 			Annotations.Mark (property, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 
-			MarkPropertyAccessors (type, property, accessors, required);
+			ProcessPropertyAccessors (type, property, accessors, customData);
 		}
 
-		void MarkPropertyAccessors (TypeDefinition type, PropertyDefinition property, string[] accessors, bool required)
+		void ProcessPropertyAccessors (TypeDefinition type, PropertyDefinition property, string[] accessors, object customData)
 		{
 			if (Array.IndexOf (accessors, "all") >= 0) {
-				MarkMethodIfNotNull (type, property.GetMethod, required);
-				MarkMethodIfNotNull (type, property.SetMethod, required);
+				ProcessMethodIfNotNull (type, property.GetMethod, customData);
+				ProcessMethodIfNotNull (type, property.SetMethod, customData);
 				return;
 			}
 
 			if (property.GetMethod != null && Array.IndexOf (accessors, "get") >= 0)
-				MarkMethod (type, property.GetMethod, required);
+				ProcessMethod (type, property.GetMethod, null, customData);
 			else if (property.GetMethod == null)
 				Context.LogWarning ($"Could not find the get accessor of property '{property.Name}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2018, _xmlDocumentLocation);
 
 			if (property.SetMethod != null && Array.IndexOf (accessors, "set") >= 0)
-				MarkMethod (type, property.SetMethod, required);
+				ProcessMethod (type, property.SetMethod, null, customData);
 			else if (property.SetMethod == null)
 				Context.LogWarning ($"Could not find the set accessor of property '{property.Name}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2019, _xmlDocumentLocation);
 		}
 
-		void ProcessPropertyName (TypeDefinition type, string name, string[] accessors, bool required)
-		{
-			if (!type.HasProperties)
-				return;
-
-			foreach (PropertyDefinition property in type.Properties)
-				if (property.Name == name)
-					MarkProperty (type, property, accessors, required);
-		}
-
-		protected static PropertyDefinition GetProperty (TypeDefinition type, string signature)
-		{
-			if (!type.HasProperties)
-				return null;
-
-			foreach (PropertyDefinition property in type.Properties)
-				if (signature == GetPropertySignature (property))
-					return property;
-
-			return null;
-		}
-
-		static string GetPropertySignature (PropertyDefinition property)
-		{
-			return property.PropertyType.FullName + " " + property.Name;
-		}
-
-		protected AssemblyDefinition GetAssembly (LinkContext context, AssemblyNameReference assemblyName)
+		protected override AssemblyDefinition GetAssembly (LinkContext context, AssemblyNameReference assemblyName)
 		{
 			var assembly = context.Resolve (assemblyName);
 			ProcessReferences (assembly, context);
 			return assembly;
-		}
-
-		protected virtual AssemblyNameReference GetAssemblyName (XPathNavigator nav)
-		{
-			return AssemblyNameReference.Parse (GetFullName (nav));
 		}
 
 		static void ProcessReferences (AssemblyDefinition assembly, LinkContext context)
@@ -708,16 +335,6 @@ namespace Mono.Linker.Steps
 				return true;
 
 			return bool.TryParse (attribute, out bool result) && result;
-		}
-
-		protected static string GetSignature (XPathNavigator nav)
-		{
-			return GetAttribute (nav, _signature);
-		}
-
-		static string GetFullName (XPathNavigator nav)
-		{
-			return GetAttribute (nav, _fullname);
 		}
 
 		protected static string[] GetAccessors (XPathNavigator nav)
@@ -738,11 +355,6 @@ namespace Mono.Linker.Steps
 			return _accessorsAll;
 		}
 
-		protected static string GetAttribute (XPathNavigator nav, string attribute)
-		{
-			return nav.GetAttribute (attribute, _ns);
-		}
-
 #if !FEATURE_ILLINK
 		protected virtual bool IsExcluded (XPathNavigator nav)
 		{
@@ -753,10 +365,5 @@ namespace Mono.Linker.Steps
 			return Context.IsFeatureExcluded (value);
 		}
 #endif
-
-		public override string ToString ()
-		{
-			return "ResolveFromXmlStep: " + _xmlDocumentLocation;
-		}
 	}
 }

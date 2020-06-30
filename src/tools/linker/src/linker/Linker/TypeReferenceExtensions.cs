@@ -10,20 +10,29 @@ namespace Mono.Linker
 	{
 		public static string GetDisplayName (this TypeReference type)
 		{
-			if (type == null)
-				return string.Empty;
+			var builder = GetDisplayNameWithoutNamespace (type);
+			builder.Insert (0, ".");
+			builder.Insert (0, type.GetNamespaceDisplayName ());
 
+			return builder.ToString ();
+		}
+
+		public static StringBuilder GetDisplayNameWithoutNamespace (this TypeReference type)
+		{
 			var sb = new StringBuilder ();
+			if (type == null)
+				return sb;
+
 			Stack<TypeReference> genericArguments = null;
 			while (true) {
 				switch (type) {
 				case ArrayType arrayType:
-					ParseArrayType (arrayType, sb);
+					AppendArrayType (arrayType, sb);
 					break;
 				case GenericInstanceType genericInstanceType:
 					int arguments = int.Parse (genericInstanceType.Name.Substring (genericInstanceType.Name.IndexOf ('`') + 1));
 					genericArguments = new Stack<TypeReference> (genericInstanceType.GenericArguments);
-					ParseGenericArguments (genericArguments, arguments, sb);
+					PrependGenericArguments (genericArguments, arguments, sb);
 					sb.Insert (0, genericInstanceType.Name.Substring (0, genericInstanceType.Name.IndexOf ('`')));
 					break;
 				default:
@@ -34,9 +43,9 @@ namespace Mono.Linker
 						}
 
 						if (genericArguments?.Count > 0)
-							ParseGenericArguments (genericArguments, arity, sb);
+							PrependGenericArguments (genericArguments, arity, sb);
 						else
-							ParseGenericParameters (type.GenericParameters.Skip (type.GenericParameters.Count - arity).ToList (), sb);
+							PrependGenericParameters (type.GenericParameters.Skip (type.GenericParameters.Count - arity).ToList (), sb);
 
 						sb.Insert (0, type.Name.Substring (0, type.Name.IndexOf ('`')));
 						break;
@@ -53,10 +62,10 @@ namespace Mono.Linker
 				sb.Insert (0, '.');
 			}
 
-			return sb.ToString ();
+			return sb;
 		}
 
-		internal static void ParseGenericParameters (IList<GenericParameter> genericParameters, StringBuilder sb)
+		internal static void PrependGenericParameters (IList<GenericParameter> genericParameters, StringBuilder sb)
 		{
 			sb.Insert (0, '>').Insert (0, genericParameters[genericParameters.Count - 1]);
 			for (int i = genericParameters.Count - 2; i >= 0; i--)
@@ -65,16 +74,16 @@ namespace Mono.Linker
 			sb.Insert (0, '<');
 		}
 
-		private static void ParseGenericArguments (Stack<TypeReference> genericArguments, int argumentsToTake, StringBuilder sb)
+		static void PrependGenericArguments (Stack<TypeReference> genericArguments, int argumentsToTake, StringBuilder sb)
 		{
-			sb.Insert (0, '>').Insert (0, genericArguments.Pop ().GetDisplayName ());
+			sb.Insert (0, '>').Insert (0, genericArguments.Pop ().GetDisplayNameWithoutNamespace ().ToString ());
 			while (--argumentsToTake > 0)
-				sb.Insert (0, ',').Insert (0, genericArguments.Pop ().GetDisplayName ());
+				sb.Insert (0, ',').Insert (0, genericArguments.Pop ().GetDisplayNameWithoutNamespace ().ToString ());
 
 			sb.Insert (0, '<');
 		}
 
-		private static void ParseArrayType (ArrayType arrayType, StringBuilder sb)
+		static void AppendArrayType (ArrayType arrayType, StringBuilder sb)
 		{
 			void parseArrayDimensions (ArrayType at)
 			{
