@@ -336,7 +336,7 @@ public:
 };
 
 BaseBucketParamsManager::BaseBucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE initialFaultingPc, Thread* pFaultingThread, OBJECTREF* pThrownException)
-    : m_pFaultingMD(NULL), m_faultingPc(initialFaultingPc), m_pGmb(pGenericModeBlock), m_tore(typeOfError), m_pThread(pFaultingThread), m_pException(pThrownException)
+    : m_pGmb(pGenericModeBlock), m_tore(typeOfError), m_pThread(pFaultingThread), m_pException(pThrownException), m_pFaultingMD(NULL), m_faultingPc(initialFaultingPc)
 {
     CONTRACTL
     {
