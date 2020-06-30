@@ -32,18 +32,8 @@
 #define g_ObjectModelAsmName "System.ObjectModel"
 #define g_ColorClassName "System.Drawing.Color"
 #define g_ColorTranslatorClassName "System.Drawing.ColorTranslator"
-#define g_SystemUriClassName "System.Uri"
-#define g_INotifyCollectionChangedName "System.Collections.Specialized.INotifyCollectionChanged"
-#define g_NotifyCollectionChangedEventHandlerName "System.Collections.Specialized.NotifyCollectionChangedEventHandler"
-#define g_NotifyCollectionChangedEventArgsName "System.Collections.Specialized.NotifyCollectionChangedEventArgs"
-#define g_NotifyCollectionChangedEventArgsMarshalerName "System.Runtime.InteropServices.WindowsRuntime.NotifyCollectionChangedEventArgsMarshaler"
-#define g_INotifyPropertyChangedName "System.ComponentModel.INotifyPropertyChanged"
-#define g_PropertyChangedEventHandlerName "System.ComponentModel.PropertyChangedEventHandler"
-#define g_PropertyChangedEventArgsName "System.ComponentModel.PropertyChangedEventArgs"
-#define g_ICommandName "System.Windows.Input.ICommand"
 #define g_ComObjectName "__ComObject"
 #endif // FEATURE_COMINTEROP
-
 
 #define g_DateClassName "System.DateTime"
 #define g_DateTimeOffsetClassName "System.DateTimeOffset"
@@ -102,7 +92,6 @@
 #define g_StringBufferName "StringBuilder"
 #define g_StringClassName "System.String"
 #define g_StringName "String"
-#define g_SharedStaticsClassName "System.SharedStatics"
 
 #define g_ThreadClassName "System.Threading.Thread"
 #define g_TypeClassName   "System.Type"
