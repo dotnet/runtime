@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>MultiplyAdd.Vector64.Byte MultiplyAdd.Vector64.Int16 MultiplyAdd.Vector64.Int32 MultiplyAdd.Vector64.SByte MultiplyAdd.Vector64.UInt16 MultiplyAdd.Vector64.UInt32 MultiplyAdd.Vector128.Byte MultiplyAdd.Vector128.Int16 MultiplyAdd.Vector128.Int32 MultiplyAdd.Vector128.SByte MultiplyAdd.Vector128.UInt16 MultiplyAdd.Vector128.UInt32</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

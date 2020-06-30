@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>ReciprocalEstimate.Vector64.Single ReciprocalEstimate.Vector64.UInt32 ReciprocalEstimate.Vector128.Single ReciprocalEstimate.Vector128.UInt32</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

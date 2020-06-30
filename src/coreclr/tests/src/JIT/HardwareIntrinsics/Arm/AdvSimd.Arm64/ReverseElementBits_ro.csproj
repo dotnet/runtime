@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd.Arm64_ro.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>ReverseElementBits.Vector128.Byte ReverseElementBits.Vector128.SByte ReverseElementBits.Vector64.Byte ReverseElementBits.Vector64.SByte</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

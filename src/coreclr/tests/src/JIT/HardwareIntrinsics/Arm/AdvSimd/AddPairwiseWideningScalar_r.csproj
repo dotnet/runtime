@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>AddPairwiseWideningScalar.Vector64.Int32 AddPairwiseWideningScalar.Vector64.UInt32</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

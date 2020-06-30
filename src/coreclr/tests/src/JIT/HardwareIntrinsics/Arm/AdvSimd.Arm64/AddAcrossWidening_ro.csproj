@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd.Arm64_ro.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>AddAcrossWidening.Vector64.Byte AddAcrossWidening.Vector64.Int16 AddAcrossWidening.Vector64.SByte AddAcrossWidening.Vector64.UInt16 AddAcrossWidening.Vector128.Byte AddAcrossWidening.Vector128.Int16 AddAcrossWidening.Vector128.Int32 AddAcrossWidening.Vector128.SByte AddAcrossWidening.Vector128.UInt16 AddAcrossWidening.Vector128.UInt32</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

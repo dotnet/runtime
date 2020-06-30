@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>AbsoluteDifferenceWideningLowerAndAdd.Vector64.Byte AbsoluteDifferenceWideningLowerAndAdd.Vector64.Int16 AbsoluteDifferenceWideningLowerAndAdd.Vector64.Int32 AbsoluteDifferenceWideningLowerAndAdd.Vector64.SByte AbsoluteDifferenceWideningLowerAndAdd.Vector64.UInt16 AbsoluteDifferenceWideningLowerAndAdd.Vector64.UInt32</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

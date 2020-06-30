@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>Divide.Vector64.Single Divide.Vector128.Double Divide.Vector128.Single</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

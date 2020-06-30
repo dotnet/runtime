@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>TransposeEven.Vector64.Byte TransposeEven.Vector64.Int16 TransposeEven.Vector64.Int32 TransposeEven.Vector64.SByte TransposeEven.Vector64.Single TransposeEven.Vector64.UInt16 TransposeEven.Vector64.UInt32 TransposeEven.Vector128.Byte TransposeEven.Vector128.Double TransposeEven.Vector128.Int16 TransposeEven.Vector128.Int32 TransposeEven.Vector128.Int64 TransposeEven.Vector128.SByte TransposeEven.Vector128.Single TransposeEven.Vector128.UInt16 TransposeEven.Vector128.UInt32 TransposeEven.Vector128.UInt64</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

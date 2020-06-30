@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>ShiftLeftLogicalSaturateUnsignedScalar.Vector64.Int16.5 ShiftLeftLogicalSaturateUnsignedScalar.Vector64.Int32.7 ShiftLeftLogicalSaturateUnsignedScalar.Vector64.SByte.3</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd.Arm64_ro.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>FusedMultiplySubtractByScalar.Vector64.Single FusedMultiplySubtractByScalar.Vector128.Double FusedMultiplySubtractByScalar.Vector128.Single</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

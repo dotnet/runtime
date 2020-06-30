@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>MinNumberScalar.Vector64.Double MinNumberScalar.Vector64.Single</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>
