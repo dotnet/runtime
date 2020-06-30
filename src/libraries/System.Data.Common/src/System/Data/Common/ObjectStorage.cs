@@ -406,6 +406,9 @@ namespace System.Data.Common
 
                         if (type == typeof(object))
                             throw ExceptionBuilder.CanNotDeserializeObjectType();
+
+                        TypeLimiter.EnsureTypeIsAllowed(type);
+
                         if (!isBaseCLRType)
                         {
                             retValue = System.Activator.CreateInstance(type, true);
