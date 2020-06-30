@@ -14962,7 +14962,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
             else if (size == EA_16BYTE)
             {
                 assert(isVectorRegister(src) && isVectorRegister(dst));
-                assert(lastInsfmt == IF_DR_3C);
+                assert(lastInsfmt == IF_DV_3C);
 
                 JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst to "
                         "src register.\n");
