@@ -6,7 +6,7 @@ namespace Mono.Linker
 	{
 		public static string GetNamespaceDisplayName (this MemberReference member)
 		{
-			var type = member.DeclaringType;
+			var type = member is TypeReference typeReference ? typeReference : member.DeclaringType;
 			while (type.DeclaringType != null)
 				type = type.DeclaringType;
 

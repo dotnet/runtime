@@ -8,7 +8,7 @@ using System.Text;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
-	[SetupCompileResource ("Dependencies/EmbeddedLinkAttributes.xml", "ILLink.LinkAttributes.xml")]
+	[SetupCompileResource ("EmbeddedLinkAttributes.xml", "ILLink.LinkAttributes.xml")]
 	[IgnoreLinkAttributes (false)]
 	[RemovedResourceInAssembly ("test.exe", "ILLink.LinkAttributes.xml")]
 	class EmbeddedLinkAttributes

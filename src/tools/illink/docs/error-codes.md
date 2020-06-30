@@ -19,10 +19,6 @@ error and warning codes.
 
 - There was an error processing a resource linker descriptor, embedded resource linker descriptor or external substitution XML (`ILLink.Substitutions.xml`). The most likely reason for this is that the descriptor file has syntactical errors.
 
-#### `IL1004`: Failed to process description file 'XML document location': 'XmlException'
-
-- There was an error processing an XML descriptor. The most likely reason for this is that the descriptor file has syntactical errors.
-
 #### `IL1005`: Error processing method 'method' in assembly 'assembly'
 
 - There was an error processing method 'method'. An exception with more details is printed.
@@ -53,11 +49,11 @@ error and warning codes.
 
 #### `IL1013`: Error processing 'XML document location': 'XmlException'
 
-- There was an error processing 'XML document location' xml file. The most likely reason for this is that the descriptor file has syntactical errors.
+- There was an error processing 'XML document location' xml file. The most likely reason for this is that the XML file has syntactical errors.
 
 #### `IL1014`: Failed to process 'XML document location`. Unsupported value for featuredefault attribute
 
-- The substitution or descriptor in 'XML document location' contains a 'featuredefault' attribute with an invalid value. This attribute only supports the true value, to indicate that this is the default behavior for a feature when a value is not given.
+- Element in 'XML document location' contains a 'featuredefault' attribute with an invalid value. This attribute only supports the true value, to indicate that this is the default behavior for a feature when a value is not given.
 
 ----
 ## Warning Codes
@@ -233,3 +229,7 @@ error and warning codes.
 #### `IL2043`: Trying to propagate DynamicallyAccessedMemberAttribute from property 'property' to its getter 'method', but it already has such attribute.
 
 - Propagating DynamicallyAccessedMembersAttribute from property 'property' to its getter 'method' found that the getter already has such an attribute. The existing attribute will be used.
+
+#### `IL2044`: Could not find any type in namespace 'namespace' specified in 'XML document location'
+
+- The 'XML document location' specifies a namespace 'namespace' but there are no types found in such namespace.
