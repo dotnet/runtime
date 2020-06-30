@@ -3046,9 +3046,21 @@ BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*
         if (GetLCIDParameterIndex(pMD) != -1)
             return TRUE;
 
-        // making sure that cctor has run may be handled by stub
-        if (pMD->IsNDirect() && ((NDirectMethodDesc *)pMD)->IsClassConstructorTriggeredByILStub())
-            return TRUE;
+        if (pMD->IsNDirect())
+        {
+            // A P/Invoke marked with UnmanagedCallersOnlyAttribute
+            // doesn't technically require marshalling. However, we
+            // don't support a DllImport with this attribute and we
+            // error out during IL Stub generation so we indicate that
+            // when checking if an IL Stub is needed.
+            if (pMD->HasUnmanagedCallersOnlyAttribute())
+                return TRUE;
+
+            NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
+            // Make sure running cctor can be handled by stub
+            if (pNMD->IsClassConstructorTriggeredByILStub())
+                return TRUE;
+        }
 
         callConv = sigInfo.GetCallConv();
     }
@@ -5268,6 +5280,8 @@ PCODE NDirect::GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, 
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(!pNMD->HasUnmanagedCallersOnlyAttribute());
+
     PCODE pStub = NULL;
 
     // pStubMD, if provided, must be preimplemented.
@@ -6622,7 +6636,6 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         INDEBUG(Thread *pThread = GetThread());
         {
             _ASSERTE(pMD->ShouldSuppressGCTransition()
-                || pMD->HasUnmanagedCallersOnlyAttribute()
                 || pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
 
             CONSISTENCY_CHECK(pMD->IsNDirect());

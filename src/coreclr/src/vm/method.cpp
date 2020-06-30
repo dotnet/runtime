@@ -2168,17 +2168,6 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
 
         // No other access flags are valid with CORINFO_ACCESS_LDFTN
         _ASSERTE((accessFlags & ~CORINFO_ACCESS_LDFTN) == 0);
-
-#ifndef CROSSGEN_COMPILE
-        // When loading the function address of a MethodDesc that is a P/Invoke and
-        // marked with UnmanagedCallersOnlyAttribute load the native function and return
-        // the native address instead of a managed or PreCode entry point.
-        if (IsNDirect()
-            && HasUnmanagedCallersOnlyAttribute())
-        {
-            return (PCODE)NDirectMethodDesc::ResolveAndSetNDirectTarget((NDirectMethodDesc*)this);
-        }
-#endif // !CROSSGEN_COMPILE
     }
 
     // We create stable entrypoints for these upfront
