@@ -551,7 +551,6 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38455", TestRuntimes.CoreCLR)]
         [InlineData(double.NegativeInfinity, false)]    // Negative Infinity
         [InlineData(double.MinValue, false)]            // Min Negative Normal
         [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
