@@ -116,9 +116,13 @@ namespace System.Net.Http.Json
                 }
                 else
                 {
+#if NETCOREAPP
                     // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
                     using Utf8JsonWriter writer = new Utf8JsonWriter(targetStream);
                     JsonSerializer.Serialize(writer, Value, ObjectType, _jsonSerializerOptions);
+#else
+                    throw new NotSupportedException(SR.SyncNotSupported);
+#endif
                 }
             }
         }

@@ -126,7 +126,7 @@ namespace System.Net.Http
             {
                 using (Stream decompressedStream = CreateContentReadStream(cancellationToken))
                 {
-                    decompressedStream.CopyTo(stream, cancellationToken);
+                    decompressedStream.CopyTo(stream);
                 }
             }
 

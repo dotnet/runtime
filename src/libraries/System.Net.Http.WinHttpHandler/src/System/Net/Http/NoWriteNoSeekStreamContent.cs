@@ -26,16 +26,16 @@ namespace System.Net.Http
             _content = content;
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
-            SerializeToStreamAsyncCore(stream, context, async: true, CancellationToken.None);
-
 #if NETCOREAPP
-        protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
-            SerializeToStreamAsyncCore(stream, context, async: true, cancellationToken);
-
         protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             SerializeToStreamAsyncCore(stream, context, async: false, cancellationToken).GetAwaiter().GetResult();
+
+        protected override void SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+            SerializeToStreamAsyncCore(stream, context, async: true, cancellationToken);
 #endif
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            SerializeToStreamAsyncCore(stream, context, async: true, CancellationToken.None);
 
         private Task SerializeToStreamAsyncCore(Stream stream, TransportContext? context, bool async, CancellationToken cancellationToken)
         {
@@ -81,6 +81,7 @@ namespace System.Net.Http
             }
             return copyTask;
         }
+
         protected override bool TryComputeLength(out long length)
         {
             length = 0;
