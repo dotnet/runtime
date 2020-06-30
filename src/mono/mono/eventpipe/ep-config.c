@@ -96,16 +96,10 @@ config_register_provider (
 
 	ep_requires_lock_held ();
 
-	// See if we've already registered this provider. Allow there to be multiple DotNETRuntime providers that may each produce
-	// different sets of events by component through different event sources.
-	// TODO: This change to allow multiple DotNETRuntime providers is temporary to get EventPipe working for
-	// PortableThreadPoolEventSource. Once a long-term solution is figured out, this change should be reverted.
-	if (ep_rt_utf8_string_compare (ep_provider_get_provider_name (provider), "Microsoft-Windows-DotNETRuntime") != 0)
-    {
-		EventPipeProvider *existing_provider = config_get_provider (config, ep_provider_get_provider_name (provider));
-		if (existing_provider)
-			return false;
-	}
+	// See if we've already registered this provider.
+	EventPipeProvider *existing_provider = config_get_provider (config, ep_provider_get_provider_name (provider));
+	if (existing_provider)
+		return false;
 
 	// The provider has not been registered, so register it.
 	ep_rt_provider_list_append (&config->provider_list, provider);

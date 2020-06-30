@@ -23,7 +23,8 @@ namespace System.Threading
                         PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
                         if (log.IsEnabled())
                         {
-                            log.ThreadPoolWorkerThreadWait(ThreadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
+                            log.ThreadPoolWorkerThreadWait(
+                                (uint)ThreadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
                         }
                     });
 
@@ -36,7 +37,8 @@ namespace System.Threading
                 PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
                 if (log.IsEnabled())
                 {
-                    log.ThreadPoolWorkerThreadStart(threadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
+                    log.ThreadPoolWorkerThreadStart(
+                        (uint)threadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
                 }
 
                 LowLevelLock hillClimbingThreadAdjustmentLock = threadPoolInstance._hillClimbingThreadAdjustmentLock;
@@ -99,7 +101,7 @@ namespace System.Threading
 
                                 if (log.IsEnabled())
                                 {
-                                    log.ThreadPoolWorkerThreadStop(newNumExistingThreads);
+                                    log.ThreadPoolWorkerThreadStop((uint)newNumExistingThreads);
                                 }
                                 return;
                             }

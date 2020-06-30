@@ -7,13 +7,32 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
 {
+#if CORECLR
+    // Currently with EventPipe there isn't a way to move events from the native side to the managed side and get the same
+    // experience. For now, the same provider name and guid are used as the native side and a temporary change has been made to
+    // EventPipe to get thread pool events in performance profiles when the portable thread pool is enabled, as that seems to be
+    // the easiest way currently and the closest to the experience when the portable thread pool is disabled.
+    // TODO: Long-term options:
+    // - Use NativeRuntimeEventSource instead, change its guid to match the provider guid from the native side, and fix the
+    //   underlying issues such that duplicate events are not sent. This should get the same experience as sending events from
+    //   the native side, and would allow easily moving other events from the native side to the managed side in the future if
+    //   necessary.
+    // - Use a different provider name and guid (maybe "System.Threading.ThreadPool"), update PerfView and dotnet-trace to
+    //   enable the provider by default when the Threading or other ThreadPool-related keywords are specified for the runtime
+    //   provider, and update PerfView with a trace event parser for the new provider so that it knows about the events and may
+    //   use them to identify thread pool threads.
     [EventSource(Name = "Microsoft-Windows-DotNETRuntime", Guid = "e13c0d23-ccbc-4e12-931b-d9cc2eee27e4")]
+#else
+    // TODO: The temporary EventPipe change made for CoreCLR above is not in Mono, change this too along with one of the
+    // long-term solutions above
+    [EventSource(Name = "Microsoft-Windows-DotNETRuntime-ThreadPool", Guid = "58c5b76b-0800-5ada-2146-c766e26b61de")]
+#endif
     internal sealed class PortableThreadPoolEventSource : EventSource
     {
         // This value does not seem to be used, leaving it as zero for now. It may be useful for a scenario that may involve
         // multiple instances of the runtime within the same process, but then it seems unlikely that both instances' thread
         // pools would be in moderate use.
-        private const short ClrInstanceId = 0;
+        private const ushort DefaultClrInstanceId = 0;
 
         private static class Messages
         {
@@ -51,178 +70,187 @@ namespace System.Threading
             public const EventKeywords ThreadTransferKeyword = (EventKeywords)0x80000000;
         }
 
+        public enum ThreadAdjustmentReasonMap : uint
+        {
+            Warmup,
+            Initializing,
+            RandomMove,
+            ClimbingMove,
+            ChangePoint,
+            Stabilizing,
+            Starvation,
+            ThreadTimedOut
+        }
+
         private PortableThreadPoolEventSource()
             : base(
+#if CORECLR // see note above
                   new Guid(0xe13c0d23, 0xccbc, 0x4e12, 0x93, 0x1b, 0xd9, 0xcc, 0x2e, 0xee, 0x27, 0xe4),
-                  "Microsoft-Windows-DotNETRuntime")
+                  "Microsoft-Windows-DotNETRuntime"
+#else
+                  new Guid(0x58c5b76b, 0x0800, 0x5ada, 0x21, 0x46, 0xc7, 0x66, 0xe2, 0x6b, 0x61, 0xde),
+                  "Microsoft-Windows-DotNETRuntime-ThreadPool"
+#endif
+                  )
         {
         }
 
         [NonEvent]
-        private unsafe void WriteThreadEvent(int eventId, int numExistingThreads)
+        private unsafe void WriteThreadEvent(int eventId, uint numExistingThreads)
         {
-            int retiredWorkerThreadCount = 0;
-            short clrInstanceId = ClrInstanceId;
+            uint retiredWorkerThreadCount = 0;
+            ushort clrInstanceId = DefaultClrInstanceId;
 
             EventData* data = stackalloc EventData[3];
             data[0].DataPointer = (IntPtr)(&numExistingThreads);
-            data[0].Size = sizeof(int);
+            data[0].Size = sizeof(uint);
             data[0].Reserved = 0;
             data[1].DataPointer = (IntPtr)(&retiredWorkerThreadCount);
-            data[1].Size = sizeof(int);
+            data[1].Size = sizeof(uint);
             data[1].Reserved = 0;
             data[2].DataPointer = (IntPtr)(&clrInstanceId);
-            data[2].Size = sizeof(short);
+            data[2].Size = sizeof(ushort);
             data[2].Reserved = 0;
             WriteEventCore(eventId, 3, data);
         }
 
         [Event(50, Level = EventLevel.Informational, Message = Messages.WorkerThread, Task = Tasks.ThreadPoolWorkerThread, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.ThreadingKeyword)]
-        public unsafe void ThreadPoolWorkerThreadStart(int numExistingThreads)
+        public unsafe void ThreadPoolWorkerThreadStart(
+            uint ActiveWorkerThreadCount,
+            uint RetiredWorkerThreadCount = 0,
+            ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
-            {
-                WriteThreadEvent(50, numExistingThreads);
-            }
+            WriteThreadEvent(50, ActiveWorkerThreadCount);
         }
 
         [Event(51, Level = EventLevel.Informational, Message = Messages.WorkerThread, Task = Tasks.ThreadPoolWorkerThread, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.ThreadingKeyword)]
-        public void ThreadPoolWorkerThreadStop(short numExistingThreads)
+        public void ThreadPoolWorkerThreadStop(
+            uint ActiveWorkerThreadCount,
+            uint RetiredWorkerThreadCount = 0,
+            ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
-            {
-                WriteThreadEvent(51, numExistingThreads);
-            }
+            WriteThreadEvent(51, ActiveWorkerThreadCount);
         }
 
         [Event(57, Level = EventLevel.Informational, Message = Messages.WorkerThread, Task = Tasks.ThreadPoolWorkerThread, Opcode = Opcodes.Wait, Version = 0, Keywords = Keywords.ThreadingKeyword)]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public void ThreadPoolWorkerThreadWait(short numExistingThreads)
+        public void ThreadPoolWorkerThreadWait(
+            uint ActiveWorkerThreadCount,
+            uint RetiredWorkerThreadCount = 0,
+            ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
-            {
-                WriteThreadEvent(57, numExistingThreads);
-            }
+            WriteThreadEvent(57, ActiveWorkerThreadCount);
         }
 
         [Event(54, Level = EventLevel.Informational, Message = Messages.WorkerThreadAdjustmentSample, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Sample, Version = 0, Keywords = Keywords.ThreadingKeyword)]
-        public unsafe void ThreadPoolWorkerThreadAdjustmentSample(double throughput)
+        public unsafe void ThreadPoolWorkerThreadAdjustmentSample(
+            double Throughput,
+            ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
-            {
-                return;
-            }
-
-            short clrInstanceId = ClrInstanceId;
-
             EventData* data = stackalloc EventData[2];
-            data[0].DataPointer = (IntPtr)(&throughput);
+            data[0].DataPointer = (IntPtr)(&Throughput);
             data[0].Size = sizeof(double);
             data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&clrInstanceId);
-            data[1].Size = sizeof(short);
+            data[1].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[1].Size = sizeof(ushort);
             data[1].Reserved = 0;
             WriteEventCore(54, 2, data);
         }
 
         [Event(55, Level = EventLevel.Informational, Message = Messages.WorkerThreadAdjustmentAdjustment, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Adjustment, Version = 0, Keywords = Keywords.ThreadingKeyword)]
-        public unsafe void ThreadPoolWorkerThreadAdjustmentAdjustment(double averageThroughput, int newWorkerThreadCount, int stateOrTransition)
+        public unsafe void ThreadPoolWorkerThreadAdjustmentAdjustment(
+            double AverageThroughput,
+            uint NewWorkerThreadCount,
+            ThreadAdjustmentReasonMap Reason,
+            ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
-            {
-                return;
-            }
-
-            short clrInstanceId = ClrInstanceId;
-
             EventData* data = stackalloc EventData[4];
-            data[0].DataPointer = (IntPtr)(&averageThroughput);
+            data[0].DataPointer = (IntPtr)(&AverageThroughput);
             data[0].Size = sizeof(double);
             data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&newWorkerThreadCount);
-            data[1].Size = sizeof(int);
+            data[1].DataPointer = (IntPtr)(&NewWorkerThreadCount);
+            data[1].Size = sizeof(uint);
             data[1].Reserved = 0;
-            data[2].DataPointer = (IntPtr)(&stateOrTransition);
-            data[2].Size = sizeof(int);
+            data[2].DataPointer = (IntPtr)(&Reason);
+            data[2].Size = sizeof(ThreadAdjustmentReasonMap);
             data[2].Reserved = 0;
-            data[3].DataPointer = (IntPtr)(&clrInstanceId);
-            data[3].Size = sizeof(short);
+            data[3].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[3].Size = sizeof(ushort);
             data[3].Reserved = 0;
             WriteEventCore(55, 4, data);
         }
 
         [Event(56, Level = EventLevel.Verbose, Message = Messages.WorkerThreadAdjustmentStats, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Stats, Version = 0, Keywords = Keywords.ThreadingKeyword)]
-        public unsafe void ThreadPoolWorkerThreadAdjustmentStats(double duration, double throughput, double threadWave, double throughputWave, double throughputErrorEstimate,
-            double averageThroughputNoise, double ratio, double confidence, double currentControlSetting, ushort newThreadWaveMagnitude)
+        public unsafe void ThreadPoolWorkerThreadAdjustmentStats(
+            double Duration,
+            double Throughput,
+            double ThreadWave,
+            double ThroughputWave,
+            double ThroughputErrorEstimate,
+            double AverageThroughputErrorEstimate,
+            double ThroughputRatio,
+            double Confidence,
+            double NewControlSetting,
+            ushort NewThreadWaveMagnitude,
+            ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            if (!IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
-            {
-                return;
-            }
-
-            short clrInstanceId = ClrInstanceId;
-
             EventData* data = stackalloc EventData[11];
-            data[0].DataPointer = (IntPtr)(&duration);
+            data[0].DataPointer = (IntPtr)(&Duration);
             data[0].Size = sizeof(double);
             data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&throughput);
+            data[1].DataPointer = (IntPtr)(&Throughput);
             data[1].Size = sizeof(double);
             data[1].Reserved = 0;
-            data[2].DataPointer = (IntPtr)(&threadWave);
+            data[2].DataPointer = (IntPtr)(&ThreadWave);
             data[2].Size = sizeof(double);
             data[2].Reserved = 0;
-            data[3].DataPointer = (IntPtr)(&throughputWave);
+            data[3].DataPointer = (IntPtr)(&ThroughputWave);
             data[3].Size = sizeof(double);
             data[3].Reserved = 0;
-            data[4].DataPointer = (IntPtr)(&throughputErrorEstimate);
+            data[4].DataPointer = (IntPtr)(&ThroughputErrorEstimate);
             data[4].Size = sizeof(double);
             data[4].Reserved = 0;
-            data[5].DataPointer = (IntPtr)(&averageThroughputNoise);
+            data[5].DataPointer = (IntPtr)(&AverageThroughputErrorEstimate);
             data[5].Size = sizeof(double);
             data[5].Reserved = 0;
-            data[6].DataPointer = (IntPtr)(&ratio);
+            data[6].DataPointer = (IntPtr)(&ThroughputRatio);
             data[6].Size = sizeof(double);
             data[6].Reserved = 0;
-            data[7].DataPointer = (IntPtr)(&confidence);
+            data[7].DataPointer = (IntPtr)(&Confidence);
             data[7].Size = sizeof(double);
             data[7].Reserved = 0;
-            data[8].DataPointer = (IntPtr)(&currentControlSetting);
+            data[8].DataPointer = (IntPtr)(&NewControlSetting);
             data[8].Size = sizeof(double);
             data[8].Reserved = 0;
-            data[9].DataPointer = (IntPtr)(&newThreadWaveMagnitude);
+            data[9].DataPointer = (IntPtr)(&NewThreadWaveMagnitude);
             data[9].Size = sizeof(ushort);
             data[9].Reserved = 0;
-            data[10].DataPointer = (IntPtr)(&clrInstanceId);
-            data[10].Size = sizeof(short);
+            data[10].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[10].Size = sizeof(ushort);
             data[10].Reserved = 0;
             WriteEventCore(56, 11, data);
         }
 
         [Event(63, Level = EventLevel.Verbose, Message = Messages.IOEnqueue, Task = Tasks.ThreadPool, Opcode = Opcodes.IOEnqueue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private unsafe void ThreadPoolIOEnqueue(IntPtr nativeOverlapped, IntPtr overlapped, bool multiDequeues)
+        private unsafe void ThreadPoolIOEnqueue(
+            IntPtr NativeOverlapped,
+            IntPtr Overlapped,
+            bool MultiDequeues,
+            ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            if (!IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
-            {
-                return;
-            }
-
-            int multiDequeuesInt = Convert.ToInt32(multiDequeues);
-            short clrInstanceId = ClrInstanceId;
+            int multiDequeuesInt = Convert.ToInt32(MultiDequeues); // bool maps to "win:Boolean", a 4-byte boolean
 
             EventData* data = stackalloc EventData[4];
-            data[0].DataPointer = (IntPtr)(&nativeOverlapped);
+            data[0].DataPointer = (IntPtr)(&NativeOverlapped);
             data[0].Size = IntPtr.Size;
             data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&overlapped);
+            data[1].DataPointer = (IntPtr)(&Overlapped);
             data[1].Size = IntPtr.Size;
             data[1].Reserved = 0;
             data[2].DataPointer = (IntPtr)(&multiDequeuesInt);
             data[2].Size = sizeof(int);
             data[2].Reserved = 0;
-            data[3].DataPointer = (IntPtr)(&clrInstanceId);
-            data[3].Size = sizeof(short);
+            data[3].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[3].Size = sizeof(ushort);
             data[3].Reserved = 0;
             WriteEventCore(63, 4, data);
         }
@@ -230,29 +258,25 @@ namespace System.Threading
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
         // FrameworkEventSource's thread transfer send/receive events instead at callers.
         [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public void ThreadPoolIOEnqueue(RegisteredWaitHandle registeredWaitHandle) =>
             ThreadPoolIOEnqueue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero, registeredWaitHandle.Repeating);
 
         [Event(64, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IODequeue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private unsafe void ThreadPoolIODequeue(IntPtr nativeOverlapped, IntPtr overlapped)
+        private unsafe void ThreadPoolIODequeue(
+            IntPtr NativeOverlapped,
+            IntPtr Overlapped,
+            ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            if (!IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
-            {
-                return;
-            }
-
-            short clrInstanceId = ClrInstanceId;
-
             EventData* data = stackalloc EventData[3];
-            data[0].DataPointer = (IntPtr)(&nativeOverlapped);
+            data[0].DataPointer = (IntPtr)(&NativeOverlapped);
             data[0].Size = IntPtr.Size;
             data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&overlapped);
+            data[1].DataPointer = (IntPtr)(&Overlapped);
             data[1].Size = IntPtr.Size;
             data[1].Reserved = 0;
-            data[2].DataPointer = (IntPtr)(&clrInstanceId);
-            data[2].Size = sizeof(short);
+            data[2].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[2].Size = sizeof(ushort);
             data[2].Reserved = 0;
             WriteEventCore(64, 3, data);
         }
@@ -260,26 +284,19 @@ namespace System.Threading
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
         // FrameworkEventSource's thread transfer send/receive events instead at callers.
         [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public void ThreadPoolIODequeue(RegisteredWaitHandle registeredWaitHandle) =>
             ThreadPoolIODequeue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero);
 
         [Event(60, Level = EventLevel.Verbose, Message = Messages.WorkingThreadCount, Task = Tasks.ThreadPoolWorkingThreadCount, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.ThreadingKeyword)]
-        public unsafe void ThreadPoolWorkingThreadCount(short count)
+        public unsafe void ThreadPoolWorkingThreadCount(uint Count, ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            if (!IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
-            {
-                return;
-            }
-
-            int countInt = count;
-            short clrInstanceId = ClrInstanceId;
-
             EventData* data = stackalloc EventData[2];
-            data[0].DataPointer = (IntPtr)(&countInt);
-            data[0].Size = sizeof(int);
+            data[0].DataPointer = (IntPtr)(&Count);
+            data[0].Size = sizeof(uint);
             data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&clrInstanceId);
-            data[1].Size = sizeof(short);
+            data[1].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[1].Size = sizeof(ushort);
             data[1].Reserved = 0;
             WriteEventCore(60, 2, data);
         }

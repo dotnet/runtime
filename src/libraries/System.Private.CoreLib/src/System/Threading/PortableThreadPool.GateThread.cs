@@ -49,7 +49,7 @@ namespace System.Threading
                             log.IsEnabled(EventLevel.Verbose, PortableThreadPoolEventSource.Keywords.ThreadingKeyword))
                         {
                             log.ThreadPoolWorkingThreadCount(
-                                threadPoolInstance.GetAndResetHighWatermarkCountOfThreadsProcessingUserCallbacks());
+                                (uint)threadPoolInstance.GetAndResetHighWatermarkCountOfThreadsProcessingUserCallbacks());
                         }
 
                         int cpuUtilization = cpuUtilizationReader.CurrentUtilization;

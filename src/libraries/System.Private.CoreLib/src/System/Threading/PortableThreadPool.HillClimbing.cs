@@ -427,7 +427,10 @@ namespace System.Threading
                 PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
                 if (log.IsEnabled())
                 {
-                    log.ThreadPoolWorkerThreadAdjustmentAdjustment(throughput, newThreadCount, (int)stateOrTransition);
+                    log.ThreadPoolWorkerThreadAdjustmentAdjustment(
+                        throughput,
+                        (uint)newThreadCount,
+                        (PortableThreadPoolEventSource.ThreadAdjustmentReasonMap)stateOrTransition);
                 }
             }
 
