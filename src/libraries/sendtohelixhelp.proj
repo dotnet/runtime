@@ -67,13 +67,13 @@
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(HelixCommand)' == '' and '$(BuildAllConfigurations)' == 'true'">
+  <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
     <HelixPreCommand Include="set DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <HelixPreCommand Include="set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
     <HelixPreCommand Include="set DOTNET_MULTILEVEL_LOOKUP=0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(HelixCommand)' == '' and '$(MonoEnvOptions)' != ''">
+  <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
     <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
     <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
   </ItemGroup>
