@@ -6,10 +6,11 @@ namespace System.Runtime.InteropServices
 {
     /// <summary>
     /// Marks APIs that were obsoleted in a given operating system version.
-    ///
+    /// </summary>
+    /// <remarks>
     /// Primarily used by OS bindings to indicate APIs that should only be used in
     /// earlier versions.
-    /// </summary>
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Assembly |
                     AttributeTargets.Class |
                     AttributeTargets.Constructor |
