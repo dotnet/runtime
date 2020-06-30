@@ -10907,23 +10907,23 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     addrSpill = gtCloneExpr(destAddr); // addrSpill represents the 'destAddr'
                     noway_assert(addrSpill != nullptr);
                 }
+            }
+        }
 
-                // TODO-CQ: this should be based on a more general
-                // "BaseAddress" method, that handles fields of structs, before or after
-                // morphing.
-                if (addrSpill != nullptr && addrSpill->OperGet() == GT_ADDR)
-                {
-                    if (addrSpill->AsOp()->gtOp1->IsLocal())
-                    {
-                        // We will *not* consider this to define the local, but rather have each individual field assign
-                        // be a definition.
-                        addrSpill->AsOp()->gtOp1->gtFlags &= ~(GTF_LIVENESS_MASK);
-                        assert(lvaGetPromotionType(addrSpill->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum()) !=
-                               PROMOTION_TYPE_INDEPENDENT);
-                        addrSpillIsStackDest = true; // addrSpill represents the address of LclVar[varNum] in our
-                                                     // local stack frame
-                    }
-                }
+        // TODO-CQ: this should be based on a more general
+        // "BaseAddress" method, that handles fields of structs, before or after
+        // morphing.
+        if ((addrSpill != nullptr) && addrSpill->OperIs(GT_ADDR))
+        {
+            GenTree* addrSpillOp = addrSpill->AsOp()->gtGetOp1();
+            if (addrSpillOp->IsLocal())
+            {
+                // We will *not* consider this to define the local, but rather have each individual field assign
+                // be a definition.
+                addrSpillOp->gtFlags &= ~(GTF_LIVENESS_MASK);
+                assert(lvaGetPromotionType(addrSpillOp->AsLclVarCommon()->GetLclNum()) != PROMOTION_TYPE_INDEPENDENT);
+                addrSpillIsStackDest = true; // addrSpill represents the address of LclVar[varNum] in our
+                                             // local stack frame
             }
         }
 
