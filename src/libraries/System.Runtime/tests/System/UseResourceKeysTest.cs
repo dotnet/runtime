@@ -10,7 +10,7 @@ namespace System.Runtime.Tests
     public class UseResourceKeysTest
     {
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void RetrnsResourceKeyWhenFeatureSwitchIsEnabled()
+        public void ReturnsResourceKeyWhenFeatureSwitchIsEnabled()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions.Add("System.Resources.UseSystemResourceKeys", true);
@@ -29,7 +29,7 @@ namespace System.Runtime.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void RetrnsResourceWhenFeatureSwitchIsDisabled()
+        public void ReturnsResourceWhenFeatureSwitchIsDisabled()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions.Add("System.Resources.UseSystemResourceKeys", false);

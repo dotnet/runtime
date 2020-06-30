@@ -133,7 +133,6 @@
     <ItemGroup>
       <FileWrites Include="$(ILLinkResourcesSubstitutionIntermediatePath)" />
     </ItemGroup>
-    <Message Importance="Low" Text="Generated $(ILLinkResourcesSubstitutionIntermediatePath) substitution file." />
   </Target>
 
   <Target Name="_CombineILLinkSubstitutionsXmls"
