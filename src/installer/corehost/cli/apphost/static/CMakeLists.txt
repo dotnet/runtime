@@ -119,6 +119,11 @@ if(CLR_CMAKE_TARGET_NETBSD)
     )
 endif(CLR_CMAKE_TARGET_NETBSD)
 
+# Path like: artifacts/bin/native/net5.0-Linux-Release-arm/
+set(NATIVE_LIBS_LOCATION "$ENV{__NativeLibsArtifacts}")
+
+message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
+
 if(NOT CLR_CMAKE_TARGET_WIN32)
     set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/singlefilehost.exports)
