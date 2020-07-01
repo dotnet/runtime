@@ -3046,9 +3046,21 @@ BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*
         if (GetLCIDParameterIndex(pMD) != -1)
             return TRUE;
 
-        // making sure that cctor has run may be handled by stub
-        if (pMD->IsNDirect() && ((NDirectMethodDesc *)pMD)->IsClassConstructorTriggeredByILStub())
-            return TRUE;
+        if (pMD->IsNDirect())
+        {
+            // A P/Invoke marked with UnmanagedCallersOnlyAttribute
+            // doesn't technically require marshalling. However, we
+            // don't support a DllImport with this attribute and we
+            // error out during IL Stub generation so we indicate that
+            // when checking if an IL Stub is needed.
+            if (pMD->HasUnmanagedCallersOnlyAttribute())
+                return TRUE;
+
+            NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
+            // Make sure running cctor can be handled by stub
+            if (pNMD->IsClassConstructorTriggeredByILStub())
+                return TRUE;
+        }
 
         callConv = sigInfo.GetCallConv();
     }
@@ -4179,15 +4191,21 @@ static void CreateNDirectStubAccessMetadata(
     }
 
     int lcidArg = -1;
+
+    // Check if we have a MethodDesc to query for additional data.
     if (pSigDesc->m_pMD != NULL)
     {
-        lcidArg = GetLCIDParameterIndex(pSigDesc->m_pMD);
+        MethodDesc* pMD = pSigDesc->m_pMD;
+
+        // P/Invoke marked with UnmanagedCallersOnlyAttribute is not
+        // presently supported.
+        if (pMD->HasUnmanagedCallersOnlyAttribute())
+            COMPlusThrow(kNotSupportedException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);
 
         // Check to see if we need to do LCID conversion.
+        lcidArg = GetLCIDParameterIndex(pMD);
         if (lcidArg != -1 && lcidArg > (*pNumArgs))
-        {
             COMPlusThrow(kIndexOutOfRangeException, IDS_EE_INVALIDLCIDPARAM);
-        }
     }
 
     (*piLCIDArg) = lcidArg;
@@ -6621,7 +6639,8 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         //
         INDEBUG(Thread *pThread = GetThread());
         {
-            _ASSERTE(pMD->ShouldSuppressGCTransition() || pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
+            _ASSERTE(pMD->ShouldSuppressGCTransition()
+                || pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
 
             CONSISTENCY_CHECK(pMD->IsNDirect());
             //
