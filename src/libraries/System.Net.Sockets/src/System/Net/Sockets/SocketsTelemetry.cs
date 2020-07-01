@@ -12,31 +12,27 @@ namespace System.Net.Sockets
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
 
         [NonEvent]
+        public static bool IsEnabled(EventLevel level)
+        {
+            return Log.IsEnabled(level, EventKeywords.All);
+        }
+
+        [NonEvent]
         public void ConnectStart(Internals.SocketAddress address)
         {
-            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
-            {
-                ConnectStart(address.ToString());
-            }
+            ConnectStart(address.ToString());
         }
 
         [NonEvent]
         public void ConnectStart(EndPoint address)
         {
-            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
-            {
-                var addressString = address.ToString();
-                if (addressString != null)
-                {
-                    ConnectStart(addressString);
-                }
-            }
+            ConnectStart(address.ToString());
         }
 
         [Event(1, Level = EventLevel.Informational)]
-        public void ConnectStart(string address)
+        public void ConnectStart(string? address)
         {
-            WriteSocketEvent(EventLevel.Informational, eventId: 1, address);
+            WriteEvent(eventId: 1, address ?? "");
         }
 
         [Event(2, Level = EventLevel.Informational)]
@@ -49,35 +45,13 @@ namespace System.Net.Sockets
         public void ConnectFailed()
         {
             WriteEvent(eventId: 3);
+            ConnectStop();
         }
 
         [Event(4, Level = EventLevel.Warning)]
         public void ConnectCancelled()
         {
             WriteEvent(eventId: 4);
-        }
-
-        [NonEvent]
-        private unsafe void WriteSocketEvent(EventLevel level, int eventId, string address)
-        {
-            if (IsEnabled(level, EventKeywords.All))
-            {
-                if (address == null) address = "";
-
-                fixed (char* addressPtr = address)
-                {
-                    const int NumEventDatas = 1;
-                    var descrs = stackalloc EventData[NumEventDatas];
-
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)addressPtr,
-                        Size = (address.Length + 1) * sizeof(char)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
-            }
         }
     }
 }

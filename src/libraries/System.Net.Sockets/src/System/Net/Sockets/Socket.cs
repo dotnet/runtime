@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.IO;
 using System.Net.Internals;
@@ -2158,7 +2159,7 @@ namespace System.Net.Sockets
 
         internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state, bool flowContext = false)
         {
-            SocketsTelemetry.Log.ConnectStart(remoteEP);
+            if (SocketsTelemetry.IsEnabled(EventLevel.Informational)) SocketsTelemetry.Log.ConnectStart(remoteEP);
 
             if (CanUseConnectEx(remoteEP))
             {
@@ -2426,8 +2427,7 @@ namespace System.Net.Sockets
             Exception? ex = castedAsyncResult.Result as Exception;
             if (ex != null || (SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
             {
-                SocketsTelemetry.Log.ConnectFailed();
-                SocketsTelemetry.Log.ConnectStop();
+                if (SocketsTelemetry.IsEnabled(EventLevel.Error)) SocketsTelemetry.Log.ConnectFailed();
 
                 if (ex == null)
                 {
@@ -2443,7 +2443,7 @@ namespace System.Net.Sockets
                 ExceptionDispatchInfo.Throw(ex);
             }
 
-            SocketsTelemetry.Log.ConnectStop();
+            if (SocketsTelemetry.IsEnabled(EventLevel.Informational)) SocketsTelemetry.Log.ConnectStop();
 
             if (NetEventSource.IsEnabled)
             {
@@ -4345,8 +4345,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                SocketsTelemetry.Log.ConnectFailed();
-                SocketsTelemetry.Log.ConnectStop();
+                if (SocketsTelemetry.IsEnabled(EventLevel.Error)) SocketsTelemetry.Log.ConnectFailed();
 
                 UpdateConnectSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
@@ -4356,7 +4355,7 @@ namespace System.Net.Sockets
                 throw socketException;
             }
 
-            SocketsTelemetry.Log.ConnectStop();
+            if (SocketsTelemetry.IsEnabled(EventLevel.Informational)) SocketsTelemetry.Log.ConnectStop();
 
             if (_rightEndPoint == null)
             {
