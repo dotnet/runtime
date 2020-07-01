@@ -29,7 +29,7 @@ namespace Internal.Cryptography
             BlockSizeInBytes = blockSizeInBytes;
         }
 
-        public abstract int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset);
+        public abstract int Transform(ReadOnlySpan<byte> input, Span<byte> output);
 
         public abstract int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output);
 

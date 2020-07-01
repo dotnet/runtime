@@ -41,27 +41,22 @@ namespace Internal.Cryptography
             base.Dispose(disposing);
         }
 
-        public override unsafe int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
+        public override unsafe int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(count > 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
-            Debug.Assert(input.Length - inputOffset >= count);
-            Debug.Assert(output != null);
-            Debug.Assert(outputOffset >= 0);
-            Debug.Assert(output.Length - outputOffset >= count);
+            Debug.Assert(input.Length > 0);
+            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
 
             // OpenSSL 1.1 does not allow partial overlap.
-            if (input == output && inputOffset != outputOffset)
+            if (input.Overlaps(output, out int overlapOffset) && overlapOffset != 0)
             {
-                byte[] tmp = CryptoPool.Rent(count);
+                byte[] tmp = CryptoPool.Rent(input.Length);
+                Span<byte> tmpSpan = tmp;
                 int written = 0;
 
                 try
                 {
-                    written = CipherUpdate(input.AsSpan(inputOffset, count), tmp);
-                    Buffer.BlockCopy(tmp, 0, output, outputOffset, written);
+                    written = CipherUpdate(input, tmpSpan);
+                    tmpSpan.Slice(0, written).CopyTo(output);
                     return written;
                 }
                 finally
@@ -70,7 +65,7 @@ namespace Internal.Cryptography
                 }
             }
 
-            return CipherUpdate(input.AsSpan(inputOffset, count), output.AsSpan(outputOffset));
+            return CipherUpdate(input, output);
         }
 
         public override int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)

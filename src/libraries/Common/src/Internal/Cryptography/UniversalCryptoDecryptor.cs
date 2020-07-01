@@ -42,7 +42,7 @@ namespace Internal.Cryptography
                 // If we have data saved from a previous call, decrypt that into the output first
                 if (_heldoverCipher != null)
                 {
-                    int depadDecryptLength = BasicSymmetricCipher.Transform(_heldoverCipher, 0, _heldoverCipher.Length, outputBuffer, outputOffset);
+                    int depadDecryptLength = BasicSymmetricCipher.Transform(_heldoverCipher, outputBuffer.AsSpan(outputOffset));
                     outputOffset += depadDecryptLength;
                     decryptedBytes += depadDecryptLength;
                 }
@@ -61,7 +61,7 @@ namespace Internal.Cryptography
 
             if (inputCount > 0)
             {
-                decryptedBytes += BasicSymmetricCipher.Transform(inputBuffer, inputOffset, inputCount, outputBuffer, outputOffset);
+                decryptedBytes += BasicSymmetricCipher.Transform(inputBuffer.AsSpan(inputOffset, inputCount), outputBuffer.AsSpan(outputOffset));
             }
 
             return decryptedBytes;
