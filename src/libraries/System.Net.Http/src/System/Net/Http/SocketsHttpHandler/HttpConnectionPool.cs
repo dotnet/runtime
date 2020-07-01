@@ -1553,6 +1553,10 @@ namespace System.Net.Http
                 memberName,                  // method name
                 message);                    // message
 
+        public int Http11ConnectionCount => _associatedConnectionCount;
+
+        public int Http20StreamCount => _http2Connection?.HttpStreamCount ?? 0;
+
         /// <summary>A cached idle connection and metadata about it.</summary>
         [StructLayout(LayoutKind.Auto)]
         private readonly struct CachedConnection : IEquatable<CachedConnection>

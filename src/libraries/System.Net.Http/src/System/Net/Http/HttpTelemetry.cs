@@ -19,6 +19,8 @@ namespace System.Net.Http
         private PollingCounter? _startedRequestsCounter;
         private PollingCounter? _currentRequestsCounter;
         private PollingCounter? _abortedRequestsCounter;
+        private PollingCounter? _maxHttp11ConnectionsPerPoolCounter;
+        private PollingCounter? _maxHttp20StreamsPerConnectionCounter;
 
         private long _startedRequests;
         private long _stoppedRequests;
@@ -95,6 +97,16 @@ namespace System.Net.Http
                 _currentRequestsCounter ??= new PollingCounter("current-requests", this, () => -Interlocked.Read(ref _stoppedRequests) + Interlocked.Read(ref _startedRequests))
                 {
                     DisplayName = "Current Requests"
+                };
+
+                _maxHttp11ConnectionsPerPoolCounter ??= new PollingCounter("http11-connections-single-pool-max", this, () => HttpConnectionPoolManager.GetMaxHttp11ConnectionsPerPool())
+                {
+                    DisplayName = "Maximum Http 1.1 Connections per Connection Pool"
+                };
+
+                _maxHttp20StreamsPerConnectionCounter ??= new PollingCounter("http20-streams-single-connection-max", this, () => HttpConnectionPoolManager.GetMaxHttp20StreamsPerConnection())
+                {
+                    DisplayName = "Maximum Http Streams per Http 2.0 Connection"
                 };
             }
         }

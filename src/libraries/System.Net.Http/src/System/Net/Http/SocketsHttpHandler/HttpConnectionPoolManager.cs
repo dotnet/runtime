@@ -31,6 +31,10 @@ namespace System.Net.Http
     /// <summary>Provides a set of connection pools, each for its own endpoint.</summary>
     internal sealed class HttpConnectionPoolManager : IDisposable
     {
+        // Used by HttpTelemetry to calculate statistics over all connection pools
+        private static readonly ConcurrentDictionary<HttpConnectionPoolManager, object?> s_allConnectionPools =
+            new ConcurrentDictionary<HttpConnectionPoolManager, object?>();
+
         /// <summary>How frequently an operation should be initiated to clean out old pools and connections in those pools.</summary>
         private readonly TimeSpan _cleanPoolTimeout;
         /// <summary>The pools, indexed by endpoint.</summary>
@@ -111,6 +115,9 @@ namespace System.Net.Http
                             thisRef.RemoveStalePools();
                         }
                     }, new WeakReference<HttpConnectionPoolManager>(this), Timeout.Infinite, Timeout.Infinite);
+
+                    bool success = s_allConnectionPools.TryAdd(this, null);
+                    Debug.Assert(success);
                 }
                 finally
                 {
@@ -455,6 +462,8 @@ namespace System.Net.Http
         {
             _cleaningTimer?.Dispose();
 
+            s_allConnectionPools.TryRemove(this, out _);
+
             foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> pool in _pools)
             {
                 pool.Value.Dispose();
@@ -525,6 +534,32 @@ namespace System.Net.Http
         private static string GetIdentityIfDefaultCredentialsUsed(bool defaultCredentialsUsed)
         {
             return defaultCredentialsUsed ? CurrentUserIdentityProvider.GetIdentity() : string.Empty;
+        }
+
+        public static int GetMaxHttp11ConnectionsPerPool()
+        {
+            int max = 0;
+            foreach ((HttpConnectionPoolManager connectionPoolManager, _) in s_allConnectionPools)
+            {
+                foreach ((_, HttpConnectionPool connectionPool) in connectionPoolManager._pools)
+                {
+                    max = Math.Max(max, connectionPool.Http11ConnectionCount);
+                }
+            }
+            return max;
+        }
+
+        public static int GetMaxHttp20StreamsPerConnection()
+        {
+            int max = 0;
+            foreach ((HttpConnectionPoolManager connectionPoolManager, _) in s_allConnectionPools)
+            {
+                foreach ((_, HttpConnectionPool connectionPool) in connectionPoolManager._pools)
+                {
+                    max = Math.Max(max, connectionPool.Http20StreamCount);
+                }
+            }
+            return max;
         }
 
         internal readonly struct HttpConnectionKey : IEquatable<HttpConnectionKey>

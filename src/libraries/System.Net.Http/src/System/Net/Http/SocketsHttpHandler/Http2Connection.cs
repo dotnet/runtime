@@ -1559,6 +1559,8 @@ namespace System.Net.Http
             }
         }
 
+        public int HttpStreamCount => _httpStreams.Count;
+
         private enum FrameType : byte
         {
             Data = 0,
