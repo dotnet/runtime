@@ -24,7 +24,7 @@ namespace Mono.Linker.Steps
 		{
 		}
 
-		IEnumerable<CustomAttribute> ProcessAttributes (XPathNavigator nav, ICustomAttributeProvider provider=null)
+		IEnumerable<CustomAttribute> ProcessAttributes (XPathNavigator nav, ICustomAttributeProvider provider = null)
 		{
 			XPathNodeIterator iterator = nav.SelectChildren ("attribute", string.Empty);
 			var attributes = new List<CustomAttribute> ();
@@ -34,9 +34,9 @@ namespace Mono.Linker.Steps
 
 				AssemblyDefinition assembly;
 				TypeDefinition attributeType;
-				
+
 				string internalAttribute = GetAttribute (iterator.Current, "internal");
-				if (internalAttribute == "RemoveAttributeInstances" && provider != null) { 
+				if (internalAttribute == "RemoveAttributeInstances" && provider != null) {
 					Context.Annotations.AddRemovableAttribute ((IMemberDefinition) provider);
 					continue;
 				}

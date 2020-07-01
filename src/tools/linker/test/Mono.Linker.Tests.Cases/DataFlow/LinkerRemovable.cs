@@ -33,7 +33,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			return "this is a return value";
 		}
-		
+
 		[Kept]
 		public static void TestType ()
 		{
