@@ -195,6 +195,6 @@
     <value>Connection was aborted.</value>
   </data>  
   <data name="net_WebSockets_Invalid_Binary_Type" xml:space="preserve">
-    <value>WebSocket bynary type '{0}' not supported.</value>
+    <value>WebSocket binary type '{0}' not supported.</value>
   </data>   
 </root>
