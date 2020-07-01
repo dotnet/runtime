@@ -372,8 +372,6 @@ namespace System.Net.WebSockets
             {
                 _writeBuffer ??= new MemoryStream();
                 _writeBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
-                if (!_writeBuffer.TryGetBuffer(out buffer))
-                    throw new WebSocketException(WebSocketError.NativeError);
             }
 
             MemoryStream writtenBuffer = _writeBuffer;
