@@ -799,13 +799,11 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.Add(T value) => this.Add(value);
 
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.AddRange(IEnumerable<T> items) => this.AddRange(items);
 
         /// <summary>
@@ -814,7 +812,6 @@ namespace System.Collections.Immutable
         /// <param name="index">The index at which to insert the value.</param>
         /// <param name="item">The element to add.</param>
         /// <returns>The new immutable list.</returns>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.Insert(int index, T item) => this.Insert(index, item);
 
         /// <summary>
@@ -823,7 +820,6 @@ namespace System.Collections.Immutable
         /// <param name="index">The index at which to insert the value.</param>
         /// <param name="items">The elements to add.</param>
         /// <returns>The new immutable list.</returns>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.InsertRange(int index, IEnumerable<T> items)
         {
             return this.InsertRange(index, items);
@@ -832,25 +828,21 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.Remove(T value, IEqualityComparer<T>? equalityComparer) => this.Remove(value, equalityComparer);
 
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.RemoveAll(Predicate<T> match) => this.RemoveAll(match);
 
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer) => this.RemoveRange(items, equalityComparer);
 
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.RemoveRange(int index, int count) => this.RemoveRange(index, count);
 
         /// <summary>
@@ -858,7 +850,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="index">The index.</param>
         /// <returns>A new list with the elements removed.</returns>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.RemoveAt(int index) => this.RemoveAt(index);
 
         /// <summary>
@@ -867,7 +858,6 @@ namespace System.Collections.Immutable
         /// <param name="index">The position in the list of the element to replace.</param>
         /// <param name="value">The element to replace the old element with.</param>
         /// <returns>The new list.</returns>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.SetItem(int index, T value) => this.SetItem(index, value);
 
         /// <summary>

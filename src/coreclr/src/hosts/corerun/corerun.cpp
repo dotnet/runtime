@@ -95,10 +95,10 @@ public:
     PathString m_coreCLRDirectoryPath;
 
     HostEnvironment(Logger *logger)
-        : m_log(logger)
-        , m_CLRRuntimeHostInitialize(nullptr)
+        : m_CLRRuntimeHostInitialize(nullptr)
         , m_CLRRuntimeHostExecute(nullptr)
-        , m_CLRRuntimeHostShutdown(nullptr) {
+        , m_CLRRuntimeHostShutdown(nullptr)
+        , m_log(logger) {
 
             // Discover the path to this exe's module. All other files are expected to be in the same directory.
             WszGetModuleFileName(::GetModuleHandleW(nullptr), m_hostPath);
@@ -414,9 +414,9 @@ public:
     //       logger - Logger to record errors
     // assemblyPath - Assembly containing activation context manifest
     ActivationContext(Logger &logger, _In_z_ const WCHAR *assemblyPath)
-        : _actCookie{}
+        : _logger{ logger }
         , _actCxt{ INVALID_HANDLE_VALUE }
-        , _logger{ logger }
+        , _actCookie{} 
     {
         ACTCTX cxt{};
         cxt.cbSize = sizeof(cxt);

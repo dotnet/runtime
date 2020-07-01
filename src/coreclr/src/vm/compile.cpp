@@ -1400,7 +1400,7 @@ mdToken CEECompileInfo::TryEncodeMethodAsToken(
     {
         _ASSERTE(pResolvedToken != NULL);
 
-        Module * pReferencingModule = (Module *)pResolvedToken->tokenScope;
+        Module * pReferencingModule = GetModule(pResolvedToken->tokenScope);
 
         if (!pReferencingModule->IsInCurrentVersionBubble())
             return mdTokenNil;
@@ -5936,12 +5936,6 @@ void CEEPreloader::GenerateMethodStubs(
     // implementation details of the CLR.
     if (IsReadyToRunCompilation() && (!GetAppDomain()->ToCompilationDomain()->GetTargetModule()->IsSystem() || !pMD->IsNDirect()))
         return;
-
-#if defined(TARGET_ARM) && defined(TARGET_UNIX)
-    // Cross-bitness compilation of il stubs does not work. Disable here.
-    if (IsReadyToRunCompilation())
-        return;
-#endif // defined(TARGET_ARM) && defined(TARGET_UNIX)
 
     DWORD dwNGenStubFlags = NDIRECTSTUB_FL_NGENEDSTUB;
 

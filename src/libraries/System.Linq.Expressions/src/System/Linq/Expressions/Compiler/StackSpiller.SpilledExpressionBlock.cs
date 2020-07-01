@@ -53,7 +53,7 @@ namespace System.Linq.Expressions.Compiler
         {
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[] args)
         {
             throw ContractUtils.Unreachable;

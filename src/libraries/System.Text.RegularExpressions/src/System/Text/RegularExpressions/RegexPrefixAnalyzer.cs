@@ -357,7 +357,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public static string AnchorDescription(int anchors)
         {
             var sb = new StringBuilder();

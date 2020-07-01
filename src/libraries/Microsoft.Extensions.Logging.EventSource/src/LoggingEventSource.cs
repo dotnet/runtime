@@ -196,7 +196,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         }
 
         [Event(5, Keywords = Keywords.JsonMessage, Level = EventLevel.LogAlways)]
-        internal unsafe void MessageJson(LogLevel Level, int FactoryID, string LoggerName, int EventId, string EventName, string ExceptionJson, string ArgumentsJson)
+        internal unsafe void MessageJson(LogLevel Level, int FactoryID, string LoggerName, int EventId, string EventName, string ExceptionJson, string ArgumentsJson, string FormattedMessage)
         {
             if (IsEnabled())
             {
@@ -204,13 +204,15 @@ namespace Microsoft.Extensions.Logging.EventSource
                 EventName ??= "";
                 ExceptionJson ??= "";
                 ArgumentsJson ??= "";
+                FormattedMessage ??= "";
 
                 fixed (char* loggerName = LoggerName)
                 fixed (char* eventName = EventName)
                 fixed (char* exceptionJson = ExceptionJson)
                 fixed (char* argumentsJson = ArgumentsJson)
+                fixed (char* formattedMessage = FormattedMessage)
                 {
-                    const int eventDataCount = 7;
+                    const int eventDataCount = 8;
                     EventData* eventData = stackalloc EventData[eventDataCount];
 
                     SetEventData(ref eventData[0], ref Level);
@@ -220,6 +222,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                     SetEventData(ref eventData[4], ref EventName, eventName);
                     SetEventData(ref eventData[5], ref ExceptionJson, exceptionJson);
                     SetEventData(ref eventData[6], ref ArgumentsJson, argumentsJson);
+                    SetEventData(ref eventData[7], ref FormattedMessage, formattedMessage);
 
                     WriteEventCore(5, eventDataCount, eventData);
                 }

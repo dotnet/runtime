@@ -19,9 +19,9 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void ExtractNarrowingLower_Vector128_Int16()
+        private static void ExtractNarrowingSaturateLower_Vector64_SByte()
         {
-            var test = new SimpleUnaryOpTest__ExtractNarrowingLower_Vector128_Int16();
+            var test = new SimpleUnaryOpTest__ExtractNarrowingSaturateLower_Vector64_SByte();
 
             if (test.IsSupported)
             {
@@ -110,7 +110,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class SimpleUnaryOpTest__ExtractNarrowingLower_Vector128_Int16
+    public sealed unsafe class SimpleUnaryOpTest__ExtractNarrowingSaturateLower_Vector64_SByte
     {
         private struct DataTable
         {
@@ -171,19 +171,19 @@ namespace JIT.HardwareIntrinsics.Arm
                 return testStruct;
             }
 
-            public void RunStructFldScenario(SimpleUnaryOpTest__ExtractNarrowingLower_Vector128_Int16 testClass)
+            public void RunStructFldScenario(SimpleUnaryOpTest__ExtractNarrowingSaturateLower_Vector64_SByte testClass)
             {
-                var result = AdvSimd.ExtractNarrowingLower(_fld1);
+                var result = AdvSimd.ExtractNarrowingSaturateLower(_fld1);
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(_fld1, testClass._dataTable.outArrayPtr);
             }
 
-            public void RunStructFldScenario_Load(SimpleUnaryOpTest__ExtractNarrowingLower_Vector128_Int16 testClass)
+            public void RunStructFldScenario_Load(SimpleUnaryOpTest__ExtractNarrowingSaturateLower_Vector64_SByte testClass)
             {
                 fixed (Vector128<Int16>* pFld1 = &_fld1)
                 {
-                    var result = AdvSimd.ExtractNarrowingLower(
+                    var result = AdvSimd.ExtractNarrowingSaturateLower(
                         AdvSimd.LoadVector128((Int16*)(pFld1))
                     );
 
@@ -206,13 +206,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        static SimpleUnaryOpTest__ExtractNarrowingLower_Vector128_Int16()
+        static SimpleUnaryOpTest__ExtractNarrowingSaturateLower_Vector64_SByte()
         {
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetInt16(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int16>, byte>(ref _clsVar1), ref Unsafe.As<Int16, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Int16>>());
         }
 
-        public SimpleUnaryOpTest__ExtractNarrowingLower_Vector128_Int16()
+        public SimpleUnaryOpTest__ExtractNarrowingSaturateLower_Vector64_SByte()
         {
             Succeeded = true;
 
@@ -231,7 +231,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = AdvSimd.ExtractNarrowingLower(
+            var result = AdvSimd.ExtractNarrowingSaturateLower(
                 Unsafe.Read<Vector128<Int16>>(_dataTable.inArray1Ptr)
             );
 
@@ -243,7 +243,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
-            var result = AdvSimd.ExtractNarrowingLower(
+            var result = AdvSimd.ExtractNarrowingSaturateLower(
                 AdvSimd.LoadVector128((Int16*)(_dataTable.inArray1Ptr))
             );
 
@@ -255,7 +255,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.ExtractNarrowingLower), new Type[] { typeof(Vector128<Int16>) })
+            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.ExtractNarrowingSaturateLower), new Type[] { typeof(Vector128<Int16>) })
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<Vector128<Int16>>(_dataTable.inArray1Ptr)
                                      });
@@ -268,7 +268,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
 
-            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.ExtractNarrowingLower), new Type[] { typeof(Vector128<Int16>) })
+            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.ExtractNarrowingSaturateLower), new Type[] { typeof(Vector128<Int16>) })
                                      .Invoke(null, new object[] {
                                         AdvSimd.LoadVector128((Int16*)(_dataTable.inArray1Ptr))
                                      });
@@ -281,7 +281,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = AdvSimd.ExtractNarrowingLower(
+            var result = AdvSimd.ExtractNarrowingSaturateLower(
                 _clsVar1
             );
 
@@ -295,7 +295,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             fixed (Vector128<Int16>* pClsVar1 = &_clsVar1)
             {
-                var result = AdvSimd.ExtractNarrowingLower(
+                var result = AdvSimd.ExtractNarrowingSaturateLower(
                     AdvSimd.LoadVector128((Int16*)(pClsVar1))
                 );
 
@@ -309,7 +309,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
             var op1 = Unsafe.Read<Vector128<Int16>>(_dataTable.inArray1Ptr);
-            var result = AdvSimd.ExtractNarrowingLower(op1);
+            var result = AdvSimd.ExtractNarrowingSaturateLower(op1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(op1, _dataTable.outArrayPtr);
@@ -320,7 +320,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
 
             var op1 = AdvSimd.LoadVector128((Int16*)(_dataTable.inArray1Ptr));
-            var result = AdvSimd.ExtractNarrowingLower(op1);
+            var result = AdvSimd.ExtractNarrowingSaturateLower(op1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(op1, _dataTable.outArrayPtr);
@@ -330,8 +330,8 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new SimpleUnaryOpTest__ExtractNarrowingLower_Vector128_Int16();
-            var result = AdvSimd.ExtractNarrowingLower(test._fld1);
+            var test = new SimpleUnaryOpTest__ExtractNarrowingSaturateLower_Vector64_SByte();
+            var result = AdvSimd.ExtractNarrowingSaturateLower(test._fld1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, _dataTable.outArrayPtr);
@@ -341,11 +341,11 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
 
-            var test = new SimpleUnaryOpTest__ExtractNarrowingLower_Vector128_Int16();
+            var test = new SimpleUnaryOpTest__ExtractNarrowingSaturateLower_Vector64_SByte();
 
             fixed (Vector128<Int16>* pFld1 = &test._fld1)
             {
-                var result = AdvSimd.ExtractNarrowingLower(
+                var result = AdvSimd.ExtractNarrowingSaturateLower(
                     AdvSimd.LoadVector128((Int16*)(pFld1))
                 );
 
@@ -358,7 +358,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = AdvSimd.ExtractNarrowingLower(_fld1);
+            var result = AdvSimd.ExtractNarrowingSaturateLower(_fld1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, _dataTable.outArrayPtr);
@@ -370,7 +370,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             fixed (Vector128<Int16>* pFld1 = &_fld1)
             {
-                var result = AdvSimd.ExtractNarrowingLower(
+                var result = AdvSimd.ExtractNarrowingSaturateLower(
                     AdvSimd.LoadVector128((Int16*)(pFld1))
                 );
 
@@ -384,7 +384,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = AdvSimd.ExtractNarrowingLower(test._fld1);
+            var result = AdvSimd.ExtractNarrowingSaturateLower(test._fld1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, _dataTable.outArrayPtr);
@@ -395,7 +395,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
 
             var test = TestStruct.Create();
-            var result = AdvSimd.ExtractNarrowingLower(
+            var result = AdvSimd.ExtractNarrowingSaturateLower(
                 AdvSimd.LoadVector128((Int16*)(&test._fld1))
             );
 
@@ -468,7 +468,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             for (var i = 0; i < RetElementCount; i++)
             {
-                if (Helpers.ExtractNarrowing(firstOp[i]) != result[i])
+                if (Helpers.ExtractNarrowingSaturate(firstOp[i]) != result[i])
                 {
                     succeeded = false;
                     break;
@@ -477,7 +477,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(AdvSimd)}.{nameof(AdvSimd.ExtractNarrowingLower)}<SByte>(Vector128<Int16>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(AdvSimd)}.{nameof(AdvSimd.ExtractNarrowingSaturateLower)}<SByte>(Vector128<Int16>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($" firstOp: ({string.Join(", ", firstOp)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);

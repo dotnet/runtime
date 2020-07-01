@@ -1156,6 +1156,60 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<ulong> DuplicateToVector128(ulong value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// uint8_t vqmovnh_u16 (uint16_t a)
+            ///   A64: UQXTN Bd, Hn
+            /// </summary>
+            public static Vector64<byte> ExtractNarrowingSaturateScalar(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vqmovns_s32 (int32_t a)
+            ///   A64: SQXTN Hd, Sn
+            /// </summary>
+            public static Vector64<short> ExtractNarrowingSaturateScalar(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqmovnd_s64 (int64_t a)
+            ///   A64: SQXTN Sd, Dn
+            /// </summary>
+            public static Vector64<int> ExtractNarrowingSaturateScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8_t vqmovnh_s16 (int16_t a)
+            ///   A64: SQXTN Bd, Hn
+            /// </summary>
+            public static Vector64<sbyte> ExtractNarrowingSaturateScalar(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16_t vqmovns_u32 (uint32_t a)
+            ///   A64: UQXTN Hd, Sn
+            /// </summary>
+            public static Vector64<ushort> ExtractNarrowingSaturateScalar(Vector64<uint> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vqmovnd_u64 (uint64_t a)
+            ///   A64: UQXTN Sd, Dn
+            /// </summary>
+            public static Vector64<uint> ExtractNarrowingSaturateScalar(Vector64<ulong> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8_t vqmovunh_s16 (int16_t a)
+            ///   A64: SQXTUN Bd, Hn
+            /// </summary>
+            public static Vector64<byte> ExtractNarrowingSaturateUnsignedScalar(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16_t vqmovuns_s32 (int32_t a)
+            ///   A64: SQXTUN Hd, Sn
+            /// </summary>
+            public static Vector64<ushort> ExtractNarrowingSaturateUnsignedScalar(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vqmovund_s64 (int64_t a)
+            ///   A64: SQXTUN Sd, Dn
+            /// </summary>
+            public static Vector64<uint> ExtractNarrowingSaturateUnsignedScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vrndmq_f64 (float64x2_t a)
             ///   A64: FRINTM Vd.2D, Vn.2D
             /// </summary>
@@ -6233,88 +6287,214 @@ namespace System.Runtime.Intrinsics.Arm
         public static ulong Extract(Vector128<ulong> vector, byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///  int8x16_t vmovn_high_s16 (int8x8_t r, int16x8_t a)
-        ///   A32: VMOVN.I16 Dd+1, Qm
-        ///   A64: XTN2 Vd.16B, Vn.8H
-        /// </summary>
-        public static Vector128<sbyte> ExtractNarrowingUpper(Vector64<sbyte> lower, Vector128<short> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  int16x8_t vmovn_high_s32 (int16x4_t r, int32x4_t a)
-        ///   A32: VMOVN.I32 Dd+1, Qm
-        ///   A64: XTN2 Vd.8H, Vn.4S
-        /// </summary>
-        public static Vector128<short> ExtractNarrowingUpper(Vector64<short> lower, Vector128<int> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  int32x4_t vmovn_high_s64 (int32x2_t r, int64x2_t a)
-        ///   A32: VMOVN.I64 Dd+1, Qm
-        ///   A64: XTN2 Vd.4S, Vn.2D
-        /// </summary>
-        public static Vector128<int> ExtractNarrowingUpper(Vector64<int> lower, Vector128<long> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  uint8x16_t vmovn_high_u16 (uint8x8_t r, uint16x8_t a)
-        ///   A32: VMOVN.I16 Dd+1, Qm
-        ///   A64: XTN2 Vd.16B, Vn.8H
-        /// </summary>
-        public static Vector128<byte> ExtractNarrowingUpper(Vector64<byte> lower, Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  uint16x8_t vmovn_high_u32 (uint16x4_t r, uint32x4_t a)
-        ///   A32: VMOVN.I32 Dd+1, Qm
-        ///   A64: XTN2 Vd.8H, Vn.4S
-        /// </summary>
-        public static Vector128<ushort> ExtractNarrowingUpper(Vector64<ushort> lower, Vector128<uint> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  uint32x4_t vmovn_high_u64 (uint32x2_t r, uint64x2_t a)
-        ///   A32: VMOVN.I64 Dd+1, Qm
-        ///   A64: XTN2 Vd.4S, Vn.2D
-        /// </summary>
-        public static Vector128<uint> ExtractNarrowingUpper(Vector64<uint> lower, Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  int8x8_t vmovn_s16 (int16x8_t a)
-        ///   A32: VMOVN.I16 Dd, Qm
-        ///   A64: XTN Vd.8B, Vn.8H
-        /// </summary>
-        public static Vector64<sbyte> ExtractNarrowingLower(Vector128<short> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  int16x4_t vmovn_s32 (int32x4_t a)
-        ///   A32: VMOVN.I32 Dd, Qm
-        ///   A64: XTN Vd.4H, Vn.4S
-        /// </summary>
-        public static Vector64<short> ExtractNarrowingLower(Vector128<int> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  int32x2_t vmovn_s64 (int64x2_t a)
-        ///   A32: VMOVN.I64 Dd, Qm
-        ///   A64: XTN Vd.2S, Vn.2D
-        /// </summary>
-        public static Vector64<int> ExtractNarrowingLower(Vector128<long> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  uint8x8_t vmovn_u16 (uint16x8_t a)
+        /// uint8x8_t vmovn_u16 (uint16x8_t a)
         ///   A32: VMOVN.I16 Dd, Qm
         ///   A64: XTN Vd.8B, Vn.8H
         /// </summary>
         public static Vector64<byte> ExtractNarrowingLower(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///  uint16x4_t vmovn_u32 (uint32x4_t a)
+        /// int16x4_t vmovn_s32 (int32x4_t a)
+        ///   A32: VMOVN.I32 Dd, Qm
+        ///   A64: XTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<short> ExtractNarrowingLower(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmovn_s64 (int64x2_t a)
+        ///   A32: VMOVN.I64 Dd, Qm
+        ///   A64: XTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<int> ExtractNarrowingLower(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vmovn_s16 (int16x8_t a)
+        ///   A32: VMOVN.I16 Dd, Qm
+        ///   A64: XTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<sbyte> ExtractNarrowingLower(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmovn_u32 (uint32x4_t a)
         ///   A32: VMOVN.I32 Dd, Qm
         ///   A64: XTN Vd.4H, Vn.4S
         /// </summary>
         public static Vector64<ushort> ExtractNarrowingLower(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///  uint32x2_t vmovn_u64 (uint64x2_t a)
+        /// uint32x2_t vmovn_u64 (uint64x2_t a)
         ///   A32: VMOVN.I64 Dd, Qm
         ///   A64: XTN Vd.2S, Vn.2D
         /// </summary>
         public static Vector64<uint> ExtractNarrowingLower(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vqmovn_u16 (uint16x8_t a)
+        ///   A32: VQMOVN.U16 Dd, Qm
+        ///   A64: UQXTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<byte> ExtractNarrowingSaturateLower(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vqmovn_s32 (int32x4_t a)
+        ///   A32: VQMOVN.S32 Dd, Qm
+        ///   A64: SQXTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<short> ExtractNarrowingSaturateLower(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqmovn_s64 (int64x2_t a)
+        ///   A32: VQMOVN.S64 Dd, Qm
+        ///   A64: SQXTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<int> ExtractNarrowingSaturateLower(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vqmovn_s16 (int16x8_t a)
+        ///   A32: VQMOVN.S16 Dd, Qm
+        ///   A64: SQXTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<sbyte> ExtractNarrowingSaturateLower(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vqmovn_u32 (uint32x4_t a)
+        ///   A32: VQMOVN.U32 Dd, Qm
+        ///   A64: UQXTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<ushort> ExtractNarrowingSaturateLower(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vqmovn_u64 (uint64x2_t a)
+        ///   A32: VQMOVN.U64 Dd, Qm
+        ///   A64: UQXTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<uint> ExtractNarrowingSaturateLower(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vqmovun_s16 (int16x8_t a)
+        ///   A32: VQMOVUN.S16 Dd, Qm
+        ///   A64: SQXTUN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<byte> ExtractNarrowingSaturateUnsignedLower(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vqmovun_s32 (int32x4_t a)
+        ///   A32: VQMOVUN.S32 Dd, Qm
+        ///   A64: SQXTUN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<ushort> ExtractNarrowingSaturateUnsignedLower(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vqmovun_s64 (int64x2_t a)
+        ///   A32: VQMOVUN.S64 Dd, Qm
+        ///   A64: SQXTUN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<uint> ExtractNarrowingSaturateUnsignedLower(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vqmovun_high_s16 (uint8x8_t r, int16x8_t a)
+        ///   A32: VQMOVUN.S16 Dd+1, Qm
+        ///   A64: SQXTUN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<byte> ExtractNarrowingSaturateUnsignedUpper(Vector64<byte> lower, Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vqmovun_high_s32 (uint16x4_t r, int32x4_t a)
+        ///   A32: VQMOVUN.S32 Dd+1, Qm
+        ///   A64: SQXTUN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<ushort> ExtractNarrowingSaturateUnsignedUpper(Vector64<ushort> lower, Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vqmovun_high_s64 (uint32x2_t r, int64x2_t a)
+        ///   A32: VQMOVUN.S64 Dd+1, Qm
+        ///   A64: SQXTUN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<uint> ExtractNarrowingSaturateUnsignedUpper(Vector64<uint> lower, Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vqmovn_high_u16 (uint8x8_t r, uint16x8_t a)
+        ///   A32: VQMOVN.U16 Dd+1, Qm
+        ///   A64: UQXTN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<byte> ExtractNarrowingSaturateUpper(Vector64<byte> lower, Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqmovn_high_s32 (int16x4_t r, int32x4_t a)
+        ///   A32: VQMOVN.S32 Dd+1, Qm
+        ///   A64: SQXTN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<short> ExtractNarrowingSaturateUpper(Vector64<short> lower, Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqmovn_high_s64 (int32x2_t r, int64x2_t a)
+        ///   A32: VQMOVN.S64 Dd+1, Qm
+        ///   A64: SQXTN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<int> ExtractNarrowingSaturateUpper(Vector64<int> lower, Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vqmovn_high_s16 (int8x8_t r, int16x8_t a)
+        ///   A32: VQMOVN.S16 Dd+1, Qm
+        ///   A64: SQXTN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<sbyte> ExtractNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vqmovn_high_u32 (uint16x4_t r, uint32x4_t a)
+        ///   A32: VQMOVN.U32 Dd+1, Qm
+        ///   A64: UQXTN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<ushort> ExtractNarrowingSaturateUpper(Vector64<ushort> lower, Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vqmovn_high_u64 (uint32x2_t r, uint64x2_t a)
+        ///   A32: VQMOVN.U64 Dd+1, Qm
+        ///   A64: UQXTN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<uint> ExtractNarrowingSaturateUpper(Vector64<uint> lower, Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vmovn_high_u16 (uint8x8_t r, uint16x8_t a)
+        ///   A32: VMOVN.I16 Dd+1, Qm
+        ///   A64: XTN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<byte> ExtractNarrowingUpper(Vector64<byte> lower, Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmovn_high_s32 (int16x4_t r, int32x4_t a)
+        ///   A32: VMOVN.I32 Dd+1, Qm
+        ///   A64: XTN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<short> ExtractNarrowingUpper(Vector64<short> lower, Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmovn_high_s64 (int32x2_t r, int64x2_t a)
+        ///   A32: VMOVN.I64 Dd+1, Qm
+        ///   A64: XTN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<int> ExtractNarrowingUpper(Vector64<int> lower, Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vmovn_high_s16 (int8x8_t r, int16x8_t a)
+        ///   A32: VMOVN.I16 Dd+1, Qm
+        ///   A64: XTN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<sbyte> ExtractNarrowingUpper(Vector64<sbyte> lower, Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmovn_high_u32 (uint16x4_t r, uint32x4_t a)
+        ///   A32: VMOVN.I32 Dd+1, Qm
+        ///   A64: XTN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<ushort> ExtractNarrowingUpper(Vector64<ushort> lower, Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmovn_high_u64 (uint32x2_t r, uint64x2_t a)
+        ///   A32: VMOVN.I64 Dd+1, Qm
+        ///   A64: XTN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<uint> ExtractNarrowingUpper(Vector64<uint> lower, Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vext_s8 (uint8x8_t a, uint8x8_t b, const int n)

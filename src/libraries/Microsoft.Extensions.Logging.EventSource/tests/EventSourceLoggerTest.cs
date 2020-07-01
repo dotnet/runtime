@@ -444,7 +444,8 @@ namespace Microsoft.Extensions.Logging.Test
 
                 LogStuff(factory);
 
-                var containsNullEventName = false;
+                bool containsNullEventName = false;
+                bool containsFormattedMessage = false;
 
                 foreach (var eventJson in testListener.Events)
                 {
@@ -452,9 +453,14 @@ namespace Microsoft.Extensions.Logging.Test
                     {
                         containsNullEventName = true;
                     }
+                    if (eventJson.Contains(@"""FormattedMessage"":""Logger1 Event1 Debug 1"""))
+                    {
+                        containsFormattedMessage = true;
+                    }
                 }
 
                 Assert.True(containsNullEventName, "EventName is supposed to be null but it isn't.");
+                Assert.True(containsFormattedMessage, "FormattedMessage is supposed to be present but it isn't.");
             }
         }
 
@@ -472,19 +478,25 @@ namespace Microsoft.Extensions.Logging.Test
                 // Write some MessageJson events with null string.
                 for (var i = 0; i < 100; i++)
                 {
-                    LoggingEventSource.Instance.MessageJson(LogLevel.Trace, 1, "MyLogger", 5, null, null, "testJson");
+                    LoggingEventSource.Instance.MessageJson(LogLevel.Trace, 1, "MyLogger", 5, null, null, "testJson", "formattedMessage");
                 }
 
                 bool containsNullEventName = false;
+                bool containsFormattedMessage = false;
                 foreach (var eventJson in testListener.Events)
                 {
                     if (eventJson.Contains(@"""__EVENT_NAME"":""MessageJson""") && eventJson.Contains(@"""EventName"":"""","))
                     {
                         containsNullEventName = true;
                     }
+                    if (eventJson.Contains(@"""FormattedMessage"":""formattedMessage"""))
+                    {
+                        containsFormattedMessage = true;
+                    }
                 }
 
                 Assert.True(containsNullEventName, "EventName and ExceptionJson is supposed to be null but it isn't.");
+                Assert.True(containsFormattedMessage, "FormattedMessage is supposed to be present but it isn't.");
             }
         }
 
