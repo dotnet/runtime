@@ -97,7 +97,7 @@ bool Is4ByteSSEInstruction(instruction ins);
 
 bool AreUpper32BitsZero(regNumber reg);
 
-bool AreSZOFlagsSet(regNumber reg, emitAttr opSize, bool needsCF);
+bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCFlags);
 
 bool hasRexPrefix(code_t code)
 {

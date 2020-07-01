@@ -5908,14 +5908,14 @@ void CodeGen::genCompareInt(GenTree* treeNode)
 {
     assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP));
 
-    GenTreeOp* tree            = treeNode->AsOp();
-    GenTree*   op1             = tree->gtOp1;
-    GenTree*   op2             = tree->gtOp2;
-    var_types  op1Type         = op1->TypeGet();
-    var_types  op2Type         = op2->TypeGet();
-    regNumber  targetReg       = tree->GetRegNum();
-    emitter*   emit            = GetEmitter();
-    bool       canReuseSZFlags = false;
+    GenTreeOp* tree          = treeNode->AsOp();
+    GenTree*   op1           = tree->gtOp1;
+    GenTree*   op2           = tree->gtOp2;
+    var_types  op1Type       = op1->TypeGet();
+    var_types  op2Type       = op2->TypeGet();
+    regNumber  targetReg     = tree->GetRegNum();
+    emitter*   emit          = GetEmitter();
+    bool       canReuseFlags = false;
 
     genConsumeOperands(tree);
 
@@ -5924,12 +5924,6 @@ void CodeGen::genCompareInt(GenTree* treeNode)
 
     instruction ins;
     var_types   type = TYP_UNKNOWN;
-
-    if (op1->isUsedFromReg() && op2->IsIntegralConst(0) && !treeNode->OperIs(GT_CMP) &&
-        compiler->opts.OptimizationEnabled())
-    {
-        canReuseSZFlags = true;
-    }
 
     if (tree->OperIs(GT_TEST_EQ, GT_TEST_NE))
     {
@@ -5953,6 +5947,11 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
+        if (compiler->opts.OptimizationEnabled())
+        {
+            canReuseFlags = true;
+        }
+
         // We're comparing a register to 0 so we can generate "test reg1, reg1"
         // instead of the longer "cmp reg1, 0"
         ins = INS_test;
@@ -6003,9 +6002,9 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
 
-    if (canReuseSZFlags &&
-        emit->AreSZOFlagsSet(op1->GetRegNum(), emitTypeSize(type),
-                             tree->IsUnsigned() && !treeNode->OperIs(GT_EQ, GT_NE)))
+    if (canReuseFlags &&
+        emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type),
+                                   tree->OperIs(GT_CMP) || !tree->OperIs(GT_EQ, GT_NE)))
     {
         JITDUMP("Not emitting compare due to flags being already set\n");
     }

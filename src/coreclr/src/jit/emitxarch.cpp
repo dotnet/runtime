@@ -215,13 +215,13 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 }
 
 //------------------------------------------------------------------------
-// IsZeroFlagSet: Checks if the previous instruction set the SZO flags and optionally CF for
-//                reg of opSize size
+// AreFlagsSetToZeroCmp: Checks if the previous instruction set the SZ, and optionally OC, flags to
+//                       the the same values as if there were a compare to 0
 //
 // Arguments:
 //    reg - register of interest
 //    opSize - size of register
-//    needsCF - also check the carry flag
+//    needsOCFlags - additionally check the carry and overflow flag
 //
 // Return Value:
 //    true if the previous instruction set the flags for reg
@@ -229,7 +229,7 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 //
 // Notes:
 //    Currently only looks back one instruction.
-bool emitter::AreSZOFlagsSet(regNumber reg, emitAttr opSize, bool needsCF)
+bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCFlags)
 {
     assert(reg != REG_NA);
     // Don't look back across IG boundaries (possible control flow)
@@ -238,7 +238,29 @@ bool emitter::AreSZOFlagsSet(regNumber reg, emitAttr opSize, bool needsCF)
         return false;
     }
 
-    instrDesc* id = emitLastIns;
+    instrDesc* id  = emitLastIns;
+    insFormat  fmt = id->idInsFmt();
+
+    switch (fmt)
+    {
+        case IF_RWR_CNS:
+        case IF_RRW_CNS:
+        case IF_RRW_SHF:
+        case IF_RWR_RRD:
+        case IF_RRW_RRD:
+        case IF_RWR_MRD:
+        case IF_RWR_SRD:
+        case IF_RRW_SRD:
+        case IF_RWR_ARD:
+        case IF_RRW_ARD:
+        case IF_RWR:
+        case IF_RRD:
+        case IF_RRW:
+            break;
+
+        default:
+            return false;
+    }
 
     if (id->idReg1() != reg)
     {
@@ -247,25 +269,25 @@ bool emitter::AreSZOFlagsSet(regNumber reg, emitAttr opSize, bool needsCF)
 
     switch (id->idIns())
     {
+        case INS_adc:
+        case INS_add:
         case INS_dec:
         case INS_dec_l:
         case INS_inc:
         case INS_inc_l:
-            if (needsCF)
-            {
-                return false;
-            }
-        case INS_adc:
-        case INS_add:
-        case INS_and:
         case INS_neg:
-        case INS_or:
         case INS_shr_1:
         case INS_shl_1:
         case INS_sar_1:
         case INS_sbb:
         case INS_sub:
         case INS_xadd:
+            if (needsOCFlags)
+            {
+                return false;
+            }
+        case INS_and:
+        case INS_or:
         case INS_xor:
             return id->idOpSize() == opSize;
 
