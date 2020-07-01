@@ -128,7 +128,7 @@ namespace System.Text.Unicode
                             // this because we pessimistically assume we'll encounter non-ASCII data at some
                             // point in the not-too-distant future (otherwise we would've stayed entirely
                             // within the all-ASCII vectorized code at the entry to this method).
-                            if (AdvSimd.Arm64.IsSupported)
+                            if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                             {
                                 mask = AdvSimd.Arm64.MaxAcross(AdvSimd.LoadVector128(pInputBuffer)).ToScalar();
                                 if (mask != 0)
@@ -164,6 +164,8 @@ namespace System.Text.Unicode
 
                     LoopTerminatedEarlyDueToNonAsciiData:
 
+                        // x86 can only be little endian, while ARM can be big or little endian
+                        // so if we reached this label we need to check both combinations are supported
                         Debug.Assert(BitConverter.IsLittleEndian);
                         Debug.Assert(AdvSimd.Arm64.IsSupported || Sse2.IsSupported);
 
