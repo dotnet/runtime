@@ -818,7 +818,7 @@ var MonoSupportLib = {
 				var name = row[0];
 				var length = row[1];
 				var bytes = data.slice(0, length);
-				Module['FS_createDataFile'](`/usr/share/zoneinfo/${name}`, null, bytes, true, true);
+				Module['FS_createDataFile'](`${prefix}/${name}`, null, bytes, true, true);
 				data = data.slice(length);
 			}
 		}
