@@ -1340,7 +1340,7 @@ namespace Mono.Linker.Steps
 
 			// Check type being used was not removed by the LinkerRemovableAttribute
 			if (_context.Annotations.HasLinkerAttribute<LinkerRemovableAttribute> (type))
-				_context.LogWarning ($"Custom Attribute {type} is being referenced in code after Custom Attribute type was removed", 2044, sourceLocationMember);
+				_context.LogWarning ($"Custom Attribute {type} is being referenced in code after Custom Attribute type was removed", 2045, sourceLocationMember);
 
 			if (CheckProcessed (type))
 				return null;
