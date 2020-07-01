@@ -9487,6 +9487,118 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<long> MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(Vector128<long> minuend, Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(minuend, left, right, rightIndex);
 
         /// <summary>
+        /// int16x4_t vqrdmulh_n_s16 (int16x4_t a, int16_t b)
+        ///   A32: VQRDMULH.S16 Dd, Dn, Dm[0]
+        ///   A64: SQRDMULH Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<short> MultiplyRoundedDoublingByScalarSaturateHigh(Vector64<short> left, Vector64<short> right) => MultiplyRoundedDoublingByScalarSaturateHigh(left, right);
+
+        /// <summary>
+        /// int32x2_t vqrdmulh_n_s32 (int32x2_t a, int32_t b)
+        ///   A32: VQRDMULH.S32 Dd, Dn, Dm[0]
+        ///   A64: SQRDMULH Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<int> MultiplyRoundedDoublingByScalarSaturateHigh(Vector64<int> left, Vector64<int> right) => MultiplyRoundedDoublingByScalarSaturateHigh(left, right);
+
+        /// <summary>
+        /// int16x8_t vqrdmulhq_n_s16 (int16x8_t a, int16_t b)
+        ///   A32: VQRDMULH.S16 Qd, Qn, Dm[0]
+        ///   A64: SQRDMULH Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<short> MultiplyRoundedDoublingByScalarSaturateHigh(Vector128<short> left, Vector64<short> right) => MultiplyRoundedDoublingByScalarSaturateHigh(left, right);
+
+        /// <summary>
+        /// int32x4_t vqrdmulhq_n_s32 (int32x4_t a, int32_t b)
+        ///   A32: VQRDMULH.S32 Qd, Qn, Dm[0]
+        ///   A64: SQRDMULH Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<int> MultiplyRoundedDoublingByScalarSaturateHigh(Vector128<int> left, Vector64<int> right) => MultiplyRoundedDoublingByScalarSaturateHigh(left, right);
+
+        /// <summary>
+        /// int16x4_t vqrdmulh_lane_s16 (int16x4_t a, int16x4_t v, const int lane)
+        ///   A32: VQRDMULH.S16 Dd, Dn, Dm[lane]
+        ///   A64: SQRDMULH Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+        /// <summary>
+        /// int16x4_t vqrdmulh_laneq_s16 (int16x4_t a, int16x8_t v, const int lane)
+        ///   A32: VQRDMULH.S16 Dd, Dn, Dm[lane]
+        ///   A64: SQRDMULH Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+        /// <summary>
+        /// int32x2_t vqrdmulh_lane_s32 (int32x2_t a, int32x2_t v, const int lane)
+        ///   A32: VQRDMULH.S32 Dd, Dn, Dm[lane]
+        ///   A64: SQRDMULH Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+        /// <summary>
+        /// int32x2_t vqrdmulh_laneq_s32 (int32x2_t a, int32x4_t v, const int lane)
+        ///   A32: VQRDMULH.S32 Dd, Dn, Dm[lane]
+        ///   A64: SQRDMULH Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+        /// <summary>
+        /// int16x8_t vqrdmulhq_lane_s16 (int16x8_t a, int16x4_t v, const int lane)
+        ///   A32: VQRDMULH.S16 Qd, Qn, Dm[lane]
+        ///   A64: SQRDMULH Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<short> left, Vector64<short> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+        /// <summary>
+        /// int16x8_t vqrdmulhq_laneq_s16 (int16x8_t a, int16x8_t v, const int lane)
+        ///   A32: VQRDMULH.S16 Qd, Qn, Dm[lane]
+        ///   A64: SQRDMULH Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<short> left, Vector128<short> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+        /// <summary>
+        /// int32x4_t vqrdmulhq_lane_s32 (int32x4_t a, int32x2_t v, const int lane)
+        ///   A32: VQRDMULH.S32 Qd, Qn, Dm[lane]
+        ///   A64: SQRDMULH Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<int> left, Vector64<int> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+        /// <summary>
+        /// int32x4_t vqrdmulhq_laneq_s32 (int32x4_t a, int32x4_t v, const int lane)
+        ///   A32: VQRDMULH.S32 Qd, Qn, Dm[lane]
+        ///   A64: SQRDMULH Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+        /// <summary>
+        /// int16x4_t vqrdmulh_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VQRDMULH.S16 Dd, Dn, Dm
+        ///   A64: SQRDMULH Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MultiplyRoundedDoublingSaturateHigh(Vector64<short> left, Vector64<short> right) => MultiplyRoundedDoublingSaturateHigh(left, right);
+
+        /// <summary>
+        /// int32x2_t vqrdmulh_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VQRDMULH.S32 Dd, Dn, Dm
+        ///   A64: SQRDMULH Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MultiplyRoundedDoublingSaturateHigh(Vector64<int> left, Vector64<int> right) => MultiplyRoundedDoublingSaturateHigh(left, right);
+
+        /// <summary>
+        /// int16x8_t vqrdmulhq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VQRDMULH.S16 Qd, Qn, Qm
+        ///   A64: SQRDMULH Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> MultiplyRoundedDoublingSaturateHigh(Vector128<short> left, Vector128<short> right) => MultiplyRoundedDoublingSaturateHigh(left, right);
+
+        /// <summary>
+        /// int32x4_t vqrdmulhq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VQRDMULH.S32 Qd, Qn, Qm
+        ///   A64: SQRDMULH Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> MultiplyRoundedDoublingSaturateHigh(Vector128<int> left, Vector128<int> right) => MultiplyRoundedDoublingSaturateHigh(left, right);
+
+        /// <summary>
         /// float64x1_t vmul_f64 (float64x1_t a, float64x1_t b)
         ///   A32: VMUL.F64 Dd, Dn, Dm
         ///   A64: FMUL Dd, Dn, Dm
