@@ -34,7 +34,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return new ImportedCollection(collection);
         }
 
+        public static ImportedCollection Import(ReadOnlySpan<byte> rawData)
+        {
+            X509Certificate2Collection collection = new X509Certificate2Collection();
+            collection.Import(rawData);
+            return new ImportedCollection(collection);
+        }
+
         public static ImportedCollection Import(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
+        {
+            X509Certificate2Collection collection = new X509Certificate2Collection();
+            collection.Import(rawData, password, keyStorageFlags);
+            return new ImportedCollection(collection);
+        }
+
+        public static ImportedCollection Import(ReadOnlySpan<byte> rawData, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags)
         {
             X509Certificate2Collection collection = new X509Certificate2Collection();
             collection.Import(rawData, password, keyStorageFlags);
@@ -51,6 +65,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         public static ImportedCollection Import(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
+        {
+            X509Certificate2Collection collection = new X509Certificate2Collection();
+            collection.Import(fileName, password, keyStorageFlags);
+            return new ImportedCollection(collection);
+        }
+
+        public static ImportedCollection Import(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags)
         {
             X509Certificate2Collection collection = new X509Certificate2Collection();
             collection.Import(fileName, password, keyStorageFlags);

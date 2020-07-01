@@ -40,9 +40,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 EcmaModule targetModule = factory.SignatureContext.GetTargetModule(_fieldDesc);
                 SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, factory.SignatureContext);
 
-                if (_fixupKind == ReadyToRunFixupKind.Check_FieldOffset)
+                if (_fixupKind == ReadyToRunFixupKind.Verify_FieldOffset)
                 {
-                    dataBuilder.EmitInt(_fieldDesc.Offset.AsInt);
+                    TypeDesc baseType = _fieldDesc.OwningType.BaseType;
+                    if ((_fieldDesc.OwningType.BaseType != null) && !_fieldDesc.IsStatic && !_fieldDesc.OwningType.IsValueType)
+                        dataBuilder.EmitUInt((uint)_fieldDesc.OwningType.BaseType.InstanceByteCount.AsInt);
+                    else
+                        dataBuilder.EmitUInt(0);
+                }
+
+                if ((_fixupKind == ReadyToRunFixupKind.Check_FieldOffset) ||
+                    (_fixupKind == ReadyToRunFixupKind.Verify_FieldOffset))
+                {
+                    dataBuilder.EmitUInt((uint)_fieldDesc.Offset.AsInt);
                 }
 
                 dataBuilder.EmitFieldSignature(_fieldDesc, innerContext);

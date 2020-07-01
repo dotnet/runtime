@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Pkcs
         //
 
         public Pkcs9ContentType()
-            : base(Oid.FromOidValue(Oids.ContentType, OidGroup.ExtensionOrAttribute))
+            : base(Oids.ContentTypeOid.CopyOid())
         {
         }
 

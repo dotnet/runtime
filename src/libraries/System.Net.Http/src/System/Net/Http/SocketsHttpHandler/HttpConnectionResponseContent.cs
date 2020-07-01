@@ -72,6 +72,9 @@ namespace System.Net.Http
             return false;
         }
 
+        protected sealed override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
+            ConsumeStream();
+
         protected sealed override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(ConsumeStream());
 

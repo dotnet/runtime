@@ -124,10 +124,8 @@ namespace System.Drawing
                         if (imageInfo.FrameDirty)
                         {
                             // See comment in the class header about locking the image ref.
-#pragma warning disable CA2002
                             lock (imageInfo.Image)
                             {
-#pragma warning restore CA2002
                                 imageInfo.UpdateFrame();
                             }
                         }
@@ -175,10 +173,8 @@ namespace System.Drawing
                 foreach (ImageInfo imageInfo in s_imageInfoList)
                 {
                     // See comment in the class header about locking the image ref.
-#pragma warning disable CA2002
                     lock (imageInfo.Image)
                     {
-#pragma warning restore CA2002
                         imageInfo.UpdateFrame();
                     }
                 }
@@ -204,10 +200,8 @@ namespace System.Drawing
             ImageInfo? imageInfo = null;
 
             // See comment in the class header about locking the image ref.
-#pragma warning disable CA2002
             lock (image)
             {
-#pragma warning restore CA2002
                 // could we avoid creating an ImageInfo object if FrameCount == 1 ?
                 imageInfo = new ImageInfo(image);
             }
@@ -293,10 +287,8 @@ namespace System.Drawing
             }
 
             // See comment in the class header about locking the image ref.
-#pragma warning disable CA2002
             lock (image)
             {
-#pragma warning restore CA2002
                 Guid[] dimensions = image.FrameDimensionsList;
 
                 foreach (Guid guid in dimensions)

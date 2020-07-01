@@ -9,7 +9,7 @@
 #include "fx_ver.h"
 #include "trace.h"
 #include "utils.h"
-#include "hostfxr_resolver_t.h"
+#include "hostfxr_resolver.h"
 
 #if defined(FEATURE_APPHOST)
 #include "bundle_marker.h"

@@ -24,10 +24,6 @@ namespace Internal.Cryptography
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private static readonly Tuple<int, CipherMode, Func<IntPtr>>[] s_algorithmInitializers =
         {
             // Neither OpenSSL nor Cng Aes support CTS mode.

@@ -822,10 +822,6 @@ namespace System.Globalization
             return true; // saw no unsortable data in the buffer
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private unsafe int IcuGetHashCodeOfString(ReadOnlySpan<char> source, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);

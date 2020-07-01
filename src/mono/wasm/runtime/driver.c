@@ -44,7 +44,7 @@ static MonoClass* datetimeoffset_class;
 static MonoClass* uri_class;
 static MonoClass* safehandle_class;
 
-int mono_wasm_enable_gc;
+int mono_wasm_enable_gc = 1;
 
 /* Not part of public headers */
 #define MONO_ICALL_TABLE_CALLBACKS_VERSION 2
@@ -730,9 +730,9 @@ mono_wasm_parse_runtime_options (int argc, char* argv[])
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_enable_on_demand_gc (void)
+mono_wasm_enable_on_demand_gc (int enable)
 {
-	mono_wasm_enable_gc = 1;
+	mono_wasm_enable_gc = enable ? 1 : 0;
 }
 
 // Returns the local timezone default is UTC.

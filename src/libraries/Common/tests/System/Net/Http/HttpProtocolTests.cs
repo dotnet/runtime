@@ -467,7 +467,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpMessageInvoker client = new HttpMessageInvoker(CreateHttpClientHandler()))
                 using (HttpResponseMessage resp = await client.SendAsync(TestAsync, new HttpRequestMessage(HttpMethod.Get, uri) { Version = base.UseVersion }, CancellationToken.None))
-                using (Stream respStream = await resp.Content.ReadAsStreamAsync())
+                using (Stream respStream = await resp.Content.ReadAsStreamAsync(TestAsync))
                 {
                     var actualData = new MemoryStream();
 

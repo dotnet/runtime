@@ -148,7 +148,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate byte* __getHelperName(IntPtr _this, IntPtr* ppException, CorInfoHelpFunc helpFunc);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate CorInfoInitClassResult __initClass(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context, [MarshalAs(UnmanagedType.Bool)]bool speculative);
+        delegate CorInfoInitClassResult __initClass(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __classMustBeLoadedBeforeCodeIsRun(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -1288,12 +1288,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static CorInfoInitClassResult _initClass(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context, [MarshalAs(UnmanagedType.Bool)]bool speculative)
+        static CorInfoInitClassResult _initClass(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.initClass(field, method, context, speculative);
+                return _this.initClass(field, method, context);
             }
             catch (Exception ex)
             {

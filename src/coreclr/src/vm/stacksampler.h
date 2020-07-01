@@ -62,7 +62,7 @@ private:
     {
         unsigned uCount;
         bool fJitted;
-        CountInfo() : fJitted(false), uCount(0) {}
+        CountInfo() : uCount(0), fJitted(false) {}
     };
 
     // Fields

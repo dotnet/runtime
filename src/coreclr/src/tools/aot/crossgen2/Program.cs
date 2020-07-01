@@ -524,6 +524,7 @@ namespace ILCompiler
                         .UseJitPath(_commandLineOptions.JitPath)
                         .UseInstructionSetSupport(instructionSetSupport)
                         .UseCustomPESectionAlignment(_commandLineOptions.CustomPESectionAlignment)
+                        .UseVerifyTypeAndFieldLayout(_commandLineOptions.VerifyTypeAndFieldLayout)
                         .GenerateOutputFile(_commandLineOptions.OutputFilePath.FullName)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)

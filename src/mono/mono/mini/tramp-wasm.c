@@ -53,12 +53,19 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 	return NULL;
 }
 
+static void
+interp_to_native_trampoline (void *target_func, InterpMethodArguments *margs)
+{
+	// Unused on wasm
+	g_assert_not_reached ();
+}
+
 gpointer
 mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 {
 	if (info)
-		*info = mono_tramp_info_create ("interp_to_native_trampoline", (guint8*)mono_wasm_interp_to_native_trampoline, 1, NULL, NULL);
-	return (gpointer)mono_wasm_interp_to_native_trampoline;
+		*info = mono_tramp_info_create ("interp_to_native_trampoline", (guint8*)interp_to_native_trampoline, 1, NULL, NULL);
+	return (gpointer)interp_to_native_trampoline;
 }
 
 guint8*

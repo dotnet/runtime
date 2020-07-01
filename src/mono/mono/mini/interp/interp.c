@@ -1483,6 +1483,7 @@ ves_pinvoke_method (
 	InterpFrame *parent_frame,
 	stackval *retval,
 	gboolean save_last_error,
+	gpointer *cache,
 	stackval *sp)
 {
 	InterpFrame frame = {parent_frame, NULL, sp, retval};
@@ -1501,6 +1502,19 @@ ves_pinvoke_method (
 	 */
 	MONO_REQ_GC_NEUTRAL_MODE;
 
+#ifdef HOST_WASM
+	/*
+	 * Use a per-signature entry function.
+	 * Cache it in imethod->data_items.
+	 * This is GC safe.
+	 */
+	MonoPIFunc entry_func = *cache;
+	if (!entry_func) {
+		entry_func = (MonoPIFunc)mono_wasm_get_interp_to_native_trampoline (sig);
+		mono_memory_barrier ();
+		*cache = entry_func;
+	}
+#else
 	static MonoPIFunc entry_func = NULL;
 	if (!entry_func) {
 		MONO_ENTER_GC_UNSAFE;
@@ -1514,6 +1528,7 @@ ves_pinvoke_method (
 		mono_memory_barrier ();
 		MONO_EXIT_GC_UNSAFE;
 	}
+#endif
 
 #ifdef ENABLE_NETCORE
 	if (save_last_error) {
@@ -1575,6 +1590,9 @@ interp_init_delegate (MonoDelegate *del, MonoError *error)
 	if (del->interp_method) {
 		/* Delegate created by a call to ves_icall_mono_delegate_ctor_interp () */
 		del->method = ((InterpMethod *)del->interp_method)->method;
+	} if (del->method_ptr && !del->method) {
+		/* Delegate created from methodInfo.MethodHandle.GetFunctionPointer() */
+		del->interp_method = (InterpMethod *)del->method_ptr;
 	} else if (del->method) {
 		/* Delegate created dynamically */
 		del->interp_method = mono_interp_get_imethod (del->object.vtable->domain, del->method, error);
@@ -3745,9 +3763,10 @@ main_loop:
 			retval.data.p = vt_sp;
 
 			gboolean save_last_error = ip [4];
+			gpointer *cache = (gpointer*)&frame->imethod->data_items [ip [5]];
 			/* for calls, have ip pointing at the start of next instruction */
-			frame->state.ip = ip + 5;
-			ves_pinvoke_method (csignature, (MonoFuncV)code, context, frame, &retval, save_last_error, sp);
+			frame->state.ip = ip + 6;
+			ves_pinvoke_method (csignature, (MonoFuncV)code, context, frame, &retval, save_last_error, cache, sp);
 
 			CHECK_RESUME_STATE (context);
 
@@ -3756,7 +3775,7 @@ main_loop:
 				vt_sp += ip [3];
 				sp++;
 			}
-			ip += 5;
+			ip += 6;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLVIRT_FAST) {
@@ -5183,8 +5202,8 @@ call_newobj:
 			gpointer *byreference_this = (gpointer*)vt_sp;
 			*byreference_this = arg0;
 
-			/* Followed by a VTRESULT opcode which will push the result on the stack */
-			/* FIXME kill MINT_VTRESULT */
+			sp [-1].data.p = vt_sp;
+			vt_sp += MINT_VT_ALIGNMENT;
 			ip++;
 			MINT_IN_BREAK;
 		}
@@ -5198,6 +5217,14 @@ call_newobj:
 			sp -= 2;
 			sp [0].data.p = (guint8*)sp [0].data.p + sp [1].data.nati;
 			sp ++;
+			++ip;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_INTRINS_CLEAR_WITH_REFERENCES) {
+			sp -= 2;
+			gpointer p = sp [0].data.p;
+			size_t size = sp [1].data.nati * sizeof (gpointer);
+			mono_gc_bzero_aligned (p, size);
 			++ip;
 			MINT_IN_BREAK;
 		}
@@ -5486,6 +5513,21 @@ call_newobj:
 		}
 		MINT_IN_CASE(MINT_STFLD_I8_UNALIGNED) STFLD_UNALIGNED(l, gint64, TRUE); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_R8_UNALIGNED) STFLD_UNALIGNED(f, double, TRUE); MINT_IN_BREAK;
+
+		MINT_IN_CASE(MINT_STFLD_VT_NOREF) {
+			MonoObject* const o = sp [-2].data.o;
+			NULL_CHECK (o);
+			sp -= 2;
+
+			guint16 offset = ip [1];
+			guint16 vtsize = ip [2];
+
+			memcpy ((char *) o + offset, sp [1].data.p, vtsize);
+
+			vt_sp -= ALIGN_TO (vtsize, MINT_VT_ALIGNMENT);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
 
 		MINT_IN_CASE(MINT_STFLD_VT) {
 			MonoObject* const o = sp [-2].data.o;

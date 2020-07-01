@@ -40,7 +40,6 @@
     <ILLinkTrimXmlLibraryBuild Condition="'$(ILLinkTrimXmlLibraryBuild)' == '' and Exists('$(MSBuildProjectDirectory)/ILLinkTrim_LibraryBuild.xml')">$(MSBuildProjectDirectory)/ILLinkTrim_LibraryBuild.xml</ILLinkTrimXmlLibraryBuild>
     <ILLinkDescriptorsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Descriptors.xml</ILLinkDescriptorsXmlIntermediatePath>
 
-    <ILLinkSubstitutionsXml Condition="'$(ILLinkSubstitutionsXml)' == '' and Exists('$(MSBuildProjectDirectory)/ILLink.Substitutions.xml')">$(MSBuildProjectDirectory)/ILLink.Substitutions.xml</ILLinkSubstitutionsXml>
     <ILLinkSubstitutionsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Substitutions.xml</ILLinkSubstitutionsXmlIntermediatePath>
 
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
@@ -49,7 +48,6 @@
 
   <ItemGroup>
     <None Include="$(ILLinkTrimXmlLibraryBuild)" Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''" />
-    <None Include="$(ILLinkSubstitutionsXml)" Condition="'$(ILLinkSubstitutionsXml)' != ''" />
     <None Include="@(ILLinkSubstitutionsXmls)" />
   </ItemGroup>
 
@@ -105,8 +103,41 @@
     </ItemGroup>
   </Target>
 
+  <PropertyGroup>
+    <ILLinkResourcesSubstitutionIntermediatePath>$(IntermediateOutputPath)ILLink.Resources.Substitutions.xml</ILLinkResourcesSubstitutionIntermediatePath>
+    <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != ''">true</GenerateResourcesSubstitutions>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(GenerateResourcesSubstitutions)' == 'true'">
+    <ILLinkSubstitutionsXmls Include="$(ILLinkResourcesSubstitutionIntermediatePath)" />
+  </ItemGroup>
+  
+  <!-- If a library uses string resources, the following target generates a substitution xml that will be embedded on the
+  library so that if a consumer wants to run the linker they can specify a feature switch to strip out all resources
+  from the assembly. -->
+  <Target Name="GenerateResourcesSubstitutionFile"  
+          Condition="'$(GenerateResourcesSubstitutions)' == 'true'"
+          Inputs="$(MSBuildProjectFullPath)"
+          Outputs="$(ILLinkResourcesSubstitutionIntermediatePath)">
+
+    <PropertyGroup>
+      <ILLinkResourcesSubstitutionTemplate>$(MSBuildThisFileDirectory)ILLink.Substitutions.Resources.template</ILLinkResourcesSubstitutionTemplate>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(ILLinkResourcesSubstitutionIntermediatePath)"
+                      Lines="$([System.IO.File]::ReadAllText('$(ILLinkResourcesSubstitutionTemplate)')
+                                                 .Replace('{AssemblyName}', '$(AssemblyName)')
+                                                 .Replace('{StringResourcesName}', '$(StringResourcesName)'))"
+                      Overwrite="true" />
+
+    <ItemGroup>
+      <FileWrites Include="$(ILLinkResourcesSubstitutionIntermediatePath)" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="_CombineILLinkSubstitutionsXmls"
-          Condition="'$(ILLinkSubstitutionsXml)' == '' and '@(ILLinkSubstitutionsXmls)' != ''"
+          DependsOnTargets="GenerateResourcesSubstitutionFile"
+          Condition="'@(ILLinkSubstitutionsXmls)' != ''"
           Inputs="@(ILLinkSubstitutionsXmls)"
           Outputs="$(ILLinkSubstitutionsXmlIntermediatePath)">
     <PropertyGroup>

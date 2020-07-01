@@ -8,7 +8,7 @@ set(FLOAT_SOURCES
 )
 
 add_library_clr(comfloat_wks
-    STATIC
+    OBJECT
     ${FLOAT_SOURCES}
 )
 

@@ -55,7 +55,7 @@ namespace System.Linq.Expressions
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
         public sealed override ExpressionType NodeType => ExpressionType.MemberAccess;
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual MemberInfo GetMember()
         {
             throw ContractUtils.Unreachable;

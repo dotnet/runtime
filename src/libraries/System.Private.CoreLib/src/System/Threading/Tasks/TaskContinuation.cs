@@ -277,8 +277,8 @@ namespace System.Threading.Tasks
             m_task = task;
             m_options = options;
             m_taskScheduler = scheduler;
-            if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(m_task, "Task.ContinueWith: " + task.m_action!.Method.Name);
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.TraceOperationBegin(m_task.Id, "Task.ContinueWith: " + task.m_action!.Method.Name, 0);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(m_task);
@@ -312,10 +312,10 @@ namespace System.Threading.Tasks
                 // If the task was cancel before running (e.g a ContinueWhenAll with a cancelled caancelation token)
                 // we will still flow it to ScheduleAndStart() were it will check the status before running
                 // We check here to avoid faulty logs that contain a join event to an operation that was already set as completed.
-                if (!continuationTask.IsCanceled && AsyncCausalityTracer.LoggingOn)
+                if (!continuationTask.IsCanceled && TplEventSource.Log.IsEnabled())
                 {
                     // Log now that we are sure that this continuation is being ran
-                    AsyncCausalityTracer.TraceOperationRelation(continuationTask, CausalityRelation.AssignDelegate);
+                    TplEventSource.Log.TraceOperationRelation(continuationTask.Id, CausalityRelation.AssignDelegate);
                 }
                 continuationTask.m_taskScheduler = m_taskScheduler;
 

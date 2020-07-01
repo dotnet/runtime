@@ -655,11 +655,10 @@ CorInfoInitClassResult WrapICorJitInfo::initClass(
             CORINFO_FIELD_HANDLE    field,
 
             CORINFO_METHOD_HANDLE   method,
-            CORINFO_CONTEXT_HANDLE  context,
-            BOOL                    speculative)
+            CORINFO_CONTEXT_HANDLE  context)
 {
     API_ENTER(initClass);
-    CorInfoInitClassResult temp = wrapHnd->initClass(field, method, context, speculative);
+    CorInfoInitClassResult temp = wrapHnd->initClass(field, method, context);
     API_LEAVE(initClass);
     return temp;
 }

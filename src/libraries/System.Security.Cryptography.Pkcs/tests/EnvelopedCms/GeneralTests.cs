@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.Pkcs.Tests;
 using System.Security.Cryptography.Xml;
 using System.Security.Cryptography.X509Certificates;
@@ -137,7 +136,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal<string>(expectedIssuers, actualIssuers);
         }
 
-
         [Fact]
         public static void DecodeAllIndefinite()
         {
@@ -218,8 +216,12 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
             Assert.Equal(Oids.Pkcs7Signed, contentType.Value);
         }
 
-        [Fact]
-        public static void TestContent()
+        [Theory]
+        [InlineData(false)]
+#if !NET472
+        [InlineData(true)]
+#endif
+        public static void TestContent(bool fromSpan)
         {
             // Tests that the content is what it is expected to be, even if it's still encrypted. This prevents from ambiguous definitions of content.
 
@@ -235,7 +237,19 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
 
             EnvelopedCms cms = new EnvelopedCms();
 
-            cms.Decode(encodedMessage);
+            if (fromSpan)
+            {
+#if !NET472
+                cms.Decode(encodedMessage.AsSpan());
+#else
+                throw new Xunit.Sdk.XunitException(
+                    "This test should not evaluate for .NET Framework, the API is missing.");
+#endif
+            }
+            else
+            {
+                cms.Decode(encodedMessage);
+            }
 
             string expectedHex = "BCEA3A10D0737EB9";
 

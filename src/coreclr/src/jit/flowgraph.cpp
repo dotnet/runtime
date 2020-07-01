@@ -4886,8 +4886,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     const bool notLastInstr = (codeAddr < codeEndp - sz);
                     const bool notDebugCode = !opts.compDbgCode;
 
-                    if (notStruct && notLastInstr && notDebugCode &&
-                        impILConsumesAddr(codeAddr + sz, impTokenLookupContextHandle, info.compScopeHnd))
+                    if (notStruct && notLastInstr && notDebugCode && impILConsumesAddr(codeAddr + sz))
                     {
                         // We can skip the addrtaken, as next IL instruction consumes
                         // the address.
@@ -23169,19 +23168,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
         return;
     }
 
-    if (inlineCandidateInfo->initClassResult & CORINFO_INITCLASS_SPECULATIVE)
-    {
-        // we defer the call to initClass() until inlining is completed in case it fails. If inlining succeeds,
-        // we will call initClass().
-        if (!(info.compCompHnd->initClass(nullptr /* field */, fncHandle /* method */,
-                                          inlineCandidateInfo->exactContextHnd /* context */) &
-              CORINFO_INITCLASS_INITIALIZED))
-        {
-            inlineResult->NoteFatal(InlineObservation::CALLEE_CLASS_INIT_FAILURE);
-            return;
-        }
-    }
-
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // The inlining attempt cannot be failed starting from this point.
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -23512,6 +23498,8 @@ _Done:
     compNeedsGSSecurityCookie |= InlineeCompiler->compNeedsGSSecurityCookie;
     compGSReorderStackLayout |= InlineeCompiler->compGSReorderStackLayout;
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
+
+    lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 
 #ifdef FEATURE_SIMD
     if (InlineeCompiler->usesSIMDTypes())
@@ -23865,18 +23853,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
     if (inlineInfo->inlineCandidateInfo->initClassResult & CORINFO_INITCLASS_USE_HELPER)
     {
-        CORINFO_CONTEXT_HANDLE exactContext = inlineInfo->inlineCandidateInfo->exactContextHnd;
-        CORINFO_CLASS_HANDLE   exactClass;
-
-        if (((SIZE_T)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
-        {
-            exactClass = CORINFO_CLASS_HANDLE((SIZE_T)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
-        }
-        else
-        {
-            exactClass = info.compCompHnd->getMethodClass(
-                CORINFO_METHOD_HANDLE((SIZE_T)exactContext & ~CORINFO_CONTEXTFLAGS_MASK));
-        }
+        CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(inlineInfo->inlineCandidateInfo->exactContextHnd);
 
         tree    = fgGetSharedCCtor(exactClass);
         newStmt = gtNewStmt(tree, callILOffset);

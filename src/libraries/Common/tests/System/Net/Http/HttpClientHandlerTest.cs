@@ -1272,7 +1272,7 @@ namespace System.Net.Http.Functional.Tests
                         using (HttpResponseMessage response = await getResponse)
                         {
                             var buffer = new byte[8000];
-                            using (Stream clientStream = await response.Content.ReadAsStreamAsync())
+                            using (Stream clientStream = await response.Content.ReadAsStreamAsync(TestAsync))
                             {
                                 int bytesRead = await clientStream.ReadAsync(buffer, 0, buffer.Length);
                                 _output.WriteLine($"Bytes read from stream: {bytesRead}");
@@ -1307,9 +1307,9 @@ namespace System.Net.Http.Functional.Tests
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
                 using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None))
                 {
-                    using (Stream responseStream = await response.Content.ReadAsStreamAsync())
+                    using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync))
                     {
-                        Assert.Same(responseStream, await response.Content.ReadAsStreamAsync());
+                        Assert.Same(responseStream, await response.Content.ReadAsStreamAsync(TestAsync));
 
                         // Boolean properties returning correct values
                         Assert.True(responseStream.CanRead);
@@ -1461,7 +1461,7 @@ namespace System.Net.Http.Functional.Tests
                     var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
 
                     using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None))
-                    using (Stream responseStream = await response.Content.ReadAsStreamAsync())
+                    using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync))
                     {
                         // Boolean properties returning correct values
                         Assert.True(responseStream.CanRead);

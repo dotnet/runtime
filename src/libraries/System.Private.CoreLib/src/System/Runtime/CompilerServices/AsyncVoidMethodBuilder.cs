@@ -76,9 +76,9 @@ namespace System.Runtime.CompilerServices
         /// <summary>Completes the method builder successfully.</summary>
         public void SetResult()
         {
-            if (AsyncCausalityTracer.LoggingOn)
+            if (TplEventSource.Log.IsEnabled())
             {
-                AsyncCausalityTracer.TraceOperationCompletion(this.Task, AsyncCausalityStatus.Completed);
+                TplEventSource.Log.TraceOperationEnd(this.Task.Id, AsyncCausalityStatus.Completed);
             }
 
             // Mark the builder as completed.  As this is a void-returning method, this mostly
@@ -102,9 +102,9 @@ namespace System.Runtime.CompilerServices
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
             }
 
-            if (AsyncCausalityTracer.LoggingOn)
+            if (TplEventSource.Log.IsEnabled())
             {
-                AsyncCausalityTracer.TraceOperationCompletion(this.Task, AsyncCausalityStatus.Error);
+                TplEventSource.Log.TraceOperationEnd(this.Task.Id, AsyncCausalityStatus.Error);
             }
 
             if (_synchronizationContext != null)

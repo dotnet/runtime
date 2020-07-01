@@ -46,9 +46,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>71b580038fb704df63e03c6b7ae7d2c6a4fdd71d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="5.0.0-beta.20316.1">
+    <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="5.0.0-beta.20325.16">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>71b580038fb704df63e03c6b7ae7d2c6a4fdd71d</Sha>
+      <Sha>b91c34a908efe4d95ac487a33b88521c76c6c3cf</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="5.0.0-beta.20316.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -174,13 +174,13 @@
       <Uri>https://github.com/mono/linker</Uri>
       <Sha>b0b5143ee2a59517df69d38cb6c363cdd17177a8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.20322.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.20329.4">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>19aa97963aa11b4818f3e3487b913244efa4ff0f</Sha>
+      <Sha>36f9e13084868949278edc7153866cc1173931d2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.20322.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.20329.4">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>19aa97963aa11b4818f3e3487b913244efa4ff0f</Sha>
+      <Sha>36f9e13084868949278edc7153866cc1173931d2</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

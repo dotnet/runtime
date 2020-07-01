@@ -80,6 +80,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 AssertExtensions.Throws<ArgumentException>(
                     "serialNumber",
                     () => request.Create(testRoot, notBefore, notAfter, Array.Empty<byte>()));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "serialNumber",
+                    () => request.Create(testRoot, notBefore, notAfter, ReadOnlySpan<byte>.Empty));
             }
         }
 
