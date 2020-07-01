@@ -37,7 +37,7 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_set_breakpoint (const char *assembly_name, in
 EMSCRIPTEN_KEEPALIVE int mono_wasm_remove_breakpoint (int bp_id);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_current_bp_id (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_enum_frames (void);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_get_var_info (int scope, int* pos, int len);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_get_local_vars (int scope, int* pos, int len);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_clear_all_breakpoints (void);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_setup_single_step (int kind);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_pause_on_exceptions (int state);
@@ -1348,7 +1348,7 @@ mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass)
 
 //FIXME this doesn't support getting the return value pseudo-var
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_get_var_info (int scope, int* pos, int len)
+mono_wasm_get_local_vars (int scope, int* pos, int len)
 {
 	FrameDescData data;
 	data.target_frame = scope;

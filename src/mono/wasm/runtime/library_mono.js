@@ -247,10 +247,6 @@ var MonoSupportLib = {
 		//
 		// @var_list: [ { index: <var_id>, name: <var_name> }, .. ]
 		mono_wasm_get_variables: function(scope, var_list) {
-			if (!this.mono_wasm_get_var_info)
-				this.mono_wasm_get_var_info = Module.cwrap ("mono_wasm_get_var_info", null, [ 'number', 'number', 'number']);
-
-			this.var_info = [];
 			const numBytes = var_list.length * Int32Array.BYTES_PER_ELEMENT;
 			const ptr = Module._malloc(numBytes);
 			let heapBytes = new Int32Array(Module.HEAP32.buffer, ptr, numBytes);
@@ -259,9 +255,8 @@ var MonoSupportLib = {
 			}
 
 			this._async_method_objectId = 0;
-			this.mono_wasm_get_var_info (scope, heapBytes.byteOffset, var_list.length);
+			let res = this.mono_wasm_get_local_vars_info (scope, heapBytes.byteOffset, var_list.length);
 			Module._free(heapBytes.byteOffset);
-			let res = MONO._fixup_name_value_objects (this.var_info);
 
 			if (this._async_method_objectId != 0)
 				this._assign_vt_ids (res, v => ({ containerId: this._async_method_objectId, fieldOffset: v.fieldOffset }));
@@ -284,8 +279,6 @@ var MonoSupportLib = {
 			}
 
 			this._post_process_details(res);
-			this.var_info = []
-
 			return res;
 		},
 
@@ -295,17 +288,10 @@ var MonoSupportLib = {
 		 * @returns {object}
 		 */
 		_get_object_properties: function(idNum, expandValueTypes) {
-			if (!this.mono_wasm_get_object_properties_info)
-				this.mono_wasm_get_object_properties_info = Module.cwrap ("mono_wasm_get_object_properties", null, [ 'number', 'bool' ]);
-
-			this.var_info = [];
-			this.mono_wasm_get_object_properties_info (idNum, expandValueTypes);
-
-			let res = MONO._filter_automatic_properties (MONO._fixup_name_value_objects (this.var_info));
+			let res = this.mono_wasm_get_object_properties_info (idNum, expandValueTypes);
+			res = MONO._filter_automatic_properties (res);
 			res = this._assign_vt_ids (res, v => ({ containerId: idNum, fieldOffset: v.fieldOffset }));
 			res = this._post_process_details (res);
-
-			this.var_info = [];
 
 			return res;
 		},
@@ -318,16 +304,10 @@ var MonoSupportLib = {
 		 * @returns {object[]}
 		 */
 		_get_array_values: function (id, startIdx = 0, count = -1, expandValueTypes = false) {
-			if (!this.mono_wasm_get_array_values_info)
-				this.mono_wasm_get_array_values_info = Module.cwrap ("mono_wasm_get_array_values", null, [ 'number', 'number', 'number', 'bool' ]);
-
 			if (isNaN (id.o.arrayId))
 				throw new Error (`Invalid array id: ${id.idStr}`);
 
-			this.var_info = [];
-			this.mono_wasm_get_array_values_info (id.o.arrayId, startIdx, count, expandValueTypes);
-
-			let res = MONO._fixup_name_value_objects (this.var_info);
+			let res = this.mono_wasm_get_array_values_info (id.o.arrayId, startIdx, count, expandValueTypes);
 			res = this._assign_vt_ids (res, (_, i) => ({ arrayId: id.o.arrayId, arrayIdx: Number (startIdx) + i}));
 
 			for (let i = 0; i < res.length; i ++) {
@@ -336,9 +316,6 @@ var MonoSupportLib = {
 					this._new_or_add_id_props ({ objectId: value.objectId, props: { varName: `[${i}]` } });
 			}
 			res = this._post_process_details (res);
-
-			this.var_info = [];
-
 			return res;
 		},
 
@@ -516,9 +493,6 @@ var MonoSupportLib = {
 		},
 
 		_get_deref_ptr_value: function (objectId) {
-			if (!this.mono_wasm_get_deref_ptr_value_info)
-				this.mono_wasm_get_deref_ptr_value_info = Module.cwrap("mono_wasm_get_deref_ptr_value", null, ['number', 'number']);
-
 			const ptr_args = this._get_id_props (objectId);
 			if (ptr_args === undefined)
 				throw new Error (`Unknown pointer id: ${objectId}`);
@@ -526,11 +500,8 @@ var MonoSupportLib = {
 			if (ptr_args.ptr_addr == 0 || ptr_args.klass_addr == 0)
 				throw new Error (`Both ptr_addr and klass_addr need to be non-zero, to dereference a pointer. objectId: ${objectId}`);
 
-			this.var_info = [];
 			const value_addr = new DataView (Module.HEAPU8.buffer).getUint32 (ptr_args.ptr_addr, /* littleEndian */ true);
-			this.mono_wasm_get_deref_ptr_value_info (value_addr, ptr_args.klass_addr);
-
-			let res = MONO._fixup_name_value_objects(this.var_info);
+			let res = this.mono_wasm_get_deref_ptr_value_info (value_addr, ptr_args.klass_addr);
 			if (res.length > 0) {
 				if (ptr_args.varName === undefined)
 					throw new Error (`Bug: no varName found for the pointer. objectId: ${objectId}`);
@@ -539,7 +510,6 @@ var MonoSupportLib = {
 			}
 
 			res = this._post_process_details (res);
-			this.var_info = [];
 			return res;
 		},
 
@@ -596,20 +566,11 @@ var MonoSupportLib = {
 
 			let getter_res;
 			if (id.scheme == 'object') {
-				if (!this.mono_wasm_invoke_getter_on_object)
-					this.mono_wasm_invoke_getter_on_object = Module.cwrap ("mono_wasm_invoke_getter_on_object", 'void', [ 'number', 'string' ]);
-
 				if (isNaN (id.o) || id.o < 0)
 					throw new Error (`Invalid object id: ${objectIdStr}`);
 
-				MONO.var_info = [];
-				this.mono_wasm_invoke_getter_on_object (id.o, name);
-				getter_res = MONO.var_info;
-				MONO.var_info = [];
+				getter_res = this.mono_wasm_invoke_getter_on_object_info (id.o, name);
 			} else if (id.scheme == 'valuetype') {
-				if (!this.mono_wasm_invoke_getter_on_value)
-					this.mono_wasm_invoke_getter_on_value = Module.cwrap ("mono_wasm_invoke_getter_on_value", 'void', [ 'number', 'number', 'string' ]);
-
 				const id_props = this._get_id_props (objectIdStr);
 				if (id_props === undefined)
 					throw new Error (`Unknown valuetype id: ${objectIdStr}`);
@@ -621,18 +582,13 @@ var MonoSupportLib = {
 				const dataHeap = new Uint8Array (Module.HEAPU8.buffer, dataPtr, id_props.value64.length);
 				dataHeap.set (new Uint8Array (this._base64_to_uint8 (id_props.value64)));
 
-				MONO.var_info = [];
-				this.mono_wasm_invoke_getter_on_value (dataHeap.byteOffset, id_props.klass, name);
-				getter_res = MONO.var_info;
-				MONO.var_info = [];
-
+				getter_res = this.mono_wasm_invoke_getter_on_value_info (dataHeap.byteOffset, id_props.klass, name);
 				Module._free (dataHeap.byteOffset);
 			} else {
 				throw new Error (`Only object, and valuetypes supported for getters, id: ${objectIdStr}`);
 			}
 
 			getter_res = MONO._post_process_details (getter_res);
-			MONO.var_info = [];
 			return getter_res.length > 0 ? getter_res [0] : {};
 		},
 
@@ -739,6 +695,36 @@ var MonoSupportLib = {
 			return this.mono_wasm_pause_on_exceptions (state_enum);
 		},
 
+		_register_c_fn: function (name, ...args) {
+			Object.defineProperty (this._c_fn_table, name + '_wrapper', { value: Module.cwrap (name, ...args) });
+		},
+
+		/**
+		 * Calls `Module.cwrap` for the function name,
+		 * and creates a wrapper around it that returns
+		 *     `{ bool result, object var_info }
+		 *
+		 * @param  {string} name C function name
+		 * @param  {string} ret_type
+		 * @param  {string[]} params
+		 *
+		 * @returns {void}
+		 */
+		_register_c_var_fn: function (name, ret_type, params) {
+			this._register_c_fn (name, ret_type, params);
+			Object.defineProperty (this, name + '_info', {
+				value: function (...args) {
+					MONO.var_info = [];
+					MONO._c_fn_table [name + '_wrapper'] (...args);
+					let res = MONO.var_info;
+					MONO.var_info = [];
+					res = this._fixup_name_value_objects (res);
+
+					return res;
+				}
+			});
+		},
+
 		mono_wasm_runtime_ready: function () {
 			this.mono_wasm_runtime_is_ready = true;
 			// DO NOT REMOVE - magic debugger init function
@@ -749,6 +735,14 @@ var MonoSupportLib = {
 			// FIXME: where should this go?
 			this._next_call_function_res_id = 0;
 			this._call_function_res_cache = {};
+
+			this._c_fn_table = {};
+			this._register_c_var_fn ('mono_wasm_get_object_properties',   null, [ 'number', 'bool' ]);
+			this._register_c_var_fn ('mono_wasm_get_array_values',        null, [ 'number', 'number', 'number', 'bool' ]);
+			this._register_c_var_fn ('mono_wasm_invoke_getter_on_object', null, [ 'number', 'string' ]);
+			this._register_c_var_fn ('mono_wasm_invoke_getter_on_value',  null, [ 'number', 'number', 'string' ]);
+			this._register_c_var_fn ('mono_wasm_get_local_vars',          null, [ 'number', 'number', 'number']);
+			this._register_c_var_fn ('mono_wasm_get_deref_ptr_value',     null, [ 'number', 'number']);
 		},
 
 		mono_wasm_set_breakpoint: function (assembly, method_token, il_offset) {
