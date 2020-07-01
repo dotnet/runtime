@@ -149,6 +149,12 @@ jobs:
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build managed product components and packages
 
+    # Run CoreCLR Tools unit tests
+    # Only run them on Windows X64, Checked, non-official builds
+    - ${{ if and(eq(parameters.osGroup, 'Windows_NT', eq(parameters.archType, 'x64'), ne(parameters.isOfficialBuild, true)) }}:
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.tools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci -test
+        displayName: Run CoreCLR Tools unit tests
+
     # Build native test components
     - ${{ if ne(parameters.isOfficialBuild, true) }}:
       - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
