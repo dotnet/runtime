@@ -1280,6 +1280,13 @@ namespace Internal.JitInterface
             {
                 bool devirt;
 
+                // Check For interfaces before the bubble check
+                // since interface methods shouldnt change from non-virtual to virtual between versions 
+                if (targetMethod.OwningType.IsInterface)
+                {
+                    // Handle interface methods specially because the Sealed bit has no meaning on interfaces.
+                    devirt = !targetMethod.IsVirtual;
+                }
                 // if we are generating version resilient code
                 // AND
                 //    caller/callee are in different version bubbles
@@ -1289,7 +1296,7 @@ namespace Internal.JitInterface
                 // This check is different between CG1 and CG2. CG1 considers two types in the same version bubble
                 // if their assemblies are in the same bubble, or if the NonVersionableTypeAttribute is present on the type.
                 // CG2 checks a method cache that it builds with a bunch of new code.
-                if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod) ||
+                else if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod) ||
                     // check the Typical TargetMethod, not the Instantiation
                     !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(targetMethod.GetTypicalMethodDefinition()))
                 {
@@ -1305,11 +1312,6 @@ namespace Internal.JitInterface
                         (targetMethod.IsIntrinsic && getIntrinsicID(targetMethod, null) != CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal);
 
                     callVirtCrossingVersionBubble = true;
-                }
-                else if (targetMethod.OwningType.IsInterface)
-                {
-                    // Handle interface methods specially because the Sealed bit has no meaning on interfaces.
-                    devirt = !targetMethod.IsVirtual;
                 }
                 else
                 {

@@ -1023,8 +1023,12 @@ internal class Program
 
     class ImplementGenericWithSealedDefaultMethod: IGenericWithSealedDefaultMethod<string>
     {
-
     }
+
+    class ImplementGenericWithSealedDefaultMethodAcrossModule : IGenericWithSealedDefaultMethodAcrossModule<string>
+    {
+    }
+
 
     class MyGen<T>
     {
@@ -1281,6 +1285,15 @@ internal class Program
             return false;
         if (!igsdf.GenericMethod<bool>().Equals("System.Boolean"))
             return false;
+
+
+        // Test a similar case across modules
+        IGenericWithSealedDefaultMethodAcrossModule<string> igsdf2 = new ImplementGenericWithSealedDefaultMethodAcrossModule();
+        if (!igsdf2.Method().Equals("System.String"))
+            return false;
+        if (!igsdf2.GenericMethod<bool>().Equals("System.Boolean"))
+            return false;
+
         return true;
     }
 

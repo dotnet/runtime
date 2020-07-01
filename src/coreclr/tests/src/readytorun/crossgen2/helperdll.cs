@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 
 public class HelperClass
 {
@@ -19,4 +20,27 @@ public class HelperClass
     {
         Console.WriteLine("In function pointer method");
     }
+}
+
+//
+// This is a test case for cross module sealed default method invocation
+//
+public interface IGenericWithSealedDefaultMethodAcrossModule<T>
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    sealed
+    string Method()
+    {
+        Type t = typeof(T);
+        return t.FullName;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    sealed
+    string GenericMethod<V>()
+    {
+        Type t = typeof(V);
+        return t.FullName;
+    }
+
 }
