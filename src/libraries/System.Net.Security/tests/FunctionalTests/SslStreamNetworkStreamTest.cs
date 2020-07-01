@@ -193,6 +193,74 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName)
+        {
+            string tagetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (var client = new SslStream(clientStream))
+            using (var server = new SslStream(serverStream))
+            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            {
+                // It should be empty before handshake.
+                Assert.Equal(string.Empty, client.TargetHostName);
+                Assert.Equal(string.Empty, server.TargetHostName);
+
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions() { TargetHost = tagetName };
+                clientOptions.RemoteCertificateValidationCallback =
+                    (sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        SslStream stream = (SslStream)sender;
+                        if (useEmptyName)
+                        {
+                            Assert.Equal('?', stream.TargetHostName[0]);
+                        }
+                        else
+                        {
+                            Assert.Equal(tagetName, stream.TargetHostName);
+                        }
+
+                        return true;
+                    };
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions();
+                serverOptions.ServerCertificateSelectionCallback =
+                    (sender, name) =>
+                    {
+                        SslStream stream = (SslStream)sender;
+                        if (useEmptyName)
+                        {
+                            Assert.Equal('?', stream.TargetHostName[0]);
+                        }
+                        else
+                        {
+                            Assert.Equal(tagetName, stream.TargetHostName);
+                        }
+
+                        return certificate;
+                    };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions),
+                                server.AuthenticateAsServerAsync(serverOptions));
+                if (useEmptyName)
+                {
+                    Assert.Equal('?', client.TargetHostName[0]);
+                    Assert.Equal('?', server.TargetHostName[0]);
+                }
+                else
+                {
+                    Assert.Equal(tagetName, client.TargetHostName);
+                    Assert.Equal(tagetName, server.TargetHostName);
+                }
+            }
+        }
+
         private static bool ValidateServerCertificate(
             object sender,
             X509Certificate retrievedServerPublicCertificate,
