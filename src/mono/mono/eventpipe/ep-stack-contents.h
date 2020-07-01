@@ -1,5 +1,5 @@
-#ifndef __EVENTPIPE_STACKCONTENTS_H__
-#define __EVENTPIPE_STACKCONTENTS_H__
+#ifndef __EVENTPIPE_STACK_CONTENTS_H__
+#define __EVENTPIPE_STACK_CONTENTS_H__
 
 #include <config.h>
 
@@ -7,11 +7,17 @@
 #include "ep-rt-config.h"
 #include "ep-types.h"
 
+#undef EP_IMPL_GETTER_SETTER
+#ifdef EP_IMPL_STACK_CONTENTS_GETTER_SETTER
+#define EP_IMPL_GETTER_SETTER
+#endif
+#include "ep-getter-setter.h"
+
 /*
  * EventPipeStackContents.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_STACK_CONTENTS_GETTER_SETTER)
 struct _EventPipeStackContents {
 #else
 struct _EventPipeStackContents_Internal {
@@ -29,7 +35,7 @@ struct _EventPipeStackContents_Internal {
 	uint32_t next_available_frame;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_STACK_CONTENTS_GETTER_SETTER)
 struct _EventPipeStackContents {
 	uint8_t _internal [sizeof (struct _EventPipeStackContents_Internal)];
 };
@@ -169,4 +175,4 @@ ep_stack_contents_get_size (const EventPipeStackContents *stack_contents)
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_STACKCONTENTS_H__ **/
+#endif /** __EVENTPIPE_STACK_CONTENTS_H__ **/

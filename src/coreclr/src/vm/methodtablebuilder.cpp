@@ -9724,23 +9724,6 @@ void MethodTableBuilder::CheckForSystemTypes()
             pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
         }
 #endif
-#if defined(ALIGN_ACCESS) || defined(FEATURE_64BIT_ALIGNMENT)
-        else if (strcmp(name, g_DecimalName) == 0)
-        {
-            // This is required because native layout of System.Decimal causes it to be aligned
-            // differently to the layout of the native DECIMAL structure, which will cause
-            // data misalignent exceptions if Decimal is embedded in another type.
-
-            EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
-            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = sizeof(ULONGLONG);
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-            // Also need to mark the type so it will be allocated on a 64-bit boundary for
-            // platforms that won't do this naturally.
-            SetAlign8Candidate();
-#endif
-        }
-#endif // ALIGN_ACCESS || FEATURE_64BIT_ALIGNMENT
     }
     else
     {

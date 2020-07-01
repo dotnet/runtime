@@ -1538,7 +1538,7 @@ namespace System
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
     }
-    public readonly partial struct Decimal : System.IComparable, System.IComparable<decimal>, System.IConvertible, System.IEquatable<decimal>, System.IFormattable, System.Runtime.Serialization.IDeserializationCallback
+    public readonly partial struct Decimal : System.IComparable, System.IComparable<decimal>, System.IConvertible, System.IEquatable<decimal>, System.IFormattable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         private readonly int _dummyPrimitive;
         [System.Runtime.CompilerServices.DecimalConstantAttribute((byte)0, (byte)0, (uint)4294967295, (uint)4294967295, (uint)4294967295)]
@@ -1555,8 +1555,8 @@ namespace System
         public Decimal(int value) { throw null; }
         public Decimal(int lo, int mid, int hi, bool isNegative, byte scale) { throw null; }
         public Decimal(int[] bits) { throw null; }
-        public Decimal(System.ReadOnlySpan<int> bits) { throw null; }
         public Decimal(long value) { throw null; }
+        public Decimal(System.ReadOnlySpan<int> bits) { throw null; }
         public Decimal(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public Decimal(uint value) { throw null; }
@@ -1651,6 +1651,7 @@ namespace System
         uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static byte ToByte(System.Decimal value) { throw null; }
         public static double ToDouble(System.Decimal d) { throw null; }
         public static short ToInt16(System.Decimal value) { throw null; }
@@ -10442,6 +10443,7 @@ namespace System.Text
         public virtual System.ReadOnlySpan<byte> Preamble { get { throw null; } }
         public static System.Text.Encoding Unicode { get { throw null; } }
         public static System.Text.Encoding UTF32 { get { throw null; } }
+        [System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.", DiagnosticId = "MSLIB0001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Text.Encoding UTF7 { get { throw null; } }
         public static System.Text.Encoding UTF8 { get { throw null; } }
         public virtual string WebName { get { throw null; } }

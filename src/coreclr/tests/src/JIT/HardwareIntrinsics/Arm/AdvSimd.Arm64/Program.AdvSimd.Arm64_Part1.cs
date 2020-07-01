@@ -12,6 +12,15 @@ namespace JIT.HardwareIntrinsics.Arm
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
+                ["MaxNumberPairwiseScalar.Vector128.Double"] = MaxNumberPairwiseScalar_Vector128_Double,
+                ["MaxPairwise.Vector128.Byte"] = MaxPairwise_Vector128_Byte,
+                ["MaxPairwise.Vector128.Double"] = MaxPairwise_Vector128_Double,
+                ["MaxPairwise.Vector128.Int16"] = MaxPairwise_Vector128_Int16,
+                ["MaxPairwise.Vector128.Int32"] = MaxPairwise_Vector128_Int32,
+                ["MaxPairwise.Vector128.SByte"] = MaxPairwise_Vector128_SByte,
+                ["MaxPairwise.Vector128.Single"] = MaxPairwise_Vector128_Single,
+                ["MaxPairwise.Vector128.UInt16"] = MaxPairwise_Vector128_UInt16,
+                ["MaxPairwise.Vector128.UInt32"] = MaxPairwise_Vector128_UInt32,
                 ["MaxPairwiseScalar.Vector64.Single"] = MaxPairwiseScalar_Vector64_Single,
                 ["MaxPairwiseScalar.Vector128.Double"] = MaxPairwiseScalar_Vector128_Double,
                 ["MaxScalar.Vector64.Double"] = MaxScalar_Vector64_Double,

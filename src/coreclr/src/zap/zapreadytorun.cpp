@@ -844,6 +844,9 @@ static_assert_no_msg((int)READYTORUN_FIXUP_PInvokeTarget             == (int)ENC
 
 static_assert_no_msg((int)READYTORUN_FIXUP_Check_InstructionSetSupport== (int)ENCODE_CHECK_INSTRUCTION_SET_SUPPORT);
 
+static_assert_no_msg((int)READYTORUN_FIXUP_Verify_FieldOffset         == (int)ENCODE_VERIFY_FIELD_OFFSET);
+static_assert_no_msg((int)READYTORUN_FIXUP_Verify_TypeLayout          == (int)ENCODE_VERIFY_TYPE_LAYOUT);
+
 //
 // READYTORUN_EXCEPTION
 //
