@@ -866,7 +866,12 @@ namespace System.Net.Sockets
                             return null;
 
                         case QueueState.Waiting:
-                            Debug.Assert(_tail != null, "State == Waiting but queue is empty!");
+                            if (_tail == null)
+                            {
+                                _state = QueueState.Ready;
+                                return null;
+                            }
+
                             op = _tail.Next;
                             Debug.Assert(_isNextOperationSynchronous == (op.Event != null));
                             if (skipAsyncEvents && !_isNextOperationSynchronous)
