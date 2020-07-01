@@ -95,7 +95,7 @@ namespace Internal.Cryptography
             // Decrypt the data, then strip the padding to get the final decrypted data. Note that even if the cipherText length is 0, we must
             // invoke TransformFinal() so that the cipher object knows to reset for the next cipher operation.
             int decryptWritten = BasicSymmetricCipher.TransformFinal(ciphertext.AsSpan(0, ciphertext.Length), ciphertext);
-            byte[] decryptedBytes = ciphertext.AsSpan(0, decryptWritten).ToArray();
+            Span<byte> decryptedBytes = ciphertext.AsSpan(0, decryptWritten);
             byte[] outputData;
             if (ciphertext.Length > 0)
             {
@@ -103,12 +103,8 @@ namespace Internal.Cryptography
                 {
                     fixed (byte* decryptedBytesPtr = decryptedBytes)
                     {
-                        outputData = DepadBlock(decryptedBytes, 0, decryptedBytes.Length);
-
-                        if (outputData != decryptedBytes)
-                        {
-                            CryptographicOperations.ZeroMemory(decryptedBytes);
-                        }
+                        outputData = DepadBlock(decryptedBytes).ToArray();
+                        CryptographicOperations.ZeroMemory(decryptedBytes);
                     }
                 }
             }
@@ -169,11 +165,9 @@ namespace Internal.Cryptography
         /// <summary>
         ///     Remove the padding from the last blocks being decrypted
         /// </summary>
-        private byte[] DepadBlock(byte[] block, int offset, int count)
+        private ReadOnlySpan<byte> DepadBlock(ReadOnlySpan<byte> block)
         {
-            Debug.Assert(block != null && count >= block.Length - offset);
-            Debug.Assert(0 <= offset);
-            Debug.Assert(0 <= count);
+            Debug.Assert(0 <= block.Length);
 
             int padBytes = 0;
 
@@ -181,7 +175,7 @@ namespace Internal.Cryptography
             switch (PaddingMode)
             {
                 case PaddingMode.ANSIX923:
-                    padBytes = block[offset + count - 1];
+                    padBytes = block[^1];
 
                     // Verify the amount of padding is reasonable
                     if (padBytes <= 0 || padBytes > InputBlockSize)
@@ -190,7 +184,7 @@ namespace Internal.Cryptography
                     }
 
                     // Verify that all the padding bytes are 0s
-                    for (int i = offset + count - padBytes; i < offset + count - 1; i++)
+                    for (int i = block.Length - padBytes; i < block.Length - 1; i++)
                     {
                         if (block[i] != 0)
                         {
@@ -201,7 +195,7 @@ namespace Internal.Cryptography
                     break;
 
                 case PaddingMode.ISO10126:
-                    padBytes = block[offset + count - 1];
+                    padBytes = block[^1];
 
                     // Verify the amount of padding is reasonable
                     if (padBytes <= 0 || padBytes > InputBlockSize)
@@ -213,14 +207,14 @@ namespace Internal.Cryptography
                     break;
 
                 case PaddingMode.PKCS7:
-                    padBytes = block[offset + count - 1];
+                    padBytes = block[^1];
 
                     // Verify the amount of padding is reasonable
                     if (padBytes <= 0 || padBytes > InputBlockSize)
                         throw new CryptographicException(SR.Cryptography_InvalidPadding);
 
                     // Verify all the padding bytes match the amount of padding
-                    for (int i = offset + count - padBytes; i < offset + count; i++)
+                    for (int i = block.Length - padBytes; i < block.Length - 1; i++)
                     {
                         if (block[i] != padBytes)
                             throw new CryptographicException(SR.Cryptography_InvalidPadding);
@@ -239,10 +233,7 @@ namespace Internal.Cryptography
                     throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
             }
 
-            // Copy everything but the padding to the output
-            byte[] depadded = new byte[count - padBytes];
-            Buffer.BlockCopy(block, offset, depadded, 0, depadded.Length);
-            return depadded;
+            return block[..^padBytes];
         }
 
         //
