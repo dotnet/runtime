@@ -5,12 +5,10 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <!-- <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.Cryptography_PlatformNotSupported_Browser</GeneratePlatformNotSupportedAssemblyMessage>
-  </PropertyGroup> -->
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
-    <Compile Include="System\Security\Cryptography\System.Security.Cryptography.Csp.notsupported.cs"/>
-  </ItemGroup>
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <GeneratePlatformNotSupportedAssemblyHeaderFile>GeneratePlatformNotSupportedAssemblyHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.Cryptography_PlatformNotSupported_Browser</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Security\Cryptography\AesCryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.Shared.cs" />

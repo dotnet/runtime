@@ -5,9 +5,10 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <!-- <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.Cryptography_PlatformNotSupported_Browser</GeneratePlatformNotSupportedAssemblyMessage>
-  </PropertyGroup> -->
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <GeneratePlatformNotSupportedAdditionalParameters>--exclude-api-list C:\git\runtime\src\libraries\System.Security.Cryptography.X509Certificates\src\ExculdeApiList.txt</GeneratePlatformNotSupportedAdditionalParameters>
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.Cryptography_PlatformNotSupported_Browser</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="System\Security\Cryptography\X509Certificates\System.Security.Cryptography.X509Certificates.notsupported.cs" />
   </ItemGroup>
