@@ -779,12 +779,16 @@ namespace System.Reflection.Emit
             return false;
         }
 
+        // We require emitted types to have all members on their bases to be accessible.
+        // This is basically an identity function for `this`.
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public Type? CreateType()
         {
             return CreateTypeInfo();
         }
 
+        // We require emitted types to have all members on their bases to be accessible.
+        // This is basically an identity function for `this`.
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public
         TypeInfo? CreateTypeInfo()
