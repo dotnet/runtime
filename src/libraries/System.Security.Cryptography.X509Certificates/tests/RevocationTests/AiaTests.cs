@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using System.Security.Cryptography.X509Certificates.Tests.Common;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
@@ -12,8 +13,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Fact]
         public static void DisableAiaOptionWorks()
         {
-            DynamicRevocationTests.BuildPrivatePki(
-                DynamicRevocationTests.PkiOptions.AllRevocation,
+            CertificateAuthority.BuildPrivatePki(
+                PkiOptions.AllRevocation,
                 out RevocationResponder responder,
                 out CertificateAuthority root,
                 out CertificateAuthority intermediate,

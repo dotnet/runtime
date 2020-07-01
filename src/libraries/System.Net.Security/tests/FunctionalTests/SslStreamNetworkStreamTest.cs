@@ -17,6 +17,14 @@ namespace System.Net.Security.Tests
 
     public class SslStreamNetworkStreamTest
     {
+        private readonly X509Certificate2 _serverCert;
+        private readonly X509CertificateCollection _serverChain;
+
+        public SslStreamNetworkStreamTest()
+        {
+            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost");
+        }
+
         [Fact]
         public async Task SslStream_SendReceiveOverNetworkStream_Ok()
         {
@@ -258,6 +266,69 @@ namespace System.Net.Security.Tests
                     Assert.Equal(tagetName, client.TargetHostName);
                     Assert.Equal(tagetName, server.TargetHostName);
                 }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public async Task SslStream_UntrustedCaWithCustomCallback_OK()
+        {
+            var options = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            options.RemoteCertificateValidationCallback =
+                (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    chain.ChainPolicy.ExtraStore.AddRange(_serverChain);
+                    chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count -1]);
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+
+                    bool result = chain.Build((X509Certificate2)certificate);
+                    Assert.True(result);
+
+                    return result;
+                };
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream client = new SslStream(clientStream))
+            using (SslStream server = new SslStream(serverStream))
+            {
+                Task t1 = client.AuthenticateAsClientAsync(options, default);
+                Task t2 = server.AuthenticateAsServerAsync(_serverCert);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public async Task SslStream_UntrustedCaWithCustomCallback_Throws()
+        {
+            var options = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            options.RemoteCertificateValidationCallback =
+                (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    chain.ChainPolicy.ExtraStore.AddRange(_serverChain);
+                    chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count -1]);
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    // This should work and we should be able to trust the chain.
+                    Assert.True(chain.Build((X509Certificate2)certificate));
+                    // Reject it in custom callback to simulate for example pinning.
+                    return false;
+                };
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream client = new SslStream(clientStream))
+            using (SslStream server = new SslStream(serverStream))
+            {
+                Task t1 = client.AuthenticateAsClientAsync(options, default);
+                Task t2 = server.AuthenticateAsServerAsync(_serverCert);
+
+                await Assert.ThrowsAsync<AuthenticationException>(() => t1);
+                // Server side should finish since we run custom callback after handshake is done.
+                await t2;
             }
         }
 
