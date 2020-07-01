@@ -39,6 +39,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif()
 
 include(../../exe.cmake)
+include(configure.cmake)
 
 add_definitions(-DFEATURE_APPHOST=1)
 add_definitions(-DFEATURE_STATIC_HOST=1)
@@ -124,6 +125,74 @@ set(NATIVE_LIBS_LOCATION "${NATIVE_LIBS_ARTIFACTS}")
 
 message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
 
+if(CLR_CMAKE_TARGET_WIN32)
+    set(NATIVE_LIBS
+        # Disable superhost on Win32 for now.
+        # ${NATIVE_LIBS_LOCATION}/libclrcompression.lib
+    )
+else()
+    set(NATIVE_LIBS
+      ${NATIVE_LIBS_LOCATION}/libSystem.IO.Compression.Native.a
+      ${NATIVE_LIBS_LOCATION}/libSystem.Native.a
+      ${NATIVE_LIBS_LOCATION}/libSystem.Net.Security.Native.a
+      ${NATIVE_LIBS_LOCATION}/libSystem.Security.Cryptography.Native.OpenSsl.a
+    )
+
+    if(CLR_CMAKE_TARGET_OSX)
+        LIST(APPEND NATIVE_LIBS
+          ${NATIVE_LIBS_LOCATION}/libSystem.Security.Cryptography.Native.Apple.a
+        )
+    endif(CLR_CMAKE_TARGET_OSX)
+    
+    
+    # Additional requirements for System.System.IO.Compression.Native
+    if (CLR_CMAKE_TARGET_SUNOS)
+        set(ZLIB_LIBRARIES z m)
+    elseif (CLR_CMAKE_TARGET_UNIX)
+        find_package(ZLIB REQUIRED)
+    endif ()
+    
+    # Additional requirements for System.Net.Security.Native
+    if (HAVE_GSSFW_HEADERS)
+       find_library(LIBGSS NAMES GSS)
+       if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
+         message(FATAL_ERROR "Cannot find GSS.Framework and System.Net.Security.Native cannot build without it. Try installing GSS.Framework (or the appropriate package for your platform)")
+       endif()
+    elseif(HAVE_HEIMDAL_HEADERS)
+       find_library(LIBGSS NAMES gssapi)
+       if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
+         message(FATAL_ERROR "Cannot find libgssapi and System.Net.Security.Native cannot build without it. Try installing heimdal (or the appropriate package for your platform)")
+       endif()
+    else()
+       find_library(LIBGSS NAMES gssapi_krb5)
+       if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
+         message(FATAL_ERROR "Cannot find libgssapi_krb5 and System.Net.Security.Native cannot build without it. Try installing libkrb5-dev (or the appropriate package for your platform)")
+       endif()
+    endif()
+    
+    # Additional requirements for System.Native
+    if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID)
+        set(NATIVE_LIBS_EXTRA
+          rt
+        )
+    elseif (CLR_CMAKE_TARGET_FREEBSD)
+        set(NATIVE_LIBS_EXTRA
+          pthread
+        )
+        if (HAVE_INOTIFY)
+          find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
+          LIST(APPEND NATIVE_LIBS_EXTRA
+            ${INOTIFY_LIBRARY}
+          )
+        endif ()
+    elseif (CLR_CMAKE_TARGET_SUNOS)
+        set(NATIVE_LIBS_EXTRA
+            socket
+        )
+    endif ()
+endif(CLR_CMAKE_TARGET_WIN32)
+
+
 if(NOT CLR_CMAKE_TARGET_WIN32)
     set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/singlefilehost.exports)
@@ -140,6 +209,18 @@ if(CLR_CMAKE_HOST_UNIX)
     set_property(TARGET singlefilehost APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_UNIX)
 
+if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
+    # These options are used to force every object to be included even if it's unused.
+    set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
+    set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
+endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
+
+if(CLR_CMAKE_TARGET_OSX)
+    # These options are used to force every object to be included even if it's unused.
+    set(START_WHOLE_ARCHIVE -force_load)
+    set(END_WHOLE_ARCHIVE )
+endif(CLR_CMAKE_TARGET_OSX)
+
 set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 
 target_link_libraries(singlefilehost
@@ -147,4 +228,12 @@ target_link_libraries(singlefilehost
     libhostpolicy_static
     libhostcommon
     ${CORECLR_LIBRARIES}
+
+    ${ZLIB_LIBRARIES}
+    ${LIBGSS}
+    ${NATIVE_LIBS_EXTRA}
+
+    ${START_WHOLE_ARCHIVE}
+    ${NATIVE_LIBS}
+    ${END_WHOLE_ARCHIVE}
 )
