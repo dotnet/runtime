@@ -91,6 +91,10 @@ var_types Compiler::getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
 
 CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, var_types simdBaseType)
 {
+    if (m_simdHandleCache == nullptr)
+    {
+        return NO_CLASS_HANDLE;
+    }
     if (simdType == TYP_SIMD16)
     {
         switch (simdBaseType)

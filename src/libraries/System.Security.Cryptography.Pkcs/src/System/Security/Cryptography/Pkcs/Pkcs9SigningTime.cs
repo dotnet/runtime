@@ -22,13 +22,13 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public Pkcs9SigningTime(DateTime signingTime)
-            : base(Oids.SigningTime, Encode(signingTime))
+            : base(Oids.SigningTimeOid.CopyOid(), Encode(signingTime))
         {
             _lazySigningTime = signingTime;
         }
 
         public Pkcs9SigningTime(byte[] encodedSigningTime)
-            : base(Oids.SigningTime, encodedSigningTime)
+            : base(Oids.SigningTimeOid.CopyOid(), encodedSigningTime)
         {
         }
 

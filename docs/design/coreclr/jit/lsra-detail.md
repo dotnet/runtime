@@ -386,7 +386,7 @@ critical edges. This also captured in the `LsraBlockInfo` and is used by the res
 
 ### Building Intervals and RefPositions
 
-`Interval`s are built for lclVars up-front. These are maintained in an array, 
+`Interval`s are built for lclVars up-front. These are maintained in an array,
 `localVarIntervals` which is indexed by the `lvVarIndex` (not the `varNum`, since
 we never allocate registers for non-tracked lclVars). Other intervals (for tree temps and
 internal registers) are constructed as the relevant node is encountered.
@@ -402,7 +402,7 @@ node, which builds `RefPositions` according to the liveness model described abov
 
 -   Then we create `RefPosition`s for each use in the instruction.
 
-    -   A use of a register candidate lclVar becomes a `RefTypeUse` `RefPosition` on the 
+    -   A use of a register candidate lclVar becomes a `RefTypeUse` `RefPosition` on the
         `Interval` associated with the lclVar.
 
     -   For tree-temp operands (including non-register-candidate lclVars), we may have one
@@ -451,7 +451,7 @@ node, which builds `RefPositions` according to the liveness model described abov
 
 During this phase, preferences are set:
 
--   Cross-interval preferences are expressed via the `relatedInterval` field of `Interval` 
+-   Cross-interval preferences are expressed via the `relatedInterval` field of `Interval`
 
     -   When a use is encountered, it is preferenced to the target `Interval` for the
         node, if that is deemed to be profitable. During register selection, it tries to
@@ -469,7 +469,7 @@ During this phase, preferences are set:
 
         -   Issue [#22374](https://github.com/dotnet/coreclr/issues/22374) also has a pointer
             to some methods that could benefit from improved preferencing.
-   
+
     - Register preferences are set:
 
         - When the use or definition of a value must use a fixed register, due to instruction
@@ -540,10 +540,10 @@ LinearScanAllocation(List<RefPosition> refPositions)
             `Interval` to which it is preferenced, if any
 
         -   Whether it is in the register preference set for the
-            `Interval` 
+            `Interval`
 
         -   Whether it is not only available but currently unassigned
-            (i.e. this register is NOT currently assigned to an `Interval` 
+            (i.e. this register is NOT currently assigned to an `Interval`
             which is not currently live, but which previously occupied
             that register).
 
@@ -756,7 +756,7 @@ enregisterable variable or temporary or physical register. It contains
     -   `RefTypeZeroInit` is an `Interval` `RefPosition` that represents the
         position at entry at which a variable will be initialized to
         zero.
-    
+
     -   `RefTypeUpperVectorSave` is a `RefPosition` for an upper vector `Interval`
         that is inserted prior to a call that will kill the upper vector if
         it is currently occupying a register. The `Interval` is then marked with
@@ -928,7 +928,7 @@ The potential enhancements to the JIT, some of which are referenced in this docu
 
 ## Code Quality Enhancements
 
-### <a name="combine"/>Merge Allocation of Free and Busy Registers
+### <a name="combine"></a>Merge Allocation of Free and Busy Registers
 
 This is captured as [\#15408](https://github.com/dotnet/coreclr/issues/15408)
 Consider merging allocating free & busy regs.
@@ -1012,8 +1012,8 @@ One strategy would be to do something along the lines of (appropriate hand-wavin
     the predecessor `varToRegMap`, iterate over the most frequently lclVars in the union of the
     live-in, uses and defs, and displace any `Intervals` that are occupying registers that
     would be more profitably used by the high-frequencly lclVars, weighing spill costs.
- 
-### <a name="avoid-split"/>Avoid Splitting Loop Backedges
+
+### <a name="avoid-split"></a>Avoid Splitting Loop Backedges
 
 This is captured as Issue [\#16857](https://github.com/dotnet/coreclr/issues/16857).
 
@@ -1050,7 +1050,7 @@ investigating whether it would be worthwhile and cheaper to simply track this in
 ### Support Reg-Optional Defs
 
 Issues [\#7752](https://github.com/dotnet/coreclr/issues/7752) and
-[\#7753](https://github.com/dotnet/coreclr/issues/7753) track the 
+[\#7753](https://github.com/dotnet/coreclr/issues/7753) track the
  proposal to support "folding" of operations using a tree temp when
 the defining operation supports read-modify-write (RMW) to memory.
 This involves supporting the possibility
@@ -1059,14 +1059,14 @@ never occupy a register.
 
 ### Don't Pre-determine Reg-Optional Operand
 
-Issue [\#6361](https://github.com/dotnet/coreclr/issues/6361) 
+Issue [\#6361](https://github.com/dotnet/coreclr/issues/6361)
 tracks the problem that `Lowering` currently has
 to select a single operand to be reg-optional, even if either
 operand could be. This requires some additional state because
 LSRA can't easily navigate from one use to the other to
 communicate whether the first operand has been assigned a
 register.
-        
+
 ### Leveraging SSA form
 
 This has not yet been opened as a github issue.
@@ -1129,30 +1129,30 @@ performance. This would also improve JIT throughput only for optimized code.
 References
 ----------
 
-1.  <a name="[1]"/> Boissinot, B. et
+1.  <a name="[1]"></a> Boissinot, B. et
     al "Fast liveness checking for ssa-form programs," CGO 2008, pp.
     35-44.
     http://portal.acm.org/citation.cfm?id=1356058.1356064&coll=ACM&dl=ACM&CFID=105967773&CFTOKEN=80545349
 
-2.  <a name="[2]"/> Boissinot, B. et al, "Revisiting
+2.  <a name="[2]"></a> Boissinot, B. et al, "Revisiting
     Out-of-SSA Translation for Correctness, Code Quality and
     Efficiency," CGO 2009, pp. 114-125.
     <http://portal.acm.org/citation.cfm?id=1545006.1545063&coll=ACM&dl=ACM&CFID=105967773&CFTOKEN=80545349>
 
 
-3.  <a name="[3]"/>Wimmer, C. and Mössenböck, D. "Optimized
+3.  <a name="[3]"></a>Wimmer, C. and Mössenböck, D. "Optimized
     Interval Splitting in a Linear Scan Register Allocator," ACM VEE
     2005, pp. 132-141.
     <http://portal.acm.org/citation.cfm?id=1064998&dl=ACM&coll=ACM&CFID=105967773&CFTOKEN=80545349>
 
-4.  <a name="[4]"/> Wimmer, C. and Franz, M. "Linear Scan
+4.  <a name="[4]"></a> Wimmer, C. and Franz, M. "Linear Scan
     Register Allocation on SSA Form," ACM CGO 2010, pp. 170-179.
     <http://portal.acm.org/citation.cfm?id=1772979&dl=ACM&coll=ACM&CFID=105967773&CFTOKEN=80545349>
 
-5.  <a name="[5]"/> Traub, O. et al "Quality and Speed in Linear-scan Register
+5.  <a name="[5]"></a> Traub, O. et al "Quality and Speed in Linear-scan Register
     Allocation," SIGPLAN '98, pp. 142-151.
     <http://portal.acm.org/citation.cfm?id=277650.277714&coll=ACM&dl=ACM&CFID=105967773&CFTOKEN=80545349>
 
-6.  <a name="[6]"/> Olesen, J. "Greedy Register Allocation in LLVM 3.0," LLVM Project Blog, Sept. 2011.
+6.  <a name="[6]"></a> Olesen, J. "Greedy Register Allocation in LLVM 3.0," LLVM Project Blog, Sept. 2011.
     <http://blog.llvm.org/2011/09/greedy-register-allocation-in-llvm-30.html>
     (Last retrieved Feb. 2012)

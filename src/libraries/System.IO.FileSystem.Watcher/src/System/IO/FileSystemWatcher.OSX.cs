@@ -76,10 +76,6 @@ namespace System.IO
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private CancellationTokenSource? _cancellation;
 
         private static FSEventStreamEventFlags TranslateFlags(NotifyFilters flagsToTranslate)

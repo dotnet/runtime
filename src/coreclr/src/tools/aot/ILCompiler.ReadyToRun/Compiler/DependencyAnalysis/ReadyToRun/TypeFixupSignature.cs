@@ -43,7 +43,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, factory.SignatureContext);
                 dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
 
-                if (_fixupKind == ReadyToRunFixupKind.Check_TypeLayout)
+                if ((_fixupKind == ReadyToRunFixupKind.Check_TypeLayout) ||
+                    (_fixupKind == ReadyToRunFixupKind.Verify_TypeLayout))
                 {
                     EncodeTypeLayout(dataBuilder, _typeDesc);
                 }

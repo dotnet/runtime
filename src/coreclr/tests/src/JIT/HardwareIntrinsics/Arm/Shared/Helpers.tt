@@ -462,7 +462,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return saturated;
         }
 
-        private static bool SignedSatQ(<#= type.wide #> val, out <#= type.unsigned #> result)
+        private static bool UnsignedSatQ(<#= type.wide #> val, out <#= type.unsigned #> result)
         {
             bool saturated = false;
 
@@ -481,16 +481,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = (<#= type.unsigned #>)val;
             }
 
-            return saturated;
-        }
-
-        private static bool UnsignedSatQ(<#= type.wide #> val, out <#= type.name #> result)
-        {
-            <#= type.unsigned #> res;
-
-            bool saturated = UnsignedSatQ((<#= type.wideUnsigned #>)val, out res);
-
-            result = (<#= type.name #>)res;
             return saturated;
         }
 
@@ -516,6 +506,59 @@ namespace JIT.HardwareIntrinsics.Arm
             return saturated;
         }
 
+        private static bool SatQ(<#= type.wide #> val, out <#= type.name #> result, bool reinterpretAsUnsigned = false)
+        {
+            bool saturated;
+
+            if (reinterpretAsUnsigned)
+            {
+                <#= type.unsigned #> res;
+                saturated = UnsignedSatQ((<#= type.wideUnsigned #>)val, out res);
+                result = (<#= type.name #>)res;
+            }
+            else
+            {
+                saturated = SignedSatQ(val, out result);
+            }
+
+            return saturated;
+        }
+
+        private static bool SatQ(<#= type.wideUnsigned #> val, out <#= type.unsigned #> result) => UnsignedSatQ(val, out result);
+
+        public static <#= type.name #> ExtractNarrowingSaturate(<#= type.wide #> op1)
+        {
+            <#= type.name #> result;
+
+            SatQ(op1, out result);
+
+            return result;
+        }
+
+        public static <#= type.name #> ExtractNarrowingSaturateUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturate(op2[i - op1.Length]);
+
+        public static <#= type.unsigned #> ExtractNarrowingSaturate(<#= type.wideUnsigned #> op1)
+        {
+            <#= type.unsigned #> result;
+
+            SatQ(op1, out result);
+
+            return result;
+        }
+
+        public static <#= type.unsigned #> ExtractNarrowingSaturateUpper(<#= type.unsigned #>[] op1, <#= type.wideUnsigned #>[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturate(op2[i - op1.Length]);
+
+        public static <#= type.unsigned #> ExtractNarrowingSaturateUnsigned(<#= type.wide #> op1)
+        {
+            <#= type.unsigned #> result;
+
+            UnsignedSatQ(op1, out result);
+
+            return result;
+        }
+
+        public static <#= type.unsigned #> ExtractNarrowingSaturateUnsignedUpper(<#= type.unsigned #>[] op1, <#= type.wide #>[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
+
         public static <#= type.wide #> ShiftLeftLogicalWidening(<#= type.name #> op1, byte op2) => UnsignedShift((<#= type.wide #>)op1, (<#= type.wide #>)op2);
 
         public static <#= type.wideUnsigned #> ShiftLeftLogicalWidening(<#= type.unsigned #> op1, byte op2) => UnsignedShift((<#= type.wideUnsigned #>)op1, (<#= type.wide #>)op2);
@@ -528,7 +571,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             <#= type.name #> result;
 
-            SignedSatQ(SignedShift(op1, (<#= type.wide #>)(-op2), rounding: true), out result);
+            SatQ(SignedShift(op1, (<#= type.wide #>)(-op2), rounding: true), out result);
 
             return result;
         }
@@ -537,7 +580,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             <#= type.unsigned #> result;
 
-            SignedSatQ(SignedShift(op1, (<#= type.wide #>)(-op2), rounding: true), out result);
+            UnsignedSatQ(SignedShift(op1, (<#= type.wide #>)(-op2), rounding: true), out result);
 
             return result;
         }
@@ -550,7 +593,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             <#= type.name #> result;
 
-            SignedSatQ(SignedShift(op1, (<#= type.wide #>)(-op2)), out result);
+            SatQ(SignedShift(op1, (<#= type.wide #>)(-op2)), out result);
 
             return result;
         }
@@ -559,7 +602,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             <#= type.unsigned #> result;
 
-            SignedSatQ(SignedShift(op1, (<#= type.wide #>)(-op2)), out result);
+            UnsignedSatQ(SignedShift(op1, (<#= type.wide #>)(-op2)), out result);
 
             return result;
         }
@@ -584,7 +627,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             <#= type.name #> result;
 
-            UnsignedSatQ(UnsignedShift(op1, (<#= type.wide #>)(-op2), rounding: true), out result);
+            SatQ(UnsignedShift(op1, (<#= type.wide #>)(-op2), rounding: true), out result, reinterpretAsUnsigned: true);
 
             return result;
         }
@@ -593,7 +636,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             <#= type.unsigned #> result;
 
-            UnsignedSatQ(UnsignedShift(op1, (<#= type.wide #>)(-op2), rounding: true), out result);
+            SatQ(UnsignedShift(op1, (<#= type.wide #>)(-op2), rounding: true), out result);
 
             return result;
         }
@@ -610,7 +653,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             <#= type.name #> result;
 
-            UnsignedSatQ(UnsignedShift(op1, (<#= type.wide #>)(-op2)), out result);
+            SatQ(UnsignedShift(op1, (<#= type.wide #>)(-op2)), out result, reinterpretAsUnsigned: true);
 
             return result;
         }
@@ -619,7 +662,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             <#= type.unsigned #> result;
 
-            UnsignedSatQ(UnsignedShift(op1, (<#= type.wide #>)(-op2)), out result);
+            SatQ(UnsignedShift(op1, (<#= type.wide #>)(-op2)), out result);
 
             return result;
         }
@@ -1330,6 +1373,7 @@ namespace JIT.HardwareIntrinsics.Arm
             <#= typeName.original #> newval = (<#= typeName.original #>)(((<#= typeName.unsigned #>)left & mask) | value);
             return newval;
         }
+
 <#
         }
 
