@@ -642,7 +642,7 @@ namespace System.Drawing.Drawing2D
         public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat? format)
         {
             if (family == null)
-                throw new ArgumentException(null, nameof(family));
+                throw new ArgumentNullException(nameof(family));
 
             IntPtr sformat = (format == null) ? IntPtr.Zero : format.nativeFormat;
             // note: the NullReferenceException on s.Length is the expected (MS) exception
@@ -653,7 +653,7 @@ namespace System.Drawing.Drawing2D
         public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat? format)
         {
             if (family == null)
-                throw new ArgumentException(null, nameof(family));
+                throw new ArgumentNullException(nameof(family));
 
             IntPtr sformat = (format == null) ? IntPtr.Zero : format.nativeFormat;
             // note: the NullReferenceException on s.Length is the expected (MS) exception
