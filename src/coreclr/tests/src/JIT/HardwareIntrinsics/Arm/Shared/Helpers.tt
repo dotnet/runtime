@@ -1358,18 +1358,18 @@ namespace JIT.HardwareIntrinsics.Arm
                                          (original: "ulong",  unsigned: "ulong") })
         {
 #>
-        public static <#= typeName.original #> ShiftRightAndInsert(<#= typeName.original #> left, <#= typeName.original #> right, byte shift)
+        public static <#= typeName.original #> ShiftLeftAndInsert(<#= typeName.original #> left, <#= typeName.original #> right, byte shift)
         {
-            <#= typeName.unsigned #> mask = (<#= typeName.unsigned #>)~(<#= typeName.unsigned #>.MaxValue >> shift);
-            <#= typeName.unsigned #> value = (<#= typeName.unsigned #>)(right >> shift);
+            <#= typeName.unsigned #> mask = (<#= typeName.unsigned #>)~(<#= typeName.unsigned #>.MaxValue << shift);
+            <#= typeName.unsigned #> value = (<#= typeName.unsigned #>)(right << shift);
             <#= typeName.original #> newval = (<#= typeName.original #>)(((<#= typeName.unsigned #>)left & mask) | value);
             return newval;
         }
 
-        public static <#= typeName.original #> ShiftLeftLogicalAndInsert(<#= typeName.original #> left, <#= typeName.original #> right, byte shift)
+        public static <#= typeName.original #> ShiftRightAndInsert(<#= typeName.original #> left, <#= typeName.original #> right, byte shift)
         {
-            <#= typeName.unsigned #> mask = (<#= typeName.unsigned #>)~(<#= typeName.unsigned #>.MaxValue << shift);
-            <#= typeName.unsigned #> value = (<#= typeName.unsigned #>)(right << shift);
+            <#= typeName.unsigned #> mask = (<#= typeName.unsigned #>)~(<#= typeName.unsigned #>.MaxValue >> shift);
+            <#= typeName.unsigned #> value = (<#= typeName.unsigned #>)(right >> shift);
             <#= typeName.original #> newval = (<#= typeName.original #>)(((<#= typeName.unsigned #>)left & mask) | value);
             return newval;
         }
