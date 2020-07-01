@@ -27,7 +27,6 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Collections.Concurrent" Condition=" '$(TargetsBrowser)' == 'true'" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
