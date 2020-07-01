@@ -94,7 +94,8 @@ namespace Internal.Cryptography
 
             // Decrypt the data, then strip the padding to get the final decrypted data. Note that even if the cipherText length is 0, we must
             // invoke TransformFinal() so that the cipher object knows to reset for the next cipher operation.
-            byte[] decryptedBytes = BasicSymmetricCipher.TransformFinal(ciphertext, 0, ciphertext.Length);
+            int decryptWritten = BasicSymmetricCipher.TransformFinal(ciphertext.AsSpan(0, ciphertext.Length), ciphertext);
+            byte[] decryptedBytes = ciphertext.AsSpan(0, decryptWritten).ToArray();
             byte[] outputData;
             if (ciphertext.Length > 0)
             {

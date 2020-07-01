@@ -36,7 +36,9 @@ namespace Internal.Cryptography
             try
             {
                 padWritten = PadBlock(inputBuffer.AsSpan(inputOffset, inputCount), padBuffer);
-                return BasicSymmetricCipher.TransformFinal(padBuffer, 0, padWritten);
+                int transformWritten = BasicSymmetricCipher.TransformFinal(padBuffer.AsSpan(0, padWritten), padBuffer);
+                Debug.Assert(padWritten == transformWritten);
+                return padBuffer.AsSpan(0, transformWritten).ToArray();
             }
             finally
             {

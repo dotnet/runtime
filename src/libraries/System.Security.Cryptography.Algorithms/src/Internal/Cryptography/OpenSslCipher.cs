@@ -60,7 +60,7 @@ namespace Internal.Cryptography
 
                 try
                 {
-                    written = CipherUpdate(input, inputOffset, count, tmp, 0);
+                    written = CipherUpdate(input.AsSpan(inputOffset, count), tmp);
                     Buffer.BlockCopy(tmp, 0, output, outputOffset, written);
                     return written;
                 }
@@ -70,59 +70,46 @@ namespace Internal.Cryptography
                 }
             }
 
-            return CipherUpdate(input, inputOffset, count, output, outputOffset);
+            return CipherUpdate(input.AsSpan(inputOffset, count), output.AsSpan(outputOffset));
         }
 
-        public override byte[] TransformFinal(byte[] input, int inputOffset, int count)
+        public override int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(count >= 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
-            Debug.Assert(input.Length - inputOffset >= count);
+            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
+            Debug.Assert(input.Length <= output.Length);
 
-            byte[] output = ProcessFinalBlock(input, inputOffset, count);
+            int written = ProcessFinalBlock(input, output);
             Reset();
-            return output;
+            return written;
         }
 
-        private byte[] ProcessFinalBlock(byte[] input, int inputOffset, int count)
+        private int ProcessFinalBlock(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            byte[] output = new byte[count];
-            int outputBytes = CipherUpdate(input, inputOffset, count, output, 0);
+            byte[] rented = CryptoPool.Rent(input.Length);
+            int written = 0;
 
-            Span<byte> outputSpan = output.AsSpan(outputBytes);
-            int bytesWritten;
-            CheckBoolReturn(Interop.Crypto.EvpCipherFinalEx(_ctx, outputSpan, out bytesWritten));
-            outputBytes += bytesWritten;
-
-            if (outputBytes == output.Length)
+            try
             {
-                return output;
+                written = CipherUpdate(input, rented);
+                Span<byte> outputSpan = rented.AsSpan(written);
+                CheckBoolReturn(Interop.Crypto.EvpCipherFinalEx(_ctx, outputSpan, out int finalWritten));
+                written += finalWritten;
+                rented.AsSpan(0, written).CopyTo(output);
+                return written;
             }
-
-            if (outputBytes == 0)
+            finally
             {
-                return Array.Empty<byte>();
+                CryptoPool.Return(rented, clearSize: written);
             }
-
-            byte[] userData = new byte[outputBytes];
-            Buffer.BlockCopy(output, 0, userData, 0, outputBytes);
-            return userData;
         }
 
-        private int CipherUpdate(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
+        private int CipherUpdate(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            int bytesWritten;
-
-            ReadOnlySpan<byte> inputSpan = input.AsSpan(inputOffset, count);
-            Span<byte> outputSpan = output.AsSpan(outputOffset);
-
             Interop.Crypto.EvpCipherUpdate(
                 _ctx,
-                outputSpan,
-                out bytesWritten,
-                inputSpan);
+                output,
+                out int bytesWritten,
+                input);
 
             return bytesWritten;
         }
