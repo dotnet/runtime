@@ -256,12 +256,20 @@ namespace CoreclrTestLib
         {
             var children = new Stack<Process>();
             Queue<Process> childrenToCheck = new Queue<Process>();
+            HashSet<int> seen = new HashSet<int>();
+
+            seen.Add(process.Id);
             foreach (var child in process.GetChildren())
                 childrenToCheck.Enqueue(child);
 
             while (childrenToCheck.Count != 0)
             {
                 Process child = childrenToCheck.Dequeue();
+                if (seen.Contains(child.Id))
+                    continue;
+
+                seen.Add(child.Id);
+
                 foreach (var grandchild in child.GetChildren())
                     childrenToCheck.Enqueue(grandchild);
 
