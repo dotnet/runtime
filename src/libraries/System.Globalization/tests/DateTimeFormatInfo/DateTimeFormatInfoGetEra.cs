@@ -23,25 +23,15 @@ namespace System.Globalization.Tests
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, "", -1 };
 
             var enUSFormat = new CultureInfo("en-US").DateTimeFormat;
-            yield return new object[] { enUSFormat, DateTimeFormatInfoData.EnUSEraName(useUserOverrides: true), 1 };
-            yield return new object[] { enUSFormat, DateTimeFormatInfoData.EnUSEraName(useUserOverrides: true).ToLower(), 1 };
-            yield return new object[] { enUSFormat, DateTimeFormatInfoData.EnUSAbbreviatedEraName(useUserOverrides: true), 1 };
-            yield return new object[] { enUSFormat, DateTimeFormatInfoData.EnUSAbbreviatedEraName(useUserOverrides: true).ToLower(), 1 };
+            yield return new object[] { enUSFormat, DateTimeFormatInfoData.EnUSEraName(), 1 };
+            yield return new object[] { enUSFormat, DateTimeFormatInfoData.EnUSEraName().ToLower(), 1 };
+            yield return new object[] { enUSFormat, DateTimeFormatInfoData.EnUSAbbreviatedEraName(), 1 };
+            yield return new object[] { enUSFormat, DateTimeFormatInfoData.EnUSAbbreviatedEraName().ToLower(), 1 };
             yield return new object[] { enUSFormat, "C.E", -1 };
             yield return new object[] { enUSFormat, "CE", -1 };
             yield return new object[] { enUSFormat, "B.C", -1 };
             yield return new object[] { enUSFormat, "BC", -1 };
             yield return new object[] { enUSFormat, "", -1 };
-
-            // CultureInfo without using userOverrides to test ICU codepaths in Windows
-            if (PlatformDetection.IsWindows && PlatformDetection.IsIcuGlobalization)
-            {
-                var enUSNoUserOverrideFormat = new CultureInfo("en-US", useUserOverride: false).DateTimeFormat;
-                yield return new object[] { enUSNoUserOverrideFormat, DateTimeFormatInfoData.EnUSEraName(useUserOverrides: false), 1 };
-                yield return new object[] { enUSNoUserOverrideFormat, DateTimeFormatInfoData.EnUSEraName(useUserOverrides: false).ToLower(), 1 };
-                yield return new object[] { enUSNoUserOverrideFormat, DateTimeFormatInfoData.EnUSAbbreviatedEraName(useUserOverrides: false), 1 };
-                yield return new object[] { enUSNoUserOverrideFormat, DateTimeFormatInfoData.EnUSAbbreviatedEraName(useUserOverrides: false).ToLower(), 1 };
-            }
 
             // For Win7, "fr-FR" is "ap J.-C".
             // For windows<Win7 & MAC, every culture is "A.D."

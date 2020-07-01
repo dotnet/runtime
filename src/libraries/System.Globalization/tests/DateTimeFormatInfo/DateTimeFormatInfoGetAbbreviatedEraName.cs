@@ -11,19 +11,11 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> GetAbbreviatedEraName_TestData()
         {
-            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, 0, DateTimeFormatInfoData.EnUSAbbreviatedEraName(useUserOverrides: true) };
-            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, 1, DateTimeFormatInfoData.EnUSAbbreviatedEraName(useUserOverrides: true) };
+            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, 0, DateTimeFormatInfoData.EnUSAbbreviatedEraName() };
+            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, 1, DateTimeFormatInfoData.EnUSAbbreviatedEraName() };
             yield return new object[] { new DateTimeFormatInfo(), 0, "AD" };
             yield return new object[] { new DateTimeFormatInfo(), 1, "AD" };
-            yield return new object[] { new CultureInfo("ja-JP").DateTimeFormat, 1, DateTimeFormatInfoData.JaJPAbbreviatedEraName(useUserOverrides: true) };
-
-            // CultureInfo without using userOverrides to test ICU codepaths in Windows
-            if (PlatformDetection.IsWindows && PlatformDetection.IsIcuGlobalization)
-            {
-                yield return new object[] { new CultureInfo("en-US", useUserOverride: false).DateTimeFormat, 0, DateTimeFormatInfoData.EnUSAbbreviatedEraName(useUserOverrides: false) };
-                yield return new object[] { new CultureInfo("en-US", useUserOverride: false).DateTimeFormat, 1, DateTimeFormatInfoData.EnUSAbbreviatedEraName(useUserOverrides: false) };
-                yield return new object[] { new CultureInfo("ja-JP", useUserOverride: false).DateTimeFormat, 1, DateTimeFormatInfoData.JaJPAbbreviatedEraName(useUserOverrides: false) };
-            }
+            yield return new object[] { new CultureInfo("ja-JP").DateTimeFormat, 1, DateTimeFormatInfoData.JaJPAbbreviatedEraName() };
         }
 
         [Theory]

@@ -15,8 +15,8 @@ namespace System.Globalization.Tests
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, 0, "A.D." };
 
             var enUSFormat = new CultureInfo("en-US").DateTimeFormat;
-            yield return new object[] { enUSFormat, 1, DateTimeFormatInfoData.EnUSEraName(useUserOverrides: true) };
-            yield return new object[] { enUSFormat, 0, DateTimeFormatInfoData.EnUSEraName(useUserOverrides: true) };
+            yield return new object[] { enUSFormat, 1, DateTimeFormatInfoData.EnUSEraName() };
+            yield return new object[] { enUSFormat, 0, DateTimeFormatInfoData.EnUSEraName() };
 
             var frRFormat = new CultureInfo("fr-FR").DateTimeFormat;
             yield return new object[] { frRFormat, 1, "ap. J.-C." };
