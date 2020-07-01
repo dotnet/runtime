@@ -173,22 +173,30 @@ namespace CoreclrTestLib
 
         private static IEnumerable<Process> Linux_GetChildren(Process process)
         {
-            int[] childPids = File.ReadAllText($"/proc/{process.Id}/task/{process.Id}/children")
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                .Select(pidString => int.Parse(pidString))
-                .ToArray();
-
             var children = new List<Process>();
-            foreach (var pid in childPids)
+
+            try
             {
-                try
+                int[] childPids = File.ReadAllText($"/proc/{process.Id}/task/{process.Id}/children")
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(pidString => int.Parse(pidString))
+                    .ToArray();
+
+                foreach (var pid in childPids)
                 {
-                    children.Add(Process.GetProcessById(pid));
+                    try
+                    {
+                        children.Add(Process.GetProcessById(pid));
+                    }
+                    catch (ArgumentException)
+                    {
+                        // Ignore failure to get process, the process may have exited
+                    }
                 }
-                catch (IOException)
-                {
-                    // Ignore failure to read process children data, the process may have exited
-                }
+            }
+            catch (IOException)
+            {
+                // Ignore failure to read process children data, the process may have exited
             }
 
             return children;
