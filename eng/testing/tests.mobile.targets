@@ -14,11 +14,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
-<<<<<<< HEAD
     <RunScriptCommand>$HARNESS_RUNNER wasm test --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- --enable-zoneinfo --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
-=======
-    <RunScriptCommand>$HARNESS_RUNNER xharness wasm test --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- --enable-zoneinfo --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
->>>>>>> 774a274b721... Correct tests.mobile.targets
   </PropertyGroup>
 
   <!-- Generate a self-contained app bundle for Android with tests. -->

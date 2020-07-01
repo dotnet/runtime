@@ -780,11 +780,11 @@ var MonoSupportLib = {
 			return className.replace(/\//g, '.').replace(/`\d+/g, '');
 		},
 
-		mono_wasm_load_data: function (data, prefix, magic) {
+		mono_wasm_load_data: function (data, prefix) {
 			var dataview = new DataView(data.buffer);
-			var sig = dataview.getUint32(0, true);
+			var magic = dataview.getUint32(0, true);
 			//	get magic number
-			if (sig != magic) {
+			if (magic != 0x626c6174) {
 				throw new Error ("File is of wrong type");
 			}
 			var manifestSize = dataview.getUint32(4, true);
@@ -806,7 +806,7 @@ var MonoSupportLib = {
 			manifest.filter(m => {
 				m = m[0].split('/')
 				if (m!= null) {
-					if (m.length === 3) folders.add(m.slice(0,2).join('/'));
+					if (m.length > 2) folders.add(m.slice(0,m.length-1).join('/'));
 					folders.add(m[0]);
 				}	
 			});

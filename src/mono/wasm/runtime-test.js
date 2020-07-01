@@ -220,9 +220,8 @@ var Module = {
 			// where the first token in each array is the relative path of the file on disk, and the second is the
 			// length of the file. The starting offset of a file can be calculated using the lengths of all files
 			// that appear prior to it.
-			var magic = 0x626c6174;
 			var zonedata = new Uint8Array(read ("dotnet.timezones.blat", "binary"));
-			MONO.mono_wasm_load_data (zonedata, "/usr/share/zoneinfo", magic);
+			MONO.mono_wasm_load_data (zonedata, "/usr/share/zoneinfo");
 		}
 
 		MONO.mono_load_runtime_and_bcl (
