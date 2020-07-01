@@ -37,6 +37,7 @@
     <Compile Include="System\Utf8TestUtilities.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="System\Net\Http\Utf8StringContentTests.netcoreapp.cs" />
     <Compile Include="System\MemoryTests.netcoreapp.cs" />
     <Compile Include="System\ReflectionTests.netcoreapp.cs" />
     <Compile Include="System\Utf8ExtensionsTests.netcoreapp.cs" />

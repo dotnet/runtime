@@ -167,7 +167,7 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task TestGetFromJsonAsyncTextPlainUtf16Async()
         {
-            const string json = @"{""Name"":""David"",""Age"":24}";
+            string json = Person.Create().Serialize();
             const int NumRequests = 2;
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>

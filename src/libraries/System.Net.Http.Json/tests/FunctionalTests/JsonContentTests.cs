@@ -73,7 +73,6 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task SendQuotedCharsetAsync()
         {
-
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -230,9 +229,5 @@ namespace System.Net.Http.Json.Functional.Tests
     public class JsonContentTests_Async : JsonContentTestsBase
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpClient client, HttpRequestMessage request) => client.SendAsync(request);
-    }
-    public class JsonContentTests_Sync : JsonContentTestsBase
-    {
-        protected override Task<HttpResponseMessage> SendAsync(HttpClient client, HttpRequestMessage request) => Task.Run(() => client.Send(request));
     }
 }

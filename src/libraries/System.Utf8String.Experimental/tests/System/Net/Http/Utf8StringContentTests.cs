@@ -41,15 +41,5 @@ namespace System.Net.Http.Tests
 
             Assert.Equal(u8("Hello").ToByteArray(), memoryStream.ToArray());
         }
-
-        [Fact]
-        public static void Ctor_CopyTo_GetStream()
-        {
-            MemoryStream memoryStream = new MemoryStream();
-
-            new Utf8StringContent(u8("Hello")).CopyTo(memoryStream, default, default);
-
-            Assert.Equal(u8("Hello").ToByteArray(), memoryStream.ToArray());
-        }
     }
 }

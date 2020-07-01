@@ -14,17 +14,10 @@ namespace System.Net.Http.Json.Functional.Tests
 {
     public class HttpClientJsonExtensionsTests
     {
-        private static readonly JsonSerializerOptions s_defaultSerializerOptions
-            = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
         [Fact]
         public async Task TestGetFromJsonAsync()
         {
-            const string json = @"{""Name"":""David"",""Age"":24}";
+            string json = Person.Create().Serialize();
             const int NumRequests = 4;
             HttpHeaderData header = new HttpHeaderData("Content-Type", "application/json");
             List<HttpHeaderData> headers = new List<HttpHeaderData> { header };
@@ -107,7 +100,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     {
                         HttpRequestData request = await server.HandleRequestAsync();
                         ValidateRequest(request);
-                        Person per = JsonSerializer.Deserialize<Person>(request.Body, s_defaultSerializerOptions);
+                        Person per = JsonSerializer.Deserialize<Person>(request.Body, JsonOptions.DefaultSerializerOptions);
                         per.Validate();
                     }
                 });
@@ -143,7 +136,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     {
                         HttpRequestData request = await server.HandleRequestAsync();
                         ValidateRequest(request);
-                        Person obj = JsonSerializer.Deserialize<Person>(request.Body, s_defaultSerializerOptions);
+                        Person obj = JsonSerializer.Deserialize<Person>(request.Body, JsonOptions.DefaultSerializerOptions);
                         obj.Validate();
                     }
                 });
