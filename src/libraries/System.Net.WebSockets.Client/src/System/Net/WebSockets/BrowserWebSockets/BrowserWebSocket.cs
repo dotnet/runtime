@@ -362,15 +362,15 @@ namespace System.Net.WebSockets
 
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
+            _writeBuffer ??= new MemoryStream();
+
             if (!endOfMessage)
             {
-                _writeBuffer ??= new MemoryStream();
                 _writeBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
                 return Task.CompletedTask;
             }
             else
             {
-                _writeBuffer ??= new MemoryStream();
                 _writeBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
             }
 
