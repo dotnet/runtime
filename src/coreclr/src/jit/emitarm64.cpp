@@ -4063,20 +4063,11 @@ void emitter::emitIns_R_R(
     {
         case INS_mov:
             assert(insOptsNone(opt));
+
             // Is the mov even necessary?
-            if (reg1 == reg2)
+            if (emitComp->opts.OptimizationEnabled() && IsRedundantMov(ins, size, reg1, reg2))
             {
-                // A mov with a EA_4BYTE has the side-effect of clearing the upper bits
-                // So only eliminate mov instructions that are not clearing the upper bits
-                //
-                if (isGeneralRegisterOrSP(reg1) && (size == EA_8BYTE))
-                {
-                    return;
-                }
-                else if (isVectorRegister(reg1) && (size == EA_16BYTE))
-                {
-                    return;
-                }
+                return;
             }
 
             // Check for the 'mov' aliases for the vector registers
@@ -15297,4 +15288,107 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
+//----------------------------------------------------------------------------------------
+// IsRedundantMov:
+//    Check if the current `mov` instruction is redundant and can be omitted.
+//    A `mov` is redundant in following 3 cases:
+//
+//    1. Move to same register
+//       (Except 4-byte movement like "mov w1, w1" which zeros out upper bits of x1 register)
+//
+//         mov Rx, Rx
+//
+//    2. Move that is identical to last instruction emitted.
+//
+//         mov Rx, Ry  # <-- last instruction
+//         mov Rx, Ry  # <-- current instruction can be omitted.
+//
+//    3. Opposite Move as that of last instruction emitted.
+//
+//         mov Rx, Ry  # <-- last instruction
+//         mov Ry, Rx  # <-- current instruction can be omitted.
+//
+// Arguments:
+//    ins  - The current instruction
+//    size - Operand size of current instruction
+//    dst  - The current destination
+//    src  - The current source
+//
+// Return Value:
+//    true if previous instruction moved from current dst to src.
+
+bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src)
+{
+    assert(ins == INS_mov);
+
+    if (dst == src)
+    {
+        // A mov with a EA_4BYTE has the side-effect of clearing the upper bits
+        // So only eliminate mov instructions that are not clearing the upper bits
+        //
+        if (isGeneralRegisterOrSP(dst) && (size == EA_8BYTE))
+        {
+            JITDUMP("\n -- suppressing mov because src and dst is same 8-byte register.\n");
+            return true;
+        }
+        else if (isVectorRegister(dst) && (size == EA_16BYTE))
+        {
+            JITDUMP("\n -- suppressing mov because src and dst is same 16-byte register.\n");
+            return true;
+        }
+    }
+
+    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+
+    if (!isFirstInstrInBlock && // Don't optimize if instruction is not the first instruction in IG.
+        (emitLastIns != nullptr) &&
+        (emitLastIns->idIns() == INS_mov) && // Don't optimize if last instruction was not 'mov'.
+        (emitLastIns->idOpSize() == size))   // Don't optimize if operand size is different than previous instruction.
+    {
+        // Check if we did same move in prev instruction except dst/src were switched.
+        regNumber prevDst    = emitLastIns->idReg1();
+        regNumber prevSrc    = emitLastIns->idReg2();
+        insFormat lastInsfmt = emitLastIns->idInsFmt();
+
+        if ((prevDst == dst) && (prevSrc == src))
+        {
+            assert(emitLastIns->idOpSize() == size);
+            JITDUMP("\n -- suppressing mov because previous instruction already moved from src to dst register.\n");
+            return true;
+        }
+
+        // Sometimes emitLastIns can be a mov with single register e.g. "mov reg, #imm". So ensure to
+        // optimize formats that does vector-to-vector or scalar-to-scalar register movs.
+        bool isValidLastInsFormats = ((lastInsfmt == IF_DV_3C) || (lastInsfmt == IF_DR_2G) || (lastInsfmt == IF_DR_2E));
+
+        if ((prevDst == src) && (prevSrc == dst) && isValidLastInsFormats)
+        {
+            // For mov with EA_8BYTE, ensure src/dst are both scalar or both vector.
+            if (size == EA_8BYTE)
+            {
+                if (isVectorRegister(src) == isVectorRegister(dst))
+                {
+                    JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst "
+                            "to src register.\n");
+                    return true;
+                }
+            }
+
+            // For mov with EA_16BYTE, both src/dst will be vector.
+            else if (size == EA_16BYTE)
+            {
+                assert(isVectorRegister(src) && isVectorRegister(dst));
+                assert(lastInsfmt == IF_DV_3C);
+
+                JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst to "
+                        "src register.\n");
+                return true;
+            }
+
+            // For mov of other sizes, don't optimize because it has side-effect of clearing the upper bits.
+        }
+    }
+
+    return false;
+}
 #endif // defined(TARGET_ARM64)

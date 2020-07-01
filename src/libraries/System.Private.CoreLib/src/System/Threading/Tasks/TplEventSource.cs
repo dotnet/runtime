@@ -33,12 +33,6 @@ namespace System.Threading.Tasks
         /// </summary>
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
-            // To get the AsyncCausality events, we need to inform the AsyncCausalityTracer
-            if (command.Command == EventCommand.Enable)
-                AsyncCausalityTracer.EnableToETW(true);
-            else if (command.Command == EventCommand.Disable)
-                AsyncCausalityTracer.EnableToETW(false);
-
             if (IsEnabled(EventLevel.Informational, Keywords.TasksFlowActivityIds))
                 ActivityTracker.Instance.Enable();
             else

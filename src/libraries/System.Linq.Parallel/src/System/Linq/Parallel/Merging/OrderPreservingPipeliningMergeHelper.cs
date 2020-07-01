@@ -167,7 +167,7 @@ namespace System.Linq.Parallel
         // Returns the results as an array.
         //
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "An ordered pipelining merge is not intended to be used this way")]
         public TOutput[] GetResultsAsArray()
         {
             Debug.Fail("An ordered pipelining merge is not intended to be used this way.");

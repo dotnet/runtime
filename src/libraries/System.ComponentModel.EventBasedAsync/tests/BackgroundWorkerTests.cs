@@ -327,9 +327,8 @@ namespace System.ComponentModel.EventBasedAsync.Tests
             bw.Dispose();
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37136", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37136", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38283", TestPlatforms.Browser)]
         public void TestFinalization()
         {
             // BackgroundWorker has a finalizer that exists purely for backwards compatibility

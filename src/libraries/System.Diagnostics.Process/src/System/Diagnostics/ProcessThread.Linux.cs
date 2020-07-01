@@ -75,10 +75,6 @@ namespace System.Diagnostics
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private Interop.procfs.ParsedStat GetStat()
         {
             Interop.procfs.ParsedStat stat;

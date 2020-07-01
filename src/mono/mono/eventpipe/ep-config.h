@@ -6,12 +6,19 @@
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-config.h"
 #include "ep-types.h"
+#include "ep-event-instance.h"
+
+#undef EP_IMPL_GETTER_SETTER
+#ifdef EP_IMPL_CONFIG_GETTER_SETTER
+#define EP_IMPL_GETTER_SETTER
+#endif
+#include "ep-getter-setter.h"
 
 /*
  * EventPipeConfiguration.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_CONFIG_GETTER_SETTER)
 struct _EventPipeConfiguration {
 #else
 struct _EventPipeConfiguration_Internal {
@@ -22,18 +29,11 @@ struct _EventPipeConfiguration_Internal {
 	ep_char8_t *config_provider_name;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_CONFIG_GETTER_SETTER)
 struct _EventPipeConfiguration {
 	uint8_t _internal [sizeof (struct _EventPipeConfiguration_Internal)];
 };
 #endif
-
-EP_DEFINE_GETTER_REF(EventPipeConfiguration *, config, ep_rt_provider_list_t *, provider_list)
-EP_DEFINE_GETTER(EventPipeConfiguration *, config, EventPipeProvider *, config_provider)
-EP_DEFINE_SETTER(EventPipeConfiguration *, config, EventPipeProvider *, config_provider)
-EP_DEFINE_GETTER(EventPipeConfiguration *, config, EventPipeEvent *, metadata_event)
-EP_DEFINE_SETTER(EventPipeConfiguration *, config, EventPipeEvent *, metadata_event)
-EP_DEFINE_GETTER(EventPipeConfiguration *, config, const ep_char8_t *, config_provider_name)
 
 static
 inline
@@ -65,8 +65,8 @@ EventPipeConfiguration *
 ep_config_get (void)
 {
 	// Singelton.
-	extern EventPipeConfiguration _ep_config;
-	return &_ep_config;
+	extern EventPipeConfiguration _ep_config_instance;
+	return &_ep_config_instance;
 }
 
 EventPipeConfiguration *
@@ -109,45 +109,11 @@ ep_config_build_event_metadata_event (
 void
 ep_config_delete_deferred_providers (EventPipeConfiguration *config);
 
-EventPipeSessionProvider *
-ep_config_get_session_provider_lock_held (
-	const EventPipeConfiguration *config,
-	const EventPipeSession *session,
-	const EventPipeProvider *provider);
-
-EventPipeProvider *
-ep_config_get_provider_lock_held (
-	EventPipeConfiguration *config,
-	const ep_char8_t *name);
-
-EventPipeProvider *
-ep_config_create_provider_lock_held (
-	EventPipeConfiguration *config,
-	const ep_char8_t *provider_name,
-	EventPipeCallback callback_func,
-	void *callback_data,
-	EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
-
-void
-ep_config_delete_provider_lock_held (
-	EventPipeConfiguration *config,
-	EventPipeProvider *provider);
-
-void
-ep_config_delete_deferred_providers_lock_held (EventPipeConfiguration *config);
-
-void
-ep_config_enable_disable_lock_held (
-	EventPipeConfiguration *config,
-	const EventPipeSession *session,
-	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
-	bool enable);
-
 /*
  * EventPipeEventMetadataEvent.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_CONFIG_GETTER_SETTER)
 struct _EventPipeEventMetadataEvent {
 #else
 struct _EventPipeEventMetadataEvent_Internal {
@@ -157,15 +123,11 @@ struct _EventPipeEventMetadataEvent_Internal {
 	uint32_t  payload_buffer_len;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_CONFIG_GETTER_SETTER)
 struct _EventPipeEventMetadataEvent {
 	uint8_t _internal [sizeof (struct _EventPipeEventMetadataEvent_Internal)];
 };
 #endif
-
-EP_DEFINE_GETTER(EventPipeEventMetadataEvent *, event_metadata_event, uint8_t *, payload_buffer)
-EP_DEFINE_GETTER(EventPipeEventMetadataEvent *, event_instance, uint32_t, payload_buffer_len)
-
 
 EventPipeEventMetadataEvent *
 ep_event_metdata_event_alloc (

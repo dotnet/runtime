@@ -1,4 +1,12 @@
 ﻿<RuleSet Name="Microsoft.Analyzers.ManagedCodeAnalysis" Description="Microsoft.Analyzers.ManagedCodeAnalysis" ToolsVersion="14.0">
+   <Rules AnalyzerId="Microsoft.DotNet.CodeAnalysis" RuleNamespace="Microsoft.DotNet.CodeAnalysis.Analyzers">
+      <Rule Id="BCL0001" Action="Warning" />         <!-- Ensure minimum API surface is respected -->
+      <Rule Id="BCL0010" Action="Warning" />         <!-- AppContext default value expected to be true -->
+      <Rule Id="BCL0011" Action="Warning" />         <!-- AppContext default value defined in if statement with incorrect pattern -->
+      <Rule Id="BCL0012" Action="Warning" />         <!-- AppContext default value defined in if statement at root of switch case -->
+      <Rule Id="BCL0015" Action="None" />            <!-- Invalid P/Invoke call -->
+      <Rule Id="BCL0020" Action="Warning" />         <!-- Invalid SR.Format call -->
+   </Rules>
    <Rules AnalyzerId="Microsoft.CodeAnalysis.NetAnalyzers" RuleNamespace="Microsoft.CodeAnalysis.NetAnalyzers">
       <Rule Id="CA1000" Action="None" />             <!-- Do not declare static members on generic types -->
       <Rule Id="CA1001" Action="None" />             <!-- Types that own disposable fields should be disposable -->

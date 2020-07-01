@@ -116,6 +116,10 @@ static UINT64 NOT_helper(UINT64 value, unsigned width);
 // A helper method to perform a bit Replicate operation
 static UINT64 Replicate_helper(UINT64 value, unsigned width, emitAttr size);
 
+// Method to do check if mov is redundant with respect to the last instruction.
+// If yes, the caller of this method can choose to omit current mov instruction.
+bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src);
+
 /************************************************************************
 *
 * This union is used to to encode/decode the special ARM64 immediate values

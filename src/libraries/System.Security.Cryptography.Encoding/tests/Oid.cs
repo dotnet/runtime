@@ -81,6 +81,13 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Equal(expectedFriendlyName, oid.FriendlyName);
         }
 
+        [Fact]
+        public static void Oid_StringString_ExplicitNullFriendlyName()
+        {
+            Oid oid = new Oid(SHA1_Oid, null) { FriendlyName = null };
+            Assert.Throws<PlatformNotSupportedException>(() => oid.FriendlyName = SHA1_Name);
+        }
+
         [Theory]
         [InlineData(SHA1_Name)]
         [InlineData(SHA256_Name)]
@@ -164,6 +171,19 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Throws<PlatformNotSupportedException>(() => oid.FriendlyName = SHA256_Name);
             Assert.Equal(SHA1_Oid, oid.Value);
             Assert.Equal(SHA1_Name, oid.FriendlyName);
+        }
+
+        [Fact]
+        public static void TestFriendlyNameGetInitializes()
+        {
+            Oid oid = new Oid(SHA1_Oid, null);
+            Assert.Equal(SHA1_Oid, oid.Value);
+
+            // Getter should initialize and lock the friendly name
+            Assert.Equal(SHA1_Name, oid.FriendlyName);
+
+            // Set to a friendly name that does not map to an OID
+            Assert.Throws<PlatformNotSupportedException>(() => oid.FriendlyName = Bogus_Name);
         }
 
         [Fact]

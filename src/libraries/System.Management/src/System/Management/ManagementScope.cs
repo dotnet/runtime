@@ -945,9 +945,7 @@ namespace System.Management
              */
             if (!IsConnected)
             {
-#pragma warning disable CA2002
                 lock (this)
-#pragma warning restore CA2002
                 {
                     if (!IsConnected)
                     {

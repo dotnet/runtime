@@ -48,10 +48,6 @@ namespace Internal.Cryptography
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private sealed class NotImplementedHashProvider : HashProvider
         {
             public NotImplementedHashProvider()
