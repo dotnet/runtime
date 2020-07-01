@@ -160,13 +160,14 @@ namespace System.Net.WebSockets
                 // Setup the onClose callback
                 _onClose = new Action<JSObject>((closeEvt) =>
                 {
-                    _innerWebSocketCloseStatus = (WebSocketCloseStatus)closeEvt.GetObjectProperty("code");
-                    _innerWebSocketCloseStatusDescription = closeEvt.GetObjectProperty("reason")?.ToString();
-                    _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(Array.Empty<byte>(), WebSocketMessageType.Close));
-
-                    _tcsClose?.SetResult();
-
-                    closeEvt.Dispose();
+                    using (closeEvt)
+                    {
+                        _innerWebSocketCloseStatus = (WebSocketCloseStatus)closeEvt.GetObjectProperty("code");
+                        _innerWebSocketCloseStatusDescription = closeEvt.GetObjectProperty("reason")?.ToString();
+                        _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(Array.Empty<byte>(), WebSocketMessageType.Close));
+                        NativeCleanup();
+                        _tcsClose?.SetResult();
+                    }
                 });
 
                 // Attach the onClose callback
@@ -264,21 +265,8 @@ namespace System.Net.WebSockets
             }
         }
 
-        public override void Dispose()
+        private void NativeCleanup()
         {
-            int priorState = Interlocked.Exchange(ref _state, (int)InternalState.Disposed);
-            if (priorState == (int)InternalState.Disposed)
-            {
-                // No cleanup required.
-                return;
-            }
-
-            // registered by the CancellationTokenSource cts in the connect method
-            _cts.Cancel(false);
-            _cts.Dispose();
-
-            _writeBuffer?.Dispose();
-
             // We need to clear the events on websocket as well or stray events
             // are possible leading to crashes.
             if (_onClose != null)
@@ -301,6 +289,26 @@ namespace System.Net.WebSockets
                 _innerWebSocket?.SetObjectProperty("onmessage", "");
                 _onMessage = null;
             }
+        }
+
+        public override void Dispose()
+        {
+            int priorState = Interlocked.Exchange(ref _state, (int)InternalState.Disposed);
+            if (priorState == (int)InternalState.Disposed)
+            {
+                // No cleanup required.
+                return;
+            }
+
+            // registered by the CancellationTokenSource cts in the connect method
+            _cts.Cancel(false);
+            _cts.Dispose();
+
+            _writeBuffer?.Dispose();
+            _receiveMessageQueue.Writer.Complete();
+
+            NativeCleanup();
+
             _innerWebSocket?.Dispose();
         }
 
@@ -353,8 +361,6 @@ namespace System.Net.WebSockets
                 if (!_writeBuffer.TryGetBuffer(out buffer))
                     throw new WebSocketException(WebSocketError.NativeError);
             }
-
-            TaskCompletionSource tcsSend = new TaskCompletionSource();
 
             MemoryStream writtenBuffer = _writeBuffer;
             _writeBuffer = null;
@@ -429,9 +435,7 @@ namespace System.Net.WebSockets
         public override async Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
             _writeBuffer = null;
-            _receiveMessageQueue.Writer.Complete();
             ThrowIfNotConnected();
-
             await CloseAsyncCore(closeStatus, statusDescription, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
         }
 
@@ -443,17 +447,10 @@ namespace System.Net.WebSockets
             WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
 
             _tcsClose = new TaskCompletionSource();
-            // Wrap the cancellationToken in a using so that it can be disposed of whether
-            // we successfully connected or failed trying.
-            // Otherwise any timeout/cancellation would apply to the full session.
-            // In the failure case we need to release the references and dispose of the objects.
-            using (cancellationToken.Register(() => _tcsClose.TrySetCanceled()))
-            {
-                _innerWebSocketCloseStatus = closeStatus;
-                _innerWebSocketCloseStatusDescription = statusDescription;
-                _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
-                await _tcsClose.Task.ConfigureAwait(continueOnCapturedContext: true);
-            }
+            _innerWebSocketCloseStatus = closeStatus;
+            _innerWebSocketCloseStatusDescription = statusDescription;
+            _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
+            await _tcsClose.Task.ConfigureAwait(continueOnCapturedContext: true);
         }
 
         public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
