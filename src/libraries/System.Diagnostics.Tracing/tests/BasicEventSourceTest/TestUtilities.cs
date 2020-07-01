@@ -39,6 +39,7 @@ namespace BasicEventSourceTests
                     eventSource.Name != "System.Runtime.InteropServices.InteropEventProvider" &&
                     eventSource.Name != "System.Reflection.Runtime.Tracing" &&
                     eventSource.Name != "Microsoft-Windows-DotNETRuntime" &&
+                    eventSource.Name != "Microsoft-Windows-DotNETRuntime-ThreadPool" &&
                     eventSource.Name != "System.Runtime"
                     )
                 {
