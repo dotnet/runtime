@@ -163,8 +163,14 @@ public class WasmAppBuilder : Task
         _assemblies![assembly.GetName().Name!] = assembly;
         foreach (var aname in assembly.GetReferencedAssemblies())
         {
-            var refAssembly = mlc.LoadFromAssemblyName(aname);
-            Add(mlc, refAssembly);
+            try
+            {
+                Assembly refAssembly = mlc.LoadFromAssemblyName(aname);
+                Add(mlc, refAssembly);
+            }
+            catch (FileNotFoundException)
+            {
+            }
         }
     }
 }
