@@ -75,7 +75,7 @@ namespace System
 
     internal static class ConsolePal
     {
-        private static Encoding? s_OutputEncoding;
+        private static Encoding? s_outputEncoding;
 
         internal static void EnsureConsoleInitialized() { }
 
@@ -95,9 +95,9 @@ namespace System
 
         public static void SetConsoleInputEncoding(Encoding enc) => throw new PlatformNotSupportedException();
 
-        public static Encoding OutputEncoding => s_OutputEncoding ?? Encoding.UTF8;
+        public static Encoding OutputEncoding => s_outputEncoding ?? Encoding.UTF8;
 
-        public static void SetConsoleOutputEncoding(Encoding enc) => s_OutputEncoding = enc;
+        public static void SetConsoleOutputEncoding(Encoding enc) => s_outputEncoding = enc;
 
         public static bool IsInputRedirectedCore() => false;
 
