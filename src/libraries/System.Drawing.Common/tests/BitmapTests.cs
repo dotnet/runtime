@@ -123,7 +123,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_InvalidResource_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("resource", () => new Bitmap(typeof(Bitmap), null));
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("resource", null, () => new Bitmap(typeof(Bitmap), null));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]

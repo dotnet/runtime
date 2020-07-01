@@ -294,7 +294,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_InvalidResource_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("resource", () => new Icon(typeof(Icon), null));
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("resource", null, () => new Icon(typeof(Icon), null));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -764,7 +764,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromHandle_Zero_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>("handle", () => Icon.FromHandle(IntPtr.Zero));
+            AssertExtensions.Throws<ArgumentException>("handle", null, () => Icon.FromHandle(IntPtr.Zero));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
