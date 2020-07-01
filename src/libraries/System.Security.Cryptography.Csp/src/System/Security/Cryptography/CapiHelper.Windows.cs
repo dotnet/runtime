@@ -906,27 +906,15 @@ namespace Internal.NativeCrypto
 
         internal static int EncryptData(
             SafeKeyHandle hKey,
-            byte[] input,
-            int inputOffset,
-            int inputCount,
-            byte[] output,
-            int outputOffset,
-            int outputCount,
+            ReadOnlySpan<byte> input,
+            Span<byte> output,
             bool isFinal)
         {
             VerifyValidHandle(hKey);
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(inputCount >= 0);
-            Debug.Assert(inputCount <= input.Length - inputOffset);
-            Debug.Assert(output != null);
-            Debug.Assert(outputOffset >= 0);
-            Debug.Assert(outputCount >= 0);
-            Debug.Assert(outputCount <= output.Length - outputOffset);
-            Debug.Assert((inputCount % 8) == 0);
+            Debug.Assert((input.Length % 8) == 0);
 
             // Figure out how big the encrypted data will be
-            int cbEncryptedData = inputCount;
+            int cbEncryptedData = input.Length;
             if (!Interop.Advapi32.CryptEncrypt(hKey, SafeHashHandle.InvalidHandle, isFinal, 0, null, ref cbEncryptedData, cbEncryptedData))
             {
                 throw GetErrorCode().ToCryptographicException();
@@ -935,67 +923,47 @@ namespace Internal.NativeCrypto
             // encryptedData is an in/out buffer for CryptEncrypt. Allocate space for the encrypted data, and copy the
             // plaintext data into that space.  Since encrypted data will have padding applied, the size of the encrypted
             // data should always be larger than the plaintext key, so use that to determine the buffer size.
-            Debug.Assert(cbEncryptedData >= inputCount);
+            Debug.Assert(cbEncryptedData >= input.Length);
             var encryptedData = new byte[cbEncryptedData];
-            Buffer.BlockCopy(input, inputOffset, encryptedData, 0, inputCount);
+            input.CopyTo(encryptedData);
 
             // Encrypt for real - the last parameter is the total size of the in/out buffer, while the second to last
             // parameter specifies the size of the plaintext to encrypt.
-            int encryptedDataLength = inputCount;
+            int encryptedDataLength = input.Length;
             if (!Interop.Advapi32.CryptEncrypt(hKey, SafeHashHandle.InvalidHandle, isFinal, 0, encryptedData, ref encryptedDataLength, cbEncryptedData))
             {
                 throw GetErrorCode().ToCryptographicException();
             }
-            Debug.Assert(encryptedDataLength == cbEncryptedData);
-
-            if (isFinal)
-            {
-                Debug.Assert(outputCount == inputCount);
-            }
-            else
-            {
-                Debug.Assert(outputCount >= encryptedDataLength);
-                outputCount = encryptedDataLength;
-            }
 
             // If isFinal, padding was added so ignore it by using outputCount as size
-            Buffer.BlockCopy(encryptedData, 0, output, outputOffset, outputCount);
+            int outputCount = isFinal ? input.Length : encryptedDataLength;
+            Debug.Assert(encryptedDataLength == cbEncryptedData);
+            Debug.Assert(outputCount <= output.Length);
 
+            encryptedData.AsSpan(0, outputCount).CopyTo(output);
             return outputCount;
         }
 
         internal static int DecryptData(
             SafeKeyHandle hKey,
-            byte[] input,
-            int inputOffset,
-            int inputCount,
-            byte[] output,
-            int outputOffset,
-            int outputCount)
+            ReadOnlySpan<byte> input,
+            Span<byte> output)
         {
             VerifyValidHandle(hKey);
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(inputCount >= 0);
-            Debug.Assert(inputCount <= input.Length - inputOffset);
-            Debug.Assert(output != null);
-            Debug.Assert(outputOffset >= 0);
-            Debug.Assert(outputCount >= 0);
-            Debug.Assert(outputCount <= output.Length - outputOffset);
-            Debug.Assert((inputCount % 8) == 0);
+            Debug.Assert((input.Length % 8) == 0);
 
-            byte[] dataTobeDecrypted = new byte[inputCount];
-            Buffer.BlockCopy(input, inputOffset, dataTobeDecrypted, 0, inputCount);
+            byte[] dataTobeDecrypted = new byte[input.Length];
+            input.CopyTo(dataTobeDecrypted);
 
-            int decryptedDataLength = inputCount;
+            int decryptedDataLength = input.Length;
+
             // Always call decryption with false (not final); deal with padding manually
             if (!Interop.Advapi32.CryptDecrypt(hKey, SafeHashHandle.InvalidHandle, false, 0, dataTobeDecrypted, ref decryptedDataLength))
             {
                 throw GetErrorCode().ToCryptographicException();
             }
 
-            Buffer.BlockCopy(dataTobeDecrypted, 0, output, outputOffset, decryptedDataLength);
-
+            dataTobeDecrypted.AsSpan(0, decryptedDataLength).CopyTo(output);
             return decryptedDataLength;
         }
 
