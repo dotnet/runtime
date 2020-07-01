@@ -94,6 +94,11 @@ namespace SerializerTrimmingTest
         {
             return JsonEqual(expected, JsonSerializer.Serialize(obj));
         }
+
+        public static bool AssertCollectionAndSerialize<T>(object obj, string json)
+        {
+            return obj is T && JsonSerializer.Serialize(obj) == json;
+        }
     }
 
     internal class MyClass

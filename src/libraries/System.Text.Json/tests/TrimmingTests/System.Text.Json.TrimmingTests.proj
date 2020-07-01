@@ -2,6 +2,48 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
+    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.IImmutableDictionary.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.IImmutableList.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.IImmutableQueue.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.IImmutableSet.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.IImmutableStack.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableArray.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableDictionary.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableHashSet.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableList.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableQueue.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableSortedDictionary.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableSortedSet.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableStack.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromReader.BoxedObject.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
@@ -50,11 +92,8 @@
     <TestConsoleAppSourceFiles Include="SerializerEntryPoint\SerializeAsync.ToStream.TypedObject.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="CollectionConvertersTest.cs">
-      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
-    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="EnumConverterTest.cs" />
-    <TestConsoleAppSourceFiles Include="JsonConstructorAttributeTest.cs" />
+    <TestConsoleAppSourceFiles Include="JsonConverterAttributeTest.cs" />
     <TestConsoleAppSourceFiles Include="ObjectConvertersTest.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
