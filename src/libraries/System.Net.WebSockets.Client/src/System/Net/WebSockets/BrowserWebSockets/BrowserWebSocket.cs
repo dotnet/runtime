@@ -166,7 +166,14 @@ namespace System.Net.WebSockets
                         _innerWebSocketCloseStatusDescription = closeEvt.GetObjectProperty("reason")?.ToString();
                         _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(Array.Empty<byte>(), WebSocketMessageType.Close));
                         NativeCleanup();
-                        _tcsClose?.SetResult();
+                        if ((InternalState)_state == InternalState.Connecting)
+                        {
+                            tcsConnect.SetException(new WebSocketException(WebSocketError.NativeError));
+                        }
+                        else
+                        {
+                            _tcsClose?.SetResult();
+                        }
                     }
                 });
 
