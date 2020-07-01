@@ -119,7 +119,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Clear()
         {
             return this.Clear();
@@ -360,7 +359,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Add(T item)
         {
             return this.Add(item);
@@ -369,7 +367,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Remove(T item)
         {
             return this.Remove(item);
@@ -378,7 +375,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Union(IEnumerable<T> other)
         {
             return this.Union(other);
@@ -387,7 +383,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Intersect(IEnumerable<T> other)
         {
             return this.Intersect(other);
@@ -396,7 +391,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Except(IEnumerable<T> other)
         {
             return this.Except(other);
@@ -407,7 +401,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The other sequence of items.</param>
         /// <returns>The new set.</returns>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.SymmetricExcept(IEnumerable<T> other)
         {
             return this.SymmetricExcept(other);
