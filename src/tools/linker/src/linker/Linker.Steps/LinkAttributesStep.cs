@@ -137,6 +137,9 @@ namespace Mono.Linker.Steps
 		{
 			Debug.Assert (ShouldProcessElement (nav));
 
+			if (GetAttribute (nav, "remove") == "true")
+				Context.Annotations.AddRemovableAttribute (type);
+
 			IEnumerable<CustomAttribute> attributes = ProcessAttributes (nav);
 			if (attributes.Count () > 0)
 				Context.CustomAttributes.AddCustomAttributes (type, attributes);

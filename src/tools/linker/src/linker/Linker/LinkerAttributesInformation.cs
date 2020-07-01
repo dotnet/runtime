@@ -15,7 +15,7 @@ namespace Mono.Linker
 	{
 		readonly Dictionary<Type, List<Attribute>> _linkerAttributes;
 
-		public LinkerAttributesInformation (LinkContext context, ICustomAttributeProvider provider)
+		public LinkerAttributesInformation (LinkContext context, ICustomAttributeProvider provider, bool removable = false)
 		{
 			_linkerAttributes = null;
 			if (context.CustomAttributes.HasCustomAttributes (provider)) {
@@ -26,11 +26,11 @@ namespace Mono.Linker
 						attributeValue = ProcessRequiresUnreferencedCodeAttribute (context, provider, customAttribute);
 					else if (attributeType.IsTypeOf<DynamicDependencyAttribute> ())
 						attributeValue = DynamicDependency.ProcessAttribute (context, provider, customAttribute);
-					else if (attributeType.IsTypeOf<LinkerRemovableAttribute> ())
-						attributeValue = new LinkerRemovableAttribute ();
 					AddAttribute (ref _linkerAttributes, attributeValue);
 				}
 			}
+			if (removable)
+				AddAttribute (ref _linkerAttributes, new LinkerRemovableAttribute ());
 		}
 
 		static void AddAttribute (ref Dictionary<Type, List<Attribute>> attributes, Attribute attributeValue)
