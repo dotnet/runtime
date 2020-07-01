@@ -123,6 +123,11 @@ namespace System.Text.Unicode
 
                         do
                         {
+                            // pInputBuffer is 32-bit aligned but not necessary 128-bit aligned, so we're
+                            // going to perform an unaligned load. We don't necessarily care about aligning
+                            // this because we pessimistically assume we'll encounter non-ASCII data at some
+                            // point in the not-too-distant future (otherwise we would've stayed entirely
+                            // within the all-ASCII vectorized code at the entry to this method).
                             if (AdvSimd.Arm64.IsSupported)
                             {
                                 mask = AdvSimd.Arm64.MaxAcross(AdvSimd.LoadVector128(pInputBuffer)).ToScalar();
@@ -133,12 +138,6 @@ namespace System.Text.Unicode
                             }
                             else if (Sse2.IsSupported)
                             {
-                                // pInputBuffer is 32-bit aligned but not necessary 128-bit aligned, so we're
-                                // going to perform an unaligned load. We don't necessarily care about aligning
-                                // this because we pessimistically assume we'll encounter non-ASCII data at some
-                                // point in the not-too-distant future (otherwise we would've stayed entirely
-                                // within the all-ASCII vectorized code at the entry to this method).
-
                                 mask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pInputBuffer));
                                 if (mask != 0)
                                 {
