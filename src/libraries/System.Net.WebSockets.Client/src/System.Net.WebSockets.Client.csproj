@@ -41,6 +41,6 @@
     <Reference Include="System.Threading.Channels" Condition="'$(TargetsBrowser)' == 'true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'" >
-    <ProjectReference Include="..\..\System.Runtime.InteropServices.JavaScript/src/System.Runtime.InteropServices.JavaScript.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>  
 </Project>
