@@ -601,5 +601,32 @@ namespace DebuggerTests
             });
         }
 
+        [Fact]
+        public async Task InvalidArrayId() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
+            wait_for_event_fn : async(pause_location) =>
+            {
+
+                int frame_idx = 1;
+                var frame_locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
+                var c_obj = GetAndAssertObjectWithName(frame_locals, "c");
+                var c_obj_id = c_obj["value"] ? ["objectId"]?.Value<string>();
+                Assert.NotNull(c_obj_id);
+
+                // Invalid format
+                await GetProperties("dotnet:array:4123", expect_ok : false);
+
+                // Invalid object id
+                await GetProperties("dotnet:array:{ \"arrayId\": 234980 }", expect_ok : false);
+
+                // Trying to access object as an array
+                if (!DotnetObjectId.TryParse (c_obj_id, out var id) || id.Scheme != "object")
+                    Assert.True(false, "Unexpected object id format. Maybe this test is out of sync with the object id format in library_mono.js?");
+
+                if (!int.TryParse(id.Value, out var idNum))
+                    Assert.True(false, "Expected a numeric value part of the object id: {c_obj_id}");
+                await GetProperties($"dotnet:array:{{\"arrayId\":{idNum}}}", expect_ok : false);
+            });
     }
 }

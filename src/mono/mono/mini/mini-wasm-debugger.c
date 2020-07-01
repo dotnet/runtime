@@ -37,15 +37,15 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_set_breakpoint (const char *assembly_name, in
 EMSCRIPTEN_KEEPALIVE int mono_wasm_remove_breakpoint (int bp_id);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_current_bp_id (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_enum_frames (void);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_get_local_vars (int scope, int* pos, int len);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_local_vars (int scope, int* pos, int len);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_clear_all_breakpoints (void);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_setup_single_step (int kind);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_pause_on_exceptions (int state);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_get_object_properties (int object_id, gboolean expand_value_types);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_values (int object_id, int start_idx, int count, gboolean expand_value_types);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_invoke_getter_on_object (int object_id, const char* name);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_object_properties (int object_id, gboolean expand_value_types);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_array_values (int object_id, int start_idx, int count, gboolean expand_value_types);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_object (int object_id, const char* name);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, const char *assembly_name, const char *method_name);
@@ -1333,21 +1333,22 @@ describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 	return TRUE;
 }
 
-EMSCRIPTEN_KEEPALIVE void
+EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass)
 {
 	MonoType *type = m_class_get_byval_arg (klass);
 	if (type->type != MONO_TYPE_PTR && type->type != MONO_TYPE_FNPTR) {
 		DEBUG_PRINTF (2, "BUG: mono_wasm_get_deref_ptr_value: Expected to get a ptr type, but got 0x%x\n", type->type);
-		return;
+		return FALSE;
 	}
 
 	mono_wasm_add_properties_var ("deref", -1);
 	describe_value (type->data.type, value_addr, TRUE);
+	return TRUE;
 }
 
 //FIXME this doesn't support getting the return value pseudo-var
-EMSCRIPTEN_KEEPALIVE void
+EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_get_local_vars (int scope, int* pos, int len)
 {
 	FrameDescData data;
@@ -1357,39 +1358,41 @@ mono_wasm_get_local_vars (int scope, int* pos, int len)
 	data.pos = pos;
 
 	mono_walk_stack_with_ctx (describe_variables_on_frame, NULL, MONO_UNWIND_NONE, &data);
+
+	return TRUE;
 }
 
-EMSCRIPTEN_KEEPALIVE void
+EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_get_object_properties (int object_id, gboolean expand_value_types)
 {
 	DEBUG_PRINTF (2, "getting properties of object %d\n", object_id);
 
-	describe_object_properties (object_id, FALSE, expand_value_types);
+	return describe_object_properties (object_id, FALSE, expand_value_types);
 }
 
-EMSCRIPTEN_KEEPALIVE void
+EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_get_array_values (int object_id, int start_idx, int count, gboolean expand_value_types)
 {
 	DEBUG_PRINTF (2, "getting array values %d, startIdx: %d, count: %d, expandValueType: %d\n", object_id, start_idx, count, expand_value_types);
 
-	describe_array_values (object_id, start_idx, count, expand_value_types);
+	return describe_array_values (object_id, start_idx, count, expand_value_types);
 }
 
-EMSCRIPTEN_KEEPALIVE void
+EMSCRIPTEN_KEEPALIVE
 mono_wasm_invoke_getter_on_object (int object_id, const char* name)
 {
 	MonoObject *obj = get_object_from_id (object_id);
 	if (!obj)
-		return;
+		return FALSE;
 
-	invoke_getter (obj, mono_object_class (obj), name);
+	return invoke_getter (obj, mono_object_class (obj), name);
 }
 
-EMSCRIPTEN_KEEPALIVE void
+EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name)
 {
 	DEBUG_PRINTF (2, "mono_wasm_invoke_getter_on_value: v: %p klass: %p, name: %s\n", value, klass, name);
-	invoke_getter (value, klass, name);
+	return invoke_getter (value, klass, name);
 }
 
 // Functions required by debugger-state-machine.

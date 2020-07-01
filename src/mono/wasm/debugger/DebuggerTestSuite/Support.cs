@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Microsoft.WebAssembly.Diagnostics;
 using Xunit;
@@ -966,6 +967,65 @@ namespace DebuggerTests
             this.token = token;
             this.scripts = scripts;
         }
+    }
+
+    class DotnetObjectId
+    {
+        public string Scheme { get; }
+        public string Value { get; }
+
+        JObject value_json;
+        public JObject ValueAsJson
+        {
+            get
+            {
+                if (value_json == null)
+                {
+                    try
+                    {
+                        value_json = JObject.Parse(Value);
+                    }
+                    catch (JsonReaderException) { }
+                }
+
+                return value_json;
+            }
+        }
+
+        public static bool TryParse(JToken jToken, out DotnetObjectId objectId) => TryParse(jToken?.Value<string>(), out objectId);
+
+        public static bool TryParse(string id, out DotnetObjectId objectId)
+        {
+            objectId = null;
+            if (id == null)
+            {
+                return false;
+            }
+
+            if (!id.StartsWith("dotnet:"))
+            {
+                return false;
+            }
+
+            var parts = id.Split(":", 3);
+
+            if (parts.Length < 3)
+            {
+                return false;
+            }
+
+            objectId = new DotnetObjectId(parts[1], parts[2]);
+
+            return true;
+        }
+
+        public DotnetObjectId(string scheme, string value)
+        {
+            Scheme = scheme;
+            Value = value;
+        }
+
+        public override string ToString() => $"dotnet:{Scheme}:{Value}";
     }
 
     enum StepKind
