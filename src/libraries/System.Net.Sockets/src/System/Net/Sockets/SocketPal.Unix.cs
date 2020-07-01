@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Sockets
 {
-    internal static partial class SocketPal
+    internal static class SocketPal
     {
         public const bool SupportsMultipleConnectAttempts = false;
         public static readonly int MaximumAddressSize = Interop.Sys.GetMaximumAddressSize();
