@@ -363,16 +363,10 @@ namespace System.Net.WebSockets
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
             _writeBuffer ??= new MemoryStream();
+            _writeBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
 
             if (!endOfMessage)
-            {
-                _writeBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
                 return Task.CompletedTask;
-            }
-            else
-            {
-                _writeBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
-            }
 
             MemoryStream writtenBuffer = _writeBuffer;
             _writeBuffer = null;
