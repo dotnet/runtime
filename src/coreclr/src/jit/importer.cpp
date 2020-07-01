@@ -1888,16 +1888,17 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         {
             pIndirection = pLookup->constLookup.addr;
         }
-        GenTree* addr =  gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
+        GenTree* addr = gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
 
-#ifdef  DEBUG
+#ifdef DEBUG
         if (handle != nullptr)
         {
             addr->AsIntCon()->gtMethodHandle = (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::StaticLookupTree;
         }
         else
         {
-            addr->gtGetOp1()->AsIntCon()->gtMethodHandle = (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::StaticLookupTree;
+            addr->gtGetOp1()->AsIntCon()->gtMethodHandle =
+                (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::StaticLookupTree;
         }
 #endif
         return addr;
@@ -1936,14 +1937,15 @@ GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
         pIndirection = pLookup->addr;
     }
     GenTree* addr = gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
-#ifdef  DEBUG
+#ifdef DEBUG
     if (handle != nullptr)
     {
         addr->AsIntCon()->gtMethodHandle = (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::RuntimeLookupTree;
     }
     else
     {
-        addr->gtGetOp1()->AsIntCon()->gtMethodHandle = (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::RuntimeLookupTree;
+        addr->gtGetOp1()->AsIntCon()->gtMethodHandle =
+            (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::RuntimeLookupTree;
     }
 #endif //  DEBUG
     return addr;
@@ -3431,7 +3433,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     GenTree* dst     = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, dstAddr, typGetBlkLayout(blkSize));
     GenTree* src     = gtNewIndOfIconHandleNode(TYP_STRUCT, (size_t)initData, GTF_ICON_STATIC_HDL, false);
 #ifdef DEBUG
-    src->gtGetOp1()->AsIntCon()->gtMethodHandle = (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::IntializeArrayIntrinsics;
+    src->gtGetOp1()->AsIntCon()->gtMethodHandle =
+        (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::IntializeArrayIntrinsics;
 #endif
 
     return gtNewBlkOpNode(dst,   // dst
@@ -7186,7 +7189,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 op1 = gtNewIconHandleNode(pFldAddr == nullptr ? (size_t)fldAddr : (size_t)pFldAddr, GTF_ICON_STATIC_HDL,
                                           fldSeq);
 #ifdef DEBUG
-                op1->AsIntCon()->gtMethodHandle = (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::StaticFieldAccess;
+                op1->AsIntCon()->gtMethodHandle =
+                    (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::StaticFieldAccess;
 #endif
 
                 if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)

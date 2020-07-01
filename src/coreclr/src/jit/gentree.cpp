@@ -7196,7 +7196,7 @@ GenTree* Compiler::gtCloneExpr(
                 else
 #endif
                 {
-                    copy                                  = gtNewIconNode(tree->AsIntCon()->gtIconVal, tree->gtType);
+                    copy = gtNewIconNode(tree->AsIntCon()->gtIconVal, tree->gtType);
 #ifdef DEBUG
                     copy->AsIntCon()->gtMethodHandle = tree->AsIntCon()->gtMethodHandle;
 #endif

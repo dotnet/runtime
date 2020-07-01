@@ -3631,8 +3631,8 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 #ifdef DEBUG
                 cellAddr->AsIntCon()->gtMethodHandle = call->gtCallMethHnd;
 #endif
-                GenTree* indir    = Ind(cellAddr);
-                result            = indir;
+                GenTree* indir = Ind(cellAddr);
+                result         = indir;
             }
             break;
         }
@@ -4422,8 +4422,8 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
         CORINFO_CONST_LOOKUP lookup;
         comp->info.compCompHnd->getAddressOfPInvokeTarget(methHnd, &lookup);
 
-        void* addr = lookup.addr;
-        GenTree* addrTree; 
+        void*    addr = lookup.addr;
+        GenTree* addrTree;
         switch (lookup.accessType)
         {
             case IAT_VALUE:
@@ -4444,7 +4444,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
                 break;
 
             case IAT_PVALUE:
-                addrTree   = AddrGen(addr);
+                addrTree = AddrGen(addr);
 #ifdef DEBUG
                 addrTree->AsIntCon()->gtMethodHandle = methHnd;
 #endif
@@ -4452,7 +4452,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
                 break;
 
             case IAT_PPVALUE:
-                addrTree                    = AddrGen(addr);
+                addrTree = AddrGen(addr);
 #ifdef DEBUG
                 addrTree->AsIntCon()->gtMethodHandle = methHnd;
 #endif
