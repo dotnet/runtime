@@ -2080,7 +2080,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
                 // for managed-to-unmanaged CALLI that requires marshaling, the target is passed
                 // as the secret argument to the stub by GenericPInvokeCalliHelper (asmhelpers.asm)
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
                 // the secret arg has been shifted to left and ORed with 1 (see code:GenericPInvokeCalliHelper)
                 pcsEmit->EmitLDC(1);
                 pcsEmit->EmitSHR_UN();
@@ -2093,7 +2093,14 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             {
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
                 // pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_NDIRECT_TARGET, 1, 1);
-                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
+
+#ifdef _DEBUG // There are five more pointer values for _DEBUG
+                _ASSERTE(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData) == sizeof(void*) * 8 + 8);
+                pcsEmit->EmitLDC(TARGET_POINTER_SIZE * 8 + 8); // offsetof(NDirectMethodDesc, ndirect.m_pWriteableData)
+#else // _DEBUG
+                _ASSERTE(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData) == sizeof(void*) * 3 + 8);
+                pcsEmit->EmitLDC(TARGET_POINTER_SIZE * 3 + 8); // offsetof(NDirectMethodDesc, ndirect.m_pWriteableData)
+#endif // _DEBUG
                 pcsEmit->EmitADD();
 
                 if (decltype(NDirectMethodDesc::ndirect.m_pWriteableData)::isRelative)
@@ -3118,7 +3125,7 @@ BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*
                         return TRUE;
                     }
                 }
-                if (i > 0) dwStackSize += sizeof(SLOT);
+                if (i > 0) dwStackSize += TARGET_POINTER_SIZE;
                 break;
             }
 
@@ -3373,7 +3380,7 @@ static inline UINT GetStackOffsetFromStackSize(UINT stackSize, bool fThisCall)
     if (fThisCall)
     {
         // -1 means that the argument is not on the stack
-        return (stackSize >= sizeof(SLOT) ? (stackSize - sizeof(SLOT)) : (UINT)-1);
+        return (stackSize >= TARGET_POINTER_SIZE ? (stackSize - TARGET_POINTER_SIZE) : (UINT)-1);
     }
 #endif // TARGET_X86
     return stackSize;
@@ -3471,8 +3478,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
     //
     // Marshal the return value.
     //
-
-    UINT nativeStackSize = (SF_IsCOMStub(dwStubFlags) ? sizeof(SLOT) : 0);
+    UINT nativeStackSize = (SF_IsCOMStub(dwStubFlags) ? TARGET_POINTER_SIZE : 0);
     bool fStubNeedsCOM = SF_IsCOMStub(dwStubFlags);
 
     // Normally we would like this to be false so that we use the correct signature
@@ -3589,7 +3595,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
         fStubNeedsCOM |= info.MarshalerRequiresCOM();
 
         // make sure that the first parameter is enregisterable
-        if (info.GetNativeArgSize() > sizeof(SLOT))
+        if (info.GetNativeArgSize() > TARGET_POINTER_SIZE)
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_BADNATL_THISCALL);
 
         argidx++;
@@ -3640,7 +3646,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
             MethodTable *pRetMT = msig.GetRetTypeHandleThrowing().AsMethodTable();
             if (IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
             {
-                nativeStackSize += sizeof(LPVOID);
+                nativeStackSize += TARGET_POINTER_SIZE;
             }
         }
     }
@@ -3653,7 +3659,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
         if (argidx == iLCIDArg)
         {
             pss->MarshalLCID(argidx);
-            nativeStackSize += sizeof(LPVOID);
+            nativeStackSize += TARGET_POINTER_SIZE;
 
             if (SF_IsReverseStub(dwStubFlags))
                 argOffset++;
@@ -3671,7 +3677,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
         if (fThisCall && argidx == 1)
         {
             // make sure that the first parameter is enregisterable
-            if (info.GetNativeArgSize() > sizeof(SLOT))
+            if (info.GetNativeArgSize() > TARGET_POINTER_SIZE)
                 COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_BADNATL_THISCALL);
         }
 
@@ -3684,7 +3690,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
     if (argidx == iLCIDArg)
     {
         pss->MarshalLCID(argidx);
-        nativeStackSize += sizeof(LPVOID);
+        nativeStackSize += TARGET_POINTER_SIZE;
 
         if (SF_IsReverseStub(dwStubFlags))
             argOffset++;
@@ -3727,7 +3733,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
     if (SF_IsHRESULTSwapping(dwStubFlags))
     {
         if (msig.GetReturnType() != ELEMENT_TYPE_VOID)
-            nativeStackSize += sizeof(LPVOID);
+            nativeStackSize += TARGET_POINTER_SIZE;
     }
 
     if (pMD->IsDynamicMethod())
@@ -3741,8 +3747,8 @@ static void CreateNDirectStubWorker(StubState*         pss,
 #ifdef TARGET_X86
         if (fThisCall)
         {
-            _ASSERTE(nativeStackSize >= sizeof(SLOT));
-            nativeStackSize -= sizeof(SLOT);
+            _ASSERTE(nativeStackSize >= TARGET_POINTER_SIZE);
+            nativeStackSize -= TARGET_POINTER_SIZE;
         }
 #else // TARGET_X86
         //
@@ -3859,7 +3865,7 @@ static void CreateStructStub(ILStubState* pss,
     if (pMD->IsDynamicMethod())
     {
         DynamicMethodDesc* pDMD = pMD->AsDynamicMethodDesc();
-        pDMD->SetNativeStackArgSize(4 * sizeof(SLOT)); // The native stack arg size is constant since the signature for struct stubs is constant.
+        pDMD->SetNativeStackArgSize(4 * TARGET_POINTER_SIZE); // The native stack arg size is constant since the signature for struct stubs is constant.
     }
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
