@@ -21,42 +21,6 @@ namespace System.Globalization
                         -1;
         }
 
-        // Call native side to figure out which calendars are allowed
-        internal static int NlsGetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-
-            NlsEnumCalendarsData data = default;
-            data.userOverride = 0;
-            data.calendars = new List<int>();
-
-            // First call GetLocaleInfo if necessary
-            if (useUserOverride)
-            {
-                // They want user overrides, see if the user calendar matches the input calendar
-                int userCalendar = CultureData.GetLocaleInfoExInt(localeName, LOCALE_ICALENDARTYPE);
-
-                // If we got a default, then use it as the first calendar
-                if (userCalendar != 0)
-                {
-                    data.userOverride = userCalendar;
-                    data.calendars.Add(userCalendar);
-                }
-            }
-
-            unsafe
-            {
-                Interop.Kernel32.EnumCalendarInfoExEx(EnumCalendarsCallback, localeName, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, Unsafe.AsPointer(ref data));
-            }
-
-            // Copy to the output array
-            for (int i = 0; i < Math.Min(calendars.Length, data.calendars.Count); i++)
-                calendars[i] = (CalendarId)data.calendars[i];
-
-            // Now we have a list of data, return the count
-            return data.calendars.Count;
-        }
-
         private static bool NlsSystemSupportsTaiwaneseCalendar()
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -70,23 +34,7 @@ namespace System.Globalization
 
         private const uint CAL_RETURN_NUMBER = 0x20000000;
         private const uint CAL_SCALNAME = 0x00000002;
-        private const uint CAL_SYEARMONTH = 0x0000002f;
-        private const uint CAL_SDAYNAME7 = 0x0000000d;
-        private const uint CAL_SABBREVDAYNAME7 = 0x00000014;
-        private const uint CAL_SMONTHNAME1 = 0x00000015;
-        private const uint CAL_SABBREVMONTHNAME1 = 0x00000022;
-        private const uint CAL_SSHORTESTDAYNAME7 = 0x00000037;
-        private const uint CAL_SERASTRING = 0x00000004;
-        private const uint CAL_SABBREVERASTRING = 0x00000039;
-        private const uint CAL_ICALINTVALUE = 0x00000001;
         private const uint CAL_ITWODIGITYEARMAX = 0x00000030;
-
-        private const uint ENUM_ALL_CALENDARS = 0xffffffff;
-
-        private const uint LOCALE_SSHORTDATE = 0x0000001F;
-        private const uint LOCALE_SLONGDATE = 0x00000020;
-        private const uint LOCALE_SYEARMONTH = 0x00001006;
-        private const uint LOCALE_ICALENDARTYPE = 0x00001009;
 
         private static bool CallGetCalendarInfoEx(string? localeName, CalendarId calendar, uint calType, out int data)
         {
@@ -146,7 +94,7 @@ namespace System.Globalization
         }
 
         //
-        // struct to help our calendar data enumaration callback
+        // struct to help our calendar data enumeration callback
         //
         public struct NlsEnumCalendarsData
         {

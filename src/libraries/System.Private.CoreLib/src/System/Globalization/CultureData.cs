@@ -141,9 +141,9 @@ namespace System.Globalization
         private int _iDefaultEbcdicCodePage = undef; // default EBCDIC code page
 
         private int _iLanguage; // locale ID (0409) - NO sort information
-        private bool _bUseOverrides; // use user overrides?
+        private bool _bUseOverrides; // use user overrides? this depends on user setting and if is user default locale.
+        private bool _bUseOverridesUserSetting; // the setting the user requested for.
         private bool _bNeutral; // Flags for the culture (ie: neutral or not right now)
-        private bool _isDefaultUserLocale;
 
         /// <summary>
         /// Region Name to Culture Name mapping table
@@ -552,6 +552,7 @@ namespace System.Globalization
             // Basics
             // Note that we override the resources since this IS NOT supposed to change (by definition)
             invariant._bUseOverrides = false;
+            invariant._bUseOverridesUserSetting = false;
             invariant._sRealName = "";                     // Name you passed in (ie: en-US, en, or de-DE_phoneb)
             invariant._sWindowsName = "";                     // Name OS thinks the object is (ie: de-DE_phoneb, or en-US (even if en was passed in))
 
@@ -786,7 +787,6 @@ namespace System.Globalization
                     return null;
                 }
                 CultureData cd = CreateCultureWithInvariantData();
-                cd._bUseOverrides = useUserOverride;
                 cd._sName = NormalizeCultureName(cultureName, out cd._bNeutral);
                 cd._sRealName = cd._sName;
                 cd._sWindowsName = cd._sName;
@@ -804,8 +804,8 @@ namespace System.Globalization
             }
 
             CultureData culture = new CultureData();
-            culture._bUseOverrides = useUserOverride;
             culture._sRealName = cultureName;
+            culture._bUseOverridesUserSetting = useUserOverride;
 
             // Ask native code if that one's real
             if (!culture.InitCultureDataCore() && !culture.InitCompatibilityCultureData())
@@ -813,6 +813,8 @@ namespace System.Globalization
                 return null;
             }
 
+            // We need _sWindowsName to be initialized to know if we're using overrides.
+            culture.InitUserOverride(useUserOverride);
             return culture;
         }
 
@@ -908,9 +910,9 @@ namespace System.Globalization
         }
 
         /// <summary>
-        /// Are overrides enabled?
+        /// Did the user request to use overrides?
         /// </summary>
-        internal bool UseUserOverride => _bUseOverrides;
+        internal bool UseUserOverride => _bUseOverridesUserSetting;
 
         /// <summary>
         /// locale name (ie: de-DE, NO sort information)
@@ -1267,7 +1269,8 @@ namespace System.Globalization
                                                                             IcuGetConsoleFallbackName(_sRealName!);
 
         /// <summary>
-        /// (user can override) grouping of digits
+        /// grouping of digits
+        /// (user can override)
         /// </summary>
         internal int[] NumberGroupSizes => _waGrouping ??= GetLocaleInfoCoreUserOverride(LocaleGroupingData.Digit);
 
@@ -1329,7 +1332,8 @@ namespace System.Globalization
         private string PerMilleSymbol => _sPerMille ??= GetLocaleInfoCore(LocaleStringData.PerMilleSymbol);
 
         /// <summary>
-        /// (user can override) local monetary symbol, eg: $
+        /// local monetary symbol, eg: $
+        /// (user can override)
         /// </summary>
         internal string CurrencySymbol => _sCurrency ??= GetLocaleInfoCoreUserOverride(LocaleStringData.MonetarySymbol);
 
@@ -1349,12 +1353,14 @@ namespace System.Globalization
         internal string CurrencyNativeName => _sNativeCurrency ??= GetLocaleInfoCore(LocaleStringData.CurrencyNativeName);
 
         /// <summary>
-        /// (user can override) monetary grouping of digits
+        /// monetary grouping of digits
+        /// (user can override)
         /// </summary>
         internal int[] CurrencyGroupSizes => _waMonetaryGrouping ??= GetLocaleInfoCoreUserOverride(LocaleGroupingData.Monetary);
 
         /// <summary>
-        /// (user can override) system of measurement 0=metric, 1=US (RegionInfo)
+        /// system of measurement 0=metric, 1=US (RegionInfo)
+        /// (user can override)
         /// </summary>
         internal int MeasurementSystem
         {
@@ -1369,22 +1375,26 @@ namespace System.Globalization
         }
 
         /// <summary>
-        /// (user can override) list Separator
+        /// list Separator
+        /// (user can override)
         /// </summary>
         internal string ListSeparator => _sListSeparator ??= GetLocaleInfoCoreUserOverride(LocaleStringData.ListSeparator);
 
         /// <summary>
-        /// (user can override) AM designator
+        /// AM designator
+        /// (user can override)
         /// </summary>
         internal string AMDesignator => _sAM1159 ??= GetLocaleInfoCoreUserOverride(LocaleStringData.AMDesignator);
 
         /// <summary>
-        /// (user can override) PM designator
+        /// PM designator
+        /// (user can override)
         /// </summary>
         internal string PMDesignator => _sPM2359 ??= GetLocaleInfoCoreUserOverride(LocaleStringData.PMDesignator);
 
         /// <summary>
-        /// (user can override) time format
+        /// time format
+        /// (user can override)
         /// </summary>
         internal string[] LongTimes
         {
@@ -1394,7 +1404,7 @@ namespace System.Globalization
                 {
                     Debug.Assert(!GlobalizationMode.Invariant);
 
-                    string[]? longTimes = GetTimeFormatsCore();
+                    string[]? longTimes = GetTimeFormatsCore(shortFormat: false);
                     if (longTimes == null || longTimes.Length == 0)
                     {
                         _saLongTimes = Invariant._saLongTimes!;
@@ -1409,8 +1419,8 @@ namespace System.Globalization
         }
 
         /// <summary>
-        /// (user can override) short time format
         /// Short times (derived from long times format)
+        /// (user can override)
         /// </summary>
         internal string[] ShortTimes
         {
@@ -1421,7 +1431,7 @@ namespace System.Globalization
                     Debug.Assert(!GlobalizationMode.Invariant);
 
                     // Try to get the short times from the OS/culture.dll
-                    string[]? shortTimes = GetShortTimeFormatsCore();
+                    string[]? shortTimes = GetTimeFormatsCore(shortFormat: true);
 
                     if (shortTimes == null || shortTimes.Length == 0)
                     {
@@ -1437,34 +1447,6 @@ namespace System.Globalization
                 }
                 return _saShortTimes!;
             }
-        }
-
-        private string[]? GetTimeFormatsCore()
-        {
-            if (!ShouldUseUserOverrideNlsData)
-            {
-                return IcuGetTimeFormats();
-            }
-
-            // Note that this gets overrides for us all the time
-            Debug.Assert(_sWindowsName != null, "[CultureData.DoEnumTimeFormats] Expected _sWindowsName to be populated by already");
-            string[]? result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, 0, UseUserOverride));
-
-            return result;
-        }
-
-        private string[]? GetShortTimeFormatsCore()
-        {
-            if (!ShouldUseUserOverrideNlsData)
-            {
-                return IcuGetShortTimeFormats();
-            }
-
-            // Note that this gets overrides for us all the time
-            Debug.Assert(_sWindowsName != null, "[CultureData.DoEnumShortTimeFormats] Expected _sWindowsName to be populated by already");
-            string[]? result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, Interop.Kernel32.TIME_NOSECONDS, UseUserOverride));
-
-            return result;
         }
 
         private string[] DeriveShortTimesFromLong()
@@ -1593,7 +1575,10 @@ namespace System.Globalization
             return index;
         }
 
-        // (user can override) first day of week
+        /// <summary>
+        /// first day of week
+        /// (user can override)
+        /// </summary>
         internal int FirstDayOfWeek
         {
             get
@@ -1606,7 +1591,10 @@ namespace System.Globalization
             }
         }
 
-        // (user can override) first week of year
+        /// <summary>
+        /// first week of year
+        /// (user can override)
+        /// </summary>
         internal int CalendarWeekRule
         {
             get
@@ -1628,7 +1616,8 @@ namespace System.Globalization
         }
 
         /// <summary>
-        /// (user can override default only) long date format
+        /// long date format
+        /// (user can override default only)
         /// </summary>
         internal string[] LongDates(CalendarId calendarId)
         {
@@ -1636,7 +1625,8 @@ namespace System.Globalization
         }
 
         /// <summary>
-        /// (user can override) date year/month format.
+        /// date year/month format.
+        /// (user can override default only)
         /// </summary>
         internal string[] YearMonths(CalendarId calendarId)
         {
@@ -1707,9 +1697,7 @@ namespace System.Globalization
                     CalendarId[] calendars = new CalendarId[23];
                     Debug.Assert(_sWindowsName != null, "[CultureData.CalendarIds] Expected _sWindowsName to be populated by already");
 
-                    int count = ShouldUseUserOverrideNlsData
-                        ? CalendarData.NlsGetCalendars(_sWindowsName, _bUseOverrides, calendars)
-                        : CalendarData.IcuGetCalendars(_sWindowsName, _bUseOverrides, calendars);
+                    int count = CalendarData.GetCalendarsCore(_sWindowsName, _bUseOverrides, calendars);
 
                     // See if we had a calendar to add.
                     if (count == 0)
@@ -1750,18 +1738,6 @@ namespace System.Globalization
                         // It worked, remember the list
                         CalendarId[] temp = new CalendarId[count];
                         Array.Copy(calendars, temp, count);
-
-                        // Want 1st calendar to be default
-                        // Prior to Vista the enumeration didn't have default calendar first
-                        if (temp.Length > 1)
-                        {
-                            CalendarId i = (CalendarId)GetLocaleInfoCoreUserOverride(LocaleNumberData.CalendarType);
-                            if (temp[1] == i)
-                            {
-                                temp[1] = temp[0];
-                                temp[0] = i;
-                            }
-                        }
 
                         _waCalendars = temp;
                     }
@@ -1804,7 +1780,7 @@ namespace System.Globalization
             if (calendarData == null)
             {
                 Debug.Assert(_sWindowsName != null, "[CultureData.GetCalendar] Expected _sWindowsName to be populated by already");
-                calendarData = new CalendarData(_sWindowsName, calendarId, UseUserOverride, _isDefaultUserLocale);
+                calendarData = new CalendarData(_sWindowsName, calendarId, _bUseOverrides);
                 _calendars[calendarIndex] = calendarData;
             }
 
@@ -1884,7 +1860,7 @@ namespace System.Globalization
             {
                 if (_iDefaultAnsiCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultAnsiCodePage = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.AnsiCodePage) : IcuGetAnsiCodePage(_sRealName!);
+                    _iDefaultAnsiCodePage = GetAnsiCodePage(_sRealName!);
                 }
                 return _iDefaultAnsiCodePage;
             }
@@ -1899,7 +1875,7 @@ namespace System.Globalization
             {
                 if (_iDefaultOemCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultOemCodePage = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.OemCodePage) : IcuGetOemCodePage(_sRealName!);
+                    _iDefaultOemCodePage = GetOemCodePage(_sRealName!);
                 }
                 return _iDefaultOemCodePage;
             }
@@ -1914,7 +1890,7 @@ namespace System.Globalization
             {
                 if (_iDefaultMacCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultMacCodePage = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.MacCodePage) : IcuGetMacCodePage(_sRealName!);
+                    _iDefaultMacCodePage = GetMacCodePage(_sRealName!);
                 }
                 return _iDefaultMacCodePage;
             }
@@ -1929,7 +1905,7 @@ namespace System.Globalization
             {
                 if (_iDefaultEbcdicCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultEbcdicCodePage = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.EbcdicCodePage) : IcuGetEbcdicCodePage(_sRealName!);
+                    _iDefaultEbcdicCodePage = GetEbcdicCodePage(_sRealName!);
                 }
                 return _iDefaultEbcdicCodePage;
             }

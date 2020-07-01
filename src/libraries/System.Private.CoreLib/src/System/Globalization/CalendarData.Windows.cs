@@ -10,60 +10,86 @@ namespace System.Globalization
 {
     internal partial class CalendarData
     {
+        private const uint CAL_ICALINTVALUE = 0x00000001;
         private const uint CAL_RETURN_GENITIVE_NAMES = 0x10000000;
         private const uint CAL_NOUSEROVERRIDE = 0x80000000;
         private const uint CAL_SMONTHDAY = 0x00000038;
         private const uint CAL_SSHORTDATE = 0x00000005;
         private const uint CAL_SLONGDATE = 0x00000006;
+        private const uint CAL_SYEARMONTH = 0x0000002f;
+        private const uint CAL_SDAYNAME7 = 0x0000000d;
+        private const uint CAL_SABBREVDAYNAME7 = 0x00000014;
+        private const uint CAL_SMONTHNAME1 = 0x00000015;
+        private const uint CAL_SABBREVMONTHNAME1 = 0x00000022;
+        private const uint CAL_SSHORTESTDAYNAME7 = 0x00000037;
+        private const uint CAL_SERASTRING = 0x00000004;
+        private const uint CAL_SABBREVERASTRING = 0x00000039;
 
-        private bool LoadCalendarDataFromSystemCore(string localeName, CalendarId calendarId, bool isUserDefaultLocale)
+        private const uint ENUM_ALL_CALENDARS = 0xffffffff;
+
+        private const uint LOCALE_ICALENDARTYPE = 0x00001009;
+        private const uint LOCALE_SSHORTDATE = 0x0000001F;
+        private const uint LOCALE_SLONGDATE = 0x00000020;
+        private const uint LOCALE_SYEARMONTH = 0x00001006;
+
+        private bool LoadCalendarDataFromSystemCore(string localeName, CalendarId calendarId)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            // If we are using ICU and loading the calendar data for the user's default
-            // local, and we're using user overrides, then we use NLS to load the data
-            // in order to get the user overrides from the OS.
-            if (!GlobalizationMode.UseNls && (!bUseUserOverrides || !isUserDefaultLocale))
+            if (GlobalizationMode.UseNls)
             {
-                return IcuLoadCalendarDataFromSystem(localeName, calendarId);
+                return NlsLoadCalendarDataFromSystem(localeName, calendarId);
             }
 
+            // If running using ICU on Windows we should honor user overrides using NLS and the rest from ICU
+            bool result = IcuLoadCalendarDataFromSystem(localeName, calendarId);
+
+            if (result && bUseUserOverrides)
+            {
+                NormalizeCalendarId(ref calendarId, ref localeName);
+                result &= CallGetCalendarInfoEx(localeName, calendarId, CAL_ITWODIGITYEARMAX, out this.iTwoDigitYearMax);
+
+                // They want user overrides, see if the user calendar matches the input calendar
+                CalendarId userCalendar = (CalendarId)CultureData.GetLocaleInfoExInt(localeName, LOCALE_ICALENDARTYPE);
+
+                // If the calendars were the same, see if the locales were the same
+                if (userCalendar == calendarId)
+                {
+                    string? shortDateOverride = CultureData.ReescapeWin32String(CultureData.GetLocaleInfoEx(localeName, LOCALE_SSHORTDATE));
+                    string? longDateOverride = CultureData.ReescapeWin32String(CultureData.GetLocaleInfoEx(localeName, LOCALE_SLONGDATE));
+                    InsertValueToArray(shortDateOverride, ref this.saShortDates);
+                    InsertValueToArray(longDateOverride, ref this.saLongDates);
+                }
+            }
+
+            return result;
+        }
+
+        private void InsertValueToArray(string? value, ref string[] destination)
+        {
+            if (value != null)
+            {
+                string[] newArray = new string[destination.Length + 1];
+                newArray[0] = value;
+                Array.Copy(destination, 0, newArray, 1, destination.Length);
+                destination = newArray;
+            }
+        }
+
+        private bool NlsLoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
+        {
             bool ret = true;
 
-            uint useOverrides = this.bUseUserOverrides ? 0 : CAL_NOUSEROVERRIDE;
+            uint useOverrides = bUseUserOverrides ? 0 : CAL_NOUSEROVERRIDE;
 
-            //
-            // Windows doesn't support some calendars right now, so remap those.
-            //
-            switch (calendarId)
-            {
-                case CalendarId.JAPANESELUNISOLAR:    // Data looks like Japanese
-                    calendarId = CalendarId.JAPAN;
-                    break;
-                case CalendarId.JULIAN:               // Data looks like gregorian US
-                case CalendarId.CHINESELUNISOLAR:     // Algorithmic, so actual data is irrelevent
-                case CalendarId.SAKA:                 // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.LUNAR_ETO_CHN:        // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.LUNAR_ETO_KOR:        // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.LUNAR_ETO_ROKUYOU:    // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.KOREANLUNISOLAR:      // Algorithmic, so actual data is irrelevent
-                case CalendarId.TAIWANLUNISOLAR:      // Algorithmic, so actual data is irrelevent
-                    calendarId = CalendarId.GREGORIAN_US;
-                    break;
-            }
-
-            //
-            // Special handling for some special calendar due to OS limitation.
-            // This includes calendar like Taiwan calendar, UmAlQura calendar, etc.
-            //
-            CheckSpecialCalendar(ref calendarId, ref localeName);
+            NormalizeCalendarId(ref calendarId, ref localeName);
 
             // Numbers
             ret &= CallGetCalendarInfoEx(localeName, calendarId, CAL_ITWODIGITYEARMAX | useOverrides, out this.iTwoDigitYearMax);
 
             // Strings
             ret &= CallGetCalendarInfoEx(localeName, calendarId, CAL_SCALNAME, out this.sNativeName);
-            ret &= CallGetCalendarInfoEx(localeName, calendarId, CAL_SMONTHDAY | useOverrides, out this.sMonthDay);
+            ret &= CallGetCalendarInfoEx(localeName, calendarId, CAL_SMONTHDAY, out this.sMonthDay);
 
             // String Arrays
             // Formats
@@ -117,6 +143,35 @@ namespace System.Globalization
             this.sMonthDay = CultureData.ReescapeWin32String(this.sMonthDay)!;
 
             return ret;
+        }
+
+        private static void NormalizeCalendarId(ref CalendarId calendarId, ref string localeName)
+        {
+            //
+            // Windows doesn't support some calendars right now, so remap those.
+            //
+            switch (calendarId)
+            {
+                case CalendarId.JAPANESELUNISOLAR:    // Data looks like Japanese
+                    calendarId = CalendarId.JAPAN;
+                    break;
+                case CalendarId.JULIAN:               // Data looks like gregorian US
+                case CalendarId.CHINESELUNISOLAR:     // Algorithmic, so actual data is irrelevent
+                case CalendarId.SAKA:                 // reserved to match Office but not implemented in our code, so data is irrelevent
+                case CalendarId.LUNAR_ETO_CHN:        // reserved to match Office but not implemented in our code, so data is irrelevent
+                case CalendarId.LUNAR_ETO_KOR:        // reserved to match Office but not implemented in our code, so data is irrelevent
+                case CalendarId.LUNAR_ETO_ROKUYOU:    // reserved to match Office but not implemented in our code, so data is irrelevent
+                case CalendarId.KOREANLUNISOLAR:      // Algorithmic, so actual data is irrelevent
+                case CalendarId.TAIWANLUNISOLAR:      // Algorithmic, so actual data is irrelevent
+                    calendarId = CalendarId.GREGORIAN_US;
+                    break;
+            }
+
+            //
+            // Special handling for some special calendar due to OS limitation.
+            // This includes calendar like Taiwan calendar, UmAlQura calendar, etc.
+            //
+            CheckSpecialCalendar(ref calendarId, ref localeName);
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -173,10 +228,7 @@ namespace System.Globalization
             context.userOverride = null;
             context.strings = new List<string>();
             // First call GetLocaleInfo if necessary
-            if ((lcType != 0) && ((lcType & CAL_NOUSEROVERRIDE) == 0) &&
-                // Get user locale, see if it matches localeName.
-                // Note that they should match exactly, including letter case
-                CultureInfo.GetUserDefaultLocaleName() == localeName)
+            if ((lcType != 0) && ((lcType & CAL_NOUSEROVERRIDE) == 0))
             {
                 // They want user overrides, see if the user calendar matches the input calendar
                 CalendarId userCalendar = (CalendarId)CultureData.GetLocaleInfoExInt(localeName, LOCALE_ICALENDARTYPE);
@@ -286,6 +338,89 @@ namespace System.Globalization
             outputStrings = results;
 
             return true;
+        }
+
+        internal static int GetCalendarsCore(string localeName, bool useUserOverride, CalendarId[] calendars)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
+            if (GlobalizationMode.UseNls)
+            {
+                return NlsGetCalendars(localeName, useUserOverride, calendars);
+            }
+
+            int count = IcuGetCalendars(localeName, calendars);
+
+            if (useUserOverride)
+            {
+                // They want user overrides, see if the user calendar matches the input calendar
+                int userCalendar = CultureData.GetLocaleInfoExInt(localeName, LOCALE_ICALENDARTYPE);
+
+                if (userCalendar != 0 && (CalendarId)userCalendar != calendars[0])
+                {
+                    CalendarId userOverride = (CalendarId)userCalendar;
+                    int index = -1;
+                    for (int i = 1; i < calendars.Length; i++)
+                    {
+                        if (calendars[i] == userOverride)
+                        {
+                            index = i;
+                            break;
+                        }
+                    }
+
+                    // We found user preferred calendar in the array, move it to first position.
+                    if (index != -1)
+                    {
+                        CalendarId tmp = calendars[0];
+                        calendars[0] = calendars[index];
+                        calendars[index] = tmp;
+                    }
+                    else
+                    {
+                        // We didn't find it, we insert it at the beginning of the array.
+                        Span<CalendarId> tmp = count < 256 ? stackalloc CalendarId[count] : new CalendarId[count];
+                        tmp[0] = userOverride;
+                        calendars.AsSpan().Slice(0, count - 1).CopyTo(tmp.Slice(1));
+                        tmp.CopyTo(calendars);
+                    }
+                }
+            }
+
+            return count;
+        }
+
+        private static int NlsGetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
+        {
+            NlsEnumCalendarsData data = default;
+            data.userOverride = 0;
+            data.calendars = new List<int>();
+
+            // First call GetLocaleInfo if necessary
+            if (useUserOverride)
+            {
+                // They want user overrides, see if the user calendar matches the input calendar
+                int userCalendar = CultureData.GetLocaleInfoExInt(localeName, LOCALE_ICALENDARTYPE);
+
+                // If we got a default, then use it as the first calendar
+                if (userCalendar != 0)
+                {
+                    data.userOverride = userCalendar;
+                    data.calendars.Add(userCalendar);
+                }
+            }
+
+            unsafe
+            {
+                Interop.Kernel32.EnumCalendarInfoExEx(EnumCalendarsCallback, localeName, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, Unsafe.AsPointer(ref data));
+            }
+
+            // Copy to the output array
+            for (int i = 0; i < Math.Min(calendars.Length, data.calendars.Count); i++)
+                calendars[i] = (CalendarId)data.calendars[i];
+
+            // Now we have a list of data, return the count
+            return data.calendars.Count;
         }
     }
 }

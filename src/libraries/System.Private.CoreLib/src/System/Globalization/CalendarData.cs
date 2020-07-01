@@ -99,13 +99,13 @@ namespace System.Globalization
         //
         // Get a bunch of data for a calendar
         //
-        internal CalendarData(string localeName, CalendarId calendarId, bool bUseUserOverrides, bool isUserDefaultLocale)
+        internal CalendarData(string localeName, CalendarId calendarId, bool bUseUserOverrides)
         {
             this.bUseUserOverrides = bUseUserOverrides;
 
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            bool loadedCalendarData = LoadCalendarDataFromSystemCore(localeName, calendarId, isUserDefaultLocale);
+            bool loadedCalendarData = LoadCalendarDataFromSystemCore(localeName, calendarId);
 
             if (!loadedCalendarData)
             {

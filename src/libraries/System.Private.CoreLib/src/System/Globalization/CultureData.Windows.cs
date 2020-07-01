@@ -80,7 +80,6 @@ namespace System.Globalization
             // Start by assuming the windows name will be the same as the specific name since windows knows
             // about specifics on all versions. Only for downlevel Neutral locales does this have to change.
             _sWindowsName = realNameBuffer;
-            _isDefaultUserLocale = _sWindowsName == CultureInfo.GetUserDefaultLocaleName();
 
             // Neutrals and non-neutrals are slightly different
             if (_bNeutral)
@@ -144,6 +143,12 @@ namespace System.Globalization
             return true;
         }
 
+        private void InitUserOverride(bool useUserOverride)
+        {
+            Debug.Assert(_sWindowsName != null, "[CultureData.InitUserOverride] Expected _sWindowsName to be populated by already");
+            _bUseOverrides = useUserOverride && _sWindowsName == CultureInfo.UserDefaultLocaleName;
+        }
+
         internal bool IsWin32Installed => true;
 
         internal static unsafe CultureData GetCurrentRegionData()
@@ -189,9 +194,43 @@ namespace System.Globalization
             return null;
         }
 
+        private string[]? GetTimeFormatsCore(bool shortFormat)
+        {
+            Debug.Assert(_sWindowsName != null, "[CultureData.GetTimeFormatsCore] Expected _sWindowsName to be populated by already");
+
+            uint lcType = shortFormat ? Interop.Kernel32.TIME_NOSECONDS : 0;
+            if (GlobalizationMode.UseNls)
+            {
+                return ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, lcType, _bUseOverrides));
+            }
+
+            if (!ShouldUseUserOverrideNlsData)
+            {
+                return IcuGetTimeFormats(shortFormat);
+            }
+
+            // When using ICU and need to get user overrides, we put the user override at the beginning
+            return new string[] {
+                GetLocaleInfoFromLCType(_sWindowsName, lcType, useUserOverride: true),
+                IcuGetTimeFormatString(shortFormat)
+            };
+        }
+
+        private int GetAnsiCodePage(string cultureName) =>
+            NlsGetLocaleInfo(LocaleNumberData.AnsiCodePage);
+
+        private int GetOemCodePage(string cultureName) =>
+            NlsGetLocaleInfo(LocaleNumberData.OemCodePage);
+
+        private int GetMacCodePage(string cultureName) =>
+            NlsGetLocaleInfo(LocaleNumberData.MacCodePage);
+
+        private int GetEbcdicCodePage(string cultureName) =>
+            NlsGetLocaleInfo(LocaleNumberData.EbcdicCodePage);
+
         // If we are using ICU and loading the calendar data for the user's default
         // local, and we're using user overrides, then we use NLS to load the data
         // in order to get the user overrides from the OS.
-        private bool ShouldUseUserOverrideNlsData => GlobalizationMode.UseNls || (UseUserOverride && _isDefaultUserLocale);
+        private bool ShouldUseUserOverrideNlsData => GlobalizationMode.UseNls || _bUseOverrides;
     }
 }

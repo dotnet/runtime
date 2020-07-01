@@ -59,16 +59,16 @@ namespace System.Globalization
             Debug.Assert(ShouldUseUserOverrideNlsData);
             uint lctype = (uint)type;
 
-            return GetLocaleInfoFromLCType(localeName, lctype, UseUserOverride);
+            return GetLocaleInfoFromLCType(localeName, lctype, _bUseOverrides);
         }
 
         private int NlsGetLocaleInfo(LocaleNumberData type)
         {
-            Debug.Assert(ShouldUseUserOverrideNlsData);
+            Debug.Assert(IsWin32Installed);
             uint lctype = (uint)type;
 
             // Fix lctype if we don't want overrides
-            if (!UseUserOverride)
+            if (!_bUseOverrides)
             {
                 lctype |= Interop.Kernel32.LOCALE_NOUSEROVERRIDE;
             }
@@ -83,14 +83,14 @@ namespace System.Globalization
         {
             Debug.Assert(ShouldUseUserOverrideNlsData);
             Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
-            return ConvertWin32GroupString(GetLocaleInfoFromLCType(_sWindowsName, (uint)type, UseUserOverride));
+            return ConvertWin32GroupString(GetLocaleInfoFromLCType(_sWindowsName, (uint)type, _bUseOverrides));
         }
 
         private string? NlsGetTimeFormatString()
         {
             Debug.Assert(ShouldUseUserOverrideNlsData);
             Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
-            return ReescapeWin32String(GetLocaleInfoFromLCType(_sWindowsName, Interop.Kernel32.LOCALE_STIMEFORMAT, UseUserOverride));
+            return ReescapeWin32String(GetLocaleInfoFromLCType(_sWindowsName, Interop.Kernel32.LOCALE_STIMEFORMAT, _bUseOverrides));
         }
 
         private int NlsGetFirstDayOfWeek()
@@ -98,7 +98,7 @@ namespace System.Globalization
             Debug.Assert(ShouldUseUserOverrideNlsData);
             Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
 
-            int result = GetLocaleInfoExInt(_sWindowsName, Interop.Kernel32.LOCALE_IFIRSTDAYOFWEEK | (!UseUserOverride ? Interop.Kernel32.LOCALE_NOUSEROVERRIDE : 0));
+            int result = GetLocaleInfoExInt(_sWindowsName, Interop.Kernel32.LOCALE_IFIRSTDAYOFWEEK | (!_bUseOverrides ? Interop.Kernel32.LOCALE_NOUSEROVERRIDE : 0));
 
             // Win32 and .NET disagree on the numbering for days of the week, so we have to convert.
             return ConvertFirstDayOfWeekMonToSun(result);
@@ -166,12 +166,12 @@ namespace System.Globalization
 
         // PAL methods end here.
 
-        private static string GetLocaleInfoFromLCType(string localeName, uint lctype, bool useUserOveride)
+        private static string GetLocaleInfoFromLCType(string localeName, uint lctype, bool useUserOverride)
         {
             Debug.Assert(localeName != null, "[CultureData.GetLocaleInfoFromLCType] Expected localeName to be not be null");
 
             // Fix lctype if we don't want overrides
-            if (!useUserOveride)
+            if (!useUserOverride)
             {
                 lctype |= Interop.Kernel32.LOCALE_NOUSEROVERRIDE;
             }

@@ -751,7 +751,7 @@ namespace System.Globalization
         {
             // reset the default culture values
 #if TARGET_WINDOWS
-            s_userDefaultLocaleName = null; // this is set by GetUserDefaultCulture();
+            UserDefaultLocaleName = GetUserDefaultLocaleName();
 #endif
             s_userDefaultCulture = GetUserDefaultCulture();
             s_userDefaultUICulture = GetUserDefaultUICulture();

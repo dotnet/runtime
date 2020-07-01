@@ -13,7 +13,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
 
-            string? strDefault = GetUserDefaultLocaleName();
+            string? strDefault = UserDefaultLocaleName;
 
             return strDefault != null ?
                 GetCultureByName(strDefault) :
@@ -44,16 +44,10 @@ namespace System.Globalization
             return InitializeUserDefaultCulture();
         }
 
-        private static volatile string? s_userDefaultLocaleName;
+        internal static string? UserDefaultLocaleName { get; private set; } = GetUserDefaultLocaleName();
 
-        internal static string? GetUserDefaultLocaleName()
-        {
-            Interlocked.CompareExchange(ref s_userDefaultLocaleName,
-                CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_USER_DEFAULT, Interop.Kernel32.LOCALE_SNAME) ??
-                CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_SYSTEM_DEFAULT, Interop.Kernel32.LOCALE_SNAME),
-                null);
-
-            return s_userDefaultLocaleName;
-        }
+        private static string? GetUserDefaultLocaleName() =>
+            CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_USER_DEFAULT, Interop.Kernel32.LOCALE_SNAME) ??
+            CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_SYSTEM_DEFAULT, Interop.Kernel32.LOCALE_SNAME);
     }
 }

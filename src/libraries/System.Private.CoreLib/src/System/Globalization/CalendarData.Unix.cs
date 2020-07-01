@@ -6,7 +6,10 @@ namespace System.Globalization
 {
     internal partial class CalendarData
     {
-        private bool LoadCalendarDataFromSystemCore(string localeName, CalendarId calendarId, bool isUserDefaultLocale) =>
+        private bool LoadCalendarDataFromSystemCore(string localeName, CalendarId calendarId) =>
             IcuLoadCalendarDataFromSystem(localeName, calendarId);
+
+        internal static int GetCalendarsCore(string localeName, bool useUserOverride, CalendarId[] calendars) =>
+            IcuGetCalendars(localeName, calendars);
      }
 }

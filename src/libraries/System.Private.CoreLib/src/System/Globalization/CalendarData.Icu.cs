@@ -91,7 +91,7 @@ namespace System.Globalization
         }
 
         // Call native side to figure out which calendars are allowed
-        internal static int IcuGetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
+        internal static int IcuGetCalendars(string localeName, CalendarId[] calendars)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
