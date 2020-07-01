@@ -788,6 +788,7 @@ namespace System.Globalization
                 }
                 CultureData cd = CreateCultureWithInvariantData();
                 cd._sName = NormalizeCultureName(cultureName, out cd._bNeutral);
+                cd._bUseOverridesUserSetting = useUserOverride;
                 cd._sRealName = cd._sName;
                 cd._sWindowsName = cd._sName;
                 cd._iLanguage = CultureInfo.LOCALE_CUSTOM_UNSPECIFIED;

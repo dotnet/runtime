@@ -42,7 +42,9 @@ namespace System.Globalization
             return InitializeUserDefaultCulture();
         }
 
-        internal static string? UserDefaultLocaleName { get; private set; } = GetUserDefaultLocaleName();
+        internal static string? UserDefaultLocaleName { get; private set; } = GlobalizationMode.Invariant ?
+                                                                                CultureInfo.InvariantCulture.Name :
+                                                                                GetUserDefaultLocaleName();
 
         private static string? GetUserDefaultLocaleName() =>
             CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_USER_DEFAULT, Interop.Kernel32.LOCALE_SNAME) ??
