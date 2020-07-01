@@ -38,7 +38,7 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Primitives" />
-    <Reference Include="System.Threading.Channels" Condition=" '$(TargetsBrowser)' == 'true'" />
+    <Reference Include="System.Threading.Channels" Condition="'$(TargetsBrowser)' == 'true'" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'" >
     <ProjectReference Include="..\..\System.Runtime.InteropServices.JavaScript/src/System.Runtime.InteropServices.JavaScript.csproj" />
