@@ -41,6 +41,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34409", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void CounterSample_Calculate_CalculateCounterSample()
         {
             CounterSample counterSample = new CounterSample(5, 0, 0, 0, 0, 0, PerformanceCounterType.NumberOfItems32);
@@ -49,6 +50,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34409", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void CounterSample_Calculate_CalculateCounterSampleCounterSample()
         {
             CounterSample counterSample1 = new CounterSample(5, 0, 0, 1, 0, 0, PerformanceCounterType.CounterDelta32);

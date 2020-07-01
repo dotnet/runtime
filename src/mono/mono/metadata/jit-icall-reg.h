@@ -77,7 +77,6 @@ MONO_JIT_ICALL (__emul_fconv_to_i4)	\
 MONO_JIT_ICALL (__emul_fconv_to_i8)	\
 MONO_JIT_ICALL (__emul_fconv_to_ovf_i8)	\
 MONO_JIT_ICALL (__emul_fconv_to_ovf_u8)	\
-MONO_JIT_ICALL (__emul_fconv_to_ovf_u8_un)	\
 MONO_JIT_ICALL (__emul_fconv_to_r4)	\
 MONO_JIT_ICALL (__emul_fconv_to_u)	\
 MONO_JIT_ICALL (__emul_fconv_to_u1)	\
@@ -115,7 +114,6 @@ MONO_JIT_ICALL (__emul_op_irem_un) \
 MONO_JIT_ICALL (__emul_rconv_to_i8) \
 MONO_JIT_ICALL (__emul_rconv_to_ovf_i8) \
 MONO_JIT_ICALL (__emul_rconv_to_ovf_u8) \
-MONO_JIT_ICALL (__emul_rconv_to_ovf_u8_un) \
 MONO_JIT_ICALL (__emul_rconv_to_u4)	\
 MONO_JIT_ICALL (__emul_rconv_to_u8) \
 MONO_JIT_ICALL (__emul_rrem) \
@@ -278,15 +276,18 @@ MONO_JIT_ICALL (mono_resume_unwind) \
 MONO_JIT_ICALL (mono_rethrow_preserve_exception) \
 MONO_JIT_ICALL (mono_string_builder_to_utf16) \
 MONO_JIT_ICALL (mono_string_builder_to_utf8) \
+MONO_JIT_ICALL (mono_string_from_ansibstr) \
 MONO_JIT_ICALL (mono_string_from_bstr_icall) \
 MONO_JIT_ICALL (mono_string_from_byvalstr) \
 MONO_JIT_ICALL (mono_string_from_byvalwstr) \
+MONO_JIT_ICALL (mono_string_from_tbstr) \
 MONO_JIT_ICALL (mono_string_new_len_wrapper) \
 MONO_JIT_ICALL (mono_string_new_wrapper_internal) \
 MONO_JIT_ICALL (mono_string_to_ansibstr) \
 MONO_JIT_ICALL (mono_string_to_bstr) \
 MONO_JIT_ICALL (mono_string_to_byvalstr) \
 MONO_JIT_ICALL (mono_string_to_byvalwstr) \
+MONO_JIT_ICALL (mono_string_to_tbstr) \
 MONO_JIT_ICALL (mono_string_to_utf16_internal) \
 MONO_JIT_ICALL (mono_string_to_utf8str) \
 MONO_JIT_ICALL (mono_string_utf16_to_builder) \
@@ -309,6 +310,7 @@ MONO_JIT_ICALL (mono_throw_method_access) \
 MONO_JIT_ICALL (mono_throw_bad_image) \
 MONO_JIT_ICALL (mono_trace_enter_method) \
 MONO_JIT_ICALL (mono_trace_leave_method) \
+MONO_JIT_ICALL (mono_trace_tail_method) \
 MONO_JIT_ICALL (mono_upgrade_remote_class_wrapper) \
 MONO_JIT_ICALL (mono_value_copy_internal) \
 MONO_JIT_ICALL (mono_x86_start_gsharedvt_call)	\

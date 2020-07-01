@@ -5,7 +5,7 @@
 #include "pal_seckey.h"
 #include "pal_utilities.h"
 
-#ifndef TARGET_IOS
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 int32_t AppleCryptoNative_SecKeyExport(
     SecKeyRef pKey, int32_t exportPrivate, CFStringRef cfExportPassphrase, CFDataRef* ppDataOut, int32_t* pOSStatus)
 {
@@ -141,7 +141,7 @@ uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef publicKey)
     return SecKeyGetBlockSize(publicKey);
 }
 
-#ifndef TARGET_IOS
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 OSStatus ExportImportKey(SecKeyRef* key, SecExternalItemType type)
 {
     SecExternalFormat dataFormat = kSecFormatOpenSSL;

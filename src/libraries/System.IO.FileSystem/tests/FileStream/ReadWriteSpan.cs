@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public abstract class FileStream_ReadWrite_Span : FileSystemTest
     {
         protected abstract FileStream CreateFileStream(string path, FileMode mode, FileAccess access = FileAccess.ReadWrite);
@@ -136,7 +137,7 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => { fs.WriteAsync(new ReadOnlyMemory<byte>(new byte[1])); });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task EmptyFile_ReadAsync_Succeeds()
         {
             using (var fs = CreateFileStream(GetTestFilePath(), FileMode.Create))
@@ -159,7 +160,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task NonEmptyFile_ReadAsync_GetsExpectedData()
         {
             string fileName = GetTestFilePath();
@@ -188,7 +189,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task NonEmptyFile_CustomMemoryManager_ReadAsync_GetsExpectedData()
         {
             string fileName = GetTestFilePath();
@@ -238,7 +239,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task NonEmptyWriteAsync_WritesExpectedData()
         {
             using (var fs = CreateFileStream(GetTestFilePath(), FileMode.Create))
@@ -254,7 +255,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task NonEmptyWriteAsync_CustomMemoryManager_WritesExpectedData()
         {
             using (var mem = new NativeMemoryManager(TestBuffer.Length))
@@ -286,6 +287,7 @@ namespace System.IO.Tests
             new FileStream(path, mode, access, FileShare.None, bufferSize: 0x1000, FileOptions.Asynchronous);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class Async_NoBuffer_FileStream_ReadWrite_Span : FileStream_ReadWrite_Span
     {
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access) =>

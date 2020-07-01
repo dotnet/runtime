@@ -68,7 +68,7 @@ namespace System.Tests
         [InlineData((ushort)789, null, false)]
         [InlineData((ushort)789, "789", false)]
         [InlineData((ushort)789, 789, false)]
-        public static void Equals(ushort i1, object obj, bool expected)
+        public static void EqualsTest(ushort i1, object obj, bool expected)
         {
             if (obj is ushort)
             {
@@ -123,7 +123,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void ToString(ushort i, string format, IFormatProvider provider, string expected)
+        public static void ToStringTest(ushort i, string format, IFormatProvider provider, string expected)
         {
             // Format should be case insensitive
             string upperFormat = format.ToUpperInvariant();

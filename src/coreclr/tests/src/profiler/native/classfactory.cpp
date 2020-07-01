@@ -5,8 +5,10 @@
 #include "classfactory.h"
 #include "gcbasicprofiler/gcbasicprofiler.h"
 #include "rejitprofiler/rejitprofiler.h"
-#include "eventpipeprofiler/eventpipeprofiler.h"
-#include "unittestprofiler/unittestprofiler.h"
+#include "eventpipeprofiler/eventpipereadingprofiler.h"
+#include "eventpipeprofiler/eventpipewritingprofiler.h"
+#include "metadatagetdispenser/metadatagetdispenser.h"
+#include "getappdomainstaticaddress/getappdomainstaticaddress.h"
 
 ClassFactory::ClassFactory(REFCLSID clsid) : refCount(0), clsid(clsid)
 {
@@ -57,8 +59,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
 	Profiler* profilers[] = {
 		new GCBasicProfiler(),
         new ReJITProfiler(),
-        new EventPipeProfiler(),
-        new UnitTestProfiler()
+        new EventPipeReadingProfiler(),
+        new EventPipeWritingProfiler(),
+        new MetaDataGetDispenser(),
+        new GetAppDomainStaticAddress()
 		// add new profilers here
 	};
 

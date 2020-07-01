@@ -2779,6 +2779,8 @@ bool CordbThread::CreateEventWasQueued()
 
 CordbUnmanagedThread::CordbUnmanagedThread(CordbProcess *pProcess, DWORD dwThreadId, HANDLE hThread, void *lpThreadLocalBase)
   : CordbBase(pProcess, dwThreadId, enumCordbUnmanagedThread),
+    m_stackBase(0),
+    m_stackLimit(0),
     m_handle(hThread),
     m_threadLocalBase(lpThreadLocalBase),
     m_pTLSArray(NULL),
@@ -2788,8 +2790,6 @@ CordbUnmanagedThread::CordbUnmanagedThread(CordbProcess *pProcess, DWORD dwThrea
 #ifdef TARGET_X86
     m_pSavedLeafSeh(NULL),
 #endif
-    m_stackBase(0),
-    m_stackLimit(0),
     m_continueCountCached(0)
 {
     m_pLeftSideContext.Set(NULL);

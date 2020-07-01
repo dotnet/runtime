@@ -1542,6 +1542,9 @@ void SsaBuilder::Build()
     m_pCompiler->fgLocalVarLiveness();
     EndPhase(PHASE_BUILD_SSA_LIVENESS);
 
+    m_pCompiler->optRemoveRedundantZeroInits();
+    EndPhase(PHASE_ZERO_INITS);
+
     // Mark all variables that will be tracked by SSA
     for (unsigned lclNum = 0; lclNum < m_pCompiler->lvaCount; lclNum++)
     {
@@ -1648,6 +1651,10 @@ bool SsaBuilder::IncludeInSsa(unsigned lclNum)
         //
         // Example mscorlib method: CompatibilitySwitches:IsCompatibilitySwitchSet
         //
+        return false;
+    }
+    else if (varDsc->lvIsStructField && m_pCompiler->lvaGetDesc(varDsc->lvParentLcl)->lvIsMultiRegRet)
+    {
         return false;
     }
     // otherwise this variable is included in SSA

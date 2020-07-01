@@ -211,13 +211,6 @@ namespace System.Security.Permissions.Tests
         }
 
         [Fact]
-        public static void PrincipalPermissionAttributeCallMethods()
-        {
-            PrincipalPermissionAttribute ppa = new PrincipalPermissionAttribute(new Permissions.SecurityAction());
-            IPermission ip = ppa.CreatePermission();
-        }
-
-        [Fact]
         public static void PublisherIdentityPermissionCallMethods()
         {
             PublisherIdentityPermission pip = new PublisherIdentityPermission(new System.Security.Cryptography.X509Certificates.X509Certificate());

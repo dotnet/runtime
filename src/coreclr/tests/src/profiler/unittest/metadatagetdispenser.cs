@@ -9,7 +9,7 @@ namespace Profiler.Tests
 {
     class MetadataGetDispenser //: ProfilerTest
     {
-        static readonly Guid UnitTestProfilerGuid = new Guid("7198FF3E-50E8-4AD1-9B89-CB15A1D6E740");
+        static readonly Guid MetaDataGetDispenserProfilerGuid = new Guid("7198FF3E-50E8-4AD1-9B89-CB15A1D6E740");
 
         public static int RunTest(string[] args)
         {
@@ -28,7 +28,7 @@ namespace Profiler.Tests
 
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
                                           testName: "UnitTestMetadataGetDispenser",
-                                          profilerClsid: UnitTestProfilerGuid);
+                                          profilerClsid: MetaDataGetDispenserProfilerGuid);
         }
     }
 }

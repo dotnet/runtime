@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Cryptography;
 using System.Diagnostics;
-using System.Security.Cryptography.Asn1;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Pkcs.Asn1;
 
 namespace System.Security.Cryptography.Pkcs
@@ -41,7 +42,7 @@ namespace System.Security.Cryptography.Pkcs
                 _secretTypeOid = new Oid(_decoded.SecretTypeId);
             }
 
-            return new Oid(_secretTypeOid);
+            return _secretTypeOid.CopyOid();
         }
 
         private static byte[] EncodeBagValue(Oid secretTypeOid, in ReadOnlyMemory<byte> secretValue)
@@ -54,11 +55,9 @@ namespace System.Security.Cryptography.Pkcs
                 SecretValue = secretValue,
             };
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
-            {
-                secretBagAsn.Encode(writer);
-                return writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
+            secretBagAsn.Encode(writer);
+            return writer.Encode();
         }
 
         internal static Pkcs12SecretBag DecodeValue(ReadOnlyMemory<byte> bagValue)

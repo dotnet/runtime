@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Configuration.Json
         }
 
         private void VisitElement(JsonElement element) {
-            foreach (var property in element.EnumerateObject())
+            foreach (JsonProperty property in element.EnumerateObject())
             {
                 EnterContext(property.Name);
                 VisitValue(property.Value);
@@ -61,8 +61,8 @@ namespace Microsoft.Extensions.Configuration.Json
                     break;
 
                 case JsonValueKind.Array:
-                    var index = 0;
-                    foreach (var arrayElement in value.EnumerateArray()) {
+                    int index = 0;
+                    foreach (JsonElement arrayElement in value.EnumerateArray()) {
                         EnterContext(index.ToString());
                         VisitValue(arrayElement);
                         ExitContext();
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Configuration.Json
                 case JsonValueKind.True:
                 case JsonValueKind.False:
                 case JsonValueKind.Null:
-                    var key = _currentPath;
+                    string key = _currentPath;
                     if (_data.ContainsKey(key))
                     {
                         throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key));

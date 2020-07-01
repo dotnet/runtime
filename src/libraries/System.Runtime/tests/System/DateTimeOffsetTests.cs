@@ -357,8 +357,8 @@ namespace System.Tests
         [Fact]
         public static void AddYears_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("years", () => DateTimeOffset.Now.AddYears(10001));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("years", () => DateTimeOffset.Now.AddYears(-10001));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.Now.AddYears(10001));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.Now.AddYears(-10001));
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => DateTimeOffset.MaxValue.AddYears(1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => DateTimeOffset.MinValue.AddYears(-1));
@@ -721,7 +721,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(DateTimeOffset dateTimeOffset1, object obj, bool expectedEquals, bool expectedEqualsExact)
+        public static void EqualsTest(DateTimeOffset dateTimeOffset1, object obj, bool expectedEquals, bool expectedEqualsExact)
         {
             Assert.Equal(expectedEquals, dateTimeOffset1.Equals(obj));
             if (obj is DateTimeOffset)

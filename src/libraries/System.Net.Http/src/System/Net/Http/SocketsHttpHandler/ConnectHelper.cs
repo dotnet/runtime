@@ -34,7 +34,12 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask<Stream> ConnectAsync(string host, int port, CancellationToken cancellationToken)
+        public static ValueTask<Stream> ConnectAsync(string host, int port, bool async, CancellationToken cancellationToken)
+        {
+            return async ? ConnectAsync(host, port, cancellationToken) : new ValueTask<Stream>(Connect(host, port, cancellationToken));
+        }
+
+        private static async ValueTask<Stream> ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
             // Rather than creating a new Socket and calling ConnectAsync on it, we use the static
             // Socket.ConnectAsync with a SocketAsyncEventArgs, as we can then use Socket.CancelConnectAsync
@@ -78,6 +83,28 @@ namespace System.Net.Http
             {
                 saea.Dispose();
             }
+        }
+
+        private static Stream Connect(string host, int port, CancellationToken cancellationToken)
+        {
+            // For synchronous connections, we can just create a socket and make the connection.
+            cancellationToken.ThrowIfCancellationRequested();
+            var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            try
+            {
+                socket.NoDelay = true;
+                using (cancellationToken.UnsafeRegister(s => ((Socket)s!).Dispose(), socket))
+                {
+                    socket.Connect(new DnsEndPoint(host, port));
+                }
+            }
+            catch (Exception e)
+            {
+                socket.Dispose();
+                throw CreateWrappedException(e, cancellationToken);
+            }
+
+            return new NetworkStream(socket, ownsSocket: true);
         }
 
         /// <summary>SocketAsyncEventArgs that carries with it additional state for a Task builder and a CancellationToken.</summary>
@@ -125,7 +152,7 @@ namespace System.Net.Http
             }
         }
 
-        public static ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Stream stream, CancellationToken cancellationToken)
+        public static ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, bool async, Stream stream, CancellationToken cancellationToken)
         {
             // If there's a cert validation callback, and if it came from HttpClientHandler,
             // wrap the original delegate in order to change the sender to be the request message (expected by HttpClientHandler's delegate).
@@ -136,20 +163,35 @@ namespace System.Net.Http
                 Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> localFromHttpClientHandler = mapper.FromHttpClientHandler;
                 HttpRequestMessage localRequest = request;
                 sslOptions.RemoteCertificateValidationCallback = (object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors) =>
-                    localFromHttpClientHandler(localRequest, certificate as X509Certificate2, chain, sslPolicyErrors);
+                {
+                    Debug.Assert(localRequest != null);
+                    bool result = localFromHttpClientHandler(localRequest, certificate as X509Certificate2, chain, sslPolicyErrors);
+                    localRequest = null!; // ensure the SslOptions and this callback don't keep the first HttpRequestMessage alive indefinitely
+                    return result;
+                };
             }
 
             // Create the SslStream, authenticate, and return it.
-            return EstablishSslConnectionAsyncCore(stream, sslOptions, cancellationToken);
+            return EstablishSslConnectionAsyncCore(async, stream, sslOptions, cancellationToken);
         }
 
-        private static async ValueTask<SslStream> EstablishSslConnectionAsyncCore(Stream stream, SslClientAuthenticationOptions sslOptions, CancellationToken cancellationToken)
+        private static async ValueTask<SslStream> EstablishSslConnectionAsyncCore(bool async, Stream stream, SslClientAuthenticationOptions sslOptions, CancellationToken cancellationToken)
         {
             SslStream sslStream = new SslStream(stream);
 
             try
             {
-                await sslStream.AuthenticateAsClientAsync(sslOptions, cancellationToken).ConfigureAwait(false);
+                if (async)
+                {
+                    await sslStream.AuthenticateAsClientAsync(sslOptions, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    using (cancellationToken.UnsafeRegister(s => ((Stream)s!).Dispose(), stream))
+                    {
+                        sslStream.AuthenticateAsClient(sslOptions);
+                    }
+                }
             }
             catch (Exception e)
             {

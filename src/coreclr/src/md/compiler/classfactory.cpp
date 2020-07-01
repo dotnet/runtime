@@ -24,9 +24,6 @@
 #include "mscoree.h"
 #include "corhost.h"
 
-#include <ndpversion.h>
-
-
 //********** Locals. **********************************************************
 HINSTANCE GetModuleInst();
 

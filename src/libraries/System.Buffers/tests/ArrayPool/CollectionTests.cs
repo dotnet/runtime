@@ -16,7 +16,7 @@ namespace System.Buffers.ArrayPool.Tests
     public class CollectionTests : ArrayPoolTest
     {
         [OuterLoop("This is a long running test (over 2 minutes)")]
-        [Theory,
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)),
             InlineData(true),
             InlineData(false)]
         public void BuffersAreCollectedWhenStale(bool trim)
@@ -76,9 +76,11 @@ namespace System.Buffers.ArrayPool.Tests
             }, trim, 3 * 60 * 1000); // This test has to wait for the buffers to go stale (give it three minutes)
         }
 
+        private static bool IsStressModeEnabledAndRemoteExecutorSupported => TestEnvironment.IsStressModeEnabled && RemoteExecutor.IsSupported;
+
         // This test can cause problems for other tests run in parallel (from other assemblies) as
         // it pushes the physical memory usage above 80% temporarily.
-        [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled)),
+        [ConditionalTheory(nameof(IsStressModeEnabledAndRemoteExecutorSupported)),
             InlineData(true),
             InlineData(false)]
         public unsafe void ThreadLocalIsCollectedUnderHighPressure(bool trim)
@@ -140,7 +142,9 @@ namespace System.Buffers.ArrayPool.Tests
             return parsedTrim;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        private static bool IsPreciseGcSupportedAndRemoteExecutorSupported => PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
+
+        [ConditionalTheory(nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void PollingEventFires(bool trim)

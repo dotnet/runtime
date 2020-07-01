@@ -11,6 +11,7 @@ using Xunit;
 public static partial class DataContractSerializerTests
 {
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34962", TestRuntimes.Mono)]
     public static void DCS_MyPersonSurrogate_Stress()
     {
         // This test is to verify a bug fix made in ObjectToIdCache.cs.

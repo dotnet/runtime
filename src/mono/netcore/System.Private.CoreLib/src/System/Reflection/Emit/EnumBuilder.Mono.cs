@@ -40,7 +40,9 @@ namespace System.Reflection.Emit
 {
     public sealed partial class EnumBuilder : TypeInfo
     {
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeBuilder _tb;
+
         private FieldBuilder _underlyingField;
         private Type _underlyingType;
 
@@ -452,6 +454,8 @@ namespace System.Reflection.Emit
         }
 
         public override bool IsTypeDefinition => true;
+
+        public override bool IsByRefLike => false;
     }
 }
 #endif

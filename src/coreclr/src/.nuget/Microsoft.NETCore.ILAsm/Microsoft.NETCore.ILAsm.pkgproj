@@ -4,9 +4,12 @@
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
     <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
+    <PackageTargetRuntime Condition="'$(_packageTargetOSGroup)' == 'Windows_NT'">$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
   </PropertyGroup>
-  
-  <Import Condition="'$(_packageTargetOSGroup)' != ''" Project="$(MSBuildThisFileDirectory)runtime.$(_packageTargetOSGroup).$(MSBuildProjectName).props" />
+
+  <ItemGroup>
+    <NativeBinary Include="$(BinDir)ilasm$(ApplicationFileExtension)" />
+  </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

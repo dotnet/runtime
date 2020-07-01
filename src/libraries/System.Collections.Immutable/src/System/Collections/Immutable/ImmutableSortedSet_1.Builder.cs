@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
@@ -431,7 +430,6 @@ namespace System.Collections.Immutable
             /// An enumerator that iterates over the <see cref="ImmutableSortedSet{T}.Builder"/>
             /// in reverse order.
             /// </returns>
-            [Pure]
             public IEnumerable<T> Reverse()
             {
                 return new ReverseEnumerable(_root);
@@ -456,6 +454,25 @@ namespace System.Collections.Immutable
                 }
 
                 return _immutable;
+            }
+
+            /// <summary>
+            /// Searches the set for a given value and returns the equal value it finds, if any.
+            /// </summary>
+            /// <param name="equalValue">The value for which to search.</param>
+            /// <param name="actualValue">The value from the set that the search found, or the original value if the search yielded no match.</param>
+            /// <returns>A value indicating whether the search was successful.</returns>
+            public bool TryGetValue(T equalValue, out T actualValue)
+            {
+                Node searchResult = _root.Search(equalValue, _comparer);
+                if (!searchResult.IsEmpty)
+                {
+                    actualValue = searchResult.Key;
+                    return true;
+                }
+
+                actualValue = equalValue;
+                return false;
             }
 
             #region ICollection members

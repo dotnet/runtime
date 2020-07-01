@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -107,6 +108,21 @@ namespace System.Text.Json.Serialization.Tests
             options = new JsonSerializerOptions();
             options.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
             Assert.Throws<JsonException>(() => JsonSerializer.Serialize((FileAttributes)(-1), options));
+
+            // Flag values honor naming policy correctly
+            options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonStringEnumConverter(new SimpleSnakeCasePolicy()));
+
+            json = JsonSerializer.Serialize(
+                FileAttributes.Directory | FileAttributes.Compressed | FileAttributes.IntegrityStream,
+                options);
+            Assert.Equal(@"""directory, compressed, integrity_stream""", json);
+
+            json = JsonSerializer.Serialize(FileAttributes.Compressed & FileAttributes.Device, options);
+            Assert.Equal(@"0", json);
+
+            json = JsonSerializer.Serialize(FileAttributes.Directory & FileAttributes.Compressed | FileAttributes.IntegrityStream, options);
+            Assert.Equal(@"""integrity_stream""", json);
         }
 
         public class FileState
@@ -184,6 +200,100 @@ namespace System.Text.Json.Serialization.Tests
 
             obj = JsonSerializer.Deserialize<MyCustomEnum>("2");
             Assert.Equal(MyCustomEnum.Second, obj);
+        }
+
+        [Fact]
+        public static void EnumWithNoValues()
+        {
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new JsonStringEnumConverter() }
+            };
+
+            Assert.Equal("-1", JsonSerializer.Serialize((EmptyEnum)(-1), options));
+            Assert.Equal("1", JsonSerializer.Serialize((EmptyEnum)(1), options));
+        }
+
+        public enum EmptyEnum { };
+
+        [Fact]
+        public static void MoreThan64EnumValuesToSerialize()
+        {
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new JsonStringEnumConverter() }
+            };
+
+            for (int i = 0; i < 128; i++)
+            {
+                MyEnum value = (MyEnum)i;
+                string asStr = value.ToString();
+                string expected = char.IsLetter(asStr[0]) ? $@"""{asStr}""" : asStr;
+                Assert.Equal(expected, JsonSerializer.Serialize(value, options));
+            }
+        }
+
+        [Fact, OuterLoop]
+        public static void VeryLargeAmountOfEnumsToSerialize()
+        {
+            // Ensure we don't throw OutOfMemoryException.
+
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new JsonStringEnumConverter() }
+            };
+
+            const int MaxValue = 2097152; // value for MyEnum.V
+
+            // Every value between 0 and MaxValue maps to a valid enum
+            // identifier, and is a candidate to go into the name cache.
+
+            // Write the first 45 values.
+            for (int i = 1; i < 46; i++)
+            {
+                JsonSerializer.Serialize((MyEnum)i, options);
+            }
+
+            // At this point, there are 60 values in the name cache;
+            // 22 cached at warm-up, the rest in the above loop.
+
+            // Ensure the approximate size limit for the name cache (a concurrent dictionary) is honored.
+            // Use multiple threads to perhaps go over the soft limit of 64, but not by more than a couple.
+            Parallel.For(0, 8, i => JsonSerializer.Serialize((MyEnum)(46 + i), options));
+
+            // Write the remaining enum values. The cache is capped to avoid
+            // OutOfMemoryException due to having too many cached items.
+            for (int i = 54; i <= MaxValue; i++)
+            {
+                JsonSerializer.Serialize((MyEnum)i, options);
+            }
+        }
+
+        [Flags]
+        public enum MyEnum
+        {
+            A = 1 << 0,
+            B = 1 << 1,
+            C = 1 << 2,
+            D = 1 << 3,
+            E = 1 << 4,
+            F = 1 << 5,
+            G = 1 << 6,
+            H = 1 << 7,
+            I = 1 << 8,
+            J = 1 << 9,
+            K = 1 << 10,
+            L = 1 << 11,
+            M = 1 << 12,
+            N = 1 << 13,
+            O = 1 << 14,
+            P = 1 << 15,
+            Q = 1 << 16,
+            R = 1 << 17,
+            S = 1 << 18,
+            T = 1 << 19,
+            U = 1 << 20,
+            V = 1 << 21,
         }
     }
 }

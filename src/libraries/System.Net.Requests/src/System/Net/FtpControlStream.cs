@@ -38,7 +38,7 @@ namespace System.Net
 
         private long _contentLength = -1;
         private DateTime _lastModified;
-        private bool _dataHandshakeStarted = false;
+        private bool _dataHandshakeStarted;
         private string? _loginDirectory;
         private string? _establishedServerDirectory;
         private string? _requestedServerDirectory;
@@ -595,7 +595,7 @@ namespace System.Net
 
             if (request.MethodInfo.Operation == FtpOperation.Rename)
             {
-                string baseDir = (requestDirectory == string.Empty)
+                string baseDir = (requestDirectory.Length == 0)
                     ? string.Empty : requestDirectory + "/";
                 commandList.Add(new PipelineEntry(FormatFtpCommand("RNFR", baseDir + requestFilename), flags));
 

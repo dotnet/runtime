@@ -2984,6 +2984,16 @@ namespace System.Text.Json.Tests
 
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(value.AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(Encoding.UTF8.GetString(value).ToCharArray().AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
                 Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64StringValue(value));
             }
 
@@ -4159,7 +4169,7 @@ namespace System.Text.Json.Tests
         [InlineData(true, false, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>mess\nage", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Hello, \nWorld!")]
         [InlineData(false, true, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>mess\nage", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Hello, \nWorld!")]
         [InlineData(false, false, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>mess\nage", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Hello, \nWorld!")]
-        public void WriteHelloWorldEscaped(bool formatted, bool skipValidation, string key, string value)
+        public void WriteHelloWorldEscaped_AdditionalCases(bool formatted, bool skipValidation, string key, string value)
         {
             string expectedStr = GetEscapedExpectedString(prettyPrint: formatted, key, value, StringEscapeHandling.EscapeHtml);
 
@@ -4666,7 +4676,7 @@ namespace System.Text.Json.Tests
         public void OutputConsistentWithJsonEncodedText()
         {
             string jsonEncodedText = $"{{\"{JsonEncodedText.Encode("propertyName+1")}\":\"{JsonEncodedText.Encode("value+1")}\"}}";
-            
+
             var output = new ArrayBufferWriter<byte>(1024);
 
             using (var writer = new Utf8JsonWriter(output))
@@ -4880,7 +4890,7 @@ namespace System.Text.Json.Tests
         [InlineData(true, false, 100)]
         [InlineData(false, true, 100)]
         [InlineData(false, false, 100)]
-        public void WriteStartEndWithPropertyNameArray(bool formatted, bool skipValidation, int keyLength)
+        public void WriteStartEndWithPropertyNameArrayDifferentKeyLengths(bool formatted, bool skipValidation, int keyLength)
         {
             var keyChars = new char[keyLength];
             for (int i = 0; i < keyChars.Length; i++)
@@ -4969,7 +4979,7 @@ namespace System.Text.Json.Tests
         [InlineData(true, false, 100)]
         [InlineData(false, true, 100)]
         [InlineData(false, false, 100)]
-        public void WriteStartEndWithPropertyNameObject(bool formatted, bool skipValidation, int keyLength)
+        public void WriteStartEndWithPropertyNameObjectDifferentKeyLengths(bool formatted, bool skipValidation, int keyLength)
         {
             var keyChars = new char[keyLength];
             for (int i = 0; i < keyChars.Length; i++)

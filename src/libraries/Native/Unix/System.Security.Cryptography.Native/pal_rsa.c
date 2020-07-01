@@ -46,6 +46,8 @@ static int GetOpenSslPadding(RsaPadding padding)
         case NoPadding:
             return RSA_NO_PADDING;
     }
+
+    return RSA_NO_PADDING;
 }
 
 static int HasNoPrivateKey(RSA* rsa)

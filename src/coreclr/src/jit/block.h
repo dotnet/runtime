@@ -725,7 +725,10 @@ struct BasicBlock : private LIR::Range
         m_firstNode = tree;
     }
 
-    EntryState* bbEntryState; // verifier tracked state of all entries in stack.
+    union {
+        EntryState* bbEntryState; // verifier tracked state of all entries in stack.
+        flowList*   bbLastPred;   // last pred list entry
+    };
 
 #define NO_BASE_TMP UINT_MAX // base# to use when we have none
     unsigned bbStkTempsIn;   // base# for input stack temps
@@ -846,11 +849,6 @@ struct BasicBlock : private LIR::Range
     // The following fields are used for loop detection
     typedef unsigned char loopNumber;
     static const unsigned NOT_IN_LOOP = UCHAR_MAX;
-
-    // This is the label a loop gets as part of the second, reachability-based
-    // loop discovery mechanism.  This is apparently only used for debugging.
-    // We hope we'll eventually just have one loop-discovery mechanism, and this will go away.
-    INDEBUG(loopNumber bbLoopNum;) // set to 'n' for a loop #n header
 
     loopNumber bbNatLoopNum; // Index, in optLoopTable, of most-nested loop that contains this block,
                              // or else NOT_IN_LOOP if this block is not in a loop.

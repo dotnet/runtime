@@ -644,34 +644,67 @@ public:
 
     // begin ICorProfilerInfo12
 
+    COM_METHOD EventPipeStartSession(
+        UINT32 cProviderConfigs,
+        COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[],
+        BOOL requestRundown,
+        EVENTPIPE_SESSION* pSession);
+
+    COM_METHOD EventPipeAddProviderToSession(
+        EVENTPIPE_SESSION session,
+        COR_PRF_EVENTPIPE_PROVIDER_CONFIG providerConfig);
+
+    COM_METHOD EventPipeStopSession(
+        EVENTPIPE_SESSION session);
+
     COM_METHOD EventPipeCreateProvider(
-        const WCHAR *szName,
-        EVENTPIPE_PROVIDER *pProviderHandle);
+        const WCHAR *providerName,
+        EVENTPIPE_PROVIDER *pProvider);
+
+    COM_METHOD EventPipeGetProviderInfo(
+                EVENTPIPE_PROVIDER provider,
+                ULONG      cchName,
+                ULONG      *pcchName,
+                WCHAR      providerName[]);
 
     COM_METHOD EventPipeDefineEvent(
-        EVENTPIPE_PROVIDER provHandle,
-        const WCHAR *szName, 
+        EVENTPIPE_PROVIDER provider,
+        const WCHAR *eventName,
         UINT32 eventID,
         UINT64 keywords,
         UINT32 eventVersion,
         UINT32 level,
+        UINT8 opcode,
         BOOL needStack,
         UINT32 cParamDescs,
         COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
-        EVENTPIPE_EVENT *pEventHandle);
+        EVENTPIPE_EVENT *pEvent);
 
     COM_METHOD EventPipeWriteEvent(
-        EVENTPIPE_EVENT eventHandle,
-        COR_PRF_EVENT_DATA data[],
+        EVENTPIPE_EVENT event,
         UINT32 cData,
+        COR_PRF_EVENT_DATA data[],
         LPCGUID pActivityId,
         LPCGUID pRelatedActivityId);
 
     // end ICorProfilerInfo12
-    
+
 protected:
 
     // Internal Helper Functions
+
+    static void EventPipeCallbackHelper(EventPipeProvider *provider,
+                                        DWORD eventId,
+                                        DWORD eventVersion,
+                                        ULONG cbMetadataBlob,
+                                        LPCBYTE metadataBlob,
+                                        ULONG cbEventData,
+                                        LPCBYTE eventData,
+                                        LPCGUID pActivityId,
+                                        LPCGUID pRelatedActivityId,
+                                        Thread *pEventThread,
+                                        ULONG numStackFrames,
+                                        UINT_PTR stackFrames[]);
 
     HRESULT GetCodeInfoHelper(FunctionID functionId,
                                ReJITID  reJitId,
@@ -708,46 +741,6 @@ protected:
 };
 
 #endif // PROFILING_SUPPORTED
-
-//---------------------------------------------------------------------------------------
-// This provides the implementations for FCALLs in managed code related to profiling
-
-class ProfilingFCallHelper
-{
-public:
-    // This is a high-efficiency way for managed profiler code to determine if
-    // profiling of remoting is active.
-    static FCDECL0(FC_BOOL_RET, FC_TrackRemoting);
-
-    // This is a high-efficiency way for managed profiler code to determine if
-    // profiling of remoting with RPC cookie IDs is active.
-    static FCDECL0(FC_BOOL_RET, FC_TrackRemotingCookie);
-
-    // This is a high-efficiency way for managed profiler code to determine if
-    // profiling of asynchronous remote calls is profiled
-    static FCDECL0(FC_BOOL_RET, FC_TrackRemotingAsync);
-
-    // This will let the profiler know that the client side is sending a message to
-    // the server-side.
-    static FCDECL2(void, FC_RemotingClientSendingMessage, GUID * pId, CLR_BOOL fIsAsync);
-
-    // For __cdecl calling convention both arguments end up on
-    // the stack but the order in which the jit puts them there needs to be reversed
-    // For __fastcall calling convention the reversal has no effect because the GUID doesn't
-    // fit in a register. On IA64 the macro is different.
-
-    // This will let the profiler know that the client side is receiving a reply
-    // to a message that it sent
-    static FCDECL2_VI(void, FC_RemotingClientReceivingReply, GUID id, CLR_BOOL fIsAsync);
-
-    // This will let the profiler know that the server side is receiving a message
-    // from a client
-    static FCDECL2_VI(void, FC_RemotingServerReceivingMessage, GUID id, CLR_BOOL fIsAsync);
-
-    // This will let the profiler know that the server side is sending a reply to
-    // a received message.
-    static FCDECL2(void, FC_RemotingServerSendingReply, GUID * pId, CLR_BOOL fIsAsync);
-};
 
 #endif // __PROFTOEEINTERFACEIMPL_H__
 

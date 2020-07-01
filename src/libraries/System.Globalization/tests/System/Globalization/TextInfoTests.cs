@@ -163,7 +163,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(TextInfo textInfo, object obj, bool expected)
+        public void EqualsTest(TextInfo textInfo, object obj, bool expected)
         {
             Assert.Equal(expected, textInfo.Equals(obj));
             if (obj is TextInfo)
@@ -416,7 +416,7 @@ namespace System.Globalization.Tests
         [InlineData("en-US", "TextInfo - en-US")]
         [InlineData("fr-FR", "TextInfo - fr-FR")]
         [InlineData("", "TextInfo - ")]
-        public void ToString(string name, string expected)
+        public void ToStringTest(string name, string expected)
         {
             Assert.Equal(expected, new CultureInfo(name).TextInfo.ToString());
         }

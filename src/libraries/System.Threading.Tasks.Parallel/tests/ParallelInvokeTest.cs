@@ -151,7 +151,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ParallelInvoke2()
         {
             ParallelInvokeTestParameters parameters = new ParallelInvokeTestParameters
@@ -163,7 +163,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ParallelInvoke3()
         {
             ParallelInvokeTestParameters parameters = new ParallelInvokeTestParameters
@@ -199,7 +199,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ParallelInvoke6()
         {
             ParallelInvokeTestParameters parameters = new ParallelInvokeTestParameters
@@ -211,7 +211,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ParallelInvoke7()
         {
             ParallelInvokeTestParameters parameters = new ParallelInvokeTestParameters
@@ -247,7 +247,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ParallelInvoke10()
         {
             ParallelInvokeTestParameters parameters = new ParallelInvokeTestParameters
@@ -259,7 +259,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ParallelInvoke11()
         {
             ParallelInvokeTestParameters parameters = new ParallelInvokeTestParameters

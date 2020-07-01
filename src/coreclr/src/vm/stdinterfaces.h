@@ -19,21 +19,6 @@
 #include "weakreference.h"
 #include "common.h"
 
-extern const IID IID_IWeakReferenceSource;
-extern const IID IID_IWeakReference;
-extern const IID IID_ICustomPropertyProvider;
-extern const IID IID_ICCW;
-
-// Until the Windows SDK is updated, just hard-code the IAgileObject IID
-#ifndef __IAgileObject_INTERFACE_DEFINED__
-DEFINE_GUID(IID_IAgileObject,0x94ea2b94,0xe9cc,0x49e0,0xc0,0xff,0xee,0x64,0xca,0x8f,0x5b,0x90);
-MIDL_INTERFACE("94ea2b94-e9cc-49e0-c0ff-ee64ca8f5b90")
-IAgileObject : public IUnknown
-{
-public:
-};
-#endif // !__IAgileObject_INTERFACE_DEFINED__
-
 // Until the Windows SDK is updated, just hard-code the INoMarshal IID
 #ifndef __INoMarshal_INTERFACE_DEFINED__
 DEFINE_GUID(IID_INoMarshal,0xecc8691b,0xc1db,0x4dc0,0x85,0x5e,0x65,0xf6,0xc5,0x51,0xaf,0x49);
@@ -67,11 +52,7 @@ enum Enum_StdInterfaces
     enum_IConnectionPointContainer,
     enum_IObjectSafety,
     enum_IDispatchEx,
-    enum_IWeakReferenceSource,
-    enum_ICustomPropertyProvider,
-    enum_ICCW,
     enum_IAgileObject,
-    enum_IStringable,
     // add your favorite std interface here
     enum_LastStdVtable,
 
@@ -120,11 +101,7 @@ extern const StdInterfaceDesc<8>  g_IErrorInfo;
 extern const StdInterfaceDesc<5>  g_IConnectionPointContainer;
 extern const StdInterfaceDesc<5>  g_IObjectSafety;
 extern const StdInterfaceDesc<15> g_IDispatchEx;
-extern const StdInterfaceDesc<4>  g_IWeakReferenceSource;
-extern const StdInterfaceDesc<10> g_ICustomPropertyProvider;
-extern const StdInterfaceDesc<7>  g_ICCW;
 extern const StdInterfaceDesc<3>  g_IAgileObject;
-extern const StdInterfaceDesc<7>  g_IStringable;
 
 // enum class types
 enum ComClassType
@@ -327,32 +304,6 @@ HRESULT __stdcall   DispatchEx_InvokeEx_Wrapper (
                                     IServiceProvider *pspCaller);
 
 //------------------------------------------------------------------------------------------
-//      IInspectable methods for managed objects
-
-// IInspectable::GetIIDs
-HRESULT __stdcall Inspectable_GetIIDs_Wrapper (
-                                    IInspectable *pInsp,
-                                    ULONG *iidCount,
-                                    IID **iids);
-
-// IInspectable::GetRuntimeClassName
-HRESULT __stdcall Inspectable_GetRuntimeClassName_Wrapper (
-                                    IInspectable *pInsp,
-                                    HSTRING *className);
-
-// IInspectable::GetTrustLevel
-HRESULT __stdcall Inspectable_GetTrustLevel_Wrapper (
-                                    IInspectable *pInsp,
-                                    TrustLevel *trustLevel);
-
-//------------------------------------------------------------------------------------------
-//      IWeakReferenceSource methods for managed objects
-
-HRESULT __stdcall WeakReferenceSource_GetWeakReference_Wrapper (
-                                    IWeakReferenceSource *pRefSrc,
-                                    IWeakReference **weakReference);
-
-//------------------------------------------------------------------------------------------
 //      IMarshal methods for COM+ objects
 
 HRESULT __stdcall Marshal_GetUnmarshalClass_Wrapper (
@@ -411,51 +362,10 @@ HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions_Wrapper(IUnknown* pUnk,
                                                          DWORD dwOptionSetMask,
                                                          DWORD dwEnabledOptions);
 
-
-//------------------------------------------------------------------------------------------
-//      ICustomPropertyProvider methods for Jupiter
-HRESULT __stdcall ICustomPropertyProvider_GetProperty_Wrapper(IUnknown *pPropertyProvider,
-                                                              HSTRING hstrName,
-                                                              /* [out] */ IUnknown **ppProperty);
-
-// Windows.UI.DirectUI.Xaml.TypeNameNative
-struct TypeNameNative
-{
-    HSTRING     typeName;
-    int         typeKind;
-};
-
-HRESULT __stdcall ICustomPropertyProvider_GetIndexedProperty_Wrapper(IUnknown *pPropertyProvider,
-                                                                     HSTRING hstrName,
-                                                                     TypeNameNative indexedParamType,
-                                                                     /* [out, retval] */ IUnknown **ppProperty);
-
-HRESULT __stdcall ICustomPropertyProvider_GetStringRepresentation_Wrapper(IUnknown *pPropertyProvider,
-                                                                          /* [out, retval] */ HSTRING *phstrStringRepresentation);
-
-HRESULT __stdcall ICustomPropertyProvider_GetType_Wrapper(IUnknown *pPropertyProvider,
-                                                          /* [out, retval] */ TypeNameNative *pTypeIdentifier);
-
-HRESULT __stdcall IStringable_ToString_Wrapper(IUnknown* pStringable,
-                                               /* [out, retval] */ HSTRING* result);
-
-//------------------------------------------------------------------------------------------
-//      ICCW methods for Jupiter
-ULONG __stdcall ICCW_AddRefFromJupiter_Wrapper(IUnknown *pUnk);
-
-ULONG __stdcall ICCW_ReleaseFromJupiter_Wrapper(IUnknown *pUnk);
-
-HRESULT __stdcall ICCW_Peg_Wrapper(IUnknown *pUnk);
-
-HRESULT __stdcall ICCW_Unpeg_Wrapper(IUnknown *pUnk);
-
-
-
 // IUNKNOWN wrappers
 
 // prototypes IUnknown methods
 HRESULT __stdcall   Unknown_QueryInterface(IUnknown* pUnk, REFIID riid, void** ppv);
-HRESULT __stdcall   Unknown_QueryInterface_ICCW(IUnknown *pUnk, REFIID riid, void **ppv);
 
 ULONG __stdcall     Unknown_AddRef(IUnknown* pUnk);
 ULONG __stdcall     Unknown_Release(IUnknown* pUnk);
@@ -495,7 +405,7 @@ InternalDispatchImpl_Invoke (
 
 //------------------------------------------------------------------------------------------
 // Helper to get the current IErrorInfo if the specified interface supports it.
-IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid, BOOL checkForIRestrictedErrInfo = TRUE);
+IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid);
 
 //------------------------------------------------------------------------------------------
 // Helpers to get the ITypeInfo* for a type.

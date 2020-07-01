@@ -191,6 +191,7 @@ typedef enum {
 #define S390_FP				s390_r11
 #define S390_MINIMAL_STACK_SIZE		160
 #define S390_REG_SAVE_OFFSET 		48
+#define S390_NONPARM_SAVE_OFFSET 	56
 #define S390_PARM_SAVE_OFFSET 		16
 #define S390_RET_ADDR_OFFSET		112
 #define S390_FLOAT_SAVE_OFFSET 		128
@@ -1339,7 +1340,6 @@ typedef struct {
 #define s390_ldeb(c, r, x, b, d)	S390_RXE(c, 0xed04, r, x, b, d)
 #define s390_ldebr(c, r1, r2)		S390_RRE(c, 0xb304, r1, r2)
 #define s390_ldgr(c, r1, r2)		S390_RRE(c, 0xb3c1, r1, r2)
-#define s390_ldgr(c, r1, r2)		S390_RRE(c, 0xb3c1, r1, r2)
 #define s390_ldxbr(c, r1, r2)		S390_RRE(c, 0xb345, r1, r2)
 #define s390_ldr(c, r1, r2)		S390_RR(c, 0x28, r1, r2)
 #define s390_le(c, f, x, b, d)		S390_RX(c, 0x78, f, x, b, d)
@@ -1384,6 +1384,7 @@ typedef struct {
 #define s390_lm(c, r1, r2, b, d)	S390_RS_1(c, 0x98, r1, r2, b, d)
 #define s390_lmg(c, r1, r2, b, d)	S390_RSY_1(c, 0xeb04, r1, r2, b, d)
 #define s390_lndbr(c, r1, r2)		S390_RRE(c, 0xb311, r1, r2)
+#define s390_lnebr(c, r1, r2)		S390_RRE(c, 0xb301, r1, r2)
 #define s390_lngr(c, r1, r2)		S390_RRE(c, 0xb901, r1, r2)
 #define s390_lnr(c, r1, r2)		S390_RR(c, 0x11, r1, r2)
 #define s390_lpdbr(c, r1, r2)		S390_RRE(c, 0xb310, r1, r2)
@@ -1489,6 +1490,7 @@ typedef struct {
 #define s390_srlg(c, r1, r2, b, d)	S390_RSY_1(c, 0xeb0c, r1, r2, b, d) 
 #define s390_st(c, r, x, b, d)		S390_RX(c, 0x50, r, x, b, d)
 #define s390_stam(c, r1, r2, b, d)	S390_RS_1(c, 0x9b, r1, r2, b, d)
+#define s390_stamy(c, r1, r2, b, d)	S390_RSY_1(c, 0xeb9b, r1, r2, b, d)
 #define s390_stc(c, r, x, b, d)		S390_RX(c, 0x42, r, x, b, d)
 #define s390_stcm(c, r, m, b, d)	S390_RX(c, 0xbe, r, m, b, d)
 #define s390_stcmy(c, r, x, b, d)	S390_RXY(c, 0xeb2d, r, x, b, d)

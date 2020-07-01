@@ -25,7 +25,7 @@ namespace System.IO.Tests
 
         #region UniversalTests
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FileNameIsToString_NotFullPath()
         {
             // We're checking that we're maintaining the original path

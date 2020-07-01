@@ -70,6 +70,25 @@ initNonPortableDistroRid()
     elif getprop ro.product.system.model 2>&1 | grep -qi android; then
         __android_sdk_version=$(getprop ro.build.version.sdk)
         nonPortableBuildID="android.$__android_sdk_version-${buildArch}"
+    elif [ "$targetOs" = "illumos" ]; then
+        __uname_version=$(uname -v)
+        case "$__uname_version" in
+            omnios-*)
+                __omnios_major_version=$(echo "${__uname_version:8:2}")
+                nonPortableBuildID=omnios."$__omnios_major_version"-"$buildArch"
+            ;;
+            joyent_*)
+                __smartos_major_version=$(echo "${__uname_version:7:4}")
+                nonPortableBuildID=smartos."$__smartos_major_version"-"$buildArch"
+            ;;
+            illumos_*)
+                nonPortableBuildID=openindiana-"$buildArch"
+            ;;
+        esac
+    elif [ "$targetOs" = "Solaris" ]; then
+        __uname_version=$(uname -v)
+        __solaris_major_version=$(echo "${__uname_version%.*}")
+        nonPortableBuildID=solaris."$__solaris_major_version"-"$buildArch"
     fi
 
     if [ -n "${nonPortableBuildID}" ]; then
@@ -137,7 +156,7 @@ initDistroRidGlobal()
     initNonPortableDistroRid "${targetOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
 
     if [ "$buildArch" = "wasm" ]; then
-        __DistroRid=WebAssembly-wasm
+        __DistroRid=browser-wasm
         export __DistroRid
     fi
 
@@ -159,12 +178,20 @@ initDistroRidGlobal()
                 distroRid="linux-$buildArch"
             elif [ "$targetOs" = "OSX" ]; then
                 distroRid="osx-$buildArch"
+            elif [ "$targetOs" = "tvOS" ]; then
+                distroRid="tvos-$buildArch"
             elif [ "$targetOs" = "iOS" ]; then
                 distroRid="ios-$buildArch"
             elif [ "$targetOs" = "Android" ]; then
                 distroRid="android-$buildArch"
+            elif [ "$targetOs" = "Browser" ]; then
+                distroRid="browser-$buildArch"
             elif [ "$targetOs" = "FreeBSD" ]; then
                 distroRid="freebsd-$buildArch"
+            elif [ "$targetOs" = "illumos" ]; then
+                distroRid="illumos-$buildArch"
+            elif [ "$targetOs" = "Solaris" ]; then
+                distroRid="solaris-$buildArch"
             fi
         fi
 

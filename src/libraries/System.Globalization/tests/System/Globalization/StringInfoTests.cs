@@ -111,7 +111,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(StringInfo stringInfo, object value, bool expected)
+        public void EqualsTest(StringInfo stringInfo, object value, bool expected)
         {
             Assert.Equal(expected, stringInfo.Equals(value));
             if (value is StringInfo)
@@ -240,7 +240,7 @@ namespace System.Globalization.Tests
             //                            ,-- Extend (U+20D1 COMBINING RIGHT HARPOON ABOVE)
             //                            |       ,-- Extend (U+FE22 COMBINING DOUBLE TILDE LEFT HALF)
             //                            |       |     ,-- Extend (U+20D1 COMBINING RIGHT HARPOON ABOVE)
-            //                            |       |     |     ,-- Extend (U+20EB COMBINING LONG DOUBLE SOLIDUS OVERLAY) 
+            //                            |       |     |     ,-- Extend (U+20EB COMBINING LONG DOUBLE SOLIDUS OVERLAY)
             yield return new object[] { "!\u20D1bo\uFE22\u20D1\u20EB|", new int[] { 0, 2, 3, 7 } };
 
             //                            ,-- Other (U+10FFFF <Unassigned>)

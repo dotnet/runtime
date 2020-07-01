@@ -41,7 +41,6 @@ namespace System.Net
         }
 
 #if DEBUG
-        internal object? _debugAsyncChain = null;    // Optionally used to track chains of async calls.
         private bool _protectState;                 // Used by ContextAwareResult to prevent some calls.
 #endif
 
@@ -506,7 +505,7 @@ namespace System.Net
         {
             if ((_intCompleted & ~HighBit) == 0 && (Interlocked.Increment(ref _intCompleted) & ~HighBit) == 1)
             {
-                // Set no result so that just in case there are waiters, they don't hang in the spin lock.
+                // Set no result so that just in case there are waiters, they don't get stuck in the spin lock.
                 _result = null;
                 Cleanup();
             }

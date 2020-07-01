@@ -18,6 +18,7 @@ set(MDRUNTIME_HEADERS
   ../../inc/corhlpr.h
   ../../inc/corpriv.h
   ../../inc/mdcommon.h
+  ../../inc/mdfileformat.h
   ../../inc/metadatatracker.h
   ../../inc/pedecoder.h
   ../../inc/posterror.h
@@ -26,11 +27,9 @@ set(MDRUNTIME_HEADERS
   ../inc/assemblymdinternaldisp.h
   ../inc/liteweightstgdb.h
   ../inc/mdcolumndescriptors.h
-  ../inc/mdfileformat.h
   ../inc/metamodel.h
   ../inc/metamodelro.h
   ../inc/recordpool.h
-  ../inc/winmdinterfaces.h
   metamodelcolumndefs.h
   mdinternaldisp.h
   mdinternalro.h
@@ -47,7 +46,7 @@ add_library_clr(mdruntime_dac ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime_dac PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_header(TARGET mdruntime_dac HEADER stdafx.h)
 
-add_library_clr(mdruntime_wks ${MDRUNTIME_SOURCES})
+add_library_clr(mdruntime_wks OBJECT ${MDRUNTIME_SOURCES})
 target_compile_definitions(mdruntime_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
 target_precompile_header(TARGET mdruntime_wks HEADER stdafx.h)
 

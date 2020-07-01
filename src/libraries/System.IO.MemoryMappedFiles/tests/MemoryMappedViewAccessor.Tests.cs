@@ -91,9 +91,11 @@ namespace System.IO.MemoryMappedFiles.Tests
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    if (PlatformDetection.IsInContainer && (viewAccess == MemoryMappedFileAccess.ReadExecute || viewAccess == MemoryMappedFileAccess.ReadWriteExecute))
+                    if ((RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || PlatformDetection.IsInContainer) &&
+                       (viewAccess == MemoryMappedFileAccess.ReadExecute || viewAccess == MemoryMappedFileAccess.ReadWriteExecute))
                     {
-                        throw new SkipTestException("Execute permission failing in container.");
+                        // Containers and OSX with SIP enabled do not have execute permissions by default.
+                        throw new SkipTestException("Insufficient execute permission.");
                     }
 
                     throw;
@@ -491,11 +493,11 @@ namespace System.IO.MemoryMappedFiles.Tests
             GC.WaitForPendingFinalizers();
             GC.Collect();
 
-            MemoryMappedFile mmf;
-            Assert.False(mmfWeak.TryGetTarget(out mmf));
-
-            MemoryMappedViewAccessor mmva;
-            Assert.False(mmvaWeak.TryGetTarget(out mmva));
+            if (PlatformDetection.IsPreciseGcSupported)
+            {
+                Assert.False(mmfWeak.TryGetTarget(out _));
+                Assert.False(mmvaWeak.TryGetTarget(out _));
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

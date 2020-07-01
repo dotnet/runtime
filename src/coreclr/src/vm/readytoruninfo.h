@@ -45,7 +45,6 @@ public:
 
 typedef DPTR(class ReadyToRunInfo) PTR_ReadyToRunInfo;
 typedef DPTR(class ReadyToRunCoreInfo) PTR_ReadyToRunCoreInfo;
-typedef DPTR(class NativeImage) PTR_NativeImage;
 
 class ReadyToRunInfo
 {
@@ -89,6 +88,8 @@ public:
     static PTR_ReadyToRunInfo Initialize(Module * pModule, AllocMemTracker *pamTracker);
 
     bool IsComponentAssembly() const { return m_isComponentAssembly; }
+
+    static bool IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModule2);
 
     PTR_READYTORUN_HEADER GetReadyToRunHeader() const { return m_pHeader; }
 

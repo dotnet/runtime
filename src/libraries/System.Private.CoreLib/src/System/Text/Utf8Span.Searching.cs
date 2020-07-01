@@ -281,7 +281,7 @@ namespace System.Text
             }
             else
             {
-                idx = compareInfo.IndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, 0, thisTranscodedToUtf16.Length, compareOptions, &matchLength, fromBeginning);
+                idx = compareInfo.IndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, &matchLength, compareOptions, fromBeginning);
             }
 #else
             Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase);

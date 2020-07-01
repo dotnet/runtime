@@ -8,7 +8,7 @@ namespace System.Threading
 {
     public static class MutexAcl
     {
-        public static Mutex Create(bool initiallyOwned, string name, out bool createdNew, MutexSecurity mutexSecurity)
+        public static Mutex Create(bool initiallyOwned, string? name, out bool createdNew, MutexSecurity? mutexSecurity)
         {
             return new Mutex(initiallyOwned, name, out createdNew, mutexSecurity);
         }

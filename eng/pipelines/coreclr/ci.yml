@@ -8,6 +8,7 @@ trigger:
     - '*'
     - src/libraries/System.Private.CoreLib/*
     exclude:
+    - .github/*
     - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
@@ -30,17 +31,6 @@ jobs:
 # Checkout repository
 #
 - template: /eng/pipelines/common/checkout-job.yml
-
-#
-# Checked Corelib builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-corelib-job.yml
-    buildConfig: checked
-    platformGroup: all
-    jobParameters:
-      testGroup: outerloop
 
 #
 # Debug builds
@@ -105,16 +95,10 @@ jobs:
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm
-    - Linux_arm64
-    - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     testGroup: outerloop
     jobParameters:
       liveLibrariesBuildConfig: Release
@@ -124,7 +108,7 @@ jobs:
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platformGroup: all
     helixQueueGroup: ci
@@ -138,7 +122,7 @@ jobs:
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platforms:
     - Linux_arm64

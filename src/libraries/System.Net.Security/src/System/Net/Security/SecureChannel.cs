@@ -41,12 +41,12 @@ namespace System.Net.Security
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
         private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
 
-        internal SecureChannel(SslAuthenticationOptions sslAuthenticationOptions)
+        internal SecureChannel(SslAuthenticationOptions sslAuthenticationOptions, SslStream sslStream)
         {
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Enter(this, sslAuthenticationOptions.TargetHost, sslAuthenticationOptions.ClientCertificates);
-                NetEventSource.Log.SecureChannelCtor(this, sslAuthenticationOptions.TargetHost!, sslAuthenticationOptions.ClientCertificates, sslAuthenticationOptions.EncryptionPolicy);
+                NetEventSource.Log.SecureChannelCtor(this, sslStream, sslAuthenticationOptions.TargetHost!, sslAuthenticationOptions.ClientCertificates, sslAuthenticationOptions.EncryptionPolicy);
             }
 
             SslStreamPal.VerifyPackageInfo();
@@ -625,7 +625,7 @@ namespace System.Net.Security
         //
         // Acquire Server Side Certificate information and set it on the class.
         //
-        private bool AcquireServerCredentials(ref byte[]? thumbPrint, ReadOnlySpan<byte> clientHello)
+        private bool AcquireServerCredentials(ref byte[]? thumbPrint)
         {
             if (NetEventSource.IsEnabled)
                 NetEventSource.Enter(this);
@@ -639,13 +639,13 @@ namespace System.Net.Security
             // with .NET Framework), and if neither is set we fall back to using ServerCertificate.
             if (_sslAuthenticationOptions.ServerCertSelectionDelegate != null)
             {
-                string? serverIdentity = SniHelper.GetServerName(clientHello);
-                localCertificate = _sslAuthenticationOptions.ServerCertSelectionDelegate(serverIdentity);
-
+                localCertificate = _sslAuthenticationOptions.ServerCertSelectionDelegate(_sslAuthenticationOptions.TargetHost);
                 if (localCertificate == null)
                 {
                     throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
                 }
+                if (NetEventSource.IsEnabled)
+                    NetEventSource.Info(this, "Use delegate selected Cert");
             }
             else if (_sslAuthenticationOptions.CertSelectionDelegate != null)
             {
@@ -784,7 +784,7 @@ namespace System.Net.Security
                     if (_refreshCredentialNeeded)
                     {
                         cachedCreds = _sslAuthenticationOptions.IsServer
-                                        ? AcquireServerCredentials(ref thumbPrint, inputBuffer)
+                                        ? AcquireServerCredentials(ref thumbPrint)
                                         : AcquireClientCredentials(ref thumbPrint);
                     }
 
@@ -1301,12 +1301,5 @@ namespace System.Net.Security
             // a Handshake message up, and we only have a Warning message.
             return Done ? null : SslStreamPal.GetException(Status);
         }
-
-#if TRACE_VERBOSE
-        public override string ToString()
-        {
-            return "Status=" + Status.ToString() + ", data size=" + Size;
-        }
-#endif
     }
 }

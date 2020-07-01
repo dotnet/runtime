@@ -170,7 +170,7 @@ namespace System.Collections.Concurrent
         /// <param name="result">To receive the item retrieved from the bag</param>
         /// <param name="take">Whether to remove or peek.</param>
         /// <returns>True if succeeded, false otherwise.</returns>
-        private bool TrySteal(out T result, bool take)
+        private bool TrySteal([MaybeNullWhen(false)] out T result, bool take)
         {
             if (CDSCollectionETWBCLProvider.Log.IsEnabled())
             {
@@ -219,7 +219,12 @@ namespace System.Collections.Concurrent
                     (TryStealFromTo(localQueue._nextQueue, null, out result, take) || TryStealFromTo(_workStealingQueues, localQueue, out result, take));
                 if (gotItem)
                 {
+#pragma warning disable CS8762
+                    // https://github.com/dotnet/runtime/issues/36132
+                    // Compiler can't automatically deduce that nullability constraints
+                    // for 'result' are satisfied at this exit point.
                     return true;
+#pragma warning restore CS8762
                 }
 
                 if (Interlocked.Read(ref _emptyToNonEmptyListTransitionCount) == initialEmptyToNonEmptyCounts)
@@ -248,7 +253,7 @@ namespace System.Collections.Concurrent
                 }
             }
 
-            result = default(T)!;
+            result = default(T);
             return false;
         }
 
@@ -870,7 +875,7 @@ namespace System.Collections.Concurrent
                 int tail = _tailIndex;
                 if (_headIndex - tail >= 0)
                 {
-                    result = default(T)!;
+                    result = default(T);
                     return false;
                 }
 
@@ -914,7 +919,7 @@ namespace System.Collections.Concurrent
                         {
                             // We encountered a race condition and the element was stolen, restore the tail.
                             _tailIndex = tail + 1;
-                            result = default(T)!;
+                            result = default(T);
                             return false;
                         }
                     }
@@ -958,7 +963,7 @@ namespace System.Collections.Concurrent
                     }
                 }
 
-                result = default(T)!;
+                result = default(T);
                 return false;
             }
 
@@ -1015,7 +1020,7 @@ namespace System.Collections.Concurrent
                 }
 
                 // The queue was empty.
-                result = default(T)!;
+                result = default(T);
                 return false;
             }
 

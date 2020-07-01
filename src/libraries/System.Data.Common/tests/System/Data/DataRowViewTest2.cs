@@ -223,7 +223,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void Equals()
+        public void EqualsTest()
         {
             DataTable dt = DataProvider.CreateParentDataTable();
             DataView dv = new DataView(dt);

@@ -29,7 +29,7 @@ namespace System
     }
 
     // !!!!!!!!!!!!!!!!!!!!!!!
-    // make sure you change the def in vm\gc.h
+    // make sure you change the def in gc\gcinterface.h
     // if you change this!
     internal enum InternalGCCollectionMode
     {
@@ -40,7 +40,7 @@ namespace System
     }
 
     // !!!!!!!!!!!!!!!!!!!!!!!
-    // make sure you change the def in vm\gc.h
+    // make sure you change the def in gc\gcinterface.h
     // if you change this!
     public enum GCNotificationStatus
     {
@@ -54,28 +54,29 @@ namespace System
     public static class GC
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void GetMemoryInfo(out ulong highMemLoadThresholdBytes,
-                                                  out ulong totalAvailableMemoryBytes,
-                                                  out ulong lastRecordedMemLoadBytes,
-                                                  out uint lastRecordedMemLoadPct,
-                                                  // The next two are size_t
-                                                  out UIntPtr lastRecordedHeapSizeBytes,
-                                                  out UIntPtr lastRecordedFragmentationBytes);
+        private static extern void GetMemoryInfo(GCMemoryInfoData data, int kind);
 
-        public static GCMemoryInfo GetGCMemoryInfo()
+        /// <summary>Gets garbage collection memory information.</summary>
+        /// <returns>An object that contains information about the garbage collector's memory usage.</returns>
+        public static GCMemoryInfo GetGCMemoryInfo() => GetGCMemoryInfo(GCKind.Any);
+
+        /// <summary>Gets garbage collection memory information.</summary>
+        /// <param name="kind">The kind of collection for which to retrieve memory information.</param>
+        /// <returns>An object that contains information about the garbage collector's memory usage.</returns>
+        public static GCMemoryInfo GetGCMemoryInfo(GCKind kind)
         {
-            GetMemoryInfo(out ulong highMemLoadThresholdBytes,
-                          out ulong totalAvailableMemoryBytes,
-                          out ulong lastRecordedMemLoadBytes,
-                          out uint _,
-                          out UIntPtr lastRecordedHeapSizeBytes,
-                          out UIntPtr lastRecordedFragmentationBytes);
+            if ((kind < GCKind.Any) || (kind > GCKind.Background))
+            {
+                throw new ArgumentOutOfRangeException(nameof(kind),
+                                      SR.Format(
+                                          SR.ArgumentOutOfRange_Bounds_Lower_Upper,
+                                          GCKind.Any,
+                                          GCKind.Background));
+            }
 
-            return new GCMemoryInfo(highMemoryLoadThresholdBytes: (long)highMemLoadThresholdBytes,
-                                    memoryLoadBytes: (long)lastRecordedMemLoadBytes,
-                                    totalAvailableMemoryBytes: (long)totalAvailableMemoryBytes,
-                                    heapSizeBytes: (long)(ulong)lastRecordedHeapSizeBytes,
-                                    fragmentedBytes: (long)(ulong)lastRecordedFragmentationBytes);
+            var data = new GCMemoryInfoData();
+            GetMemoryInfo(data, (int)kind);
+            return new GCMemoryInfo(data);
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -135,7 +136,7 @@ namespace System
 
             if ((4 == IntPtr.Size) && (bytesAllocated > int.MaxValue))
             {
-                throw new ArgumentOutOfRangeException("pressure",
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                     SR.ArgumentOutOfRange_MustBeNonNegInt32);
             }
 
@@ -353,7 +354,7 @@ namespace System
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize);
+        private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, nint sectionSize);
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _UnregisterFrozenSegment(IntPtr segmentHandle);
@@ -540,21 +541,12 @@ namespace System
         private static readonly List<MemoryLoadChangeNotification> s_notifications = new List<MemoryLoadChangeNotification>();
         private static float s_previousMemoryLoad = float.MaxValue;
 
-        private static float GetMemoryLoad()
-        {
-            GetMemoryInfo(out ulong _,
-                          out ulong _,
-                          out ulong _,
-                          out uint lastRecordedMemLoadPct,
-                          out UIntPtr _,
-                          out UIntPtr _);
-
-            return (float)lastRecordedMemLoadPct;
-        }
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern uint GetMemoryLoad();
 
         private static bool InvokeMemoryLoadChangeNotifications()
         {
-            float currentMemoryLoad = GetMemoryLoad();
+            float currentMemoryLoad = (float)GetMemoryLoad();
 
             lock (s_notifications)
             {

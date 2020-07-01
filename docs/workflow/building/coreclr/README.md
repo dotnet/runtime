@@ -1,25 +1,25 @@
 # Building
 
-To build just CoreCLR, use the `-subsetCategory` flag to the `build.sh` (or `build.cmd`) script at the repo root:
+To build just CoreCLR, use the `-subset` flag to the `build.sh` (or `build.cmd`) script at the repo root:
 
 For Linux:
 ```
-./build.sh -subsetCategory coreclr
+./build.sh -subset clr
 ```
 
 For Windows:
 ```
-build.cmd -subsetCategory coreclr
+build.cmd -subset clr
 ```
 
 By default, build generates a 'debug' build type, that includes asserts and is easier for some people to debug. If you want to make performance measurements, or just want tests to execute more quickly, you can also build the 'release' version (which does not have these checks) by adding the flag `-configuration release` (or `-c release`), for example:
 ```
-./build.sh -subsetCategory coreclr -configuration release
+./build.sh -subset clr -configuration release
 ```
 
 CoreCLR also supports a 'checked' build type which has asserts enabled like 'debug', but is built with the native compiler optimizer enabled, so it runs much faster. This is the usual mode used for running tests in the CI system. You can build that using, for example:
 ```
-./build.sh -subsetCategory coreclr -configuration checked
+./build.sh -subset clr -configuration checked
 ```
 
 This will produce outputs as follows:

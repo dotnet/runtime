@@ -235,8 +235,12 @@ namespace System.IO
             Invalidate();
         }
 
-        public override void Delete() => FileSystem.RemoveDirectory(FullPath, recursive: false);
+        public override void Delete() => Delete(recursive: false);
 
-        public void Delete(bool recursive) => FileSystem.RemoveDirectory(FullPath, recursive);
+        public void Delete(bool recursive)
+        {
+            FileSystem.RemoveDirectory(FullPath, recursive);
+            Invalidate();
+        }
     }
 }

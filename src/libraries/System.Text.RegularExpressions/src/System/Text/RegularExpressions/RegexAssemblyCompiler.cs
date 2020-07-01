@@ -14,7 +14,7 @@ namespace System.Text.RegularExpressions
     internal sealed class RegexAssemblyCompiler : RegexCompiler
     {
         /// <summary>Type count used to augment generated type names to create unique names.</summary>
-        private static int s_typeCount = 0;
+        private static int s_typeCount;
 
         private AssemblyBuilder _assembly;
         private ModuleBuilder _module;
@@ -48,7 +48,7 @@ namespace System.Text.RegularExpressions
             _strings = code.Strings;
             _leadingCharClasses = code.LeadingCharClasses;
             _boyerMoorePrefix = code.BoyerMoorePrefix;
-            _anchors = code.Anchors;
+            _leadingAnchor = code.LeadingAnchor;
             _trackcount = code.TrackCount;
 
             // Pick a name for the class.

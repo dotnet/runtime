@@ -74,11 +74,11 @@ namespace System.SpanTests
         [Fact]
         public static void LastIndexOfSequenceZeroLengthValue()
         {
-            // A zero-length value is always "found" at the start of the span.
+            // A zero-length value is always "found" at the end of the span.
             ReadOnlySpan<int> span = new ReadOnlySpan<int>(new int[] { 0, 1, 77, 2, 3, 77, 77, 4, 5, 77, 77, 77, 88, 6, 6, 77, 77, 88, 9 });
             ReadOnlySpan<int> value = new ReadOnlySpan<int>(Array.Empty<int>());
             int index = span.LastIndexOf(value);
-            Assert.Equal(0, index);
+            Assert.Equal(span.Length, index);
         }
 
         [Fact]
@@ -93,7 +93,6 @@ namespace System.SpanTests
         [Fact]
         public static void LastIndexOfSequenceLengthOneValue()
         {
-            // A zero-length value is always "found" at the start of the span.
             ReadOnlySpan<int> span = new ReadOnlySpan<int>(new int[] { 0, 1, 2, 3, 4, 5 });
             ReadOnlySpan<int> value = new ReadOnlySpan<int>(new int[] { 2 });
             int index = span.LastIndexOf(value);
@@ -103,7 +102,6 @@ namespace System.SpanTests
         [Fact]
         public static void LastIndexOfSequenceLengthOneValueAtVeryEnd()
         {
-            // A zero-length value is always "found" at the start of the span.
             ReadOnlySpan<int> span = new ReadOnlySpan<int>(new int[] { 0, 1, 2, 3, 4, 5 });
             ReadOnlySpan<int> value = new ReadOnlySpan<int>(new int[] { 5 });
             int index = span.LastIndexOf(value);
@@ -113,7 +111,6 @@ namespace System.SpanTests
         [Fact]
         public static void LastIndexOfSequenceLengthOneValueMultipleTimes()
         {
-            // A zero-length value is always "found" at the start of the span.
             ReadOnlySpan<int> span = new ReadOnlySpan<int>(new int[] { 0, 1, 5, 3, 4, 5 });
             ReadOnlySpan<int> value = new ReadOnlySpan<int>(new int[] { 5 });
             int index = span.LastIndexOf(value);
@@ -123,7 +120,6 @@ namespace System.SpanTests
         [Fact]
         public static void LastIndexOfSequenceLengthOneValueJustPasttVeryEnd()
         {
-            // A zero-length value is always "found" at the start of the span.
             ReadOnlySpan<int> span = new ReadOnlySpan<int>(new int[] { 0, 1, 2, 3, 4, 5 }, 0, 5);
             ReadOnlySpan<int> value = new ReadOnlySpan<int>(new int[] { 5 });
             int index = span.LastIndexOf(value);
@@ -196,11 +192,11 @@ namespace System.SpanTests
         [Fact]
         public static void LastIndexOfSequenceZeroLengthValue_String()
         {
-            // A zero-length value is always "found" at the start of the span.
+            // A zero-length value is always "found" at the end of the span.
             ReadOnlySpan<string> span = new ReadOnlySpan<string>(new string[] { "0", "1", "77", "2", "3", "77", "77", "4", "5", "77", "77", "77", "88", "6", "6", "77", "77", "88", "9" });
             ReadOnlySpan<string> value = new ReadOnlySpan<string>(Array.Empty<string>());
             int index = span.LastIndexOf(value);
-            Assert.Equal(0, index);
+            Assert.Equal(span.Length, index);
         }
 
         [Fact]
@@ -215,7 +211,6 @@ namespace System.SpanTests
         [Fact]
         public static void LastIndexOfSequenceLengthOneValue_String()
         {
-            // A zero-length value is always "found" at the start of the span.
             ReadOnlySpan<string> span = new ReadOnlySpan<string>(new string[] { "0", "1", "2", "3", "4", "5" });
             ReadOnlySpan<string> value = new ReadOnlySpan<string>(new string[] { "2" });
             int index = span.LastIndexOf(value);
@@ -225,7 +220,6 @@ namespace System.SpanTests
         [Fact]
         public static void LastIndexOfSequenceLengthOneValueAtVeryEnd_String()
         {
-            // A zero-length value is always "found" at the start of the span.
             ReadOnlySpan<string> span = new ReadOnlySpan<string>(new string[] { "0", "1", "2", "3", "4", "5" });
             ReadOnlySpan<string> value = new ReadOnlySpan<string>(new string[] { "5" });
             int index = span.LastIndexOf(value);
@@ -235,7 +229,6 @@ namespace System.SpanTests
         [Fact]
         public static void LastIndexOfSequenceLengthOneValueJustPasttVeryEnd_String()
         {
-            // A zero-length value is always "found" at the start of the span.
             ReadOnlySpan<string> span = new ReadOnlySpan<string>(new string[] { "0", "1", "2", "3", "4", "5" }, 0, 5);
             ReadOnlySpan<string> value = new ReadOnlySpan<string>(new string[] { "5" });
             int index = span.LastIndexOf(value);

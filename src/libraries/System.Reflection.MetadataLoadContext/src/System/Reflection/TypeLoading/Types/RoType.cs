@@ -192,9 +192,14 @@ namespace System.Reflection.TypeLoading
                 }
             }
 
-            // todo: use IEnumerable<T> extension: return ifcs.ToArray()
-            List<RoType> list = new List<RoType>(ifcs);
-            return list.ToArray();
+            if (ifcs.Count == 0)
+            {
+                return Array.Empty<RoType>();
+            }
+
+            var arr = new RoType[ifcs.Count];
+            ifcs.CopyTo(arr);
+            return arr;
         }
 
         private volatile RoType[]? _lazyInterfaces;

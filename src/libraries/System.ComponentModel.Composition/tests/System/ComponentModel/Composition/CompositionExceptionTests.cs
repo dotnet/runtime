@@ -368,7 +368,7 @@ namespace System.ComponentModel.Composition
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Message_ShouldFormatCountOfRootCausesUsingTheCurrentCulture()
         {
             RemoteExecutor.Invoke(() =>

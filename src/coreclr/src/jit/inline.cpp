@@ -1151,8 +1151,16 @@ void InlineStrategy::NoteOutcome(InlineContext* context)
 
 bool InlineStrategy::BudgetCheck(unsigned ilSize)
 {
-    int timeDelta = EstimateInlineTime(ilSize);
-    return (timeDelta + m_CurrentTimeEstimate > m_CurrentTimeBudget);
+    const int  timeDelta = EstimateInlineTime(ilSize);
+    const bool result    = (timeDelta + m_CurrentTimeEstimate > m_CurrentTimeBudget);
+
+    if (result)
+    {
+        JITDUMP("\nBudgetCheck: for IL Size %d, timeDelta %d +  currentEstimate %d > currentBudget %d\n", ilSize,
+                timeDelta, m_CurrentTimeEstimate, m_CurrentTimeBudget);
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -1171,6 +1179,7 @@ InlineContext* InlineStrategy::NewRoot()
     InlineContext* rootContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
 
     rootContext->m_ILSize = m_Compiler->info.compILCodeSize;
+    rootContext->m_Code   = m_Compiler->info.compCode;
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
@@ -1576,7 +1585,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     strncpy(buf, methodName, sizeof(buf));
     buf[sizeof(buf) - 1] = 0;
 
-    for (int i = 0; i < _countof(buf); i++)
+    for (size_t i = 0; i < _countof(buf); i++)
     {
         switch (buf[i])
         {

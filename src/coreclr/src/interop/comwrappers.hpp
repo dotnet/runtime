@@ -15,11 +15,12 @@ enum class CreateComInterfaceFlagsEx : int32_t
     CallerDefinedIUnknown = InteropLib::Com::CreateComInterfaceFlags_CallerDefinedIUnknown,
     TrackerSupport = InteropLib::Com::CreateComInterfaceFlags_TrackerSupport,
 
-    // Highest bit is reserved for internal usage
+    // Highest bits are reserved for internal usage
+    LacksICustomQueryInterface = 1 << 29,
     IsComActivated = 1 << 30,
     IsPegged = 1 << 31,
 
-    InternalMask = IsPegged | IsComActivated,
+    InternalMask = IsPegged | IsComActivated | LacksICustomQueryInterface,
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(CreateComInterfaceFlagsEx);
@@ -85,8 +86,16 @@ private:
     // the wrapper. Supplied with a decrementing value.
     ULONGLONG UniversalRelease(_In_ ULONGLONG dec);
 
+    // Query the runtime defined tables.
+    void* AsRuntimeDefined(_In_ REFIID riid);
+
+    // Query the user defined tables.
+    void* AsUserDefined(_In_ REFIID riid);
+
 public:
+    // N.B. Does not impact the reference count of the object.
     void* As(_In_ REFIID riid);
+
     // Attempt to set the target object handle based on an assumed current value.
     bool TrySetObjectHandle(_In_ InteropLib::OBJECTHANDLE objectHandle, _In_ InteropLib::OBJECTHANDLE current = nullptr);
     bool IsSet(_In_ CreateComInterfaceFlagsEx flag) const;
@@ -116,14 +125,13 @@ ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);
 // Class for connecting a native COM object to a managed object instance
 class NativeObjectWrapperContext
 {
-#ifdef _DEBUG
-    size_t _sentinel;
-#endif
-
     IReferenceTracker* _trackerObject;
     void* _runtimeContext;
     Volatile<BOOL> _isValidTracker;
 
+#ifdef _DEBUG
+    size_t _sentinel;
+#endif
 public: // static
     // Convert a context pointer into a NativeObjectWrapperContext.
     static NativeObjectWrapperContext* MapFromRuntimeContext(_In_ void* cxt);

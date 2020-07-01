@@ -2242,8 +2242,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 		t = mini_get_underlying_type (t);
 		//XXX what about ArgGSharedVtOnStack here?
-		// FIXME tailcall is not always yet initialized.
-		if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t) && !call->tailcall) {
+		if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t)) {
 			if (!t->byref) {
 				if (t->type == MONO_TYPE_R4)
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, AMD64_RSP, ainfo->offset, in->dreg);
@@ -2302,18 +2301,9 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case ArgValuetypeAddrOnStack:
 		case ArgGSharedVtInReg:
 		case ArgGSharedVtOnStack: {
-			// FIXME tailcall is not always yet initialized.
-			if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t) && !call->tailcall)
+			if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t))
 				/* Already emitted above */
 				break;
-			//FIXME what about ArgGSharedVtOnStack ?
-			// FIXME tailcall is not always yet initialized.
-			if (ainfo->storage == ArgOnStack && call->tailcall) {
-				MonoInst *call_inst = (MonoInst*)call;
-				cfg->args [i]->flags |= MONO_INST_VOLATILE;
-				EMIT_NEW_ARGSTORE (cfg, call_inst, i, in);
-				break;
-			}
 
 			guint32 align;
 			guint32 size;
@@ -7326,9 +7316,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
 			amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, 0x44);
 			break;
-		case OP_SSE41_ROUNDPD:
-			amd64_sse_roundpd_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
+		case OP_SSE41_ROUNDP: {
+			if (ins->inst_c1 == MONO_TYPE_R8)
+				amd64_sse_roundpd_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
+			else
+				g_assert_not_reached (); // roundps, but it's not used anywhere for non-llvm back-end yet.
 			break;
+		}
 #endif
 
 		case OP_LZCNT32:
@@ -8867,8 +8861,9 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 			if (mode != -1) {
 				int xreg = alloc_xreg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_FCONV_TO_R8_X, xreg, args [0]->dreg);
-				EMIT_NEW_UNALU (cfg, ins, OP_SSE41_ROUNDPD, xreg, xreg);
+				EMIT_NEW_UNALU (cfg, ins, OP_SSE41_ROUNDP, xreg, xreg);
 				ins->inst_c0 = mode;
+				ins->inst_c1 = MONO_TYPE_R8;
 				int dreg = alloc_freg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_EXTRACT_R8, dreg, xreg);
 				return ins;

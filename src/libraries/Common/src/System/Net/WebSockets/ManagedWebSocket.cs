@@ -72,7 +72,7 @@ namespace System.Net.WebSockets
         /// expect to always receive unmasked payloads, whereas servers always send
         /// unmasked payloads and expect to always receive masked payloads.
         /// </summary>
-        private readonly bool _isServer = false;
+        private readonly bool _isServer;
         /// <summary>The agreed upon subprotocol with the server.</summary>
         private readonly string? _subprotocol;
         /// <summary>Timer used to send periodic pings to the server, at the interval specified</summary>
@@ -104,9 +104,9 @@ namespace System.Net.WebSockets
         /// <summary>Whether we've ever received a close frame.</summary>
         private bool _receivedCloseFrame;
         /// <summary>The reason for the close, as sent by the server, or null if not yet closed.</summary>
-        private WebSocketCloseStatus? _closeStatus = null;
+        private WebSocketCloseStatus? _closeStatus;
         /// <summary>A description of the close reason as sent by the server, or null if not yet closed.</summary>
-        private string? _closeStatusDescription = null;
+        private string? _closeStatusDescription;
 
         /// <summary>
         /// The last header received in a ReceiveAsync.  If ReceiveAsync got a header but then
@@ -118,15 +118,15 @@ namespace System.Net.WebSockets
         /// </summary>
         private MessageHeader _lastReceiveHeader = new MessageHeader { Opcode = MessageOpcode.Text, Fin = true };
         /// <summary>The offset of the next available byte in the _receiveBuffer.</summary>
-        private int _receiveBufferOffset = 0;
+        private int _receiveBufferOffset;
         /// <summary>The number of bytes available in the _receiveBuffer.</summary>
-        private int _receiveBufferCount = 0;
+        private int _receiveBufferCount;
         /// <summary>
         /// When dealing with partially read fragments of binary/text messages, a mask previously received may still
         /// apply, and the first new byte received may not correspond to the 0th position in the mask.  This value is
         /// the next offset into the mask that should be applied.
         /// </summary>
-        private int _receivedMaskOffsetOffset = 0;
+        private int _receivedMaskOffsetOffset;
         /// <summary>
         /// Temporary send buffer.  This should be released back to the ArrayPool once it's
         /// no longer needed for the current send operation.  It is stored as an instance
@@ -514,8 +514,9 @@ namespace System.Net.WebSockets
             if (acquiredLock)
             {
                 // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
-                // The call will handle releasing the lock.
-                ValueTask t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Ping, true, Memory<byte>.Empty);
+                // The call will handle releasing the lock.  We send a pong rather than ping, since it's allowed by
+                // the RFC as a unidirectional heartbeat and we're not interested in waiting for a response.
+                ValueTask t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Pong, true, ReadOnlyMemory<byte>.Empty);
                 if (t.IsCompletedSuccessfully)
                 {
                     t.GetAwaiter().GetResult();
@@ -709,7 +710,7 @@ namespace System.Net.WebSockets
                             null, null);
                     }
 
-                    // Otherwise, read as much of the payload as we can efficiently, and upate the header to reflect how much data
+                    // Otherwise, read as much of the payload as we can efficiently, and update the header to reflect how much data
                     // remains for future reads.  We first need to copy any data that may be lingering in the receive buffer
                     // into the destination; then to minimize ReceiveAsync calls, we want to read as much as we can, stopping
                     // only when we've either read the whole message or when we've filled the payload buffer.
@@ -788,6 +789,7 @@ namespace System.Net.WebSockets
 
         /// <summary>Processes a received close message.</summary>
         /// <param name="header">The message header.</param>
+        /// <param name="cancellationToken">The CancellationToken used to cancel the websocket operation.</param>
         /// <returns>The received result message.</returns>
         private async ValueTask HandleReceivedCloseAsync(MessageHeader header, CancellationToken cancellationToken)
         {
@@ -883,6 +885,7 @@ namespace System.Net.WebSockets
 
         /// <summary>Processes a received ping or pong message.</summary>
         /// <param name="header">The message header.</param>
+        /// <param name="cancellationToken">The CancellationToken used to cancel the websocket operation.</param>
         private async ValueTask HandleReceivedPingPongAsync(MessageHeader header, CancellationToken cancellationToken)
         {
             // Consume any (optional) payload associated with the ping/pong.
@@ -1110,6 +1113,7 @@ namespace System.Net.WebSockets
                     {
                         Debug.Assert(!Monitor.IsEntered(StateUpdateLock), $"{nameof(StateUpdateLock)} must never be held when acquiring {nameof(ReceiveAsyncLock)}");
                         Task receiveTask;
+                        bool usingExistingReceive;
                         lock (ReceiveAsyncLock)
                         {
                             // Now that we're holding the ReceiveAsyncLock, double-check that we've not yet received the close frame.
@@ -1126,12 +1130,19 @@ namespace System.Net.WebSockets
                             // a race condition here, e.g. if there's a in-flight receive that completes after we check, but that's fine: worst
                             // case is we then await it, find that it's not what we need, and try again.
                             receiveTask = _lastReceiveAsync;
-                            _lastReceiveAsync = receiveTask = ValidateAndReceiveAsync(receiveTask, closeBuffer, cancellationToken);
+                            Task newReceiveTask = ValidateAndReceiveAsync(receiveTask, closeBuffer, cancellationToken);
+                            usingExistingReceive = ReferenceEquals(receiveTask, newReceiveTask);
+                            _lastReceiveAsync = receiveTask = newReceiveTask;
                         }
 
                         // Wait for whatever receive task we have.  We'll then loop around again to re-check our state.
+                        // If this is an existing receive, and if we have a cancelable token, we need to register with that
+                        // token while we wait, since it may not be the same one that was given to the receive initially.
                         Debug.Assert(receiveTask != null);
-                        await receiveTask.ConfigureAwait(false);
+                        using (usingExistingReceive ? cancellationToken.Register(s => ((ManagedWebSocket)s!).Abort(), this) : default)
+                        {
+                            await receiveTask.ConfigureAwait(false);
+                        }
                     }
                 }
                 finally

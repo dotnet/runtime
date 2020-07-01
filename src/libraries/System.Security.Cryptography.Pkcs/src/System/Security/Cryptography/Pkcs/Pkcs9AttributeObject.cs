@@ -32,12 +32,12 @@ namespace System.Security.Cryptography.Pkcs
             : base(asnEncodedData)
         {
             if (asnEncodedData.Oid == null)
-                throw new ArgumentNullException(nameof(asnEncodedData.Oid));
+                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "asnEncodedData.Oid"), nameof(asnEncodedData));
             string? szOid = base.Oid!.Value;
             if (szOid == null)
-                throw new ArgumentNullException("oid.Value");
+                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(asnEncodedData));
             if (szOid.Length == 0)
-                throw new ArgumentException(SR.Arg_EmptyOrNullString, "oid.Value");
+                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(asnEncodedData));
         }
 
         internal Pkcs9AttributeObject(Oid oid)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Xml.Serialization;
@@ -20,7 +21,7 @@ namespace System.Xml.Schema
         private Occurs _flags = Occurs.None;
 
         [XmlAttribute("minOccurs")]
-        public string MinOccursString
+        public string? MinOccursString
         {
             get
             {
@@ -46,7 +47,7 @@ namespace System.Xml.Schema
         }
 
         [XmlAttribute("maxOccurs")]
-        public string MaxOccursString
+        public string? MaxOccursString
         {
             get
             {
@@ -136,17 +137,17 @@ namespace System.Xml.Schema
 
         internal XmlQualifiedName GetQualifiedName()
         {
-            XmlSchemaElement elem = this as XmlSchemaElement;
+            XmlSchemaElement? elem = this as XmlSchemaElement;
             if (elem != null)
             {
                 return elem.QualifiedName;
             }
             else
             {
-                XmlSchemaAny any = this as XmlSchemaAny;
+                XmlSchemaAny? any = this as XmlSchemaAny;
                 if (any != null)
                 {
-                    string ns = any.Namespace;
+                    string? ns = any.Namespace;
                     if (ns != null)
                     {
                         ns = ns.Trim();

@@ -7,6 +7,7 @@
 //
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Text
@@ -26,30 +27,34 @@ namespace System.Text
         private const string optionalChars =
             "!\"#$%&*;<=>@[]^_`{|}";
 
+#pragma warning disable MSLIB0001
         // Used by Encoding.UTF7 for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
         internal static readonly UTF7Encoding s_default = new UTF7Encoding();
+#pragma warning restore MSLIB0001
 
         // The set of base 64 characters.
-        private byte[] _base64Bytes = null!;
+        private byte[] _base64Bytes;
         // The decoded bits for every base64 values. This array has a size of 128 elements.
         // The index is the code point value of the base 64 characters.  The value is -1 if
         // the code point is not a valid base 64 character.  Otherwise, the value is a value
         // from 0 ~ 63.
-        private sbyte[] _base64Values = null!;
+        private sbyte[] _base64Values;
         // The array to decide if a Unicode code point below 0x80 can be directly encoded in UTF7.
         // This array has a size of 128.
-        private bool[] _directEncode = null!;
+        private bool[] _directEncode;
 
         private readonly bool _allowOptionals;
 
         private const int UTF7_CODEPAGE = 65000;
 
+        [Obsolete(Obsoletions.SystemTextEncodingUTF7Message, DiagnosticId = Obsoletions.SystemTextEncodingUTF7DiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public UTF7Encoding()
             : this(false)
         {
         }
 
+        [Obsolete(Obsoletions.SystemTextEncodingUTF7Message, DiagnosticId = Obsoletions.SystemTextEncodingUTF7DiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public UTF7Encoding(bool allowOptionals)
             : base(UTF7_CODEPAGE) // Set the data item.
         {
@@ -60,6 +65,9 @@ namespace System.Text
             MakeTables();
         }
 
+        [MemberNotNull(nameof(_base64Bytes))]
+        [MemberNotNull(nameof(_base64Values))]
+        [MemberNotNull(nameof(_directEncode))]
         private void MakeTables()
         {
             // Build our tables
@@ -850,7 +858,7 @@ namespace System.Text
         private sealed class DecoderUTF7FallbackBuffer : DecoderFallbackBuffer
         {
             // Store our default string
-            private char cFallback = (char)0;
+            private char cFallback;
             private int iCount = -1;
             private int iSize;
 

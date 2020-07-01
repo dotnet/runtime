@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
     {
         public bool IsCurveValid(Oid oid)
         {
-            if (PlatformDetection.IsOSX)
+            if (PlatformDetection.IsOSXLike)
             {
                 return false;
             }
@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         {
             get
             {
-                if (PlatformDetection.IsOSX)
+                if (PlatformDetection.IsOSXLike)
                 {
                     return false;
                 }
@@ -34,8 +34,6 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                 return true;
             }
         }
-
-        public bool LimitedPrivateKeySupported => !PlatformDetection.IsOSX;
 
         private static bool IsValueOrFriendlyNameValid(string friendlyNameOrValue)
         {

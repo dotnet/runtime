@@ -10,15 +10,11 @@ namespace System.Threading.Tests
 {
     public class ManualResetEventSlimTests
     {
-        [Fact]
-        public static void RunManualResetEventSlimTest0_StateTrans()
-        {
-            RunManualResetEventSlimTest0_StateTrans(false);
-            RunManualResetEventSlimTest0_StateTrans(true);
-        }
-
         // Validates init, set, reset state transitions.
-        private static void RunManualResetEventSlimTest0_StateTrans(bool init)
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void RunManualResetEventSlimTest0_StateTrans(bool init)
         {
             ManualResetEventSlim ev = new ManualResetEventSlim(init);
             Assert.Equal(init, ev.IsSet);
@@ -34,7 +30,7 @@ namespace System.Threading.Tests
         }
 
         // Uses 3 events to coordinate between two threads. Very little validation.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunManualResetEventSlimTest1_SimpleWait()
         {
             ManualResetEventSlim ev1 = new ManualResetEventSlim(false);

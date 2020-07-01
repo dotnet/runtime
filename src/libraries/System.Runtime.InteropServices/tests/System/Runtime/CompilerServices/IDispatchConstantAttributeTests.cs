@@ -14,9 +14,7 @@ namespace System.Runtime.CompilerServices.Tests
         public void Ctor_Default()
         {
             var attribute = new IDispatchConstantAttribute();
-#pragma warning disable 0618 // DispatchWrapper is marked as Obsolete.
             DispatchWrapper wrapper = Assert.IsType<DispatchWrapper>(attribute.Value);
-#pragma warning restore 0618
             Assert.Null(wrapper.WrappedObject);
         }
     }

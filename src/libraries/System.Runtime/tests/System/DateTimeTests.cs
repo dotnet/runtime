@@ -383,8 +383,8 @@ namespace System.Tests
 
         public static IEnumerable<object[]> AddYears_OutOfRange_TestData()
         {
-            yield return new object[] { DateTime.Now, 10001, "years" };
-            yield return new object[] { DateTime.Now, -10001, "years" };
+            yield return new object[] { DateTime.Now, 10001, "value" };
+            yield return new object[] { DateTime.Now, -10001, "value" };
             yield return new object[] { DateTime.MaxValue, 1, "months" };
             yield return new object[] { DateTime.MinValue, -1, "months" };
         }

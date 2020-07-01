@@ -32,6 +32,7 @@
 
 #if MONO_FEATURE_SRE
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.IO;
@@ -154,7 +155,7 @@ namespace System.Reflection.Emit
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
-            if (name == string.Empty)
+            if (name.Length == 0)
                 throw new ArgumentException("name cannot be empty", nameof(name));
             if (global_type_created != null)
                 throw new InvalidOperationException("global fields already created");
@@ -354,12 +355,14 @@ namespace System.Reflection.Emit
         }
 
         [ComVisible(true)]
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string className)
         {
             return GetType(className, false, false);
         }
 
         [ComVisible(true)]
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string className, bool ignoreCase)
         {
             return GetType(className, false, ignoreCase);
@@ -563,8 +566,7 @@ namespace System.Reflection.Emit
             if (field == null)
                 throw new ArgumentNullException(nameof(field));
 
-            throw new NotImplementedException();
-            //return new FieldToken (GetToken (field));
+            return new FieldToken(GetToken (field), field.GetType());
         }
 
         // FIXME:
@@ -598,6 +600,8 @@ namespace System.Reflection.Emit
             return new TypeToken(GetToken(type));
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Reflection.Emit is not subject to trimming")]
         public TypeToken GetTypeToken(string name)
         {
             return GetTypeToken(GetType(name)!);
@@ -841,6 +845,11 @@ namespace System.Reflection.Emit
             return false;
         }
 
+        internal ModuleBuilder GetNativeHandle() => this;
+
+        internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
+
+        [RequiresUnreferencedCode("Methods might be removed")]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             if (global_type_created == null)
@@ -942,6 +951,7 @@ namespace System.Reflection.Emit
             return CustomAttributeData.GetCustomAttributes(this);
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             if (global_type_created == null)
@@ -949,6 +959,7 @@ namespace System.Reflection.Emit
             return global_type_created.GetField(name, bindingAttr);
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
             if (global_type_created == null)
@@ -956,6 +967,7 @@ namespace System.Reflection.Emit
             return global_type_created.GetFields(bindingFlags);
         }
 
+        [RequiresUnreferencedCode("Methods might be removed")]
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
             if (global_type_created == null)

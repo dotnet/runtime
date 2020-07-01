@@ -13,7 +13,7 @@ namespace System.Data
     {
         internal readonly string _name;
         internal readonly int _info = -1;
-        internal int _argumentCount = 0;
+        internal int _argumentCount;
         internal const int initialCapacity = 1;
         internal ExpressionNode[] _arguments;
 

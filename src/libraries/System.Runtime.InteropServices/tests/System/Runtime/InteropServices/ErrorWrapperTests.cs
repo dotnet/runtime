@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-#pragma warning disable 0618 // ErrorWrapper is marked as Obsolete.
     public class ErrorWrapperTests
     {
         [Theory]
@@ -58,5 +57,4 @@ namespace System.Runtime.InteropServices.Tests
             public void SetHrResult(int hResult) => HResult = hResult;
         }
     }
-#pragma warning restore 0618
 }

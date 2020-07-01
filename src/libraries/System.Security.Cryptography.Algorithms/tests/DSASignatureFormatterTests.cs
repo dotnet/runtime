@@ -10,13 +10,13 @@ namespace System.Security.Cryptography.Dsa.Tests
     public partial class DSASignatureFormatterTests : AsymmetricSignatureFormatterTests
     {
         [Fact]
-        public static void InvalidFormatterArguments()
+        public static void InvalidFormatterArguments_DSA()
         {
             InvalidFormatterArguments(new DSASignatureFormatter());
         }
 
         [Fact]
-        public static void InvalidDeformatterArguments()
+        public static void InvalidDeformatterArguments_DSA()
         {
             InvalidDeformatterArguments(new DSASignatureDeformatter());
         }

@@ -45,8 +45,6 @@ namespace System.Net.Mime
         internal const char Comma = ',';
         internal const char Dot = '.';
 
-        private static readonly char[] s_colonSeparator = new char[] { ':' };
-
         // NOTE: See RFC 2822 for more detail.  By default, every value in the array is false and only
         // those values which are allowed in that particular set are then set to true.  The numbers
         // annotating each definition below are the range of ASCII values which are allowed in that definition.
@@ -317,7 +315,7 @@ namespace System.Net.Mime
                 localBuilder.Append(' ');
             }
 
-            string[] offsetFields = offset.Split(s_colonSeparator);
+            string[] offsetFields = offset.Split(':');
             localBuilder.Append(offsetFields[0]);
             localBuilder.Append(offsetFields[1]);
             return (builder != null ? null : localBuilder.ToString());

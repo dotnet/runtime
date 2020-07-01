@@ -12896,8 +12896,8 @@ private:
 // is a valid Remap Breakpoint location (not in a special offset, must be empty stack, and not in a handler.
 //
 EnCSequencePointHelper::EnCSequencePointHelper(DebuggerJitInfo *pJitInfo)
-    : m_pOffsetToHandlerInfo(NULL),
-      m_pJitInfo(pJitInfo)
+    : m_pJitInfo(pJitInfo),
+    m_pOffsetToHandlerInfo(NULL)      
 {
     CONTRACTL
     {
@@ -13947,7 +13947,7 @@ void GenericHijackFuncHelper()
     if (pEEThread != NULL)
     {
         // We've got a Thread ptr, so get the continue type out of the thread's debugger word.
-        continueType = (DWORD)threadDebuggerWord;
+        continueType = (DWORD)(size_t) threadDebuggerWord;
 
         _ASSERTE(pEEThread->GetInteropDebuggingHijacked());
         pEEThread->SetInteropDebuggingHijacked(FALSE);

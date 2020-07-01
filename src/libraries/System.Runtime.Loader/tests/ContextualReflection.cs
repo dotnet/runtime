@@ -170,7 +170,7 @@ namespace System.Runtime.Loader.Tests
         }
 
 #region EnterContextualReflectionAndDispose
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CurrentContextualReflectionContextInitialValueNull()
         {
             RemoteExecutor.Invoke(() =>

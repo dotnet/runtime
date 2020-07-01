@@ -761,7 +761,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region IList members
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get
             {
@@ -771,7 +771,7 @@ namespace System.Numerics.Tensors
             {
                 try
                 {
-                    SetValue(index, (T)value);
+                    SetValue(index, (T)value!);
                 }
                 catch (InvalidCastException)
                 {
@@ -784,40 +784,40 @@ namespace System.Numerics.Tensors
 
         public bool IsReadOnly => false;
 
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
             throw new InvalidOperationException();
         }
 
         void IList.Clear()
         {
-            Fill(default);
+            Fill(default!);
         }
 
-        bool IList.Contains(object value)
+        bool IList.Contains(object? value)
         {
-            if (IsCompatibleObject(value))
+            if (IsCompatibleObject(value!))
             {
-                return Contains((T)value);
+                return Contains((T)value!);
             }
             return false;
         }
 
-        int IList.IndexOf(object value)
+        int IList.IndexOf(object? value)
         {
-            if (IsCompatibleObject(value))
+            if (IsCompatibleObject(value!))
             {
-                return IndexOf((T)value);
+                return IndexOf((T)value!);
             }
             return -1;
         }
 
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
             throw new InvalidOperationException();
         }
 
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
             throw new InvalidOperationException();
         }
@@ -848,7 +848,7 @@ namespace System.Numerics.Tensors
 
         void ICollection<T>.Clear()
         {
-            Fill(default);
+            Fill(default!);
         }
 
         bool ICollection<T>.Contains(T item)
@@ -934,7 +934,7 @@ namespace System.Numerics.Tensors
         {
             for (int i = 0; i < Length; i++)
             {
-                if (GetValue(i).Equals(item))
+                if (GetValue(i)!.Equals(item))
                 {
                     return i;
                 }
@@ -961,7 +961,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region IStructuralComparable members
-        int IStructuralComparable.CompareTo(object other, IComparer comparer)
+        int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
             if (other == null)
             {
@@ -1063,7 +1063,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region IStructuralEquatable members
-        bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer)
+        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
             if (other == null)
             {
@@ -1163,7 +1163,7 @@ namespace System.Numerics.Tensors
             // with the same content and different shape.
             for (int i = 0; i < Length; i++)
             {
-                hashCode ^= comparer.GetHashCode(GetValue(i));
+                hashCode ^= comparer.GetHashCode(GetValue(i)!);
             }
 
             return hashCode;

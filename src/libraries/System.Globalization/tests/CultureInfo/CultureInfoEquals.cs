@@ -26,7 +26,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(CultureInfo culture, object value, bool expected)
+        public void EqualsTest(CultureInfo culture, object value, bool expected)
         {
             Assert.Equal(expected, culture.Equals(value));
         }

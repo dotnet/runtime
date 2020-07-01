@@ -18,21 +18,15 @@ namespace System.Runtime.InteropServices
             {
                 if (s_frameworkDescription == null)
                 {
-                    string? versionString = AppContext.GetData("FX_PRODUCT_VERSION") as string;
+                    string? versionString = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
-                    if (versionString == null)
+                    // Strip the git hash if there is one
+                    if (versionString != null)
                     {
-                        // Use AssemblyInformationalVersionAttribute as fallback if the exact product version is not specified by the host
-                        versionString = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-
-                        // Strip the git hash if there is one
-                        if (versionString != null)
+                        int plusIndex = versionString.IndexOf('+');
+                        if (plusIndex != -1)
                         {
-                            int plusIndex = versionString.IndexOf('+');
-                            if (plusIndex != -1)
-                            {
-                                versionString = versionString.Substring(0, plusIndex);
-                            }
+                            versionString = versionString.Substring(0, plusIndex);
                         }
                     }
 

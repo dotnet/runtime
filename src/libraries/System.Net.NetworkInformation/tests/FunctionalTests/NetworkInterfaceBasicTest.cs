@@ -260,6 +260,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(~(TestPlatforms.OSX|TestPlatforms.FreeBSD))]
         [InlineData(false)]
         [InlineData(true)]

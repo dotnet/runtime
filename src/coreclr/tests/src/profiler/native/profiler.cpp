@@ -22,7 +22,7 @@ HRESULT STDMETHODCALLTYPE Profiler::Initialize(IUnknown *pICorProfilerInfoUnk)
     printf("Profiler.dll!Profiler::Initialize\n");
     fflush(stdout);
 
-    HRESULT queryInterfaceResult = pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo8), reinterpret_cast<void **>(&this->pCorProfilerInfo));
+    HRESULT queryInterfaceResult = pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo9), reinterpret_cast<void **>(&this->pCorProfilerInfo));
     if (FAILED(queryInterfaceResult))
     {
         printf("Profiler.dll!Profiler::Initialize failed to QI for ICorProfilerInfo.\n");
@@ -490,9 +490,38 @@ HRESULT STDMETHODCALLTYPE Profiler::DynamicMethodJITCompilationFinished(Function
     return S_OK;
 }
 
+HRESULT STDMETHODCALLTYPE Profiler::DynamicMethodUnloaded(FunctionID functionId)
+{
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE Profiler::EventPipeEventDelivered(
+    EVENTPIPE_PROVIDER provider,
+    DWORD eventId,
+    DWORD eventVersion,
+    ULONG cbMetadataBlob,
+    LPCBYTE metadataBlob,
+    ULONG cbEventData,
+    LPCBYTE eventData,
+    LPCGUID pActivityId,
+    LPCGUID pRelatedActivityId,
+    ThreadID eventThread,
+    ULONG numStackFrames,
+    UINT_PTR stackFrames[])
+{
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE Profiler::EventPipeProviderCreated(EVENTPIPE_PROVIDER provider)
+{
+    return S_OK;
+}
+
 HRESULT STDMETHODCALLTYPE Profiler::QueryInterface(REFIID riid, void **ppvObject)
 {
-    if (riid == __uuidof(ICorProfilerCallback8) ||
+    if (riid == __uuidof(ICorProfilerCallback10) ||
+        riid == __uuidof(ICorProfilerCallback9) ||
+        riid == __uuidof(ICorProfilerCallback8) ||
         riid == __uuidof(ICorProfilerCallback7) ||
         riid == __uuidof(ICorProfilerCallback6) ||
         riid == __uuidof(ICorProfilerCallback5) ||

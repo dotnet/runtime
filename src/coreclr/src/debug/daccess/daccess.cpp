@@ -3290,6 +3290,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface7*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface8)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface8*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -5584,7 +5588,11 @@ ClrDataAccess::Initialize(void)
             UNREACHABLE();
         }
 
-        IfFailRet(m_pLegacyTarget->GetImageBase(TARGET_MAIN_CLR_DLL_NAME_W, &base));
+        ReleaseHolder<ICLRRuntimeLocator> pRuntimeLocator(NULL);
+        if (m_pLegacyTarget->QueryInterface(__uuidof(ICLRRuntimeLocator), (void**)&pRuntimeLocator) != S_OK || pRuntimeLocator->GetRuntimeBase(&base) != S_OK)
+        {
+            IfFailRet(m_pLegacyTarget->GetImageBase(TARGET_MAIN_CLR_DLL_NAME_W, &base));
+        }
 
         m_globalBase = TO_TADDR(base);
     }
@@ -6600,7 +6608,7 @@ bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEFile *peFile,
 
 #if defined(FEATURE_CORESYSTEM)
 /* static */
-// We extract "ni.dll or .ni.winmd" from the NGEM image name to obtain the IL image name.
+// We extract "ni.dll from the NGEN image name to obtain the IL image name.
 // In the end we add given ilExtension.
 // This dependecy is based on Apollo installer behavior.
 bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
@@ -6613,20 +6621,14 @@ bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
     }
 
     _wcslwr_s(wszFilePath, cchFilePath);
-    // Find the "ni.dll" or "ni.winmd" extension (check for PEFile isWinRT something to know when is winmd or not.
+    // Find the "ni.dll" extension.
     // If none exists use NGEN image name.
     //
-    const WCHAR* ngenExtension[] = {W("ni.dll"), W("ni.winmd")};
+    const WCHAR* ngenExtension = W("ni.dll");
 
-    for (unsigned i = 0; i < COUNTOF(ngenExtension); ++i)
+    if (wcslen(ilExtension) <= wcslen(ngenExtension))
     {
-        if (wcslen(ilExtension) > wcslen(ngenExtension[i]))
-        {
-            // We should not have IL image name bigger than NGEN image.
-            // It will not fit inside wszFilePath.
-            continue;
-        }
-        LPWSTR  wszFileExtension = wcsstr(wszFilePath, ngenExtension[i]);
+        LPWSTR  wszFileExtension = wcsstr(wszFilePath, ngenExtension);
         if (wszFileExtension != 0)
         {
             LPWSTR  wszNextFileExtension = wszFileExtension;
@@ -6634,14 +6636,14 @@ bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
             do
             {
                 wszFileExtension = wszNextFileExtension;
-                wszNextFileExtension = wcsstr(wszFileExtension + 1, ngenExtension[i]);
+                wszNextFileExtension = wcsstr(wszFileExtension + 1, ngenExtension);
             } while (wszNextFileExtension != 0);
 
-            // Overwrite ni.dll or ni.winmd with ilExtension(.dll, .winmd)
+            // Overwrite ni.dll with ilExtension
             if (!memcpy_s(wszFileExtension,
-                           wcslen(ngenExtension[i])*sizeof(WCHAR),
-                           ilExtension,
-                           wcslen(ilExtension)*sizeof(WCHAR)))
+                            wcslen(ngenExtension)*sizeof(WCHAR),
+                            ilExtension,
+                            wcslen(ilExtension)*sizeof(WCHAR)))
             {
                 wszFileExtension[wcslen(ilExtension)] = '\0';
                 return true;
@@ -6768,63 +6770,54 @@ ClrDataAccess::GetMetaDataFromHost(PEFile* peFile,
         }
 
 #if defined(FEATURE_CORESYSTEM)
-        const WCHAR* ilExtension[] = {W("dll"), W("winmd")};
+        const WCHAR* ilExtension = W("dll");
         WCHAR ngenImageName[MAX_LONGPATH] = {0};
         if (wcscpy_s(ngenImageName, NumItems(ngenImageName), uniPath) != 0)
         {
             goto ErrExit;
         }
-        for (unsigned i = 0; i < COUNTOF(ilExtension); i++)
+        if (wcscpy_s(uniPath, NumItems(uniPath), ngenImageName) != 0)
         {
-            if (wcscpy_s(uniPath, NumItems(uniPath), ngenImageName) != 0)
-            {
-                goto ErrExit;
-            }
-            // Transform NGEN image name into IL Image name
-            if (!GetILImageNameFromNgenImage(ilExtension[i], uniPath, NumItems(uniPath)))
-            {
-                goto ErrExit;
-            }
+            goto ErrExit;
+        }
+        // Transform NGEN image name into IL Image name
+        if (!GetILImageNameFromNgenImage(ilExtension, uniPath, NumItems(uniPath)))
+        {
+            goto ErrExit;
+        }
 #endif//FEATURE_CORESYSTEM
 
-            // RVA size in ngen image and IL image is the same. Because the only
-            // different is in RVA. That is 4 bytes column fixed.
-            //
+        // RVA size in ngen image and IL image is the same. Because the only
+        // different is in RVA. That is 4 bytes column fixed.
+        //
 
-            // try again
-            if (m_legacyMetaDataLocator)
-            {
-                hr = m_legacyMetaDataLocator->GetMetadata(
-                    uniPath,
-                    imageTimestamp,
-                    imageSize,
-                    NULL,           // MVID - not used yet
-                    0,              // pass zero hint here... important
-                    0,              // flags - reserved for future.
-                    dataSize,
-                    (BYTE*)buffer,
-                    NULL);
-            }
-            else
-            {
-                hr = m_target3->GetMetaData(
-                    uniPath,
-                    imageTimestamp,
-                    imageSize,
-                    NULL,           // MVID - not used yet
-                    0,              // pass zero hint here... important
-                    0,              // flags - reserved for future.
-                    dataSize,
-                    (BYTE*)buffer,
-                    NULL);
-            }
-#if defined(FEATURE_CORESYSTEM)
-            if (SUCCEEDED(hr))
-            {
-                break;
-            }
+        // try again
+        if (m_legacyMetaDataLocator)
+        {
+            hr = m_legacyMetaDataLocator->GetMetadata(
+                uniPath,
+                imageTimestamp,
+                imageSize,
+                NULL,           // MVID - not used yet
+                0,              // pass zero hint here... important
+                0,              // flags - reserved for future.
+                dataSize,
+                (BYTE*)buffer,
+                NULL);
         }
-#endif // FEATURE_CORESYSTEM
+        else
+        {
+            hr = m_target3->GetMetaData(
+                uniPath,
+                imageTimestamp,
+                imageSize,
+                NULL,           // MVID - not used yet
+                0,              // pass zero hint here... important
+                0,              // flags - reserved for future.
+                dataSize,
+                (BYTE*)buffer,
+                NULL);
+        }
     }
 
     if (FAILED(hr))
@@ -7302,7 +7295,7 @@ ClrDataAccess::GetDacGlobals()
     }
 
     if (FAILED(status = GetResourceRvaFromResourceSectionRvaByName(m_pTarget, m_globalBase,
-        resourceSectionRVA, (DWORD)RT_RCDATA, _WIDE(DACCESS_TABLE_RESOURCE), 0,
+        resourceSectionRVA, (DWORD)(size_t)RT_RCDATA, _WIDE(DACCESS_TABLE_RESOURCE), 0,
         &rsrcRVA, &rsrcSize)))
     {
         _ASSERTE_MSG(false, "DAC fatal error: can't locate DAC table resource in " TARGET_MAIN_CLR_DLL_NAME_A);
@@ -7351,9 +7344,9 @@ ClrDataAccess::GetDacGlobals()
 #ifdef _DEBUG
         char szMsgBuf[1024];
         _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
-            "DAC fatal error: mismatch in number of globals in DAC table. Read from file: %d, expected: %d.",
+            "DAC fatal error: mismatch in number of globals in DAC table. Read from file: %d, expected: %zd.",
             header.numGlobals,
-            offsetof(DacGlobals, EEJitManager__vtAddr) / sizeof(ULONG));
+            (size_t)offsetof(DacGlobals, EEJitManager__vtAddr) / sizeof(ULONG));
         _ASSERTE_MSG(false, szMsgBuf);
 #endif // _DEBUG
 
@@ -7366,9 +7359,9 @@ ClrDataAccess::GetDacGlobals()
 #ifdef _DEBUG
         char szMsgBuf[1024];
         _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
-            "DAC fatal error: mismatch in number of vptrs in DAC table. Read from file: %d, expected: %d.",
+            "DAC fatal error: mismatch in number of vptrs in DAC table. Read from file: %d, expected: %zd.",
             header.numVptrs,
-            (sizeof(DacGlobals) - offsetof(DacGlobals, EEJitManager__vtAddr)) / sizeof(ULONG));
+            (size_t)(sizeof(DacGlobals) - offsetof(DacGlobals, EEJitManager__vtAddr)) / sizeof(ULONG));
         _ASSERTE_MSG(false, szMsgBuf);
 #endif // _DEBUG
 
@@ -8170,6 +8163,12 @@ void DacHandleWalker::GetRefCountedHandleInfo(
 {
     SUPPORTS_DAC;
 
+    if (pJupiterRefCount)
+        *pJupiterRefCount = 0;
+
+    if (pIsPegged)
+        *pIsPegged = FALSE;
+
 #ifdef FEATURE_COMINTEROP
     if (uType == HNDTYPE_REFCOUNTED)
     {
@@ -8179,12 +8178,6 @@ void DacHandleWalker::GetRefCountedHandleInfo(
         {
             if (pRefCount)
                 *pRefCount = (unsigned int)pWrap->GetRefCount();
-
-            if (pJupiterRefCount)
-                *pJupiterRefCount = (unsigned int)pWrap->GetJupiterRefCount();
-
-            if (pIsPegged)
-                *pIsPegged = pWrap->IsConsideredPegged();
 
             if (pIsStrong)
                 *pIsStrong = pWrap->IsWrapperActive();
@@ -8196,12 +8189,6 @@ void DacHandleWalker::GetRefCountedHandleInfo(
 
     if (pRefCount)
         *pRefCount = 0;
-
-    if (pJupiterRefCount)
-        *pJupiterRefCount = 0;
-
-    if (pIsPegged)
-        *pIsPegged = FALSE;
 
     if (pIsStrong)
         *pIsStrong = FALSE;
@@ -8248,7 +8235,7 @@ void CALLBACK DacHandleWalker::EnumCallbackSOS(PTR_UNCHECKED_OBJECTREF handle, u
     if (param->Type == HNDTYPE_DEPENDENT)
         data.Secondary = GetDependentHandleSecondary(handle.GetAddr()).GetAddr();
 #ifdef FEATURE_COMINTEROP
-    else if (param->Type == HNDTYPE_WEAK_WINRT)
+    else if (param->Type == HNDTYPE_WEAK_NATIVE_COM)
         data.Secondary = HndGetHandleExtraInfo(handle.GetAddr());
 #endif // FEATURE_COMINTEROP
     else

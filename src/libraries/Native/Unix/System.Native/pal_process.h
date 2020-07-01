@@ -95,28 +95,6 @@ typedef enum
     PAL_LOG_NOTICE = 5,  /* normal but significant condition */
     PAL_LOG_INFO = 6,    /* informational */
     PAL_LOG_DEBUG = 7,   /* debug-level messages */
-    // Facilities
-    PAL_LOG_KERN = (0 << 3),      /* kernel messages */
-    PAL_LOG_USER = (1 << 3),      /* random user-level messages */
-    PAL_LOG_MAIL = (2 << 3),      /* mail system */
-    PAL_LOG_DAEMON = (3 << 3),    /* system daemons */
-    PAL_LOG_AUTH = (4 << 3),      /* authorization messages */
-    PAL_LOG_SYSLOG = (5 << 3),    /* messages generated internally by syslogd */
-    PAL_LOG_LPR = (6 << 3),       /* line printer subsystem */
-    PAL_LOG_NEWS = (7 << 3),      /* network news subsystem */
-    PAL_LOG_UUCP = (8 << 3),      /* UUCP subsystem */
-    PAL_LOG_CRON = (9 << 3),      /* clock daemon */
-    PAL_LOG_AUTHPRIV = (10 << 3), /* authorization messages (private) */
-    PAL_LOG_FTP = (11 << 3),      /* ftp daemon */
-    // Between FTP and Local is reserved for system use
-    PAL_LOG_LOCAL0 = (16 << 3), /* reserved for local use */
-    PAL_LOG_LOCAL1 = (17 << 3), /* reserved for local use */
-    PAL_LOG_LOCAL2 = (18 << 3), /* reserved for local use */
-    PAL_LOG_LOCAL3 = (19 << 3), /* reserved for local use */
-    PAL_LOG_LOCAL4 = (20 << 3), /* reserved for local use */
-    PAL_LOG_LOCAL5 = (21 << 3), /* reserved for local use */
-    PAL_LOG_LOCAL6 = (22 << 3), /* reserved for local use */
-    PAL_LOG_LOCAL7 = (23 << 3), /* reserved for local use */
 } SysLogPriority;
 
 /**

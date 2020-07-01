@@ -157,7 +157,7 @@ namespace System.Net.Test.Common
 
             if (_ignoredSettingsAckPromise != null && header.Type == FrameType.Settings && header.Flags == FrameFlags.Ack)
             {
-                _ignoredSettingsAckPromise.TrySetResult(false);
+                _ignoredSettingsAckPromise.TrySetResult(true);
                 _ignoredSettingsAckPromise = null;
                 return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
             }
@@ -470,7 +470,7 @@ namespace System.Net.Test.Common
             }
         }
 
-        public async Task<byte[]> ReadBodyAsync()
+        public async Task<byte[]> ReadBodyAsync(bool expectEndOfStream = false)
         {
             byte[] body = null;
             Frame frame;
@@ -478,7 +478,11 @@ namespace System.Net.Test.Common
             do
             {
                 frame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
-                if (frame == null || frame.Type == FrameType.RstStream)
+                if (frame == null && expectEndOfStream)
+                {
+                    break;
+                }
+                else if (frame == null || frame.Type == FrameType.RstStream)
                 {
                     throw new IOException( frame == null ? "End of stream" : "Got RST");
                 }

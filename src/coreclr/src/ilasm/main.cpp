@@ -9,7 +9,7 @@
 #include "ilasmpch.h"
 
 #include "asmparse.h"
-#include "ndpversion.h"
+#include "clrversion.h"
 #include "shimload.h"
 
 #include "strsafe.h"
@@ -149,7 +149,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
 #pragma warning(pop)
 #endif
     {
-        printf("\nMicrosoft (R) .NET Framework IL Assembler version " VER_FILEVERSION_STR);
+        printf("\nMicrosoft (R) .NET IL Assembler version " CLR_PRODUCT_VERSION);
         printf("\n%S\n\n", VER_LEGALCOPYRIGHT_LOGO_STR_L);
         goto PrintUsageAndExit;
 
@@ -643,7 +643,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                 //======================================================================
                 if(bLogo)
                 {
-                    printf("\nMicrosoft (R) .NET Framework IL Assembler.  Version " VER_FILEVERSION_STR);
+                    printf("\nMicrosoft (R) .NET IL Assembler.  Version " CLR_PRODUCT_VERSION);
                     printf("\n%S", VER_LEGALCOPYRIGHT_LOGO_STR_L);
                 }
 

@@ -8,7 +8,7 @@
 #include "host_interface.h"
 #include "host_startup_info.h"
 #include "fx_definition.h"
-
+ 
 class corehost_init_t
 {
 private:
@@ -37,6 +37,7 @@ private:
     const pal::string_t m_host_info_host_path;
     const pal::string_t m_host_info_dotnet_root;
     const pal::string_t m_host_info_app_path;
+
 public:
     corehost_init_t(
         const pal::string_t& host_command,

@@ -15,7 +15,7 @@ namespace Profiler.Tests
     public enum ProfileeOptions
     {
         None = 0,
-        DisableTieredCompilation,
+        OptimizationSensitive,
         NoStartupAttach
     }
 
@@ -41,10 +41,12 @@ namespace Profiler.Tests
                 envVars.Add("CORECLR_PROFILER", "{" + profilerClsid + "}");
             }
 
-            if (profileeOptions.HasFlag(ProfileeOptions.DisableTieredCompilation))
+            if (profileeOptions.HasFlag(ProfileeOptions.OptimizationSensitive))
             {
-                Console.WriteLine("Disabling tiered compilation.");
+                Console.WriteLine("Disabling tiered compilation, jitstress, and minopts.");
                 envVars.Add("COMPlus_TieredCompilation", "0");
+                envVars.Add("COMPlus_JitStress", "0");
+                envVars.Add("COMPlus_JITMinOpts", "0");
             }
 
             string profilerPath = GetProfilerPath();

@@ -130,7 +130,7 @@ namespace System.Numerics.Tests
 
         [Theory]
         [MemberData(nameof(FromIntTests_MemberData))]
-        public void ToByteArray_FromIntTests(int i, bool isUnsigned, bool isBigEndian, byte[] expectedBytes)
+        public void ToByteArray_FromIntTests_Advanced(int i, bool isUnsigned, bool isBigEndian, byte[] expectedBytes)
         {
             BigInteger bi = new BigInteger(i);
 
@@ -151,7 +151,7 @@ namespace System.Numerics.Tests
 
         [Theory]
         [MemberData(nameof(FromLongTests_MemberData))]
-        public void ToByteArray_FromLongTests(long l, bool isUnsigned, bool isBigEndian, byte[] expectedBytes)
+        public void ToByteArray_FromLongTests_Advanced(long l, bool isUnsigned, bool isBigEndian, byte[] expectedBytes)
         {
             BigInteger bi = new BigInteger(l);
 
@@ -172,7 +172,7 @@ namespace System.Numerics.Tests
 
         [Theory]
         [MemberData(nameof(FromStringTests_MemberData))]
-        public void ToByteArray_FromStringTests(string str, bool isUnsigned, bool isBigEndian, byte[] expectedBytes)
+        public void ToByteArray_FromStringTests_Advanced(string str, bool isUnsigned, bool isBigEndian, byte[] expectedBytes)
         {
             BigInteger bi = BigInteger.Parse(str);
 

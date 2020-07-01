@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -18,7 +19,7 @@ namespace System
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>, ISpanFormattable
     {
-        public static readonly Guid Empty = default;
+        public static readonly Guid Empty;
 
         private int _a;   // Do not rename (binary serialization)
         private short _b; // Do not rename (binary serialization)
@@ -196,7 +197,7 @@ namespace System
             return result._parsedGuid;
         }
 
-        public static bool TryParse(string? input, out Guid result)
+        public static bool TryParse([NotNullWhen(true)] string? input, out Guid result)
         {
             if (input == null)
             {
@@ -251,7 +252,7 @@ namespace System
             return result._parsedGuid;
         }
 
-        public static bool TryParseExact(string? input, string? format, out Guid result)
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string? format, out Guid result)
         {
             if (input == null)
             {

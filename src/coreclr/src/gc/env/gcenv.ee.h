@@ -64,7 +64,7 @@ public:
     static void DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent);
     static void DiagWalkFReachableObjects(void* gcContext);
     static void DiagWalkSurvivors(void* gcContext, bool fCompacting);
-    static void DiagWalkLOHSurvivors(void* gcContext);
+    static void DiagWalkUOHSurvivors(void* gcContext, int gen);
     static void DiagWalkBGCSurvivors(void* gcContext);
     static void StompWriteBarrier(WriteBarrierParameters* args);
 
@@ -73,9 +73,9 @@ public:
     static void HandleFatalError(unsigned int exitCode);
     static bool EagerFinalized(Object* obj);
     static MethodTable* GetFreeObjectMethodTable();
-    static bool GetBooleanConfigValue(const char* key, bool* value);
-    static bool GetIntConfigValue(const char* key, int64_t* value);
-    static bool GetStringConfigValue(const char* key, const char** value);
+    static bool GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value);
+    static bool GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value);
+    static bool GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value);
     static void FreeStringConfigValue(const char* key);
     static bool IsGCThread();
     static bool WasCurrentThreadCreatedByGC();

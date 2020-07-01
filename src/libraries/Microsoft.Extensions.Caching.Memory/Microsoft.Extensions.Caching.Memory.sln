@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Cachin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Caching.Memory.Tests", "tests\Microsoft.Extensions.Caching.Memory.Tests.csproj", "{DE244209-5EC7-47DD-8EC9-7B634DFDA1B7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{9BE95529-D00D-4D03-82F1-103891E17F28}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{DE244209-5EC7-47DD-8EC9-7B634DFDA1B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE244209-5EC7-47DD-8EC9-7B634DFDA1B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE244209-5EC7-47DD-8EC9-7B634DFDA1B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9BE95529-D00D-4D03-82F1-103891E17F28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9BE95529-D00D-4D03-82F1-103891E17F28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9BE95529-D00D-4D03-82F1-103891E17F28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9BE95529-D00D-4D03-82F1-103891E17F28}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -41,6 +47,7 @@ Global
 		{CB26F7AD-3279-4BBB-B33A-485CBF2B0787} = {20ACD179-AFDD-456A-9D27-5F4B036BA5AB}
 		{802F8E4B-C890-4312-B8A1-BF0201C7F949} = {02F50816-753B-4542-BDB9-80B6AD32D31F}
 		{DE244209-5EC7-47DD-8EC9-7B634DFDA1B7} = {A56177C8-32A9-4C5A-9AE8-312F209B3F32}
+		{9BE95529-D00D-4D03-82F1-103891E17F28} = {A56177C8-32A9-4C5A-9AE8-312F209B3F32}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {67FE26A1-86FB-4A0F-83E4-3CD98E58DF2E}

@@ -41,10 +41,10 @@ namespace Microsoft.Extensions.Http
         {
             if (PrimaryHandler == null)
             {
-                var message = SR.Format(SR.HttpMessageHandlerBuilder_PrimaryHandlerIsNull, nameof(PrimaryHandler));
+                string message = SR.Format(SR.HttpMessageHandlerBuilder_PrimaryHandlerIsNull, nameof(PrimaryHandler));
                 throw new InvalidOperationException(message);
             }
-            
+
             return CreateHandlerPipeline(PrimaryHandler, AdditionalHandlers);
         }
     }

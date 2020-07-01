@@ -5,6 +5,7 @@
 using Microsoft.NET.HostModel.AppHost;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.NET.HostModel.Bundle
@@ -27,8 +28,6 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public TargetInfo(OSPlatform? os, Version targetFrameworkVersion)
         {
-            Version net50 = new Version(5, 0);
-
             OS = os ?? HostOS;
             FrameworkVersion = targetFrameworkVersion ?? net50;
 
@@ -55,6 +54,13 @@ namespace Microsoft.NET.HostModel.Bundle
             return IsLinux ? ElfUtils.IsElfImage(filePath) : IsOSX ? MachOUtils.IsMachOImage(filePath) : PEUtils.IsPEImage(filePath);
         }
 
+        public string GetAssemblyName(string hostName)
+        {
+            // This logic to calculate assembly name from hostName should be removed (and probably moved to test helpers)
+            // once the SDK in the correct assembly name.
+            return (IsWindows ? Path.GetFileNameWithoutExtension(hostName) : hostName);
+        }
+
         public override string ToString()
         {
             string os = IsWindows ? "win" : IsLinux ? "linux" : "osx";
@@ -71,6 +77,21 @@ namespace Microsoft.NET.HostModel.Bundle
         // The .net core 3 apphost doesn't care about semantics of FileType -- all files are extracted at startup.
         // However, the apphost checks that the FileType value is within expected bounds, so set it to the first enumeration.
         public FileType TargetSpecificFileType(FileType fileType) => (BundleVersion == 1) ? FileType.Unknown : fileType;
+
+        // In .net core 3.x, bundle processing happens within the AppHost.
+        // Therefore HostFxr and HostPolicy can be bundled within the single-file app.
+        // In .net 5, bundle processing happens in HostFxr and HostPolicy libraries.
+        // Therefore, these libraries themselves cannot be bundled into the single-file app.
+        // This problem is mitigated by statically linking these host components with the AppHost.
+        // https://github.com/dotnet/runtime/issues/32823
+        public bool ShouldExclude(string relativePath) =>
+            (FrameworkVersion.Major != 3) && (relativePath.Equals(HostFxr) || relativePath.Equals(HostPolicy));
+
+        readonly Version net50 = new Version(5, 0);
+        string HostFxr => IsWindows ? "hostfxr.dll" : IsLinux ? "libhostfxr.so" : "libhostfxr.dylib";
+        string HostPolicy => IsWindows ? "hostpolicy.dll" : IsLinux ? "libhostpolicy.so" : "libhostpolicy.dylib";
+
+
     }
 }
 

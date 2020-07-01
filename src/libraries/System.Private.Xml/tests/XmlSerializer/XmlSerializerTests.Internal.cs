@@ -21,8 +21,8 @@ public static partial class XmlSerializerTests
             mappings[i] = importer.ImportTypeMapping(types[i]);
         }
         var serializers = XmlSerializer.FromMappings(mappings, typeof(object));
-        Xml_GuidAsRoot(serializers[0]);
-        Xml_ListGenericRoot(serializers[1]);
+        Xml_GuidAsRoot_Helper(serializers[0]);
+        Xml_ListGenericRoot_Helper(serializers[1]);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public static partial class XmlSerializerTests
 
         mapping = new XmlReflectionImporter(null, null).ImportTypeMapping(typeof(List<string>));
         serializer = new XmlSerializer(mapping);
-        Xml_ListGenericRoot(serializer);
+        Xml_ListGenericRoot_Helper(serializer);
     }
 
 }

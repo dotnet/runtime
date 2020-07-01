@@ -179,6 +179,24 @@ namespace System.Tests
             }
         }
 
+        [Fact]
+        public static void E()
+        {
+            Assert.Equal(0x402DF854, BitConverter.SingleToInt32Bits(MathF.E));
+        }
+
+        [Fact]
+        public static void Pi()
+        {
+            Assert.Equal(0x40490FDB, BitConverter.SingleToInt32Bits(MathF.PI));
+        }
+
+        [Fact]
+        public static void Tau()
+        {
+            Assert.Equal(0x40C90FDB, BitConverter.SingleToInt32Bits(MathF.Tau));
+        }
+
         [Theory]
         [InlineData( float.NegativeInfinity, float.PositiveInfinity, 0.0f)]
         [InlineData(-3.14159265f,            3.14159265f,            CrossPlatformMachineEpsilon * 10)]     // value: -(pi)             expected: (pi)
@@ -1463,7 +1481,7 @@ namespace System.Tests
         [InlineData(MidpointRounding.AwayFromZero)]
         [InlineData(MidpointRounding.ToNegativeInfinity)]
         [InlineData(MidpointRounding.ToPositiveInfinity)]
-        public static void Round_Digits(MidpointRounding mode)
+        public static void Round_Digits_ByMidpointRounding(MidpointRounding mode)
         {
             Assert.Equal(float.PositiveInfinity, MathF.Round(float.PositiveInfinity, 3, mode));
             Assert.Equal(float.NegativeInfinity, MathF.Round(float.NegativeInfinity, 3, mode));

@@ -7,6 +7,7 @@
 #include "assemblybinder.hpp"
 #include "coreclrbindercommon.h"
 #include "clrprivbindercoreclr.h"
+#include "bundle.h"
 
 using namespace BINDER_SPACE;
 

@@ -96,6 +96,7 @@ HRESULT GCBasicProfiler::GarbageCollectionStarted(int cGenerations, BOOL generat
             {
             case 0:
             case 3:
+            case 4:
                 // no useful verification
                 break;
             case 1:

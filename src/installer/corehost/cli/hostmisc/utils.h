@@ -45,6 +45,8 @@ size_t index_of_non_numeric(const pal::string_t& str, unsigned i);
 bool try_stou(const pal::string_t& str, unsigned* num);
 pal::string_t get_dotnet_root_env_var_name();
 pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal::string_t& app);
+pal::string_t get_runtime_config_path(const pal::string_t& path, const pal::string_t& name);
+pal::string_t get_runtime_config_dev_path(const pal::string_t& path, const pal::string_t& name);
 void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& name, pal::string_t* cfg, pal::string_t* dev_cfg);
 pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t &fxr_path);
 

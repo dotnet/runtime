@@ -41,7 +41,7 @@ CompMemKindMacro(ArrayInfoMap)
 CompMemKindMacro(MemoryPhiArg)
 CompMemKindMacro(CSE)
 CompMemKindMacro(GC)
-CompMemKindMacro(CorSig)
+CompMemKindMacro(CorTailCallInfo)
 CompMemKindMacro(Inlining)
 CompMemKindMacro(ArrayStack)
 CompMemKindMacro(DebugInfo)
@@ -58,6 +58,7 @@ CompMemKindMacro(VariableLiveRanges)
 CompMemKindMacro(ClassLayout)
 CompMemKindMacro(TailMergeThrows)
 CompMemKindMacro(EarlyProp)
+CompMemKindMacro(ZeroInit)
 //clang-format on
 
 #undef CompMemKindMacro

@@ -44,7 +44,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void IdnCheckHostName_IPv6WithBrackets_IPv6()
         {
-            Assert.Equal(UriHostNameType.IPv6, Uri.CheckHostName("[" + IPAddress.IPv6Loopback.ToString() + "]"));
+            Assert.Equal(UriHostNameType.IPv6, Uri.CheckHostName($"[{IPAddress.IPv6Loopback}]"));
         }
 
         [Fact]

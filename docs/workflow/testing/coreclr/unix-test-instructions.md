@@ -32,8 +32,8 @@ During development there are many instances where building an individual test is
 
 ## Building an Individual Test
 
-```
-/path/to/runtime/dotnet.sh msbuild src/coreclr/tests/src/path-to-proj-file /p:TargetOS=<TargetOS> /p:Configuration=<BuildType>
+```sh
+./dotnet.sh msbuild src/coreclr/tests/src/path-to-proj-file /p:TargetOS=<TargetOS> /p:Configuration=<BuildType>
 ```
 
 ## Running Tests
@@ -43,47 +43,53 @@ The following instructions assume that on the Unix machine:
 
 `src/coreclr/build-test.sh` will have set up the `Core_Root` directory correctly after the test build.
 
-```bash
-~/runtime$ ./src/coreclr/tests/runtest.sh x64 checked
+```sh
+./src/coreclr/tests/runtest.sh x64 checked
 ```
 
 Please use the following command for help.
 
-```
-~/runtime$ ./src/coreclr/tests/runtest.sh -h
+```sh
+./src/coreclr/tests/runtest.sh -h
 ```
 
 ### Unsupported and temporarily disabled tests
 
-Unsupported tests outside of Windows have two annotations in their csproj to
-ignore them when run.
+To support building all tests for all targets on single target, we use
+the conditional property
 
-```
-<TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-```
-
-This will write in the bash target to skip the test by returning a passing value if run outside Windows.
-
-In addition:
-```
-<DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+```xml
+<CLRTestTargetUnsupported Condition="...">true</CLRTestTargetUnsupported>
 ```
 
-Is used to disable the build, that way if building on Unix cycles are saved building/running.
+This property disables building of a test in a default build. It also
+disables running a test in the bash/batch wrapper scripts. It allows the
+test to be built on any target in CI when the `allTargets` option is
+passed to the `build-test.*` scripts.
+
+Tests which never should be built or run are marked
+
+```xml
+<DisableProjectBuild>true</DisableProjectBuild>
+```
+
+This propoerty should not be conditioned on Target properties to allow
+all tests to be built for `allTargets`.
 
 PAL tests
 ---------
 
-Build CoreCLR on the Unix machine.
+Build CoreCLR with PAL tests on the Unix machine:
+
+```sh
+./src/coreclr/build-runtime.sh -skipgenerateversion -nopgooptimize \
+    -cmakeargs -DCLR_CMAKE_BUILD_TESTS=1
+```
 
 Run tests:
 
-```
-~/runtime$ src/coreclr/src/pal/tests/palsuite/runpaltests.sh ~/runtime/artifacts/obj/coreclr/Linux.x64.Debug
+```sh
+./src/coreclr/src/pal/tests/palsuite/runpaltests.sh $(pwd)/artifacts/obj/coreclr/$(uname).x64.Debug
 ```
 
-Test results will go into:
-
-```
-/tmp/PalTestOutput/default/pal_tests.xml
-```
+Test results will go into: `/tmp/PalTestOutput/default/pal_tests.xml`

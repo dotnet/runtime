@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="../../Interop.settings.targets" />
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Disable for GCStress due to test failure: https://github.com/dotnet/runtime/issues/37237 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- IEnumerator/IEnumerable marshalling unsupported outside of windows -->
-    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <!-- RefCounted handle to System.Runtime.InteropServices.CustomMarshalers.EnumVariantViewOfEnumerator holds the LoaderAllocator alive via System.Linq.Enumerable+RangeIterator -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>

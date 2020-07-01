@@ -54,7 +54,7 @@ namespace System.Threading.Tasks.Dataflow
         internal const int Unbounded = DataflowBlockOptions.Unbounded;
 
         /// <summary>Whether the linked target will have completion and faulting notification propagated to it automatically.</summary>
-        private bool _propagateCompletion = false;
+        private bool _propagateCompletion;
         /// <summary>The maximum number of messages that may be consumed across the link.</summary>
         private int _maxNumberOfMessages = Unbounded;
         /// <summary>Whether the link should be appended to the source?s list of links, or whether it should be prepended.</summary>

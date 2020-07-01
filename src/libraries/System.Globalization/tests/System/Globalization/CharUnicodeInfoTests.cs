@@ -18,17 +18,17 @@ namespace System.Globalization.Tests
                 if (testCase.Utf32CodeValue.Length == 1)
                 {
                     // Test the char overload for a single char
-                    GetUnicodeCategory(testCase.Utf32CodeValue[0], testCase.GeneralCategory);
+                    GetUnicodeCategoryTest_Char(testCase.Utf32CodeValue[0], testCase.GeneralCategory);
                 }
                 // Test the string overload for a surrogate pair or a single char
-                GetUnicodeCategory(testCase.Utf32CodeValue, new UnicodeCategory[] { testCase.GeneralCategory });
+                GetUnicodeCategoryTest_String(testCase.Utf32CodeValue, new UnicodeCategory[] { testCase.GeneralCategory });
                 Assert.Equal(testCase.GeneralCategory, CharUnicodeInfo.GetUnicodeCategory(testCase.CodePoint));
             }
         }
 
         [Theory]
         [InlineData('\uFFFF', UnicodeCategory.OtherNotAssigned)]
-        public void GetUnicodeCategory(char ch, UnicodeCategory expected)
+        public void GetUnicodeCategoryTest_Char(char ch, UnicodeCategory expected)
         {
             UnicodeCategory actual = CharUnicodeInfo.GetUnicodeCategory(ch);
             Assert.True(actual == expected, ErrorMessage(ch, expected, actual));
@@ -38,7 +38,7 @@ namespace System.Globalization.Tests
         [InlineData("aA1!", new UnicodeCategory[] { UnicodeCategory.LowercaseLetter, UnicodeCategory.UppercaseLetter, UnicodeCategory.DecimalDigitNumber, UnicodeCategory.OtherPunctuation })]
         [InlineData("\uD808\uDF6C", new UnicodeCategory[] { UnicodeCategory.OtherLetter, UnicodeCategory.Surrogate })]
         [InlineData("a\uD808\uDF6Ca", new UnicodeCategory[] { UnicodeCategory.LowercaseLetter, UnicodeCategory.OtherLetter, UnicodeCategory.Surrogate, UnicodeCategory.LowercaseLetter })]
-        public void GetUnicodeCategory(string s, UnicodeCategory[] expected)
+        public void GetUnicodeCategoryTest_String(string s, UnicodeCategory[] expected)
         {
             for (int i = 0; i < expected.Length; i++)
             {
@@ -50,13 +50,13 @@ namespace System.Globalization.Tests
         public void GetUnicodeCategory_String_InvalidSurrogatePairs()
         {
             // High, high surrogate pair
-            GetUnicodeCategory("\uD808\uD808", new UnicodeCategory[] { UnicodeCategory.Surrogate, UnicodeCategory.Surrogate });
+            GetUnicodeCategoryTest_String("\uD808\uD808", new UnicodeCategory[] { UnicodeCategory.Surrogate, UnicodeCategory.Surrogate });
 
             // Low, low surrogate pair
-            GetUnicodeCategory("\uDF6C\uDF6C", new UnicodeCategory[] { UnicodeCategory.Surrogate, UnicodeCategory.Surrogate });
+            GetUnicodeCategoryTest_String("\uDF6C\uDF6C", new UnicodeCategory[] { UnicodeCategory.Surrogate, UnicodeCategory.Surrogate });
 
             // Low, high surrogate pair
-            GetUnicodeCategory("\uDF6C\uD808", new UnicodeCategory[] { UnicodeCategory.Surrogate, UnicodeCategory.Surrogate });
+            GetUnicodeCategoryTest_String("\uDF6C\uD808", new UnicodeCategory[] { UnicodeCategory.Surrogate, UnicodeCategory.Surrogate });
         }
 
         [Fact]
@@ -76,16 +76,16 @@ namespace System.Globalization.Tests
                 if (testCase.Utf32CodeValue.Length == 1)
                 {
                     // Test the char overload for a single char
-                    GetNumericValue(testCase.Utf32CodeValue[0], testCase.NumericValue);
+                    GetNumericValueTest_Char(testCase.Utf32CodeValue[0], testCase.NumericValue);
                 }
                 // Test the string overload for a surrogate pair
-                GetNumericValue(testCase.Utf32CodeValue, new double[] { testCase.NumericValue });
+                GetNumericValueTest_String(testCase.Utf32CodeValue, new double[] { testCase.NumericValue });
             }
         }
 
         [Theory]
         [InlineData('\uFFFF', -1)]
-        public void GetNumericValue(char ch, double expected)
+        public void GetNumericValueTest_Char(char ch, double expected)
         {
             double actual = CharUnicodeInfo.GetNumericValue(ch);
             Assert.True(expected == actual, ErrorMessage(ch, expected, actual));
@@ -93,7 +93,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(s_GetNumericValueData))]
-        public void GetNumericValue(string s, double[] expected)
+        public void GetNumericValueTest_String(string s, double[] expected)
         {
             for (int i = 0; i < expected.Length; i++)
             {

@@ -36,7 +36,7 @@ namespace System.Drawing
         private uint _bestImageOffset;
         private uint _bestBitDepth;
         private uint _bestBytesInRes;
-        private bool? _isBestImagePng = null;
+        private bool? _isBestImagePng;
         private Size _iconSize = Size.Empty;
         private IntPtr _handle = IntPtr.Zero;
         private readonly bool _ownHandle = true;
@@ -639,9 +639,8 @@ namespace System.Drawing
                 {
                     try
                     {
-                        // We threw this way on NetFX
                         if (outputStream == null)
-                            throw new ArgumentNullException("dataStream");
+                            throw new ArgumentNullException(nameof(outputStream));
 
                         picture.SaveAsFile(new GPStream(outputStream, makeSeekable: false), -1, out int temp);
                     }

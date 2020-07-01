@@ -93,8 +93,8 @@ namespace System.Transactions
         }
 
         // Data storage for current delegate
-        internal static HostCurrentTransactionCallback? s_currentDelegate = null;
-        internal static bool s_currentDelegateSet = false;
+        internal static HostCurrentTransactionCallback? s_currentDelegate;
+        internal static bool s_currentDelegateSet;
 
         // CurrentDelegate
         //

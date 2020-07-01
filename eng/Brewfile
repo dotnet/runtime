@@ -1,0 +1,8 @@
+brew "autoconf"
+brew "automake"
+brew "cmake"
+brew "icu4c"
+brew "libtool"
+brew "openssl@1.1"
+brew "pkg-config"
+brew "python3"

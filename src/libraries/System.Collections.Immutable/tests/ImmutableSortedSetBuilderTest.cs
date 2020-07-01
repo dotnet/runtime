@@ -399,5 +399,31 @@ namespace System.Collections.Immutable.Tests
             ImmutableSortedSet<int>.Builder nullBuilder = null;
             AssertExtensions.Throws<ArgumentNullException>("builder", () => nullBuilder.ToImmutableSortedSet());
         }
+
+        [Fact]
+        public void TryGetValue()
+        {
+            var builder = ImmutableSortedSet.Create(1, 2, 3).ToBuilder();
+            Assert.True(builder.TryGetValue(2, out _));
+
+            builder = ImmutableSortedSet.Create(CustomComparer.Instance, 1, 2, 3, 4).ToBuilder();
+            var existing = 0;
+            Assert.True(builder.TryGetValue(5, out existing));
+            Assert.Equal(4, existing);
+        }
+
+        private class CustomComparer : IComparer<int>
+        {
+            private CustomComparer()
+            {
+            }
+
+            public static CustomComparer Instance { get; } = new CustomComparer();
+
+            public int Compare(int x, int y) =>
+                x >> 1 == y >> 1 ? 0 :
+                x < y ? -1 :
+                1;
+        }
     }
 }
