@@ -30,14 +30,20 @@ namespace Internal.Cryptography
 
         protected sealed override unsafe byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            byte[] padBuffer = CryptoPool.Rent(inputCount + InputBlockSize * 2);
+            // Rent a buffer with enough space to hold at most a hold block of padding if the input is
+            // is the block size.
+            byte[] padBuffer = CryptoPool.Rent(inputCount + InputBlockSize);
             int padWritten = 0;
 
             try
             {
                 padWritten = PadBlock(inputBuffer.AsSpan(inputOffset, inputCount), padBuffer);
                 int transformWritten = BasicSymmetricCipher.TransformFinal(padBuffer.AsSpan(0, padWritten), padBuffer);
+
+                // After padding, we should have an even number of blocks, and the same applies
+                // to the transform.
                 Debug.Assert(padWritten == transformWritten);
+
                 return padBuffer.AsSpan(0, transformWritten).ToArray();
             }
             finally
