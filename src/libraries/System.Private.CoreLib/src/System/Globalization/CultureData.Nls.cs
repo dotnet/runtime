@@ -405,7 +405,7 @@ namespace System.Globalization
             data.strings = new List<string>();
 
             // Now call the enumeration API. Work is done by our callback function
-            Interop.Kernel32.EnumTimeFormatsEx(EnumTimeCallback, localeName, (uint)dwFlags, Unsafe.AsPointer(ref data));
+            Interop.Kernel32.EnumTimeFormatsEx(EnumTimeCallback, localeName, dwFlags, Unsafe.AsPointer(ref data));
 
             if (data.strings.Count > 0)
             {

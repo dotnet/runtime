@@ -198,22 +198,25 @@ namespace System.Globalization
         {
             Debug.Assert(_sWindowsName != null, "[CultureData.GetTimeFormatsCore] Expected _sWindowsName to be populated by already");
 
-            uint lcType = shortFormat ? Interop.Kernel32.TIME_NOSECONDS : 0;
             if (GlobalizationMode.UseNls)
             {
-                return ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, lcType, _bUseOverrides));
+                return ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, shortFormat ? Interop.Kernel32.TIME_NOSECONDS : 0, _bUseOverrides));
             }
 
-            if (!ShouldUseUserOverrideNlsData)
+            string icuFormatString = IcuGetTimeFormatString(shortFormat);
+
+            if (!_bUseOverrides)
             {
-                return IcuGetTimeFormats(shortFormat);
+                return new string[] { icuFormatString };
             }
 
             // When using ICU and need to get user overrides, we put the user override at the beginning
-            return new string[] {
-                GetLocaleInfoFromLCType(_sWindowsName, lcType, useUserOverride: true),
-                IcuGetTimeFormatString(shortFormat)
-            };
+            string userOverride = GetLocaleInfoFromLCType(_sWindowsName, shortFormat ? Interop.Kernel32.LOCALE_SSHORTTIME : Interop.Kernel32.LOCALE_STIMEFORMAT, useUserOverride: true);
+
+            Debug.Assert(!string.IsNullOrEmpty(userOverride));
+
+            return userOverride != icuFormatString ?
+                 new string[] { userOverride, icuFormatString } : new string[] { userOverride };
         }
 
         private int GetAnsiCodePage(string cultureName) =>

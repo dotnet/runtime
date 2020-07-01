@@ -147,12 +147,6 @@ namespace System.Globalization
             return ConvertIcuTimeFormatString(span.Slice(0, span.IndexOf('\0')));
         }
 
-        private string[] IcuGetTimeFormats(bool shortFormat)
-        {
-            string format = IcuGetTimeFormatString(shortFormat);
-            return new string[] { format };
-        }
-
         private static CultureData? IcuGetCultureDataFromRegionName(string? regionName)
         {
             // no support to lookup by region name, other than the hard-coded list in CultureData

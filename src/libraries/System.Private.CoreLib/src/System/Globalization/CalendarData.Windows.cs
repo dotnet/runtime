@@ -57,22 +57,41 @@ namespace System.Globalization
                 {
                     string? shortDateOverride = CultureData.ReescapeWin32String(CultureData.GetLocaleInfoEx(localeName, LOCALE_SSHORTDATE));
                     string? longDateOverride = CultureData.ReescapeWin32String(CultureData.GetLocaleInfoEx(localeName, LOCALE_SLONGDATE));
-                    InsertValueToArray(shortDateOverride, ref this.saShortDates);
-                    InsertValueToArray(longDateOverride, ref this.saLongDates);
+                    InsertOrSwapOverride(shortDateOverride, ref this.saShortDates);
+                    InsertOrSwapOverride(longDateOverride, ref this.saLongDates);
                 }
             }
 
             return result;
         }
 
-        private void InsertValueToArray(string? value, ref string[] destination)
+        private void InsertOrSwapOverride(string? value, ref string[] destination)
         {
             if (value != null)
             {
-                string[] newArray = new string[destination.Length + 1];
-                newArray[0] = value;
-                Array.Copy(destination, 0, newArray, 1, destination.Length);
-                destination = newArray;
+                int index = -1;
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    if (destination[i] == value)
+                    {
+                        index = i;
+                        break;
+                    }
+                }
+
+                if (index == -1)
+                {
+                    string[] newArray = new string[destination.Length + 1];
+                    newArray[0] = value;
+                    Array.Copy(destination, 0, newArray, 1, destination.Length);
+                    destination = newArray;
+                }
+                else if (index > 0) // swap it only if needed
+                {
+                    string tmp = destination[0];
+                    destination[0] = value;
+                    destination[index] = tmp;
+                }
             }
         }
 

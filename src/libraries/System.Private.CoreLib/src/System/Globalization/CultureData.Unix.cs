@@ -90,8 +90,11 @@ namespace System.Globalization
             return IcuLocaleData.LCIDToLocaleName(culture);
         }
 
-        private string[]? GetTimeFormatsCore(bool shortFormat) =>
-            IcuGetTimeFormats(shortFormat);
+        private string[]? GetTimeFormatsCore(bool shortFormat)
+        {
+            string format = IcuGetTimeFormatString(shortFormat);
+            return new string[] { format };
+        }
 
         private static int GetAnsiCodePage(string cultureName)
         {
