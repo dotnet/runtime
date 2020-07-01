@@ -19,8 +19,11 @@ namespace System.Net.Http
         private PollingCounter? _startedRequestsCounter;
         private PollingCounter? _currentRequestsCounter;
         private PollingCounter? _abortedRequestsCounter;
+
+#if !TARGETS_BROWSER
         private PollingCounter? _maxHttp11ConnectionsPerPoolCounter;
         private PollingCounter? _maxHttp20StreamsPerConnectionCounter;
+#endif
 
         private long _startedRequests;
         private long _stoppedRequests;
@@ -99,6 +102,7 @@ namespace System.Net.Http
                     DisplayName = "Current Requests"
                 };
 
+#if !TARGETS_BROWSER
                 _maxHttp11ConnectionsPerPoolCounter ??= new PollingCounter("http11-connections-single-pool-max", this, () => HttpConnectionPoolManager.GetMaxHttp11ConnectionsPerPool())
                 {
                     DisplayName = "Maximum Http 1.1 Connections per Connection Pool"
@@ -108,6 +112,7 @@ namespace System.Net.Http
                 {
                     DisplayName = "Maximum Http Streams per Http 2.0 Connection"
                 };
+#endif
             }
         }
 
