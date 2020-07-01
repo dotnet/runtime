@@ -12,6 +12,9 @@ namespace JIT.HardwareIntrinsics.Arm
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
+                ["ShiftArithmeticRoundedSaturate.Vector64.Int16"] = ShiftArithmeticRoundedSaturate_Vector64_Int16,
+                ["ShiftArithmeticRoundedSaturate.Vector64.Int32"] = ShiftArithmeticRoundedSaturate_Vector64_Int32,
+                ["ShiftArithmeticRoundedSaturate.Vector64.SByte"] = ShiftArithmeticRoundedSaturate_Vector64_SByte,
                 ["ShiftArithmeticRoundedSaturate.Vector128.Int16"] = ShiftArithmeticRoundedSaturate_Vector128_Int16,
                 ["ShiftArithmeticRoundedSaturate.Vector128.Int32"] = ShiftArithmeticRoundedSaturate_Vector128_Int32,
                 ["ShiftArithmeticRoundedSaturate.Vector128.Int64"] = ShiftArithmeticRoundedSaturate_Vector128_Int64,
@@ -265,9 +268,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["ShiftRightLogicalNarrowingLower.Vector64.Int32.1"] = ShiftRightLogicalNarrowingLower_Vector64_Int32_1,
                 ["ShiftRightLogicalNarrowingLower.Vector64.SByte.1"] = ShiftRightLogicalNarrowingLower_Vector64_SByte_1,
                 ["ShiftRightLogicalNarrowingLower.Vector64.UInt16.1"] = ShiftRightLogicalNarrowingLower_Vector64_UInt16_1,
-                ["ShiftRightLogicalNarrowingLower.Vector64.UInt32.1"] = ShiftRightLogicalNarrowingLower_Vector64_UInt32_1,
-                ["ShiftRightLogicalNarrowingSaturateLower.Vector64.Byte.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_Byte_1,
-                ["ShiftRightLogicalNarrowingSaturateLower.Vector64.Int16.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_Int16_1,
             };
         }
     }

@@ -8,6 +8,9 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="MultiplyBySelectedScalarWideningLower.Vector64.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningLower.Vector64.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningLower.Vector64.Int32.Vector64.Int32.1.cs" />
     <Compile Include="MultiplyBySelectedScalarWideningLower.Vector64.Int32.Vector128.Int32.3.cs" />
     <Compile Include="MultiplyBySelectedScalarWideningLower.Vector64.UInt16.Vector64.UInt16.3.cs" />
     <Compile Include="MultiplyBySelectedScalarWideningLower.Vector64.UInt16.Vector128.UInt16.7.cs" />
@@ -261,9 +264,6 @@
     <Compile Include="ShiftArithmeticRounded.Vector128.Int32.cs" />
     <Compile Include="ShiftArithmeticRounded.Vector128.Int64.cs" />
     <Compile Include="ShiftArithmeticRounded.Vector128.SByte.cs" />
-    <Compile Include="ShiftArithmeticRoundedSaturate.Vector64.Int16.cs" />
-    <Compile Include="ShiftArithmeticRoundedSaturate.Vector64.Int32.cs" />
-    <Compile Include="ShiftArithmeticRoundedSaturate.Vector64.SByte.cs" />
     <Compile Include="Program.AdvSimd_Part3.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />

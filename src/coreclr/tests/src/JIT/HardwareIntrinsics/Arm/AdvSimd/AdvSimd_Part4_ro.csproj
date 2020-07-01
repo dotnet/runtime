@@ -8,6 +8,9 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ShiftArithmeticRoundedSaturate.Vector64.Int16.cs" />
+    <Compile Include="ShiftArithmeticRoundedSaturate.Vector64.Int32.cs" />
+    <Compile Include="ShiftArithmeticRoundedSaturate.Vector64.SByte.cs" />
     <Compile Include="ShiftArithmeticRoundedSaturate.Vector128.Int16.cs" />
     <Compile Include="ShiftArithmeticRoundedSaturate.Vector128.Int32.cs" />
     <Compile Include="ShiftArithmeticRoundedSaturate.Vector128.Int64.cs" />
@@ -261,9 +264,6 @@
     <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.Int32.1.cs" />
     <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.SByte.1.cs" />
     <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.UInt16.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.UInt32.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.Byte.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.Int16.1.cs" />
     <Compile Include="Program.AdvSimd_Part4.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />

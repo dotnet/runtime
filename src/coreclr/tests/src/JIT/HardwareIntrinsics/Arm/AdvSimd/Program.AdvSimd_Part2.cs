@@ -64,6 +64,9 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["Insert.Vector128.UInt16.1"] = Insert_Vector128_UInt16_1,
                 ["Insert.Vector128.UInt32.1"] = Insert_Vector128_UInt32_1,
                 ["Insert.Vector128.UInt64.1"] = Insert_Vector128_UInt64_1,
+                ["InsertScalar.Vector128.Double.1"] = InsertScalar_Vector128_Double_1,
+                ["InsertScalar.Vector128.Int64.1"] = InsertScalar_Vector128_Int64_1,
+                ["InsertScalar.Vector128.UInt64.1"] = InsertScalar_Vector128_UInt64_1,
                 ["LeadingSignCount.Vector64.Int16"] = LeadingSignCount_Vector64_Int16,
                 ["LeadingSignCount.Vector64.Int32"] = LeadingSignCount_Vector64_Int32,
                 ["LeadingSignCount.Vector64.SByte"] = LeadingSignCount_Vector64_SByte,
@@ -265,9 +268,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["MultiplyBySelectedScalar.Vector128.UInt16.Vector128.UInt16.7"] = MultiplyBySelectedScalar_Vector128_UInt16_Vector128_UInt16_7,
                 ["MultiplyBySelectedScalar.Vector128.UInt32.Vector64.UInt32.1"] = MultiplyBySelectedScalar_Vector128_UInt32_Vector64_UInt32_1,
                 ["MultiplyBySelectedScalar.Vector128.UInt32.Vector128.UInt32.3"] = MultiplyBySelectedScalar_Vector128_UInt32_Vector128_UInt32_3,
-                ["MultiplyBySelectedScalarWideningLower.Vector64.Int16.Vector64.Int16.3"] = MultiplyBySelectedScalarWideningLower_Vector64_Int16_Vector64_Int16_3,
-                ["MultiplyBySelectedScalarWideningLower.Vector64.Int16.Vector128.Int16.7"] = MultiplyBySelectedScalarWideningLower_Vector64_Int16_Vector128_Int16_7,
-                ["MultiplyBySelectedScalarWideningLower.Vector64.Int32.Vector64.Int32.1"] = MultiplyBySelectedScalarWideningLower_Vector64_Int32_Vector64_Int32_1,
             };
         }
     }
