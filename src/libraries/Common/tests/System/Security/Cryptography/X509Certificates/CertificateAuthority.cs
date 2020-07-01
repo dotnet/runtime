@@ -300,7 +300,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 request.CertificateExtensions.Add(altName);
             }
 
-
             byte[] serial = new byte[sizeof(long)];
             RandomNumberGenerator.Fill(serial);
 
@@ -834,15 +833,15 @@ SingleResponse ::= SEQUENCE {
         }
 
         internal static void BuildPrivatePki(
-        PkiOptions pkiOptions,
-        out RevocationResponder responder,
-        out CertificateAuthority rootAuthority,
-        out CertificateAuthority intermediateAuthority,
-        out X509Certificate2 endEntityCert,
-        string testName = null,
-        bool registerAuthorities = true,
-        bool pkiOptionsInSubject = false,
-        string subjectName = null)
+            PkiOptions pkiOptions,
+            out RevocationResponder responder,
+            out CertificateAuthority rootAuthority,
+            out CertificateAuthority intermediateAuthority,
+            out X509Certificate2 endEntityCert,
+            string testName = null,
+            bool registerAuthorities = true,
+            bool pkiOptionsInSubject = false,
+            string subjectName = null)
         {
             bool rootDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoRootCertDistributionUri);
             bool issuerRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl);
@@ -920,7 +919,6 @@ SingleResponse ::= SEQUENCE {
                     issuerDistributionViaHttp ? certUrl : null,
                     endEntityRevocationViaCrl ? cdpUrl : null,
                     endEntityRevocationViaOcsp ? ocspUrl : null);
-
 
                 X509Extension altName = null;
 

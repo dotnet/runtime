@@ -642,7 +642,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [MemberData(nameof(AllViableRevocation))]
         public static void RevokeEndEntity_RootRevocationOffline(PkiOptions pkiOptions)
         {
-            CertificateAuthority.BuildPrivatePki(
+            BuildPrivatePki(
                 pkiOptions,
                 out RevocationResponder responder,
                 out CertificateAuthority root,
@@ -715,7 +715,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [MemberData(nameof(AllViableRevocation))]
         public static void NothingRevoked_RootRevocationOffline(PkiOptions pkiOptions)
         {
-            CertificateAuthority.BuildPrivatePki(
+            BuildPrivatePki(
                 pkiOptions,
                 out RevocationResponder responder,
                 out CertificateAuthority root,
@@ -1167,7 +1167,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             [CallerMemberName] string callerName = null,
             bool pkiOptionsInTestName = true)
         {
-            CertificateAuthority.BuildPrivatePki(
+            BuildPrivatePki(
                 pkiOptions,
                 out RevocationResponder responder,
                 out CertificateAuthority root,
@@ -1244,6 +1244,29 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 Assert.Equal(expected, actual);
                 Assert.Equal(allFlags, chainActual);
             }
+        }
+
+        internal static void BuildPrivatePki(
+            PkiOptions pkiOptions,
+            out RevocationResponder responder,
+            out CertificateAuthority rootAuthority,
+            out CertificateAuthority intermediateAuthority,
+            out X509Certificate2 endEntityCert,
+            [CallerMemberName] string testName = null,
+            bool registerAuthorities = true,
+            bool pkiOptionsInSubject = false)
+        {
+            bool issuerRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl);
+            bool issuerRevocationViaOcsp = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaOcsp);
+            bool endEntityRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
+            bool endEntityRevocationViaOcsp = pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaOcsp);
+
+            Assert.True(
+                issuerRevocationViaCrl || issuerRevocationViaOcsp ||
+                    endEntityRevocationViaCrl || endEntityRevocationViaOcsp,
+                "At least one revocation mode is enabled");
+
+            CertificateAuthority.BuildPrivatePki(pkiOptions, out responder, out rootAuthority, out intermediateAuthority, out endEntityCert, testName, registerAuthorities, pkiOptionsInSubject);
         }
 
         private static string BuildSubject(
