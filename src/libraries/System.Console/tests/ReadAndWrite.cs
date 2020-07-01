@@ -317,13 +317,6 @@ public class ReadAndWrite
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Browser)]
-    public static void OutputEncoding_Setter_Throws_PlatformNotSupportedException()
-    {
-        Assert.Throws<PlatformNotSupportedException>(() => Console.OutputEncoding = Encoding.Unicode);
-    }
-
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Browser)]
     public static void InputEncoding_Getter_Throws_PlatformNotSupportedException()
     {
         Assert.Throws<PlatformNotSupportedException>(() => Console.InputEncoding);
