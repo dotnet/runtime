@@ -491,6 +491,9 @@ mono_wasm_string_from_js (const char *str)
 static int
 class_is_task (MonoClass *klass)
 {
+	if (!strcmp ("AsyncStateMachineBox`1", mono_class_get_name (klass)))
+		return 1;
+		
 	if (!strcmp ("System.Threading.Tasks", mono_class_get_namespace (klass)) &&
 		(!strcmp ("Task", mono_class_get_name (klass)) || !strcmp ("Task`1", mono_class_get_name (klass))))
 		return 1;
