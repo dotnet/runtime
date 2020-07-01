@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Xunit;
 
-namespace System.Runtime.InteropServices.Tests
+namespace System.Runtime.Versioning.Tests
 {
     public class OSPlatformAttributeTests
     {

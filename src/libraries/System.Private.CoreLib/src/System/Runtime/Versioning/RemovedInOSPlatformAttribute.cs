@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Runtime.InteropServices
+namespace System.Runtime.Versioning
 {
     /// <summary>
-    /// Marks APIs that were obsoleted in a given operating system version.
-    ///
-    /// Primarily used by OS bindings to indicate APIs that should only be used in
-    /// earlier versions.
+    /// Marks APIs that were removed in a given operating system version.
     /// </summary>
+    /// <remarks>
+    /// Primarily used by OS bindings to indicate APIs that are only available in
+    /// earlier versions.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Assembly |
                     AttributeTargets.Class |
                     AttributeTargets.Constructor |
@@ -19,18 +20,10 @@ namespace System.Runtime.InteropServices
                     AttributeTargets.Property |
                     AttributeTargets.Struct,
                     AllowMultiple = true, Inherited = false)]
-    public sealed class ObsoletedInOSPlatformAttribute : OSPlatformAttribute
+    public sealed class RemovedInOSPlatformAttribute : OSPlatformAttribute
     {
-        public ObsoletedInOSPlatformAttribute(string platformName) : base(platformName)
+        public RemovedInOSPlatformAttribute(string platformName) : base(platformName)
         {
         }
-
-        public ObsoletedInOSPlatformAttribute(string platformName, string message) : base(platformName)
-        {
-            Message = message;
-        }
-
-        public string? Message { get; }
-        public string? Url { get; set; }
     }
 }
