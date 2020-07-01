@@ -2964,14 +2964,15 @@ struct GenTreeIntCon : public GenTreeIntConCommon
     // to fetch target method name and display in the disassembled code.
     CORINFO_METHOD_HANDLE gtMethodHandle = (CORINFO_METHOD_HANDLE)Unknown;
 
-    enum MethodHandleType{Unknown = 0,
-                          StringLiteralNode,
-                          StaticLookupTree,
-                          RuntimeLookupTree,
-                          IntializeArrayIntrinsics,
-                          StaticFieldAccess,
-                          GSCookieCheck,
-                          SetGSCookie};
+    // Enum values are such that they don't overlap with helper's or user function's method handle.
+    enum MethodHandleType{Unknown                  = 2,
+                          StringLiteralNode        = 4,
+                          StaticLookupTree         = 6,
+                          RuntimeLookupTree        = 8,
+                          IntializeArrayIntrinsics = 10,
+                          StaticFieldAccess        = 12,
+                          GSCookieCheck            = 14,
+                          SetGSCookie              = 16};
 #endif
 
     GenTreeIntCon(var_types type, ssize_t value DEBUGARG(bool largeNode = false))
