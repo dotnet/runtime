@@ -30,7 +30,7 @@ namespace System.Runtime.InteropServices
             Message = message;
         }
 
-        public string Message { get; }
-        public string Url { get; set; }
+        public string? Message { get; }
+        public string? Url { get; set; }
     }
 }

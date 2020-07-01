@@ -9635,10 +9635,36 @@ namespace System.Runtime.InteropServices
         Explicit = 2,
         Auto = 3,
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    public sealed class MinimumOSPlatformAttribute : System.Runtime.InteropServices.OSPlatformAttribute
+    {
+        public MinimumOSPlatformAttribute(string platformName) : base(platformName) { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    public sealed class ObsoletedInOSPlatformAttribute : System.Runtime.InteropServices.OSPlatformAttribute
+    {
+        public ObsoletedInOSPlatformAttribute(string platformName) : base(platformName) { }
+        public ObsoletedInOSPlatformAttribute(string platformName, string message) : base(platformName) { }
+        public string? Message { get; }
+        public string? Url { get; set; }
+    }
+#pragma warning disable CS3015 // Type has no accessible constructors which use only CLS-compliant types
+    public abstract class OSPlatformAttribute : System.Attribute
+#pragma warning restore CS3015 // Type has no accessible constructors which use only CLS-compliant types
+    {
+        private protected OSPlatformAttribute(string platformName) { }
+        public string PlatformName { get; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class OutAttribute : System.Attribute
     {
         public OutAttribute() { }
+    }
+    [System.CLSCompliantAttribute(false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    public sealed class RemovedInOSPlatformAttribute : System.Runtime.InteropServices.OSPlatformAttribute
+    {
+        public RemovedInOSPlatformAttribute(string platformName) : base(platformName) { }
     }
     public abstract partial class SafeBuffer : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
@@ -9694,6 +9720,11 @@ namespace System.Runtime.InteropServices
     public sealed partial class SuppressGCTransitionAttribute : System.Attribute
     {
         public SuppressGCTransitionAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
+    public sealed class TargetPlatformAttribute : System.Runtime.InteropServices.OSPlatformAttribute
+    {
+        public TargetPlatformAttribute(string platformName) : base (platformName) { }
     }
 }
 namespace System.Runtime.Remoting
