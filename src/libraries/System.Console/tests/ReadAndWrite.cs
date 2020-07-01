@@ -312,14 +312,7 @@ public class ReadAndWrite
     public static void OutputEncoding_Getter_Returns_Unicode()
     {
         Encoding curEncoding = Console.OutputEncoding;
-        Assert.Equal(Encoding.Unicode, curEncoding);
-    }
-
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Browser)]
-    public static void OutputEncoding_Setter_Throws_PlatformNotSupportedException()
-    {
-        Assert.Throws<PlatformNotSupportedException>(() => Console.OutputEncoding = Encoding.Unicode);
+        Assert.Equal(Encoding.UTF8, curEncoding);
     }
 
     [Fact]

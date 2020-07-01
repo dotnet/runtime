@@ -208,7 +208,7 @@ namespace System.Linq.Parallel.Tests
         // enumerator when it is finished. If an exception occurs, the calling enumerator disposes
         // the source enumerator... but then other worker threads may generate ODEs.
         // This test verifies any such ODEs are not reflected in the output exception.
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 16 }, new[] { 16 }, MemberType = typeof(UnorderedSources))]
         public static void PlinqChunkPartitioner_DontEnumerateAfterException(
             Labeled<ParallelQuery<int>> left, int leftCount,
@@ -231,7 +231,7 @@ namespace System.Linq.Parallel.Tests
         // disposes the enumerator when it is finished.  If an exception occurs, the calling
         // enumerator disposes the source enumerator... but then other worker threads may generate ODEs.
         // This test verifies any such ODEs are not reflected in the output exception.
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 16 }, new[] { 16 }, MemberType = typeof(UnorderedSources))]
         public static void ManualChunkPartitioner_DontEnumerateAfterException(
             Labeled<ParallelQuery<int>> left, int leftCount,

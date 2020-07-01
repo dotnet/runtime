@@ -7,9 +7,5 @@ namespace Internal.Cryptography
     internal abstract partial class AsnFormatter
     {
         private static readonly AsnFormatter s_instance = new OpenSslAsnFormatter();
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
     }
 }

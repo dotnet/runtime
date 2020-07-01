@@ -65,10 +65,8 @@ namespace System.IO
         static FileSystemWatcher()
         {
             int s_notifyFiltersValidMask = 0;
-#pragma warning disable CS8605 // Unboxing a possibly null value
             foreach (int enumValue in Enum.GetValues(typeof(NotifyFilters)))
                 s_notifyFiltersValidMask |= enumValue;
-#pragma warning restore CS8605
             Debug.Assert(c_notifyFiltersValidMask == s_notifyFiltersValidMask, "The NotifyFilters enum has changed. The c_notifyFiltersValidMask must be updated to reflect the values of the NotifyFilters enum.");
         }
 #endif

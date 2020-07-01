@@ -165,7 +165,7 @@
       <GenAPIAdditionalParameters Condition="Exists('$(_ExcludeAPIList)')">$(GenAPIAdditionalParameters) --exclude-api-list "$(_ExcludeAPIList)"</GenAPIAdditionalParameters>
       <GenAPIAdditionalParameters>$(GenAPIAdditionalParameters) --header-file "$(_LicenseHeaderTxtPath)"</GenAPIAdditionalParameters>
       <GenAPIAdditionalParameters Condition="'$(LangVersion)' != ''">$(GenAPIAdditionalParameters) --lang-version "$(LangVersion)"</GenAPIAdditionalParameters>  
-      <GenAPIAdditionalParameters Condition="'@(ReferenceFromRuntime)' != ''">$(GenAPIAdditionalParameters) --follow-type-forwards</GenAPIAdditionalParameters>
+      <GenAPIAdditionalParameters Condition="'%(ProjectReference.Identity)' == '$(CoreLibProject)'">$(GenAPIAdditionalParameters) --follow-type-forwards</GenAPIAdditionalParameters>
     </PropertyGroup>
   </Target>
 

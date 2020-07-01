@@ -998,6 +998,12 @@ namespace Internal.JitInterface
                             CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCSTATIC_BASE :
                             CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE);
                     }
+
+                    if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                    {
+                        // ENCODE_CHECK_FIELD_OFFSET
+                        _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                    }
                 }
                 else
                 {
@@ -1047,6 +1053,12 @@ namespace Internal.JitInterface
                     else
                     if (helperId != ReadyToRunHelperId.Invalid)
                     {
+                        if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                        {
+                            // ENCODE_CHECK_FIELD_OFFSET
+                            _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                        }
+
                         pResult->fieldLookup = CreateConstLookupToSymbol(
                             _compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, field.OwningType)
                             );
@@ -1270,11 +1282,6 @@ namespace Internal.JitInterface
             else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) == 0 || resolvedConstraint)
             {
                 directCall = true;
-            }
-            else if (targetMethod.OwningType.IsInterface && targetMethod.IsAbstract)
-            {
-                // Backwards compat: calls to abstract interface methods are treated as callvirt
-                directCall = false;
             }
             else
             {
@@ -1897,7 +1904,7 @@ namespace Internal.JitInterface
             if (!type.IsValueType)
                 return false;
 
-            return !_compilation.IsLayoutFixedInCurrentVersionBubble(type);
+            return !_compilation.IsLayoutFixedInCurrentVersionBubble(type) || _compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout;
         }
 
         private bool HasLayoutMetadata(TypeDesc type)
@@ -1953,10 +1960,20 @@ namespace Internal.JitInterface
             }
             else if (pMT.IsValueType)
             {
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                {
+                    // ENCODE_CHECK_FIELD_OFFSET
+                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                }
                 // ENCODE_NONE
             }
             else if (_compilation.IsInheritanceChainLayoutFixedInCurrentVersionBubble(pMT.BaseType))
             {
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                {
+                    // ENCODE_CHECK_FIELD_OFFSET
+                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                }
                 // ENCODE_NONE
             }
             else if (HasLayoutMetadata(pMT))
@@ -1973,6 +1990,12 @@ namespace Internal.JitInterface
             else
             {
                 PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
+
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                {
+                    // ENCODE_CHECK_FIELD_OFFSET
+                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                }
 
                 // ENCODE_FIELD_BASE_OFFSET
                 Debug.Assert(pResult->offset >= (uint)pMT.BaseType.InstanceByteCount.AsInt);

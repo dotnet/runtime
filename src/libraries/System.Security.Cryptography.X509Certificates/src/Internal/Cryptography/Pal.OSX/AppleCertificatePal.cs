@@ -72,7 +72,7 @@ namespace Internal.Cryptography.Pal
         }
 
         public static ICertificatePal FromBlob(
-            byte[] rawData,
+            ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
             X509KeyStorageFlags keyStorageFlags)
         {

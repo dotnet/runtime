@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Pkcs
         private byte[]? _lazyKeyId;
 
         public Pkcs9LocalKeyId() :
-            base(new Oid(Oids.LocalKeyId))
+            base(Oids.LocalKeyIdOid.CopyOid())
         {
         }
 
