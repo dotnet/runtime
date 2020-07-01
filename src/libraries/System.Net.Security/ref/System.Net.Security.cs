@@ -126,7 +126,7 @@ namespace System.Net.Security
     }
     public sealed partial class SslStreamCertificateContext
     {
-        internal SslStreamCertificateContext(System.Security.Cryptography.X509Certificates.X509Certificate2 target, System.Security.Cryptography.X509Certificates.X509Certificate2[]? intermediates = null) { throw null; }
+        internal SslStreamCertificateContext() { throw null; }
         public static SslStreamCertificateContext Create(System.Security.Cryptography.X509Certificates.X509Certificate2 target, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? additionalCertificates, bool offline = false) { throw null; }
     }
     public partial class SslClientAuthenticationOptions
