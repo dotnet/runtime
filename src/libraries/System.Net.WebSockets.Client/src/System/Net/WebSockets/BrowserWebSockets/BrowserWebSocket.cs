@@ -184,9 +184,13 @@ namespace System.Net.WebSockets
                             if (Interlocked.CompareExchange(ref _state, (int)InternalState.Connected, (int)InternalState.Connecting) != (int)InternalState.Connecting)
                             {
                                 // Aborted/Disposed during connect.
-                                throw new ObjectDisposedException(GetType().FullName);
+                                tcsConnect.SetException(new ObjectDisposedException(GetType().FullName));
                             }
                             tcsConnect.SetResult();
+                        }
+                        else
+                        {
+                            tcsConnect.SetCanceled();
                         }
                     }
                 });
