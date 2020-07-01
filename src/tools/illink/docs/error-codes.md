@@ -234,6 +234,6 @@ error and warning codes.
 
 - The 'XML document location' specifies a namespace 'namespace' but there are no types found in such namespace.
 
-#### `IL2045`: Custom Attribute 'type' is being referenced in code after LinkerRemovableAttribute was used on the Custom Attribute type
+#### `IL2045`: Custom Attribute 'type' is being referenced in code after Custom Attribute type was removed
 
-- CustomAttribute 'type' is being referenced in the code but the 'type' has been removed using the LinkerRemovableAttribute
+- CustomAttribute 'type' is being referenced in the code but the 'type' has been removed using the "remove" attribute tag on a type inside the LinkAttributes xml
