@@ -128,17 +128,6 @@ get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image);
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
 
-#ifdef ENABLE_NETCORE
-static void
-mono_domain_alcs_lock (MonoDomain *domain);
-
-static void
-mono_domain_alcs_unlock (MonoDomain *domain);
-
-static void
-mono_domain_create_default_alc (MonoDomain *domain);
-#endif
-
 static LockFreeMempool*
 lock_free_mempool_new (void)
 {
@@ -443,28 +432,29 @@ mono_domain_create (void)
 
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
-	domain->mp = mono_mempool_new ();
-	domain->code_mp = mono_code_manager_new ();
+#ifndef ENABLE_NETCORE
+	domain->memory_manager = (MonoMemoryManager *)mono_memory_manager_create_singleton (NULL, TRUE);
+#else
+	domain->memory_manager = (MonoMemoryManager *)mono_memory_manager_create_singleton (NULL, FALSE); // TODO: remove this
+#endif
+
 	domain->lock_free_mp = lock_free_mempool_new ();
 	domain->env = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Environment Variable Table");
 	domain->domain_assemblies = NULL;
 	domain->assembly_bindings = NULL;
 	domain->assembly_bindings_parsed = FALSE;
-	domain->class_vtable_array = g_ptr_array_new ();
 	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
 	mono_jit_code_hash_init (&domain->jit_code_hash);
 	domain->ldstr_table = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain String Pool Table");
 	domain->num_jit_info_table_duplicates = 0;
 	domain->jit_info_table = mono_jit_info_table_new (domain);
 	domain->jit_info_free_queue = NULL;
-	domain->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->ftnptrs_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	mono_coop_mutex_init_recursive (&domain->lock);
 
 	mono_coop_mutex_init_recursive (&domain->assemblies_lock);
 	mono_os_mutex_init_recursive (&domain->jit_code_hash_lock);
-	mono_os_mutex_init_recursive (&domain->finalizable_objects_hash_lock);
 
 #ifdef ENABLE_NETCORE
 	mono_coop_mutex_init (&domain->alcs_lock);
@@ -1097,15 +1087,6 @@ mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext 
 	return ass;
 }
 
-static void
-unregister_vtable_reflection_type (MonoVTable *vtable)
-{
-	MonoObject *type = (MonoObject *)vtable->type;
-
-	if (type->vtable->klass != mono_defaults.runtimetype_class)
-		MONO_GC_UNREGISTER_ROOT_IF_MOVING (vtable->type);
-}
-
 /**
  * mono_domain_free:
  * \param domain the domain to release
@@ -1157,23 +1138,14 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_g_hash_table_destroy (domain->env);
 	domain->env = NULL;
 
-	mono_reflection_cleanup_domain (domain);
+	// collect statistics
+	code_alloc = mono_code_manager_size (domain->memory_manager->code_mp, &code_size);
+	total_domain_code_alloc += code_alloc;
+	max_domain_code_alloc = MAX (max_domain_code_alloc, code_alloc);
+	max_domain_code_size = MAX (max_domain_code_size, code_size);
 
-	/* This must be done before type_hash is freed */
-	if (domain->class_vtable_array) {
-		int i;
-		for (i = 0; i < domain->class_vtable_array->len; ++i)
-			unregister_vtable_reflection_type ((MonoVTable *)g_ptr_array_index (domain->class_vtable_array, i));
-	}
-
-	if (domain->type_hash) {
-		mono_g_hash_table_destroy (domain->type_hash);
-		domain->type_hash = NULL;
-	}
-	if (domain->type_init_exception_hash) {
-		mono_g_hash_table_destroy (domain->type_init_exception_hash);
-		domain->type_init_exception_hash = NULL;
-	}
+	mono_memory_manager_free_singleton ((MonoSingletonMemoryManager *)domain->memory_manager, debug_domain_unload);
+	domain->memory_manager = NULL;
 
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		MonoAssembly *ass = (MonoAssembly *)tmp->data;
@@ -1241,8 +1213,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	g_free (domain->friendly_name);
 	domain->friendly_name = NULL;
-	g_ptr_array_free (domain->class_vtable_array, TRUE);
-	domain->class_vtable_array = NULL;
 	g_hash_table_destroy (domain->proxy_vtable_hash);
 	domain->proxy_vtable_hash = NULL;
 	mono_internal_hash_table_destroy (&domain->jit_code_hash);
@@ -1260,30 +1230,9 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->jit_info_table = NULL;
 	g_assert (!domain->jit_info_free_queue);
 
-	/* collect statistics */
-	code_alloc = mono_code_manager_size (domain->code_mp, &code_size);
-	total_domain_code_alloc += code_alloc;
-	max_domain_code_alloc = MAX (max_domain_code_alloc, code_alloc);
-	max_domain_code_size = MAX (max_domain_code_size, code_size);
-
-	if (debug_domain_unload) {
-		mono_mempool_invalidate (domain->mp);
-		mono_code_manager_invalidate (domain->code_mp);
-	} else {
-#ifndef DISABLE_PERFCOUNTERS
-		/* FIXME: use an explicit subtraction method as soon as it's available */
-		mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, -1 * mono_mempool_get_allocated (domain->mp));
-#endif
-		mono_mempool_destroy (domain->mp);
-		domain->mp = NULL;
-		mono_code_manager_destroy (domain->code_mp);
-		domain->code_mp = NULL;
-	}
 	lock_free_mempool_free (domain->lock_free_mp);
 	domain->lock_free_mp = NULL;
 
-	g_hash_table_destroy (domain->finalizable_objects_hash);
-	domain->finalizable_objects_hash = NULL;
 	if (domain->generic_virtual_cases) {
 		g_hash_table_destroy (domain->generic_virtual_cases);
 		domain->generic_virtual_cases = NULL;
@@ -1297,7 +1246,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		domain->method_to_dyn_method = NULL;
 	}
 
-	mono_os_mutex_destroy (&domain->finalizable_objects_hash_lock);
 	mono_coop_mutex_destroy (&domain->assemblies_lock);
 	mono_os_mutex_destroy (&domain->jit_code_hash_lock);
 
@@ -1389,7 +1337,7 @@ gpointer
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
 #endif
-	res = mono_mempool_alloc (domain->mp, size);
+	res = mono_mempool_alloc (domain->memory_manager->mp, size);
 	mono_domain_unlock (domain);
 
 	return res;
@@ -1409,7 +1357,7 @@ gpointer
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
 #endif
-	res = mono_mempool_alloc0 (domain->mp, size);
+	res = mono_mempool_alloc0 (domain->memory_manager->mp, size);
 	mono_domain_unlock (domain);
 
 	return res;
@@ -1432,7 +1380,7 @@ void*
 	gpointer res;
 
 	mono_domain_lock (domain);
-	res = mono_code_manager_reserve (domain->code_mp, size);
+	res = mono_code_manager_reserve (domain->memory_manager->code_mp, size);
 	mono_domain_unlock (domain);
 
 	return res;
@@ -1449,7 +1397,7 @@ void*
 	gpointer res;
 
 	mono_domain_lock (domain);
-	res = mono_code_manager_reserve_align (domain->code_mp, size, alignment);
+	res = mono_code_manager_reserve_align (domain->memory_manager->code_mp, size, alignment);
 	mono_domain_unlock (domain);
 
 	return res;
@@ -1464,7 +1412,7 @@ void
 mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize)
 {
 	mono_domain_lock (domain);
-	mono_code_manager_commit (domain->code_mp, data, size, newsize);
+	mono_code_manager_commit (domain->memory_manager->code_mp, data, size, newsize);
 	mono_domain_unlock (domain);
 }
 
@@ -1481,7 +1429,7 @@ void
 mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *user_data)
 {
 	mono_domain_lock (domain);
-	mono_code_manager_foreach (domain->code_mp, func, user_data);
+	mono_code_manager_foreach (domain->memory_manager->code_mp, func, user_data);
 	mono_domain_unlock (domain);
 }
 
@@ -2075,60 +2023,3 @@ mono_domain_default_alc (MonoDomain *domain)
 	return domain->default_alc;
 #endif
 }
-
-#ifdef ENABLE_NETCORE
-static inline void
-mono_domain_alcs_lock (MonoDomain *domain)
-{
-	mono_coop_mutex_lock (&domain->alcs_lock);
-}
-
-static inline void
-mono_domain_alcs_unlock (MonoDomain *domain)
-{
-	mono_coop_mutex_unlock (&domain->alcs_lock);
-}
-
-static MonoAssemblyLoadContext *
-create_alc (MonoDomain *domain, gboolean is_default, gboolean collectible)
-{
-	MonoAssemblyLoadContext *alc = NULL;
-
-	mono_domain_alcs_lock (domain);
-	if (is_default && domain->default_alc)
-		goto leave;
-
-	alc = g_new0 (MonoAssemblyLoadContext, 1);
-	mono_alc_init (alc, domain, collectible);
-
-	domain->alcs = g_slist_prepend (domain->alcs, alc);
-	if (is_default)
-		domain->default_alc = alc;
-leave:
-	mono_domain_alcs_unlock (domain);
-	return alc;
-}
-
-void
-mono_domain_create_default_alc (MonoDomain *domain)
-{
-	if (domain->default_alc)
-		return;
-	create_alc (domain, TRUE, FALSE);
-}
-
-MonoAssemblyLoadContext *
-mono_domain_create_individual_alc (MonoDomain *domain, MonoGCHandle this_gchandle, gboolean collectible, MonoError *error)
-{
-	MonoAssemblyLoadContext *alc = create_alc (domain, FALSE, collectible);
-	alc->gchandle = this_gchandle;
-	return alc;
-}
-
-static void
-mono_alc_free (MonoAssemblyLoadContext *alc)
-{
-	mono_alc_cleanup (alc);
-	g_free (alc);
-}
-#endif

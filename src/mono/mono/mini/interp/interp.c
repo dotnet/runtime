@@ -671,17 +671,18 @@ typedef struct {
 	InterpMethod *target_imethod;
 } InterpVTableEntry;
 
-/* domain lock must be held */
+/* memory manager lock must be held */
 static GSList*
 append_imethod (MonoDomain *domain, GSList *list, InterpMethod *imethod, InterpMethod *target_imethod)
 {
 	GSList *ret;
 	InterpVTableEntry *entry;
+	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 
-	entry = (InterpVTableEntry*) mono_mempool_alloc (domain->mp, sizeof (InterpVTableEntry));
+	entry = (InterpVTableEntry*) mono_mempool_alloc (memory_manager->mp, sizeof (InterpVTableEntry));
 	entry->imethod = imethod;
 	entry->target_imethod = target_imethod;
-	ret = g_slist_append_mempool (domain->mp, list, entry);
+	ret = g_slist_append_mempool (memory_manager->mp, list, entry);
 
 	return ret;
 }
@@ -747,14 +748,14 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 	if (!table [offset]) {
 		InterpMethod *target_imethod = get_virtual_method (imethod, vtable);
 		/* Lazily initialize the method table slot */
-		mono_domain_lock (vtable->domain);
+		mono_memory_manager_lock (vtable->domain->memory_manager);
 		if (!table [offset]) {
 			if (imethod->method->is_inflated || offset < 0)
 				table [offset] = append_imethod (vtable->domain, NULL, imethod, target_imethod);
 			else
 				table [offset] = (gpointer) ((gsize)target_imethod | 0x1);
 		}
-		mono_domain_unlock (vtable->domain);
+		mono_memory_manager_unlock (vtable->domain->memory_manager);
 	}
 
 	if ((gsize)table [offset] & 0x1) {
@@ -766,10 +767,10 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 
 		if (!target_imethod) {
 			target_imethod = get_virtual_method (imethod, vtable);
-			mono_domain_lock (vtable->domain);
+			mono_memory_manager_lock (vtable->domain->memory_manager);
 			if (!get_target_imethod ((GSList*)table [offset], imethod))
 				table [offset] = append_imethod (vtable->domain, (GSList*)table [offset], imethod, target_imethod);
-			mono_domain_unlock (vtable->domain);
+			mono_memory_manager_unlock (vtable->domain->memory_manager);
 		}
 		return target_imethod;
 	}

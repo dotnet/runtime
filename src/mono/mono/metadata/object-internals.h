@@ -323,6 +323,30 @@ mono_string_builder_string_length (MonoStringBuilderHandle sbh)
 	return sb->chunkOffset + sb->chunkLength;
 }
 
+#ifdef ENABLE_NETCORE
+// Keep in sync with System.Runtime.Loader.AssemblyLoadContext.InternalState
+typedef enum {
+	ALIVE = 0,
+	UNLOADING = 1
+} MonoManagedAssemblyLoadContextInternalState;
+
+// Keep in sync with System.Runtime.Loader.AssemblyLoadContext
+typedef struct {
+	MonoObject object;
+	MonoObject *unload_lock;
+	MonoEvent *resolving_unmanaged_dll;
+	MonoEvent *resolving;
+	MonoEvent *unloading;
+	MonoString *name;
+	gpointer *native_assembly_load_context;
+	gint64 id;
+	gint32 internal_state;
+	MonoBoolean is_collectible;
+} MonoManagedAssemblyLoadContext;
+
+TYPED_HANDLE_DECL (MonoManagedAssemblyLoadContext);
+#endif
+
 typedef struct {
 	MonoType *type;
 	gpointer  value;
@@ -1647,30 +1671,6 @@ typedef struct {
 	MonoClassField *field;
 	MonoProperty *prop;
 } CattrNamedArg;
-
-#ifdef ENABLE_NETCORE
-// Keep in sync with System.Runtime.Loader.AssemblyLoadContext.InternalState
-typedef enum {
-	ALIVE = 0,
-	UNLOADING = 1
-} MonoManagedAssemblyLoadContextInternalState;
-
-// Keep in sync with System.Runtime.Loader.AssemblyLoadContext
-typedef struct {
-	MonoObject object;
-	MonoObject *unload_lock;
-	MonoEvent *resolving_unmaned_dll;
-	MonoEvent *resolving;
-	MonoEvent *unloading;
-	MonoString *name;
-	gpointer *native_assembly_load_context;
-	gint64 id;
-	gint32 internal_state;
-	MonoBoolean is_collectible;
-} MonoManagedAssemblyLoadContext;
-
-TYPED_HANDLE_DECL (MonoManagedAssemblyLoadContext);
-#endif
 
 /* All MonoInternalThread instances should be pinned, so it's safe to use the raw ptr.  However
  * for uniformity, icall wrapping will make handles anyway.  So this is the method for getting the payload.

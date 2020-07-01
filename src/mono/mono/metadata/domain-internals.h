@@ -339,8 +339,7 @@ struct _MonoDomain {
 	 * must taken first.
 	 */
 	MonoCoopMutex    lock;
-	MonoMemPool        *mp;
-	MonoCodeManager    *code_mp;
+
 	/*
 	 * keep all the managed objects close to each other for the precise GC
 	 * For the Boehm GC we additionally keep close also other GC-tracked pointers.
@@ -366,14 +365,7 @@ struct _MonoDomain {
 #define MONO_DOMAIN_FIRST_GC_TRACKED env
 	MonoGHashTable     *env;
 	MonoGHashTable     *ldstr_table;
-	/* hashtables for Reflection handles */
-	MonoGHashTable     *type_hash;
-	MonoConcGHashTable     *refobject_hash;
-	/* maps class -> type initialization exception object */
-	MonoGHashTable    *type_init_exception_hash;
-	/* maps delegate trampoline addr -> delegate object */
-	MonoGHashTable     *delegate_hash_table;
-#define MONO_DOMAIN_LAST_GC_TRACKED delegate_hash_table
+#define MONO_DOMAIN_LAST_GC_TRACKED ldstr_table
 	guint32            state;
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
@@ -388,7 +380,6 @@ struct _MonoDomain {
 	GSList             *domain_assemblies;
 	MonoAssembly       *entry_assembly;
 	char               *friendly_name;
-	GPtrArray          *class_vtable_array;
 	/* maps remote class key -> MonoRemoteClass */
 	GHashTable         *proxy_vtable_hash;
 	/* Protected by 'jit_code_hash_lock' */
@@ -414,14 +405,7 @@ struct _MonoDomain {
 	MonoMethod         *private_invoke_method;
 	/* Used to store offsets of thread and context static fields */
 	GHashTable         *special_static_fields;
-	/* 
-	 * This must be a GHashTable, since these objects can't be finalized
-	 * if the hashtable contains a GC visible reference to them.
-	 */
-	GHashTable         *finalizable_objects_hash;
 
-	/* Protects the three hashes above */
-	mono_mutex_t   finalizable_objects_hash_lock;
 	/* Used when accessing 'domain_assemblies' */
 	MonoCoopMutex  assemblies_lock;
 
@@ -455,7 +439,7 @@ struct _MonoDomain {
 
 	/* Cache function pointers for architectures  */
 	/* that require wrappers */
-	GHashTable *ftnptrs_hash;
+	GHashTable *ftnptrs_hash; // TODO: need to move?
 
 	/* Maps MonoMethod* to weak links to DynamicMethod objects */
 	GHashTable *method_to_dyn_method;
@@ -467,9 +451,15 @@ struct _MonoDomain {
 
 #ifdef ENABLE_NETCORE
 	GSList *alcs;
+	GPtrArray *generic_memory_managers;
 	MonoAssemblyLoadContext *default_alc;
-	MonoCoopMutex alcs_lock; /* Used when accessing 'alcs' */
+	MonoCoopMutex alcs_lock; /* Used when accessing 'alcs' and 'generic_memory_managers' */
 #endif
+
+//#ifndef ENABLE_NETCORE // TODO: re-add this define
+	// Holds domain code memory
+	MonoMemoryManager *memory_manager;
+//#endif
 };
 
 typedef struct  {
@@ -699,8 +689,23 @@ MonoAssemblyLoadContext *
 mono_domain_default_alc (MonoDomain *domain);
 
 #ifdef ENABLE_NETCORE
+void
+mono_domain_create_default_alc (MonoDomain *domain);
+
 MonoAssemblyLoadContext *
 mono_domain_create_individual_alc (MonoDomain *domain, MonoGCHandle this_gchandle, gboolean collectible, MonoError *error);
+
+static inline void
+mono_domain_alcs_lock (MonoDomain *domain)
+{
+	mono_coop_mutex_lock (&domain->alcs_lock);
+}
+
+static inline void
+mono_domain_alcs_unlock (MonoDomain *domain)
+{
+	mono_coop_mutex_unlock (&domain->alcs_lock);
+}
 #endif
 
 static inline
@@ -712,6 +717,14 @@ mono_domain_ambient_alc (MonoDomain *domain)
 	 * passed to them from their callers.
 	 */
 	return mono_domain_default_alc (domain);
+}
+
+static inline
+MonoMemoryManager *
+mono_domain_ambient_memory_manager (MonoDomain *domain)
+{
+	// FIXME: All the callers of mono_domain_ambient_memory_manager should get a MemoryManager passed to them from their callers
+	return domain->memory_manager;
 }
 
 G_END_DECLS

@@ -220,7 +220,7 @@ mono_gc_run_finalize (void *obj, void *data)
 #ifndef HAVE_SGEN_GC
 	mono_domain_finalizers_lock (domain);
 
-	o2 = (MonoObject *)g_hash_table_lookup (domain->finalizable_objects_hash, o);
+	o2 = (MonoObject *)g_hash_table_lookup (domain->memory_manager->finalizable_objects_hash, o);
 
 	mono_domain_finalizers_unlock (domain);
 
@@ -374,9 +374,9 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 	mono_domain_finalizers_lock (domain);
 
 	if (callback)
-		g_hash_table_insert (domain->finalizable_objects_hash, obj, obj);
+		g_hash_table_insert (domain->memory_manager->finalizable_objects_hash, obj, obj);
 	else
-		g_hash_table_remove (domain->finalizable_objects_hash, obj);
+		g_hash_table_remove (domain->memory_manager->finalizable_objects_hash, obj);
 
 	mono_domain_finalizers_unlock (domain);
 
@@ -878,7 +878,7 @@ finalize_domain_objects (void)
 	mono_gc_invoke_finalizers ();
 
 #ifdef HAVE_BOEHM_GC
-	while (g_hash_table_size (domain->finalizable_objects_hash) > 0) {
+	while (g_hash_table_size (domain->memory_manager->finalizable_objects_hash) > 0) {
 		int i;
 		GPtrArray *objs;
 		/* 
@@ -887,7 +887,7 @@ finalize_domain_objects (void)
 		 * remove entries from the hash table, so we make a copy.
 		 */
 		objs = g_ptr_array_new ();
-		g_hash_table_foreach (domain->finalizable_objects_hash, collect_objects, objs);
+		g_hash_table_foreach (domain->memory_manager->finalizable_objects_hash, collect_objects, objs);
 		/* printf ("FINALIZING %d OBJECTS.\n", objs->len); */
 
 		for (i = 0; i < objs->len; ++i) {

@@ -540,6 +540,11 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
+		<!-- assembly-load-context.c: mono_domain_create_individual_alc -->
+		<type fullname="System.Reflection.RefTracker" preserve="fields" >
+			<method name=".ctor" />
+		</type>
+
 		<!-- domain.c: mono_defaults.method_info_class -->
 		<type fullname="System.Reflection.MethodInfo" preserve="nothing" />
 

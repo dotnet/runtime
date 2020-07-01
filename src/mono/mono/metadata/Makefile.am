@@ -427,6 +427,7 @@ common_sources = \
 	callspec.h	\
 	callspec.c	\
 	abi.c	\
+	memory-manager.c \
 	native-library.c \
 	native-library.h \
 	native-library-qcall.c \

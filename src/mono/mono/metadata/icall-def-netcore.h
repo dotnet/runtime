@@ -251,6 +251,9 @@ HANDLES(MMETHI_1, "get_method_info", ves_icall_get_method_info, void, 2, (MonoMe
 HANDLES(MMETHI_2, "get_parameter_info", ves_icall_System_Reflection_MonoMethodInfo_get_parameter_info, MonoArray, 2, (MonoMethod_ptr, MonoReflectionMethod))
 HANDLES(MMETHI_3, "get_retval_marshal", ves_icall_System_MonoMethodInfo_get_retval_marshal, MonoReflectionMarshalAsAttribute, 1, (MonoMethod_ptr))
 
+ICALL_TYPE(REFTRACKER, "System.Reflection.ReferenceTracker", REFTRACKER_1)
+HANDLES(REFTRACKER_1, "Destroy", ves_icall_System_Reflection_ReferenceTracker_Destroy, void, 1, (gpointer))
+
 ICALL_TYPE(RASSEM, "System.Reflection.RuntimeAssembly", RASSEM_1)
 HANDLES(RASSEM_1, "GetExportedTypes", ves_icall_System_Reflection_RuntimeAssembly_GetExportedTypes, MonoArray, 1, (MonoReflectionAssembly))
 HANDLES(RASSEM_1a, "GetFilesInternal", ves_icall_System_Reflection_RuntimeAssembly_GetFilesInternal, MonoObject, 3, (MonoReflectionAssembly, MonoString, MonoBoolean))
