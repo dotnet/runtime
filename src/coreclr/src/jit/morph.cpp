@@ -6097,6 +6097,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             {
                 offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->AsField()->gtFieldLookup.addr,
                                                       GTF_ICON_FIELD_HDL, false);
+                offsetNode->gtGetOp1()->AsIntCon()->gtMethodHandle =
+                    (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::FieldAccess;
             }
             else
             {

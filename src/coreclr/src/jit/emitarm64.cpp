@@ -12115,6 +12115,9 @@ void emitter::emitDispIns(
                         case GenTreeIntCon::MethodHandleType::StaticFieldAccess:
                             targetName = "StaticFieldAccess";
                             break;
+                        case GenTreeIntCon::MethodHandleType::FieldAccess:
+                            targetName = "FieldAccess";
+                            break;
                         case GenTreeIntCon::MethodHandleType::GSCookieCheck:
                             targetName = "GlobalSecurityCookieCheck";
                             break;
