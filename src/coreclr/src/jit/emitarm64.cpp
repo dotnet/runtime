@@ -12115,10 +12115,10 @@ void emitter::emitDispIns(
                         case GenTreeIntCon::MethodHandleType::StaticFieldAccess:
                             targetName = "StaticFieldAccess";
                             break;
-                        case GenTreeIntCon::MethodHandleType::GCCookieCheck:
+                        case GenTreeIntCon::MethodHandleType::GSCookieCheck:
                             targetName = "GlobalSecurityCookieCheck";
                             break;
-                        case GenTreeIntCon::MethodHandleType::SetGCCookie:
+                        case GenTreeIntCon::MethodHandleType::SetGSCookie:
                             targetName = "SetGlobalSecurityCookie";
                             break;
                         default:

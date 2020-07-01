@@ -2970,8 +2970,8 @@ struct GenTreeIntCon : public GenTreeIntConCommon
                           RuntimeLookupTree,
                           IntializeArrayIntrinsics,
                           StaticFieldAccess,
-                          GCCookieCheck,
-                          SetGCCookie};
+                          GSCookieCheck,
+                          SetGSCookie};
 #endif
 
     GenTreeIntCon(var_types type, ssize_t value DEBUGARG(bool largeNode = false))
