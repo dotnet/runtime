@@ -30,74 +30,89 @@ namespace Internal.Cryptography
 
         protected sealed override unsafe byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            byte[] paddedBlock = PadBlock(inputBuffer, inputOffset, inputCount);
+            byte[] padBuffer = CryptoPool.Rent(inputCount + InputBlockSize * 2);
+            int padWritten = 0;
 
-            fixed (byte* paddedBlockPtr = paddedBlock)
+            try
             {
-                byte[] output = BasicSymmetricCipher.TransformFinal(paddedBlock, 0, paddedBlock.Length);
-
-                if (paddedBlock != inputBuffer)
-                {
-                    CryptographicOperations.ZeroMemory(paddedBlock);
-                }
-
-                return output;
+                padWritten = PadBlock(inputBuffer.AsSpan(inputOffset, inputCount), padBuffer);
+                return BasicSymmetricCipher.TransformFinal(padBuffer, 0, padWritten);
+            }
+            finally
+            {
+                CryptoPool.Return(padBuffer, clearSize: padWritten);
             }
         }
 
-        private byte[] PadBlock(byte[] block, int offset, int count)
+        internal int PadBlock(ReadOnlySpan<byte> block, Span<byte> destination)
         {
-            byte[] result;
-            int padBytes = InputBlockSize - (count % InputBlockSize);
+            int count = block.Length;
+            int paddingRemainder = count % InputBlockSize;
+            int padBytes = InputBlockSize - paddingRemainder;
 
             switch (PaddingMode)
             {
-                case PaddingMode.None:
-                    if (count % InputBlockSize != 0)
-                        throw new CryptographicException(SR.Cryptography_PartialBlock);
+                case PaddingMode.None when (paddingRemainder != 0):
+                    throw new CryptographicException(SR.Cryptography_PartialBlock);
 
-                    result = new byte[count];
-                    Buffer.BlockCopy(block, offset, result, 0, result.Length);
-                    break;
+                case PaddingMode.None:
+                    if (destination.Length < count)
+                    {
+                        throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+                    }
+
+                    block.CopyTo(destination);
+                    return count;
 
                 // ANSI padding fills the blocks with zeros and adds the total number of padding bytes as
                 // the last pad byte, adding an extra block if the last block is complete.
                 //
-                // x 00 00 00 00 00 00 07
+                // xx 00 00 00 00 00 00 07
                 case PaddingMode.ANSIX923:
-                    result = new byte[count + padBytes];
+                    int ansiSize = count + padBytes;
 
-                    Buffer.BlockCopy(block, offset, result, 0, count);
-                    result[result.Length - 1] = (byte)padBytes;
+                    if (destination.Length < ansiSize)
+                    {
+                        throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+                    }
 
-                    break;
+                    block.CopyTo(destination);
+                    destination.Slice(count, padBytes - 1).Clear();
+                    destination[count + padBytes - 1] = (byte)padBytes;
+                    return ansiSize;
 
                 // ISO padding fills the blocks up with random bytes and adds the total number of padding
                 // bytes as the last pad byte, adding an extra block if the last block is complete.
                 //
                 // xx rr rr rr rr rr rr 07
                 case PaddingMode.ISO10126:
-                    result = new byte[count + padBytes];
+                    int isoSize = count + padBytes;
 
-                    Buffer.BlockCopy(block, offset, result, 0, count);
-                    RandomNumberGenerator.Fill(result.AsSpan(count + 1, padBytes - 1));
-                    result[result.Length - 1] = (byte)padBytes;
+                    if (destination.Length < isoSize)
+                    {
+                        throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+                    }
 
-                    break;
+                    block.CopyTo(destination);
+                    RandomNumberGenerator.Fill(destination.Slice(count, padBytes - 1));
+                    destination[count + padBytes - 1] = (byte)padBytes;
+                    return isoSize;
 
                 // PKCS padding fills the blocks up with bytes containing the total number of padding bytes
                 // used, adding an extra block if the last block is complete.
                 //
                 // xx xx 06 06 06 06 06 06
                 case PaddingMode.PKCS7:
-                    result = new byte[count + padBytes];
-                    Buffer.BlockCopy(block, offset, result, 0, count);
+                    int pkcsSize = count + padBytes;
 
-                    for (int i = count; i < result.Length; i++)
+                    if (destination.Length < pkcsSize)
                     {
-                        result[i] = (byte)padBytes;
+                        throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
                     }
-                    break;
+
+                    block.CopyTo(destination);
+                    destination.Slice(count, padBytes).Fill((byte)padBytes);
+                    return pkcsSize;
 
                 // Zeros padding fills the last partial block with zeros, and does not add a new block to
                 // the end if the last block is already complete.
@@ -109,15 +124,20 @@ namespace Internal.Cryptography
                         padBytes = 0;
                     }
 
-                    result = new byte[count + padBytes];
-                    Buffer.BlockCopy(block, offset, result, 0, count);
-                    break;
+                    int zeroSize = count + padBytes;
+
+                    if (destination.Length < zeroSize)
+                    {
+                        throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+                    }
+
+                    destination.Slice(0, zeroSize).Clear();
+                    block.CopyTo(destination);
+                    return zeroSize;
 
                 default:
                     throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
             }
-
-            return result;
         }
     }
 }
