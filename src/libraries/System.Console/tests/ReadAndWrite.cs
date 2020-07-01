@@ -312,7 +312,7 @@ public class ReadAndWrite
     public static void OutputEncoding_Getter_Returns_Unicode()
     {
         Encoding curEncoding = Console.OutputEncoding;
-        Assert.Equal(Encoding.Unicode, curEncoding);
+        Assert.Equal(Encoding.UTF8, curEncoding);
     }
 
     [Fact]
