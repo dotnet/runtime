@@ -9,7 +9,7 @@ namespace System.Diagnostics.CodeAnalysis
 	/// attribute usages but not the attribute definition
 	/// </summary>
 	[AttributeUsage (
-		AttributeTargets.Class , Inherited = false)]
+		AttributeTargets.Class, Inherited = false)]
 	public sealed class LinkerRemovableAttribute : Attribute
 	{
 	}
