@@ -12195,7 +12195,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
 #endif //FEATURE_LOH_COMPACTION
 
             // must fit exactly or leave formattable space
-            if ((diff == 0) || (diff > (ptrdiff_t)Align (min_obj_size, align_const)))
+            if ((diff == 0) || (diff >= (ptrdiff_t)Align (min_obj_size, align_const)))
             {
 #ifdef BACKGROUND_GC
                 cookie = bgc_alloc_lock->uoh_alloc_set (free_list);
@@ -12407,7 +12407,7 @@ found_no_fit:
     return FALSE;
 }
 
-BOOL gc_heap::loh_a_fit_segment_end_p (int gen_number,
+BOOL gc_heap::uoh_a_fit_segment_end_p (int gen_number,
                                        size_t size,
                                        alloc_context* acontext,
                                        uint32_t flags,
@@ -12974,7 +12974,7 @@ BOOL gc_heap::uoh_try_fit (int gen_number,
 
     if (!a_fit_free_list_uoh_p (size, acontext, flags, align_const, gen_number))
     {
-        can_allocate = loh_a_fit_segment_end_p (gen_number, size,
+        can_allocate = uoh_a_fit_segment_end_p (gen_number, size,
                                                 acontext, flags, align_const,
                                                 commit_failed_p, oom_r);
 
