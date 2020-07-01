@@ -4,6 +4,7 @@
 
 using System.Net.Http.Headers;
 using System.Net.Test.Common;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -83,7 +84,7 @@ namespace System.Net.Http.Json.Functional.Tests
 
                         var request = new HttpRequestMessage(HttpMethod.Post, uri);
                         request.Content = content;
-                        await client.SendAsync(request);
+                        await SendAsync(client, request);
                     }
                 },
                 async server => {
@@ -115,7 +116,7 @@ namespace System.Net.Http.Json.Functional.Tests
                         var request = new HttpRequestMessage(HttpMethod.Post, uri);
                         MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse("foo/bar; charset=utf-8");
                         request.Content = JsonContent.Create(Person.Create(), mediaType: mediaType);
-                        await client.SendAsync(request);
+                        await SendAsync(client, request);
                     }
                 },
                 async server => {
@@ -162,7 +163,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
-        public static async Task ValidateUtf16IsTranscodedAsync()
+        public async Task ValidateUtf16IsTranscodedAsync()
         {
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
@@ -173,7 +174,7 @@ namespace System.Net.Http.Json.Functional.Tests
                         MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse("application/json; charset=utf-16");
                         // Pass new options to avoid using the Default Web Options that use camelCase.
                         request.Content = JsonContent.Create(Person.Create(), mediaType: mediaType, options: new JsonSerializerOptions());
-                        await client.SendAsync(request);
+                        await SendAsync(client, request);
                     }
                 },
                 async server => {
@@ -196,7 +197,7 @@ namespace System.Net.Http.Json.Functional.Tests
                         EnsureDefaultOptions dummyObj = new EnsureDefaultOptions();
                         var request = new HttpRequestMessage(HttpMethod.Post, uri);
                         request.Content = JsonContent.Create(dummyObj);
-                        await client.SendAsync(request);
+                        await SendAsync(client, request);
                     }
                 },
                 server => server.HandleRequestAsync());
@@ -216,7 +217,7 @@ namespace System.Net.Http.Json.Functional.Tests
                         content.Headers.ContentType = null;
 
                         request.Content = content;
-                        await client.SendAsync(request);
+                        await SendAsync(client, request);
                     }
                 },
                 async server => {

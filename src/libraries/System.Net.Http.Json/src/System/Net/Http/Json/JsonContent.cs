@@ -78,6 +78,7 @@ namespace System.Net.Http.Json
                     else
                     {
                         // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
+                        // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
                         using Utf8JsonWriter writer = new Utf8JsonWriter(transcodingStream);
                         JsonSerializer.Serialize(writer, Value, ObjectType, _jsonSerializerOptions);
                     }
@@ -121,7 +122,7 @@ namespace System.Net.Http.Json
                     using Utf8JsonWriter writer = new Utf8JsonWriter(targetStream);
                     JsonSerializer.Serialize(writer, Value, ObjectType, _jsonSerializerOptions);
 #else
-                    throw new NotSupportedException(SR.SyncNotSupported);
+                    Debug.Assert(async);
 #endif
                 }
             }

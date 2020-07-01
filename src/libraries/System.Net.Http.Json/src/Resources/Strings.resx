@@ -132,7 +132,4 @@
   <data name="SerializeWrongType" xml:space="preserve">
     <value>The specified type {0} must derive from the specific value's type {1}.</value>
   </data>
-  <data name="SyncNotSupported" xml:space="preserve">
-    <value>Synchronous serialization of JsonContent is not supported.</value>
-  </data>
 </root>
