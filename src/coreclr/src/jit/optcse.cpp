@@ -3212,8 +3212,8 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         return false;
     }
 
-    // If this is a struct type, we can only consider it for CSE-ing if we can get at
-    // its handle, so that we can create a temp.
+    // If this is a struct type (including SIMD*), we can only consider it for CSE-ing
+    // if we can get its handle, so that we can create a temp.
     if (varTypeIsStruct(type) && (gtGetStructHandleIfPresent(tree) == NO_CLASS_HANDLE))
     {
         return false;
