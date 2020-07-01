@@ -341,9 +341,14 @@ namespace CoreclrTestLib
                             foreach (var child in FindChildProcessesByName(process, "corerun"))
                             {
                                 string crashDumpPath = Path.Combine(Path.GetFullPath(crashDumpFolder), string.Format("crashdump_{0}.dmp", child.Id));
+                                Console.WriteLine($"Attempting to collect crash dump: {crashDumpPath}");
                                 if (CollectCrashDump(child, crashDumpPath))
                                 {
-                                    Console.WriteLine("Collected crash dump {0}", crashDumpPath);
+                                    Console.WriteLine("Collected crash dump: {0}", crashDumpPath);
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Failed to collect crash dump");
                                 }
                             }
                         }
