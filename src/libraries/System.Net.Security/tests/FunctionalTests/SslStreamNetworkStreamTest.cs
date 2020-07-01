@@ -202,6 +202,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task SslStream_UntrustedCaWithCustomCallback_OK()
         {
             var options = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
@@ -232,6 +233,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task SslStream_UntrustedCaWithCustomCallback_Throws()
         {
             var options = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
