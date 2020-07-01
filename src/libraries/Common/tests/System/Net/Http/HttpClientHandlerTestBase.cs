@@ -110,6 +110,7 @@ namespace System.Net.Http.Functional.Tests
                 _expectedVersion = expectedVersion;
             }
 
+#if NETCOREAPP
             protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 if (request.Version != _expectedVersion)
@@ -126,6 +127,7 @@ namespace System.Net.Http.Functional.Tests
 
                 return response;
             }
+#endif
 
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {

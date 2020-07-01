@@ -176,7 +176,7 @@ namespace System.Net.Http.Functional.Tests
             handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
-                using (HttpResponseMessage response = await client.SendAsync(TestAsync, CreateRequest(HttpMethod.Get, uri, client.DefaultRequestVersion)))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, CreateRequest(HttpMethod.Get, uri, remoteServer.HttpVersion)))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     string responseContent = await response.Content.ReadAsStringAsync();
@@ -203,7 +203,7 @@ namespace System.Net.Http.Functional.Tests
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
-            using (HttpResponseMessage response = await client.SendAsync(TestAsync, CreateRequest(HttpMethod.Get, uri, client.DefaultRequestVersion), HttpCompletionOption.ResponseHeadersRead))
+            using (HttpResponseMessage response = await client.SendAsync(TestAsync, CreateRequest(HttpMethod.Get, uri, remoteServer.HttpVersion), HttpCompletionOption.ResponseHeadersRead))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -252,7 +252,7 @@ namespace System.Net.Http.Functional.Tests
                         client.DefaultRequestHeaders.Add("Accept-Encoding", manualAcceptEncodingHeaderValues);
                     }
 
-                    Task<HttpResponseMessage> clientTask = client.SendAsync(TestAsync, CreateRequest(HttpMethod.Get, url, client.DefaultRequestVersion));
+                    Task<HttpResponseMessage> clientTask = client.SendAsync(TestAsync, CreateRequest(HttpMethod.Get, url, UseVersion));
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
                     await TaskTimeoutExtensions.WhenAllOrAnyFailed(new Task[] { clientTask, serverTask });
 
