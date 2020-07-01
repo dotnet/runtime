@@ -186,7 +186,10 @@ namespace System.Net.WebSockets
                                 // Aborted/Disposed during connect.
                                 tcsConnect.SetException(new ObjectDisposedException(GetType().FullName));
                             }
-                            tcsConnect.SetResult();
+                            else
+                            {
+                                tcsConnect.SetResult();
+                            }
                         }
                         else
                         {
