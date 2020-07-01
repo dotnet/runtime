@@ -2,19 +2,19 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA5384</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
-    <GeneratePlatformNotSupportedAdditionalParameters>--exclude-api-list C:\git\runtime\src\libraries\System.Security.Cryptography.X509Certificates\src\ExculdeApiList.txt</GeneratePlatformNotSupportedAdditionalParameters>
-    <GeneratePlatformNotSupportedAssemblyMessage>SR.Cryptography_PlatformNotSupported_Browser</GeneratePlatformNotSupportedAssemblyMessage>
+  <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true'">
+    <GeneratePlatformNotSupportedAdditionalParameters>--exclude-api-list $(MSBuildThisFileDirectory)ExculdeApiList.txt</GeneratePlatformNotSupportedAdditionalParameters>
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.Cryptography_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetsAnyOS)' == 'true'">
     <Compile Include="System\Security\Cryptography\X509Certificates\System.Security.Cryptography.X509Certificates.notsupported.cs" />
   </ItemGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="Internal\Cryptography\ICertificatePal.cs" />
     <Compile Include="Internal\Cryptography\ICertificatePalCore.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"

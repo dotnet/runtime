@@ -89,7 +89,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [SkipOnMono("Not Supported on WASM")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38559")]
         public void ClientCertificates_Get_Set_Succeeds()
         {
             Assert.Null(_clientOptions.ClientCertificates);
@@ -103,7 +103,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [SkipOnMono("Not supported on WASM")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38559")]
         public void ServerCertificate_Get_Set_Succeeds()
         {
             Assert.Null(_serverOptions.ServerCertificate);

@@ -120,6 +120,6 @@
     <value>Could not find file '{0}'.</value>
   </data>
   <data name="DiagnosticsFileVersionInfo_PlatformNotSupported" xml:space="preserve">
-    <value>System.Diagnostics.FileVersionInfo is not supported on Browser.</value>
+    <value>System.Diagnostics.FileVersionInfo is not supported on this platform.</value>
   </data>
 </root>

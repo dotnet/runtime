@@ -179,6 +179,6 @@
     <value>BrotliStream.BaseStream returned more bytes than requested in Read.</value>
   </data>
   <data name="IOCompressionBrotli_PlatformNotSupported" xml:space="preserve">
-    <value>System.IO.Compression.Brotli is not supported on Browser.</value>
+    <value>System.IO.Compression.Brotli is not supported on this platform.</value>
   </data>
 </root>
