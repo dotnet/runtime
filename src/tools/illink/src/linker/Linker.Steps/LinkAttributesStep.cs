@@ -24,13 +24,22 @@ namespace Mono.Linker.Steps
 		{
 		}
 
-		IEnumerable<CustomAttribute> ProcessAttributes (XPathNavigator nav)
+		IEnumerable<CustomAttribute> ProcessAttributes (XPathNavigator nav, ICustomAttributeProvider provider=null)
 		{
 			XPathNodeIterator iterator = nav.SelectChildren ("attribute", string.Empty);
 			var attributes = new List<CustomAttribute> ();
 			while (iterator.MoveNext ()) {
+				if (!ShouldProcessElement (iterator.Current))
+					continue;
+
 				AssemblyDefinition assembly;
 				TypeDefinition attributeType;
+				
+				string internalAttribute = GetAttribute (iterator.Current, "internal");
+				if (internalAttribute == "RemoveAttributeInstances" && provider != null) { 
+					Context.Annotations.AddRemovableAttribute ((IMemberDefinition) provider);
+					continue;
+				}
 
 				string attributeFullName = GetFullName (iterator.Current);
 				if (attributeFullName == String.Empty) {
@@ -137,10 +146,7 @@ namespace Mono.Linker.Steps
 		{
 			Debug.Assert (ShouldProcessElement (nav));
 
-			if (GetAttribute (nav, "remove") == "true")
-				Context.Annotations.AddRemovableAttribute (type);
-
-			IEnumerable<CustomAttribute> attributes = ProcessAttributes (nav);
+			IEnumerable<CustomAttribute> attributes = ProcessAttributes (nav, type);
 			if (attributes.Count () > 0)
 				Context.CustomAttributes.AddCustomAttributes (type, attributes);
 			ProcessTypeChildren (type, nav);
