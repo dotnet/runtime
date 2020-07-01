@@ -11,7 +11,6 @@ using static System.Tests.Utf8TestUtilities;
 
 namespace System.Net.Http.Tests
 {
-    [SkipOnMono("The features from System.Utf8String.Experimental namespace are experimental.")]
     public partial class Utf8StringContentTests
     {
         [Fact]
@@ -21,6 +20,18 @@ namespace System.Net.Http.Tests
 
             new Utf8StringContent(u8("Hello")).CopyTo(memoryStream, default, default);
 
+            Assert.Equal(u8("Hello").ToByteArray(), memoryStream.ToArray());
+        }
+
+        [Fact]
+        public static void Ctor_ReadAsStream()
+        {
+            var content = new Utf8StringContent(u8("Hello"));
+            var stream = content.ReadAsStream();
+
+            MemoryStream memoryStream = new MemoryStream();
+            stream.CopyTo(memoryStream);
+            memoryStream.Seek(0, SeekOrigin.Begin);
             Assert.Equal(u8("Hello").ToByteArray(), memoryStream.ToArray());
         }
     }
