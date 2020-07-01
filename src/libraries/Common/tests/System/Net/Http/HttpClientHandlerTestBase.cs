@@ -110,6 +110,23 @@ namespace System.Net.Http.Functional.Tests
                 _expectedVersion = expectedVersion;
             }
 
+            protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                if (request.Version != _expectedVersion)
+                {
+                    throw new Exception($"Unexpected request version: expected {_expectedVersion}, saw {request.Version}");
+                }
+
+                HttpResponseMessage response = base.Send(request, cancellationToken);
+
+                if (response.Version != _expectedVersion)
+                {
+                    throw new Exception($"Unexpected response version: expected {_expectedVersion}, saw {response.Version}");
+                }
+
+                return response;
+            }
+
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 if (request.Version != _expectedVersion)
