@@ -322,7 +322,7 @@ namespace System.Net.WebSockets
         /// <param name="messageType">Message type.</param>
         /// <param name="endOfMessage">If set to <c>true</c> end of message.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        public override async Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+        public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
             ThrowIfNotConnected();
 
@@ -342,13 +342,13 @@ namespace System.Net.WebSockets
 
             if (!endOfMessage)
             {
-                _writeBuffer = _writeBuffer ?? new MemoryStream();
+                _writeBuffer ??= new MemoryStream();
                 _writeBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
-                return;
+                return Task.CompletedTask;
             }
             else
             {
-                _writeBuffer = _writeBuffer ?? new MemoryStream();
+                _writeBuffer ??= new MemoryStream();
                 _writeBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
                 if (!_writeBuffer.TryGetBuffer(out buffer))
                     throw new WebSocketException(WebSocketError.NativeError);
@@ -367,25 +367,23 @@ namespace System.Net.WebSockets
                         using (Uint8Array uint8Buffer = Uint8Array.From(buffer))
                         {
                             _innerWebSocket!.Invoke("send", uint8Buffer);
-                            tcsSend.TrySetResult();
                         }
                         break;
                     default:
                         string strBuffer = buffer.Array == null ? string.Empty : Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
                         _innerWebSocket!.Invoke("send", strBuffer);
-                        tcsSend.TrySetResult();
                         break;
                 }
             }
             catch (Exception excb)
             {
-                tcsSend.TrySetException(new WebSocketException(WebSocketError.NativeError, excb));
+                throw new WebSocketException(WebSocketError.NativeError, excb);
             }
             finally
             {
                 writtenBuffer?.Dispose();
             }
-            await tcsSend.Task.ConfigureAwait(continueOnCapturedContext: true);
+            return Task.CompletedTask;
         }
 
         /// <summary>
