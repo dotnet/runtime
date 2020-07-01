@@ -85,21 +85,34 @@ namespace Internal.Cryptography
 
         private int ProcessFinalBlock(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            byte[] rented = CryptoPool.Rent(input.Length);
-            int written = 0;
-
-            try
+            // If input and output overlap but are not the same, we need to use a
+            // temp buffer since openssl doesn't seem to like partial overlaps.
+            if (input.Overlaps(output, out int offset) && offset != 0)
             {
-                written = CipherUpdate(input, rented);
-                Span<byte> outputSpan = rented.AsSpan(written);
+                byte[] rented = CryptoPool.Rent(input.Length);
+                int written = 0;
+
+                try
+                {
+                    written = CipherUpdate(input, rented);
+                    Span<byte> outputSpan = rented.AsSpan(written);
+                    CheckBoolReturn(Interop.Crypto.EvpCipherFinalEx(_ctx, outputSpan, out int finalWritten));
+                    written += finalWritten;
+                    rented.AsSpan(0, written).CopyTo(output);
+                    return written;
+                }
+                finally
+                {
+                    CryptoPool.Return(rented, clearSize: written);
+                }
+            }
+            else
+            {
+                int written = CipherUpdate(input, output);
+                Span<byte> outputSpan = output.Slice(written);
                 CheckBoolReturn(Interop.Crypto.EvpCipherFinalEx(_ctx, outputSpan, out int finalWritten));
                 written += finalWritten;
-                rented.AsSpan(0, written).CopyTo(output);
                 return written;
-            }
-            finally
-            {
-                CryptoPool.Return(rented, clearSize: written);
             }
         }
 
