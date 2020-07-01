@@ -1956,6 +1956,150 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> MultiplyBySelectedScalar(Vector128<double> left, Vector128<double> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// int16_t vqdmulhh_s16 (int16_t a, int16_t b)
+            ///   A64: SQDMULH Hd, Hn, Hm
+            /// </summary>
+            public static Vector64<short> MultiplyDoublingSaturateHighScalar(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmulhs_s32 (int32_t a, int32_t b)
+            ///   A64: SQDMULH Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingSaturateHighScalar(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vqdmulhh_lane_s16 (int16_t a, int16x4_t v, const int lane)
+            ///   A64: SQDMULH Hd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<short> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vqdmulhh_laneq_s16 (int16_t a, int16x8_t v, const int lane)
+            ///   A64: SQDMULH Hd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<short> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmulhs_lane_s32 (int32_t a, int32x2_t v, const int lane)
+            ///   A64: SQDMULH Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmulhs_laneq_s32 (int32_t a, int32x4_t v, const int lane)
+            ///   A64: SQDMULH Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmlalh_s16 (int32_t a, int16_t b, int16_t c)
+            ///   A64: SQDMLAL Sd, Hn, Hm
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningAndAddSaturateScalar(Vector64<int> addend, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmlals_s32 (int64_t a, int32_t b, int32_t c)
+            ///   A64: SQDMLAL Dd, Sn, Sm
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningAndAddSaturateScalar(Vector64<long> addend, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmlslh_s16 (int32_t a, int16_t b, int16_t c)
+            ///   A64: SQDMLSL Sd, Hn, Hm
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningAndSubtractSaturateScalar(Vector64<int> minuend, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmlsls_s32 (int64_t a, int32_t b, int32_t c)
+            ///   A64: SQDMLSL Dd, Sn, Sm
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningAndSubtractSaturateScalar(Vector64<long> minuend, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmullh_s16 (int16_t a, int16_t b)
+            ///   A64: SQDMULL Sd, Hn, Hm
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningSaturateScalar(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmulls_s32 (int32_t a, int32_t b)
+            ///   A64: SQDMULL Dd, Sn, Sm
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningSaturateScalar(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmullh_lane_s16 (int16_t a, int16x4_t v, const int lane)
+            ///   A64: SQDMULL Sd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmullh_laneq_s16 (int16_t a, int16x8_t v, const int lane)
+            ///   A64: SQDMULL Sd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmulls_lane_s32 (int32_t a, int32x2_t v, const int lane)
+            ///   A64: SQDMULL Dd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmulls_laneq_s32 (int32_t a, int32x4_t v, const int lane)
+            ///   A64: SQDMULL Dd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmlalh_lane_s16 (int32_t a, int16_t b, int16x4_t v, const int lane)
+            ///   A64: SQDMLAL Sd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<int> addend, Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmlalh_laneq_s16 (int32_t a, int16_t b, int16x8_t v, const int lane)
+            ///   A64: SQDMLAL Sd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<int> addend, Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmlals_lane_s32 (int64_t a, int32_t b, int32x2_t v, const int lane)
+            ///   A64: SQDMLAL Dd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<long> addend, Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmlals_laneq_s32 (int64_t a, int32_t b, int32x4_t v, const int lane)
+            ///   A64: SQDMLAL Dd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<long> addend, Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmlslh_lane_s16 (int32_t a, int16_t b, int16x4_t v, const int lane)
+            ///   A64: SQDMLSL Sd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<int> minuend, Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmlslh_laneq_s16 (int32_t a, int16_t b, int16x8_t v, const int lane)
+            ///   A64: SQDMLSL Sd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<int> minuend, Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmlsls_lane_s32 (int64_t a, int32_t b, int32x2_t v, const int lane)
+            ///   A64: SQDMLSL Dd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<long> minuend, Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmlsls_laneq_s32 (int64_t a, int32_t b, int32x4_t v, const int lane)
+            ///   A64: SQDMLSL Dd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<long> minuend, Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float32x2_t vmulx_f32 (float32x2_t a, float32x2_t b)
             ///   A64: FMULX Vd.2S, Vn.2S, Vm.2S
             /// </summary>
