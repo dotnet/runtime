@@ -468,3 +468,23 @@ For fields and properties, you need to include the name since they are not order
   <property name="propertyName">SomeValue</property>
 </attribute>
 ```
+
+Additionally the attribute element also supports the usage of the feature switch
+```xml
+<attribute fullname="SomecustomAttribute" feature="EnableOptionalFeature" featurevalue="false"/>
+```
+
+Also if the attribute is used in a type, a special property can be used to specify that the type
+is a Custom Attribute an it's instances should be removed by the linker. To do this the word "internal" 
+and value "RemoveAttributeInstances" should be included in the attribute as described in the following
+example:
+
+```xml
+<linker>
+  <assembly fullname="*"> 
+    <type fullname="System.Runtime.CompilerServices.NullableAttribute">
+      <attribute internal="RemoveAttributeInstances" feature="EnableOptionalFeature" featurevalue="false" />
+    </type>
+  </assembly>
+</linker>
+```
