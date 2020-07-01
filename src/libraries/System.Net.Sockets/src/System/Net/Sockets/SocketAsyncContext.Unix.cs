@@ -311,6 +311,8 @@ namespace System.Net.Sockets
                 ErrorCode = SocketError.OperationAborted;
             }
 
+            internal virtual bool IsPartialSuccess => false;
+
             protected abstract void Abort();
 
             protected abstract bool DoTryComplete(SocketAsyncContext context);
@@ -457,6 +459,8 @@ namespace System.Net.Sockets
 
             public BufferMemoryReceiveOperation(SocketAsyncContext context) : base(context) { }
 
+            internal override bool IsPartialSuccess => ErrorCode == SocketError.Success && Buffer.Length > BytesTransferred;
+
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 // Zero byte read is performed to know when data is available.
@@ -535,6 +539,8 @@ namespace System.Net.Sockets
             public int Length;
 
             public BufferPtrReceiveOperation(SocketAsyncContext context) : base(context) { }
+
+            internal override bool IsPartialSuccess => ErrorCode == SocketError.Success && Length > BytesTransferred;
 
             protected override bool DoTryComplete(SocketAsyncContext context) =>
                 SocketPal.TryCompleteReceiveFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
@@ -1035,7 +1041,7 @@ namespace System.Net.Sockets
                             // No more operations to process
                             _tail = null;
                             _isNextOperationSynchronous = false;
-                            _state = QueueState.Ready;
+                            _state = op.IsPartialSuccess ? QueueState.Waiting :  QueueState.Ready;
                             _sequenceNumber++;
                             Trace(context, $"Exit (finished queue)");
                         }
