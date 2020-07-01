@@ -64,12 +64,11 @@ namespace Internal.Cryptography
                 return 0;
             }
 
-            Span<byte> outputBuffer = new byte[input.Length];
-            int outputBytes = CipherUpdate(input, outputBuffer);
+            int outputBytes = CipherUpdate(input, output);
             int ret;
             int errorCode;
 
-            fixed (byte* outputStart = outputBuffer)
+            fixed (byte* outputStart = output)
             {
                 byte* outputCurrent = outputStart + outputBytes;
                 int bytesWritten;
@@ -77,7 +76,7 @@ namespace Internal.Cryptography
                 ret = Interop.AppleCrypto.CryptorFinal(
                     _cryptor,
                     outputCurrent,
-                    outputBuffer.Length - outputBytes,
+                    output.Length - outputBytes,
                     out bytesWritten,
                     out errorCode);
 
@@ -86,12 +85,6 @@ namespace Internal.Cryptography
 
             ProcessInteropError(ret, errorCode);
 
-            if (outputBytes == 0)
-            {
-                return 0;
-            }
-
-            outputBuffer.Slice(0, outputBytes).CopyTo(output);
             return outputBytes;
         }
 
