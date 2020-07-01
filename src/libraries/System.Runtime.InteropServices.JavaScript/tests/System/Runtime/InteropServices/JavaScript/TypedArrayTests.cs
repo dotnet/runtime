@@ -10,22 +10,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public static class TypedArrayTests
     {
-
         private static Function _objectPrototype;
-
-        [Fact]
-        public static void DataViewConstructor()
-        {
-            // create an ArrayBuffer with a size in bytes
-            var buffer = new ArrayBuffer(16);
-
-            // Create a couple of views
-            var view1 = new DataView(buffer);
-            var view2 = new DataView(buffer, 12, 4); //from byte 12 for the next 4 bytes
-            view1.SetInt8(12, 42); // put 42 in slot 12 
-
-            Assert.Equal(42, view2.GetInt8(0));
-        }
 
         public static IEnumerable<object[]> Object_Prototype()
         {
