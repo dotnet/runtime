@@ -372,7 +372,13 @@ namespace System.Threading
         [System.Diagnostics.Conditional("DEBUG")]
         internal static void CheckThreadPoolAndContextsAreDefault()
         {
-            Debug.Assert(Thread.CurrentThread.IsThreadPoolThread);
+            if (Thread.IsThreadStartSupported)
+            {
+#pragma warning disable CS0162 // Unreachable code detected. Thread.IsThreadStartSupported is constant false in runtimes where we can't create threads.
+                Debug.Assert(Thread.CurrentThread.IsThreadPoolThread);
+#pragma warning restore CS0162
+            }
+
             Debug.Assert(Thread.CurrentThread._executionContext == null, "ThreadPool thread not on Default ExecutionContext.");
             Debug.Assert(Thread.CurrentThread._synchronizationContext == null, "ThreadPool thread not on Default SynchronizationContext.");
         }

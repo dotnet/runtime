@@ -319,6 +319,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern DeserializationTracker GetThreadDeserializationTracker(ref StackCrawlMark stackMark);
 
+        internal const bool IsThreadStartSupported = true;
+
         /// <summary>Returns true if the thread has been started and is not dead.</summary>
         public extern bool IsAlive
         {
