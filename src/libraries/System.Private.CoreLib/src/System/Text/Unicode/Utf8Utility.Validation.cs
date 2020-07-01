@@ -4,6 +4,8 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -121,7 +123,15 @@ namespace System.Text.Unicode
 
                         do
                         {
-                            if (Sse2.IsSupported)
+                            if (AdvSimd.Arm64.IsSupported)
+                            {
+                                mask = AdvSimd.Arm64.MaxAcross(AdvSimd.LoadVector128(pInputBuffer)).ToScalar();
+                                if (mask != 0)
+                                {
+                                    goto LoopTerminatedEarlyDueToNonAsciiData;
+                                }
+                            }
+                            else if (Sse2.IsSupported)
                             {
                                 // pInputBuffer is 32-bit aligned but not necessary 128-bit aligned, so we're
                                 // going to perform an unaligned load. We don't necessarily care about aligning
@@ -129,10 +139,10 @@ namespace System.Text.Unicode
                                 // point in the not-too-distant future (otherwise we would've stayed entirely
                                 // within the all-ASCII vectorized code at the entry to this method).
 
-                                mask = (uint)Sse2.MoveMask(Sse2.LoadVector128((byte*)pInputBuffer));
+                                mask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pInputBuffer));
                                 if (mask != 0)
                                 {
-                                    goto Sse2LoopTerminatedEarlyDueToNonAsciiData;
+                                    goto LoopTerminatedEarlyDueToNonAsciiData;
                                 }
                             }
                             else
@@ -153,10 +163,10 @@ namespace System.Text.Unicode
 
                         continue; // need to perform a bounds check because we might be running out of data
 
-                    Sse2LoopTerminatedEarlyDueToNonAsciiData:
+                    LoopTerminatedEarlyDueToNonAsciiData:
 
                         Debug.Assert(BitConverter.IsLittleEndian);
-                        Debug.Assert(Sse2.IsSupported);
+                        Debug.Assert(AdvSimd.Arm64.IsSupported || Sse2.IsSupported);
 
                         // The 'mask' value will have a 0 bit for each ASCII byte we saw and a 1 bit
                         // for each non-ASCII byte we saw. We can count the number of ASCII bytes,
