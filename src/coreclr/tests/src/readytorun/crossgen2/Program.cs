@@ -1000,7 +1000,36 @@ internal class Program
 
         return true;
     }
-    
+
+    interface IGenericWithSealedDefaultMethod<T>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        sealed
+        string Method()
+        {
+            Type t = typeof(T);
+            return t.FullName;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        sealed
+        string GenericMethod<V>()
+        {
+            Type t = typeof(V);
+            return t.FullName;
+        }
+
+    }
+
+    class ImplementGenericWithSealedDefaultMethod: IGenericWithSealedDefaultMethod<string>
+    {
+    }
+
+    class ImplementGenericWithSealedDefaultMethodAcrossModule : IGenericWithSealedDefaultMethodAcrossModule<string>
+    {
+    }
+
+
     class MyGen<T>
     {
         public static string GcValue;
@@ -1249,6 +1278,25 @@ internal class Program
             return true;
     }
 
+    private static bool SealedDefaultInterfaceMethodTest()
+    {
+        IGenericWithSealedDefaultMethod<string> igsdf = new ImplementGenericWithSealedDefaultMethod();
+        if (!igsdf.Method().Equals("System.String"))
+            return false;
+        if (!igsdf.GenericMethod<bool>().Equals("System.Boolean"))
+            return false;
+
+
+        // Test a similar case across modules
+        IGenericWithSealedDefaultMethodAcrossModule<string> igsdf2 = new ImplementGenericWithSealedDefaultMethodAcrossModule();
+        if (!igsdf2.Method().Equals("System.String"))
+            return false;
+        if (!igsdf2.GenericMethod<bool>().Equals("System.Boolean"))
+            return false;
+
+        return true;
+    }
+
     private static bool FunctionPointerFromAnotherModuleTest()
     {
         // This test tests referencing a method from another module while creating a function pointer.
@@ -1322,6 +1370,7 @@ internal class Program
         RunTest("ObjectToStringOnGenericParamTestVersionBubbleLocalStruct", ObjectToStringOnGenericParamTestVersionBubbleLocalStruct());
         RunTest("EnumValuesToStringTest", EnumValuesToStringTest());
         RunTest("DelegateFromAnotherModuleTest", DelegateFromAnotherModuleTest());
+        RunTest("SealedDefaultInterfaceMethodTest", SealedDefaultInterfaceMethodTest());
         RunTest("FunctionPointerFromAnotherModuleTest", FunctionPointerFromAnotherModuleTest());
 
         File.Delete(TextFileName);
