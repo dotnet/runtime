@@ -98,12 +98,14 @@ namespace System.Text.Json.Serialization.Tests
 
         public class DictionaryDecimalKey : DictionaryKeyTestsBase<decimal, int>
         {
+            protected override string _expectedJson => $@"{{""{JsonSerializer.Serialize(decimal.MaxValue)}"":1}}";
             protected override decimal Key => decimal.MaxValue;
             protected override int Value => 1;
         }
 
         public class DictionaryDoubleKey : DictionaryKeyTestsBase<double, int>
         {
+            protected override string _expectedJson => $@"{{""{JsonSerializer.Serialize(double.MaxValue)}"":1}}";
             protected override double Key => double.MaxValue;
             protected override int Value => 1;
         }
@@ -153,6 +155,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public class DictionarySingleKey : DictionaryKeyTestsBase<float, int>
         {
+            protected override string _expectedJson => $@"{{""{JsonSerializer.Serialize(float.MaxValue)}"":1}}";
             protected override float Key => float.MaxValue;
             protected override int Value => 1;
         }
@@ -452,9 +455,9 @@ namespace System.Text.Json.Serialization.Tests
             public static IEnumerable<object[]> DictionaryKeysWithSpecialCharacters =>
                 new List<object[]>
                 {
-                    new object[] { float.MaxValue, "3.4028235E+38" },
-                    new object[] { double.MaxValue, "1.7976931348623157E+308" },
-                    new object[] { DateTimeOffset.MaxValue, "9999-12-31T23:59:59.9999999+00:00" }
+                    new object[] { float.MaxValue, JsonSerializer.Serialize(float.MaxValue)  },
+                    new object[] { double.MaxValue, JsonSerializer.Serialize(double.MaxValue) },
+                    new object[] { DateTimeOffset.MaxValue, JsonSerializer.Serialize(DateTimeOffset.MaxValue) }
                 };
 
             [Theory]
@@ -501,12 +504,13 @@ namespace System.Text.Json.Serialization.Tests
                         long.MaxValue, typeof(Dictionary<long, int>) },
                     new object[] { @"\u0031\u0038\u0034\u0034\u0036\u0037\u0034\u0034\u0030\u0037\u0033\u0037\u0030\u0039\u0035\u0035\u0031\u0036\u0031\u0035",
                         ulong.MaxValue, typeof(Dictionary<ulong, int>) },
-                    new object[] { @"\u0033\u002e\u0034\u0030\u0032\u0038\u0032\u0033\u0034\u0037\u0045\u002b\u0033\u0038",
-                        float.MaxValue, typeof(Dictionary<float, int>) },
-                    new object[] { @"\u0031\u002e\u0037\u0039\u0037\u0036\u0039\u0033\u0031\u0033\u0034\u0038\u0036\u0032\u0033\u0031\u0035\u0037\u0045\u002b\u0033\u0030\u0038",
-                        double.MaxValue, typeof(Dictionary<double, int>) },
-                    new object[] { @"\u0037\u0039\u0032\u0032\u0038\u0031\u0036\u0032\u0035\u0031\u0034\u0032\u0036\u0034\u0033\u0033\u0037\u0035\u0039\u0033\u0035\u0034\u0033\u0039\u0035\u0030\u0033\u0033\u0035",
-                        decimal.MaxValue, typeof(Dictionary<decimal, int>) },
+                    // Do not use max values on floating point types since it may have different string representations depending on the tfm.
+                    new object[] { @"\u0033\u002e\u0031\u0032\u0035\u0065\u0037",
+                        3.125e7f, typeof(Dictionary<float, int>) },
+                    new object[] { @"\u0033\u002e\u0031\u0032\u0035\u0065\u0037",
+                        3.125e7d, typeof(Dictionary<double, int>) },
+                    new object[] { @"\u0033\u002e\u0031\u0032\u0035\u0065\u0037",
+                        3.125e7m, typeof(Dictionary<decimal, int>) },
                     new object[] { @"\u0039\u0039\u0039\u0039\u002d\u0031\u0032\u002d\u0033\u0031\u0054\u0032\u0033\u003a\u0035\u0039\u003a\u0035\u0039\u002e\u0039\u0039\u0039\u0039\u0039\u0039\u0039",
                         DateTime.MaxValue, typeof(Dictionary<DateTime, int>) },
                     new object[] { @"\u0039\u0039\u0039\u0039\u002d\u0031\u0032\u002d\u0033\u0031\u0054\u0032\u0033\u003a\u0035\u0039\u003a\u0035\u0039\u002e\u0039\u0039\u0039\u0039\u0039\u0039\u0039\u002b\u0030\u0030\u003a\u0030\u0030",
