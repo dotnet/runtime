@@ -200,7 +200,7 @@ namespace CoreclrTestLib
             ProcessStartInfo createdumpInfo = null;
             string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
             string createdumpPath = Path.Combine(coreRoot, "createdump");
-            string arguments = "--name \"{path}\" {process.Id} -h";
+            string arguments = $"--name \"{path}\" {process.Id} --withheap";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
