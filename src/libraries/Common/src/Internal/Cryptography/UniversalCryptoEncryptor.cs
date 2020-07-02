@@ -23,12 +23,12 @@ namespace Internal.Cryptography
         {
         }
 
-        protected sealed override int UncheckedTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
+        protected override int UncheckedTransformBlock(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer)
         {
-            return BasicSymmetricCipher.Transform(inputBuffer.AsSpan(inputOffset, inputCount), outputBuffer.AsSpan(outputOffset));
+            return BasicSymmetricCipher.Transform(inputBuffer, outputBuffer);
         }
 
-        protected sealed override unsafe byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
+        protected override unsafe byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
             // Rent a buffer with enough space to hold at most a hold block of padding if the input is
             // is the block size.

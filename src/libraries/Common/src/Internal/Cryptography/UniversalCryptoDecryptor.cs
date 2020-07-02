@@ -24,7 +24,7 @@ namespace Internal.Cryptography
         {
         }
 
-        protected sealed override int UncheckedTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
+        protected override int UncheckedTransformBlock(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer)
         {
             //
             // If we're decrypting, it's possible to be called with the last blocks of the data, and then
@@ -42,8 +42,8 @@ namespace Internal.Cryptography
                 // If we have data saved from a previous call, decrypt that into the output first
                 if (_heldoverCipher != null)
                 {
-                    int depadDecryptLength = BasicSymmetricCipher.Transform(_heldoverCipher, outputBuffer.AsSpan(outputOffset));
-                    outputOffset += depadDecryptLength;
+                    int depadDecryptLength = BasicSymmetricCipher.Transform(_heldoverCipher, outputBuffer);
+                    outputBuffer = outputBuffer.Slice(depadDecryptLength);
                     decryptedBytes += depadDecryptLength;
                 }
                 else
@@ -52,16 +52,15 @@ namespace Internal.Cryptography
                 }
 
                 // Postpone the last block to the next round.
-                Debug.Assert(inputCount >= _heldoverCipher.Length, "inputCount >= _heldoverCipher.Length");
-                int startOfLastBlock = inputOffset + inputCount - _heldoverCipher.Length;
-                Buffer.BlockCopy(inputBuffer, startOfLastBlock, _heldoverCipher, 0, _heldoverCipher.Length);
-                inputCount -= _heldoverCipher.Length;
-                Debug.Assert(inputCount % InputBlockSize == 0, "Did not remove whole blocks for depadding");
+                Debug.Assert(inputBuffer.Length >= _heldoverCipher.Length, "inputBuffer.Length >= _heldoverCipher.Length");
+                inputBuffer.Slice(inputBuffer.Length - _heldoverCipher.Length).CopyTo(_heldoverCipher);
+                inputBuffer = inputBuffer.Slice(0, inputBuffer.Length - _heldoverCipher.Length);
+                Debug.Assert(inputBuffer.Length % InputBlockSize == 0, "Did not remove whole blocks for depadding");
             }
 
-            if (inputCount > 0)
+            if (inputBuffer.Length > 0)
             {
-                decryptedBytes += BasicSymmetricCipher.Transform(inputBuffer.AsSpan(inputOffset, inputCount), outputBuffer.AsSpan(outputOffset));
+                decryptedBytes += BasicSymmetricCipher.Transform(inputBuffer, outputBuffer);
             }
 
             return decryptedBytes;
