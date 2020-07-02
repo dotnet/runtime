@@ -42,12 +42,12 @@ namespace System.Globalization
             return InitializeUserDefaultCulture();
         }
 
-        internal static string? UserDefaultLocaleName { get; private set; } = GlobalizationMode.Invariant ?
-                                                                                CultureInfo.InvariantCulture.Name :
-                                                                                GetUserDefaultLocaleName();
+        internal static string? UserDefaultLocaleName { get; set; } = GetUserDefaultLocaleName();
 
         private static string? GetUserDefaultLocaleName() =>
-            CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_USER_DEFAULT, Interop.Kernel32.LOCALE_SNAME) ??
-            CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_SYSTEM_DEFAULT, Interop.Kernel32.LOCALE_SNAME);
+            GlobalizationMode.Invariant ?
+                CultureInfo.InvariantCulture.Name :
+                CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_USER_DEFAULT, Interop.Kernel32.LOCALE_SNAME) ??
+                CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_SYSTEM_DEFAULT, Interop.Kernel32.LOCALE_SNAME);
     }
 }
