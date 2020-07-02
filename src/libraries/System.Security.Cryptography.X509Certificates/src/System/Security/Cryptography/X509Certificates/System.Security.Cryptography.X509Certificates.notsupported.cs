@@ -10,6 +10,6 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public partial class X509Certificate : System.IDisposable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
-        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { throw new System.PlatformNotSupportedException(System.SR.Cryptography_PlatformNotSupported_Browser); }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { throw new System.PlatformNotSupportedException(System.SR.Cryptography_PlatformNotSupported); }
     }
 }
