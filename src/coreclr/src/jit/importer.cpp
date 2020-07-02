@@ -7186,7 +7186,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 op1 = gtNewIconHandleNode(pFldAddr == nullptr ? (size_t)fldAddr : (size_t)pFldAddr, GTF_ICON_STATIC_HDL,
                                           fldSeq);
 #ifdef DEBUG
-                op1->AsIntCon()->gtTargetHandle = op1->AsIntCon()->gtIconVal;
+                op1->AsIntCon()->gtTargetHandle = TargetHandleType::StaticFieldAccess;
 #endif
 
                 if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)

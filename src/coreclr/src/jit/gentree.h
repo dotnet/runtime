@@ -149,7 +149,8 @@ enum TargetHandleType : byte
     Unknown                  = 2,
     GSCookieCheck            = 4,
     SetGSCookie              = 6,
-    IntializeArrayIntrinsics = 8
+    StaticFieldAccess        = 8,
+    IntializeArrayIntrinsics = 10
 };
 #endif
 /*****************************************************************************/

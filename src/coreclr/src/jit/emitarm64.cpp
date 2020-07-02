@@ -12133,6 +12133,10 @@ void emitter::emitDispIns(
                     {
                         targetName = "SetGlobalSecurityCookie";
                     }
+                    else if (targetHandle == TargetHandleType::StaticFieldAccess)
+                    {
+                        targetName = "StaticFieldAccess";
+                    }
                     else
                     {
                         targetName = "Unknown";
