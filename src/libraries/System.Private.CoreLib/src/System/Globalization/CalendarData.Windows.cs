@@ -67,32 +67,28 @@ namespace System.Globalization
 
         private void InsertOrSwapOverride(string? value, ref string[] destination)
         {
-            if (value != null)
-            {
-                int index = -1;
-                for (int i = 0; i < destination.Length; i++)
-                {
-                    if (destination[i] == value)
-                    {
-                        index = i;
-                        break;
-                    }
-                }
+            if (value == null)
+                return;
 
-                if (index == -1)
+            for (int i = 0; i < destination.Length; i++)
+            {
+                if (destination[i] == value)
                 {
-                    string[] newArray = new string[destination.Length + 1];
-                    newArray[0] = value;
-                    Array.Copy(destination, 0, newArray, 1, destination.Length);
-                    destination = newArray;
-                }
-                else if (index > 0) // swap it only if needed
-                {
-                    string tmp = destination[0];
-                    destination[0] = value;
-                    destination[index] = tmp;
+                    if (i > 0)
+                    {
+                        string tmp = destination[0];
+                        destination[0] = value;
+                        destination[i] = tmp;
+                    }
+
+                    return;
                 }
             }
+
+            string[] newArray = new string[destination.Length + 1];
+            newArray[0] = value;
+            Array.Copy(destination, 0, newArray, 1, destination.Length);
+            destination = newArray;
         }
 
         private bool NlsLoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
@@ -378,31 +374,23 @@ namespace System.Globalization
                 if (userCalendar != 0 && (CalendarId)userCalendar != calendars[0])
                 {
                     CalendarId userOverride = (CalendarId)userCalendar;
-                    int index = -1;
                     for (int i = 1; i < calendars.Length; i++)
                     {
                         if (calendars[i] == userOverride)
                         {
-                            index = i;
-                            break;
+                            CalendarId tmp = calendars[0];
+                            calendars[0] = userOverride;
+                            calendars[i] = tmp;
+                            return count;
                         }
                     }
 
-                    // We found user preferred calendar in the array, move it to first position.
-                    if (index != -1)
-                    {
-                        CalendarId tmp = calendars[0];
-                        calendars[0] = calendars[index];
-                        calendars[index] = tmp;
-                    }
-                    else
-                    {
-                        // We didn't find it, we insert it at the beginning of the array.
-                        Span<CalendarId> tmp = count < 256 ? stackalloc CalendarId[count] : new CalendarId[count];
-                        tmp[0] = userOverride;
-                        calendars.AsSpan().Slice(0, count - 1).CopyTo(tmp.Slice(1));
-                        tmp.CopyTo(calendars);
-                    }
+                    // We didn't find it, we insert it at the beginning of the array. If calendar's array is full, we drop the last element.
+                    count = count < calendars.Length ? count + 1 : count;
+                    Span<CalendarId> tmpSpan = stackalloc CalendarId[count]; // should be 23 max.
+                    tmpSpan[0] = userOverride;
+                    calendars.AsSpan().Slice(0, count - 1).CopyTo(tmpSpan.Slice(1));
+                    tmpSpan.CopyTo(calendars);
                 }
             }
 
