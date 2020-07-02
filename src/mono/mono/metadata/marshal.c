@@ -6784,7 +6784,7 @@ mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method)
 	ERROR_DECL (attr_error);
 	MonoClass *attr_klass = NULL;
 #ifdef ENABLE_NETCORE
-	attr_klass = = mono_class_try_get_unmanaged_callers_only_attribute_class ();
+	attr_klass = mono_class_try_get_unmanaged_callers_only_attribute_class ();
 #endif
 	if (!attr_klass)
 		return FALSE;
