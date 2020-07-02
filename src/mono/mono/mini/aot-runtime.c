@@ -1313,8 +1313,10 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			if (!m)
 				return FALSE;
 			klass = decode_klass_ref (module, p, &p, error);
+#if 0
 			if (!klass)
 				return FALSE;
+#endif
 			ref->method = mono_marshal_get_managed_wrapper (m, klass, 0, error);
 			if (!is_ok (error))
 				return FALSE;
