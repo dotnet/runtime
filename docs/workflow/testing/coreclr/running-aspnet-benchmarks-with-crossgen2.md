@@ -23,7 +23,7 @@ this are below.
 For Windows:
 
 ```powershell
-.\build.cmd -subset clr+libs -rc release -lc release
+.\build.cmd -subset clr+libs -c release
 cd src\coreclr
 .\build-test.cmd Release generatelayoutonly
 ```
@@ -31,7 +31,7 @@ cd src\coreclr
 For Linux:
 
 ```bash
-./build.sh -subset clr+libs -rc release -lc release
+./build.sh -subset clr+libs -c release
 cd src/coreclr
 ./build-test.sh -release -generatelayoutonly
 ```
