@@ -27,13 +27,13 @@ namespace System.Net
             {
                 name = NameResolutionPal.GetHostName();
             }
-            catch when (LogFailure(string.Empty, stopwatch))
+            catch when (LogFailure(stopwatch))
             {
                 Debug.Fail("LogFailure should return false");
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(string.Empty, stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(null, name);
             return name;
@@ -398,13 +398,13 @@ namespace System.Net
                         Aliases = aliases
                     };
             }
-            catch when (LogFailure(hostName, stopwatch))
+            catch when (LogFailure(stopwatch))
             {
                 Debug.Fail("LogFailure should return false");
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(hostName, stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             return result;
         }
@@ -437,13 +437,13 @@ namespace System.Net
                 }
                 Debug.Assert(name != null);
             }
-            catch when (LogFailure(address, stopwatch))
+            catch when (LogFailure(stopwatch))
             {
                 Debug.Fail("LogFailure should return false");
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(address, stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             // Do the forward lookup to get the IPs for that host name
             stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
@@ -467,13 +467,13 @@ namespace System.Net
                         AddressList = addresses
                     };
             }
-            catch when (LogFailure(name, stopwatch))
+            catch when (LogFailure(stopwatch))
             {
                 Debug.Fail("LogFailure should return false");
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(name, stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             // One of three things happened:
             // 1. Success.
@@ -534,7 +534,7 @@ namespace System.Net
                     {
                         coreTask = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses);
                     }
-                    catch when (LogFailure(hostName, stopwatch))
+                    catch when (LogFailure(stopwatch))
                     {
                         Debug.Fail("LogFailure should return false");
                         throw;
@@ -546,13 +546,11 @@ namespace System.Net
                         coreTask.ContinueWith(
                             (task, state) =>
                             {
-                                var tuple = (Tuple<string, ValueStopwatch>)state!;
                                 NameResolutionTelemetry.Log.AfterResolution(
-                                    hostNameOrAddress: tuple.Item1,
-                                    stopwatch: tuple.Item2,
+                                    stopwatch: (ValueStopwatch)state!,
                                     successful: task.IsCompletedSuccessfully);
                             },
-                            state: Tuple.Create(hostName, stopwatch),
+                            state: stopwatch,
                             cancellationToken: default,
                             TaskContinuationOptions.ExecuteSynchronously,
                             TaskScheduler.Default);
@@ -597,15 +595,9 @@ namespace System.Net
         }
 
 
-        private static bool LogFailure(string hostName, ValueStopwatch stopwatch)
+        private static bool LogFailure(ValueStopwatch stopwatch)
         {
-            NameResolutionTelemetry.Log.AfterResolution(hostName, stopwatch, successful: false);
-            return false;
-        }
-
-        private static bool LogFailure(IPAddress address, ValueStopwatch stopwatch)
-        {
-            NameResolutionTelemetry.Log.AfterResolution(address, stopwatch, successful: false);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: false);
             return false;
         }
     }

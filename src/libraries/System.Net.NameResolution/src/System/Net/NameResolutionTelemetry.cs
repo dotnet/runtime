@@ -17,9 +17,9 @@ namespace System.Net
 
         public static new bool IsEnabled => Log.IsEnabled();
 
-        private const int ResolutionStartingEventId = 1;
-        private const int ResolutionSuccessEventId = 2;
-        private const int ResolutionFailureEventId = 3;
+        private const int ResolutionStartEventId = 1;
+        private const int ResolutionStopEventId = 2;
+        private const int ResolutionFailedEventId = 3;
 
         private PollingCounter? _lookupsRequestedCounter;
         private EventCounter? _lookupsDuration;
@@ -47,16 +47,14 @@ namespace System.Net
 
         private const int MaxIPFormattedLength = 128;
 
-        // Methods below assume that ResolutionSuccess and ResolutionFailure have the same signature
+        [Event(ResolutionStartEventId, Level = EventLevel.Informational)]
+        private void ResolutionStart(string hostNameOrAddress) => WriteEvent(ResolutionStartEventId, hostNameOrAddress);
 
-        [Event(ResolutionStartingEventId, Level = EventLevel.Informational)]
-        private void ResolutionStarting(string hostNameOrAddress) => WriteEvent(ResolutionStartingEventId, hostNameOrAddress);
+        [Event(ResolutionStopEventId, Level = EventLevel.Informational)]
+        private void ResolutionStop() => WriteEvent(ResolutionStopEventId);
 
-        [Event(ResolutionSuccessEventId, Level = EventLevel.Informational)]
-        private void ResolutionSuccess(string hostNameOrAddress, double duration) => WriteEvent(ResolutionSuccessEventId, hostNameOrAddress, duration);
-
-        [Event(ResolutionFailureEventId, Level = EventLevel.Informational)]
-        private void ResolutionFailure(string hostNameOrAddress, double duration) => WriteEvent(ResolutionFailureEventId, hostNameOrAddress, duration);
+        [Event(ResolutionFailedEventId, Level = EventLevel.Informational)]
+        private void ResolutionFailed() => WriteEvent(ResolutionFailedEventId);
 
 
         [NonEvent]
@@ -70,9 +68,10 @@ namespace System.Net
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {
-                    ResolutionStarting(hostNameOrAddress);
-                    return ValueStopwatch.StartNew();
+                    ResolutionStart(hostNameOrAddress);
                 }
+
+                return ValueStopwatch.StartNew();
             }
 
             return default;
@@ -89,47 +88,31 @@ namespace System.Net
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {
-                    WriteEvent(ResolutionStartingEventId, FormatIPAddressNullTerminated(address, stackalloc char[MaxIPFormattedLength]));
-                    return ValueStopwatch.StartNew();
+                    WriteEvent(ResolutionStartEventId, FormatIPAddressNullTerminated(address, stackalloc char[MaxIPFormattedLength]));
                 }
+
+                return ValueStopwatch.StartNew();
             }
 
             return default;
         }
 
         [NonEvent]
-        public void AfterResolution(string hostNameOrAddress, ValueStopwatch stopwatch, bool successful)
+        public void AfterResolution(ValueStopwatch stopwatch, bool successful)
         {
             if (stopwatch.IsActive)
             {
-                double duration = stopwatch.GetElapsedTime().TotalMilliseconds;
+                _lookupsDuration!.WriteMetric(stopwatch.GetElapsedTime().TotalMilliseconds);
 
-                _lookupsDuration!.WriteMetric(duration);
-
-                if (successful)
+                if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {
-                    ResolutionSuccess(hostNameOrAddress, duration);
+                    if (!successful)
+                    {
+                        ResolutionFailed();
+                    }
+
+                    ResolutionStop();
                 }
-                else
-                {
-                    ResolutionFailure(hostNameOrAddress, duration);
-                }
-            }
-        }
-
-        [NonEvent]
-        public void AfterResolution(IPAddress address, ValueStopwatch stopwatch, bool successful)
-        {
-            if (stopwatch.IsActive)
-            {
-                double duration = stopwatch.GetElapsedTime().TotalMilliseconds;
-
-                _lookupsDuration!.WriteMetric(duration);
-
-                WriteEvent(
-                    successful ? ResolutionSuccessEventId : ResolutionFailureEventId,
-                    FormatIPAddressNullTerminated(address, stackalloc char[MaxIPFormattedLength]),
-                    duration);
             }
         }
 
@@ -168,62 +151,6 @@ namespace System.Net
                     };
 
                     WriteEventCore(eventId, eventDataCount: 1, &descr);
-                }
-            }
-        }
-
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, Span<char> arg1, double arg2)
-        {
-            Debug.Assert(!arg1.IsEmpty && arg1.IndexOf('\0') == arg1.Length - 1, "Expecting a null-terminated ROS<char>");
-
-            if (IsEnabled())
-            {
-                fixed (char* arg1Ptr = &MemoryMarshal.GetReference(arg1))
-                {
-                    const int NumEventDatas = 2;
-                    EventData* descrs = stackalloc EventData[NumEventDatas];
-
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg1Ptr),
-                        Size = arg1.Length * sizeof(char)
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg2),
-                        Size = sizeof(double)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
-            }
-        }
-
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, string? arg1, double arg2)
-        {
-            if (IsEnabled())
-            {
-                arg1 ??= "";
-
-                fixed (char* arg1Ptr = arg1)
-                {
-                    const int NumEventDatas = 2;
-                    EventData* descrs = stackalloc EventData[NumEventDatas];
-
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg1Ptr),
-                        Size = (arg1.Length + 1) * sizeof(char)
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg2),
-                        Size = sizeof(double)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
                 }
             }
         }

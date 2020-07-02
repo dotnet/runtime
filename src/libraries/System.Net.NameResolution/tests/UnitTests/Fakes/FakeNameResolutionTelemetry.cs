@@ -16,8 +16,6 @@ namespace System.Net
 
         public ValueStopwatch BeforeResolution(IPAddress address) => default;
 
-        public void AfterResolution(string hostNameOrAddress, ValueStopwatch stopwatch, bool successful) { }
-
-        public void AfterResolution(IPAddress address, ValueStopwatch stopwatch, bool successful) { }
+        public void AfterResolution(ValueStopwatch stopwatch, bool successful) { }
     }
 }
