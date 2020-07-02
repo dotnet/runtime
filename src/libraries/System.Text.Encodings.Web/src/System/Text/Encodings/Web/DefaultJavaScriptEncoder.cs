@@ -84,8 +84,6 @@ namespace System.Text.Encodings.Web
             return _allowedCharacters.FindFirstCharacterToEncode(text, textLength);
         }
 
-
-
         public override unsafe int FindFirstCharacterToEncodeUtf8(ReadOnlySpan<byte> utf8Text)
         {
             fixed (byte* ptr = utf8Text)
