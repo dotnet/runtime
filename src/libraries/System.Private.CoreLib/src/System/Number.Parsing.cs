@@ -242,11 +242,9 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryParseNumber(ref char* str, char* strEnd, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
+        private static bool TryParseNumber(ref ReadOnlySpan<char> str, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
         {
             Debug.Assert(str != null);
-            Debug.Assert(strEnd != null);
-            Debug.Assert(str <= strEnd);
             Debug.Assert((styles & NumberStyles.AllowHexSpecifier) == 0);
 
             const int StateSign = 0x0001;
@@ -285,9 +283,9 @@ namespace System
             }
 
             int state = 0;
-            char* p = str;
-            char ch = p < strEnd ? *p : '\0';
-            char* next;
+            ReadOnlySpan<char> p = str;
+            char ch = p.IsEmpty ? '\0' : p[0];
+            int? nextIndex;
 
             while (true)
             {
@@ -295,30 +293,30 @@ namespace System
                 // "-Kr 1231.47" is legal but "- 1231.47" is not.
                 if (!IsWhite(ch) || (styles & NumberStyles.AllowLeadingWhite) == 0 || ((state & StateSign) != 0 && ((state & StateCurrency) == 0 && info.NumberNegativePattern != 2)))
                 {
-                    if ((((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || ((next = MatchChars(p, strEnd, info.NegativeSign)) != null && (number.IsNegative = true))))
+                    if ((((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((nextIndex = MatchChars(p, info.PositiveSign)) != null || ((nextIndex = MatchChars(p, info.NegativeSign)) != null && (number.IsNegative = true))))
                     {
                         state |= StateSign;
-                        p = next - 1;
+                        p = p.Slice(nextIndex.Value - 1);
                     }
                     else if (ch == '(' && ((styles & NumberStyles.AllowParentheses) != 0) && ((state & StateSign) == 0))
                     {
                         state |= StateSign | StateParens;
                         number.IsNegative = true;
                     }
-                    else if (currSymbol != null && (next = MatchChars(p, strEnd, currSymbol)) != null)
+                    else if (currSymbol != null && (nextIndex = MatchChars(p, currSymbol)) != null)
                     {
                         state |= StateCurrency;
                         currSymbol = null;
                         // We already found the currency symbol. There should not be more currency symbols. Set
                         // currSymbol to NULL so that we won't search it again in the later code path.
-                        p = next - 1;
+                        p = p.Slice(nextIndex.Value - 1);
                     }
                     else
                     {
                         break;
                     }
                 }
-                ch = ++p < strEnd ? *p : '\0';
+                ch = (p = p.Slice(1)).IsEmpty ? '\0' : p[0];
             }
 
             int digCount = 0;
@@ -364,20 +362,20 @@ namespace System
                         number.Scale--;
                     }
                 }
-                else if (((styles & NumberStyles.AllowDecimalPoint) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, strEnd, decSep)) != null || (parsingCurrency && (state & StateCurrency) == 0) && (next = MatchChars(p, strEnd, info.NumberDecimalSeparator)) != null))
+                else if (((styles & NumberStyles.AllowDecimalPoint) != 0) && ((state & StateDecimal) == 0) && ((nextIndex = MatchChars(p, decSep)) != null || (parsingCurrency && (state & StateCurrency) == 0) && (nextIndex = MatchChars(p, info.NumberDecimalSeparator)) != null))
                 {
                     state |= StateDecimal;
-                    p = next - 1;
+                    p = p.Slice(nextIndex.Value - 1);
                 }
-                else if (((styles & NumberStyles.AllowThousands) != 0) && ((state & StateDigits) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, strEnd, groupSep)) != null || (parsingCurrency && (state & StateCurrency) == 0) && (next = MatchChars(p, strEnd, info.NumberGroupSeparator)) != null))
+                else if (((styles & NumberStyles.AllowThousands) != 0) && ((state & StateDigits) != 0) && ((state & StateDecimal) == 0) && ((nextIndex = MatchChars(p, groupSep)) != null || (parsingCurrency && (state & StateCurrency) == 0) && (nextIndex = MatchChars(p, info.NumberGroupSeparator)) != null))
                 {
-                    p = next - 1;
+                    p = p.Slice(nextIndex.Value - 1);
                 }
                 else
                 {
                     break;
                 }
-                ch = ++p < strEnd ? *p : '\0';
+                ch = (p = p.Slice(1)).IsEmpty ? '\0' : p[0];
             }
 
             bool negExp = false;
@@ -387,15 +385,15 @@ namespace System
             {
                 if ((ch == 'E' || ch == 'e') && ((styles & NumberStyles.AllowExponent) != 0))
                 {
-                    char* temp = p;
-                    ch = ++p < strEnd ? *p : '\0';
-                    if ((next = MatchChars(p, strEnd, info._positiveSign)) != null)
+                    ReadOnlySpan<char> temp = p;
+                    ch = (p = p.Slice(1)).IsEmpty ? '\0' : p[0];
+                    if ((nextIndex = MatchChars(p, info._positiveSign)) != null)
                     {
-                        ch = (p = next) < strEnd ? *p : '\0';
+                        ch = (p = p.Slice(nextIndex.Value)).IsEmpty ? '\0' : p[nextIndex.Value];
                     }
-                    else if ((next = MatchChars(p, strEnd, info._negativeSign)) != null)
+                    else if ((nextIndex = MatchChars(p, info._negativeSign)) != null)
                     {
-                        ch = (p = next) < strEnd ? *p : '\0';
+                        ch = (p = p.Slice(nextIndex.Value)).IsEmpty ? '\0' : p[nextIndex.Value];
                         negExp = true;
                     }
                     if (IsDigit(ch))
@@ -404,13 +402,13 @@ namespace System
                         do
                         {
                             exp = exp * 10 + (ch - '0');
-                            ch = ++p < strEnd ? *p : '\0';
+                            ch = (p = p.Slice(1)).IsEmpty ? '\0' : p[0];
                             if (exp > 1000)
                             {
                                 exp = 9999;
                                 while (IsDigit(ch))
                                 {
-                                    ch = ++p < strEnd ? *p : '\0';
+                                    ch = (p = p.Slice(1)).IsEmpty ? '\0' : p[0];
                                 }
                             }
                         } while (IsDigit(ch));
@@ -423,33 +421,33 @@ namespace System
                     else
                     {
                         p = temp;
-                        ch = p < strEnd ? *p : '\0';
+                        ch = p.IsEmpty ? '\0' : p[0];
                     }
                 }
                 while (true)
                 {
                     if (!IsWhite(ch) || (styles & NumberStyles.AllowTrailingWhite) == 0)
                     {
-                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || (((next = MatchChars(p, strEnd, info.NegativeSign)) != null) && (number.IsNegative = true))))
+                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && ((nextIndex = MatchChars(p, info.PositiveSign)) != null || (((nextIndex = MatchChars(p, info.NegativeSign)) != null) && (number.IsNegative = true))))
                         {
                             state |= StateSign;
-                            p = next - 1;
+                            p = p.Slice(nextIndex.Value - 1);
                         }
                         else if (ch == ')' && ((state & StateParens) != 0))
                         {
                             state &= ~StateParens;
                         }
-                        else if (currSymbol != null && (next = MatchChars(p, strEnd, currSymbol)) != null)
+                        else if (currSymbol != null && (nextIndex = MatchChars(p, currSymbol)) != null)
                         {
                             currSymbol = null;
-                            p = next - 1;
+                            p = p.Slice(nextIndex.Value - 1);
                         }
                         else
                         {
                             break;
                         }
                     }
-                    ch = ++p < strEnd ? *p : '\0';
+                    ch = (p = p.Slice(1)).IsEmpty ? '\0' : p[0];
                 }
                 if ((state & StateParens) == 0)
                 {
@@ -1924,15 +1922,13 @@ namespace System
         internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> value, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
         {
             Debug.Assert(info != null);
-            fixed (char* stringPointer = &MemoryMarshal.GetReference(value))
+
+            ReadOnlySpan<char> p = value;
+            if (!TryParseNumber(ref p, styles, ref number, info)
+                || ((value.Length - p.Length) < value.Length && !TrailingZeros(value, (value.Length - p.Length))))
             {
-                char* p = stringPointer;
-                if (!TryParseNumber(ref p, p + value.Length, styles, ref number, info)
-                    || ((int)(p - stringPointer) < value.Length && !TrailingZeros(value, (int)(p - stringPointer))))
-                {
-                    number.CheckConsistency();
-                    return false;
-                }
+                number.CheckConsistency();
+                return false;
             }
 
             number.CheckConsistency();
@@ -1955,29 +1951,28 @@ namespace System
 
         private static bool IsSpaceReplacingChar(char c) => c == '\u00a0' || c == '\u202f';
 
-        private static unsafe char* MatchChars(char* p, char* pEnd, string value)
+        private static int? MatchChars(ReadOnlySpan<char> p, string value)
         {
-            Debug.Assert(p != null && pEnd != null && p <= pEnd && value != null);
-            fixed (char* stringPointer = value)
+            Debug.Assert(p != null && value != null);
+            ReadOnlySpan<char> str = value;
+
+            if (str[0] != '\0')
             {
-                char* str = stringPointer;
-                if (*str != '\0')
+                // We only hurt the failure case
+                // This fix is for French or Kazakh cultures. Since a user cannot type 0xA0 or 0x202F as a
+                // space character we use 0x20 space character instead to mean the same.
+
+                int pIndex = 0;
+                while (true)
                 {
-                    // We only hurt the failure case
-                    // This fix is for French or Kazakh cultures. Since a user cannot type 0xA0 or 0x202F as a
-                    // space character we use 0x20 space character instead to mean the same.
-                    while (true)
+                    char cp = pIndex < p.Length ? p[pIndex] : '\0';
+                    if (cp != str[pIndex] && !(IsSpaceReplacingChar(str[pIndex]) && cp == '\u0020'))
                     {
-                        char cp = p < pEnd ? *p : '\0';
-                        if (cp != *str && !(IsSpaceReplacingChar(*str) && cp == '\u0020'))
-                        {
-                            break;
-                        }
-                        p++;
-                        str++;
-                        if (*str == '\0')
-                            return p;
+                        break;
                     }
+                    pIndex++;
+                    if (str[pIndex] == '\0')
+                        return pIndex;
                 }
             }
 
