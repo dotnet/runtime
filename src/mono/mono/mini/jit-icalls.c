@@ -39,6 +39,18 @@ mono_ldftn (MonoMethod *method)
 	gpointer addr;
 	ERROR_DECL (error);
 
+	if (G_UNLIKELY ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
+			method->wrapper_type == MONO_WRAPPER_NONE &&
+			mono_method_has_unmanaged_callers_only_attribute (method))) {
+		MonoClass *delegate_klass = NULL;
+		MonoGCHandle target_handle = 0;
+		method = mono_marshal_get_managed_wrapper (method, delegate_klass, target_handle, error);
+		if (!is_ok (error)) {
+			mono_error_set_pending_exception (error);
+			return NULL;
+		}
+	}
+
 	if (mono_llvm_only) {
 		// FIXME: No error handling
 
