@@ -192,23 +192,6 @@ else()
     endif ()
 endif(CLR_CMAKE_TARGET_WIN32)
 
-
-if(NOT CLR_CMAKE_TARGET_WIN32)
-    set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_unixexports.src)
-    set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/singlefilehost.exports)
-    generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
-
-    set_exports_linker_option(${EXPORTS_FILE})
-endif(NOT CLR_CMAKE_TARGET_WIN32)
-
-if(CLR_CMAKE_HOST_UNIX)
-    add_custom_target(singlefilehost_exports DEPENDS ${EXPORTS_FILE})
-    add_dependencies(singlefilehost singlefilehost_exports)
-
-    set_property(TARGET singlefilehost APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
-    set_property(TARGET singlefilehost APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_UNIX)
-
 if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
     # These options are used to force every object to be included even if it's unused.
     set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
