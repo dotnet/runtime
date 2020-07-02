@@ -664,7 +664,7 @@ namespace System
             for (; i < guidString.Length && guidString[i] == '0'; i++) ;
 
             int processedDigits = 0;
-            ReadOnlySpan<byte> charToHexLookup = Number.CharToHexLookup;
+            ReadOnlySpan<byte> charToHexLookup = HexConverter.CharToHexLookup;
             uint tmp = 0;
             for (; i < guidString.Length; i++)
             {
