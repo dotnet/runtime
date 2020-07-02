@@ -11030,6 +11030,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
         unsigned mflags   = 0;
         unsigned clsFlags = 0;
+
         switch (opcode)
         {
             unsigned  lclNum;

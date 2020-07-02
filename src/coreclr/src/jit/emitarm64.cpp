@@ -7810,7 +7810,7 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 void emitter::emitIns_R_AI(instruction ins,
                            emitAttr    attr,
                            regNumber   ireg,
-                           ssize_t addr DEBUGARG(size_t methodHandle) DEBUGARG(unsigned gtFlags))
+                           ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(unsigned gtFlags))
 {
     assert(EA_IS_RELOC(attr));
     emitAttr      size    = EA_SIZE(attr);
@@ -7839,7 +7839,7 @@ void emitter::emitIns_R_AI(instruction ins,
     id->idReg1(ireg);
     id->idSetIsDspReloc();
 #ifdef DEBUG
-    id->idDebugOnlyInfo()->idMemCookie = methodHandle;
+    id->idDebugOnlyInfo()->idMemCookie = targetHandle;
     id->idDebugOnlyInfo()->idFlags     = gtFlags;
 #endif
 
