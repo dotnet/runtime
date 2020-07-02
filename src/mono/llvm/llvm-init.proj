@@ -18,8 +18,8 @@
 
   <!-- On Linux, we need to treat the target arch as the host arch, i.e. treat arm64 Linux as a desktop platform -->
   <PropertyGroup>
-        <MonoLLVMTargetArchitecture Condition="'$(MonoLLVMHostOS)' == 'linux'">$(TargetArchitecture)</MonoLLVMTargetArchitecture>
-        <MonoLLVMTargetArchitecture Condition="'$(MonoLLVMHostOS)' != 'linux'">$(HostArch)</MonoLLVMTargetArchitecture>
+        <MonoLLVMTargetArchitecture Condition="'$(MonoLLVMHostOS)' == 'linux' and '$(TargetArchitecture)' != 'Browser'">$(TargetArchitecture)</MonoLLVMTargetArchitecture>
+        <MonoLLVMTargetArchitecture Condition="'$(MonoLLVMHostOS)' != 'linux' or '$(TargetArchitecture)' == 'Browser'"">$(HostArch)</MonoLLVMTargetArchitecture>
   </PropertyGroup>
 
   <ItemGroup>
