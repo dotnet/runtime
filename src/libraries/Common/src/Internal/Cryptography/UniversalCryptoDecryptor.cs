@@ -103,7 +103,7 @@ namespace Internal.Cryptography
             // Decrypt the data, then strip the padding to get the final decrypted data. Note that even if the cipherText length is 0, we must
             // invoke TransformFinal() so that the cipher object knows to reset for the next cipher operation.
             int decryptWritten = BasicSymmetricCipher.TransformFinal(inputCiphertext, ciphertext);
-            ReadOnlySpan<byte> decryptedBytes = ciphertext.Slice(0, decryptWritten);
+            Span<byte> decryptedBytes = ciphertext.Slice(0, decryptWritten);
 
             int unpaddedLength = 0;
 
@@ -111,6 +111,7 @@ namespace Internal.Cryptography
             {
                 unpaddedLength = DepadBlock(decryptedBytes);
                 decryptedBytes.Slice(0, unpaddedLength).CopyTo(outputBuffer);
+                CryptographicOperations.ZeroMemory(decryptedBytes);
             }
 
             Reset();
