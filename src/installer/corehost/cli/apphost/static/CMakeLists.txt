@@ -179,8 +179,8 @@ else()
         set(NATIVE_LIBS_EXTRA
           pthread
         )
-        if (HAVE_INOTIFY)
-          find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
+        find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
+        if(NOT (INOTIFY_LIBRARY STREQUAL INOTIFY_LIBRARY-NOTFOUND))
           LIST(APPEND NATIVE_LIBS_EXTRA
             ${INOTIFY_LIBRARY}
           )
