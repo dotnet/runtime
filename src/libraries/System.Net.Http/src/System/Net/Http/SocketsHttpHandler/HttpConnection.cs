@@ -15,6 +15,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System;
+using System.Runtime.ExceptionServices;
 
 namespace System.Net.Http
 {
@@ -320,7 +322,7 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            TaskCompletionSource<bool>? allowExpect100ToContinue = null;
+            TaskCompletionSource<(bool sendRequestContent, bool timerExpired)>? allowExpect100ToContinue = null;
             Task? sendRequestContentTask = null;
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
             Debug.Assert(RemainingBuffer.Length == 0, "Unexpected data in read buffer");
@@ -456,9 +458,9 @@ namespace System.Net.Http
                         // Create a TCS we'll use to block the request content from being sent, and create a timer that's used
                         // as a fail-safe to unblock the request content if we don't hear back from the server in a timely manner.
                         // Then kick off the request.  The TCS' result indicates whether content should be sent or not.
-                        allowExpect100ToContinue = new TaskCompletionSource<bool>();
+                        allowExpect100ToContinue = new TaskCompletionSource<(bool sendRequestContent, bool timerExpired)>();
                         var expect100Timer = new Timer(
-                            s => ((TaskCompletionSource<bool>)s!).TrySetResult(true),
+                            tcs => ((TaskCompletionSource<(bool sendRequestContent, bool timerExpired)>)tcs!).TrySetResult((sendRequestContent: true, timerExpired: true)),
                             allowExpect100ToContinue, _pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan);
                         sendRequestContentTask = SendRequestContentWithExpect100ContinueAsync(
                             request, allowExpect100ToContinue.Task, CreateRequestContentStream(request), expect100Timer, async, cancellationToken);
@@ -518,7 +520,7 @@ namespace System.Net.Http
                     // sending request body (if any).
                     if (allowExpect100ToContinue != null && response.StatusCode == HttpStatusCode.Continue)
                     {
-                        allowExpect100ToContinue.TrySetResult(true);
+                        allowExpect100ToContinue.TrySetResult((sendRequestContent: true, timerExpired: false));
                         allowExpect100ToContinue = null;
                     }
                     else if (response.StatusCode == HttpStatusCode.SwitchingProtocols)
@@ -569,9 +571,9 @@ namespace System.Net.Http
                         // to be closed.  However, we may have also lost a race condition with the Expect: 100-continue timeout, so if it turns out
                         // we've already started sending the payload (we weren't able to cancel it), then we don't need to force close the connection.
                         // We also must not clone connection if we do NTLM or Negotiate authentication.
-                        allowExpect100ToContinue.TrySetResult(false);
+                        allowExpect100ToContinue.TrySetResult((sendRequestContent: false, timerExpired: false));
 
-                        if (!allowExpect100ToContinue.Task.Result) // if Result is true, the timeout already expired and we started sending content
+                        if (!allowExpect100ToContinue.Task.Result.sendRequestContent) // if Result is true, the timeout already expired and we started sending content
                         {
                             _connectionClose = true;
                         }
@@ -581,7 +583,7 @@ namespace System.Net.Http
                         // For any success status codes, for errors when the request content length is known to be small,
                         // or for session-based authentication challenges, send the payload
                         // (if there is one... if there isn't, Content is null and thus allowExpect100ToContinue is also null, we won't get here).
-                        allowExpect100ToContinue.TrySetResult(true);
+                        allowExpect100ToContinue.TrySetResult((sendRequestContent: true, timerExpired: false));
                     }
                 }
 
@@ -680,7 +682,7 @@ namespace System.Net.Http
                 cancellationRegistration.Dispose();
 
                 // Make sure to complete the allowExpect100ToContinue task if it exists.
-                allowExpect100ToContinue?.TrySetResult(false);
+                allowExpect100ToContinue?.TrySetResult((sendRequestContent: false, timerExpired: false));
 
                 if (NetEventSource.IsEnabled) Trace($"Error sending request: {error}");
 
@@ -693,6 +695,14 @@ namespace System.Net.Http
                 // hook up a continuation that will log it.
                 if (sendRequestContentTask != null && !sendRequestContentTask.IsCompletedSuccessfully)
                 {
+                    if (sendRequestContentTask.IsFaulted && Volatile.Read(ref _disposed) == 1)
+                    {
+                        Exception? sendRequestContentException = sendRequestContentTask.Exception?.InnerException;
+                        if (sendRequestContentException != null)
+                        {
+                            ExceptionDispatchInfo.Throw(sendRequestContentException);
+                        }
+                    }
                     LogExceptions(sendRequestContentTask);
                 }
 
@@ -794,11 +804,12 @@ namespace System.Net.Http
         }
 
         private async Task SendRequestContentWithExpect100ContinueAsync(
-            HttpRequestMessage request, Task<bool> allowExpect100ToContinueTask, HttpContentWriteStream stream, Timer expect100Timer, bool async, CancellationToken cancellationToken)
+            HttpRequestMessage request, Task<(bool sendRequestContent, bool timerExpired)> allowExpect100ToContinueTask,
+            HttpContentWriteStream stream, Timer expect100Timer, bool async, CancellationToken cancellationToken)
         {
             // Wait until we receive a trigger notification that it's ok to continue sending content.
             // This will come either when the timer fires or when we receive a response status line from the server.
-            bool sendRequestContent = await allowExpect100ToContinueTask.ConfigureAwait(false);
+            (bool sendRequestContent, bool timerExpired) = await allowExpect100ToContinueTask.ConfigureAwait(false);
 
             // Clean up the timer; it's no longer needed.
             expect100Timer.Dispose();
@@ -807,7 +818,17 @@ namespace System.Net.Http
             if (sendRequestContent)
             {
                 if (NetEventSource.IsEnabled) Trace($"Sending request content for Expect: 100-continue.");
-                await SendRequestContentAsync(request, stream, async, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await SendRequestContentAsync(request, stream, async, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception) when (timerExpired)
+                {
+                    // Tear down the connection if called from the timer thread because caller's thread will wait for server status line indefinitely
+                    // or till HttpClient.Timeout tear the connection itself.
+                    Dispose();
+                    throw;
+                }
             }
             else
             {
