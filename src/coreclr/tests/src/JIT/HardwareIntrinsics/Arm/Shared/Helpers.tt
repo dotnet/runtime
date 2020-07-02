@@ -1511,5 +1511,24 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double ConvertToDouble(ulong op1) => op1;
 
+<#
+        foreach (var type in new[] { (name: "byte",  wide: "uint"), (name: "sbyte", wide: "int") })
+        {
+#>
+        public static <#= type.wide #> DotProduct(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #>[] op3, int i)
+        {
+            <#= type.wide #> result = op1[i];
+
+            for (int j = 4 * i; j < 4 * (i + 1); j++)
+            {
+                result += (<#= type.wide #>)((<#= type.wide #>)op2[i] * (<#= type.wide #>)op3[i]);
+            }
+
+            return result;
+        }
+
+<#
+        }
+#>
     }
 }

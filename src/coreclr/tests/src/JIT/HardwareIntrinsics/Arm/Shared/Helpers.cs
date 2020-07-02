@@ -5509,5 +5509,29 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double ConvertToDouble(ulong op1) => op1;
 
+        public static uint DotProduct(uint[] op1, byte[] op2, byte[] op3, int i)
+        {
+            uint result = op1[i];
+
+            for (int j = 4 * i; j < 4 * (i + 1); j++)
+            {
+                result += (uint)((uint)op2[i] * (uint)op3[i]);
+            }
+
+            return result;
+        }
+
+        public static int DotProduct(int[] op1, sbyte[] op2, sbyte[] op3, int i)
+        {
+            int result = op1[i];
+
+            for (int j = 4 * i; j < 4 * (i + 1); j++)
+            {
+                result += (int)((int)op2[i] * (int)op3[i]);
+            }
+
+            return result;
+        }
+
     }
 }
