@@ -6208,6 +6208,16 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				if (method->wrapper_type == MONO_WRAPPER_NONE && m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 					m = mono_marshal_get_synchronized_wrapper (m);
 
+				if (G_UNLIKELY (*td->ip == CEE_LDFTN &&
+						(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
+						method->wrapper_type == MONO_WRAPPER_NONE &&
+						mono_method_has_unmanaged_callers_only_attribute (method))) {
+					MonoClass *delegate_klass = NULL;
+					MonoGCHandle target_handle = 0;
+					m = mono_marshal_get_managed_wrapper (m, delegate_klass, target_handle, error);
+					goto_if_nok (error, exit);
+				}
+
 				interp_add_ins (td, *td->ip == CEE_LDFTN ? MINT_LDFTN : MINT_LDVIRTFTN);
 				td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 				goto_if_nok (error, exit);
