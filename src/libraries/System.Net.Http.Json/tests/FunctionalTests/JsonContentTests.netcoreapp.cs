@@ -20,13 +20,14 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public void JsonContent_CopyTo_Succeeds()
         {
-            var person = Person.Create();
-            using var content = JsonContent.Create(person);
-            using var stream = new MemoryStream();
+            Person person = Person.Create();
+            using JsonContent content = JsonContent.Create(person);
+            using MemoryStream stream = new MemoryStream();
+            // HttpContent.CopyTo internally calls overriden JsonContent.SerializeToStream, which is the targeted method of this test.
             content.CopyTo(stream, null, default);
             stream.Seek(0, SeekOrigin.Begin);
-            using var reader = new StreamReader(stream);
-            var json = reader.ReadToEnd();
+            using StreamReader reader = new StreamReader(stream);
+            string json = reader.ReadToEnd();
             Assert.Equal(person.Serialize(JsonOptions.DefaultSerializerOptions), json);
         }
     }
