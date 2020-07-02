@@ -64,6 +64,13 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             return InstructionSet_Crc32;
         }
     }
+    else if (className[0] == 'D')
+    {
+        if (strcmp(className, "Dp") == 0)
+        {
+            return InstructionSet_Dp;
+        }
+    }
     else if (className[0] == 'S')
     {
         if (strcmp(className, "Sha1") == 0)
@@ -134,18 +141,15 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_ArmBase_Arm64:
         case InstructionSet_Crc32:
         case InstructionSet_Crc32_Arm64:
+        case InstructionSet_Dp:
         case InstructionSet_Sha1:
         case InstructionSet_Sha256:
         case InstructionSet_Vector64:
         case InstructionSet_Vector128:
-        {
             return true;
-        }
 
         default:
-        {
             return false;
-        }
     }
 }
 
