@@ -3945,6 +3945,9 @@ emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke
  * mono_marshal_get_managed_wrapper:
  * Generates IL code to call managed methods from unmanaged code 
  * If \p target_handle is \c 0, the wrapper info will be a \c WrapperInfo structure.
+ *
+ * If \p delegate_klass is \c NULL, we're creating a wrapper for a function pointer to a method marked with
+ * UnamangedCallersOnlyAttribute.
  */
 MonoMethod *
 mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle target_handle, MonoError *error)
@@ -3976,11 +3979,21 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	if (!target_handle && (res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
-	invoke = mono_get_delegate_invoke_internal (delegate_klass);
-	invoke_sig = mono_method_signature_internal (invoke);
-
-	mspecs = g_new0 (MonoMarshalSpec*, mono_method_signature_internal (invoke)->param_count + 1);
-	mono_method_get_marshal_info (invoke, mspecs);
+	if (G_UNLIKELY (!delegate_klass)) {
+		/* creating a wrapper for a function pointer with UnmanagedCallersOnlyAttribute */
+		if (mono_method_has_marshal_info (method)) {
+			mono_error_set_invalid_program (error, "method %s with UnmanadedCallersOnlyAttribute has marshal specs", mono_method_full_name (method, TRUE));
+			return NULL;
+		}
+		invoke = NULL;
+		invoke_sig = mono_method_signature_internal (method);
+		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
+	} else {
+		invoke = mono_get_delegate_invoke_internal (delegate_klass);
+		invoke_sig = mono_method_signature_internal (invoke);
+		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
+		mono_method_get_marshal_info (invoke, mspecs);
+	}
 
 	sig = mono_method_signature_internal (method);
 
@@ -4009,7 +4022,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
 
 	/* The attribute is only available in Net 2.0 */
-	if (mono_class_try_get_unmanaged_function_pointer_attribute_class ()) {
+	if (delegate_klass && mono_class_try_get_unmanaged_function_pointer_attribute_class ()) {
 		MonoCustomAttrInfo *cinfo;
 		MonoCustomAttrEntry *attr;
 
