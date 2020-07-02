@@ -119,20 +119,30 @@ namespace Internal.Cryptography
 
         protected override unsafe byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            byte[] rented = CryptoPool.Rent(inputCount + InputBlockSize);
-            int written = 0;
-
-            fixed (byte* pRented = rented)
+            if (DepaddingRequired)
             {
-                try
+                byte[] rented = CryptoPool.Rent(inputCount + InputBlockSize);
+                int written = 0;
+
+                fixed (byte* pRented = rented)
                 {
-                    written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), rented);
-                    return rented.AsSpan().Slice(0, written).ToArray();
+                    try
+                    {
+                        written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), rented);
+                        return rented.AsSpan().Slice(0, written).ToArray();
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(rented, clearSize: written);
+                    }
                 }
-                finally
-                {
-                    CryptoPool.Return(rented, clearSize: written);
-                }
+            }
+            else
+            {
+                byte[] buffer = GC.AllocateUninitializedArray<byte>(inputCount);
+                int written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), buffer);
+                Debug.Assert(written == buffer.Length);
+                return buffer;
             }
         }
 
