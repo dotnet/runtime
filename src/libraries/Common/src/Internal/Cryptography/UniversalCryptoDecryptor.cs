@@ -77,39 +77,44 @@ namespace Internal.Cryptography
             // Otherwise the decryption buffer is just the input data.
             //
 
+            ReadOnlySpan<byte> inputCiphertext;
             Span<byte> ciphertext;
 
             if (_heldoverCipher == null)
             {
-                ciphertext = new byte[inputBuffer.Length];
-                inputBuffer.CopyTo(ciphertext);
+                // Pinned so that we can avoid the `fixed` to stop the decrypt buffer from getting
+                // copied around by the GC.
+                ciphertext = GC.AllocateUninitializedArray<byte>(inputBuffer.Length, pinned: true);
+                inputCiphertext = inputBuffer;
             }
             else
             {
-                Span<byte> continuedCiphertext = new byte[_heldoverCipher.Length + inputBuffer.Length];
+                // Pinned so that we can avoid the `fixed` to stop the decrypt buffer from getting
+                // copied around by the GC.
+                Span<byte> continuedCiphertext =  GC.AllocateUninitializedArray<byte>(_heldoverCipher.Length + inputBuffer.Length, pinned: true);
                 _heldoverCipher.AsSpan().CopyTo(continuedCiphertext);
                 inputBuffer.CopyTo(continuedCiphertext.Slice(_heldoverCipher.Length));
+
+                // Decrypt in-place
                 ciphertext = continuedCiphertext;
+                inputCiphertext = continuedCiphertext;
             }
 
-            fixed (byte* pCiphertext = ciphertext)
+            // Decrypt the data, then strip the padding to get the final decrypted data. Note that even if the cipherText length is 0, we must
+            // invoke TransformFinal() so that the cipher object knows to reset for the next cipher operation.
+            int decryptWritten = BasicSymmetricCipher.TransformFinal(inputCiphertext, ciphertext);
+            ReadOnlySpan<byte> decryptedBytes = ciphertext.Slice(0, decryptWritten);
+
+            int unpaddedLength = 0;
+
+            if (decryptedBytes.Length > 0)
             {
-                // Decrypt the data, then strip the padding to get the final decrypted data. Note that even if the cipherText length is 0, we must
-                // invoke TransformFinal() so that the cipher object knows to reset for the next cipher operation.
-                int decryptWritten = BasicSymmetricCipher.TransformFinal(ciphertext, ciphertext);
-                ReadOnlySpan<byte> decryptedBytes = ciphertext.Slice(0, decryptWritten);
-
-                int unpaddedLength = 0;
-
-                if (decryptedBytes.Length > 0)
-                {
-                    unpaddedLength = DepadBlock(decryptedBytes);
-                    decryptedBytes.Slice(0, unpaddedLength).CopyTo(outputBuffer);
-                }
-
-                Reset();
-                return unpaddedLength;
+                unpaddedLength = DepadBlock(decryptedBytes);
+                decryptedBytes.Slice(0, unpaddedLength).CopyTo(outputBuffer);
             }
+
+            Reset();
+            return unpaddedLength;
         }
 
         protected sealed override void Dispose(bool disposing)
