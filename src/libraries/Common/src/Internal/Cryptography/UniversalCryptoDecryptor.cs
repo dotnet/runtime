@@ -130,7 +130,7 @@ namespace Internal.Cryptography
                     try
                     {
                         written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), rented);
-                        return rented.AsSpan().Slice(0, written).ToArray();
+                        return rented.AsSpan(0, written).ToArray();
                     }
                     finally
                     {
