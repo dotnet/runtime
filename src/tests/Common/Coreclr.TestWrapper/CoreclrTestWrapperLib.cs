@@ -16,39 +16,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace CoreclrTestLib
 {
-    static class DbgHelp
-    {
-        public enum MiniDumpType : int
-        {
-            MiniDumpNormal                          = 0x00000000,
-            MiniDumpWithDataSegs                    = 0x00000001,
-            MiniDumpWithFullMemory                  = 0x00000002,
-            MiniDumpWithHandleData                  = 0x00000004,
-            MiniDumpFilterMemory                    = 0x00000008,
-            MiniDumpScanMemory                      = 0x00000010,
-            MiniDumpWithUnloadedModules             = 0x00000020,
-            MiniDumpWithIndirectlyReferencedMemory  = 0x00000040,
-            MiniDumpFilterModulePaths               = 0x00000080,
-            MiniDumpWithProcessThreadData           = 0x00000100,
-            MiniDumpWithPrivateReadWriteMemory      = 0x00000200,
-            MiniDumpWithoutOptionalData             = 0x00000400,
-            MiniDumpWithFullMemoryInfo              = 0x00000800,
-            MiniDumpWithThreadInfo                  = 0x00001000,
-            MiniDumpWithCodeSegs                    = 0x00002000,
-            MiniDumpWithoutAuxiliaryState           = 0x00004000,
-            MiniDumpWithFullAuxiliaryState          = 0x00008000,
-            MiniDumpWithPrivateWriteCopyMemory      = 0x00010000,
-            MiniDumpIgnoreInaccessibleMemory        = 0x00020000,
-            MiniDumpWithTokenInformation            = 0x00040000,
-            MiniDumpWithModuleHeaders               = 0x00080000,
-            MiniDumpFilterTriage                    = 0x00100000,
-            MiniDumpValidTypeFlags                  = 0x001fffff
-        }
-
-        [DllImport("DbgHelp.dll", SetLastError = true)]
-        public static extern bool MiniDumpWriteDump(IntPtr handle, int processId, SafeFileHandle file, MiniDumpType dumpType, IntPtr exceptionParam, IntPtr userStreamParam, IntPtr callbackParam);
-    }
-
     static class Kernel32
     {
         public const int MAX_PATH = 260;
@@ -230,24 +197,24 @@ namespace CoreclrTestLib
 
         static bool CollectCrashDump(Process process, string path)
         {
+            ProcessStartInfo createdumpInfo = null;
+            string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
+            string createdumpPath = Path.Combine(coreRoot, "createdump");
+            string arguments = "--name \"{path}\" {process.Id} -h";
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                using (var crashDump = File.OpenWrite(path))
-                {
-                    var flags = DbgHelp.MiniDumpType.MiniDumpWithFullMemory | DbgHelp.MiniDumpType.MiniDumpIgnoreInaccessibleMemory;
-                    return DbgHelp.MiniDumpWriteDump(process.Handle, process.Id, crashDump.SafeFileHandle, flags, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-                }
+                createdumpInfo = new ProcessStartInfo(createdumpPath + ".exe");
+                createdumpInfo.Arguments = arguments;
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
-                ProcessStartInfo createdumpInfo = new ProcessStartInfo("sudo");
-                createdumpInfo.Arguments = $"{Path.Combine(coreRoot, "createdump")} --name \"{path}\" {process.Id} -h";
-                Process createdump = Process.Start(createdumpInfo);
-                return createdump.WaitForExit(DEFAULT_TIMEOUT) && createdump.ExitCode == 0;
+                createdumpInfo = new ProcessStartInfo("sudo");
+                createdumpInfo.Arguments = $"{createdumpPath} " + arguments;
             }
 
-            return false;
+            Process createdump = Process.Start(createdumpInfo);
+            return createdump.WaitForExit(DEFAULT_TIMEOUT) && createdump.ExitCode == 0;
         }
 
         // Finds all children processes starting with a process named childName
