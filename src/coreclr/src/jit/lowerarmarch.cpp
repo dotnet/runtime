@@ -780,6 +780,8 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
     if ((simdSize == 8) && (simdType == TYP_DOUBLE))
     {
+        // TODO-Cleanup: Struct retyping means we have the wrong type here. We need to
+        //               manually fix it up so the simdType checks below are correct.
         simdType = TYP_SIMD8;
     }
 
@@ -1189,6 +1191,13 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
             if (baseType == TYP_FLOAT)
             {
+                // Float needs an additional pairwise add to finish summing the parts
+                // The first will have summed e0 with e1 and e2 with e3 and then repeats that for the upper half
+                // So, we will have a vector that looks like this:
+                //    < e0 + e1, e2 + e3, e0 + e1, e2 + e3>
+                // Doing a second horizontal add with itself will then give us
+                //    e0 + e1 + e2 + e3 in all elements of the vector
+
                 // We will be constructing the following parts:
                 //   ...
                 //          /--*  tmp1 simd16

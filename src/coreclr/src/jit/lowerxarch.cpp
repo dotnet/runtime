@@ -1402,6 +1402,8 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
     if ((simdSize == 8) && (simdType == TYP_DOUBLE))
     {
+        // TODO-Cleanup: Struct retyping means we have the wrong type here. We need to
+        //               manually fix it up so the simdType checks below are correct.
         simdType = TYP_SIMD8;
     }
 
