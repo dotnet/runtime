@@ -36,9 +36,7 @@ namespace System
                 throw new ArgumentNullException(nameof(name));
 
             if (s_dataStore == null)
-            {
                 return null;
-            }
 
             object? data;
             lock (s_dataStore)
