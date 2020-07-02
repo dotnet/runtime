@@ -4,7 +4,7 @@
     <IgnoreCoreCLRTestLibraryDependency>true</IgnoreCoreCLRTestLibraryDependency>
     <CLRTestScriptLocalCoreShim>true</CLRTestScriptLocalCoreShim>
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
-    <IlrtTestKind>BuildOnly</IlrtTestKind>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <DefineConstants>BLOCK_WINDOWS_NANO</DefineConstants>
   </PropertyGroup>
