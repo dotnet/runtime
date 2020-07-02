@@ -1025,6 +1025,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     case NI_AdvSimd_DuplicateSelectedScalarToVector128:
                     case NI_AdvSimd_Extract:
                     case NI_AdvSimd_Insert:
+                    case NI_AdvSimd_InsertScalar:
                     case NI_AdvSimd_LoadAndInsertScalar:
                     case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
                         needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();

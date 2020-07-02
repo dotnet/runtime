@@ -2,13 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
-
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -26,6 +19,24 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509Extension(Oid oid, byte[] rawData, bool critical)
+            : this(oid, rawData.AsSpanParameter(nameof(rawData)), critical)
+        {
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="X509Extension"/> class.
+        /// </summary>
+        /// <param name="oid">
+        ///   The object identifier used to identify the extension.
+        /// </param>
+        /// <param name="rawData">
+        ///   The encoded data used to create the extension.
+        /// </param>
+        /// <param name="critical">
+        ///   <see langword="true" /> if the extension is critical;
+        ///   otherwise, <see langword="false" />.
+        /// </param>
+        public X509Extension(Oid oid, ReadOnlySpan<byte> rawData, bool critical)
             : base(oid, rawData)
         {
             if (base.Oid == null || base.Oid.Value == null)
@@ -36,6 +47,24 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509Extension(string oid, byte[] rawData, bool critical)
+            : this(new Oid(oid), rawData, critical)
+        {
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="X509Extension"/> class.
+        /// </summary>
+        /// <param name="oid">
+        ///   The object identifier used to identify the extension.
+        /// </param>
+        /// <param name="rawData">
+        ///   The encoded data used to create the extension.
+        /// </param>
+        /// <param name="critical">
+        ///   <see langword="true" /> if the extension is critical;
+        ///   otherwise, <see langword="false" />.
+        /// </param>
+        public X509Extension(string oid, ReadOnlySpan<byte> rawData, bool critical)
             : this(new Oid(oid), rawData, critical)
         {
         }
@@ -57,6 +86,11 @@ namespace System.Security.Cryptography.X509Certificates
         internal X509Extension(string oidValue)
         {
             base.Oid = Oid.FromOidValue(oidValue, OidGroup.ExtensionOrAttribute);
+        }
+
+        internal X509Extension(Oid oid)
+        {
+            base.Oid = oid;
         }
     }
 }

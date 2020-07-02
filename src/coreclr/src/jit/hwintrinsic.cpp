@@ -91,6 +91,10 @@ var_types Compiler::getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
 
 CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, var_types simdBaseType)
 {
+    if (m_simdHandleCache == nullptr)
+    {
+        return NO_CLASS_HANDLE;
+    }
     if (simdType == TYP_SIMD16)
     {
         switch (simdBaseType)
@@ -803,7 +807,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     sigReader.Read(info.compCompHnd, sig);
 
 #ifdef TARGET_ARM64
-    if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_LoadAndInsertScalar))
+    if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_InsertScalar) ||
+        (intrinsic == NI_AdvSimd_LoadAndInsertScalar))
     {
         assert(sig->numArgs == 3);
         immOp = impStackTop(1).val;
@@ -1054,7 +1059,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         }
                     }
                 }
-                else if (intrinsic == NI_AdvSimd_Insert)
+                else if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_InsertScalar))
                 {
                     op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
                 }

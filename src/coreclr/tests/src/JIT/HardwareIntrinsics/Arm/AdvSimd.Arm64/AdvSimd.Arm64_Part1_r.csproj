@@ -8,6 +8,15 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="MaxNumberPairwiseScalar.Vector128.Double.cs" />
+    <Compile Include="MaxPairwise.Vector128.Byte.cs" />
+    <Compile Include="MaxPairwise.Vector128.Double.cs" />
+    <Compile Include="MaxPairwise.Vector128.Int16.cs" />
+    <Compile Include="MaxPairwise.Vector128.Int32.cs" />
+    <Compile Include="MaxPairwise.Vector128.SByte.cs" />
+    <Compile Include="MaxPairwise.Vector128.Single.cs" />
+    <Compile Include="MaxPairwise.Vector128.UInt16.cs" />
+    <Compile Include="MaxPairwise.Vector128.UInt32.cs" />
     <Compile Include="MaxPairwiseScalar.Vector64.Single.cs" />
     <Compile Include="MaxPairwiseScalar.Vector128.Double.cs" />
     <Compile Include="MaxScalar.Vector64.Double.cs" />

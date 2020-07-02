@@ -13,5 +13,5 @@ Currently the identifiers `MSLIB0001` through `MSLIB0999` are carved out for obs
 
 | Diagnostic ID    | Description |
 | :--------------- | :---------- |
-|  __`MSLIB0001`__ | (Reserved for `Encoding.UTF7`.) |
+|  __`MSLIB0001`__ | The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead. |
 |  __`MSLIB0002`__ | `PrincipalPermissionAttribute` is not honored by the runtime and must not be used. |

@@ -998,6 +998,12 @@ namespace Internal.JitInterface
                             CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCSTATIC_BASE :
                             CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE);
                     }
+
+                    if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                    {
+                        // ENCODE_CHECK_FIELD_OFFSET
+                        _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                    }
                 }
                 else
                 {
@@ -1047,6 +1053,12 @@ namespace Internal.JitInterface
                     else
                     if (helperId != ReadyToRunHelperId.Invalid)
                     {
+                        if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                        {
+                            // ENCODE_CHECK_FIELD_OFFSET
+                            _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                        }
+
                         pResult->fieldLookup = CreateConstLookupToSymbol(
                             _compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, field.OwningType)
                             );
@@ -1271,23 +1283,29 @@ namespace Internal.JitInterface
             {
                 directCall = true;
             }
-            else if (targetMethod.OwningType.IsInterface && targetMethod.IsAbstract)
-            {
-                // Backwards compat: calls to abstract interface methods are treated as callvirt
-                directCall = false;
-            }
             else
             {
                 bool devirt;
 
+                // Check For interfaces before the bubble check
+                // since interface methods shouldnt change from non-virtual to virtual between versions 
+                if (targetMethod.OwningType.IsInterface)
+                {
+                    // Handle interface methods specially because the Sealed bit has no meaning on interfaces.
+                    devirt = !targetMethod.IsVirtual;
+                }
                 // if we are generating version resilient code
                 // AND
                 //    caller/callee are in different version bubbles
                 // we have to apply more restrictive rules
                 // These rules are related to the "inlining rules" as far as the
                 // boundaries of a version bubble are concerned.
-                if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod) ||
-                    !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(targetMethod))
+                // This check is different between CG1 and CG2. CG1 considers two types in the same version bubble
+                // if their assemblies are in the same bubble, or if the NonVersionableTypeAttribute is present on the type.
+                // CG2 checks a method cache that it builds with a bunch of new code.
+                else if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod) ||
+                    // check the Typical TargetMethod, not the Instantiation
+                    !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(targetMethod.GetTypicalMethodDefinition()))
                 {
                     // For version resiliency we won't de-virtualize all final/sealed method calls.  Because during a 
                     // servicing event it is legal to unseal a method or type.
@@ -1301,11 +1319,6 @@ namespace Internal.JitInterface
                         (targetMethod.IsIntrinsic && getIntrinsicID(targetMethod, null) != CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal);
 
                     callVirtCrossingVersionBubble = true;
-                }
-                else if (targetMethod.OwningType.IsInterface)
-                {
-                    // Handle interface methods specially because the Sealed bit has no meaning on interfaces.
-                    devirt = !targetMethod.IsVirtual;
                 }
                 else
                 {
@@ -1897,7 +1910,7 @@ namespace Internal.JitInterface
             if (!type.IsValueType)
                 return false;
 
-            return !_compilation.IsLayoutFixedInCurrentVersionBubble(type);
+            return !_compilation.IsLayoutFixedInCurrentVersionBubble(type) || _compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout;
         }
 
         private bool HasLayoutMetadata(TypeDesc type)
@@ -1953,10 +1966,20 @@ namespace Internal.JitInterface
             }
             else if (pMT.IsValueType)
             {
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                {
+                    // ENCODE_CHECK_FIELD_OFFSET
+                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                }
                 // ENCODE_NONE
             }
             else if (_compilation.IsInheritanceChainLayoutFixedInCurrentVersionBubble(pMT.BaseType))
             {
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                {
+                    // ENCODE_CHECK_FIELD_OFFSET
+                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                }
                 // ENCODE_NONE
             }
             else if (HasLayoutMetadata(pMT))
@@ -1973,6 +1996,12 @@ namespace Internal.JitInterface
             else
             {
                 PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
+
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                {
+                    // ENCODE_CHECK_FIELD_OFFSET
+                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                }
 
                 // ENCODE_FIELD_BASE_OFFSET
                 Debug.Assert(pResult->offset >= (uint)pMT.BaseType.InstanceByteCount.AsInt);

@@ -22,7 +22,7 @@ namespace Internal.Cryptography.Pal
             return OpenSslX509CertificateReader.FromOtherCert(cert);
         }
 
-        public static ICertificatePal FromBlob(byte[] rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        public static ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             return OpenSslX509CertificateReader.FromBlob(rawData, password, keyStorageFlags);
         }
