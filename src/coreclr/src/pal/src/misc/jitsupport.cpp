@@ -51,8 +51,8 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 //        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_DCPOP);
 #endif
 #ifdef HWCAP_ASIMDDP
-//    if (hwCap & HWCAP_ASIMDDP)
-//        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_DP);
+    if (hwCap & HWCAP_ASIMDDP)
+        CPUCompileFlags.Set(InstructionSet_Dp);
 #endif
 #ifdef HWCAP_FCMA
 //    if (hwCap & HWCAP_FCMA)
