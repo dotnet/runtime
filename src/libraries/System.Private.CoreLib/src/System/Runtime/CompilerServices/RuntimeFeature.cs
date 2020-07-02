@@ -37,6 +37,7 @@ namespace System.Runtime.CompilerServices
             {
                 case PortablePdb:
                 case CovariantReturnsOfClasses:
+                case UnmanagedSignatureCallingConvention:
 #if FEATURE_DEFAULT_INTERFACES
                 case DefaultImplementationsOfInterfaces:
 #endif
