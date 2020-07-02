@@ -5922,15 +5922,17 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
         case IAT_VALUE: // constructStringLiteral in CoreRT case can return IAT_VALUE
             tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
             tree->gtType = TYP_REF;
-            tree         = gtNewOperNode(GT_NOP, TYP_REF, tree); // prevents constant folding
+#ifdef DEBUG
+            tree->AsIntCon()->gtMethodHandle = (size_t)pValue;
+#endif
+            tree = gtNewOperNode(GT_NOP, TYP_REF, tree); // prevents constant folding
             break;
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
             // Create an indirection
             tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, false);
 #ifdef DEBUG
-            tree->gtGetOp1()->AsIntCon()->gtMethodHandle =
-                (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::StringLiteralNode;
+            tree->gtGetOp1()->AsIntCon()->gtMethodHandle = (size_t)pValue;
 #endif
             break;
 
@@ -5938,8 +5940,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
             // Create the first indirection
             tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_PSTR_HDL, true);
 #ifdef DEBUG
-            tree->gtGetOp1()->AsIntCon()->gtMethodHandle =
-                (CORINFO_METHOD_HANDLE)GenTreeIntCon::MethodHandleType::StringLiteralNode;
+            tree->gtGetOp1()->AsIntCon()->gtMethodHandle = (size_t)pValue;
 #endif
 
             // Create the second indirection

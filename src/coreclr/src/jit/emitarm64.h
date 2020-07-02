@@ -813,7 +813,7 @@ void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg,
 void emitIns_R_AI(instruction ins,
                   emitAttr    attr,
                   regNumber   ireg,
-                  ssize_t disp DEBUGARG(CORINFO_METHOD_HANDLE methodHandle = nullptr));
+                  ssize_t disp DEBUGARG(size_t methodHandle = 0) DEBUGARG(unsigned gtFlags = 0));
 
 void emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 

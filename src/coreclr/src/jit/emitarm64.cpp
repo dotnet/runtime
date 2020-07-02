@@ -7810,7 +7810,7 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 void emitter::emitIns_R_AI(instruction ins,
                            emitAttr    attr,
                            regNumber   ireg,
-                           ssize_t addr DEBUGARG(CORINFO_METHOD_HANDLE methodHandle))
+                           ssize_t addr DEBUGARG(size_t methodHandle) DEBUGARG(unsigned gtFlags))
 {
     assert(EA_IS_RELOC(attr));
     emitAttr      size    = EA_SIZE(attr);
@@ -7839,7 +7839,8 @@ void emitter::emitIns_R_AI(instruction ins,
     id->idReg1(ireg);
     id->idSetIsDspReloc();
 #ifdef DEBUG
-    id->idDebugOnlyInfo()->idMemCookie = (size_t)methodHandle;
+    id->idDebugOnlyInfo()->idMemCookie = methodHandle;
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
 #endif
 
     dispIns(id);
@@ -11953,6 +11954,7 @@ void emitter::emitDispIns(
         ssize_t      index2;
         unsigned     registerListSize;
         const char*  targetName;
+        const WCHAR* stringLiteral;
 
         case IF_BI_0A: // BI_0A   ......iiiiiiiiii iiiiiiiiiiiiiiii               simm26:00
         case IF_BI_0B: // BI_0B   ......iiiiiiiiii iiiiiiiiiii.....               simm19:00
@@ -12058,8 +12060,9 @@ void emitter::emitDispIns(
         case IF_LARGEADR:
             assert(insOptsNone(id->idInsOpt()));
             emitDispReg(id->idReg1(), size, true);
-            imm        = emitGetInsSC(id);
-            targetName = nullptr;
+            imm           = emitGetInsSC(id);
+            targetName    = nullptr;
+            stringLiteral = nullptr;
 
             /* Is this actually a reference to a data section? */
             if (fmt == IF_LARGEADR)
@@ -12074,7 +12077,6 @@ void emitter::emitDispIns(
             printf("[");
             if (id->idAddr()->iiaIsJitDataOffset())
             {
-                printf("[");
                 doffs = Compiler::eeGetJitDataOffs(id->idAddr()->iiaFieldHnd);
                 /* Display a data section reference */
 
@@ -12093,40 +12095,44 @@ void emitter::emitDispIns(
                 {
                     printf("HIGH RELOC ");
                     emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
-                    size_t methodHandle = id->idDebugOnlyInfo()->idMemCookie;
+                    size_t   targetHandle = id->idDebugOnlyInfo()->idMemCookie;
+                    unsigned idFlags      = id->idDebugOnlyInfo()->idFlags & GTF_ICON_HDL_MASK;
 
-                    switch (methodHandle)
+                    if ((idFlags == GTF_ICON_STR_HDL) || (idFlags == GTF_ICON_PSTR_HDL))
                     {
-                        case GenTreeIntCon::MethodHandleType::Unknown:
-                            targetName = "Unknown";
-                            break;
-                        case GenTreeIntCon::MethodHandleType::StringLiteralNode:
-                            targetName = "Access_To_StringLiteralNode";
-                            break;
-                        case GenTreeIntCon::MethodHandleType::StaticLookupTree:
-                            targetName = "Static_LookupTree";
-                            break;
-                        case GenTreeIntCon::MethodHandleType::RuntimeLookupTree:
-                            targetName = "Runtime_LookupTree";
-                            break;
-                        case GenTreeIntCon::MethodHandleType::IntializeArrayIntrinsics:
-                            targetName = "IntializeArrayIntrinsics";
-                            break;
-                        case GenTreeIntCon::MethodHandleType::StaticFieldAccess:
-                            targetName = "StaticFieldAccess";
-                            break;
-                        case GenTreeIntCon::MethodHandleType::FieldAccess:
-                            targetName = "FieldAccess";
-                            break;
-                        case GenTreeIntCon::MethodHandleType::GSCookieCheck:
-                            targetName = "GlobalSecurityCookieCheck";
-                            break;
-                        case GenTreeIntCon::MethodHandleType::SetGSCookie:
-                            targetName = "SetGlobalSecurityCookie";
-                            break;
-                        default:
-                            targetName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)methodHandle);
-                            break;
+                        stringLiteral = emitComp->eeGetCPString(targetHandle);
+                        if (stringLiteral == nullptr)
+                        {
+                            stringLiteral = L"String handle";
+                        }
+                    }
+                    else if (idFlags == GTF_ICON_FIELD_HDL)
+                    {
+                        targetName = emitComp->eeGetFieldName((CORINFO_FIELD_HANDLE)targetHandle);
+                    }
+                    else if ((idFlags == GTF_ICON_METHOD_HDL) || (idFlags == GTF_ICON_FTN_ADDR))
+                    {
+                        targetName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)targetHandle);
+                    }
+                    else if (idFlags == GTF_ICON_CLASS_HDL)
+                    {
+                        targetName = emitComp->eeGetClassName((CORINFO_CLASS_HANDLE)targetHandle);
+                    }
+                    else if (targetHandle == MethodHandleType::IntializeArrayIntrinsics)
+                    {
+                        targetName = "IntializeArrayIntrinsics";
+                    }
+                    else if (targetHandle == MethodHandleType::GSCookieCheck)
+                    {
+                        targetName = "GlobalSecurityCookieCheck";
+                    }
+                    else if (targetHandle == MethodHandleType::SetGSCookie)
+                    {
+                        targetName = "SetGlobalSecurityCookie";
+                    }
+                    else
+                    {
+                        targetName = "Unknown";
                     }
                 }
                 else if (id->idIsBound())
@@ -12142,6 +12148,10 @@ void emitter::emitDispIns(
             if (targetName != nullptr)
             {
                 printf("      // [%s]", targetName);
+            }
+            else if (stringLiteral != nullptr)
+            {
+                printf("      // [%S]", stringLiteral);
             }
             break;
 

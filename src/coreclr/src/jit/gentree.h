@@ -138,6 +138,20 @@ enum gtCallTypes : BYTE
     CT_COUNT // fake entry (must be last)
 };
 
+#ifdef DEBUG
+/*****************************************************************************
+*
+*  TargetHandleTypes are used to determine the type of handle present inside GenTreeIntCon node.
+*  The values are such that they don't overlap with helper's or user function's handle.
+*/
+enum MethodHandleType : byte
+{
+    Unknown                  = 2,
+    GSCookieCheck            = 4,
+    SetGSCookie              = 6,
+    IntializeArrayIntrinsics = 8
+};
+#endif
 /*****************************************************************************/
 
 struct BasicBlock;
@@ -2962,18 +2976,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
 #ifdef DEBUG
     // If the value represents target address, holds the method handle to that target which is used
     // to fetch target method name and display in the disassembled code.
-    CORINFO_METHOD_HANDLE gtMethodHandle = (CORINFO_METHOD_HANDLE)Unknown;
-
-    // Enum values are such that they don't overlap with helper's or user function's method handle.
-    enum MethodHandleType{Unknown                  = 2,
-                          StringLiteralNode        = 4,
-                          StaticLookupTree         = 6,
-                          RuntimeLookupTree        = 8,
-                          IntializeArrayIntrinsics = 10,
-                          StaticFieldAccess        = 12,
-                          FieldAccess              = 14,
-                          GSCookieCheck            = 16,
-                          SetGSCookie              = 18};
+    size_t gtMethodHandle = 0;
 #endif
 
     GenTreeIntCon(var_types type, ssize_t value DEBUGARG(bool largeNode = false))
