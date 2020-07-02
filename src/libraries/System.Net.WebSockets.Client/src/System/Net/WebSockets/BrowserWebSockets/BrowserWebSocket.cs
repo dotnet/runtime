@@ -385,7 +385,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception excb)
             {
-                throw new WebSocketException(WebSocketError.NativeError, excb);
+                return new Task.FromException(WebSocketException(WebSocketError.NativeError, excb));
             }
             finally
             {
