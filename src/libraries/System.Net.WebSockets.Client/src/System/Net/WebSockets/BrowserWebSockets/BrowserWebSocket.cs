@@ -443,8 +443,7 @@ namespace System.Net.WebSockets
 
         private async Task CloseAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
-            ThrowOnInvalidState(State,
-                WebSocketState.Open, WebSocketState.CloseReceived, WebSocketState.CloseSent);
+            ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseReceived, WebSocketState.CloseSent);
 
             WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
 
