@@ -144,10 +144,17 @@ namespace CoreclrTestLib
 
             try
             {
-                int[] childPids = File.ReadAllText($"/proc/{process.Id}/task/{process.Id}/children")
+                Console.WriteLine($"Attempting to read: /proc/{process.Id}/task/{process.Id}/children");
+                string childPidsString = File.ReadAllText($"/proc/{process.Id}/task/{process.Id}/children");
+                Console.WriteLine($"> {childPidsString}");
+                int[] childPids = childPidsString
                     .Split(' ', StringSplitOptions.RemoveEmptyEntries)
                     .Select(pidString => int.Parse(pidString))
                     .ToArray();
+                // int[] childPids = File.ReadAllText($"/proc/{process.Id}/task/{process.Id}/children")
+                //     .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                //     .Select(pidString => int.Parse(pidString))
+                //     .ToArray();
 
                 foreach (var pid in childPids)
                 {
@@ -161,9 +168,10 @@ namespace CoreclrTestLib
                     }
                 }
             }
-            catch (IOException)
+            catch (IOException e)
             {
                 // Ignore failure to read process children data, the process may have exited
+                Console.WriteLine($"Failed read proc file: {e}");
             }
 
             return children;
@@ -200,7 +208,7 @@ namespace CoreclrTestLib
             ProcessStartInfo createdumpInfo = null;
             string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
             string createdumpPath = Path.Combine(coreRoot, "createdump");
-            string arguments = $"--name \"{path}\" {process.Id} --withheap";
+            string arguments = $"--name \"{path}\" {process.Id} --withheap --diag";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
