@@ -1516,6 +1516,9 @@ mono_method_is_constructor (MonoMethod *method);
 gboolean
 mono_class_has_default_constructor (MonoClass *klass, gboolean public_only);
 
+gboolean
+mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method);
+
 // There are many ways to do on-demand initialization.
 //   Some allow multiple concurrent initializations. Some do not.
 //   Some allow multiple concurrent writes to the global. Some do not.

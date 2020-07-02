@@ -113,6 +113,7 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_function_pointer_attribute, 
 
 #ifdef ENABLE_NETCORE
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (suppress_gc_transition_attribute, "System.Runtime.InteropServices", "SuppressGCTransitionAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "System.Runtime.InteropServicea", "UnmanagedCallersOnlyAttribute")
 #endif
 
 static MonoImage*
@@ -6754,4 +6755,35 @@ get_marshal_cb (void)
 #endif
 	}
 	return &marshal_cb;
+}
+
+/**
+ * mono_method_has_unmanaged_callers_only_attribute:
+ *
+ * Returns \c TRUE if \p method has the \c UnmanagedCallersOnlyAttribute
+ */
+gboolean
+mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method)
+{
+	/* TODO: if this is slow and called repeatedly for the same method, add a bit to MonoMethod that is true if the
+	 * method doesn't have the UnmanagedCallersOnlyAttribute, and false if we haven't checked yet, or if the
+	 * attribute is present. */
+	ERROR_DECL (attr_error);
+	MonoClass *attr_klass = NULL;
+#ifdef ENABLE_NETCORE
+	attr_klass = = mono_class_try_get_unmanaged_callers_only_attribute_class ();
+#endif
+	if (!attr_klass)
+		return FALSE;
+	MonoCustomAttrInfo *cinfo;
+	cinfo = mono_custom_attrs_from_method_checked (method, attr_error);
+	if (!is_ok (attr_error) || !cinfo) {
+		mono_error_cleanup (attr_error);
+		return FALSE;
+	}
+	gboolean result;
+	result = mono_custom_attrs_has_attr (cinfo, attr_klass);
+	if (!cinfo->cached)
+		mono_custom_attrs_free (cinfo);
+	return result;
 }
