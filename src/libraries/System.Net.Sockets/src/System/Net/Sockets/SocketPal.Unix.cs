@@ -6,6 +6,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -13,6 +14,38 @@ using System.Threading.Tasks;
 
 namespace System.Net.Sockets
 {
+    internal sealed class LinuxSocketsEventSource : EventSource
+    {
+        internal static readonly LinuxSocketsEventSource Log = new LinuxSocketsEventSource();
+
+        private LinuxSocketsEventSource() : base("Npgsql") { } // using an existing name that is recognized by aspnet/benchmarks backend
+
+        private PollingCounter? _totalReadsNonBlockingCounter;
+        private PollingCounter? _totalReadsWouldBlockCounter;
+        //private PollingCounter? _totalWritesNonBlockingCounter;
+        //private PollingCounter? _totalWritesWouldBlockCounter;
+
+        private long _readsWouldBlockCount, _readsNonBlockingCount, _writesWouldBlockCount, _writesNonBlockingCount;
+
+        protected override void OnEventCommand(EventCommandEventArgs command)
+        {
+            if (command.Command != EventCommand.Enable)
+            {
+                return;
+            }
+
+            _totalReadsNonBlockingCounter = new PollingCounter("total-commands", this, () => _readsNonBlockingCount) { DisplayName = "Total Commands" };
+            _totalReadsWouldBlockCounter = new PollingCounter("failed-commands", this, () => _readsWouldBlockCount) { DisplayName = "Failed Commands" };
+            //_totalWritesNonBlockingCounter = new PollingCounter("linux-sockets/writes-non-blocking", this, () => _writesNonBlockingCount) { DisplayName = "Writes Non Blocking" };
+            //_totalWritesWouldBlockCounter = new PollingCounter("linux-sockets/writes-would-block", this, () => _writesWouldBlockCount) { DisplayName = "Writes Would Block" };
+        }
+
+        internal void OnReadNonBlocking() => Interlocked.Increment(ref _readsNonBlockingCount);
+        internal void OnReadWoudlBlock() => Interlocked.Increment(ref _readsWouldBlockCount);
+        internal void OnWriteNonBlocking() => Interlocked.Increment(ref _writesNonBlockingCount);
+        internal void OnWriteWoudlBlock() => Interlocked.Increment(ref _writesWouldBlockCount);
+    }
+
     internal static class SocketPal
     {
         public const bool SupportsMultipleConnectAttempts = false;
@@ -711,6 +744,7 @@ namespace System.Net.Sockets
                 {
                     bytesReceived = received;
                     errorCode = SocketError.Success;
+                    LinuxSocketsEventSource.Log.OnReadNonBlocking();
                     return true;
                 }
 
@@ -722,6 +756,7 @@ namespace System.Net.Sockets
                     return true;
                 }
 
+                LinuxSocketsEventSource.Log.OnReadWoudlBlock();
                 errorCode = SocketError.Success;
                 return false;
             }
@@ -768,6 +803,7 @@ namespace System.Net.Sockets
 
                 if (received != -1)
                 {
+                    LinuxSocketsEventSource.Log.OnReadNonBlocking();
                     bytesReceived = received;
                     errorCode = SocketError.Success;
                     return true;
@@ -781,6 +817,7 @@ namespace System.Net.Sockets
                     return true;
                 }
 
+                LinuxSocketsEventSource.Log.OnReadWoudlBlock();
                 errorCode = SocketError.Success;
                 return false;
             }
@@ -882,6 +919,7 @@ namespace System.Net.Sockets
                         return true;
                     }
 
+                    LinuxSocketsEventSource.Log.OnWriteWoudlBlock();
                     errorCode = successfulSend ? SocketError.Success : SocketError.WouldBlock;
                     return false;
                 }
@@ -895,6 +933,7 @@ namespace System.Net.Sockets
                 if (isComplete)
                 {
                     errorCode = SocketError.Success;
+                    LinuxSocketsEventSource.Log.OnWriteNonBlocking();
                     return true;
                 }
 
