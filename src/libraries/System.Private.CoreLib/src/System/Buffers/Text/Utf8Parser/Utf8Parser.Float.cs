@@ -27,7 +27,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static unsafe bool TryParse(ReadOnlySpan<byte> source, out float value, out int bytesConsumed, char standardFormat = default)
+        public static bool TryParse(ReadOnlySpan<byte> source, out float value, out int bytesConsumed, char standardFormat = default)
         {
             Span<byte> pDigits = stackalloc byte[Number.SingleNumberBufferLength];
             Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.FloatingPoint, pDigits);
@@ -61,7 +61,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static unsafe bool TryParse(ReadOnlySpan<byte> source, out double value, out int bytesConsumed, char standardFormat = default)
+        public static bool TryParse(ReadOnlySpan<byte> source, out double value, out int bytesConsumed, char standardFormat = default)
         {
             Span<byte> pDigits = stackalloc byte[Number.DoubleNumberBufferLength];
             Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.FloatingPoint, pDigits);
