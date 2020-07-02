@@ -317,14 +317,13 @@ HRESULT PortablePdbWritter::DefineSequencePoints(Method* method)
 
 HRESULT PortablePdbWritter::DefineLocalScope(Method* method)
 {
-    mdLocalVariable firstLocVarToken = mdLocalScopeNil;
-    if (!_DefineLocalScope(method->m_Tok, &method->m_MainScope, &firstLocVarToken))
+    if (!_DefineLocalScope(method->m_Tok, &method->m_MainScope))
         return E_FAIL;
     else
         return S_OK;
 }
 
-BOOL PortablePdbWritter::_DefineLocalScope(mdMethodDef methodDefToken, Scope* currScope, mdLocalVariable* firstLocVarToken)
+BOOL PortablePdbWritter::_DefineLocalScope(mdMethodDef methodDefToken, Scope* currScope)
 {
     BOOL fSuccess = FALSE;
     ARG_NAME_LIST* pLocalVar = currScope->pLocals;
@@ -334,6 +333,7 @@ BOOL PortablePdbWritter::_DefineLocalScope(mdMethodDef methodDefToken, Scope* cu
     ULONG firstLocalConstRid = RidFromToken(mdLocalConstantNil);    // TODO: not supported for now
     ULONG start = 0;
     ULONG length = 0;
+    mdLocalVariable firstLocVarToken = mdLocalScopeNil;
 
     while (pLocalVar != NULL)
     {
@@ -342,20 +342,23 @@ BOOL PortablePdbWritter::_DefineLocalScope(mdMethodDef methodDefToken, Scope* cu
         USHORT index = pLocalVar->dwAttr & 0xffff; // slot
         if (FAILED(m_pdbEmitter->DefineLocalVariable(attribute, index, (char*)pLocalVar->szName, &locVarToken))) goto exit;
 
-        if (*firstLocVarToken == mdLocalScopeNil)
-            *firstLocVarToken = locVarToken;
+        if (firstLocVarToken == mdLocalScopeNil)
+            firstLocVarToken = locVarToken;
 
         pLocalVar = pLocalVar->pNext;
     }
 
-    firstLocalVarRid = RidFromToken(*firstLocVarToken);
-    start = currScope->dwStart;
-    length = currScope->dwEnd - currScope->dwStart;
-    if (FAILED(m_pdbEmitter->DefineLocalScope(methodRid, importScopeRid, firstLocalVarRid, firstLocalConstRid, start, length))) goto exit;
+    if (firstLocVarToken != mdLocalScopeNil)
+    {
+        firstLocalVarRid = RidFromToken(firstLocVarToken);
+        start = currScope->dwStart;
+        length = currScope->dwEnd - currScope->dwStart;
+        if (FAILED(m_pdbEmitter->DefineLocalScope(methodRid, importScopeRid, firstLocalVarRid, firstLocalConstRid, start, length))) goto exit;
+    }
 
     fSuccess = TRUE;
     for (ULONG i = 0; i < currScope->SubScope.COUNT(); i++)
-        fSuccess &= _DefineLocalScope(methodDefToken, currScope->SubScope.PEEK(i), firstLocVarToken);
+        fSuccess &= _DefineLocalScope(methodDefToken, currScope->SubScope.PEEK(i));
 
 exit:
     return fSuccess;

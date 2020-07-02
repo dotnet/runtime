@@ -57,7 +57,7 @@ private:
     BOOL            VerifySequencePoint(LinePC* curr, LinePC* next);
     void            CompressUnsignedLong(ULONG srcData, BinStr* dstBuffer);
     void            CompressSignedLong(LONG srcData, BinStr* dstBuffer);
-    BOOL            _DefineLocalScope(mdMethodDef methodDefToken, Scope* currScope, mdLocalVariable* firstLocVarToken);
+    BOOL            _DefineLocalScope(mdMethodDef methodDefToken, Scope* currScope);
 
 private:
     IMetaDataEmit3* m_pdbEmitter;
