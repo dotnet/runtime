@@ -1567,7 +1567,7 @@ protected:
                               int align_const,
                               BOOL* commit_failed_p);
     PER_HEAP
-    BOOL loh_a_fit_segment_end_p (int gen_number,
+    BOOL uoh_a_fit_segment_end_p (int gen_number,
                                   size_t size,
                                   alloc_context* acontext,
                                   uint32_t flags,
