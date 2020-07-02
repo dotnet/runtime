@@ -1,0 +1,3 @@
+// exclusions to work around browser builds
+
+T:System.Data.Odbc.ODBC32
