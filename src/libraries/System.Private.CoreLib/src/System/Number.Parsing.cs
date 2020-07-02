@@ -244,7 +244,7 @@ namespace System
 
         private static bool TryParseNumber(ref ReadOnlySpan<char> str, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
         {
-            Debug.Assert(str != null);
+            Debug.Assert(str != null);//TODO do we need this?
             Debug.Assert((styles & NumberStyles.AllowHexSpecifier) == 0);
 
             const int StateSign = 0x0001;
@@ -488,11 +488,11 @@ namespace System
             return TryParseInt32Number(value, styles, info, out result);
         }
 
-        private static unsafe ParsingStatus TryParseInt32Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out int result)
+        private static ParsingStatus TryParseInt32Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out int result)
         {
             result = 0;
-            byte* pDigits = stackalloc byte[Int32NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int32NumberBufferLength);
+            Span<byte> pDigits = stackalloc byte[Int32NumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -867,11 +867,11 @@ namespace System
             return TryParseInt64Number(value, styles, info, out result);
         }
 
-        private static unsafe ParsingStatus TryParseInt64Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out long result)
+        private static ParsingStatus TryParseInt64Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out long result)
         {
             result = 0;
-            byte* pDigits = stackalloc byte[Int64NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int64NumberBufferLength);
+            Span<byte> pDigits = stackalloc byte[Int64NumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -903,11 +903,11 @@ namespace System
             return TryParseUInt32Number(value, styles, info, out result);
         }
 
-        private static unsafe ParsingStatus TryParseUInt32Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out uint result)
+        private static ParsingStatus TryParseUInt32Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out uint result)
         {
             result = 0;
-            byte* pDigits = stackalloc byte[UInt32NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt32NumberBufferLength);
+            Span<byte> pDigits = stackalloc byte[UInt32NumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1231,11 +1231,11 @@ namespace System
             return TryParseUInt64Number(value, styles, info, out result);
         }
 
-        private static unsafe ParsingStatus TryParseUInt64Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out ulong result)
+        private static ParsingStatus TryParseUInt64Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out ulong result)
         {
             result = 0;
-            byte* pDigits = stackalloc byte[UInt64NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt64NumberBufferLength);
+            Span<byte> pDigits = stackalloc byte[UInt64NumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1703,10 +1703,10 @@ namespace System
             return result;
         }
 
-        internal static unsafe ParsingStatus TryParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
+        internal static ParsingStatus TryParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
         {
-            byte* pDigits = stackalloc byte[DecimalNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, DecimalNumberBufferLength);
+            Span<byte> pDigits = stackalloc byte[DecimalNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits);
 
             result = 0;
 
@@ -1723,10 +1723,10 @@ namespace System
             return ParsingStatus.OK;
         }
 
-        internal static unsafe bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out double result)
+        internal static bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out double result)
         {
-            byte* pDigits = stackalloc byte[DoubleNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, DoubleNumberBufferLength);
+            Span<byte> pDigits = stackalloc byte[DoubleNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1785,10 +1785,10 @@ namespace System
             return true;
         }
 
-        internal static unsafe bool TryParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Half result)
+        internal static bool TryParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Half result)
         {
-            byte* pDigits = stackalloc byte[HalfNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, HalfNumberBufferLength);
+            Span<byte> pDigits = stackalloc byte[HalfNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1852,10 +1852,10 @@ namespace System
             return true;
         }
 
-        internal static unsafe bool TryParseSingle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out float result)
+        internal static bool TryParseSingle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out float result)
         {
-            byte* pDigits = stackalloc byte[SingleNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, SingleNumberBufferLength);
+            Span<byte> pDigits = stackalloc byte[SingleNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1919,13 +1919,13 @@ namespace System
             return true;
         }
 
-        internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> value, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
+        internal static bool TryStringToNumber(ReadOnlySpan<char> value, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
         {
             Debug.Assert(info != null);
 
             ReadOnlySpan<char> p = value;
             if (!TryParseNumber(ref p, styles, ref number, info)
-                || ((value.Length - p.Length) < value.Length && !TrailingZeros(value, (value.Length - p.Length))))
+                || ((value.Length - p.Length) < value.Length && !TrailingZeros(value, (value.Length - p.Length))))//TODO what this validation does?
             {
                 number.CheckConsistency();
                 return false;
@@ -1963,7 +1963,7 @@ namespace System
                 // space character we use 0x20 space character instead to mean the same.
 
                 int pIndex = 0;
-                while (true)
+                while (true)//TODO rethink this algorithm. Maybe change to for loop
                 {
                     char cp = pIndex < p.Length ? p[pIndex] : '\0';
                     char cstr = pIndex < str.Length ? str[pIndex] : '\0';

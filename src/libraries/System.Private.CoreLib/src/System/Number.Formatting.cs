@@ -301,17 +301,16 @@ namespace System
             "(#)", "-#", "- #", "#-", "# -",
         };
 
-        public static unsafe string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        public static string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             char fmt = ParseFormatSpecifier(format, out int digits);
 
-            byte* pDigits = stackalloc byte[DecimalNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, DecimalNumberBufferLength);
+            Span<byte> pDigits = stackalloc byte[DecimalNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits);
 
             DecimalToNumber(ref value, ref number);
 
-            char* stackPtr = stackalloc char[CharStackBufferSize];
-            ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
 
             if (fmt != 0)
             {
@@ -325,17 +324,16 @@ namespace System
             return sb.ToString();
         }
 
-        public static unsafe bool TryFormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        public static bool TryFormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
         {
             char fmt = ParseFormatSpecifier(format, out int digits);
 
-            byte* pDigits = stackalloc byte[DecimalNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, DecimalNumberBufferLength);
+            Span<byte> pDigits = stackalloc byte[DecimalNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits);
 
             DecimalToNumber(ref value, ref number);
 
-            char* stackPtr = stackalloc char[CharStackBufferSize];
-            ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
 
             if (fmt != 0)
             {
@@ -530,7 +528,7 @@ namespace System
             }
 
             char fmt = ParseFormatSpecifier(format, out int precision);
-            byte* pDigits = stackalloc byte[DoubleNumberBufferLength];
+            byte* pDigits = stackalloc byte[DoubleNumberBufferLength];//TODO can't change to Span, or the call to NumberToString throws CS8350 and CS8352 (because of ValueStringBuilder reference)
 
             if (fmt == '\0')
             {
@@ -616,7 +614,7 @@ namespace System
             }
 
             char fmt = ParseFormatSpecifier(format, out int precision);
-            byte* pDigits = stackalloc byte[SingleNumberBufferLength];
+            byte* pDigits = stackalloc byte[SingleNumberBufferLength];//TODO can't change to Span, or the call to NumberToString throws CS8350 and CS8352 (because of ValueStringBuilder reference)
 
             if (fmt == '\0')
             {
@@ -693,7 +691,7 @@ namespace System
             }
 
             char fmt = ParseFormatSpecifier(format, out int precision);
-            byte* pDigits = stackalloc byte[HalfNumberBufferLength];
+            byte* pDigits = stackalloc byte[HalfNumberBufferLength];//TODO can't change to Span, or the call to NumberToString throws CS8350 and CS8352 (because of ValueStringBuilder reference)
 
             if (fmt == '\0')
             {
@@ -787,7 +785,7 @@ namespace System
 
             return FormatInt32Slow(value, hexMask, format, provider);
 
-            static unsafe string FormatInt32Slow(int value, int hexMask, string? format, IFormatProvider? provider)
+            static string FormatInt32Slow(int value, int hexMask, string? format, IFormatProvider? provider)
             {
                 ReadOnlySpan<char> formatSpan = format;
                 char fmt = ParseFormatSpecifier(formatSpan, out int digits);
@@ -806,13 +804,12 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    byte* pDigits = stackalloc byte[Int32NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int32NumberBufferLength);
+                    Span<byte> pDigits = stackalloc byte[Int32NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
 
                     Int32ToNumber(value, ref number);
 
-                    char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
 
                     if (fmt != 0)
                     {
@@ -839,7 +836,7 @@ namespace System
 
             return TryFormatInt32Slow(value, hexMask, format, provider, destination, out charsWritten);
 
-            static unsafe bool TryFormatInt32Slow(int value, int hexMask, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+            static bool TryFormatInt32Slow(int value, int hexMask, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
             {
                 char fmt = ParseFormatSpecifier(format, out int digits);
                 char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
@@ -857,13 +854,12 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    byte* pDigits = stackalloc byte[Int32NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int32NumberBufferLength);
+                    Span<byte> pDigits = stackalloc byte[Int32NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
 
                     Int32ToNumber(value, ref number);
 
-                    char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
 
                     if (fmt != 0)
                     {
@@ -888,7 +884,7 @@ namespace System
 
             return FormatUInt32Slow(value, format, provider);
 
-            static unsafe string FormatUInt32Slow(uint value, string? format, IFormatProvider? provider)
+            static string FormatUInt32Slow(uint value, string? format, IFormatProvider? provider)
             {
                 ReadOnlySpan<char> formatSpan = format;
                 char fmt = ParseFormatSpecifier(formatSpan, out int digits);
@@ -905,13 +901,12 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    byte* pDigits = stackalloc byte[UInt32NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt32NumberBufferLength);
+                    Span<byte> pDigits = stackalloc byte[UInt32NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
 
                     UInt32ToNumber(value, ref number);
 
-                    char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
 
                     if (fmt != 0)
                     {
@@ -936,7 +931,7 @@ namespace System
 
             return TryFormatUInt32Slow(value, format, provider, destination, out charsWritten);
 
-            static unsafe bool TryFormatUInt32Slow(uint value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+            static bool TryFormatUInt32Slow(uint value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
             {
                 char fmt = ParseFormatSpecifier(format, out int digits);
                 char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
@@ -952,13 +947,12 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    byte* pDigits = stackalloc byte[UInt32NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt32NumberBufferLength);
+                    Span<byte> pDigits = stackalloc byte[UInt32NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
 
                     UInt32ToNumber(value, ref number);
 
-                    char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
 
                     if (fmt != 0)
                     {
@@ -985,7 +979,7 @@ namespace System
 
             return FormatInt64Slow(value, format, provider);
 
-            static unsafe string FormatInt64Slow(long value, string? format, IFormatProvider? provider)
+            static string FormatInt64Slow(long value, string? format, IFormatProvider? provider)
             {
                 ReadOnlySpan<char> formatSpan = format;
                 char fmt = ParseFormatSpecifier(formatSpan, out int digits);
@@ -1004,13 +998,12 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    byte* pDigits = stackalloc byte[Int64NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int64NumberBufferLength);
+                    Span<byte> pDigits = stackalloc byte[Int64NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
 
                     Int64ToNumber(value, ref number);
 
-                    char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
 
                     if (fmt != 0)
                     {
@@ -1037,7 +1030,7 @@ namespace System
 
             return TryFormatInt64Slow(value, format, provider, destination, out charsWritten);
 
-            static unsafe bool TryFormatInt64Slow(long value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+            static bool TryFormatInt64Slow(long value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
             {
                 char fmt = ParseFormatSpecifier(format, out int digits);
                 char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
@@ -1055,13 +1048,12 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    byte* pDigits = stackalloc byte[Int64NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int64NumberBufferLength);
+                    Span<byte> pDigits = stackalloc byte[Int64NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
 
                     Int64ToNumber(value, ref number);
 
-                    char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
 
                     if (fmt != 0)
                     {
@@ -1086,7 +1078,7 @@ namespace System
 
             return FormatUInt64Slow(value, format, provider);
 
-            static unsafe string FormatUInt64Slow(ulong value, string? format, IFormatProvider? provider)
+            static string FormatUInt64Slow(ulong value, string? format, IFormatProvider? provider)
             {
                 ReadOnlySpan<char> formatSpan = format;
                 char fmt = ParseFormatSpecifier(formatSpan, out int digits);
@@ -1103,13 +1095,12 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    byte* pDigits = stackalloc byte[UInt64NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt64NumberBufferLength);
+                    Span<byte> pDigits = stackalloc byte[UInt64NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
 
                     UInt64ToNumber(value, ref number);
 
-                    char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
 
                     if (fmt != 0)
                     {
@@ -1134,7 +1125,7 @@ namespace System
 
             return TryFormatUInt64Slow(value, format, provider, destination, out charsWritten);
 
-            static unsafe bool TryFormatUInt64Slow(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+            static bool TryFormatUInt64Slow(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
             {
                 char fmt = ParseFormatSpecifier(format, out int digits);
                 char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
@@ -1150,13 +1141,12 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    byte* pDigits = stackalloc byte[UInt64NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt64NumberBufferLength);
+                    Span<byte> pDigits = stackalloc byte[UInt64NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
 
                     UInt64ToNumber(value, ref number);
 
-                    char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
 
                     if (fmt != 0)
                     {
@@ -1729,7 +1719,7 @@ namespace System
                 '\0';
         }
 
-        internal static unsafe void NumberToString(ref ValueStringBuilder sb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info)
+        internal static void NumberToString(ref ValueStringBuilder sb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info)
         {
             number.CheckConsistency();
             bool isCorrectlyRounded = (number.Kind == NumberBufferKind.FloatingPoint);

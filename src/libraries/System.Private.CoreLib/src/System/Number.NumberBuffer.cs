@@ -28,6 +28,25 @@ namespace System
             public NumberBufferKind Kind;
             public Span<byte> Digits;
 
+            public NumberBuffer(NumberBufferKind kind, Span<byte> digits)
+            {
+                Debug.Assert(digits != null);//TODO we do still need it?
+
+                DigitsCount = 0;
+                Scale = 0;
+                IsNegative = false;
+                HasNonZeroTail = false;
+                Kind = kind;
+                Digits = digits;
+
+#if DEBUG
+                Digits.Fill(0xCC);
+#endif
+
+                Digits[0] = (byte)('\0');
+                CheckConsistency();
+            }
+
             public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength)
             {
                 Debug.Assert(digits != null);
