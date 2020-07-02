@@ -743,6 +743,9 @@ protected:
 #ifdef TARGET_X86
     int                 m_curOfs;           // Current position of the stack iterator
     int                 m_numRegistersUsed;
+#ifdef FEATURE_INTERPRETER
+    bool                m_fUnmanagedCallConv;
+#endif
 #endif
 
 #ifdef TARGET_AMD64
@@ -988,6 +991,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
             m_fUnmanagedCallConv = false;
             m_numRegistersUsed = numRegistersUsed;
             m_curOfs = TransitionBlock::GetOffsetOfArgs() + SizeOfArgStack();
+            break;
         }
 #else
         m_numRegistersUsed = numRegistersUsed;
@@ -1601,20 +1605,21 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
     }
 
 #ifdef FEATURE_INTERPRETER
-     BYTE callconv = CallConv();
-     switch (callconv)
-     {
-     case IMAGE_CEE_CS_CALLCONV_C:
-     case IMAGE_CEE_CS_CALLCONV_STDCALL:
-           numRegistersUsed = NUM_ARGUMENT_REGISTERS;
-           nSizeOfArgStack = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
-           break;
+    BYTE callconv = CallConv();
+    switch (callconv)
+    {
+    case IMAGE_CEE_CS_CALLCONV_C:
+    case IMAGE_CEE_CS_CALLCONV_STDCALL:
+        numRegistersUsed = NUM_ARGUMENT_REGISTERS;
+        nSizeOfArgStack = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
+        break;
 
-     case IMAGE_CEE_CS_CALLCONV_THISCALL:
-     case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-          _ASSERTE_MSG(false, "Unsupported calling convention.");
-     default:
-     }
+    case IMAGE_CEE_CS_CALLCONV_THISCALL:
+    case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+        _ASSERTE_MSG(false, "Unsupported calling convention.");
+    default:
+        break;
+    }
 #endif // FEATURE_INTERPRETER
 
     DWORD nArgs = this->NumFixedArgs();
