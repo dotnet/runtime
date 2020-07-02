@@ -149,16 +149,16 @@ namespace System.Net.WebSockets
                 _innerWebSocket.SetObjectProperty("binaryType", "arraybuffer");
 
                 // Setup the onError callback
-                _onError = new Action<JSObject>((errorEvt) =>
+                _onError = (errorEvt) =>
                 {
                     errorEvt.Dispose();
-                });
+                };
 
                 // Attach the onError callback
                 _innerWebSocket.SetObjectProperty("onerror", _onError);
 
                 // Setup the onClose callback
-                _onClose = new Action<JSObject>((closeEvt) =>
+                _onClose = (closeEvt) =>
                 {
                     using (closeEvt)
                     {
@@ -175,13 +175,13 @@ namespace System.Net.WebSockets
                             _tcsClose?.SetResult();
                         }
                     }
-                });
+                };
 
                 // Attach the onClose callback
                 _innerWebSocket.SetObjectProperty("onclose", _onClose);
 
                 // Setup the onOpen callback
-                _onOpen = new Action<JSObject>((evt) =>
+                _onOpen = (evt) =>
                 {
                     using (evt)
                     {
@@ -203,13 +203,13 @@ namespace System.Net.WebSockets
                             tcsConnect.SetCanceled(cancellationToken);
                         }
                     }
-                });
+                };
 
                 // Attach the onOpen callback
                 _innerWebSocket.SetObjectProperty("onopen", _onOpen);
 
                 // Setup the onMessage callback
-                _onMessage = new Action<JSObject>((messageEvent) =>
+                _onMessage = (messageEvent) =>
                 {
                     // get the events "data"
                     using (messageEvent)
@@ -265,7 +265,7 @@ namespace System.Net.WebSockets
                                 throw new NotImplementedException(SR.Format(SR.net_WebSockets_Invalid_Binary_Type, _innerWebSocket.GetObjectProperty("binaryType").ToString()));
                         }
                     }
-                });
+                };
 
                 // Attach the onMessage callaback
                 _innerWebSocket.SetObjectProperty("onmessage", _onMessage);
