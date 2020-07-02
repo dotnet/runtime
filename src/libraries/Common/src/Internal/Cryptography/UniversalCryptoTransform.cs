@@ -114,26 +114,11 @@ namespace Internal.Cryptography
             return UncheckedTransformBlock(inputBuffer.AsSpan(inputOffset, inputCount), outputBuffer.AsSpan(outputOffset));
         }
 
-        protected unsafe byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
-        {
-            byte[] rented = CryptoPool.Rent(inputCount + OutputBlockSize);
-            int written = 0;
-
-            fixed (byte* pRented = rented)
-            {
-                try
-                {
-                    written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), rented);
-                    return rented.AsSpan().Slice(0, written).ToArray();
-                }
-                finally
-                {
-                    CryptoPool.Return(rented, clearSize: written);
-                }
-            }
-        }
-
         protected abstract int UncheckedTransformBlock(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer);
+
+        // For final block, encryption and decryption can give better context for the returning byte size, so we
+        // don't provide an implementation here.
+        protected abstract byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount);
         protected abstract int UncheckedTransformFinalBlock(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer);
 
         protected PaddingMode PaddingMode { get; private set; }

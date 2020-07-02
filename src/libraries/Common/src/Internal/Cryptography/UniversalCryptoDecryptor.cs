@@ -117,6 +117,25 @@ namespace Internal.Cryptography
             return unpaddedLength;
         }
 
+        protected override unsafe byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
+        {
+            byte[] rented = CryptoPool.Rent(inputCount + InputBlockSize);
+            int written = 0;
+
+            fixed (byte* pRented = rented)
+            {
+                try
+                {
+                    written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), rented);
+                    return rented.AsSpan().Slice(0, written).ToArray();
+                }
+                finally
+                {
+                    CryptoPool.Return(rented, clearSize: written);
+                }
+            }
+        }
+
         protected sealed override void Dispose(bool disposing)
         {
             if (disposing)
