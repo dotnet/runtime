@@ -3680,13 +3680,19 @@ bool LclVarDsc::CanBeReplacedWithItsField(Compiler* comp) const
     }
 
 #if defined(FEATURE_SIMD)
+    assert(!comp->isOpaqueSIMDLclVar(this)); // opaque SIMD can't be promoted.
     // If we return `struct A { SIMD16 a; }` we split the struct into several fields.
-    // In order to do that we have to have its field in memory. Right now lowering cannot
+    // In order to do that we have to have its field `a` in memory. Right now lowering cannot
     // handle RETURN struct(multiple registers)->SIMD16(one register), but it can be improved.
     LclVarDsc* fieldDsc = comp->lvaGetDesc(lvFieldLclStart);
     if (fieldDsc->TypeGet() == TYP_SIMD12 || fieldDsc->TypeGet() == TYP_SIMD16)
     {
+#if defined(TARGET_ARM64)
         return false;
+#else  // !TARGET_ARM64
+        // TODO-X64-CQ: it will be reachable after https://github.com/dotnet/runtime/issues/9578.
+        unreached();
+#endif //! TARGET_ARM64
     }
 #endif // FEATURE_SIMD
 

@@ -245,7 +245,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             if (node->AsBlk()->Data()->IsCall())
             {
                 assert(!comp->compDoOldStructRetyping());
-                LowerStoreCallStruct(node->AsBlk());
+                LowerStoreSingleRegCallStruct(node->AsBlk());
                 break;
             }
             __fallthrough;
@@ -2939,12 +2939,30 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     JITDUMP("============");
 
     GenTree* retVal = ret->gtGetOp1();
-    bool     needBitcast =
+    // There are two kinds of retyping:
+    // - A simple bitcast can be inserted when:
+    //   - We're returning a floating type as an integral type or vice-versa, or
+    //   - We're returning a struct as a primitive type and using the old form of retyping.
+    // - If we're returning a struct as a primitive type and *not* using old retying, we change the type of
+    //   'retval' in 'LowerRetStructLclVar()'
+    bool needBitcast =
         (ret->TypeGet() != TYP_VOID) && (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(ret->gtGetOp1()));
-    if (needBitcast && !varTypeIsStruct(ret) && (!varTypeIsStruct(retVal) || comp->compDoOldStructRetyping()))
+    if (needBitcast && ((!varTypeIsStruct(ret) && !varTypeIsStruct(retVal)) || comp->compDoOldStructRetyping()))
     {
-        // Add a simple bitcast for an old retyping or when both types are not structs.
-        // If one type is a struct it will be handled below for !compDoOldStructRetyping.
+// Add a simple bitcast for an old retyping or when both types are not structs.
+// If one type is a struct it will be handled below for !compDoOldStructRetyping.
+#if defined(DEBUG)
+        if (comp->compDoOldStructRetyping())
+        {
+            assert(varTypeIsSIMD(ret) || !!varTypeIsStruct(ret));
+            assert(varTypeIsSIMD(retVal) || !!varTypeIsStruct(retVal));
+        }
+        else
+        {
+            assert(!varTypeIsStruct(ret) && !varTypeIsStruct(retVal));
+        }
+#endif
+
         GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
         ret->gtOp1       = bitcast;
         BlockRange().InsertBefore(ret, bitcast);
@@ -2973,22 +2991,15 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
                 assert(!comp->compDoOldStructRetyping());
                 assert(comp->info.compRetNativeType != TYP_STRUCT);
 
-                bool      constStructInit  = retVal->IsConstInitVal();
-                bool      actualTypesMatch = false;
                 var_types retActualType    = genActualType(comp->info.compRetNativeType);
                 var_types retValActualType = genActualType(retVal->TypeGet());
-                if (retActualType == retValActualType)
-                {
-                    // This could happen if we have retyped op1 as a primitive type during struct promotion,
-                    // check `retypedFieldsMap` for details.
-                    actualTypesMatch = true;
-                }
 
-                bool implicitCastFromSameOrBiggerSize = false;
-                if (genTypeSize(retActualType) <= genTypeSize(retValActualType))
-                {
-                    implicitCastFromSameOrBiggerSize = true;
-                }
+                bool constStructInit                  = retVal->IsConstInitVal();
+                bool implicitCastFromSameOrBiggerSize = (genTypeSize(retActualType) <= genTypeSize(retValActualType));
+
+                // This could happen if we have retyped op1 as a primitive type during struct promotion,
+                // check `retypedFieldsMap` for details.
+                bool actualTypesMatch = (retActualType == retValActualType);
 
                 assert(actualTypesMatch || constStructInit || implicitCastFromSameOrBiggerSize);
             }
@@ -3015,7 +3026,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
                 // Return struct as a primitive using Unsafe cast.
                 assert(!comp->compDoOldStructRetyping());
                 assert(retVal->OperIs(GT_LCL_VAR));
-                LowerRetStructLclVar(ret);
+                LowerRetSingleRegStructLclVar(ret);
             }
         }
     }
@@ -3048,7 +3059,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 
     if (!dstIsMultiReg && varTypeIsStruct(varDsc))
     {
-        // TODO: we want to check `varDsc->lvRegStruct` as the last condition instead of `!varDsc->lvPromoted`,
+        // TODO-Cleanup: we want to check `varDsc->lvRegStruct` as the last condition instead of `!varDsc->lvPromoted`,
         // but we do not set it for `CSE` vars so it is currently failing.
         assert(varDsc->CanBeReplacedWithItsField(comp) || varDsc->lvDoNotEnregister || !varDsc->lvPromoted);
         if (varDsc->CanBeReplacedWithItsField(comp))
@@ -3094,8 +3105,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         }
         CheckMultiRegLclVar(lclStore->AsLclVar(), retTypeDesc);
     }
-    if ((lclStore->TypeGet() == TYP_STRUCT) && !srcIsMultiReg && varTypeIsStruct(lclStore->TypeGet()) &&
-        (src->OperGet() != GT_PHI))
+    if ((lclStore->TypeGet() == TYP_STRUCT) && !srcIsMultiReg && (src->OperGet() != GT_PHI))
     {
         if (src->OperGet() == GT_CALL)
         {
@@ -3210,7 +3220,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             {
                 assert(retVal->OperIs(GT_LCL_VAR));
                 assert(!comp->compDoOldStructRetyping());
-                LowerRetStructLclVar(ret);
+                LowerRetSingleRegStructLclVar(ret);
             }
             return;
         }
@@ -3260,7 +3270,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             break;
 
         case GT_LCL_VAR:
-            LowerRetStructLclVar(ret);
+            LowerRetSingleRegStructLclVar(ret);
             break;
 
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
@@ -3297,8 +3307,10 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
         case GT_CNS_DBL:
-            // Currently we are not promoting structs with a single float field.
-            // TODO: can improve `GT_CNS_DBL` handling for supported platforms, but
+            // Currently we are not promoting structs with a single float field,
+            // https://github.com/dotnet/runtime/issues/4323
+
+            // TODO-CQ: can improve `GT_CNS_DBL` handling for supported platforms, but
             // because it is only x86 nowadays it is not worth it.
             unreached();
 #endif
@@ -3317,7 +3329,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerRetStructLclVar: Lowers a return node with a struct lclVar as a source.
+// LowerRetSingleRegStructLclVar: Lowers a return node with a struct lclVar as a source.
 //
 // Arguments:
 //    node - The return node to lower.
@@ -3327,7 +3339,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 //    - if LclVar is allocated in memory then read it as return type;
 //    - if LclVar can be enregistered read it as register type and add a bitcast if necessary;
 //
-void Lowering::LowerRetStructLclVar(GenTreeUnOp* ret)
+void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 {
     assert(!comp->compMethodReturnsMultiRegRegTypeAlternate());
     assert(!comp->compDoOldStructRetyping());
@@ -3342,6 +3354,7 @@ void Lowering::LowerRetStructLclVar(GenTreeUnOp* ret)
         // We can replace the struct with its only field and keep the field on a register.
         unsigned   fieldLclNum = varDsc->lvFieldLclStart;
         LclVarDsc* fieldDsc    = comp->lvaGetDesc(fieldLclNum);
+        assert(varTypeIsSmallInt(fieldDsc->lvType)); // For a non-small type it had to be done in morph.
 
         lclVar->SetLclNum(fieldLclNum);
         JITDUMP("Replacing an independently promoted local var V%02u with its only field  V%02u for the return "
@@ -3469,20 +3482,22 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerStoreCallStruct: Lowers a store block where source is a struct typed call.
+// LowerStoreSingleRegCallStruct: Lowers a store block where the source is a struct typed call.
 //
 // Arguments:
 //     store - The store node to lower.
 //
 // Notes:
-//    - it spills the call's result if it can be retyped as a primitive type.
+//    - the function is only for calls that return one register;
+//    - it spills the call's result if it can be retyped as a primitive type;
 //
-void Lowering::LowerStoreCallStruct(GenTreeBlk* store)
+void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 {
     assert(!comp->compDoOldStructRetyping());
     assert(varTypeIsStruct(store));
     assert(store->Data()->IsCall());
     GenTreeCall* call = store->Data()->AsCall();
+    assert(!call->HasMultiRegRetVal());
 
     const ClassLayout* layout  = store->GetLayout();
     const var_types    regType = layout->GetRegisterType();
