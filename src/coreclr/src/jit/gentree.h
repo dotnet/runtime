@@ -146,11 +146,10 @@ enum gtCallTypes : BYTE
 */
 enum TargetHandleType : byte
 {
-    Unknown                  = 2,
-    GSCookieCheck            = 4,
-    SetGSCookie              = 6,
-    StaticFieldAccess        = 8,
-    IntializeArrayIntrinsics = 10
+    THT_Unknown                  = 2,
+    THT_GSCookieCheck            = 4,
+    THT_SetGSCookie              = 6,
+    THT_IntializeArrayIntrinsics = 8
 };
 #endif
 /*****************************************************************************/

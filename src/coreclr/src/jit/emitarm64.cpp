@@ -12098,7 +12098,19 @@ void emitter::emitDispIns(
                     size_t   targetHandle = id->idDebugOnlyInfo()->idMemCookie;
                     unsigned idFlags      = id->idDebugOnlyInfo()->idFlags & GTF_ICON_HDL_MASK;
 
-                    if ((idFlags == GTF_ICON_STR_HDL) || (idFlags == GTF_ICON_PSTR_HDL))
+                    if (targetHandle == THT_IntializeArrayIntrinsics)
+                    {
+                        targetName = "IntializeArrayIntrinsics";
+                    }
+                    else if (targetHandle == THT_GSCookieCheck)
+                    {
+                        targetName = "GlobalSecurityCookieCheck";
+                    }
+                    else if (targetHandle == THT_SetGSCookie)
+                    {
+                        targetName = "SetGlobalSecurityCookie";
+                    }
+                    else if ((idFlags == GTF_ICON_STR_HDL) || (idFlags == GTF_ICON_PSTR_HDL))
                     {
                         stringLiteral = emitComp->eeGetCPString(targetHandle);
                         // Note that eGetCPString isn't currently implemented on Linux/ARM
@@ -12109,7 +12121,7 @@ void emitter::emitDispIns(
                             stringLiteral = L"String handle";
                         }
                     }
-                    else if (idFlags == GTF_ICON_FIELD_HDL)
+                    else if ((idFlags == GTF_ICON_FIELD_HDL) || (idFlags == GTF_ICON_STATIC_HDL))
                     {
                         targetName = emitComp->eeGetFieldName((CORINFO_FIELD_HANDLE)targetHandle);
                     }
@@ -12121,21 +12133,9 @@ void emitter::emitDispIns(
                     {
                         targetName = emitComp->eeGetClassName((CORINFO_CLASS_HANDLE)targetHandle);
                     }
-                    else if (targetHandle == TargetHandleType::IntializeArrayIntrinsics)
+                    else if (idFlags == GTF_ICON_TOKEN_HDL)
                     {
-                        targetName = "IntializeArrayIntrinsics";
-                    }
-                    else if (targetHandle == TargetHandleType::GSCookieCheck)
-                    {
-                        targetName = "GlobalSecurityCookieCheck";
-                    }
-                    else if (targetHandle == TargetHandleType::SetGSCookie)
-                    {
-                        targetName = "SetGlobalSecurityCookie";
-                    }
-                    else if (targetHandle == TargetHandleType::StaticFieldAccess)
-                    {
-                        targetName = "StaticFieldAccess";
+                        targetName = "Token handle";
                     }
                     else
                     {

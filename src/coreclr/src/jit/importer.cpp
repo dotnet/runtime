@@ -1891,13 +1891,23 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         GenTree* addr = gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
 
 #ifdef DEBUG
-        if (handle != nullptr)
+        size_t handleToTrack;
+        if (handleFlags == GTF_ICON_TOKEN_HDL)
         {
-            addr->AsIntCon()->gtTargetHandle = (size_t)compileTimeHandle;
+            handleToTrack = 0;
         }
         else
         {
-            addr->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)compileTimeHandle;
+            handleToTrack = (size_t)compileTimeHandle;
+        }
+
+        if (handle != nullptr)
+        {
+            addr->AsIntCon()->gtTargetHandle = handleToTrack;
+        }
+        else
+        {
+            addr->gtGetOp1()->AsIntCon()->gtTargetHandle = handleToTrack;
         }
 #endif
         return addr;
@@ -1937,6 +1947,7 @@ GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
     }
     GenTree* addr = gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
 #ifdef DEBUG
+    assert((handleFlags == GTF_ICON_CLASS_HDL) || (handleFlags == GTF_ICON_METHOD_HDL));
     if (handle != nullptr)
     {
         addr->AsIntCon()->gtTargetHandle = (size_t)compileTimeHandle;
@@ -3431,7 +3442,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     GenTree* dst     = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, dstAddr, typGetBlkLayout(blkSize));
     GenTree* src     = gtNewIndOfIconHandleNode(TYP_STRUCT, (size_t)initData, GTF_ICON_STATIC_HDL, false);
 #ifdef DEBUG
-    src->gtGetOp1()->AsIntCon()->gtTargetHandle = TargetHandleType::IntializeArrayIntrinsics;
+    src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_IntializeArrayIntrinsics;
 #endif
 
     return gtNewBlkOpNode(dst,   // dst
@@ -7186,7 +7197,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 op1 = gtNewIconHandleNode(pFldAddr == nullptr ? (size_t)fldAddr : (size_t)pFldAddr, GTF_ICON_STATIC_HDL,
                                           fldSeq);
 #ifdef DEBUG
-                op1->AsIntCon()->gtTargetHandle = TargetHandleType::StaticFieldAccess;
+                op1->AsIntCon()->gtTargetHandle = op1->AsIntCon()->gtIconVal;
 #endif
 
                 if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
