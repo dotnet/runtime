@@ -389,11 +389,11 @@ namespace System
                     ch = (p = p.Slice(1)).IsEmpty ? '\0' : p[0];
                     if ((nextIndex = MatchChars(p, info._positiveSign)) != null)
                     {
-                        ch = (p = p.Slice(nextIndex.Value)).IsEmpty ? '\0' : p[nextIndex.Value];
+                        ch = (p = p.Slice(nextIndex.Value)).IsEmpty ? '\0' : p[0];
                     }
                     else if ((nextIndex = MatchChars(p, info._negativeSign)) != null)
                     {
-                        ch = (p = p.Slice(nextIndex.Value)).IsEmpty ? '\0' : p[nextIndex.Value];
+                        ch = (p = p.Slice(nextIndex.Value)).IsEmpty ? '\0' : p[0];
                         negExp = true;
                     }
                     if (IsDigit(ch))
