@@ -32,8 +32,8 @@ namespace System.Net.Http
     internal sealed class HttpConnectionPoolManager : IDisposable
     {
         // Used by HttpTelemetry to calculate statistics over all connection pools
-        private static readonly ConcurrentDictionary<HttpConnectionPoolManager, object?> s_allConnectionPools =
-            new ConcurrentDictionary<HttpConnectionPoolManager, object?>();
+        private static readonly ConcurrentDictionary<WeakReference<HttpConnectionPoolManager>, object?> s_allConnectionPools =
+            new ConcurrentDictionary<WeakReference<HttpConnectionPoolManager>, object?>();
 
         /// <summary>How frequently an operation should be initiated to clean out old pools and connections in those pools.</summary>
         private readonly TimeSpan _cleanPoolTimeout;
@@ -47,6 +47,8 @@ namespace System.Net.Http
         private readonly HttpConnectionSettings _settings;
         private readonly IWebProxy? _proxy;
         private readonly ICredentials? _proxyCredentials;
+
+        private readonly WeakReference<HttpConnectionPoolManager>? _weakThisRef;
 
         private NetworkChangeCleanup? _networkChangeCleanup;
 
@@ -107,6 +109,8 @@ namespace System.Net.Http
                     // Create the timer.  Ensure the Timer has a weak reference to this manager; otherwise, it
                     // can introduce a cycle that keeps the HttpConnectionPoolManager rooted by the Timer
                     // implementation until the handler is Disposed (or indefinitely if it's not).
+                    _weakThisRef = new WeakReference<HttpConnectionPoolManager>(this);
+
                     _cleaningTimer = new Timer(s =>
                     {
                         var wr = (WeakReference<HttpConnectionPoolManager>)s!;
@@ -114,9 +118,9 @@ namespace System.Net.Http
                         {
                             thisRef.RemoveStalePools();
                         }
-                    }, new WeakReference<HttpConnectionPoolManager>(this), Timeout.Infinite, Timeout.Infinite);
+                    }, _weakThisRef, Timeout.Infinite, Timeout.Infinite);
 
-                    bool success = s_allConnectionPools.TryAdd(this, null);
+                    bool success = s_allConnectionPools.TryAdd(_weakThisRef, null);
                     Debug.Assert(success);
                 }
                 finally
@@ -128,6 +132,10 @@ namespace System.Net.Http
                     }
                 }
             }
+            else
+            {
+                GC.SuppressFinalize(this);
+            }
 
             // Figure out proxy stuff.
             if (settings._useProxy)
@@ -137,6 +145,14 @@ namespace System.Net.Http
                 {
                     _proxyCredentials = _proxy.Credentials ?? settings._defaultProxyCredentials;
                 }
+            }
+        }
+
+        ~HttpConnectionPoolManager()
+        {
+            if (_weakThisRef != null)
+            {
+                s_allConnectionPools.TryRemove(_weakThisRef, out _);
             }
         }
 
@@ -462,7 +478,11 @@ namespace System.Net.Http
         {
             _cleaningTimer?.Dispose();
 
-            s_allConnectionPools.TryRemove(this, out _);
+            if (_weakThisRef != null)
+            {
+                s_allConnectionPools.TryRemove(_weakThisRef, out _);
+                GC.SuppressFinalize(this);
+            }
 
             foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> pool in _pools)
             {
@@ -539,11 +559,14 @@ namespace System.Net.Http
         public static int GetMaxHttp11ConnectionsPerPool()
         {
             int max = 0;
-            foreach ((HttpConnectionPoolManager connectionPoolManager, _) in s_allConnectionPools)
+            foreach ((WeakReference<HttpConnectionPoolManager> weakConnectionPoolManagerRef, _) in s_allConnectionPools)
             {
-                foreach ((_, HttpConnectionPool connectionPool) in connectionPoolManager._pools)
+                if (weakConnectionPoolManagerRef.TryGetTarget(out HttpConnectionPoolManager? connectionPoolManager))
                 {
-                    max = Math.Max(max, connectionPool.Http11ConnectionCount);
+                    foreach ((_, HttpConnectionPool connectionPool) in connectionPoolManager._pools)
+                    {
+                        max = Math.Max(max, connectionPool.Http11ConnectionCount);
+                    }
                 }
             }
             return max;
@@ -552,11 +575,14 @@ namespace System.Net.Http
         public static int GetMaxHttp20StreamsPerConnection()
         {
             int max = 0;
-            foreach ((HttpConnectionPoolManager connectionPoolManager, _) in s_allConnectionPools)
+            foreach ((WeakReference<HttpConnectionPoolManager> weakConnectionPoolManagerRef, _) in s_allConnectionPools)
             {
-                foreach ((_, HttpConnectionPool connectionPool) in connectionPoolManager._pools)
+                if (weakConnectionPoolManagerRef.TryGetTarget(out HttpConnectionPoolManager? connectionPoolManager))
                 {
-                    max = Math.Max(max, connectionPool.Http20StreamCount);
+                    foreach ((_, HttpConnectionPool connectionPool) in connectionPoolManager._pools)
+                    {
+                        max = Math.Max(max, connectionPool.Http20StreamCount);
+                    }
                 }
             }
             return max;
