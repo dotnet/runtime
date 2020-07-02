@@ -559,6 +559,79 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static <#= type.unsigned #> ExtractNarrowingSaturateUnsignedUpper(<#= type.unsigned #>[] op1, <#= type.wide #>[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
 
+        private static (<#= type.wide #> val, bool ovf) MultiplyDoublingOvf(<#= type.name #> op1, <#= type.name #> op2, bool rounding)
+        {
+            <#= type.wide #> roundConst = 0;
+
+            if (rounding)
+            {
+                roundConst = (<#= type.wide#>)1 << (8 * sizeof(<#= type.name #>) - 1);
+            }
+
+            <#= type.wide #> product = (<#= type.wide #>)((<#= type.wide #>)op1 * (<#= type.wide #>)op2);
+
+            var (result, ovf) = AddOvf(product, roundConst);
+
+            if (ovf)
+            {
+                return (result, ovf);
+            }
+
+            return AddOvf(result, product);
+        }
+
+        public static <#= type.name #> MultiplyDoublingSaturateHigh(<#= type.name #> op1, <#= type.name #> op2)
+        {
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+
+            if (ovf)
+            {
+                return product < 0 ? <#= type.name #>.MaxValue : <#= type.name #>.MinValue;
+            }
+
+            return (<#= type.name #>)UnsignedShift(product, (<#= type.wide #>)(-8 * sizeof(<#= type.name #>)));
+        }
+
+        public static <#= type.name #> MultiplyRoundedDoublingSaturateHigh(<#= type.name #> op1, <#= type.name #> op2)
+        {
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: true);
+
+            if (ovf)
+            {
+                return product < 0 ? <#= type.name #>.MaxValue : <#= type.name #>.MinValue;
+            }
+
+            return (<#= type.name #>)UnsignedShift(product, (<#= type.wide #>)(-8 * sizeof(<#= type.name #>)));
+        }
+
+        public static <#= type.wide #> MultiplyDoublingWideningSaturate(<#= type.name #> op1, <#= type.name #> op2)
+        {
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+
+            if (ovf)
+            {
+                return product < 0 ? <#= type.name #>.MaxValue : <#= type.name #>.MinValue;
+            }
+
+            return product;
+        }
+
+        public static <#= type.wide #> MultiplyDoublingWideningAndAddSaturate(<#= type.wide #> op1, <#= type.name #> op2, <#= type.name #> op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
+
+        public static <#= type.wide #> MultiplyDoublingWideningAndSubtractSaturate(<#= type.wide #> op1, <#= type.name #> op2, <#= type.name #> op3) => SubtractSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
+
+        public static <#= type.wide #> MultiplyDoublingWideningSaturateUpperByScalar(<#= type.name #>[] op1, <#= type.name #> op2, int i) => MultiplyDoublingWideningSaturate(op1[i + op1.Length / 2], op2);
+
+        public static <#= type.wide #> MultiplyDoublingWideningUpperByScalarAndAddSaturate(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #> op3, int i) => MultiplyDoublingWideningAndAddSaturate(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static <#= type.wide #> MultiplyDoublingWideningUpperByScalarAndSubtractSaturate(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #> op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static <#= type.wide #> MultiplyDoublingWideningSaturateUpper(<#= type.name #>[] op1, <#= type.name #>[] op2, int i) => MultiplyDoublingWideningSaturate(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static <#= type.wide #> MultiplyDoublingWideningUpperAndAddSaturate(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #>[] op3, int i) => MultiplyDoublingWideningAndAddSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static <#= type.wide #> MultiplyDoublingWideningUpperAndSubtractSaturate(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #>[] op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
         public static <#= type.wide #> ShiftLeftLogicalWidening(<#= type.name #> op1, byte op2) => UnsignedShift((<#= type.wide #>)op1, (<#= type.wide #>)op2);
 
         public static <#= type.wideUnsigned #> ShiftLeftLogicalWidening(<#= type.unsigned #> op1, byte op2) => UnsignedShift((<#= type.wideUnsigned #>)op1, (<#= type.wide #>)op2);
