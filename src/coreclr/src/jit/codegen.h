@@ -1488,7 +1488,7 @@ public:
     void instGen_Set_Reg_To_Imm(emitAttr  size,
                                 regNumber reg,
                                 ssize_t   imm,
-                                insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t methodHandle = 0)
+                                insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t targetHandle = 0)
                                     DEBUGARG(unsigned gtFlags = 0));
 
     void instGen_Compare_Reg_To_Zero(emitAttr size, regNumber reg);
