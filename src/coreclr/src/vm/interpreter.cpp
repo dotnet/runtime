@@ -413,6 +413,10 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
         NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- CORINFO_CALLCONV_PROPERTY");
         break;
 
+    case CORINFO_CALLCONV_UNMANAGED:
+        NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- CORINFO_CALLCONV_UNMANAGED");
+        break;
+
     case CORINFO_CALLCONV_NATIVEVARARG:
         NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- CORINFO_CALLCONV_NATIVEVARARG");
         break;
@@ -1284,6 +1288,10 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
     case CORINFO_CALLCONV_PROPERTY:
         NYI_INTERP("GenerateInterpreterStub -- CORINFO_CALLCONV_PROPERTY");
+        break;
+
+    case CORINFO_CALLCONV_UNMANAGED:
+        NYI_INTERP("GenerateInterpreterStub -- CORINFO_CALLCONV_UNMANAGED");
         break;
 
     case CORINFO_CALLCONV_NATIVEVARARG:
