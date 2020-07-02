@@ -149,10 +149,7 @@ namespace System.Net.WebSockets
                 _innerWebSocket.SetObjectProperty("binaryType", "arraybuffer");
 
                 // Setup the onError callback
-                _onError = (errorEvt) =>
-                {
-                    errorEvt.Dispose();
-                };
+                _onError = errorEvt => errorEvt.Dispose();
 
                 // Attach the onError callback
                 _innerWebSocket.SetObjectProperty("onerror", _onError);
