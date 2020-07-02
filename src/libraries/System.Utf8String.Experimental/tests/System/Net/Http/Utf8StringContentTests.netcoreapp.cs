@@ -26,8 +26,8 @@ namespace System.Net.Http.Tests
         [Fact]
         public static void Ctor_ReadAsStream()
         {
-            var content = new Utf8StringContent(u8("Hello"));
-            var stream = content.ReadAsStream();
+            Utf8StringContent content = new Utf8StringContent(u8("Hello"));
+            Stream stream = content.ReadAsStream();
 
             MemoryStream memoryStream = new MemoryStream();
             stream.CopyTo(memoryStream);
