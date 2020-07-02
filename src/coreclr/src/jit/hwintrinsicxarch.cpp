@@ -787,7 +787,6 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector128_ToScalar:
-        case NI_Vector256_ToScalar:
         {
             assert(sig->numArgs == 1);
 
@@ -809,9 +808,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_LONG:
                 case TYP_ULONG:
                 {
-#if defined(TARGET_AMD64)
                     isSupported = compExactlyDependsOn(InstructionSet_SSE2_X64);
-#endif // TARGET_AMD64
                     break;
                 }
 
@@ -828,9 +825,51 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 }
             }
 
-            if (isSupported && (intrinsic == NI_Vector256_ToScalar))
+            if (isSupported)
             {
-                isSupported = compExactlyDependsOn(InstructionSet_AVX);
+                op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Vector256_ToScalar:
+        {
+            assert(sig->numArgs == 1);
+
+            bool isSupported = false;
+
+            switch (baseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                case TYP_SHORT:
+                case TYP_USHORT:
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    isSupported = compExactlyDependsOn(InstructionSet_AVX);
+                    break;
+                }
+
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    isSupported = compExactlyDependsOn(InstructionSet_AVX) && compExactlyDependsOn(InstructionSet_SSE2_X64);
+                    break;
+                }
+
+                case TYP_FLOAT:
+                case TYP_DOUBLE:
+                {
+                    isSupported = compExactlyDependsOn(InstructionSet_AVX);
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
             }
 
             if (isSupported)
