@@ -917,7 +917,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
         }
 
-        UNATIVE_OFFSET cnsSize  = (simdSize != 12) ? simdSize : 16;
+        UNATIVE_OFFSET cnsSize  = (simdSize == 12) ? 16 : simdSize;
         UNATIVE_OFFSET cnsAlign = cnsSize;
 
         CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(&vecCns, cnsSize, cnsAlign);
@@ -1079,7 +1079,7 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     {
         assert(baseType == TYP_FLOAT);
 
-        // We will be constructing the following parts:
+        // For 12 byte SIMD, we need to clear the upper 4 bytes:
         //   idx  =    CNS_INT       int    0x03
         //   tmp1 = *  CNS_DLB       float  0.0
         //          /--*  op1  simd16

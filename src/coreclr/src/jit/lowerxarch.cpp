@@ -2800,8 +2800,9 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         {
             assert(baseType == TYP_FLOAT);
 
-            // Setting the simd16Count to 2 will cause 1 hadd to be emitted rather
-            // than 2, which will cause the upper two elements to be ignored.
+            // If simdSize == 8 then we have only two elements, not the 4 that we got from getSIMDVectorLength,
+            // which we gave a simdSize of 16. So, we set the simd16Count to 2 so that only 1 hadd will
+            // be emitted rather than 2, so that the upper two elements will be ignored.
 
             simd16Count = 2;
         }
