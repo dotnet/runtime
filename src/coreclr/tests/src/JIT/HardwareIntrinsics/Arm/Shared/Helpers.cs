@@ -2153,6 +2153,79 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte ExtractNarrowingSaturateUnsignedUpper(byte[] op1, short[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
 
+        private static (short val, bool ovf) MultiplyDoublingOvf(sbyte op1, sbyte op2, bool rounding)
+        {
+            short roundConst = 0;
+
+            if (rounding)
+            {
+                roundConst = (short)1 << (8 * sizeof(sbyte) - 1);
+            }
+
+            short product = (short)((short)op1 * (short)op2);
+
+            var (result, ovf) = AddOvf(product, roundConst);
+
+            if (ovf)
+            {
+                return (result, ovf);
+            }
+
+            return AddOvf(result, product);
+        }
+
+        public static sbyte MultiplyDoublingSaturateHigh(sbyte op1, sbyte op2)
+        {
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+
+            if (ovf)
+            {
+                return product < 0 ? sbyte.MaxValue : sbyte.MinValue;
+            }
+
+            return (sbyte)UnsignedShift(product, (short)(-8 * sizeof(sbyte)));
+        }
+
+        public static sbyte MultiplyRoundedDoublingSaturateHigh(sbyte op1, sbyte op2)
+        {
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: true);
+
+            if (ovf)
+            {
+                return product < 0 ? sbyte.MaxValue : sbyte.MinValue;
+            }
+
+            return (sbyte)UnsignedShift(product, (short)(-8 * sizeof(sbyte)));
+        }
+
+        public static short MultiplyDoublingWideningSaturate(sbyte op1, sbyte op2)
+        {
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+
+            if (ovf)
+            {
+                return product < 0 ? sbyte.MaxValue : sbyte.MinValue;
+            }
+
+            return product;
+        }
+
+        public static short MultiplyDoublingWideningAndAddSaturate(short op1, sbyte op2, sbyte op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
+
+        public static short MultiplyDoublingWideningAndSubtractSaturate(short op1, sbyte op2, sbyte op3) => SubtractSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
+
+        public static short MultiplyDoublingWideningSaturateUpperByScalar(sbyte[] op1, sbyte op2, int i) => MultiplyDoublingWideningSaturate(op1[i + op1.Length / 2], op2);
+
+        public static short MultiplyDoublingWideningUpperByScalarAndAddSaturate(short[] op1, sbyte[] op2, sbyte op3, int i) => MultiplyDoublingWideningAndAddSaturate(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static short MultiplyDoublingWideningUpperByScalarAndSubtractSaturate(short[] op1, sbyte[] op2, sbyte op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static short MultiplyDoublingWideningSaturateUpper(sbyte[] op1, sbyte[] op2, int i) => MultiplyDoublingWideningSaturate(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static short MultiplyDoublingWideningUpperAndAddSaturate(short[] op1, sbyte[] op2, sbyte[] op3, int i) => MultiplyDoublingWideningAndAddSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static short MultiplyDoublingWideningUpperAndSubtractSaturate(short[] op1, sbyte[] op2, sbyte[] op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
         public static short ShiftLeftLogicalWidening(sbyte op1, byte op2) => UnsignedShift((short)op1, (short)op2);
 
         public static ushort ShiftLeftLogicalWidening(byte op1, byte op2) => UnsignedShift((ushort)op1, (short)op2);
@@ -2388,6 +2461,79 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort ExtractNarrowingSaturateUnsignedUpper(ushort[] op1, int[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
 
+        private static (int val, bool ovf) MultiplyDoublingOvf(short op1, short op2, bool rounding)
+        {
+            int roundConst = 0;
+
+            if (rounding)
+            {
+                roundConst = (int)1 << (8 * sizeof(short) - 1);
+            }
+
+            int product = (int)((int)op1 * (int)op2);
+
+            var (result, ovf) = AddOvf(product, roundConst);
+
+            if (ovf)
+            {
+                return (result, ovf);
+            }
+
+            return AddOvf(result, product);
+        }
+
+        public static short MultiplyDoublingSaturateHigh(short op1, short op2)
+        {
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+
+            if (ovf)
+            {
+                return product < 0 ? short.MaxValue : short.MinValue;
+            }
+
+            return (short)UnsignedShift(product, (int)(-8 * sizeof(short)));
+        }
+
+        public static short MultiplyRoundedDoublingSaturateHigh(short op1, short op2)
+        {
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: true);
+
+            if (ovf)
+            {
+                return product < 0 ? short.MaxValue : short.MinValue;
+            }
+
+            return (short)UnsignedShift(product, (int)(-8 * sizeof(short)));
+        }
+
+        public static int MultiplyDoublingWideningSaturate(short op1, short op2)
+        {
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+
+            if (ovf)
+            {
+                return product < 0 ? short.MaxValue : short.MinValue;
+            }
+
+            return product;
+        }
+
+        public static int MultiplyDoublingWideningAndAddSaturate(int op1, short op2, short op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
+
+        public static int MultiplyDoublingWideningAndSubtractSaturate(int op1, short op2, short op3) => SubtractSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
+
+        public static int MultiplyDoublingWideningSaturateUpperByScalar(short[] op1, short op2, int i) => MultiplyDoublingWideningSaturate(op1[i + op1.Length / 2], op2);
+
+        public static int MultiplyDoublingWideningUpperByScalarAndAddSaturate(int[] op1, short[] op2, short op3, int i) => MultiplyDoublingWideningAndAddSaturate(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static int MultiplyDoublingWideningUpperByScalarAndSubtractSaturate(int[] op1, short[] op2, short op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static int MultiplyDoublingWideningSaturateUpper(short[] op1, short[] op2, int i) => MultiplyDoublingWideningSaturate(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static int MultiplyDoublingWideningUpperAndAddSaturate(int[] op1, short[] op2, short[] op3, int i) => MultiplyDoublingWideningAndAddSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static int MultiplyDoublingWideningUpperAndSubtractSaturate(int[] op1, short[] op2, short[] op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
         public static int ShiftLeftLogicalWidening(short op1, byte op2) => UnsignedShift((int)op1, (int)op2);
 
         public static uint ShiftLeftLogicalWidening(ushort op1, byte op2) => UnsignedShift((uint)op1, (int)op2);
@@ -2622,6 +2768,79 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static uint ExtractNarrowingSaturateUnsignedUpper(uint[] op1, long[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
+
+        private static (long val, bool ovf) MultiplyDoublingOvf(int op1, int op2, bool rounding)
+        {
+            long roundConst = 0;
+
+            if (rounding)
+            {
+                roundConst = (long)1 << (8 * sizeof(int) - 1);
+            }
+
+            long product = (long)((long)op1 * (long)op2);
+
+            var (result, ovf) = AddOvf(product, roundConst);
+
+            if (ovf)
+            {
+                return (result, ovf);
+            }
+
+            return AddOvf(result, product);
+        }
+
+        public static int MultiplyDoublingSaturateHigh(int op1, int op2)
+        {
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+
+            if (ovf)
+            {
+                return product < 0 ? int.MaxValue : int.MinValue;
+            }
+
+            return (int)UnsignedShift(product, (long)(-8 * sizeof(int)));
+        }
+
+        public static int MultiplyRoundedDoublingSaturateHigh(int op1, int op2)
+        {
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: true);
+
+            if (ovf)
+            {
+                return product < 0 ? int.MaxValue : int.MinValue;
+            }
+
+            return (int)UnsignedShift(product, (long)(-8 * sizeof(int)));
+        }
+
+        public static long MultiplyDoublingWideningSaturate(int op1, int op2)
+        {
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+
+            if (ovf)
+            {
+                return product < 0 ? int.MaxValue : int.MinValue;
+            }
+
+            return product;
+        }
+
+        public static long MultiplyDoublingWideningAndAddSaturate(long op1, int op2, int op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
+
+        public static long MultiplyDoublingWideningAndSubtractSaturate(long op1, int op2, int op3) => SubtractSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
+
+        public static long MultiplyDoublingWideningSaturateUpperByScalar(int[] op1, int op2, int i) => MultiplyDoublingWideningSaturate(op1[i + op1.Length / 2], op2);
+
+        public static long MultiplyDoublingWideningUpperByScalarAndAddSaturate(long[] op1, int[] op2, int op3, int i) => MultiplyDoublingWideningAndAddSaturate(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static long MultiplyDoublingWideningUpperByScalarAndSubtractSaturate(long[] op1, int[] op2, int op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static long MultiplyDoublingWideningSaturateUpper(int[] op1, int[] op2, int i) => MultiplyDoublingWideningSaturate(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static long MultiplyDoublingWideningUpperAndAddSaturate(long[] op1, int[] op2, int[] op3, int i) => MultiplyDoublingWideningAndAddSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static long MultiplyDoublingWideningUpperAndSubtractSaturate(long[] op1, int[] op2, int[] op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
         public static long ShiftLeftLogicalWidening(int op1, byte op2) => UnsignedShift((long)op1, (long)op2);
 
