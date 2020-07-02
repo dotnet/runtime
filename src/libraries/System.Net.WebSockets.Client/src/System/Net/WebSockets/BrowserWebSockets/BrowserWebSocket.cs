@@ -165,7 +165,7 @@ namespace System.Net.WebSockets
                         NativeCleanup();
                         if ((InternalState)_state == InternalState.Connecting)
                         {
-                            tcsConnect.SetException(new WebSocketException(WebSocketError.NativeError));
+                            tcsConnect.TrySetException(new WebSocketException(WebSocketError.NativeError));
                         }
                         else
                         {
@@ -188,7 +188,7 @@ namespace System.Net.WebSockets
                             if (Interlocked.CompareExchange(ref _state, (int)InternalState.Connected, (int)InternalState.Connecting) != (int)InternalState.Connecting)
                             {
                                 // Aborted/Disposed during connect.
-                                tcsConnect.SetException(new ObjectDisposedException(GetType().FullName));
+                                tcsConnect.TrySetException(new ObjectDisposedException(GetType().FullName));
                             }
                             else
                             {
@@ -385,7 +385,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception excb)
             {
-                return new Task.FromException(WebSocketException(WebSocketError.NativeError, excb));
+                return Task.FromException(new WebSocketException(WebSocketError.NativeError, excb));
             }
             finally
             {
