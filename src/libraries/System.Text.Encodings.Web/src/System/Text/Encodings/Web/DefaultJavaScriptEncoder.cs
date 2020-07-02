@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -10,6 +11,9 @@ using System.Text.Unicode;
 #if NETCOREAPP
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+#endif
+#if NETCOREAPP5_0
+using System.Runtime.Intrinsics.Arm;
 #endif
 
 namespace System.Text.Encodings.Web
@@ -80,6 +84,8 @@ namespace System.Text.Encodings.Web
             return _allowedCharacters.FindFirstCharacterToEncode(text, textLength);
         }
 
+
+
         public override unsafe int FindFirstCharacterToEncodeUtf8(ReadOnlySpan<byte> utf8Text)
         {
             fixed (byte* ptr = utf8Text)
@@ -87,21 +93,42 @@ namespace System.Text.Encodings.Web
                 int idx = 0;
 
 #if NETCOREAPP
-                if (Sse2.IsSupported)
+                if (AdvSimdHelper.IsSse2OrAdvSimdArm64Supported())
                 {
                     sbyte* startingAddress = (sbyte*)ptr;
                     while (utf8Text.Length - 16 >= idx)
                     {
                         Debug.Assert(startingAddress >= ptr && startingAddress <= (ptr + utf8Text.Length - 16));
 
-                        // Load the next 16 bytes.
-                        Vector128<sbyte> sourceValue = Sse2.LoadVector128(startingAddress);
+                        bool containsNonAsciiBytes;
 
-                        // Check for ASCII text. Any byte that's not in the ASCII range will already be negative when
-                        // casted to signed byte.
-                        int index = Sse2.MoveMask(sourceValue);
+                        if (AdvSimdHelper.IsAdvSimdArm64Supported())
+                        {
+#if NETCOREAPP5_0
+                            // Load the next 16 bytes.
+                            Vector128<sbyte> sourceValue = AdvSimd.LoadVector128(startingAddress);
 
-                        if (index != 0)
+                            // Check for ASCII text. Any byte that's not in the ASCII range will already be negative when
+                            // casted to signed byte.
+                            containsNonAsciiBytes = AdvSimd.Arm64.MinAcross(sourceValue).ToScalar() < 0;
+#else
+                            Debug.Fail("AdvSimd not supported in this platform.");
+                            throw new NotSupportedException();
+#endif
+                        }
+                        else
+                        {
+                            Debug.Assert(Sse2.IsSupported);
+
+                            // Load the next 16 bytes.
+                            Vector128<sbyte> sourceValue = Sse2.LoadVector128(startingAddress);
+
+                            // Check for ASCII text. Any byte that's not in the ASCII range will already be negative when
+                            // casted to signed byte.
+                            containsNonAsciiBytes = Sse2.MoveMask(sourceValue) != 0;
+                        }
+
+                        if (containsNonAsciiBytes)
                         {
                             // At least one of the following 16 bytes is non-ASCII.
 

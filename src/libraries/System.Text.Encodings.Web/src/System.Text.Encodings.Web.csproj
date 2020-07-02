@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Text\Encodings\Web\AdvSimdHelper.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoderBasicLatin.cs" />
     <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />
@@ -29,12 +30,9 @@
     <Compile Include="System\Text\Encodings\Web\Ssse3Helper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs"
-             Link="System\Text\UnicodeDebug.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs"
-             Link="System\Text\UnicodeUtility.cs" />
-    <Compile Include="$(CommonPath)System\HexConverter.cs"
-             Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs" Link="System\Text\UnicodeDebug.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />
