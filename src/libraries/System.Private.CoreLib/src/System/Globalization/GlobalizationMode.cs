@@ -72,7 +72,7 @@ namespace System.Globalization
 
         private static IntPtr LoadLibrary(string library, bool failOnLoadFailure)
         {
-            if (!NativeLibrary.TryLoad(library, typeof(object).Assembly, DllImportSearchPath.ApplicationDirectory, out IntPtr lib) && failOnLoadFailure)
+            if (!NativeLibrary.TryLoad(library, typeof(object).Assembly, DllImportSearchPath.ApplicationDirectory | DllImportSearchPath.System32, out IntPtr lib) && failOnLoadFailure)
             {
                 Environment.FailFast($"Failed to load app-local ICU: {library}");
             }

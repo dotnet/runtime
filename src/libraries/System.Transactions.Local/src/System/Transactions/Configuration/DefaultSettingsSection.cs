@@ -16,14 +16,6 @@ namespace System.Transactions.Configuration
         public TimeSpan Timeout
         {
             get { return s_timeout; }
-            set
-            {
-                if (value < TimeSpan.Zero || value > TimeSpan.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(Timeout), SR.ConfigInvalidTimeSpanValue);
-                }
-                s_timeout = value;
-            }
         }
     }
 }
