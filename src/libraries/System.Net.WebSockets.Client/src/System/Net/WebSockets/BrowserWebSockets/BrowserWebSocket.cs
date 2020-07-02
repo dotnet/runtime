@@ -209,60 +209,7 @@ namespace System.Net.WebSockets
                 _innerWebSocket.SetObjectProperty("onopen", _onOpen);
 
                 // Setup the onMessage callback
-                _onMessage = (messageEvent) =>
-                {
-                    // get the events "data"
-                    using (messageEvent)
-                    {
-                        ThrowIfNotConnected();
-                        // If the messageEvent's data property is marshalled as a JSObject then we are dealing with
-                        // binary data
-                        object eventData = messageEvent.GetObjectProperty("data");
-                        switch (eventData)
-                        {
-                            case ArrayBuffer buffer:
-                                using (buffer)
-                                {
-                                    _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(buffer, WebSocketMessageType.Binary));
-                                    break;
-                                }
-                            case JSObject blobData:
-                                using (blobData)
-                                {
-                                    // Create a new "FileReader" object
-                                    using (HostObject reader = new HostObject("FileReader"))
-                                    {
-                                        Action<JSObject> loadend = (loadEvent) =>
-                                        {
-                                            using (loadEvent)
-                                            using (JSObject target = (JSObject)loadEvent.GetObjectProperty("target"))
-                                            {
-                                                // https://developer.mozilla.org/en-US/docs/Web/API/FileReader/readyState
-                                                if ((int)target.GetObjectProperty("readyState") == 2) // DONE - The operation is complete.
-                                                {
-                                                    using (ArrayBuffer binResult = (ArrayBuffer)target.GetObjectProperty("result"))
-                                                    {
-                                                        _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(binResult, WebSocketMessageType.Binary));
-                                                    }
-                                                }
-                                            }
-                                        };
-
-                                        reader.Invoke("addEventListener", "loadend", loadend);
-                                        reader.Invoke("readAsArrayBuffer", blobData);
-                                    }
-                                    break;
-                                }
-                            case string message:
-                                {
-                                    _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text));
-                                    break;
-                                }
-                            default:
-                                throw new NotImplementedException(SR.Format(SR.net_WebSockets_Invalid_Binary_Type, _innerWebSocket.GetObjectProperty("binaryType").ToString()));
-                        }
-                    }
-                };
+                _onMessage = (messageEvent) => onMessageCallback(messageEvent);
 
                 // Attach the onMessage callaback
                 _innerWebSocket.SetObjectProperty("onmessage", _onMessage);
@@ -273,6 +220,60 @@ namespace System.Net.WebSockets
                 Dispose();
                 WebSocketException wex = new WebSocketException(SR.net_webstatus_ConnectFailure, wse);
                 throw wex;
+            }
+        }
+
+        private void onMessageCallback(JSObject messageEvent)
+        {
+            // get the events "data"
+            using (messageEvent)
+            {
+                ThrowIfNotConnected();
+                // If the messageEvent's data property is marshalled as a JSObject then we are dealing with
+                // binary data
+                object eventData = messageEvent.GetObjectProperty("data");
+                switch (eventData)
+                {
+                    case ArrayBuffer buffer:
+                        using (buffer)
+                        {
+                            _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(buffer, WebSocketMessageType.Binary));
+                            break;
+                        }
+                    case JSObject blobData:
+                        using (blobData)
+                        {
+                            // Create a new "FileReader" object
+                            using (HostObject reader = new HostObject("FileReader"))
+                            {
+                                Action<JSObject> loadend = (loadEvent) =>
+                                {
+                                    using (loadEvent)
+                                    using (JSObject target = (JSObject)loadEvent.GetObjectProperty("target"))
+                                    {
+                                        // https://developer.mozilla.org/en-US/docs/Web/API/FileReader/readyState
+                                        if ((int)target.GetObjectProperty("readyState") == 2) // DONE - The operation is complete.
+                                        {
+                                            using (ArrayBuffer binResult = (ArrayBuffer)target.GetObjectProperty("result"))
+                                            {
+                                                _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(binResult, WebSocketMessageType.Binary));
+                                            }
+                                        }
+                                    }
+                                };
+                                reader.Invoke("addEventListener", "loadend", loadend);
+                                reader.Invoke("readAsArrayBuffer", blobData);
+                            }
+                            break;
+                        }
+                    case string message:
+                        {
+                            _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text));
+                            break;
+                        }
+                    default:
+                        throw new NotImplementedException(SR.Format(SR.net_WebSockets_Invalid_Binary_Type, _innerWebSocket?.GetObjectProperty("binaryType").ToString()));
+                }
             }
         }
 
@@ -304,6 +305,7 @@ namespace System.Net.WebSockets
 
         public override void Dispose()
         {
+            System.Diagnostics.Debug.WriteLine("BrowserWebSocket::Dispose");
             int priorState = Interlocked.Exchange(ref _state, (int)InternalState.Disposed);
             if (priorState == (int)InternalState.Disposed)
             {
