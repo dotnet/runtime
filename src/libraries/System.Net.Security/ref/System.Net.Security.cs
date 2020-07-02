@@ -124,6 +124,11 @@ namespace System.Net.Security
         public static bool operator !=(System.Net.Security.SslApplicationProtocol left, System.Net.Security.SslApplicationProtocol right) { throw null; }
         public override string ToString() { throw null; }
     }
+    public sealed partial class SslStreamCertificateContext
+    {
+        internal SslStreamCertificateContext() { throw null; }
+        public static SslStreamCertificateContext Create(System.Security.Cryptography.X509Certificates.X509Certificate2 target, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? additionalCertificates, bool offline = false) { throw null; }
+    }
     public partial class SslClientAuthenticationOptions
     {
         public SslClientAuthenticationOptions() { }
@@ -150,6 +155,7 @@ namespace System.Net.Security
         public System.Net.Security.EncryptionPolicy EncryptionPolicy { get { throw null; } set { } }
         public System.Net.Security.RemoteCertificateValidationCallback? RemoteCertificateValidationCallback { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509Certificate? ServerCertificate { get { throw null; } set { } }
+        public System.Net.Security.SslStreamCertificateContext? ServerCertificateContext { get { throw null; } set { } }
         public System.Net.Security.ServerCertificateSelectionCallback? ServerCertificateSelectionCallback { get { throw null; } set { } }
     }
     public partial class SslStream : System.Net.Security.AuthenticatedStream

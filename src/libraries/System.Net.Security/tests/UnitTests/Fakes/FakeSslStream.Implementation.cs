@@ -95,6 +95,11 @@ namespace System.Net.Security
         internal X509Certificate LocalClientCertificate => default;
         internal X509RevocationMode CheckCertRevocationStatus => default;
         internal ProtocolToken CreateShutdownToken() => default;
+
+        internal static X509Certificate2? FindCertificateWithPrivateKey(object instance, bool isServer, X509Certificate certificate)
+        {
+            return certificate as X509Certificate2;
+        }
     }
 
     internal class ProtocolToken
