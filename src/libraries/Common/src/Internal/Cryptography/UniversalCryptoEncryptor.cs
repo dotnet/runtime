@@ -28,28 +28,16 @@ namespace Internal.Cryptography
             return BasicSymmetricCipher.Transform(inputBuffer, outputBuffer);
         }
 
-        protected override unsafe byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
+        protected override int UncheckedTransformFinalBlock(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer)
         {
-            // Rent a buffer with enough space to hold at most a hold block of padding if the input is
-            // is the block size.
-            byte[] padBuffer = CryptoPool.Rent(inputCount + InputBlockSize);
-            int padWritten = 0;
+            int padWritten = PadBlock(inputBuffer, outputBuffer);
+            int transformWritten = BasicSymmetricCipher.TransformFinal(outputBuffer.Slice(0, padWritten), outputBuffer);
 
-            try
-            {
-                padWritten = PadBlock(inputBuffer.AsSpan(inputOffset, inputCount), padBuffer);
-                int transformWritten = BasicSymmetricCipher.TransformFinal(padBuffer.AsSpan(0, padWritten), padBuffer);
+            // After padding, we should have an even number of blocks, and the same applies
+            // to the transform.
+            Debug.Assert(padWritten == transformWritten);
 
-                // After padding, we should have an even number of blocks, and the same applies
-                // to the transform.
-                Debug.Assert(padWritten == transformWritten);
-
-                return padBuffer.AsSpan(0, transformWritten).ToArray();
-            }
-            finally
-            {
-                CryptoPool.Return(padBuffer, clearSize: padWritten);
-            }
+            return transformWritten;
         }
 
         internal int PadBlock(ReadOnlySpan<byte> block, Span<byte> destination)
