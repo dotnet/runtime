@@ -72,7 +72,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             DataflowTestHelpers.TestArgumentsExceptions<Tuple<int, int, int>>(new JoinBlock<int, int, int>());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task TestPostThenReceive()
         {
             const int Iters = 3;
