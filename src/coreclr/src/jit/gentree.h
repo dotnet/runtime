@@ -144,7 +144,7 @@ enum gtCallTypes : BYTE
 *  TargetHandleTypes are used to determine the type of handle present inside GenTreeIntCon node.
 *  The values are such that they don't overlap with helper's or user function's handle.
 */
-enum TargetHandleType : byte
+enum TargetHandleType : BYTE
 {
     THT_Unknown                  = 2,
     THT_GSCookieCheck            = 4,
