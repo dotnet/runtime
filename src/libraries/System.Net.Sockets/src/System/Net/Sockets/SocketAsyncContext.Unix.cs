@@ -459,7 +459,7 @@ namespace System.Net.Sockets
 
             public BufferMemoryReceiveOperation(SocketAsyncContext context) : base(context) { }
 
-            internal override bool IsPartialSuccess => ErrorCode == SocketError.Success && Buffer.Length > BytesTransferred;
+            internal override bool IsPartialSuccess => ErrorCode == SocketError.Success && BytesTransferred > 0 && BytesTransferred < Buffer.Length;
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
@@ -540,7 +540,7 @@ namespace System.Net.Sockets
 
             public BufferPtrReceiveOperation(SocketAsyncContext context) : base(context) { }
 
-            internal override bool IsPartialSuccess => ErrorCode == SocketError.Success && Length > BytesTransferred;
+            internal override bool IsPartialSuccess => ErrorCode == SocketError.Success && BytesTransferred > 0 && BytesTransferred < Length;
 
             protected override bool DoTryComplete(SocketAsyncContext context) =>
                 SocketPal.TryCompleteReceiveFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
@@ -727,12 +727,12 @@ namespace System.Net.Sockets
 
             public bool IsNextOperationSynchronous_Speculative => _isNextOperationSynchronous;
 
-            public void Init()
+            public void Init(bool isReady)
             {
                 Debug.Assert(_queueLock == null);
                 _queueLock = new object();
 
-                _state = QueueState.Ready;
+                _state = isReady ? QueueState.Ready : QueueState.Waiting;
                 _sequenceNumber = 0;
             }
 
@@ -869,6 +869,7 @@ namespace System.Net.Sockets
                             if (_tail == null)
                             {
                                 _state = QueueState.Ready;
+                                _sequenceNumber++;
                                 return null;
                             }
 
@@ -1204,8 +1205,8 @@ namespace System.Net.Sockets
         {
             _socket = socket;
 
-            _receiveQueue.Init();
-            _sendQueue.Init();
+            _receiveQueue.Init(isReady: false);
+            _sendQueue.Init(isReady: true);
         }
 
         public bool PreferInlineCompletions
