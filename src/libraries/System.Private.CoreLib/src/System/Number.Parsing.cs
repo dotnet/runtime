@@ -1956,7 +1956,7 @@ namespace System
             Debug.Assert(p != null && value != null);
             ReadOnlySpan<char> str = value;
 
-            if (str[0] != '\0')
+            if (str.Length > 0)
             {
                 // We only hurt the failure case
                 // This fix is for French or Kazakh cultures. Since a user cannot type 0xA0 or 0x202F as a
@@ -1966,12 +1966,13 @@ namespace System
                 while (true)
                 {
                     char cp = pIndex < p.Length ? p[pIndex] : '\0';
-                    if (cp != str[pIndex] && !(IsSpaceReplacingChar(str[pIndex]) && cp == '\u0020'))
+                    char cstr = pIndex < str.Length ? str[pIndex] : '\0';
+                    if (cp != cstr && !(IsSpaceReplacingChar(cstr) && cp == '\u0020'))
                     {
                         break;
                     }
                     pIndex++;
-                    if (str[pIndex] == '\0')
+                    if (pIndex >= str.Length)
                         return pIndex;
                 }
             }
