@@ -19,6 +19,11 @@ namespace System.Runtime.CompilerServices
 #endif
 
         /// <summary>
+        /// Indicates that this version of runtime supports the Unmanaged calling convention value.
+        /// </summary>
+        public const string UnmanagedSignatureCallingConvention = nameof(UnmanagedSignatureCallingConvention);
+
+        /// <summary>
         /// Indicates that this version of runtime supports covariant returns in overrides of methods declared in classes.
         /// </summary>
         public const string CovariantReturnsOfClasses = nameof(CovariantReturnsOfClasses);
