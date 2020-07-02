@@ -109,7 +109,7 @@ namespace Internal.Cryptography
 
             if (decryptedBytes.Length > 0)
             {
-                unpaddedLength = DepadBlock(decryptedBytes);
+                unpaddedLength = GetPaddingLength(decryptedBytes);
                 decryptedBytes.Slice(0, unpaddedLength).CopyTo(outputBuffer);
                 CryptographicOperations.ZeroMemory(decryptedBytes);
             }
@@ -193,12 +193,11 @@ namespace Internal.Cryptography
         }
 
         /// <summary>
-        ///     Remove the padding from the last blocks being decrypted
+        ///     Gets the length of the padding applied to the block, and validates
+        ///     the padding, if possible.
         /// </summary>
-        private int DepadBlock(ReadOnlySpan<byte> block)
+        private int GetPaddingLength(ReadOnlySpan<byte> block)
         {
-            Debug.Assert(0 <= block.Length);
-
             int padBytes = 0;
 
             // See PadBlock for a description of the padding modes.

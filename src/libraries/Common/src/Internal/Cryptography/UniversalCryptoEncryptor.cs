@@ -73,7 +73,7 @@ namespace Internal.Cryptography
             }
         }
 
-        internal int PadBlock(ReadOnlySpan<byte> block, Span<byte> destination)
+        private int PadBlock(ReadOnlySpan<byte> block, Span<byte> destination)
         {
             int count = block.Length;
             int paddingRemainder = count % InputBlockSize;
