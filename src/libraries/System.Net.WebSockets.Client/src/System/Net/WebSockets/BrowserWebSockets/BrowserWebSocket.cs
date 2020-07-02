@@ -229,11 +229,10 @@ namespace System.Net.WebSockets
                             case JSObject blobData:
                                 using (blobData)
                                 {
-                                    Action<JSObject>? loadend = null;
                                     // Create a new "FileReader" object
                                     using (HostObject reader = new HostObject("FileReader"))
                                     {
-                                        loadend = (loadEvent) =>
+                                        Action<JSObject> loadend = (loadEvent) =>
                                         {
                                             using (loadEvent)
                                             using (JSObject target = (JSObject)loadEvent.GetObjectProperty("target"))
@@ -244,8 +243,6 @@ namespace System.Net.WebSockets
                                                     using (ArrayBuffer binResult = (ArrayBuffer)target.GetObjectProperty("result"))
                                                     {
                                                         _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(binResult, WebSocketMessageType.Binary));
-                                                        if (loadend != null)
-                                                            JavaScript.Runtime.FreeObject(loadend);
                                                     }
                                                 }
                                             }
