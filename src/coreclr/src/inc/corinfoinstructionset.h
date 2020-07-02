@@ -28,8 +28,9 @@ enum CORINFO_InstructionSet
     InstructionSet_Sha1=8,
     InstructionSet_Sha256=9,
     InstructionSet_Atomics=10,
-    InstructionSet_Vector64=11,
-    InstructionSet_Vector128=12,
+    InstructionSet_Dp=11,
+    InstructionSet_Vector64=12,
+    InstructionSet_Vector128=13,
 #endif // TARGET_ARM64
 #ifdef TARGET_AMD64
     InstructionSet_X86Base=1,
@@ -344,6 +345,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Sha256";
         case InstructionSet_Atomics :
             return "Atomics";
+        case InstructionSet_Dp :
+            return "Dp";
         case InstructionSet_Vector64 :
             return "Vector64";
         case InstructionSet_Vector128 :
@@ -469,6 +472,7 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Sha1: return InstructionSet_Sha1;
         case READYTORUN_INSTRUCTION_Sha256: return InstructionSet_Sha256;
         case READYTORUN_INSTRUCTION_Atomics: return InstructionSet_Atomics;
+        case READYTORUN_INSTRUCTION_Dp: return InstructionSet_Dp;
 #endif // TARGET_ARM64
 #ifdef TARGET_AMD64
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;

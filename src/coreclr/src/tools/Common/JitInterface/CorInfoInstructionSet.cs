@@ -29,8 +29,9 @@ namespace Internal.JitInterface
         ARM64_Sha1=8,
         ARM64_Sha256=9,
         ARM64_Atomics=10,
-        ARM64_Vector64=11,
-        ARM64_Vector128=12,
+        ARM64_Dp=11,
+        ARM64_Vector64=12,
+        ARM64_Vector128=13,
         X64_X86Base=1,
         X64_SSE=2,
         X64_SSE2=3,
@@ -448,6 +449,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("sha1", "Sha1", InstructionSet.ARM64_Sha1, true);
                     yield return new InstructionSetInfo("sha2", "Sha256", InstructionSet.ARM64_Sha256, true);
                     yield return new InstructionSetInfo("lse", "", InstructionSet.ARM64_Atomics, true);
+                    yield return new InstructionSetInfo("dotprod", "Dp", InstructionSet.ARM64_Dp, true);
                     yield return new InstructionSetInfo("Vector64", "", InstructionSet.ARM64_Vector64, false);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.ARM64_Vector128, false);
                     break;

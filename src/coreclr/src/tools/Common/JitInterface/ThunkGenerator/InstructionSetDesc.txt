@@ -83,5 +83,6 @@ implication        ,ARM64 ,Sha1      ,ArmBase
 instructionset     ,ARM64 ,Sha256    ,        ,20 ,Sha256   ,sha2
 implication        ,ARM64 ,Sha256    ,ArmBase
 instructionset     ,ARM64 ,          ,Atomics ,21 ,Atomics  ,lse
+instructionset     ,ARM64 ,Dp        ,        ,23 ,Dp       ,dotprod
 instructionset     ,ARM64 ,          ,        ,   ,Vector64 ,
 instructionset     ,ARM64 ,          ,        ,   ,Vector128,
