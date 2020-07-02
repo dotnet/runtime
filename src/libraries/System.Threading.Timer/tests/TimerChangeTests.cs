@@ -49,7 +49,7 @@ namespace System.Threading.Tests
             Assert.Throws<ObjectDisposedException>(() => t.Change(TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]

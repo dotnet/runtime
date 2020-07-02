@@ -13,7 +13,7 @@ namespace System.ComponentModel.Composition.Registration
         private string _contractName;
         private Type _contractType;
         private bool _asMany;
-        private bool _asManySpecified = false;
+        private bool _asManySpecified;
         private bool _allowDefault;
         private bool _allowRecomposition;
         private CreationPolicy _requiredCreationPolicy;

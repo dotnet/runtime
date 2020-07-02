@@ -26,7 +26,7 @@ if (CLR_CMAKE_TARGET_WIN32)
 endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library_clr(ceefgen
-    STATIC
+    OBJECT
     ${CEEFILEGEN_SOURCES}
 )
 target_precompile_header(TARGET ceefgen HEADER stdafx.h)

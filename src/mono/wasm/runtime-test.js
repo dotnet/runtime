@@ -107,7 +107,7 @@ print("Arguments: " + testArguments);
 profilers = [];
 setenv = {};
 runtime_args = [];
-enable_gc = false;
+enable_gc = true;
 enable_zoneinfo = false;
 while (true) {
 	if (args [0].startsWith ("--profile=")) {
@@ -127,8 +127,8 @@ while (true) {
 		var arg = args [0].substring ("--runtime-arg=".length);
 		runtime_args.push (arg);
 		args = args.slice (1);
-	} else if (args [0] == "--enable-gc") {
-		enable_gc = true;
+	} else if (args [0] == "--disable-on-demand-gc") {
+		enable_gc = false;
 		args = args.slice (1);
 	} else if (args [0] == "--enable-zoneinfo") {
 		enable_zoneinfo = true;
@@ -152,7 +152,7 @@ if (typeof window == "undefined")
 var Module = { 
 	mainScriptUrlOrBlob: "dotnet.js",
 
-	print: function(x) { print ("WASM: " + x) },
+	print: print,
 	printErr: function(x) { print ("WASM-ERR: " + x) },
 
 	onAbort: function(x) {
@@ -201,9 +201,8 @@ var Module = {
 			}
 		}
 
-		if (enable_gc) {
-			var f = Module.cwrap ('mono_wasm_enable_on_demand_gc', 'void', []);
-			f ();
+		if (!enable_gc) {
+			Module.ccall ('mono_wasm_enable_on_demand_gc', 'void', ['number'], [0]);
 		}
 		if (enable_zoneinfo) {
 			// Load the zoneinfo data into the VFS rooted at /zoneinfo
@@ -378,6 +377,20 @@ var App = {
 				print (ex.stack);
 				test_exit (1);
 			}
+
+/*
+			// For testing tp/timers etc.
+			while (true) {
+				// Sleep by busy waiting
+				var start = performance.now ();
+				useconds = 1e6 / 10;
+				while (performance.now() - start < useconds / 1000) {
+					// Do nothing.
+				}
+
+				Module.pump_message ();
+			}
+*/
 
 			if (is_browser)
 				test_exit (0);

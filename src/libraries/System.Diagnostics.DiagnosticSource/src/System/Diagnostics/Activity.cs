@@ -789,6 +789,30 @@ namespace System.Diagnostics
                    ('0' <= id[1] && id[1] <= '9' || 'a' <= id[1] && id[1] <= 'e');
         }
 
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+        [System.Security.SecuritySafeCriticalAttribute]
+#endif
+        internal static bool TryConvertIdToContext(string id, out ActivityContext context)
+        {
+            context = default;
+            if (!IsW3CId(id))
+            {
+                return false;
+            }
+
+            ReadOnlySpan<char> traceIdSpan = id.AsSpan(3,  32);
+            ReadOnlySpan<char> spanIdSpan  = id.AsSpan(36, 16);
+
+            if (!ActivityTraceId.IsLowerCaseHexAndNotAllZeros(traceIdSpan) || !ActivityTraceId.IsLowerCaseHexAndNotAllZeros(spanIdSpan) ||
+                !ActivityTraceId.IsHexadecimalLowercaseChar(id[53]) || !ActivityTraceId.IsHexadecimalLowercaseChar(id[54]))
+            {
+                return false;
+            }
+
+            context = new ActivityContext(new ActivityTraceId(traceIdSpan.ToString()), new ActivitySpanId(spanIdSpan.ToString()), (ActivityTraceFlags) ActivityTraceId.HexByteFromChars(id[53], id[54]));
+            return true;
+        }
+
         /// <summary>
         /// Dispose will stop the Activity if it is already started and notify any event listeners. Nothing will happen otherwise.
         /// </summary>
@@ -1225,7 +1249,7 @@ namespace System.Diagnostics
     public enum ActivityTraceFlags
     {
         None = 0b_0_0000000,
-        Recorded = 0b_0_0000001, // The Activity (or more likley its parents) has been marked as useful to record
+        Recorded = 0b_0_0000001, // The Activity (or more likely its parents) has been marked as useful to record
     }
 
     /// <summary>

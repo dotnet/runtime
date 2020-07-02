@@ -26,9 +26,9 @@ namespace System.ComponentModel.Composition.Hosting
     public class TypeCatalog : ComposablePartCatalog, ICompositionElement
     {
         private readonly object _thisLock = new object();
-        private Type[]? _types = null;
+        private Type[]? _types;
         private volatile List<ComposablePartDefinition>? _parts;
-        private volatile bool _isDisposed = false;
+        private volatile bool _isDisposed;
         private readonly ICompositionElement _definitionOrigin;
         private readonly Lazy<IDictionary<string, List<ComposablePartDefinition>>> _contractPartIndex;
 

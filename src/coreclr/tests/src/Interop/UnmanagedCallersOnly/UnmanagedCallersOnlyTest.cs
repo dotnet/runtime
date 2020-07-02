@@ -42,8 +42,7 @@ public class Program
             TestUnmanagedCallersOnlyValid();
             TestUnmanagedCallersOnlyValid_OnNewNativeThread();
             TestUnmanagedCallersOnlyValid_PrepareMethod();
-            // Fails due to https://github.com/dotnet/runtime/issues/38192
-            //TestUnmanagedCallersOnlyMultipleTimesValid();
+            TestUnmanagedCallersOnlyMultipleTimesValid();
             NegativeTest_NonStaticMethod();
             NegativeTest_ViaDelegate();
             NegativeTest_NonBlittable();
@@ -605,7 +604,7 @@ public class Program
         testNativeMethod();
     }
 
-    [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
     public static int CallbackViaUnmanagedCalli(int val)
     {
         return DoubleImpl(val);
@@ -653,7 +652,7 @@ public class Program
         Assert.AreEqual(expected, testNativeMethod());
     }
 
-    [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
     public static int CallbackViaUnmanagedCalliThrows(int val)
     {
         throw new Exception() { HResult = CallbackThrowsErrorCode };

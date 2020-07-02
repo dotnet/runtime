@@ -17,7 +17,7 @@ namespace System.Xml.Serialization
         private string _name;
         private string _ns;
         private int _order = -1;
-        private bool _nsSpecified = false;
+        private bool _nsSpecified;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>

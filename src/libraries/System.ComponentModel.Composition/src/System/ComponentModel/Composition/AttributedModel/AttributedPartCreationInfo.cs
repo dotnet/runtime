@@ -17,9 +17,9 @@ namespace System.ComponentModel.Composition.AttributedModel
     internal class AttributedPartCreationInfo : IReflectionPartCreationInfo
     {
         private readonly Type _type;
-        private readonly bool _ignoreConstructorImports = false;
+        private readonly bool _ignoreConstructorImports;
         private readonly ICompositionElement? _origin;
-        private PartCreationPolicyAttribute? _partCreationPolicy = null;
+        private PartCreationPolicyAttribute? _partCreationPolicy;
         private ConstructorInfo? _constructor;
         private IEnumerable<ExportDefinition>? _exports;
         private IEnumerable<ImportDefinition>? _imports;

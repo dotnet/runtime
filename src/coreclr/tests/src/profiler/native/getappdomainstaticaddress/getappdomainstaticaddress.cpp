@@ -224,7 +224,7 @@ HRESULT GetAppDomainStaticAddress::ModuleUnloadStarted(ModuleID moduleId)
                 if (DEBUG_OUT)
                 {
                     wprintf(L"ClassID 0x%" PRIxPTR " (%s) being removed due to generic argument 0x%" PRIxPTR " (%s) belonging to the parent module 0x%" PRIxPTR " unloading\n",
-                            classId, GetClassIDName(classId).ToWString().c_str(), typeArg, GetClassIDName(typeArg).ToWString().c_str(), typeArgModId);
+                            classId, GetClassIDName(classId).ToCStr(), typeArg, GetClassIDName(typeArg).ToCStr(), typeArgModId);
                 }
 
                 shouldEraseClassId = true;
@@ -331,7 +331,7 @@ HRESULT GetAppDomainStaticAddress::ClassUnloadStarted(ClassID classId)
 
     if (DEBUG_OUT)
     {
-        wprintf(L"Class 0x%" PRIxPTR " (%s) unload started\n", classId, GetClassIDName(classId).ToWString().c_str());
+        wprintf(L"Class 0x%" PRIxPTR " (%s) unload started\n", classId, GetClassIDName(classId).ToCStr());
     }
 
     for (auto it = classADMap.begin(); it != classADMap.end(); ++it)

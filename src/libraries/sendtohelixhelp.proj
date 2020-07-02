@@ -62,6 +62,11 @@
     <HelixType Condition="'$(BuildAllConfigurations)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <IncludeDotNetCli>true</IncludeDotNetCli>
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(HelixCommand)' == '' and '$(BuildAllConfigurations)' == 'true'">
     <HelixPreCommand Include="set DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <HelixPreCommand Include="set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
@@ -147,7 +152,7 @@
     <Message Importance="High" Text="Using Timeout: $(_timeoutSpan)" />
 
     <ItemGroup>
-      <HelixCorrelationPayload Include="$(HelixCorrelationPayload)" />
+      <HelixCorrelationPayload Condition="'$(TargetOS)' != 'Browser'" Include="$(HelixCorrelationPayload)" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
 

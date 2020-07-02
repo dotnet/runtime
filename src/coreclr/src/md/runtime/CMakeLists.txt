@@ -46,7 +46,7 @@ add_library_clr(mdruntime_dac ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime_dac PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_header(TARGET mdruntime_dac HEADER stdafx.h)
 
-add_library_clr(mdruntime_wks ${MDRUNTIME_SOURCES})
+add_library_clr(mdruntime_wks OBJECT ${MDRUNTIME_SOURCES})
 target_compile_definitions(mdruntime_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
 target_precompile_header(TARGET mdruntime_wks HEADER stdafx.h)
 

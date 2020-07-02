@@ -255,8 +255,8 @@ namespace System.Xml.Serialization
         private readonly MemberInfo _checkSpecifiedMemberInfo;
         private readonly MethodInfo _checkShouldPersistMethodInfo;
         private readonly bool _checkShouldPersist;
-        private readonly bool _readOnly = false;
-        private readonly bool _isProperty = false;
+        private readonly bool _readOnly;
+        private readonly bool _isProperty;
         private readonly Type _fieldType;
         private readonly string _name;
         private readonly TypeDesc _fieldTypeDesc;

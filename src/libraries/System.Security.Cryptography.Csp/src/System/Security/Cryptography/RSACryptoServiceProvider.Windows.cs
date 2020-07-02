@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
         private readonly bool _randomKeyContainer;
         private SafeKeyHandle? _safeKeyHandle;
         private SafeProvHandle? _safeProvHandle;
-        private static volatile CspProviderFlags s_useMachineKeyStore = 0;
+        private static volatile CspProviderFlags s_useMachineKeyStore;
         private bool _disposed;
 
         public RSACryptoServiceProvider()

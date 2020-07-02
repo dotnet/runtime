@@ -31,13 +31,13 @@ namespace System.IO
         private NotifyFilters _notifyFilters = c_defaultNotifyFilters;
 
         // Flag to watch subtree of this directory
-        private bool _includeSubdirectories = false;
+        private bool _includeSubdirectories;
 
         // Flag to note whether we are attached to the thread pool and responding to changes
-        private bool _enabled = false;
+        private bool _enabled;
 
         // Are we in init?
-        private bool _initializing = false;
+        private bool _initializing;
 
         // Buffer size
         private uint _internalBufferSize = 8192;

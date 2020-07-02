@@ -31,6 +31,6 @@ endif(WIN32)
 convert_to_absolute_path(INTEROP_SOURCES ${INTEROP_SOURCES})
 
 add_library_clr(interop
-    STATIC
+    OBJECT
     ${INTEROP_SOURCES}
 )

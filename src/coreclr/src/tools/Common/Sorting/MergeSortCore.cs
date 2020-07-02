@@ -41,17 +41,12 @@ namespace ILCompiler.Sorting.Implementation
                 TDataStructureAccessor accessor = default(TDataStructureAccessor);
                 int halfLen = length / 2;
 
-                TaskCompletionSource<bool> rightSortComplete = new System.Threading.Tasks.TaskCompletionSource<bool>();
-                _ = Task.Run(async () =>
-                {
-                    await ParallelSort(arrayToSort, index + halfLen, length - halfLen, comparer);
-                    rightSortComplete.SetResult(true);
-                });
+                Task rightSortTask = Task.Run(() => ParallelSort(arrayToSort, index + halfLen, length - halfLen, comparer));
 
                 T[] localCopyOfHalfOfArray = new T[halfLen];
                 accessor.Copy(arrayToSort, index, localCopyOfHalfOfArray, 0, halfLen);
                 await MergeSortCore<T, T[], ArrayAccessor<T>, TComparer, TCompareAsEqualAction>.ParallelSort(localCopyOfHalfOfArray, 0, halfLen, comparer);
-                await rightSortComplete.Task;
+                await rightSortTask;
                 Merge(localCopyOfHalfOfArray, arrayToSort, index, halfLen, length, comparer);
             }
         }

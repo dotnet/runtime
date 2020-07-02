@@ -9,11 +9,11 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ActiveDirectorySchemaClassCollection : CollectionBase
     {
-        private DirectoryEntry _classEntry = null;
-        private readonly string _propertyName = null;
-        private readonly ActiveDirectorySchemaClass _schemaClass = null;
-        private readonly bool _isBound = false;
-        private readonly DirectoryContext _context = null;
+        private DirectoryEntry _classEntry;
+        private readonly string _propertyName;
+        private readonly ActiveDirectorySchemaClass _schemaClass;
+        private readonly bool _isBound;
+        private readonly DirectoryContext _context;
 
         internal ActiveDirectorySchemaClassCollection(DirectoryContext context,
                                                         ActiveDirectorySchemaClass schemaClass,

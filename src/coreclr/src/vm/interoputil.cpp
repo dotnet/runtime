@@ -4520,43 +4520,6 @@ MethodTable* GetClassFromIProvideClassInfo(IUnknown* pUnk)
 
 #endif // FEATURE_COMINTEROP
 
-static void DECLSPEC_NORETURN ThrowTypeLoadExceptionWithInner(MethodTable *pClassMT, LPCWSTR pwzName, HRESULT hr, unsigned resID)
-{
-    CONTRACTL
-    {
-        THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    StackSString simpleName(SString::Utf8, pClassMT->GetAssembly()->GetSimpleName());
-
-    EEMessageException ex(hr);
-    EX_THROW_WITH_INNER(EETypeLoadException, (pwzName, simpleName.GetUnicode(), nullptr, resID), &ex);
-}
-
-//
-// Creates activation factory and wraps it with a RCW
-//
-void GetNativeWinRTFactoryObject(MethodTable *pMT, Thread *pThread, MethodTable *pFactoryIntfMT, BOOL bNeedUniqueRCW, ICOMInterfaceMarshalerCallback *pCallback, OBJECTREF *prefFactory)
-{
-    CONTRACTL
-    {
-        THROWS;
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(CheckPointer(pThread));
-        PRECONDITION(CheckPointer(pFactoryIntfMT, NULL_OK));
-        PRECONDITION(CheckPointer(pCallback, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    COMPlusThrow(kPlatformNotSupportedException, W("PlatformNotSupported_WinRT"));
-}
-
 #endif //#ifndef CROSSGEN_COMPILE
-
 
 #endif // FEATURE_COMINTEROP

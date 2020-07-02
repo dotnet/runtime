@@ -23,7 +23,7 @@ namespace System.Xml.Xsl.XsltOld
         private bool _isEmptyTag;
 
         internal string[] TextInfo = new string[4];
-        internal int TextInfoCount = 0;
+        internal int TextInfoCount;
 
         internal bool search;
         internal HtmlElementProps htmlProps;

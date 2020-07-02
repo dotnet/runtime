@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using System.Net.Security;
 using System.Collections.Generic;
 using System.Security.Authentication;
@@ -20,6 +21,8 @@ namespace System.Net.Http
 #endif
         private readonly DiagnosticsHandler _diagnosticsHandler;
         private ClientCertificateOption _clientCertificateOptions;
+
+        private volatile bool _disposed;
 
         public HttpClientHandler()
         {
@@ -143,6 +146,39 @@ namespace System.Net.Http
             set => _underlyingHandler.MaxConnectionsPerServer = value;
         }
 
+        public long MaxRequestContentBufferSize
+        {
+            // This property is not supported. In the .NET Framework it was only used when the handler needed to
+            // automatically buffer the request content. That only happened if neither 'Content-Length' nor
+            // 'Transfer-Encoding: chunked' request headers were specified. So, the handler thus needed to buffer
+            // in the request content to determine its length and then would choose 'Content-Length' semantics when
+            // POST'ing. In .NET Core, the handler will resolve the ambiguity by always choosing
+            // 'Transfer-Encoding: chunked'. The handler will never automatically buffer in the request content.
+            get
+            {
+                return 0; // Returning zero is appropriate since in .NET Framework it means no limit.
+            }
+
+            set
+            {
+                if (value < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                if (value > HttpContent.MaxBufferSize)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value,
+                        SR.Format(CultureInfo.InvariantCulture, SR.net_http_content_buffersize_limit,
+                        HttpContent.MaxBufferSize));
+                }
+
+                CheckDisposed();
+
+                // No-op on property setter.
+            }
+        }
+
         public int MaxResponseHeadersLength
         {
             get => _underlyingHandler.MaxResponseHeadersLength;
@@ -235,6 +271,14 @@ namespace System.Net.Http
 
         public IDictionary<string, object?> Properties => _underlyingHandler.Properties;
 
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            return DiagnosticsHandler.IsEnabled() ?
+                _diagnosticsHandler.Send(request, cancellationToken) :
+                _underlyingHandler.Send(request, cancellationToken);
+        }
+
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
@@ -255,6 +299,14 @@ namespace System.Net.Http
             // Hack to trigger an InvalidOperationException if a property that's stored on
             // SslOptions is changed, since SslOptions itself does not do any such checks.
             _underlyingHandler.SslOptions = _underlyingHandler.SslOptions;
+        }
+
+        private void CheckDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().ToString());
+            }
         }
     }
 }

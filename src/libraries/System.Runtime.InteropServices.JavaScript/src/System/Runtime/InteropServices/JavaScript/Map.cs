@@ -138,7 +138,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             #region IDisposable Support
-            private bool _disposedValue = false; // To detect redundant calls
+            private bool _disposedValue; // To detect redundant calls
 
             private void Dispose(bool disposing)
             {
@@ -230,7 +230,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
 
                 #region IDisposable Support
-                private bool _disposedValue = false; // To detect redundant calls
+                private bool _disposedValue; // To detect redundant calls
 
                 private void Dispose(bool disposing)
                 {

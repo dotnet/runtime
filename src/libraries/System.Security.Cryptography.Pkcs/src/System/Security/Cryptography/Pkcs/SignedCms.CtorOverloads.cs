@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Pkcs
         private static readonly Oid s_cmsDataOid = Oid.FromOidValue(Oids.Pkcs7Data, OidGroup.ExtensionOrAttribute);
 
         private static ContentInfo MakeEmptyContentInfo() =>
-            new ContentInfo(new Oid(s_cmsDataOid), Array.Empty<byte>());
+            new ContentInfo(s_cmsDataOid.CopyOid(), Array.Empty<byte>());
 
         public SignedCms()
             : this(SubjectIdentifierType.IssuerAndSerialNumber, MakeEmptyContentInfo(), false)

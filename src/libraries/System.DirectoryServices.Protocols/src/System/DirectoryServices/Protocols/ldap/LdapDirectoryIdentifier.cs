@@ -6,7 +6,7 @@ namespace System.DirectoryServices.Protocols
 {
     public class LdapDirectoryIdentifier : DirectoryIdentifier
     {
-        private readonly string[] _servers = null;
+        private readonly string[] _servers;
 
         public LdapDirectoryIdentifier(string server) : this(server != null ? new string[] { server } : null, false, false)
         {

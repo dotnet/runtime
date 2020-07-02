@@ -81,7 +81,7 @@ namespace System.IO.Tests
             Assert.InRange(trackingStream.TimesCalled(nameof(trackingStream.Position)), 0, 1);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task AsyncIfCanSeekIsTrueLengthAndPositionShouldOnlyBeCalledOnce()
         {
             var baseStream = new DelegateStream(

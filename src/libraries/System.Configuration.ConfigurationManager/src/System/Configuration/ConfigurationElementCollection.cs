@@ -25,7 +25,7 @@ namespace System.Configuration
 
         private int _removedItemCount; // Number of items removed for this collection (not including parent)
         private string _removeElement = DefaultRemoveItemName;
-        internal bool InternalAddToEnd = false;
+        internal bool InternalAddToEnd;
         internal string InternalElementTagName = string.Empty;
 
         protected ConfigurationElementCollection() { }

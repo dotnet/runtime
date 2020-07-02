@@ -2036,7 +2036,7 @@ public:
         return m_tpIndex;
     }
 
-    IUnknown *CreateBinderContext();
+    CLRPrivBinderCoreCLR *CreateBinderContext();
 
     void SetIgnoreUnhandledExceptions()
     {

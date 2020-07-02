@@ -58,7 +58,7 @@ if(FEATURE_JIT_PITCHING)
 endif(FEATURE_JIT_PITCHING)
 
 # Compile *_i.cpp to lib
-_add_library(corguids ${CORGUIDS_SOURCES})
+_add_library(corguids OBJECT ${CORGUIDS_SOURCES})
 
 # Binplace the inc files for packaging later.
 

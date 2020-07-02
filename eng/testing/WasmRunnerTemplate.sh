@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 
 EXECUTION_DIR=$(dirname $0)
-JAVASCRIPT_ENGINE=$1
 
 cd $EXECUTION_DIR
 
 XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
-dotnet xharness wasm test --engine=$JAVASCRIPT_ENGINE \
-    --js-file=runtime.js -v \
-    --output-directory=$XHARNESS_OUT \
-    -- --enable-gc --run WasmTestRunner.dll ${@:2}
+if [ ! -x "$(command -v xharness)" ]; then
+	HARNESS_RUNNER="dotnet"
+fi
+
+# RunCommands defined in tests.mobile.targets
+[[RunCommands]]
 
 _exitCode=$?
 
