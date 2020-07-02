@@ -6,6 +6,6 @@ namespace System.ComponentModel
 {
     public partial class Win32Exception
     {
-        private static string GetErrorMessage(int error) => string.Empty;
+        private static string GetErrorMessage(int error) => "Unsupported platform";
     }
 }
