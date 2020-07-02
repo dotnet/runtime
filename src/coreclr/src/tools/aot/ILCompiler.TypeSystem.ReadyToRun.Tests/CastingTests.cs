@@ -54,6 +54,7 @@ namespace TypeSystemTests
             Assert.True(iFooType.CanCastTo(objectType));
 
             Assert.False(objectType.CanCastTo(iFooType));
+            Assert.False(true); // Intentional failure!
         }
         
         [Fact]
