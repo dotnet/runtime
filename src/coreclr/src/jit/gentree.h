@@ -144,7 +144,7 @@ enum gtCallTypes : BYTE
 *  TargetHandleTypes are used to determine the type of handle present inside GenTreeIntCon node.
 *  The values are such that they don't overlap with helper's or user function's handle.
 */
-enum MethodHandleType : byte
+enum TargetHandleType : byte
 {
     Unknown                  = 2,
     GSCookieCheck            = 4,
@@ -2976,7 +2976,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
 #ifdef DEBUG
     // If the value represents target address, holds the method handle to that target which is used
     // to fetch target method name and display in the disassembled code.
-    size_t gtMethodHandle = 0;
+    size_t gtTargetHandle = 0;
 #endif
 
     GenTreeIntCon(var_types type, ssize_t value DEBUGARG(bool largeNode = false))

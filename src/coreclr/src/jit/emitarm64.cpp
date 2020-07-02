@@ -12101,6 +12101,9 @@ void emitter::emitDispIns(
                     if ((idFlags == GTF_ICON_STR_HDL) || (idFlags == GTF_ICON_PSTR_HDL))
                     {
                         stringLiteral = emitComp->eeGetCPString(targetHandle);
+                        // Note that eGetCPString isn't currently implemented on Linux/ARM
+                        // and instead always returns nullptr. However, use it here, so in
+                        // future, once it is is implemented, no changes will be needed here.
                         if (stringLiteral == nullptr)
                         {
                             stringLiteral = L"String handle";
@@ -12118,15 +12121,15 @@ void emitter::emitDispIns(
                     {
                         targetName = emitComp->eeGetClassName((CORINFO_CLASS_HANDLE)targetHandle);
                     }
-                    else if (targetHandle == MethodHandleType::IntializeArrayIntrinsics)
+                    else if (targetHandle == TargetHandleType::IntializeArrayIntrinsics)
                     {
                         targetName = "IntializeArrayIntrinsics";
                     }
-                    else if (targetHandle == MethodHandleType::GSCookieCheck)
+                    else if (targetHandle == TargetHandleType::GSCookieCheck)
                     {
                         targetName = "GlobalSecurityCookieCheck";
                     }
-                    else if (targetHandle == MethodHandleType::SetGSCookie)
+                    else if (targetHandle == TargetHandleType::SetGSCookie)
                     {
                         targetName = "SetGlobalSecurityCookie";
                     }

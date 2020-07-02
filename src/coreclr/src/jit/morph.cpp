@@ -2705,7 +2705,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         size_t   addrValue           = (size_t)call->gtEntryPoint.addr;
         GenTree* indirectCellAddress = gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
 #ifdef DEBUG
-        indirectCellAddress->AsIntCon()->gtMethodHandle = (size_t)call->gtCallMethHnd;
+        indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
 #endif
         indirectCellAddress->SetRegNum(REG_R2R_INDIRECT_PARAM);
 
@@ -6098,7 +6098,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->AsField()->gtFieldLookup.addr,
                                                       GTF_ICON_FIELD_HDL, false);
 #ifdef DEBUG
-                offsetNode->gtGetOp1()->AsIntCon()->gtMethodHandle = (size_t)symHnd;
+                offsetNode->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)symHnd;
 #endif
             }
             else
@@ -8398,7 +8398,7 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
         ssize_t addr = ssize_t(call->gtStubCallStubAddr);
         stubAddrArg  = gtNewIconHandleNode(addr, GTF_ICON_FTN_ADDR);
 #ifdef DEBUG
-        stubAddrArg->AsIntCon()->gtMethodHandle = (size_t)call->gtCallMethHnd;
+        stubAddrArg->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
 #endif
     }
     assert(stubAddrArg != nullptr);

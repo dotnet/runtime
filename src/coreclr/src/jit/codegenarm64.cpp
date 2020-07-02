@@ -1687,7 +1687,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (con->ImmedValNeedsReloc(compiler))
             {
                 instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, targetReg, cnsVal,
-                                       INS_FLAGS_DONT_CARE DEBUGARG(tree->AsIntCon()->gtMethodHandle)
+                                       INS_FLAGS_DONT_CARE DEBUGARG(tree->AsIntCon()->gtTargetHandle)
                                            DEBUGARG(tree->AsIntCon()->gtFlags));
                 regSet.verifyRegUsed(targetReg);
             }

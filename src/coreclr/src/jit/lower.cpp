@@ -3629,7 +3629,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
                 // a single indirection.
                 GenTree* cellAddr = AddrGen(addr);
 #ifdef DEBUG
-                cellAddr->AsIntCon()->gtMethodHandle = (size_t)call->gtCallMethHnd;
+                cellAddr->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
 #endif
                 GenTree* indir = Ind(cellAddr);
                 result         = indir;
@@ -4446,7 +4446,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
             case IAT_PVALUE:
                 addrTree = AddrGen(addr);
 #ifdef DEBUG
-                addrTree->AsIntCon()->gtMethodHandle = (size_t)methHnd;
+                addrTree->AsIntCon()->gtTargetHandle = (size_t)methHnd;
 #endif
                 result = Ind(addrTree);
                 break;
@@ -4454,7 +4454,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
             case IAT_PPVALUE:
                 addrTree = AddrGen(addr);
 #ifdef DEBUG
-                addrTree->AsIntCon()->gtMethodHandle = (size_t)methHnd;
+                addrTree->AsIntCon()->gtTargetHandle = (size_t)methHnd;
 #endif
                 result = Ind(Ind(addrTree));
                 break;

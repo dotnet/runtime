@@ -5923,7 +5923,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
             tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
             tree->gtType = TYP_REF;
 #ifdef DEBUG
-            tree->AsIntCon()->gtMethodHandle = (size_t)pValue;
+            tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
 #endif
             tree = gtNewOperNode(GT_NOP, TYP_REF, tree); // prevents constant folding
             break;
@@ -5932,7 +5932,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
             // Create an indirection
             tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, false);
 #ifdef DEBUG
-            tree->gtGetOp1()->AsIntCon()->gtMethodHandle = (size_t)pValue;
+            tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
 #endif
             break;
 
@@ -5940,7 +5940,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
             // Create the first indirection
             tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_PSTR_HDL, true);
 #ifdef DEBUG
-            tree->gtGetOp1()->AsIntCon()->gtMethodHandle = (size_t)pValue;
+            tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
 #endif
 
             // Create the second indirection
@@ -7199,7 +7199,7 @@ GenTree* Compiler::gtCloneExpr(
                 {
                     copy = gtNewIconNode(tree->AsIntCon()->gtIconVal, tree->gtType);
 #ifdef DEBUG
-                    copy->AsIntCon()->gtMethodHandle = tree->AsIntCon()->gtMethodHandle;
+                    copy->AsIntCon()->gtTargetHandle = tree->AsIntCon()->gtTargetHandle;
 #endif
                     copy->AsIntCon()->gtCompileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
                     copy->AsIntCon()->gtFieldSeq          = tree->AsIntCon()->gtFieldSeq;
