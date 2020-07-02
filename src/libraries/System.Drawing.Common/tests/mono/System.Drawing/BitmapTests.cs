@@ -1304,7 +1304,7 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void BitmapTypeStringCtor2()
         {
-            Assert.Throws<ArgumentException>(() => new Bitmap(typeof(Bitmap), null));
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("resource", null, () => new Bitmap(typeof(Bitmap), null));
         }
 
         private void SetResolution(float x, float y)
