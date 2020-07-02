@@ -1445,6 +1445,24 @@ static bool ShouldRedirectToCurrentLibrary(LPCSTR libraryNameOrPath)
     if (libraryNameOrPath == nullptr)
         return true;
 
+    const char* toRedirect[] = {
+            "System.Native.so",
+            "System.Globalization.Native.so",
+            "System.IO.Compression.Native.so",
+            "System.Net.Security.Native.so",
+            "System.Security.Cryptography.Native.OpenSsl.so"
+    };
+
+    int nameLength = strlen(libraryNameOrPath);
+    int count = sizeof(toRedirect) / sizeof(toRedirect[0]);
+    for (int i = 0; i < count; ++i)
+    {
+        const char* match = toRedirect[i];
+        int matchLength = strlen(match);
+        if (nameLength >= matchLength && strcmp(libraryNameOrPath + nameLength - matchLength, match) == 0)
+            return true;
+    }
+
     return false;
 }
 
