@@ -19,9 +19,9 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void ShiftLeftLogicalAndInsert_Vector128_UInt64()
+        private static void ShiftLeftAndInsert_Vector128_UInt64()
         {
-            var test = new ImmBinaryOpTest__ShiftLeftLogicalAndInsert_Vector128_UInt64();
+            var test = new ImmBinaryOpTest__ShiftLeftAndInsert_Vector128_UInt64();
 
             if (test.IsSupported)
             {
@@ -110,7 +110,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class ImmBinaryOpTest__ShiftLeftLogicalAndInsert_Vector128_UInt64
+    public sealed unsafe class ImmBinaryOpTest__ShiftLeftAndInsert_Vector128_UInt64
     {
         private struct DataTable
         {
@@ -182,20 +182,20 @@ namespace JIT.HardwareIntrinsics.Arm
                 return testStruct;
             }
 
-            public void RunStructFldScenario(ImmBinaryOpTest__ShiftLeftLogicalAndInsert_Vector128_UInt64 testClass)
+            public void RunStructFldScenario(ImmBinaryOpTest__ShiftLeftAndInsert_Vector128_UInt64 testClass)
             {
-                var result = AdvSimd.ShiftLeftLogicalAndInsert(_fld1, _fld2, 32);
+                var result = AdvSimd.ShiftLeftAndInsert(_fld1, _fld2, 32);
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(_fld1, _fld2, testClass._dataTable.outArrayPtr);
             }
 
-            public void RunStructFldScenario_Load(ImmBinaryOpTest__ShiftLeftLogicalAndInsert_Vector128_UInt64 testClass)
+            public void RunStructFldScenario_Load(ImmBinaryOpTest__ShiftLeftAndInsert_Vector128_UInt64 testClass)
             {
                 fixed (Vector128<UInt64>* pFld1 = &_fld1)
                 fixed (Vector128<UInt64>* pFld2 = &_fld2)
                 {
-                    var result = AdvSimd.ShiftLeftLogicalAndInsert(
+                    var result = AdvSimd.ShiftLeftAndInsert(
                         AdvSimd.LoadVector128((UInt64*)(pFld1)),
                         AdvSimd.LoadVector128((UInt64*)(pFld2)),
                         32
@@ -225,7 +225,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        static ImmBinaryOpTest__ShiftLeftLogicalAndInsert_Vector128_UInt64()
+        static ImmBinaryOpTest__ShiftLeftAndInsert_Vector128_UInt64()
         {
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetUInt64(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt64>, byte>(ref _clsVar1), ref Unsafe.As<UInt64, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<UInt64>>());
@@ -233,7 +233,7 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt64>, byte>(ref _clsVar2), ref Unsafe.As<UInt64, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<UInt64>>());
         }
 
-        public ImmBinaryOpTest__ShiftLeftLogicalAndInsert_Vector128_UInt64()
+        public ImmBinaryOpTest__ShiftLeftAndInsert_Vector128_UInt64()
         {
             Succeeded = true;
 
@@ -255,7 +255,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = AdvSimd.ShiftLeftLogicalAndInsert(
+            var result = AdvSimd.ShiftLeftAndInsert(
                 Unsafe.Read<Vector128<UInt64>>(_dataTable.inArray1Ptr),
                 Unsafe.Read<Vector128<UInt64>>(_dataTable.inArray2Ptr),
                 32
@@ -269,7 +269,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
-            var result = AdvSimd.ShiftLeftLogicalAndInsert(
+            var result = AdvSimd.ShiftLeftAndInsert(
                 AdvSimd.LoadVector128((UInt64*)(_dataTable.inArray1Ptr)),
                 AdvSimd.LoadVector128((UInt64*)(_dataTable.inArray2Ptr)),
                 32
@@ -283,7 +283,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.ShiftLeftLogicalAndInsert), new Type[] { typeof(Vector128<UInt64>), typeof(Vector128<UInt64>), typeof(byte) })
+            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.ShiftLeftAndInsert), new Type[] { typeof(Vector128<UInt64>), typeof(Vector128<UInt64>), typeof(byte) })
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<Vector128<UInt64>>(_dataTable.inArray1Ptr),
                                         Unsafe.Read<Vector128<UInt64>>(_dataTable.inArray2Ptr),
@@ -298,7 +298,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
 
-            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.ShiftLeftLogicalAndInsert), new Type[] { typeof(Vector128<UInt64>), typeof(Vector128<UInt64>), typeof(byte) })
+            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.ShiftLeftAndInsert), new Type[] { typeof(Vector128<UInt64>), typeof(Vector128<UInt64>), typeof(byte) })
                                      .Invoke(null, new object[] {
                                         AdvSimd.LoadVector128((UInt64*)(_dataTable.inArray1Ptr)),
                                         AdvSimd.LoadVector128((UInt64*)(_dataTable.inArray2Ptr)),
@@ -313,7 +313,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = AdvSimd.ShiftLeftLogicalAndInsert(
+            var result = AdvSimd.ShiftLeftAndInsert(
                 _clsVar1,
                 _clsVar2,
                 32
@@ -330,7 +330,7 @@ namespace JIT.HardwareIntrinsics.Arm
             fixed (Vector128<UInt64>* pClsVar1 = &_clsVar1)
             fixed (Vector128<UInt64>* pClsVar2 = &_clsVar2)
             {
-                var result = AdvSimd.ShiftLeftLogicalAndInsert(
+                var result = AdvSimd.ShiftLeftAndInsert(
                     AdvSimd.LoadVector128((UInt64*)(pClsVar1)),
                     AdvSimd.LoadVector128((UInt64*)(pClsVar2)),
                     32
@@ -347,7 +347,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var op1 = Unsafe.Read<Vector128<UInt64>>(_dataTable.inArray1Ptr);
             var op2 = Unsafe.Read<Vector128<UInt64>>(_dataTable.inArray2Ptr);
-            var result = AdvSimd.ShiftLeftLogicalAndInsert(op1, op2, 32);
+            var result = AdvSimd.ShiftLeftAndInsert(op1, op2, 32);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(op1, op2, _dataTable.outArrayPtr);
@@ -359,7 +359,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var op1 = AdvSimd.LoadVector128((UInt64*)(_dataTable.inArray1Ptr));
             var op2 = AdvSimd.LoadVector128((UInt64*)(_dataTable.inArray2Ptr));
-            var result = AdvSimd.ShiftLeftLogicalAndInsert(op1, op2, 32);
+            var result = AdvSimd.ShiftLeftAndInsert(op1, op2, 32);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(op1, op2, _dataTable.outArrayPtr);
@@ -369,8 +369,8 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new ImmBinaryOpTest__ShiftLeftLogicalAndInsert_Vector128_UInt64();
-            var result = AdvSimd.ShiftLeftLogicalAndInsert(test._fld1, test._fld2, 32);
+            var test = new ImmBinaryOpTest__ShiftLeftAndInsert_Vector128_UInt64();
+            var result = AdvSimd.ShiftLeftAndInsert(test._fld1, test._fld2, 32);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
@@ -379,12 +379,12 @@ namespace JIT.HardwareIntrinsics.Arm
         public void RunClassLclFldScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
-            var test = new ImmBinaryOpTest__ShiftLeftLogicalAndInsert_Vector128_UInt64();
+            var test = new ImmBinaryOpTest__ShiftLeftAndInsert_Vector128_UInt64();
 
             fixed (Vector128<UInt64>* pFld1 = &test._fld1)
             fixed (Vector128<UInt64>* pFld2 = &test._fld2)
             {
-                var result = AdvSimd.ShiftLeftLogicalAndInsert(
+                var result = AdvSimd.ShiftLeftAndInsert(
                     AdvSimd.LoadVector128((UInt64*)(pFld1)),
                     AdvSimd.LoadVector128((UInt64*)(pFld2)),
                     32
@@ -399,7 +399,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = AdvSimd.ShiftLeftLogicalAndInsert(_fld1, _fld2, 32);
+            var result = AdvSimd.ShiftLeftAndInsert(_fld1, _fld2, 32);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, _fld2, _dataTable.outArrayPtr);
@@ -412,7 +412,7 @@ namespace JIT.HardwareIntrinsics.Arm
             fixed (Vector128<UInt64>* pFld1 = &_fld1)
             fixed (Vector128<UInt64>* pFld2 = &_fld2)
             {
-                var result = AdvSimd.ShiftLeftLogicalAndInsert(
+                var result = AdvSimd.ShiftLeftAndInsert(
                     AdvSimd.LoadVector128((UInt64*)(pFld1)),
                     AdvSimd.LoadVector128((UInt64*)(pFld2)),
                     32
@@ -428,7 +428,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = AdvSimd.ShiftLeftLogicalAndInsert(test._fld1, test._fld2, 32);
+            var result = AdvSimd.ShiftLeftAndInsert(test._fld1, test._fld2, 32);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
@@ -439,7 +439,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
 
             var test = TestStruct.Create();
-            var result = AdvSimd.ShiftLeftLogicalAndInsert(
+            var result = AdvSimd.ShiftLeftAndInsert(
                 AdvSimd.LoadVector128((UInt64*)(&test._fld1)),
                 AdvSimd.LoadVector128((UInt64*)(&test._fld2)),
                 32
@@ -518,7 +518,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             for (var i = 0; i < RetElementCount; i++)
             {
-                if (Helpers.ShiftLeftLogicalAndInsert(firstOp[i], secondOp[i], Imm) != result[i])
+                if (Helpers.ShiftLeftAndInsert(firstOp[i], secondOp[i], Imm) != result[i])
                 {
                     succeeded = false;
                     break;
@@ -527,7 +527,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(AdvSimd)}.{nameof(AdvSimd.ShiftLeftLogicalAndInsert)}<UInt64>(Vector128<UInt64>, Vector128<UInt64>, 32): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(AdvSimd)}.{nameof(AdvSimd.ShiftLeftAndInsert)}<UInt64>(Vector128<UInt64>, Vector128<UInt64>, 32): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    firstOp: ({string.Join(", ", firstOp)})");
                 TestLibrary.TestFramework.LogInformation($"   secondOp: ({string.Join(", ", secondOp)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");

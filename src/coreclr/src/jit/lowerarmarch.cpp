@@ -1416,6 +1416,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_DuplicateSelectedScalarToVector64:
             case NI_AdvSimd_DuplicateSelectedScalarToVector128:
             case NI_AdvSimd_Extract:
+            case NI_AdvSimd_InsertScalar:
             case NI_AdvSimd_LoadAndInsertScalar:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
             case NI_Vector64_GetElement:

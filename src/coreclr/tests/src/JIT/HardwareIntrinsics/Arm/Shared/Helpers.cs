@@ -5070,6 +5070,14 @@ namespace JIT.HardwareIntrinsics.Arm
             return TableVectorExtension(i, zeros, indices, table);
         }
 
+        public static byte ShiftLeftAndInsert(byte left, byte right, byte shift)
+        {
+            byte mask = (byte)~(byte.MaxValue << shift);
+            byte value = (byte)(right << shift);
+            byte newval = (byte)(((byte)left & mask) | value);
+            return newval;
+        }
+
         public static byte ShiftRightAndInsert(byte left, byte right, byte shift)
         {
             byte mask = (byte)~(byte.MaxValue >> shift);
@@ -5078,11 +5086,11 @@ namespace JIT.HardwareIntrinsics.Arm
             return newval;
         }
 
-        public static byte ShiftLeftLogicalAndInsert(byte left, byte right, byte shift)
+        public static short ShiftLeftAndInsert(short left, short right, byte shift)
         {
-            byte mask = (byte)~(byte.MaxValue << shift);
-            byte value = (byte)(right << shift);
-            byte newval = (byte)(((byte)left & mask) | value);
+            ushort mask = (ushort)~(ushort.MaxValue << shift);
+            ushort value = (ushort)(right << shift);
+            short newval = (short)(((ushort)left & mask) | value);
             return newval;
         }
 
@@ -5094,11 +5102,11 @@ namespace JIT.HardwareIntrinsics.Arm
             return newval;
         }
 
-        public static short ShiftLeftLogicalAndInsert(short left, short right, byte shift)
+        public static int ShiftLeftAndInsert(int left, int right, byte shift)
         {
-            ushort mask = (ushort)~(ushort.MaxValue << shift);
-            ushort value = (ushort)(right << shift);
-            short newval = (short)(((ushort)left & mask) | value);
+            uint mask = (uint)~(uint.MaxValue << shift);
+            uint value = (uint)(right << shift);
+            int newval = (int)(((uint)left & mask) | value);
             return newval;
         }
 
@@ -5110,11 +5118,11 @@ namespace JIT.HardwareIntrinsics.Arm
             return newval;
         }
 
-        public static int ShiftLeftLogicalAndInsert(int left, int right, byte shift)
+        public static long ShiftLeftAndInsert(long left, long right, byte shift)
         {
-            uint mask = (uint)~(uint.MaxValue << shift);
-            uint value = (uint)(right << shift);
-            int newval = (int)(((uint)left & mask) | value);
+            ulong mask = (ulong)~(ulong.MaxValue << shift);
+            ulong value = (ulong)(right << shift);
+            long newval = (long)(((ulong)left & mask) | value);
             return newval;
         }
 
@@ -5126,11 +5134,11 @@ namespace JIT.HardwareIntrinsics.Arm
             return newval;
         }
 
-        public static long ShiftLeftLogicalAndInsert(long left, long right, byte shift)
+        public static sbyte ShiftLeftAndInsert(sbyte left, sbyte right, byte shift)
         {
-            ulong mask = (ulong)~(ulong.MaxValue << shift);
-            ulong value = (ulong)(right << shift);
-            long newval = (long)(((ulong)left & mask) | value);
+            byte mask = (byte)~(byte.MaxValue << shift);
+            byte value = (byte)(right << shift);
+            sbyte newval = (sbyte)(((byte)left & mask) | value);
             return newval;
         }
 
@@ -5142,11 +5150,11 @@ namespace JIT.HardwareIntrinsics.Arm
             return newval;
         }
 
-        public static sbyte ShiftLeftLogicalAndInsert(sbyte left, sbyte right, byte shift)
+        public static ushort ShiftLeftAndInsert(ushort left, ushort right, byte shift)
         {
-            byte mask = (byte)~(byte.MaxValue << shift);
-            byte value = (byte)(right << shift);
-            sbyte newval = (sbyte)(((byte)left & mask) | value);
+            ushort mask = (ushort)~(ushort.MaxValue << shift);
+            ushort value = (ushort)(right << shift);
+            ushort newval = (ushort)(((ushort)left & mask) | value);
             return newval;
         }
 
@@ -5158,11 +5166,11 @@ namespace JIT.HardwareIntrinsics.Arm
             return newval;
         }
 
-        public static ushort ShiftLeftLogicalAndInsert(ushort left, ushort right, byte shift)
+        public static uint ShiftLeftAndInsert(uint left, uint right, byte shift)
         {
-            ushort mask = (ushort)~(ushort.MaxValue << shift);
-            ushort value = (ushort)(right << shift);
-            ushort newval = (ushort)(((ushort)left & mask) | value);
+            uint mask = (uint)~(uint.MaxValue << shift);
+            uint value = (uint)(right << shift);
+            uint newval = (uint)(((uint)left & mask) | value);
             return newval;
         }
 
@@ -5174,11 +5182,11 @@ namespace JIT.HardwareIntrinsics.Arm
             return newval;
         }
 
-        public static uint ShiftLeftLogicalAndInsert(uint left, uint right, byte shift)
+        public static ulong ShiftLeftAndInsert(ulong left, ulong right, byte shift)
         {
-            uint mask = (uint)~(uint.MaxValue << shift);
-            uint value = (uint)(right << shift);
-            uint newval = (uint)(((uint)left & mask) | value);
+            ulong mask = (ulong)~(ulong.MaxValue << shift);
+            ulong value = (ulong)(right << shift);
+            ulong newval = (ulong)(((ulong)left & mask) | value);
             return newval;
         }
 
@@ -5186,14 +5194,6 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             ulong mask = (ulong)~(ulong.MaxValue >> shift);
             ulong value = (ulong)(right >> shift);
-            ulong newval = (ulong)(((ulong)left & mask) | value);
-            return newval;
-        }
-
-        public static ulong ShiftLeftLogicalAndInsert(ulong left, ulong right, byte shift)
-        {
-            ulong mask = (ulong)~(ulong.MaxValue << shift);
-            ulong value = (ulong)(right << shift);
             ulong newval = (ulong)(((ulong)left & mask) | value);
             return newval;
         }

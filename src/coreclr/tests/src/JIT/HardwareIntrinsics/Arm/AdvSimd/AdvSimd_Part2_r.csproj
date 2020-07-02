@@ -60,6 +60,9 @@
     <Compile Include="Insert.Vector128.UInt16.1.cs" />
     <Compile Include="Insert.Vector128.UInt32.1.cs" />
     <Compile Include="Insert.Vector128.UInt64.1.cs" />
+    <Compile Include="InsertScalar.Vector128.Double.1.cs" />
+    <Compile Include="InsertScalar.Vector128.Int64.1.cs" />
+    <Compile Include="InsertScalar.Vector128.UInt64.1.cs" />
     <Compile Include="LeadingSignCount.Vector64.Int16.cs" />
     <Compile Include="LeadingSignCount.Vector64.Int32.cs" />
     <Compile Include="LeadingSignCount.Vector64.SByte.cs" />
@@ -261,9 +264,6 @@
     <Compile Include="MultiplyBySelectedScalar.Vector128.UInt16.Vector128.UInt16.7.cs" />
     <Compile Include="MultiplyBySelectedScalar.Vector128.UInt32.Vector64.UInt32.1.cs" />
     <Compile Include="MultiplyBySelectedScalar.Vector128.UInt32.Vector128.UInt32.3.cs" />
-    <Compile Include="MultiplyBySelectedScalarWideningLower.Vector64.Int16.Vector64.Int16.3.cs" />
-    <Compile Include="MultiplyBySelectedScalarWideningLower.Vector64.Int16.Vector128.Int16.7.cs" />
-    <Compile Include="MultiplyBySelectedScalarWideningLower.Vector64.Int32.Vector64.Int32.1.cs" />
     <Compile Include="Program.AdvSimd_Part2.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />

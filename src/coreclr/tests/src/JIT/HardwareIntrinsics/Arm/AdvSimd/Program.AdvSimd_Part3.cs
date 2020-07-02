@@ -12,6 +12,9 @@ namespace JIT.HardwareIntrinsics.Arm
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
+                ["MultiplyBySelectedScalarWideningLower.Vector64.Int16.Vector64.Int16.3"] = MultiplyBySelectedScalarWideningLower_Vector64_Int16_Vector64_Int16_3,
+                ["MultiplyBySelectedScalarWideningLower.Vector64.Int16.Vector128.Int16.7"] = MultiplyBySelectedScalarWideningLower_Vector64_Int16_Vector128_Int16_7,
+                ["MultiplyBySelectedScalarWideningLower.Vector64.Int32.Vector64.Int32.1"] = MultiplyBySelectedScalarWideningLower_Vector64_Int32_Vector64_Int32_1,
                 ["MultiplyBySelectedScalarWideningLower.Vector64.Int32.Vector128.Int32.3"] = MultiplyBySelectedScalarWideningLower_Vector64_Int32_Vector128_Int32_3,
                 ["MultiplyBySelectedScalarWideningLower.Vector64.UInt16.Vector64.UInt16.3"] = MultiplyBySelectedScalarWideningLower_Vector64_UInt16_Vector64_UInt16_3,
                 ["MultiplyBySelectedScalarWideningLower.Vector64.UInt16.Vector128.UInt16.7"] = MultiplyBySelectedScalarWideningLower_Vector64_UInt16_Vector128_UInt16_7,
@@ -265,9 +268,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["ShiftArithmeticRounded.Vector128.Int32"] = ShiftArithmeticRounded_Vector128_Int32,
                 ["ShiftArithmeticRounded.Vector128.Int64"] = ShiftArithmeticRounded_Vector128_Int64,
                 ["ShiftArithmeticRounded.Vector128.SByte"] = ShiftArithmeticRounded_Vector128_SByte,
-                ["ShiftArithmeticRoundedSaturate.Vector64.Int16"] = ShiftArithmeticRoundedSaturate_Vector64_Int16,
-                ["ShiftArithmeticRoundedSaturate.Vector64.Int32"] = ShiftArithmeticRoundedSaturate_Vector64_Int32,
-                ["ShiftArithmeticRoundedSaturate.Vector64.SByte"] = ShiftArithmeticRoundedSaturate_Vector64_SByte,
             };
         }
     }
