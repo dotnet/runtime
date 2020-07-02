@@ -50,9 +50,9 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (Dictionary<TKey, TValue>.Enumerator)state.Current.CollectionEnumerator;
             }
 
-            JsonConverter<TKey> keyConverter = GetKeyConverter(options);
-            JsonConverter<TValue> converter = GetValueConverter(state.Current.JsonClassInfo);
-            if (!state.SupportContinuation && converter.CanUseDirectReadOrWrite)
+            JsonConverter<TKey> keyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
+            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo);
+            if (!state.SupportContinuation && valueConverter.CanUseDirectReadOrWrite)
             {
                 // Fast path that avoids validation and extra indirection.
                 do
@@ -60,7 +60,7 @@ namespace System.Text.Json.Serialization.Converters
                     TKey key = enumerator.Current.Key;
                     keyConverter.WriteWithQuotes(writer, key, options, ref state);
 
-                    converter.Write(writer, enumerator.Current.Value, options);
+                    valueConverter.Write(writer, enumerator.Current.Value, options);
                 } while (enumerator.MoveNext());
             }
             else
@@ -82,7 +82,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
 
                     TValue element = enumerator.Current.Value;
-                    if (!converter.TryWrite(writer, element, options, ref state))
+                    if (!valueConverter.TryWrite(writer, element, options, ref state))
                     {
                         state.Current.CollectionEnumerator = enumerator;
                         return false;

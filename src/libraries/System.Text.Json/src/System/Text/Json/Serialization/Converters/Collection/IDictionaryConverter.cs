@@ -4,7 +4,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -23,8 +22,8 @@ namespace System.Text.Json.Serialization.Converters
 
         private JsonConverter<object>? _objectConverter;
 
-        private JsonConverter<object> GetObjectKeyConverter(JsonSerializerOptions options)
-            => _objectConverter ??= (JsonConverter<object>)options.GetDictionaryKeyConverter(typeof(object));
+        private static JsonConverter<object> GetObjectKeyConverter(JsonSerializerOptions options)
+            => (JsonConverter<object>)options.GetDictionaryKeyConverter(typeof(object));
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
@@ -73,7 +72,7 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (IDictionaryEnumerator)state.Current.CollectionEnumerator;
             }
 
-            JsonConverter<object?> converter = GetValueConverter(state.Current.JsonClassInfo);
+            JsonConverter<object?> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo);
             do
             {
                 if (ShouldFlush(writer, ref state))
@@ -89,20 +88,20 @@ namespace System.Text.Json.Serialization.Converters
                     // Optimize for string since that's the hot path.
                     if (key is string keyString)
                     {
-                        JsonConverter<string> stringKeyConverter = GetKeyConverter(options);
+                        JsonConverter<string> stringKeyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
                         stringKeyConverter.WriteWithQuotes(writer, keyString, options, ref state);
                     }
                     else
                     {
                         // IDictionary is a special case since it has polymorphic object semantics on serialization
                         // but needs to use JsonConverter<string> on deserialization.
-                        JsonConverter<object> objectKeyConverter = GetObjectKeyConverter(options);
+                        JsonConverter<object> objectKeyConverter = _objectConverter ??= GetObjectKeyConverter(options);
                         objectKeyConverter.WriteWithQuotes(writer, key, options, ref state);
                     }
                 }
 
                 object? element = enumerator.Value;
-                if (!converter.TryWrite(writer, element, options, ref state))
+                if (!valueConverter.TryWrite(writer, element, options, ref state))
                 {
                     state.Current.CollectionEnumerator = enumerator;
                     return false;

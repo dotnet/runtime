@@ -53,8 +53,8 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (IEnumerator<KeyValuePair<TKey, TValue>>)state.Current.CollectionEnumerator;
             }
 
-            JsonConverter<TKey> keyConverter = GetKeyConverter(options);
-            JsonConverter<TValue> converter = GetValueConverter(state.Current.JsonClassInfo);
+            JsonConverter<TKey> keyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
+            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo);
             do
             {
                 if (ShouldFlush(writer, ref state))
@@ -72,7 +72,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 TValue element = enumerator.Current.Value;
-                if (!converter.TryWrite(writer, element, options, ref state))
+                if (!valueConverter.TryWrite(writer, element, options, ref state))
                 {
                     state.Current.CollectionEnumerator = enumerator;
                     return false;
