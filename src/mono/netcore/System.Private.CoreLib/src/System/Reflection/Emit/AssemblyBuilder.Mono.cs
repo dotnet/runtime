@@ -173,15 +173,10 @@ namespace System.Reflection.Emit
         //
         // AssemblyBuilder inherits from Assembly, but the runtime thinks its layout inherits from RuntimeAssembly
         //
-        #region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
-#pragma warning disable 649
+#region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h as well as DynamicDependency on basic_init
         internal IntPtr _mono_assembly;
-#pragma warning restore 649
         private object? _evidence;
-        #endregion
 
-#pragma warning disable 169, 414, 649
-        #region Sync with object-internals.h
         private UIntPtr dynamic_assembly; /* GC-tracked */
         private MethodInfo? entry_point;
         private ModuleBuilder[] modules;
@@ -202,13 +197,12 @@ namespace System.Reflection.Emit
         private object? permissions_minimum;
         private object? permissions_optional;
         private object? permissions_refused;
-        private PortableExecutableKinds peKind;
-        private ImageFileMachine machine;
+        private int peKind;
+        private int machine;
         private bool corlib_internal;
         private Type[]? type_forwarders;
         private byte[]? pktoken;
-        #endregion
-#pragma warning restore 169, 414, 649
+#endregion
 
         private AssemblyName aname;
         private string? assemblyName;
@@ -219,6 +213,34 @@ namespace System.Reflection.Emit
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [DynamicDependency("RuntimeResolve", typeof(ModuleBuilder))]
+
+        [DynamicDependency("_mono_assembly")]
+        [DynamicDependency("_evidence")]
+        [DynamicDependency("dynamic_assembly")]
+        [DynamicDependency("entry_point")]
+        [DynamicDependency("modules")]
+        [DynamicDependency("name")]
+        [DynamicDependency("dir")]
+        [DynamicDependency("cattrs")]
+        [DynamicDependency("resources")]
+        [DynamicDependency("public_key")]
+        [DynamicDependency("version")]
+        [DynamicDependency("culture")]
+        [DynamicDependency("algid")]
+        [DynamicDependency("flags")]
+        [DynamicDependency("pekind")]
+        [DynamicDependency("delay_sign")]
+        [DynamicDependency("access")]
+        [DynamicDependency("loaded_modules")]
+        [DynamicDependency("win32_resources")]
+        [DynamicDependency("permissions_minimum")]
+        [DynamicDependency("permissions_optional")]
+        [DynamicDependency("permissions_refused")]
+        [DynamicDependency("peKind")]
+        [DynamicDependency("machine")]
+        [DynamicDependency("corlib_internal")]
+        [DynamicDependency("type_forwarders")]
+        [DynamicDependency("pktoken")]
         private static extern void basic_init(AssemblyBuilder ab);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
