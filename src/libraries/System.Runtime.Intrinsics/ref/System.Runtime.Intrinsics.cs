@@ -2513,6 +2513,29 @@ namespace System.Runtime.Intrinsics.Arm
         }
     }
     [System.CLSCompliantAttribute(false)]
+    public abstract partial class Dp : System.Runtime.Intrinsics.Arm.AdvSimd
+    {
+        internal Dp() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector128<int> DotProduct(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> DotProduct(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> DotProduct(System.Runtime.Intrinsics.Vector64<int> addend, System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> DotProduct(System.Runtime.Intrinsics.Vector64<uint> addend, System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right, byte rightScaledIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right, byte rightScaledIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right, byte rightScaledIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector64<byte> right, byte rightScaledIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector64<int> addend, System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right, byte rightScaledIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector64<int> addend, System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right, byte rightScaledIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector64<uint> addend, System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector128<byte> right, byte rightScaledIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector64<uint> addend, System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right, byte rightScaledIndex) { throw null; }
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.AdvSimd.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
     public abstract partial class Sha1 : System.Runtime.Intrinsics.Arm.ArmBase
     {
         internal Sha1() { }
