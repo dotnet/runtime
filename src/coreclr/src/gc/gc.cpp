@@ -8314,6 +8314,16 @@ void gc_heap::sort_mark_list()
         return;
     }
 
+#ifdef BACKGROUND_GC
+    // we are not going to use the mark list if background GC is running
+    // so let's not waste time sorting it
+    if (gc_heap::background_running_p())
+    {
+        mark_list_index = mark_list_end + 1;
+        return;
+    }
+#endif //BACKGROUND_GC
+
     // if any other heap had a mark list overflow, we fake one too,
     // so we don't use an incomplete mark list by mistake
     for (int i = 0; i < n_heaps; i++)
@@ -8797,11 +8807,20 @@ void gc_heap::combine_mark_lists()
 
 void gc_heap::grow_mark_list ()
 {
+    // with vectorized sorting, we can use bigger mark lists
+#ifdef USE_VXSORT
 #ifdef MULTIPLE_HEAPS
-    const size_t MAX_MARK_LIST_SIZE = 1000 * 1024;
+    const size_t MAX_MARK_LIST_SIZE = IsSupportedInstructionSet(InstructionSet::AVX2) ? 1000 * 1024 : 200 * 1024;
 #else //MULTIPLE_HEAPS
-    const size_t MAX_MARK_LIST_SIZE = 32 * 1024;
+    const size_t MAX_MARK_LIST_SIZE = IsSupportedInstructionSet(InstructionSet::AVX2) ? 32 * 1024 : 16 * 1024;
 #endif //MULTIPLE_HEAPS
+#else
+#ifdef MULTIPLE_HEAPS
+    const size_t MAX_MARK_LIST_SIZE = 200 * 1024;
+#else //MULTIPLE_HEAPS
+    const size_t MAX_MARK_LIST_SIZE = 16 * 1024;
+#endif //MULTIPLE_HEAPS
+#endif
 
     size_t new_mark_list_size = min (mark_list_size * 2, MAX_MARK_LIST_SIZE);
     if (new_mark_list_size == mark_list_size)
@@ -22261,7 +22280,9 @@ void gc_heap::plan_phase (int condemned_gen_number)
     if (mark_list_index >= (mark_list_end + 1))
     {
         mark_list_index = mark_list_end + 1;
+#ifndef MULTIPLE_HEAPS // in Server GC, we check for mark list overflow in sort_mark_list
         mark_list_overflow = true;
+#endif
     }
 #else
     dprintf (3, ("mark_list length: %Id",
