@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
@@ -12,12 +11,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     {
         public static ServiceProvider BuildServiceProvider(this IServiceCollection services, ServiceProviderMode mode)
         {
+            if (mode == ServiceProviderMode.Default)
+            {
+                return services.BuildServiceProvider();
+            }
+
             IServiceProviderEngine engine = mode switch
             {
-                ServiceProviderMode.Default =>
-                    RuntimeFeature.IsDynamicCodeCompiled ?
-                        (IServiceProviderEngine)new DynamicServiceProviderEngine(services) :
-                        new RuntimeServiceProviderEngine(services),
                 ServiceProviderMode.Dynamic => new DynamicServiceProviderEngine(services),
                 ServiceProviderMode.Runtime => new RuntimeServiceProviderEngine(services),
                 ServiceProviderMode.Expressions => new ExpressionsServiceProviderEngine(services),
