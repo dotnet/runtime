@@ -2,16 +2,13 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA5384</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true'">
-    <GeneratePlatformNotSupportedAdditionalParameters>--exclude-api-list $(MSBuildThisFileDirectory)ExculdeApiList.txt</GeneratePlatformNotSupportedAdditionalParameters>
+    <NoWarn>$(NoWarn);CS8769</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage>SR.Cryptography_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsAnyOS)' == 'true'">
-    <Compile Include="System\Security\Cryptography\X509Certificates\System.Security.Cryptography.X509Certificates.notsupported.cs" />
-  </ItemGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">

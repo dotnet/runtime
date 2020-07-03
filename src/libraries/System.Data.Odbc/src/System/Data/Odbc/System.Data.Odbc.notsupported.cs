@@ -18,10 +18,4 @@ namespace System.Data.Odbc
             NO_DATA = 100,
         }
     }
-
-    // GenApi doesnot produce an in built alias for system.decimal.
-    public sealed partial class OdbcDataReader : System.Data.Common.DbDataReader
-    {
-        public override decimal GetDecimal(int i) { throw new System.PlatformNotSupportedException(System.SR.Odbc_PlatformNotSupported); }
-    }
 }

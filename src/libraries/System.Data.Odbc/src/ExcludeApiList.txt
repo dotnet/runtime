@@ -1,3 +1,0 @@
-// exclusions to work around browser builds
-
-M:System.Data.Odbc.OdbcDataReader.GetDecimal(System.Int32)

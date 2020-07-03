@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true'">
-    <GeneratePlatformNotSupportedAssemblyHeaderFile>GeneratePlatformNotSupportedAssemblyHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
+    <NoWarn>$(NoWarn);CS0809</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage>SR.Cryptography_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
