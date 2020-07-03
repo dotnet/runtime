@@ -30,7 +30,7 @@ namespace System
 
             public NumberBuffer(NumberBufferKind kind, Span<byte> digits)
             {
-                Debug.Assert(digits != null);//TODO we do still need it?
+                Debug.Assert(digits != null);
 
                 DigitsCount = 0;
                 Scale = 0;
