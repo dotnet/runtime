@@ -38,20 +38,26 @@ namespace System.Net.Sockets
         [Event(2, Level = EventLevel.Informational)]
         public void ConnectStop()
         {
-            WriteEvent(eventId: 2);
+            ConnectStopInternal();
         }
 
         [Event(3, Level = EventLevel.Error)]
         public void ConnectFailed()
         {
             WriteEvent(eventId: 3);
-            ConnectStop();
+            ConnectStopInternal();
         }
 
         [Event(4, Level = EventLevel.Warning)]
         public void ConnectCancelled()
         {
             WriteEvent(eventId: 4);
+        }
+
+        [NonEvent]
+        private void ConnectStopInternal()
+        {
+            WriteEvent(eventId: 2);
         }
     }
 }
