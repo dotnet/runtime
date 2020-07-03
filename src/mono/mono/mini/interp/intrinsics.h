@@ -12,4 +12,7 @@ interp_intrins_ascii_chars_to_uppercase (guint32 val);
 int
 interp_intrins_ordinal_ignore_case_ascii (guint32 valueA, guint32 valueB);
 
+int
+interp_intrins_64ordinal_ignore_case_ascii (guint64 valueA, guint64 valueB);
+
 #endif /* __MONO_MINI_INTERP_INTRINSICS_H__ */

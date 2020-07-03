@@ -57,3 +57,13 @@ interp_intrins_ordinal_ignore_case_ascii (guint32 valueA, guint32 valueB)
 	guint32 combinedIndicator = lowerIndicator | upperIndicator;
 	return (((combinedIndicator >> 2) | ~0x00200020) & differentBits) == 0;
 }
+
+int
+interp_intrins_64ordinal_ignore_case_ascii (guint64 valueA, guint64 valueB)
+{
+	// Utf16Utility.UInt64OrdinalIgnoreCaseAscii
+	guint64 lowerIndicator = valueA + 0x0080008000800080l - 0x0041004100410041l;
+	guint64 upperIndicator = (valueA | 0x0020002000200020l) + 0x0100010001000100l - 0x007B007B007B007Bl;
+	guint64 combinedIndicator = (0x0080008000800080l & lowerIndicator & upperIndicator) >> 2;
+	return (valueA | combinedIndicator) == (valueB | combinedIndicator);
+}
