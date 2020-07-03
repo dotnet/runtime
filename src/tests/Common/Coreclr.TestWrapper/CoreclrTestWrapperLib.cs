@@ -243,7 +243,7 @@ namespace CoreclrTestLib
 
             Task<string> copyOutput = createdump.StandardOutput.ReadToEndAsync();
             Task<string> copyError = createdump.StandardError.ReadToEndAsync();
-            bool fSuccess = createdump.WaitForExit(DEFAULT_TIMEOUT) && createdump.ExitCode == 0;
+            bool fSuccess = createdump.WaitForExit(DEFAULT_TIMEOUT);
 
             if (fSuccess)
             {
@@ -257,7 +257,7 @@ namespace CoreclrTestLib
                 Console.WriteLine(error);
             }
 
-            return fSuccess;
+            return fSuccess && createdump.ExitCode == 0;
         }
 
         // Finds all children processes starting with a process named childName
