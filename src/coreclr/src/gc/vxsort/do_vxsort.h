@@ -1,11 +1,16 @@
-// Enum for the GCToOSInterface::SupportsInstructionSet method
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+// Enum for the IsSupportedInstructionSet method
 enum class InstructionSet
 {
     AVX2 = 0,
     AVX512F = 1,
 };
 
-bool SupportsInstructionSet(InstructionSet instructionSet);
+void InitSupportedInstructionSet(int32_t configSetting);
+bool IsSupportedInstructionSet(InstructionSet instructionSet);
 
 void do_vxsort_avx2(uint8_t** low, uint8_t** high);
 void do_vxsort_avx2(int32_t* low, int32_t* high);

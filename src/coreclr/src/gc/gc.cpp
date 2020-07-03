@@ -2088,8 +2088,9 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address);
 #ifdef USE_VXSORT
 void do_vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
 {
-    assert(SupportsInstructionSet(InstructionSet::AVX2));
-    if (SupportsInstructionSet(InstructionSet::AVX512F))
+    assert(IsSupportedInstructionSet(InstructionSet::AVX2));
+    // use AVX512F only if the list is large enough to pay for downclocking impact
+    if (IsSupportedInstructionSet(InstructionSet::AVX512F) && ((high -low) > 128*1024))
     {
         do_vxsort_avx512(low, high);
     }
@@ -2107,8 +2108,9 @@ void do_vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
 
 void do_vxsort(int32_t* low, int32_t* high, unsigned int depth)
 {
-    assert(SupportsInstructionSet(InstructionSet::AVX2));
-    if (SupportsInstructionSet(InstructionSet::AVX512F))
+    assert(IsSupportedInstructionSet(InstructionSet::AVX2));
+    // use AVX512F only if the list is large enough to pay for downclocking impact
+    if (IsSupportedInstructionSet(InstructionSet::AVX512F) && ((high - low) > 128*1024))
     {
         do_vxsort_avx512(low, high);
     }
@@ -8351,10 +8353,11 @@ void gc_heap::sort_mark_list()
     }
 
 #ifdef USE_VXSORT
-    // runtime test if AVX2 is indeed available
-    if (SupportsInstructionSet(InstructionSet::AVX2))
+    ptrdiff_t item_count = mark_list_index - mark_list;
+    // conservatively use AVX2 only for large mark lists,
+    // and do runtime test if AVX2 is indeed available 
+    if (item_count > 8*1024 && IsSupportedInstructionSet(InstructionSet::AVX2))
     {
-        ptrdiff_t item_count = mark_list_index - mark_list;
 #if defined(_DEBUG) || defined(WRITE_SORT_DATA)
         // in debug, make a copy of the mark list
         // for checking and debugging purposes
@@ -10326,6 +10329,10 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
                                          static_cast<int>(GCEventStatus::GetEnabledLevel(GCEventProvider_Private)),
                                          static_cast<int>(GCEventStatus::GetEnabledKeywords(GCEventProvider_Private)));
 #endif // __linux__
+
+#ifdef USE_VXSORT
+    InitSupportedInstructionSet((int32_t)GCConfig::GetGCEnabledInstructionSets());
+#endif
 
     if (!init_semi_shared())
     {
@@ -22270,9 +22277,11 @@ void gc_heap::plan_phase (int condemned_gen_number)
     {
 #ifndef MULTIPLE_HEAPS
 #ifdef USE_VXSORT
-        if (SupportsInstructionSet(InstructionSet::AVX2))
+        ptrdiff_t entry_count = mark_list_index - mark_list;
+        // conservatively use AVX2 only for large mark lists,
+        // and do runtime test if AVX2 is indeed available 
+        if (entry_count > 8*1024 && IsSupportedInstructionSet(InstructionSet::AVX2))
         {
-            ptrdiff_t entry_count = mark_list_index - mark_list;
             int32_t* mark_list_32 = (int32_t*)mark_list;
             uint8_t* low = gc_low;
             ptrdiff_t range = heap_segment_allocated(ephemeral_heap_segment) - low;
