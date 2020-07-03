@@ -408,7 +408,7 @@ namespace Mono.Linker.Steps
 			foreach (var type in typesWithInterfaces) {
 				// Exception, types that have not been flagged as instantiated yet.  These types may not need their interfaces even if the
 				// interface type is marked
-				if (!Annotations.IsInstantiated (type))
+				if (!Annotations.IsInstantiated (type) && !Annotations.IsRelevantToVariantCasting (type))
 					continue;
 
 				MarkInterfaceImplementations (type);
@@ -1285,6 +1285,16 @@ namespace Mono.Linker.Steps
 			MarkMethodsIf (type.Methods, IsSpecialSerializationConstructor, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
 		}
 
+		internal protected virtual TypeDefinition MarkTypeVisibleToReflection (TypeReference reference, DependencyInfo reason, IMemberDefinition sourceLocationMember)
+		{
+			// If a type is visible to reflection, we need to stop doing optimization that could cause observable difference
+			// in reflection APIs. This includes APIs like MakeGenericType (where variant castability of the produced type
+			// could be incorrect) or IsAssignableFrom (where assignability of unconstructed types might change).
+			Annotations.MarkRelevantToVariantCasting (reference.Resolve ());
+
+			return MarkType (reference, reason, sourceLocationMember);
+		}
+
 		/// <summary>
 		/// Marks the specified <paramref name="reference"/> as referenced.
 		/// </summary>
@@ -2001,8 +2011,11 @@ namespace Mono.Linker.Steps
 
 		void MarkGenericArguments (IGenericInstance instance, IMemberDefinition sourceLocationMember)
 		{
-			foreach (TypeReference argument in instance.GenericArguments)
+			foreach (TypeReference argument in instance.GenericArguments) {
 				MarkType (argument, new DependencyInfo (DependencyKind.GenericArgumentType, instance), sourceLocationMember);
+
+				Annotations.MarkRelevantToVariantCasting (argument.Resolve ());
+			}
 
 			MarkGenericArgumentConstructors (instance, sourceLocationMember);
 		}
@@ -2173,8 +2186,14 @@ namespace Mono.Linker.Steps
 		{
 			(reference, reason) = GetOriginalMethod (reference, reason, sourceLocationMember);
 
-			if (reference.DeclaringType is ArrayType)
+			if (reference.DeclaringType is ArrayType arrayType) {
+				MarkType (reference.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, reference), sourceLocationMember);
+
+				if (reference.Name == ".ctor") {
+					Annotations.MarkRelevantToVariantCasting (arrayType.Resolve ());
+				}
 				return null;
+			}
 
 			if (reference.DeclaringType is GenericInstanceType) {
 				// Blame the method reference on the original reason without marking it.
@@ -2642,7 +2661,7 @@ namespace Mono.Linker.Steps
 					Debug.Assert (instruction.OpCode.Code == Code.Ldtoken);
 					var reason = new DependencyInfo (DependencyKind.Ldtoken, method);
 					if (token is TypeReference typeReference) {
-						MarkType (typeReference, reason, method);
+						MarkTypeVisibleToReflection (typeReference, reason, method);
 					} else if (token is MethodReference methodReference) {
 						MarkMethod (methodReference, reason, method);
 					} else {
@@ -2652,6 +2671,9 @@ namespace Mono.Linker.Steps
 				}
 
 			case OperandType.InlineType:
+				if (instruction.OpCode.Code == Code.Newarr) {
+					Annotations.MarkRelevantToVariantCasting (((TypeReference) instruction.Operand).Resolve ());
+				}
 				MarkType ((TypeReference) instruction.Operand, new DependencyInfo (DependencyKind.InstructionTypeRef, method), method);
 				break;
 			default:
