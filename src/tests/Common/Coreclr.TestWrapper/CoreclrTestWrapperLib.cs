@@ -219,26 +219,26 @@ namespace CoreclrTestLib
             string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
             string createdumpPath = Path.Combine(coreRoot, "createdump");
             string arguments = $"--name \"{path}\" {process.Id} --withheap --diag";
+            Process createdump = new Process();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                createdumpInfo = new ProcessStartInfo(createdumpPath + ".exe");
-                createdumpInfo.Arguments = arguments;
+                createdump.StartInfo.FileName = createdumpPath + ".exe";
+                createdump.StartInfo.Arguments = arguments;
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                createdumpInfo = new ProcessStartInfo("sudo");
-                createdumpInfo.Arguments = $"{createdumpPath} " + arguments;
+                createdump.StartInfo.FileName = "sudo";
+                createdump.StartInfo.Arguments = $"{createdumpPath} " + arguments;
             }
 
-            createdumpInfo.UseShellExecute = false;
-            createdumpInfo.RedirectStandardOutput = true;
-            createdumpInfo.RedirectStandardError = true;
+            createdump.StartInfo.UseShellExecute = false;
+            createdump.StartInfo.RedirectStandardOutput = true;
+            createdump.StartInfo.RedirectStandardError = true;
 
-            Console.WriteLine($"Invoking: {createdumpInfo.FileName} {createdumpInfo.Arguments}");
-            Process createdump = Process.Start(createdumpInfo);
-            if (createdump == null || createdump.HasExited)
-                return false;
+            Console.WriteLine($"Invoking: {createdump.StartInfo.FileName} {createdump.StartInfo.Arguments}");
+            createdump.Start();
+            Console.WriteLine($"createdump PID: {createdump.Id}");
 
             Task<string> copyOutput = process.StandardOutput.ReadToEndAsync();
             Task<string> copyError = process.StandardError.ReadToEndAsync();
