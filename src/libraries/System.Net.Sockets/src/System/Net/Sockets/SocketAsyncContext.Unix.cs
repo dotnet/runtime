@@ -311,7 +311,8 @@ namespace System.Net.Sockets
                 ErrorCode = SocketError.OperationAborted;
             }
 
-            internal virtual bool IsPartialSuccess => false;
+            // returns true when read()|write() returned lower number of bytes than the size of buffer
+            internal virtual bool HasExhaustedIoSpace  => false;
 
             protected abstract void Abort();
 
@@ -371,6 +372,8 @@ namespace System.Net.Sockets
 
             public BufferMemorySendOperation(SocketAsyncContext context) : base(context) { }
 
+            internal override bool HasExhaustedIoSpace => ErrorCode == SocketError.Success && BytesTransferred > 0 && BytesTransferred < Buffer.Length;
+
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 int bufferIndex = 0;
@@ -429,6 +432,8 @@ namespace System.Net.Sockets
 
             public BufferPtrSendOperation(SocketAsyncContext context) : base(context) { }
 
+            internal override bool HasExhaustedIoSpace => ErrorCode == SocketError.Success && BytesTransferred > 0 && Count > 0; // TryCompleteSendTo modifies Count
+
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 int bufferIndex = 0;
@@ -459,7 +464,7 @@ namespace System.Net.Sockets
 
             public BufferMemoryReceiveOperation(SocketAsyncContext context) : base(context) { }
 
-            internal override bool IsPartialSuccess => ErrorCode == SocketError.Success && BytesTransferred > 0 && BytesTransferred < Buffer.Length;
+            internal override bool HasExhaustedIoSpace  => ErrorCode == SocketError.Success && BytesTransferred > 0 && BytesTransferred < Buffer.Length;
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
@@ -540,7 +545,7 @@ namespace System.Net.Sockets
 
             public BufferPtrReceiveOperation(SocketAsyncContext context) : base(context) { }
 
-            internal override bool IsPartialSuccess => ErrorCode == SocketError.Success && BytesTransferred > 0 && BytesTransferred < Length;
+            internal override bool HasExhaustedIoSpace  => ErrorCode == SocketError.Success && BytesTransferred > 0 && BytesTransferred < Length;
 
             protected override bool DoTryComplete(SocketAsyncContext context) =>
                 SocketPal.TryCompleteReceiveFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
@@ -1047,15 +1052,38 @@ namespace System.Net.Sockets
                             // No more operations to process
                             _tail = null;
                             _isNextOperationSynchronous = false;
-                            _state = op.IsPartialSuccess ? QueueState.Waiting :  QueueState.Ready;
-                            _sequenceNumber++;
+
+                            if (op.HasExhaustedIoSpace)
+                            {
+                                // the buffer that given operation was using was bigger than
+                                // the number of bytes returned from read()|write()
+                                // so instead of setting the state to Ready and having the next read()|write()
+                                // return EWOULDBLOCK, we set the state to Waiting and just wait
+                                // for new epoll notification which is going to set it to Ready
+                                // see the Q&A section of https://www.man7.org/linux/man-pages/man7/epoll.7.html for more
+                                _state = QueueState.Waiting;
+                            }
+                            else
+                            {
+                                _state = QueueState.Ready;
+                                _sequenceNumber++;
+                            }
                             Trace(context, $"Exit (finished queue)");
                         }
                         else
                         {
-                            // Pop current operation and advance to next
-                            nextOp = _tail.Next = op.Next;
-                            _isNextOperationSynchronous = nextOp.Event != null;
+                            // Pop current operation
+                            _tail.Next = op.Next;
+                            _isNextOperationSynchronous = op.Next != null;
+
+                            if (op.HasExhaustedIoSpace)
+                            {
+                                _state = QueueState.Waiting;
+                            }
+                            else
+                            {
+                                nextOp = _tail.Next; // will be dispatched outside of lock
+                            }
                         }
                     }
                 }
