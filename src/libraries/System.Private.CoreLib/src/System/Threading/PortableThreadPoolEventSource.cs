@@ -11,7 +11,7 @@ namespace System.Threading
     // experience. For now, the same provider name and guid are used as the native side and a temporary change has been made to
     // EventPipe in CoreCLR to get thread pool events in performance profiles when the portable thread pool is enabled, as that
     // seems to be the easiest way currently and the closest to the experience when the portable thread pool is disabled.
-    // TODO: Long-term options:
+    // TODO: Long-term options (also see https://github.com/dotnet/runtime/issues/38763):
     // - Use NativeRuntimeEventSource instead, change its guid to match the provider guid from the native side, and fix the
     //   underlying issues such that duplicate events are not sent. This should get the same experience as sending events from
     //   the native side, and would allow easily moving other events from the native side to the managed side in the future if
