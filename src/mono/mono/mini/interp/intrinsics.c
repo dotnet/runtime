@@ -35,3 +35,14 @@ interp_intrins_marvin_block (guint32 *pp0, guint32 *pp1)
 	*pp1 = p1;
 }
 
+guint32
+interp_intrins_ascii_chars_to_uppercase (guint32 value)
+{
+	// Utf16Utility.ConvertAllAsciiCharsInUInt32ToUppercase
+	guint32 lowerIndicator = value + 0x00800080 - 0x00610061;
+	guint32 upperIndicator = value + 0x00800080 - 0x007B007B;
+	guint32 combinedIndicator = (lowerIndicator ^ upperIndicator);
+	guint32 mask = (combinedIndicator & 0x00800080) >> 2;
+
+	return value ^ mask;
+}

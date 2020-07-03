@@ -793,3 +793,4 @@ OPDEF(MINT_INTRINS_UNSAFE_BYTE_OFFSET, "intrins_unsafe_byte_offset", 1, Pop2, Pu
 OPDEF(MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE, "intrins_runtimehelpers_object_has_component_size", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_CLEAR_WITH_REFERENCES, "intrin_clear_with_references", 1, Pop2, Push0, MintOpNoArgs)
 OPDEF(MINT_INTRINS_MARVIN_BLOCK, "intrins_marvin_block", 1, Pop2, Push0, MintOpNoArgs)
+OPDEF(MINT_INTRINS_ASCII_CHARS_TO_UPPERCASE, "intrins_ascii_chars_to_uppercase", 1, Pop1, Push1, MintOpNoArgs)

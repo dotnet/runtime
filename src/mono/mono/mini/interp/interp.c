@@ -5260,6 +5260,11 @@ call_newobj:
 			++ip;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_INTRINS_ASCII_CHARS_TO_UPPERCASE) {
+			sp [-1].data.i = interp_intrins_ascii_chars_to_uppercase ((guint32)sp [-1].data.i);
+			++ip;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_INTRINS_UNSAFE_BYTE_OFFSET) {
 			sp -= 2;
 			sp [0].data.nati = (guint8*)sp [1].data.p - (guint8*)sp [0].data.p;
