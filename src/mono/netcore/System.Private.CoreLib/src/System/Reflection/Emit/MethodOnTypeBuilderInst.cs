@@ -30,6 +30,7 @@
 #if MONO_FEATURE_SRE
 using System.Globalization;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 
@@ -73,6 +74,8 @@ namespace System.Reflection.Emit
                 this.generic_method_definition = method;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Reflection.Emit is not subject to trimming")]
         private static MethodInfo ExtractBaseMethod(MethodInfo info)
         {
             if (info is MethodBuilder)

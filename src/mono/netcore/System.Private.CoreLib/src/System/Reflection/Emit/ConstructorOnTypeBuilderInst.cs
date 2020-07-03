@@ -28,6 +28,7 @@
 //
 
 #if MONO_FEATURE_SRE
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 
@@ -163,6 +164,8 @@ namespace System.Reflection.Emit
         }
 
         // Called from the runtime to return the corresponding finished ConstructorInfo object
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
         internal ConstructorInfo RuntimeResolve()
         {
             Type type = instantiation.InternalResolve();
