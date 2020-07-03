@@ -36,7 +36,7 @@ namespace System.Net.Security
 
         private TlsFrameHelper.TlsFrameInfo _lastFrame;
 
-        private readonly object _handshakeLock = new object();
+        private object _handshakeLock => _sslAuthenticationOptions!;
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
 
         private const int FrameOverhead = 32;
@@ -409,7 +409,8 @@ namespace System.Net.Security
             else if (_lastFrame.Header.Type == TlsContentType.Handshake)
             {
                 if ((_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
-                    _sslAuthenticationOptions!.ServerCertSelectionDelegate != null) ||
+                    (_sslAuthenticationOptions!.ServerCertSelectionDelegate != null ||
+                    _sslAuthenticationOptions!.ServerOptionDelegate != null)) ||
                      NetEventSource.IsEnabled)
                 {
                     TlsFrameHelper.ProcessingOptions options = NetEventSource.IsEnabled ?
@@ -426,6 +427,23 @@ namespace System.Net.Security
                     {
                         // SNI if it exist. Even if we could not parse the hello, we can fall-back to default certificate.
                         _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
+
+                        if (_sslAuthenticationOptions.ServerOptionDelegate != null)
+                        {
+                            ValueTask<SslServerAuthenticationOptions> t =
+                                _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_lastFrame.TargetName, _lastFrame.SupportedVersions),
+                                                                            _sslAuthenticationOptions.UserState, adapter.CancellationToken);
+
+                            if (t.IsCompletedSuccessfully)
+                            {
+                                _sslAuthenticationOptions.UpdateOptions(t.Result);
+                            }
+                            else
+                            {
+                                SslServerAuthenticationOptions userOptions = await t.ConfigureAwait(false);
+                                _sslAuthenticationOptions.UpdateOptions(userOptions);
+                            }
+                        }
                     }
 
                     if (NetEventSource.IsEnabled)

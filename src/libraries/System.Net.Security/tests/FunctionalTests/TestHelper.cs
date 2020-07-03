@@ -14,6 +14,12 @@ namespace System.Net.Security.Tests
 {
     public static class TestHelper
     {
+        public static (SslStream ClientStream, SslStream ServerStream) GetConnectedSslStreams()
+        {
+            (Stream clientStream, Stream serverStream) = GetConnectedStreams();
+            return (new SslStream(clientStream), new SslStream(serverStream));
+        }
+
         public static (Stream ClientStream, Stream ServerStream) GetConnectedStreams()
         {
             if (Capability.SecurityForceSocketStreams())
