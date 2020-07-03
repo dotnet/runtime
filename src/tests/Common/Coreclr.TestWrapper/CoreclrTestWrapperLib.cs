@@ -141,37 +141,47 @@ namespace CoreclrTestLib
         private static IEnumerable<Process> Linux_GetChildren(Process process)
         {
             var children = new List<Process>();
+            List<int> childPids = null;
 
             try
             {
-                Console.WriteLine($"Attempting to read: /proc/{process.Id}/task/{process.Id}/children");
-                string childPidsString = File.ReadAllText($"/proc/{process.Id}/task/{process.Id}/children");
-                Console.WriteLine($"> {childPidsString}");
-                int[] childPids = childPidsString
+                childPids = File.ReadAllText($"/proc/{process.Id}/task/{process.Id}/children")
                     .Split(' ', StringSplitOptions.RemoveEmptyEntries)
                     .Select(pidString => int.Parse(pidString))
-                    .ToArray();
-                // int[] childPids = File.ReadAllText($"/proc/{process.Id}/task/{process.Id}/children")
-                //     .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                //     .Select(pidString => int.Parse(pidString))
-                //     .ToArray();
-
-                foreach (var pid in childPids)
-                {
-                    try
-                    {
-                        children.Add(Process.GetProcessById(pid));
-                    }
-                    catch (ArgumentException)
-                    {
-                        // Ignore failure to get process, the process may have exited
-                    }
-                }
+                    .ToList();
             }
             catch (IOException e)
             {
-                // Ignore failure to read process children data, the process may have exited
-                Console.WriteLine($"Failed read proc file: {e}");
+                // Some distros might not have the /proc/pid/task/tid/children entry enabled in the kernel
+                // attempt to use pgrep then
+                Console.WriteLine($"Failed read proc file: /proc/{process.Id}/task/{process.Id}/children");
+                Console.WriteLine("\tfalling back to `pgrep`");
+
+                var pgrepInfo = new ProcessStartInfo("pgrep");
+                pgrepInfo.RedirectStandardOutput = true;
+                pgrepInfo.Arguments = $"-P {process.Id}";
+
+                using Process pgrep = Process.Start(pgrepInfo);
+
+                string[] pidStrings = pgrep.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                pgrep.WaitForExit();
+
+                childPids = new List<int>();
+                foreach (var pidString in pidStrings)
+                    if (int.TryParse(pidString, out int childPid))
+                        childPids.Add(childPid);
+            }
+
+            foreach (var pid in childPids)
+            {
+                try
+                {
+                    children.Add(Process.GetProcessById(pid));
+                }
+                catch (ArgumentException)
+                {
+                    // Ignore failure to get process, the process may have exited
+                }
             }
 
             return children;
@@ -225,31 +235,26 @@ namespace CoreclrTestLib
             createdumpInfo.RedirectStandardOutput = true;
             createdumpInfo.RedirectStandardError = true;
 
+            Console.WriteLine($"Invoking: {createdumpInfo.FileName} {createdumpInfo.Arguments}");
             Process createdump = Process.Start(createdumpInfo);
-            var cts = new CancellationTokenSource();
-            using var stdoutStream = new MemoryStream();
-            using var stderrStream = new MemoryStream();
-            Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(stdoutStream, 4096, cts.Token);
-            Task copyError = process.StandardError.BaseStream.CopyToAsync(stderrStream, 4096, cts.Token);
+            if (createdump == null || createdump.HasExited)
+                return false;
+
+            Task<string> copyOutput = process.StandardOutput.ReadToEndAsync();
+            Task<string> copyError = process.StandardError.ReadToEndAsync();
             bool fSuccess = createdump.WaitForExit(DEFAULT_TIMEOUT) && createdump.ExitCode == 0;
-            if (!fSuccess)
-                cts.Cancel();
 
-            try
+            if (fSuccess)
             {
-                Task.WaitAll(copyOutput, copyError);
+                Task.WaitAll(copyError, copyOutput);
+                string output = copyOutput.Result;
+                string error = copyError.Result;
+
+                Console.WriteLine("createdump stdout:");
+                Console.WriteLine(output);
+                Console.WriteLine("createdump stderr:");
+                Console.WriteLine(error);
             }
-            catch (TaskCanceledException)
-            {}
-
-            stdoutStream.Seek(0, SeekOrigin.Begin);
-            stderrStream.Seek(0, SeekOrigin.Begin);
-
-
-            Console.WriteLine("createdump stdout:");
-            stdoutStream.CopyTo(Console.OpenStandardOutput());
-            Console.WriteLine("createdump stderr:");
-            stderrStream.CopyTo(Console.OpenStandardOutput());
 
             return fSuccess;
         }
