@@ -1924,8 +1924,7 @@ namespace System
             Debug.Assert(info != null);
 
             ReadOnlySpan<char> p = value;
-            if (!TryParseNumber(ref p, styles, ref number, info)
-                || (!p.IsEmpty && !TrailingZeros(value, value.Length - p.Length)))
+            if (!TryParseNumber(ref p, styles, ref number, info) || !TrailingZeros(p))
             {
                 number.CheckConsistency();
                 return false;
@@ -1937,8 +1936,13 @@ namespace System
 
         private static bool TrailingZeros(ReadOnlySpan<char> value, int index)
         {
+            return TrailingZeros(value.Slice(index));
+        }
+
+        private static bool TrailingZeros(ReadOnlySpan<char> value)
+        {
             // For compatibility, we need to allow trailing zeros at the end of a number string
-            for (int i = index; (uint)i < (uint)value.Length; i++)
+            for (int i = 0; (uint)i < (uint)value.Length; i++)
             {
                 if (value[i] != '\0')
                 {
