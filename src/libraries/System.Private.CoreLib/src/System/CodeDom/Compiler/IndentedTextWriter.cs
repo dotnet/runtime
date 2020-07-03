@@ -29,8 +29,6 @@ namespace System.CodeDom.Compiler
 
             _writer = writer;
             _tabString = tabString;
-            _indentLevel = 0;
-            _tabsPending = false;
         }
 
         public override Encoding Encoding => _writer.Encoding;

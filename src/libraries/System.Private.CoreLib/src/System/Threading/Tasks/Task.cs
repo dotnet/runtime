@@ -6524,7 +6524,6 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(outerTask != null, "Expected non-null outerTask");
             _lookForOce = lookForOce;
-            _state = STATE_WAITING_ON_OUTER_TASK;
 
             if (TplEventSource.Log.IsEnabled())
                 TplEventSource.Log.TraceOperationBegin(this.Id, "Task.Unwrap", 0);
