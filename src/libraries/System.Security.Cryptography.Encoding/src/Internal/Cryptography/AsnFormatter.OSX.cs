@@ -13,10 +13,6 @@ namespace Internal.Cryptography
     internal abstract partial class AsnFormatter
     {
         private static readonly AsnFormatter s_instance = new AppleAsnFormatter();
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
     }
 
     internal class AppleAsnFormatter : AsnFormatter

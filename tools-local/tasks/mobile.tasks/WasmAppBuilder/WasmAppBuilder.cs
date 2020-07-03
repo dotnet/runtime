@@ -150,7 +150,7 @@ public class WasmAppBuilder : Task
 
         using (var sw = File.CreateText(Path.Join(AppDir, "run-v8.sh")))
         {
-            sw.WriteLine("v8 --expose_wasm runtime.js -- --enable-gc --run " + Path.GetFileName(MainAssembly) + " $*");
+            sw.WriteLine("v8 --expose_wasm runtime.js -- --run " + Path.GetFileName(MainAssembly) + " $*");
         }
 
         return true;
@@ -163,8 +163,14 @@ public class WasmAppBuilder : Task
         _assemblies![assembly.GetName().Name!] = assembly;
         foreach (var aname in assembly.GetReferencedAssemblies())
         {
-            var refAssembly = mlc.LoadFromAssemblyName(aname);
-            Add(mlc, refAssembly);
+            try
+            {
+                Assembly refAssembly = mlc.LoadFromAssemblyName(aname);
+                Add(mlc, refAssembly);
+            }
+            catch (FileNotFoundException)
+            {
+            }
         }
     }
 }

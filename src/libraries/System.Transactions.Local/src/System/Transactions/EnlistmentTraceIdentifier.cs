@@ -11,7 +11,7 @@ namespace System.Transactions
     /// </summary>
     internal readonly struct EnlistmentTraceIdentifier : IEquatable<EnlistmentTraceIdentifier>
     {
-        public static readonly EnlistmentTraceIdentifier Empty = default;
+        public static EnlistmentTraceIdentifier Empty => default;
 
         public EnlistmentTraceIdentifier(
             Guid resourceManagerIdentifier,

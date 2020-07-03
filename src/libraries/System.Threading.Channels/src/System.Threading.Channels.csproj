@@ -31,6 +31,7 @@
              Link="Common\System\Collections\Concurrent\SingleProducerConsumerQueue.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.AppContext" Condition="'$(TargetFramework)' == 'netstandard1.3'" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />

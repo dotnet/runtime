@@ -730,7 +730,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
-        public async Task Send_SingleThread_Succeeds(HttpCompletionOption completionOption)
+        public void Send_SingleThread_Succeeds(HttpCompletionOption completionOption)
         {
             int currentThreadId = Thread.CurrentThread.ManagedThreadId;
 
@@ -754,13 +754,9 @@ namespace System.Net.Http.Functional.Tests
                             Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
                         })
                     }, completionOption);
-                // ToDo: use synchronous ReadAsStream once it's been implemented.
-                if (completionOption == HttpCompletionOption.ResponseContentRead)
-                {
-                    // Should be buffered thus return completed task and execute synchronously.
-                    Stream contentStream = await response.Content.ReadAsStreamAsync();
-                    Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
-                }
+                    
+                Stream contentStream = response.Content.ReadAsStream();
+                Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
             }
         }
 
@@ -793,16 +789,11 @@ namespace System.Net.Http.Functional.Tests
                             })
                         }, completionOption);
 
-                        // ToDo: use synchronous ReadAsStream once it's been implemented.
-                        if (completionOption == HttpCompletionOption.ResponseContentRead)
+                        Stream contentStream = response.Content.ReadAsStream();
+                        Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);                        
+                        using (StreamReader sr = new StreamReader(contentStream))
                         {
-                            // Should be buffered thus return completed task and execute synchronously.
-                            Stream contentStream = await response.Content.ReadAsStreamAsync();
-                            Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);                        
-                            using (StreamReader sr = new StreamReader(contentStream))
-                            {
-                                Assert.Equal(content, sr.ReadToEnd());
-                            }
+                            Assert.Equal(content, sr.ReadToEnd());
                         }
                     }
                     finally

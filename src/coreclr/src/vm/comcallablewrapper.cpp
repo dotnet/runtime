@@ -3172,10 +3172,10 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
 // constructor
 //--------------------------------------------------------------------------
 ComCallWrapperCache::ComCallWrapperCache() :
-    m_lock(CrstCOMWrapperCache),
     m_cbRef(0),
     m_pCacheLineAllocator(NULL),
-    m_pLoaderAllocator(NULL)
+    m_pLoaderAllocator(NULL),
+    m_lock(CrstCOMWrapperCache)
 {
     WRAPPER_NO_CONTRACT;
 

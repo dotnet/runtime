@@ -1159,6 +1159,60 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<ulong> DuplicateToVector128(ulong value) => DuplicateToVector128(value);
 
             /// <summary>
+            /// uint8_t vqmovnh_u16 (uint16_t a)
+            ///   A64: UQXTN Bd, Hn
+            /// </summary>
+            public static Vector64<byte> ExtractNarrowingSaturateScalar(Vector64<ushort> value) => ExtractNarrowingSaturateScalar(value);
+
+            /// <summary>
+            /// int16_t vqmovns_s32 (int32_t a)
+            ///   A64: SQXTN Hd, Sn
+            /// </summary>
+            public static Vector64<short> ExtractNarrowingSaturateScalar(Vector64<int> value) => ExtractNarrowingSaturateScalar(value);
+
+            /// <summary>
+            /// int32_t vqmovnd_s64 (int64_t a)
+            ///   A64: SQXTN Sd, Dn
+            /// </summary>
+            public static Vector64<int> ExtractNarrowingSaturateScalar(Vector64<long> value) => ExtractNarrowingSaturateScalar(value);
+
+            /// <summary>
+            /// int8_t vqmovnh_s16 (int16_t a)
+            ///   A64: SQXTN Bd, Hn
+            /// </summary>
+            public static Vector64<sbyte> ExtractNarrowingSaturateScalar(Vector64<short> value) => ExtractNarrowingSaturateScalar(value);
+
+            /// <summary>
+            /// uint16_t vqmovns_u32 (uint32_t a)
+            ///   A64: UQXTN Hd, Sn
+            /// </summary>
+            public static Vector64<ushort> ExtractNarrowingSaturateScalar(Vector64<uint> value) => ExtractNarrowingSaturateScalar(value);
+
+            /// <summary>
+            /// uint32_t vqmovnd_u64 (uint64_t a)
+            ///   A64: UQXTN Sd, Dn
+            /// </summary>
+            public static Vector64<uint> ExtractNarrowingSaturateScalar(Vector64<ulong> value) => ExtractNarrowingSaturateScalar(value);
+
+            /// <summary>
+            /// uint8_t vqmovunh_s16 (int16_t a)
+            ///   A64: SQXTUN Bd, Hn
+            /// </summary>
+            public static Vector64<byte> ExtractNarrowingSaturateUnsignedScalar(Vector64<short> value) => ExtractNarrowingSaturateUnsignedScalar(value);
+
+            /// <summary>
+            /// uint16_t vqmovuns_s32 (int32_t a)
+            ///   A64: SQXTUN Hd, Sn
+            /// </summary>
+            public static Vector64<ushort> ExtractNarrowingSaturateUnsignedScalar(Vector64<int> value) => ExtractNarrowingSaturateUnsignedScalar(value);
+
+            /// <summary>
+            /// uint32_t vqmovund_s64 (int64_t a)
+            ///   A64: SQXTUN Sd, Dn
+            /// </summary>
+            public static Vector64<uint> ExtractNarrowingSaturateUnsignedScalar(Vector64<long> value) => ExtractNarrowingSaturateUnsignedScalar(value);
+
+            /// <summary>
             /// float64x2_t vrndmq_f64 (float64x2_t a)
             ///   A64: FRINTM Vd.2D, Vn.2D
             /// </summary>
@@ -6236,88 +6290,214 @@ namespace System.Runtime.Intrinsics.Arm
         public static ulong Extract(Vector128<ulong> vector, byte index) => Extract(vector, index);
 
         /// <summary>
-        ///  int8x16_t vmovn_high_s16 (int8x8_t r, int16x8_t a)
-        ///   A32: VMOVN.I16 Dd+1, Qm
-        ///   A64: XTN2 Vd.16B, Vn.8H
-        /// </summary>
-        public static Vector128<sbyte> ExtractNarrowingUpper(Vector64<sbyte> lower, Vector128<short> value) => ExtractNarrowingUpper(lower, value);
-
-        /// <summary>
-        ///  int16x8_t vmovn_high_s32 (int16x4_t r, int32x4_t a)
-        ///   A32: VMOVN.I32 Dd+1, Qm
-        ///   A64: XTN2 Vd.8H, Vn.4S
-        /// </summary>
-        public static Vector128<short> ExtractNarrowingUpper(Vector64<short> lower, Vector128<int> value) => ExtractNarrowingUpper(lower, value);
-
-        /// <summary>
-        ///  int32x4_t vmovn_high_s64 (int32x2_t r, int64x2_t a)
-        ///   A32: VMOVN.I64 Dd+1, Qm
-        ///   A64: XTN2 Vd.4S, Vn.2D
-        /// </summary>
-        public static Vector128<int> ExtractNarrowingUpper(Vector64<int> lower, Vector128<long> value) => ExtractNarrowingUpper(lower, value);
-
-        /// <summary>
-        ///  uint8x16_t vmovn_high_u16 (uint8x8_t r, uint16x8_t a)
-        ///   A32: VMOVN.I16 Dd+1, Qm
-        ///   A64: XTN2 Vd.16B, Vn.8H
-        /// </summary>
-        public static Vector128<byte> ExtractNarrowingUpper(Vector64<byte> lower, Vector128<ushort> value) => ExtractNarrowingUpper(lower, value);
-
-        /// <summary>
-        ///  uint16x8_t vmovn_high_u32 (uint16x4_t r, uint32x4_t a)
-        ///   A32: VMOVN.I32 Dd+1, Qm
-        ///   A64: XTN2 Vd.8H, Vn.4S
-        /// </summary>
-        public static Vector128<ushort> ExtractNarrowingUpper(Vector64<ushort> lower, Vector128<uint> value) => ExtractNarrowingUpper(lower, value);
-
-        /// <summary>
-        ///  uint32x4_t vmovn_high_u64 (uint32x2_t r, uint64x2_t a)
-        ///   A32: VMOVN.I64 Dd+1, Qm
-        ///   A64: XTN2 Vd.4S, Vn.2D
-        /// </summary>
-        public static Vector128<uint> ExtractNarrowingUpper(Vector64<uint> lower, Vector128<ulong> value) => ExtractNarrowingUpper(lower, value);
-
-        /// <summary>
-        ///  int8x8_t vmovn_s16 (int16x8_t a)
-        ///   A32: VMOVN.I16 Dd, Qm
-        ///   A64: XTN Vd.8B, Vn.8H
-        /// </summary>
-        public static Vector64<sbyte> ExtractNarrowingLower(Vector128<short> value) => ExtractNarrowingLower(value);
-
-        /// <summary>
-        ///  int16x4_t vmovn_s32 (int32x4_t a)
-        ///   A32: VMOVN.I32 Dd, Qm
-        ///   A64: XTN Vd.4H, Vn.4S
-        /// </summary>
-        public static Vector64<short> ExtractNarrowingLower(Vector128<int> value) => ExtractNarrowingLower(value);
-
-        /// <summary>
-        ///  int32x2_t vmovn_s64 (int64x2_t a)
-        ///   A32: VMOVN.I64 Dd, Qm
-        ///   A64: XTN Vd.2S, Vn.2D
-        /// </summary>
-        public static Vector64<int> ExtractNarrowingLower(Vector128<long> value) => ExtractNarrowingLower(value);
-
-        /// <summary>
-        ///  uint8x8_t vmovn_u16 (uint16x8_t a)
+        /// uint8x8_t vmovn_u16 (uint16x8_t a)
         ///   A32: VMOVN.I16 Dd, Qm
         ///   A64: XTN Vd.8B, Vn.8H
         /// </summary>
         public static Vector64<byte> ExtractNarrowingLower(Vector128<ushort> value) => ExtractNarrowingLower(value);
 
         /// <summary>
-        ///  uint16x4_t vmovn_u32 (uint32x4_t a)
+        /// int16x4_t vmovn_s32 (int32x4_t a)
+        ///   A32: VMOVN.I32 Dd, Qm
+        ///   A64: XTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<short> ExtractNarrowingLower(Vector128<int> value) => ExtractNarrowingLower(value);
+
+        /// <summary>
+        /// int32x2_t vmovn_s64 (int64x2_t a)
+        ///   A32: VMOVN.I64 Dd, Qm
+        ///   A64: XTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<int> ExtractNarrowingLower(Vector128<long> value) => ExtractNarrowingLower(value);
+
+        /// <summary>
+        /// int8x8_t vmovn_s16 (int16x8_t a)
+        ///   A32: VMOVN.I16 Dd, Qm
+        ///   A64: XTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<sbyte> ExtractNarrowingLower(Vector128<short> value) => ExtractNarrowingLower(value);
+
+        /// <summary>
+        /// uint16x4_t vmovn_u32 (uint32x4_t a)
         ///   A32: VMOVN.I32 Dd, Qm
         ///   A64: XTN Vd.4H, Vn.4S
         /// </summary>
         public static Vector64<ushort> ExtractNarrowingLower(Vector128<uint> value) => ExtractNarrowingLower(value);
 
         /// <summary>
-        ///  uint32x2_t vmovn_u64 (uint64x2_t a)
+        /// uint32x2_t vmovn_u64 (uint64x2_t a)
         ///   A32: VMOVN.I64 Dd, Qm
         ///   A64: XTN Vd.2S, Vn.2D
         /// </summary>
         public static Vector64<uint> ExtractNarrowingLower(Vector128<ulong> value) => ExtractNarrowingLower(value);
+
+        /// <summary>
+        /// uint8x8_t vqmovn_u16 (uint16x8_t a)
+        ///   A32: VQMOVN.U16 Dd, Qm
+        ///   A64: UQXTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<byte> ExtractNarrowingSaturateLower(Vector128<ushort> value) => ExtractNarrowingSaturateLower(value);
+
+        /// <summary>
+        /// int16x4_t vqmovn_s32 (int32x4_t a)
+        ///   A32: VQMOVN.S32 Dd, Qm
+        ///   A64: SQXTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<short> ExtractNarrowingSaturateLower(Vector128<int> value) => ExtractNarrowingSaturateLower(value);
+
+        /// <summary>
+        /// int32x2_t vqmovn_s64 (int64x2_t a)
+        ///   A32: VQMOVN.S64 Dd, Qm
+        ///   A64: SQXTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<int> ExtractNarrowingSaturateLower(Vector128<long> value) => ExtractNarrowingSaturateLower(value);
+
+        /// <summary>
+        /// int8x8_t vqmovn_s16 (int16x8_t a)
+        ///   A32: VQMOVN.S16 Dd, Qm
+        ///   A64: SQXTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<sbyte> ExtractNarrowingSaturateLower(Vector128<short> value) => ExtractNarrowingSaturateLower(value);
+
+        /// <summary>
+        /// uint16x4_t vqmovn_u32 (uint32x4_t a)
+        ///   A32: VQMOVN.U32 Dd, Qm
+        ///   A64: UQXTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<ushort> ExtractNarrowingSaturateLower(Vector128<uint> value) => ExtractNarrowingSaturateLower(value);
+
+        /// <summary>
+        /// uint32x2_t vqmovn_u64 (uint64x2_t a)
+        ///   A32: VQMOVN.U64 Dd, Qm
+        ///   A64: UQXTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<uint> ExtractNarrowingSaturateLower(Vector128<ulong> value) => ExtractNarrowingSaturateLower(value);
+
+        /// <summary>
+        /// uint8x8_t vqmovun_s16 (int16x8_t a)
+        ///   A32: VQMOVUN.S16 Dd, Qm
+        ///   A64: SQXTUN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<byte> ExtractNarrowingSaturateUnsignedLower(Vector128<short> value) => ExtractNarrowingSaturateUnsignedLower(value);
+
+        /// <summary>
+        /// uint16x4_t vqmovun_s32 (int32x4_t a)
+        ///   A32: VQMOVUN.S32 Dd, Qm
+        ///   A64: SQXTUN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<ushort> ExtractNarrowingSaturateUnsignedLower(Vector128<int> value) => ExtractNarrowingSaturateUnsignedLower(value);
+
+        /// <summary>
+        /// uint32x2_t vqmovun_s64 (int64x2_t a)
+        ///   A32: VQMOVUN.S64 Dd, Qm
+        ///   A64: SQXTUN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<uint> ExtractNarrowingSaturateUnsignedLower(Vector128<long> value) => ExtractNarrowingSaturateUnsignedLower(value);
+
+        /// <summary>
+        /// uint8x16_t vqmovun_high_s16 (uint8x8_t r, int16x8_t a)
+        ///   A32: VQMOVUN.S16 Dd+1, Qm
+        ///   A64: SQXTUN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<byte> ExtractNarrowingSaturateUnsignedUpper(Vector64<byte> lower, Vector128<short> value) => ExtractNarrowingSaturateUnsignedUpper(lower, value);
+
+        /// <summary>
+        /// uint16x8_t vqmovun_high_s32 (uint16x4_t r, int32x4_t a)
+        ///   A32: VQMOVUN.S32 Dd+1, Qm
+        ///   A64: SQXTUN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<ushort> ExtractNarrowingSaturateUnsignedUpper(Vector64<ushort> lower, Vector128<int> value) => ExtractNarrowingSaturateUnsignedUpper(lower, value);
+
+        /// <summary>
+        /// uint32x4_t vqmovun_high_s64 (uint32x2_t r, int64x2_t a)
+        ///   A32: VQMOVUN.S64 Dd+1, Qm
+        ///   A64: SQXTUN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<uint> ExtractNarrowingSaturateUnsignedUpper(Vector64<uint> lower, Vector128<long> value) => ExtractNarrowingSaturateUnsignedUpper(lower, value);
+
+        /// <summary>
+        /// uint8x16_t vqmovn_high_u16 (uint8x8_t r, uint16x8_t a)
+        ///   A32: VQMOVN.U16 Dd+1, Qm
+        ///   A64: UQXTN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<byte> ExtractNarrowingSaturateUpper(Vector64<byte> lower, Vector128<ushort> value) => ExtractNarrowingSaturateUpper(lower, value);
+
+        /// <summary>
+        /// int16x8_t vqmovn_high_s32 (int16x4_t r, int32x4_t a)
+        ///   A32: VQMOVN.S32 Dd+1, Qm
+        ///   A64: SQXTN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<short> ExtractNarrowingSaturateUpper(Vector64<short> lower, Vector128<int> value) => ExtractNarrowingSaturateUpper(lower, value);
+
+        /// <summary>
+        /// int32x4_t vqmovn_high_s64 (int32x2_t r, int64x2_t a)
+        ///   A32: VQMOVN.S64 Dd+1, Qm
+        ///   A64: SQXTN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<int> ExtractNarrowingSaturateUpper(Vector64<int> lower, Vector128<long> value) => ExtractNarrowingSaturateUpper(lower, value);
+
+        /// <summary>
+        /// int8x16_t vqmovn_high_s16 (int8x8_t r, int16x8_t a)
+        ///   A32: VQMOVN.S16 Dd+1, Qm
+        ///   A64: SQXTN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<sbyte> ExtractNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value) => ExtractNarrowingSaturateUpper(lower, value);
+
+        /// <summary>
+        /// uint16x8_t vqmovn_high_u32 (uint16x4_t r, uint32x4_t a)
+        ///   A32: VQMOVN.U32 Dd+1, Qm
+        ///   A64: UQXTN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<ushort> ExtractNarrowingSaturateUpper(Vector64<ushort> lower, Vector128<uint> value) => ExtractNarrowingSaturateUpper(lower, value);
+
+        /// <summary>
+        /// uint32x4_t vqmovn_high_u64 (uint32x2_t r, uint64x2_t a)
+        ///   A32: VQMOVN.U64 Dd+1, Qm
+        ///   A64: UQXTN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<uint> ExtractNarrowingSaturateUpper(Vector64<uint> lower, Vector128<ulong> value) => ExtractNarrowingSaturateUpper(lower, value);
+
+        /// <summary>
+        /// uint8x16_t vmovn_high_u16 (uint8x8_t r, uint16x8_t a)
+        ///   A32: VMOVN.I16 Dd+1, Qm
+        ///   A64: XTN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<byte> ExtractNarrowingUpper(Vector64<byte> lower, Vector128<ushort> value) => ExtractNarrowingUpper(lower, value);
+
+        /// <summary>
+        /// int16x8_t vmovn_high_s32 (int16x4_t r, int32x4_t a)
+        ///   A32: VMOVN.I32 Dd+1, Qm
+        ///   A64: XTN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<short> ExtractNarrowingUpper(Vector64<short> lower, Vector128<int> value) => ExtractNarrowingUpper(lower, value);
+
+        /// <summary>
+        /// int32x4_t vmovn_high_s64 (int32x2_t r, int64x2_t a)
+        ///   A32: VMOVN.I64 Dd+1, Qm
+        ///   A64: XTN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<int> ExtractNarrowingUpper(Vector64<int> lower, Vector128<long> value) => ExtractNarrowingUpper(lower, value);
+
+        /// <summary>
+        /// int8x16_t vmovn_high_s16 (int8x8_t r, int16x8_t a)
+        ///   A32: VMOVN.I16 Dd+1, Qm
+        ///   A64: XTN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<sbyte> ExtractNarrowingUpper(Vector64<sbyte> lower, Vector128<short> value) => ExtractNarrowingUpper(lower, value);
+
+        /// <summary>
+        /// uint16x8_t vmovn_high_u32 (uint16x4_t r, uint32x4_t a)
+        ///   A32: VMOVN.I32 Dd+1, Qm
+        ///   A64: XTN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<ushort> ExtractNarrowingUpper(Vector64<ushort> lower, Vector128<uint> value) => ExtractNarrowingUpper(lower, value);
+
+        /// <summary>
+        /// uint32x4_t vmovn_high_u64 (uint32x2_t r, uint64x2_t a)
+        ///   A32: VMOVN.I64 Dd+1, Qm
+        ///   A64: XTN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<uint> ExtractNarrowingUpper(Vector64<uint> lower, Vector128<ulong> value) => ExtractNarrowingUpper(lower, value);
 
         /// <summary>
         /// uint8x8_t vext_s8 (uint8x8_t a, uint8x8_t b, const int n)
@@ -6927,6 +7107,27 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: INS Vd.D[lane], Xn
         /// </summary>
         public static Vector128<ulong> Insert(Vector128<ulong> vector, byte index, ulong data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// float64x2_t vcopyq_lane_f64 (float64x2_t a, const int lane1, float64x1_t b, const int lane2)
+        ///   A32: VMOV.F64 Dd, Dm
+        ///   A64: INS Vd.D[lane1], Vn.D[0]
+        /// </summary>
+        public static Vector128<double> InsertScalar(Vector128<double> result, byte resultIndex, Vector64<double> value) => InsertScalar(result, resultIndex, value);
+
+        /// <summary>
+        /// int64x2_t vcopyq_lane_s64 (int64x2_t a, const int lane1, int64x1_t b, const int lane2)
+        ///   A32: VMOV Dd, Dm
+        ///   A64: INS Vd.D[lane1], Vn.D[0]
+        /// </summary>
+        public static Vector128<long> InsertScalar(Vector128<long> result, byte resultIndex, Vector64<long> value) => InsertScalar(result, resultIndex, value);
+
+        /// <summary>
+        /// uint64x2_t vcopyq_lane_u64 (uint64x2_t a, const int lane1, uint64x1_t b, const int lane2)
+        ///   A32: VMOV Dd, Dm
+        ///   A64: INS Vd.D[lane1], Vn.D[0]
+        /// </summary>
+        public static Vector128<ulong> InsertScalar(Vector128<ulong> result, byte resultIndex, Vector64<ulong> value) => InsertScalar(result, resultIndex, value);
 
         /// <summary>
         /// int16x4_t vcls_s16 (int16x4_t a)
@@ -10049,230 +10250,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<float> RoundToZeroScalar(Vector64<float> value) => RoundToZeroScalar(value);
 
         /// <summary>
-        /// uint8x8_t vsli_n_u8(uint8x8_t a, uint8x8_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.8 Dd, Dm, #n
-        ///   A64: SLI Vd.8B, Vn.8B, #n
-        /// </summary>
-        public static Vector64<byte> ShiftLeftLogicalAndInsert(Vector64<byte> left, Vector64<byte> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int16x4_t vsli_n_s16(int16x4_t a, int16x4_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.16 Dd, Dm, #n
-        ///   A64: SLI Vd.4H, Vn.4H, #n
-        /// </summary>
-        public static Vector64<short> ShiftLeftLogicalAndInsert(Vector64<short> left, Vector64<short> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int32x2_t vsli_n_s32(int32x2_t a, int32x2_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.32 Dd, Dm, #n
-        ///   A64: SLI Vd.2S, Vn.2S, #n
-        /// </summary>
-        public static Vector64<int> ShiftLeftLogicalAndInsert(Vector64<int> left, Vector64<int> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int8x8_t vsli_n_s8(int8x8_t a, int8x8_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.8 Dd, Dm, #n
-        ///   A64: SLI Vd.8B, Vn.8B, #n
-        /// </summary>
-        public static Vector64<sbyte> ShiftLeftLogicalAndInsert(Vector64<sbyte> left, Vector64<sbyte> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
-
-        /// <summary>
-        /// uint16x4_t vsli_n_u16(uint16x4_t a, uint16x4_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.16 Dd, Dm, #n
-        ///   A64: SLI Vd.4H, Vn.4H, #n
-        /// </summary>
-        public static Vector64<ushort> ShiftLeftLogicalAndInsert(Vector64<ushort> left, Vector64<ushort> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
-
-        /// <summary>
-        /// uint32x2_t vsli_n_u32(uint32x2_t a, uint32x2_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.32 Dd, Dm, #n
-        ///   A64: SLI Vd.2S, Vn.2S, #n
-        /// </summary>
-        public static Vector64<uint> ShiftLeftLogicalAndInsert(Vector64<uint> left, Vector64<uint> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
-
-        /// <summary>
-        /// uint8x16_t vsliq_n_u8(uint8x16_t a, uint8x16_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.8 Qd, Qm, #n
-        ///   A64: SLI Vd.16B, Vn.16B, #n
-        /// </summary>
-        public static Vector128<byte> ShiftLeftLogicalAndInsert(Vector128<byte> left, Vector128<byte> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int16x8_t vsliq_n_s16(int16x8_t a, int16x8_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.16 Qd, Qm, #n
-        ///   A64: SLI Vd.8H, Vn.8H, #n
-        /// </summary>
-        public static Vector128<short> ShiftLeftLogicalAndInsert(Vector128<short> left, Vector128<short> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int32x4_t vsliq_n_s32(int32x4_t a, int32x4_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.32 Qd, Qm, #n
-        ///   A64: SLI Vd.4S, Vn.4S, #n
-        /// </summary>
-        public static Vector128<int> ShiftLeftLogicalAndInsert(Vector128<int> left, Vector128<int> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int64x2_t vsliq_n_s64(int64x2_t a, int64x2_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.64 Qd, Qm, #n
-        ///   A64: SLI Vd.2D, Vn.2D, #n
-        /// </summary>
-        public static Vector128<long> ShiftLeftLogicalAndInsert(Vector128<long> left, Vector128<long> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int8x16_t vsliq_n_s8(int8x16_t a, int8x16_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.8 Qd, Qm, #n
-        ///   A64: SLI Vd.16B, Vn.16B, #n
-        /// </summary>
-        public static Vector128<sbyte> ShiftLeftLogicalAndInsert(Vector128<sbyte> left, Vector128<sbyte> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
-
-        /// <summary>
-        /// uint16x8_t vsliq_n_u16(uint16x8_t a, uint16x8_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.16 Qd, Qm, #n
-        ///   A64: SLI Vd.8H, Vn.8H, #n
-        /// </summary>
-        public static Vector128<ushort> ShiftLeftLogicalAndInsert(Vector128<ushort> left, Vector128<ushort> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
-
-        /// <summary>
-        /// uint32x4_t vsliq_n_u32(uint32x4_t a, uint32x4_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.32 Qd, Qm, #n
-        ///   A64: SLI Vd.4S, Vn.4S, #n
-        /// </summary>
-        public static Vector128<uint> ShiftLeftLogicalAndInsert(Vector128<uint> left, Vector128<uint> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
-
-        /// <summary>
-        /// uint64x2_t vsliq_n_u64(uint64x2_t a, uint64x2_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.64 Qd, Qm, #n
-        ///   A64: SLI Vd.2D, Vn.2D, #n
-        /// </summary>
-        public static Vector128<ulong> ShiftLeftLogicalAndInsert(Vector128<ulong> left, Vector128<ulong> right, byte shift) => ShiftLeftLogicalAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int64_t vslid_n_s64(int64_t a, int64_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.64 Dd, Dm, #n
-        ///   A64: SLI Dd, Dn, #n
-        /// </summary>
-        public static Vector64<long> ShiftLeftLogicalAndInsertScalar(Vector64<long> left, Vector64<long> right, byte shift) => ShiftLeftLogicalAndInsertScalar(left, right, shift);
-
-        /// <summary>
-        /// uint64_t vslid_n_u64(uint64_t a, uint64_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.64 Dd, Dm, #n
-        ///   A64: SLI Dd, Dn, #n
-        /// </summary>
-        public static Vector64<ulong> ShiftLeftLogicalAndInsertScalar(Vector64<ulong> left, Vector64<ulong> right, byte shift) => ShiftLeftLogicalAndInsertScalar(left, right, shift);
-
-        /// <summary>
-        /// uint8x8_t vsri_n_u8(uint8x8_t a, uint8x8_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.8 Dd, Dm, #n
-        ///   A64: SRI Vd.8B, Vn.8B, #n
-        /// </summary>
-        public static Vector64<byte> ShiftRightAndInsert(Vector64<byte> left, Vector64<byte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int16x4_t vsri_n_s16(int16x4_t a, int16x4_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.16 Dd, Dm, #n
-        ///   A64: SRI Vd.4H, Vn.4H, #n
-        /// </summary>
-        public static Vector64<short> ShiftRightAndInsert(Vector64<short> left, Vector64<short> right, byte shift) => ShiftRightAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int32x2_t vsri_n_s32(int32x2_t a, int32x2_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.32 Dd, Dm, #n
-        ///   A64: SRI Vd.2S, Vn.2S, #n
-        /// </summary>
-        public static Vector64<int> ShiftRightAndInsert(Vector64<int> left, Vector64<int> right, byte shift) => ShiftRightAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int8x8_t vsri_n_s8(int8x8_t a, int8x8_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.8 Dd, Dm, #n
-        ///   A64: SRI Vd.8B, Vn.8B, #n
-        /// </summary>
-        public static Vector64<sbyte> ShiftRightAndInsert(Vector64<sbyte> left, Vector64<sbyte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
-
-        /// <summary>
-        /// uint16x4_t vsri_n_u16(uint16x4_t a, uint16x4_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.16 Dd, Dm, #n
-        ///   A64: SRI Vd.4H, Vn.4H, #n
-        /// </summary>
-        public static Vector64<ushort> ShiftRightAndInsert(Vector64<ushort> left, Vector64<ushort> right, byte shift) => ShiftRightAndInsert(left, right, shift);
-
-        /// <summary>
-        /// uint32x2_t vsri_n_u32(uint32x2_t a, uint32x2_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.32 Dd, Dm, #n
-        ///   A64: SRI Vd.2S, Vn.2S, #n
-        /// </summary>
-        public static Vector64<uint> ShiftRightAndInsert(Vector64<uint> left, Vector64<uint> right, byte shift) => ShiftRightAndInsert(left, right, shift);
-
-        /// <summary>
-        /// uint8x16_t vsriq_n_u8(uint8x16_t a, uint8x16_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.8 Qd, Qm, #n
-        ///   A64: SRI Vd.16B, Vn.16B, #n
-        /// </summary>
-        public static Vector128<byte> ShiftRightAndInsert(Vector128<byte> left, Vector128<byte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int16x8_t vsriq_n_s16(int16x8_t a, int16x8_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.16 Qd, Qm, #n
-        ///   A64: SRI Vd.8H, Vn.8H, #n
-        /// </summary>
-        public static Vector128<short> ShiftRightAndInsert(Vector128<short> left, Vector128<short> right, byte shift) => ShiftRightAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int32x4_t vsriq_n_s32(int32x4_t a, int32x4_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.32 Qd, Qm, #n
-        ///   A64: SRI Vd.4S, Vn.4S, #n
-        /// </summary>
-        public static Vector128<int> ShiftRightAndInsert(Vector128<int> left, Vector128<int> right, byte shift) => ShiftRightAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int64x2_t vsriq_n_s64(int64x2_t a, int64x2_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.64 Qd, Qm, #n
-        ///   A64: SRI Vd.2D, Vn.2D, #n
-        /// </summary>
-        public static Vector128<long> ShiftRightAndInsert(Vector128<long> left, Vector128<long> right, byte shift) => ShiftRightAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int8x16_t vsriq_n_s8(int8x16_t a, int8x16_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.8 Qd, Qm, #n
-        ///   A64: SRI Vd.16B, Vn.16B, #n
-        /// </summary>
-        public static Vector128<sbyte> ShiftRightAndInsert(Vector128<sbyte> left, Vector128<sbyte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
-
-        /// <summary>
-        /// uint16x8_t vsriq_n_u16(uint16x8_t a, uint16x8_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.16 Qd, Qm, #n
-        ///   A64: SRI Vd.8H, Vn.8H, #n
-        /// </summary>
-        public static Vector128<ushort> ShiftRightAndInsert(Vector128<ushort> left, Vector128<ushort> right, byte shift) => ShiftRightAndInsert(left, right, shift);
-
-        /// <summary>
-        /// uint32x4_t vsriq_n_u32(uint32x4_t a, uint32x4_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.32 Qd, Qm, #n
-        ///   A64: SRI Vd.4S, Vn.4S, #n
-        /// </summary>
-        public static Vector128<uint> ShiftRightAndInsert(Vector128<uint> left, Vector128<uint> right, byte shift) => ShiftRightAndInsert(left, right, shift);
-
-        /// <summary>
-        /// uint64x2_t vsriq_n_u64(uint64x2_t a, uint64x2_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.64 Qd, Qm, #n
-        ///   A64: SRI Vd.2D, Vn.2D, #n
-        /// </summary>
-        public static Vector128<ulong> ShiftRightAndInsert(Vector128<ulong> left, Vector128<ulong> right, byte shift) => ShiftRightAndInsert(left, right, shift);
-
-        /// <summary>
-        /// int64_t vsrid_n_s64(int64_t a, int64_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.64 Dd, Dm, #n
-        ///   A64: SRI Dd, Dn, #n
-        /// </summary>
-        public static Vector64<long> ShiftRightLogicalAndInsertScalar(Vector64<long> left, Vector64<long> right, byte shift) => ShiftRightLogicalAndInsertScalar(left, right, shift);
-
-        /// <summary>
-        /// uint64_t vsrid_n_u64(uint64_t a, uint64_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.64 Dd, Dm, #n
-        ///   A64: SRI Dd, Dn, #n
-        /// </summary>
-        public static Vector64<ulong> ShiftRightLogicalAndInsertScalar(Vector64<ulong> left, Vector64<ulong> right, byte shift) => ShiftRightLogicalAndInsertScalar(left, right, shift);
-
-        /// <summary>
         /// int16x4_t vshl_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VSHL.S16 Dd, Dn, Dm
         ///   A64: SSHL Vd.4H, Vn.4H, Vm.4H
@@ -10495,6 +10472,118 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: SSHL Dd, Dn, Dm
         /// </summary>
         public static Vector64<long> ShiftArithmeticScalar(Vector64<long> value, Vector64<long> count) => ShiftArithmeticScalar(value, count);
+
+        /// <summary>
+        /// uint8x8_t vsli_n_u8(uint8x8_t a, uint8x8_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.8 Dd, Dm, #n
+        ///   A64: SLI Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<byte> ShiftLeftAndInsert(Vector64<byte> left, Vector64<byte> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int16x4_t vsli_n_s16(int16x4_t a, int16x4_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.16 Dd, Dm, #n
+        ///   A64: SLI Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<short> ShiftLeftAndInsert(Vector64<short> left, Vector64<short> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int32x2_t vsli_n_s32(int32x2_t a, int32x2_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.32 Dd, Dm, #n
+        ///   A64: SLI Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<int> ShiftLeftAndInsert(Vector64<int> left, Vector64<int> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int8x8_t vsli_n_s8(int8x8_t a, int8x8_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.8 Dd, Dm, #n
+        ///   A64: SLI Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftLeftAndInsert(Vector64<sbyte> left, Vector64<sbyte> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint16x4_t vsli_n_u16(uint16x4_t a, uint16x4_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.16 Dd, Dm, #n
+        ///   A64: SLI Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<ushort> ShiftLeftAndInsert(Vector64<ushort> left, Vector64<ushort> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint32x2_t vsli_n_u32(uint32x2_t a, uint32x2_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.32 Dd, Dm, #n
+        ///   A64: SLI Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<uint> ShiftLeftAndInsert(Vector64<uint> left, Vector64<uint> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint8x16_t vsliq_n_u8(uint8x16_t a, uint8x16_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.8 Qd, Qm, #n
+        ///   A64: SLI Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<byte> ShiftLeftAndInsert(Vector128<byte> left, Vector128<byte> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int16x8_t vsliq_n_s16(int16x8_t a, int16x8_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.16 Qd, Qm, #n
+        ///   A64: SLI Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<short> ShiftLeftAndInsert(Vector128<short> left, Vector128<short> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int32x4_t vsliq_n_s32(int32x4_t a, int32x4_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.32 Qd, Qm, #n
+        ///   A64: SLI Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<int> ShiftLeftAndInsert(Vector128<int> left, Vector128<int> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int64x2_t vsliq_n_s64(int64x2_t a, int64x2_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.64 Qd, Qm, #n
+        ///   A64: SLI Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<long> ShiftLeftAndInsert(Vector128<long> left, Vector128<long> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int8x16_t vsliq_n_s8(int8x16_t a, int8x16_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.8 Qd, Qm, #n
+        ///   A64: SLI Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<sbyte> ShiftLeftAndInsert(Vector128<sbyte> left, Vector128<sbyte> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint16x8_t vsliq_n_u16(uint16x8_t a, uint16x8_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.16 Qd, Qm, #n
+        ///   A64: SLI Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<ushort> ShiftLeftAndInsert(Vector128<ushort> left, Vector128<ushort> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint32x4_t vsliq_n_u32(uint32x4_t a, uint32x4_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.32 Qd, Qm, #n
+        ///   A64: SLI Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<uint> ShiftLeftAndInsert(Vector128<uint> left, Vector128<uint> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint64x2_t vsliq_n_u64(uint64x2_t a, uint64x2_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.64 Qd, Qm, #n
+        ///   A64: SLI Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<ulong> ShiftLeftAndInsert(Vector128<ulong> left, Vector128<ulong> right, byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int64_t vslid_n_s64(int64_t a, int64_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.64 Dd, Dm, #n
+        ///   A64: SLI Dd, Dn, #n
+        /// </summary>
+        public static Vector64<long> ShiftLeftAndInsertScalar(Vector64<long> left, Vector64<long> right, byte shift) => ShiftLeftAndInsertScalar(left, right, shift);
+
+        /// <summary>
+        /// uint64_t vslid_n_u64(uint64_t a, uint64_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.64 Dd, Dm, #n
+        ///   A64: SLI Dd, Dn, #n
+        /// </summary>
+        public static Vector64<ulong> ShiftLeftAndInsertScalar(Vector64<ulong> left, Vector64<ulong> right, byte shift) => ShiftLeftAndInsertScalar(left, right, shift);
 
         /// <summary>
         /// uint8x8_t vshl_n_u8 (uint8x8_t a, const int n)
@@ -11300,6 +11389,118 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: USHL Dd, Dn, Dm
         /// </summary>
         public static Vector64<ulong> ShiftLogicalScalar(Vector64<ulong> value, Vector64<long> count) => ShiftLogicalScalar(value, count);
+
+        /// <summary>
+        /// uint8x8_t vsri_n_u8(uint8x8_t a, uint8x8_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.8 Dd, Dm, #n
+        ///   A64: SRI Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<byte> ShiftRightAndInsert(Vector64<byte> left, Vector64<byte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int16x4_t vsri_n_s16(int16x4_t a, int16x4_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.16 Dd, Dm, #n
+        ///   A64: SRI Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<short> ShiftRightAndInsert(Vector64<short> left, Vector64<short> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int32x2_t vsri_n_s32(int32x2_t a, int32x2_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.32 Dd, Dm, #n
+        ///   A64: SRI Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<int> ShiftRightAndInsert(Vector64<int> left, Vector64<int> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int8x8_t vsri_n_s8(int8x8_t a, int8x8_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.8 Dd, Dm, #n
+        ///   A64: SRI Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightAndInsert(Vector64<sbyte> left, Vector64<sbyte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint16x4_t vsri_n_u16(uint16x4_t a, uint16x4_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.16 Dd, Dm, #n
+        ///   A64: SRI Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<ushort> ShiftRightAndInsert(Vector64<ushort> left, Vector64<ushort> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint32x2_t vsri_n_u32(uint32x2_t a, uint32x2_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.32 Dd, Dm, #n
+        ///   A64: SRI Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<uint> ShiftRightAndInsert(Vector64<uint> left, Vector64<uint> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint8x16_t vsriq_n_u8(uint8x16_t a, uint8x16_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.8 Qd, Qm, #n
+        ///   A64: SRI Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<byte> ShiftRightAndInsert(Vector128<byte> left, Vector128<byte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int16x8_t vsriq_n_s16(int16x8_t a, int16x8_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.16 Qd, Qm, #n
+        ///   A64: SRI Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<short> ShiftRightAndInsert(Vector128<short> left, Vector128<short> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int32x4_t vsriq_n_s32(int32x4_t a, int32x4_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.32 Qd, Qm, #n
+        ///   A64: SRI Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<int> ShiftRightAndInsert(Vector128<int> left, Vector128<int> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int64x2_t vsriq_n_s64(int64x2_t a, int64x2_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.64 Qd, Qm, #n
+        ///   A64: SRI Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<long> ShiftRightAndInsert(Vector128<long> left, Vector128<long> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int8x16_t vsriq_n_s8(int8x16_t a, int8x16_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.8 Qd, Qm, #n
+        ///   A64: SRI Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightAndInsert(Vector128<sbyte> left, Vector128<sbyte> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint16x8_t vsriq_n_u16(uint16x8_t a, uint16x8_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.16 Qd, Qm, #n
+        ///   A64: SRI Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<ushort> ShiftRightAndInsert(Vector128<ushort> left, Vector128<ushort> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint32x4_t vsriq_n_u32(uint32x4_t a, uint32x4_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.32 Qd, Qm, #n
+        ///   A64: SRI Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<uint> ShiftRightAndInsert(Vector128<uint> left, Vector128<uint> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// uint64x2_t vsriq_n_u64(uint64x2_t a, uint64x2_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.64 Qd, Qm, #n
+        ///   A64: SRI Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<ulong> ShiftRightAndInsert(Vector128<ulong> left, Vector128<ulong> right, byte shift) => ShiftRightAndInsert(left, right, shift);
+
+        /// <summary>
+        /// int64_t vsrid_n_s64(int64_t a, int64_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.64 Dd, Dm, #n
+        ///   A64: SRI Dd, Dn, #n
+        /// </summary>
+        public static Vector64<long> ShiftRightAndInsertScalar(Vector64<long> left, Vector64<long> right, byte shift) => ShiftRightAndInsertScalar(left, right, shift);
+
+        /// <summary>
+        /// uint64_t vsrid_n_u64(uint64_t a, uint64_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.64 Dd, Dm, #n
+        ///   A64: SRI Dd, Dn, #n
+        /// </summary>
+        public static Vector64<ulong> ShiftRightAndInsertScalar(Vector64<ulong> left, Vector64<ulong> right, byte shift) => ShiftRightAndInsertScalar(left, right, shift);
 
         /// <summary>
         /// int16x4_t vshr_n_s16 (int16x4_t a, const int n)

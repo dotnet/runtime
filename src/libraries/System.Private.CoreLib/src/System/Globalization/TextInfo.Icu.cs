@@ -10,10 +10,6 @@ namespace System.Globalization
     {
         private Tristate _needsTurkishCasing = Tristate.NotInitialized;
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private static bool NeedsTurkishCasing(string localeName)
         {
             Debug.Assert(localeName != null);

@@ -1951,18 +1951,6 @@ public:
         AssemblySpec *pSpec,
         BOOL fThrowOnFileNotFound) DAC_EMPTY_RET(NULL);
 
-    HRESULT BindAssemblySpecForHostedBinder(
-        AssemblySpec *   pSpec,
-        IAssemblyName *  pAssemblyName,
-        ICLRPrivBinder * pBinder,
-        PEAssembly **    ppAssembly) DAC_EMPTY_RET(E_FAIL);
-
-    HRESULT BindHostedPrivAssembly(
-        PEAssembly *       pParentPEAssembly,
-        ICLRPrivAssembly * pPrivAssembly,
-        IAssemblyName *    pAssemblyName,
-        PEAssembly **      ppAssembly) DAC_EMPTY_RET(S_OK);
-
     //****************************************************************************************
     //
     //****************************************************************************************

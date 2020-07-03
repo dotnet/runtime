@@ -7,6 +7,10 @@
 
 
   <!-- COMPlus_* variables that can be specified for a test scenario -->
+  <!-- There is a non-COMPlus variable here: RunningIlasmRoundTrip. When set to 1, this triggers CoreCLR round-trip testing.
+       The value is read in the test wrapper scripts. When set in a __TestEnv script, it is set before it is read.
+       The COMPlus_ processing handling below allows for variables not prefixed by 'COMPlus_'.
+  -->
   <PropertyGroup>
     <COMPlusVariables>
       COMPlus_TieredCompilation;
@@ -48,7 +52,8 @@
       COMPlus_TieredPGO;
       COMPlus_JitEnableGuardedDevirtualization;
       COMPlus_EnableEHWriteThru;
-      COMPlus_JitObjectStackAllocation
+      COMPlus_JitObjectStackAllocation;
+      RunningIlasmRoundTrip
     </COMPlusVariables>
   </PropertyGroup>
   <ItemGroup>
@@ -140,6 +145,7 @@
     <TestEnvironment Include="jitguardeddevirtualization" JitEnableGuardedDevirtualization="1" TieredCompilation="0" />
     <TestEnvironment Include="jitehwritethru" EnableEhWriteThru="1" TieredCompilation="0" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
+    <TestEnvironment Include="ilasmroundtrip" RunningIlasmRoundTrip="1" />
   </ItemGroup>
 
   <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables

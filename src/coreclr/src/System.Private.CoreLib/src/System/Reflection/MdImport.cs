@@ -23,7 +23,7 @@ namespace System.Reflection
         Field = 0x06,
         LocalSig = 0x07,
         Property = 0x08,
-        Unmgd = 0x09,
+        Unmanaged = 0x09,
         GenericInst = 0x0a,  // generic method instantiation
 
         Generic = 0x10,  // Generic method sig with explicit number of type arguments (precedes ordinary parameter count)

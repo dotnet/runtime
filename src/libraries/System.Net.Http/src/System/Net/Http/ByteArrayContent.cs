@@ -68,6 +68,9 @@ namespace System.Net.Http
             return true;
         }
 
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
+            CreateMemoryStreamForByteArray();
+
         protected override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(CreateMemoryStreamForByteArray());
 

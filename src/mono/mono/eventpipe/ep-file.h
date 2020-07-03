@@ -6,29 +6,41 @@
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-config.h"
 #include "ep-types.h"
+#include "ep-stream.h"
+
+#undef EP_IMPL_GETTER_SETTER
+#ifdef EP_IMPL_FILE_GETTER_SETTER
+#define EP_IMPL_GETTER_SETTER
+#endif
+#include "ep-getter-setter.h"
 
 /*
  * EventPipeFile.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_FILE_GETTER_SETTER)
 struct _EventPipeFile {
 #else
 struct _EventPipeFile_Internal {
 #endif
 	FastSerializableObject fast_serializable_object;
+	// The frequency of the timestamps used for this file.
+	int64_t timestamp_frequency;
 	StreamWriter *stream_writer;
+	// The object responsible for serialization.
 	FastSerializer *fast_serializer;
 	EventPipeEventBlock *event_block;
 	EventPipeMetadataBlock *metadata_block;
 	EventPipeStackBlock *stack_block;
+	// Hashtable of metadata labels.
 	ep_rt_metadata_labels_hash_map_t metadata_ids;
 	ep_rt_stack_hash_map_t stack_hash;
-	uint64_t file_open_system_time;
-	uint64_t file_open_timestamp;
-	uint64_t timestamp_frequency;
+	// The system time when the file was opened.
+	ep_systemtime_t file_open_system_time;
+	// The timestamp when the file was opened.  Used for calculating file-relative timestamps.
+	ep_timestamp_t file_open_timestamp;
 #ifdef EP_CHECKED_BUILD
-	uint64_t last_sorted_timestamp;
+	ep_timestamp_t last_sorted_timestamp;
 #endif
 	uint32_t pointer_size;
 	uint32_t current_process_id;
@@ -36,31 +48,26 @@ struct _EventPipeFile_Internal {
 	uint32_t sampling_rate_in_ns;
 	uint32_t stack_id_counter;
 	volatile uint32_t metadata_id_counter;
+	// The format to serialize.
 	EventPipeSerializationFormat format;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_FILE_GETTER_SETTER)
 struct _EventPipeFile {
 	uint8_t _internal [sizeof (struct _EventPipeFile_Internal)];
 };
 #endif
 
-EP_DEFINE_GETTER(EventPipeFile *, file, StreamWriter *, stream_writer)
 EP_DEFINE_GETTER(EventPipeFile *, file, FastSerializer *, fast_serializer)
-EP_DEFINE_SETTER(EventPipeFile *, file, FastSerializer *, fast_serializer)
-EP_DEFINE_GETTER(EventPipeFile *, file, EventPipeEventBlock *, event_block)
-EP_DEFINE_GETTER(EventPipeFile *, file, EventPipeMetadataBlock *, metadata_block)
-EP_DEFINE_GETTER_REF(EventPipeFile *, file, ep_rt_metadata_labels_hash_map_t *, metadata_ids)
-EP_DEFINE_GETTER_REF(EventPipeFile *, file, ep_rt_stack_hash_map_t *, stack_hash)
-EP_DEFINE_GETTER(EventPipeFile *, file, EventPipeStackBlock *, stack_block)
 EP_DEFINE_GETTER(EventPipeFile *, file, EventPipeSerializationFormat, format)
-EP_DEFINE_GETTER(EventPipeFile *, file, uint32_t, stack_id_counter);
-EP_DEFINE_SETTER(EventPipeFile *, file, uint32_t, stack_id_counter);
-EP_DEFINE_GETTER_REF(EventPipeFile *, file, volatile uint32_t *, metadata_id_counter)
-#ifdef EP_CHECKED_BUILD
-EP_DEFINE_GETTER(EventPipeFile *, file, uint64_t, last_sorted_timestamp)
-EP_DEFINE_SETTER(EventPipeFile *, file, uint64_t, last_sorted_timestamp)
-#endif
+
+static
+inline
+bool
+ep_file_has_errors (EventPipeFile *file)
+{
+	return (ep_file_get_fast_serializer (file) == NULL) || ep_fast_serializer_get_write_error_encountered (ep_file_get_fast_serializer (file));
+}
 
 EventPipeFile *
 ep_file_alloc (
@@ -101,7 +108,7 @@ ep_file_get_file_minimum_version (EventPipeSerializationFormat format);
  * StackHashKey.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_FILE_GETTER_SETTER)
 struct _StackHashKey {
 #else
 struct _StackHashKey_Internal {
@@ -111,7 +118,7 @@ struct _StackHashKey_Internal {
 	uint32_t stack_size_in_bytes;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_FILE_GETTER_SETTER)
 struct _StackHashKey {
 	uint8_t _internal [sizeof (struct _StackHashKey_Internal)];
 };
@@ -131,7 +138,7 @@ ep_stack_hash_key_fini (StackHashKey *key);
  * StackHashEntry.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_FILE_GETTER_SETTER)
 struct _StackHashEntry {
 #else
 struct _StackHashEntry_Internal {
@@ -142,7 +149,7 @@ struct _StackHashEntry_Internal {
 	uint8_t stack_bytes[1];
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_FILE_GETTER_SETTER)
 struct _StackHashEntry {
 	uint8_t _internal [sizeof (struct _StackHashEntry_Internal)];
 };

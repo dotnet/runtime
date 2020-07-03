@@ -107,6 +107,9 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
+            new ReadOnlyStream(_content);
+
         protected override Task<Stream> CreateContentReadStreamAsync()
         {
             // Wrap the stream with a read-only stream to prevent someone from writing to the stream.

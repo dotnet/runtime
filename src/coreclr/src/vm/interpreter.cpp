@@ -413,6 +413,10 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
         NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- CORINFO_CALLCONV_PROPERTY");
         break;
 
+    case CORINFO_CALLCONV_UNMANAGED:
+        NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- CORINFO_CALLCONV_UNMANAGED");
+        break;
+
     case CORINFO_CALLCONV_NATIVEVARARG:
         NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- CORINFO_CALLCONV_NATIVEVARARG");
         break;
@@ -1112,6 +1116,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_AMD64)
                         argState.AddArg(k, static_cast<short>(szSlots));
 #elif defined(HOST_ARM) || defined(HOST_ARM64)
+                        // TODO: handle Vector64, Vector128 types
                         CorInfoHFAElemType hfaType = comp->getHFAType(vcTypeRet);
                         if (CorInfoTypeIsFloatingPoint(hfaType))
                         {
@@ -1283,6 +1288,10 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
     case CORINFO_CALLCONV_PROPERTY:
         NYI_INTERP("GenerateInterpreterStub -- CORINFO_CALLCONV_PROPERTY");
+        break;
+
+    case CORINFO_CALLCONV_UNMANAGED:
+        NYI_INTERP("GenerateInterpreterStub -- CORINFO_CALLCONV_UNMANAGED");
         break;
 
     case CORINFO_CALLCONV_NATIVEVARARG:
@@ -1827,12 +1836,16 @@ AwareLock* Interpreter::GetMonitorForStaticMethod()
         {
         case CORINFO_LOOKUP_CLASSPARAM:
             {
-                classHnd = (CORINFO_CLASS_HANDLE) GetPreciseGenericsContext();
+                CORINFO_CONTEXT_HANDLE ctxHnd = GetPreciseGenericsContext();
+                _ASSERTE_MSG((((size_t)ctxHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS), "Precise context not class context");
+                classHnd = (CORINFO_CLASS_HANDLE) ((size_t)ctxHnd & ~CORINFO_CONTEXTFLAGS_CLASS);
             }
             break;
         case CORINFO_LOOKUP_METHODPARAM:
             {
-                MethodDesc* pMD = (MethodDesc*) GetPreciseGenericsContext();
+                CORINFO_CONTEXT_HANDLE ctxHnd = GetPreciseGenericsContext();
+                _ASSERTE_MSG((((size_t)ctxHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD), "Precise context not method context");
+                MethodDesc* pMD = (MethodDesc*) (CORINFO_METHOD_HANDLE) ((size_t)ctxHnd & ~CORINFO_CONTEXTFLAGS_METHOD);
                 classHnd = (CORINFO_CLASS_HANDLE) pMD->GetMethodTable();
             }
             break;
@@ -2249,8 +2262,8 @@ EvalLoop:
 #if defined(FEATURE_HFA)
                 // Is it an HFA?
                 else if (m_methInfo->m_returnType == CORINFO_TYPE_VALUECLASS
-                         && (cit != CORINFO_HFA_ELEM_NONE))
-                    && (MetaSig(reinterpret_cast<MethodDesc*>(m_methInfo->m_method)).GetCallingConventionInfo() & CORINFO_CALLCONV_VARARG) == 0)
+                         && (cit != CORINFO_HFA_ELEM_NONE)
+                         && (MetaSig(reinterpret_cast<MethodDesc*>(m_methInfo->m_method)).GetCallingConventionInfo() & CORINFO_CALLCONV_VARARG) == 0)
                 {
                     if (retValIt.IsLargeStruct(&m_interpCeeInfo))
                     {
@@ -4012,6 +4025,10 @@ bool CorInfoTypeIsFloatingPoint(CorInfoType cit)
     return cit == CORINFO_TYPE_FLOAT || cit == CORINFO_TYPE_DOUBLE;
 }
 
+bool CorInfoTypeIsFloatingPoint(CorInfoHFAElemType cihet)
+{
+    return cihet == CORINFO_HFA_ELEM_FLOAT || cihet == CORINFO_HFA_ELEM_DOUBLE;
+}
 
 bool CorElemTypeIsUnsigned(CorElementType cet)
 {
@@ -6410,8 +6427,10 @@ void Interpreter::LdVirtFtn()
         GCX_PREEMP();
         ResolveToken(&tok, tokVal, CORINFO_TOKENKIND_Method InterpTracingArg(RTK_LdVirtFtn));
         m_interpCeeInfo.getCallInfo(&tok, NULL, m_methInfo->m_method,
-                                  combine(CORINFO_CALLINFO_SECURITYCHECKS,CORINFO_CALLINFO_LDFTN),
-                                  &callInfo);
+                                    combine(CORINFO_CALLINFO_CALLVIRT,
+                                            combine(CORINFO_CALLINFO_SECURITYCHECKS,
+                                                    CORINFO_CALLINFO_LDFTN)),
+                                    &callInfo);
 
 
         classHnd = tok.hClass;
@@ -9071,25 +9090,25 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             didIntrinsic = true;
         }
 
-// TODO: The following check for hardware intrinsics is not a production-level
-//       solution and may produce incorrect results.
-#ifdef FEATURE_INTERPRETER
+        // TODO: The following check for hardware intrinsics is not a production-level
+        //       solution and may produce incorrect results.
         static ConfigDWORD s_InterpreterHWIntrinsicsIsSupportedFalse;
         if (s_InterpreterHWIntrinsicsIsSupportedFalse.val(CLRConfig::INTERNAL_InterpreterHWIntrinsicsIsSupportedFalse) != 0)
         {
             if (strcmp(methToCall->GetModule()->GetSimpleName(), "System.Private.CoreLib") == 0 &&
+#ifdef _DEBUG // GetDebugClassName() is only available in _DEBUG builds
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
                 strncmp(methToCall->GetClass()->GetDebugClassName(), "System.Runtime.Intrinsics.X86", 29) == 0 &&
 #elif defined(TARGET_ARM64)
                 strncmp(methToCall->GetClass()->GetDebugClassName(), "System.Runtime.Intrinsics.Arm", 29) == 0 &&
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+#endif // _DEBUG
                 strcmp(methToCall->GetName(), "get_IsSupported") == 0)
             {
                 DoGetIsSupported();
                 didIntrinsic = true;
             }
         }
-#endif // FEATURE_INTERPRETER
 
 #if FEATURE_SIMD
         if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)

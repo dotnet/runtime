@@ -356,16 +356,37 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Null(skid);
         }
 
-        [Fact]
-        public static void SubjectKeyIdentifierExtension_Bytes()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void SubjectKeyIdentifierExtension_Bytes(bool fromSpan)
         {
             byte[] sk = { 1, 2, 3, 4 };
-            X509SubjectKeyIdentifierExtension e = new X509SubjectKeyIdentifierExtension(sk, false);
+            X509SubjectKeyIdentifierExtension e;
+
+            if (fromSpan)
+            {
+                e = new X509SubjectKeyIdentifierExtension(new ReadOnlySpan<byte>(sk), false);
+            }
+            else
+            {
+                e = new X509SubjectKeyIdentifierExtension(sk, false);
+            }
 
             byte[] rawData = e.RawData;
             Assert.Equal("040401020304".HexToByteArray(), rawData);
 
-            e = new X509SubjectKeyIdentifierExtension(new AsnEncodedData(rawData), false);
+            if (fromSpan)
+            {
+                e = new X509SubjectKeyIdentifierExtension(
+                    new AsnEncodedData(new ReadOnlySpan<byte>(rawData)),
+                    false);
+            }
+            else
+            {
+                e = new X509SubjectKeyIdentifierExtension(new AsnEncodedData(rawData), false);
+            }
+
             string skid = e.SubjectKeyIdentifier;
             Assert.Equal("01020304", skid);
         }

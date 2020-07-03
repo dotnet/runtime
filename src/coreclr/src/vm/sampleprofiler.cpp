@@ -16,7 +16,7 @@
 
 const unsigned long NUM_NANOSECONDS_IN_1_MS = 1000000;
 
-Volatile<BOOL> SampleProfiler::s_profilingEnabled = false;
+Volatile<BOOL> SampleProfiler::s_profilingEnabled = FALSE;
 Thread *SampleProfiler::s_pSamplingThread = NULL;
 const WCHAR *SampleProfiler::s_providerName = W("Microsoft-DotNETCore-SampleProfiler");
 EventPipeProvider *SampleProfiler::s_pEventPipeProvider = NULL;
@@ -25,8 +25,9 @@ SampleProfiler::SampleProfilerPayload SampleProfiler::s_ExternalPayload = {Sampl
 SampleProfiler::SampleProfilerPayload SampleProfiler::s_ManagedPayload = {SampleProfilerSampleType::Managed};
 CLREventStatic SampleProfiler::s_threadShutdownEvent;
 unsigned long SampleProfiler::s_samplingRateInNs = NUM_NANOSECONDS_IN_1_MS; // 1ms
-bool SampleProfiler::s_timePeriodIsSet = FALSE;
-int32_t SampleProfiler::s_RefCount = 0;
+bool SampleProfiler::s_timePeriodIsSet = false;
+Volatile<BOOL> SampleProfiler::s_canStartSampling = FALSE;
+int32_t SampleProfiler::s_refCount = 0;
 
 #ifndef TARGET_UNIX
 PVOID SampleProfiler::s_timeBeginPeriodFn = NULL;
@@ -68,45 +69,23 @@ void SampleProfiler::Enable()
         MODE_ANY;
         PRECONDITION(s_pEventPipeProvider != nullptr);
         PRECONDITION(s_pThreadTimeEvent != nullptr);
-        PRECONDITION((s_pSamplingThread == NULL && s_RefCount == 0) || ((s_pSamplingThread != NULL && s_RefCount > 0)));
         // Synchronization of multiple callers occurs in EventPipe::Enable.
         PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
 
-    const bool fSuccess = LoadDependencies();
-
-#ifndef TARGET_UNIX
-    _ASSERTE(fSuccess);
-    // TODO: Stress log on failure?
-#else
-    _ASSERTE(!fSuccess);
-#endif
-
     // Check to see if the sample profiler event is enabled.  If it is not, do not spin up the sampling thread.
     if (!s_pThreadTimeEvent->IsEnabled())
-        return;
-
-    if (!s_profilingEnabled)
     {
-        s_profilingEnabled = true;
-        s_pSamplingThread = SetupUnstartedThread();
-        if (s_pSamplingThread->CreateNewThread(0, ThreadProc, NULL))
-        {
-            // Start the sampling thread.
-            s_pSamplingThread->SetBackground(TRUE);
-            s_pSamplingThread->StartThread();
-        }
-        else
-        {
-            _ASSERT(!"Unable to create sample profiler thread.");
-        }
-
-        s_threadShutdownEvent.CreateManualEvent(FALSE);
-
-        SetTimeGranularity();
+        return;
     }
-    ++s_RefCount;
+
+    if (s_canStartSampling)
+    {
+        EnableInternal();
+    }
+
+    ++s_refCount;
 }
 
 void SampleProfiler::Disable()
@@ -118,7 +97,7 @@ void SampleProfiler::Disable()
         MODE_ANY;
         // Synchronization of multiple callers occurs in EventPipe::Disable.
         PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
-        PRECONDITION(s_RefCount >= 0);
+        PRECONDITION(s_refCount >= 0);
     }
     CONTRACTL_END;
 
@@ -126,7 +105,7 @@ void SampleProfiler::Disable()
     if (!s_profilingEnabled)
         return;
 
-    if (s_RefCount == 1)
+    if (s_refCount == 1)
     {
         _ASSERTE(!g_fProcessDetach);
 
@@ -142,7 +121,25 @@ void SampleProfiler::Disable()
             ResetTimeGranularity();
         UnloadDependencies();
     }
-    --s_RefCount;
+    --s_refCount;
+}
+
+void SampleProfiler::CanStartSampling()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
+    }
+    CONTRACTL_END;
+
+    s_canStartSampling = TRUE;
+    if (s_refCount > 0)
+    {
+        EnableInternal();
+    }
 }
 
 void SampleProfiler::SetSamplingRate(unsigned long nanoseconds)
@@ -334,7 +331,7 @@ bool SampleProfiler::LoadDependencies()
     CONTRACTL_END;
 
 #ifndef TARGET_UNIX
-    if (s_RefCount > 0)
+    if (s_refCount > 0)
         return true; // Already loaded.
 
     s_hMultimediaLib = WszLoadLibrary(W("winmm.dll"));
@@ -370,6 +367,51 @@ void SampleProfiler::UnloadDependencies()
         s_timeEndPeriodFn = NULL;
     }
 #endif //TARGET_UNIX
+}
+
+void SampleProfiler::EnableInternal()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(s_pEventPipeProvider != nullptr);
+        PRECONDITION(s_pThreadTimeEvent != nullptr);
+        PRECONDITION((s_pSamplingThread == NULL && s_refCount == 0) || ((s_pSamplingThread != NULL && s_refCount > 0)));
+        // Synchronization of multiple callers occurs in EventPipe::Enable.
+        PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
+    }
+    CONTRACTL_END;
+
+    const bool fSuccess = LoadDependencies();
+
+#ifndef TARGET_UNIX
+    _ASSERTE(fSuccess);
+    // TODO: Stress log on failure?
+#else
+    _ASSERTE(!fSuccess);
+#endif
+
+    if (!s_profilingEnabled)
+    {
+        s_profilingEnabled = true;
+        s_pSamplingThread = SetupUnstartedThread();
+        if (s_pSamplingThread->CreateNewThread(0, ThreadProc, NULL))
+        {
+            // Start the sampling thread.
+            s_pSamplingThread->SetBackground(TRUE);
+            s_pSamplingThread->StartThread();
+        }
+        else
+        {
+            _ASSERT(!"Unable to create sample profiler thread.");
+        }
+
+        s_threadShutdownEvent.CreateManualEvent(FALSE);
+
+        SetTimeGranularity();
+    }
 }
 
 #endif // FEATURE_PERFTRACING

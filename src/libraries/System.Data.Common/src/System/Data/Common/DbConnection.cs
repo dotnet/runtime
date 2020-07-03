@@ -3,8 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
+
+#nullable enable
 
 namespace System.Data.Common
 {
@@ -24,6 +27,7 @@ namespace System.Data.Common
 #pragma warning disable 618 // ignore obsolete warning about RecommendedAsConfigurable to use SettingsBindableAttribute
         [RecommendedAsConfigurable(true)]
 #pragma warning restore 618
+        [AllowNull]
         public abstract string ConnectionString { get; set; }
 
         public virtual int ConnectionTimeout => ADP.DefaultConnectionTimeout;
@@ -35,9 +39,9 @@ namespace System.Data.Common
         /// <summary>
         /// The associated provider factory for derived class.
         /// </summary>
-        protected virtual DbProviderFactory DbProviderFactory => null;
+        protected virtual DbProviderFactory? DbProviderFactory => null;
 
-        internal DbProviderFactory ProviderFactory => DbProviderFactory;
+        internal DbProviderFactory? ProviderFactory => DbProviderFactory;
 
         [Browsable(false)]
         public abstract string ServerVersion { get; }
@@ -45,7 +49,7 @@ namespace System.Data.Common
         [Browsable(false)]
         public abstract ConnectionState State { get; }
 
-        public virtual event StateChangeEventHandler StateChange;
+        public virtual event StateChangeEventHandler? StateChange;
 
         protected abstract DbTransaction BeginDbTransaction(IsolationLevel isolationLevel);
 
@@ -133,7 +137,7 @@ namespace System.Data.Common
 
         protected abstract DbCommand CreateDbCommand();
 
-        public virtual void EnlistTransaction(System.Transactions.Transaction transaction)
+        public virtual void EnlistTransaction(System.Transactions.Transaction? transaction)
         {
             throw ADP.NotSupported();
         }
@@ -150,7 +154,7 @@ namespace System.Data.Common
             throw ADP.NotSupported();
         }
 
-        public virtual DataTable GetSchema(string collectionName, string[] restrictionValues)
+        public virtual DataTable GetSchema(string collectionName, string?[] restrictionValues)
         {
             throw ADP.NotSupported();
         }

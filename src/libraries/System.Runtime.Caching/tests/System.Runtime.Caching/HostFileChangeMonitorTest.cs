@@ -41,6 +41,7 @@ using MonoTests.Common;
 
 namespace MonoTests.System.Runtime.Caching
 {
+    [SkipOnMono("HostFileChangeMonitor is not supported on Browser", TestPlatforms.Browser)]
     public class HostFileChangeMonitorTest
     {
         [Fact]

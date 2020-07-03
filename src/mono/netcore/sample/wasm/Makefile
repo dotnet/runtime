@@ -13,7 +13,7 @@ clean:
 	rm -rf bin
 
 run:
-	cd bin/$(CONFIG)/publish && ~/.jsvu/v8 --expose_wasm runtime.js -- --enable-gc --run WasmSample.dll
+	cd bin/$(CONFIG)/publish && ~/.jsvu/v8 --expose_wasm runtime.js -- --run WasmSample.dll
 
 runtimepack:
 	EMSDK_PATH=$(abspath $(TOP)/src/mono/wasm/emsdk) $(TOP)/build.sh -c $(CONFIG) -os Browser -arch wasm -subset Mono+Libs

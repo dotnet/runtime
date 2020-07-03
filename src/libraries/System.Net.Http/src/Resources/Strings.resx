@@ -180,6 +180,9 @@
   <data name="net_http_content_stream_copy_error" xml:space="preserve">
     <value>Error while copying content to a stream.</value>
   </data>
+  <data name="net_http_content_read_as_stream_has_task" xml:space="preserve">
+    <value>The content's stream has already been retrieved via async ReadAsStreamAsync and cannot be subsequently accessed synchronously.</value>
+  </data>
   <data name="net_http_argument_empty_string" xml:space="preserve">
     <value>The value cannot be null or empty.</value>
   </data>

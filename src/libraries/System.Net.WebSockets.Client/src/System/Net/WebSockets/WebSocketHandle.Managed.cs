@@ -182,7 +182,7 @@ namespace System.Net.WebSockets
                 }
 
                 // Get the response stream and wrap it in a web socket.
-                Stream connectedStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                Stream connectedStream = response.Content.ReadAsStream();
                 Debug.Assert(connectedStream.CanWrite);
                 Debug.Assert(connectedStream.CanRead);
                 WebSocket = WebSocket.CreateFromStream(

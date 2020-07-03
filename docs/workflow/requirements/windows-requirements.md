@@ -19,22 +19,22 @@ git config --system core.longpaths true
 
 ## Visual Studio
 
-- Install [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/). The Community version is completely free.
+- Install [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/). The Community edition is available free of charge.
 
 Visual Studio 2019 installation process:
 - It's recommended to use 'Workloads' installation approach. The following are the minimum requirements:
   - .NET Desktop Development with all default components.
   - Desktop Development with C++ with all default components.
-- To build for Arm32 or Arm64, make sure that you have the right architecture specific compilers installed:
-  - In addition, ensure you install the ARM tools. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section, check the box for "MSVC v142 - VS 2019 C++ ARM build tools" (v14.23 or newer).
-  - Also, ensure you install the ARM64 tools. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section, check the box for "MSVC v142 - VS 2019 C++ ARM64 build tools (v14.23 or newer)".
+- To build for Arm32 or Arm64, make sure that you have the right architecture-specific compilers installed. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section:
+  - For Arm32, check the box for "MSVC v142 - VS 2019 C++ ARM build tools (v14.23 or newer)".
+  - For Arm64, check the box for "MSVC v142 - VS 2019 C++ ARM64 build tools (v14.23 or newer)".
 - To build the tests, you will need some additional components:
   - Windows 10 SDK component version 10.0.18362 or newer. This component is installed by default as a part of 'Desktop Development with C++' workload.
   - C++/CLI support for v142 build tools (v14.23 or newer)
 
 A `.vsconfig` file is included in the root of the dotnet/runtime repository that includes all components needed to build the dotnet/runtime repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations?view=vs-2019#import-a-configuration) to install all necessary components.
 
-The dotnet/runtime repository requires at least Visual Studio 2019 16.6 Preview 2.
+The dotnet/runtime repository requires at least Visual Studio 2019 16.6.
 
 ## CMake
 
