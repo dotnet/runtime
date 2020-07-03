@@ -30,6 +30,18 @@ namespace Internal.JitInterface
         private Dictionary<string, string> _config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private object _keepAlive; // Keeps callback delegates alive
 
+        private delegate bool DllMainDelegate(IntPtr libHandle, int reason, IntPtr reserved);
+
+        private enum DllMainReason
+        {
+            DLL_PROCESS_ATTACH = 1,
+            DLL_PROCESS_DETACH = 0
+        }
+
+        private static IntPtr libHandle = IntPtr.Zero;
+        private static DllMainDelegate dllMain = null;
+
+
         public static void Initialize(
             TargetDetails target,
             IEnumerable<CorJitFlag> jitFlags,
@@ -46,12 +58,24 @@ namespace Internal.JitInterface
 #if READYTORUN
             NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, (libName, assembly, searchPath) =>
             {
-                IntPtr libHandle = IntPtr.Zero;
+                libHandle = IntPtr.Zero;
                 if (libName == CorInfoImpl.JitLibrary)
                 {
                     if (!string.IsNullOrEmpty(jitPath))
                     {
                         libHandle = NativeLibrary.Load(jitPath);
+
+                        // call DllMain function (only if it is exists)
+                        IntPtr pDllMain;
+                        if (dllMain == null)
+                        {
+                            if (NativeLibrary.TryGetExport(libHandle, "DllMain", out pDllMain))
+                            {
+                                dllMain = (DllMainDelegate)Marshal.GetDelegateForFunctionPointer(pDllMain, typeof(DllMainDelegate));
+                                dllMain(libHandle, (int)DllMainReason.DLL_PROCESS_ATTACH, IntPtr.Zero);
+                                Console.Error.WriteLine("Calling DLLMAin");
+                            }
+                        }
                     }
                     else
                     {
@@ -89,8 +113,10 @@ namespace Internal.JitInterface
 
             _jitFlags = jitFlagBuilder.ToArray();
 
+            System.Console.Error.WriteLine("RyuJitOptions:");
             foreach (var param in parameters)
             {
+                System.Console.Error.WriteLine("{0} = {1}", param.Key, param.Value);
                 _config[param.Key] = param.Value;
             }
 
@@ -114,9 +140,11 @@ namespace Internal.JitInterface
             if (_config.TryGetValue(name, out stringValue) &&
                 Int32.TryParse(stringValue, NumberStyles.AllowHexSpecifier, null, out intValue))
             {
+                System.Console.Error.WriteLine("get {0} = {1}", name, intValue);
                 return intValue;
             }
 
+            System.Console.Error.WriteLine("get {0} = {1} (default)", name, defaultValue);
             return defaultValue;
         }
 
@@ -125,9 +153,11 @@ namespace Internal.JitInterface
             string stringValue;
             if (_config.TryGetValue(name, out stringValue))
             {
+                System.Console.Error.WriteLine("get {0} = {1}", name, stringValue);
                 return stringValue;
             }
 
+            System.Console.Error.WriteLine("get {0} = \"\" (default)", name);
             return String.Empty;
         }
 
