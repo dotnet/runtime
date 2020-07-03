@@ -82,20 +82,20 @@ namespace Internal.Cryptography
 
             if (_heldoverCipher == null)
             {
-#if NET5_0
-                ciphertext = GC.AllocateUninitializedArray<byte>(inputBuffer.Length);
-#else
+#if NETSTANDARD || NETFRAMEWORK || NETCOREAPP3_0
                 ciphertext = new byte[inputBuffer.Length];
+#else
+                ciphertext = GC.AllocateUninitializedArray<byte>(inputBuffer.Length);
 #endif
                 inputCiphertext = inputBuffer;
             }
             else
             {
                 Span<byte> continuedCiphertext;
-#if NET5_0
-                continuedCiphertext = GC.AllocateUninitializedArray<byte>(_heldoverCipher.Length + inputBuffer.Length);
-#else
+#if NETSTANDARD || NETFRAMEWORK || NETCOREAPP3_0
                 continuedCiphertext = new byte[_heldoverCipher.Length + inputBuffer.Length];
+#else
+                continuedCiphertext = GC.AllocateUninitializedArray<byte>(_heldoverCipher.Length + inputBuffer.Length);
 #endif
                 _heldoverCipher.AsSpan().CopyTo(continuedCiphertext);
                 inputBuffer.CopyTo(continuedCiphertext.Slice(_heldoverCipher.Length));
@@ -148,10 +148,10 @@ namespace Internal.Cryptography
             }
             else
             {
-#if NET5_0
-                byte[] buffer = GC.AllocateUninitializedArray<byte>(inputCount);
-#else
+#if NETSTANDARD || NETFRAMEWORK || NETCOREAPP3_0
                 byte[] buffer = new byte[inputCount];
+#else
+                byte[] buffer = GC.AllocateUninitializedArray<byte>(inputCount);
 #endif
                 int written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), buffer);
                 Debug.Assert(written == buffer.Length);
