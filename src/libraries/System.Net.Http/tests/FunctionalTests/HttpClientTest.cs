@@ -832,6 +832,7 @@ namespace System.Net.Http.Functional.Tests
                                 for (int i = 0; i < 100; ++i)
                                 {
                                     stream.Write(new byte[] { 0xff });
+                                    stream.Flush();
                                     Thread.Sleep(TimeSpan.FromSeconds(0.1));
                                 }
                             }))
@@ -874,6 +875,7 @@ namespace System.Net.Http.Functional.Tests
                                 for (int i = 0; i < 100; ++i)
                                 {
                                     stream.Write(new byte[] { 0xff });
+                                    stream.Flush();
                                     Thread.Sleep(TimeSpan.FromSeconds(0.1));
                                 }
                             }))
@@ -976,6 +978,7 @@ namespace System.Net.Http.Functional.Tests
                             for (int i = 0; i < 100; ++i)
                             {
                                 await connection.Writer.WriteLineAsync(content);
+                                await connection.Writer.FlushAsync();
                                 await Task.Delay(TimeSpan.FromSeconds(0.1));
                             }
                         }
