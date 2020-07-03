@@ -244,7 +244,7 @@ jobs:
       condition: >-
         and(
             eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
-            eq(variables['isFullMatrix'], true)))
+            eq(variables['isFullMatrix'], true))
   
 # Build the whole product using Mono runtime
 # Only when libraries, mono or installer are changed
