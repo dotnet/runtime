@@ -283,7 +283,7 @@ namespace CoreclrTestLib
                 foreach (var grandchild in child.GetChildren())
                     childrenToCheck.Enqueue(grandchild);
 
-                if (child.ProcessName.Equals(childName, StringComparison.Ordinal))
+                if (child.ProcessName.Equals(childName, StringComparison.OrdinalIgnoreCase))
                 {
                     children.Push(child);
                 }
