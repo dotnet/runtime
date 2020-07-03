@@ -614,7 +614,6 @@
 			<method signature="System.Void .ctor(System.String)" />
 		</type>
 
-		<type fullname="System.Reflection.Emit.AssemblyBuilder" preserve="fields" required="false" feature="sre" />
 		<type fullname="System.Reflection.Emit.ConstructorBuilder" preserve="fields" required="false" feature="sre"/>
 		<type fullname="System.Reflection.Emit.DynamicMethod" preserve="fields" required="false" feature="sre" />
 		<!-- mono_dynamic_image_register_token -->
