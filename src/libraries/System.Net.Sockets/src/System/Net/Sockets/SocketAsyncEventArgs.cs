@@ -573,8 +573,7 @@ namespace System.Net.Sockets
                 {
                     if (SocketsTelemetry.IsEnabled(EventLevel.Warning))
                     {
-                        SocketsTelemetry.Log.ConnectCancelled();
-                        SocketsTelemetry.Log.ConnectStop();
+                        SocketsTelemetry.Log.ConnectCanceled();
                     }
 
                     // Otherwise we're doing a normal ConnectAsync - cancel it by closing the socket.

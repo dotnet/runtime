@@ -49,9 +49,10 @@ namespace System.Net.Sockets
         }
 
         [Event(4, Level = EventLevel.Warning)]
-        public void ConnectCancelled()
+        public void ConnectCanceled()
         {
             WriteEvent(eventId: 4);
+            ConnectStopInternal();
         }
 
         [NonEvent]
