@@ -46,3 +46,14 @@ interp_intrins_ascii_chars_to_uppercase (guint32 value)
 
 	return value ^ mask;
 }
+
+int
+interp_intrins_ordinal_ignore_case_ascii (guint32 valueA, guint32 valueB)
+{
+	// Utf16Utility.UInt32OrdinalIgnoreCaseAscii
+	guint32 differentBits = valueA ^ valueB;
+	guint32 lowerIndicator = valueA + 0x01000100 - 0x00410041;
+	guint32 upperIndicator = (valueA | 0x00200020u) + 0x00800080 - 0x007B007B;
+	guint32 combinedIndicator = lowerIndicator | upperIndicator;
+	return (((combinedIndicator >> 2) | ~0x00200020) & differentBits) == 0;
+}
