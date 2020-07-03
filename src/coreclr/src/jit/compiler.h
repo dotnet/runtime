@@ -7640,7 +7640,7 @@ public:
 
     bool LookupPromotedStructDeathVars(GenTree* tree, VARSET_TP** bits)
     {
-        bits        = nullptr;
+        *bits       = nullptr;
         bool result = false;
 
         if (m_promotedStructDeathVars != nullptr)
