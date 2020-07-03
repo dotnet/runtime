@@ -11,16 +11,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     internal abstract class ServiceProviderEngine : IServiceProviderEngine, IServiceScopeFactory
     {
-        private readonly IServiceProviderEngineCallback _callback;
+        private IServiceProviderEngineCallback _callback;
 
         private readonly Func<Type, Func<ServiceProviderEngineScope, object>> _createServiceAccessor;
 
         private bool _disposed;
 
-        protected ServiceProviderEngine(IEnumerable<ServiceDescriptor> serviceDescriptors, IServiceProviderEngineCallback callback)
+        protected ServiceProviderEngine(IEnumerable<ServiceDescriptor> serviceDescriptors)
         {
             _createServiceAccessor = CreateServiceAccessor;
-            _callback = callback;
             Root = new ServiceProviderEngineScope(this);
             RuntimeResolver = new CallSiteRuntimeResolver();
             CallSiteFactory = new CallSiteFactory(serviceDescriptors);
@@ -38,6 +37,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public ServiceProviderEngineScope Root { get; }
 
         public IServiceScope RootScope => Root;
+
+        void IServiceProviderEngine.InitializeCallback(IServiceProviderEngineCallback callback)
+        {
+            _callback = callback;
+        }
 
         public void ValidateService(ServiceDescriptor descriptor)
         {

@@ -101,6 +101,8 @@ namespace System.Reflection.Emit
             pmodule = mb;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't analyze ResolveUserType but it's an identity function")]
         internal TypeBuilder(ModuleBuilder mb, string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
         {
             int sep_index;
@@ -777,11 +779,17 @@ namespace System.Reflection.Emit
             return false;
         }
 
+        // We require emitted types to have all members on their bases to be accessible.
+        // This is basically an identity function for `this`.
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public Type? CreateType()
         {
             return CreateTypeInfo();
         }
 
+        // We require emitted types to have all members on their bases to be accessible.
+        // This is basically an identity function for `this`.
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public
         TypeInfo? CreateTypeInfo()
         {

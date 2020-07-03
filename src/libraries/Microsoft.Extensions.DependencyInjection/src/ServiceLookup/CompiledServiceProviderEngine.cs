@@ -15,7 +15,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public ExpressionResolverBuilder ResolverBuilder { get; }
 #endif
 
-        public CompiledServiceProviderEngine(IEnumerable<ServiceDescriptor> serviceDescriptors, IServiceProviderEngineCallback callback) : base(serviceDescriptors, callback)
+        public CompiledServiceProviderEngine(IEnumerable<ServiceDescriptor> serviceDescriptors)
+            : base(serviceDescriptors)
         {
 #if IL_EMIT
             ResolverBuilder = new ILEmitResolverBuilder(RuntimeResolver, this, Root);

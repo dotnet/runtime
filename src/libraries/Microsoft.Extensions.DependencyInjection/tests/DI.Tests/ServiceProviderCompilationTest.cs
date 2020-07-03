@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var stackSize = 256 * 1024;
             var serviceCollection = new ServiceCollection();
             CompilationTestDataProvider.Register(serviceCollection);
-            var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions { Mode = mode });
+            var serviceProvider = serviceCollection.BuildServiceProvider(mode);
 
             // Act + Assert
 

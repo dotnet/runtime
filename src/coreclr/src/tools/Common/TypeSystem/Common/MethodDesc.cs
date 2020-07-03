@@ -60,6 +60,44 @@ namespace Internal.TypeSystem
             Debug.Assert(parameters != null, "Parameters must not be null");
         }
 
+        public MethodSignature ApplySubstitution(Instantiation substitution)
+        {
+            if (substitution.IsNull)
+                return this;
+
+            bool needsNewMethodSignature = false;
+            TypeDesc[] newParameters = _parameters; // Re-use existing array until conflict appears
+            TypeDesc returnTypeNew = _returnType.InstantiateSignature(substitution, default(Instantiation));
+            if (returnTypeNew != _returnType)
+            {
+                needsNewMethodSignature = true;
+                newParameters = (TypeDesc[])_parameters.Clone();
+            }
+
+            for (int i = 0; i < newParameters.Length; i++)
+            {
+                TypeDesc newParameter = newParameters[i].InstantiateSignature(substitution, default(Instantiation));
+                if (newParameter != newParameters[i])
+                {
+                    if (!needsNewMethodSignature)
+                    {
+                        needsNewMethodSignature = true;
+                        newParameters = (TypeDesc[])_parameters.Clone();
+                    }
+                    newParameters[i] = newParameter;
+                }
+            }
+
+            if (needsNewMethodSignature)
+            {
+                return new MethodSignature(_flags, _genericParameterCount, returnTypeNew, newParameters, _embeddedSignatureData);
+            }
+            else
+            {
+                return this;
+            }
+        }
+
         public MethodSignatureFlags Flags
         {
             get
