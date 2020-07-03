@@ -343,10 +343,16 @@ namespace Tracing.Tests.Common
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                List<int> currentPids = System.Diagnostics.Process.GetProcesses().Select(pid => pid.Id).ToList();
-                IEnumerable<IGrouping<int,FileInfo>> currentIpcs = Directory.GetFiles(Path.GetTempPath(), "dotnet-diagnostic*")
-                    .Select(filename => new { pid = int.Parse(Regex.Match(filename, @"dotnet-diagnostic-(?<pid>\d+)").Groups["pid"].Value), fileInfo = new FileInfo(filename) })
-                    .GroupBy(fileInfos => fileInfos.pid, fileInfos => fileInfos.fileInfo);
+                Func<(IEnumerable<IGrouping<int,FileInfo>>, List<int>)> getPidsAndSockets = () =>
+                {
+                    IEnumerable<IGrouping<int,FileInfo>> currentIpcs = Directory.GetFiles(Path.GetTempPath(), "dotnet-diagnostic*")
+                        .Select(filename => new { pid = int.Parse(Regex.Match(filename, @"dotnet-diagnostic-(?<pid>\d+)").Groups["pid"].Value), fileInfo = new FileInfo(filename) })
+                        .GroupBy(fileInfos => fileInfos.pid, fileInfos => fileInfos.fileInfo);
+                    List<int> currentPids = System.Diagnostics.Process.GetProcesses().Select(pid => pid.Id).ToList();
+                    return (currentIpcs, currentPids);
+                };
+
+                var (currentIpcs, currentPids) = getPidsAndSockets();
 
                 foreach (var ipc in currentIpcs)
                 {
@@ -375,14 +381,11 @@ namespace Tracing.Tests.Common
                 }
 
                 // validate we cleaned everything up
-                IEnumerable<IGrouping<int,FileInfo>> afterIpcs = Directory.GetFiles(Path.GetTempPath(), "dotnet-diagnostic*")
-                    .Select(filename => new { pid = int.Parse(Regex.Match(filename, @"dotnet-diagnostic-(?<pid>\d+)").Groups["pid"].Value), fileInfo = new FileInfo(filename) })
-                    .GroupBy(fileInfos => fileInfos.pid, fileInfos => fileInfos.fileInfo);
-                currentPids = System.Diagnostics.Process.GetProcesses().Select(pid => pid.Id).ToList();
+                (currentIpcs, currentPids) = getPidsAndSockets();
 
                 // if there are pipes for processses that don't exist anymore,
                 // or a process has multiple pipes, we failed.
-                foreach (IGrouping<int,FileInfo> group in afterIpcs)
+                foreach (IGrouping<int,FileInfo> group in currentIpcs)
                 {
                     if (!currentPids.Contains(group.Key) || group.Count() > 1)
                     {
