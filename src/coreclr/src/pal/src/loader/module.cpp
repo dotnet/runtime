@@ -1445,13 +1445,23 @@ static bool ShouldRedirectToCurrentLibrary(LPCSTR libraryNameOrPath)
     if (libraryNameOrPath == nullptr)
         return true;
 
+    // TODO: WIP - hardcoded for now, but should be specified by the host.
+#if defined(__APPLE__)
+    const char* toRedirect[] = {
+            "System.IO.Compression.Native.dylib",
+            "System.Native.dylib",
+            "System.Net.Security.Native.dylib",
+            "System.Security.Cryptography.Native.Apple.dylib",
+            "System.Security.Cryptography.Native.OpenSsl.dylib"
+    };
+#else
     const char* toRedirect[] = {
             "System.Native.so",
-            "System.Globalization.Native.so",
             "System.IO.Compression.Native.so",
             "System.Net.Security.Native.so",
             "System.Security.Cryptography.Native.OpenSsl.so"
     };
+#endif
 
     int nameLength = strlen(libraryNameOrPath);
     int count = sizeof(toRedirect) / sizeof(toRedirect[0]);
