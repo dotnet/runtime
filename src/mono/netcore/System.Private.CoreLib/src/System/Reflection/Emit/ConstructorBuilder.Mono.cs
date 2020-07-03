@@ -34,7 +34,6 @@
 using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
