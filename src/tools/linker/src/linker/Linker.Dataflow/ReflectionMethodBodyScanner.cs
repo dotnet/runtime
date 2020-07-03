@@ -790,7 +790,7 @@ namespace Mono.Linker.Dataflow
 									// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
 									reflectionContext.RecordHandledPattern ();
 								} else {
-									reflectionContext.RecordRecognizedPattern (foundType, () => _markStep.MarkType (foundType, new DependencyInfo (DependencyKind.AccessedViaReflection, callingMethodDefinition), callingMethodDefinition));
+									reflectionContext.RecordRecognizedPattern (foundType, () => _markStep.MarkTypeVisibleToReflection (foundType, new DependencyInfo (DependencyKind.AccessedViaReflection, callingMethodDefinition), callingMethodDefinition));
 									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new SystemTypeValue (foundType));
 								}
 							} else if (typeNameValue == NullValue.Instance) {
@@ -1408,7 +1408,7 @@ namespace Mono.Linker.Dataflow
 		void MarkNestedType (ref ReflectionPatternContext reflectionContext, TypeDefinition nestedType)
 		{
 			var source = reflectionContext.Source;
-			reflectionContext.RecordRecognizedPattern (nestedType, () => _markStep.MarkType (nestedType, new DependencyInfo (DependencyKind.AccessedViaReflection, source), source));
+			reflectionContext.RecordRecognizedPattern (nestedType, () => _markStep.MarkTypeVisibleToReflection (nestedType, new DependencyInfo (DependencyKind.AccessedViaReflection, source), source));
 		}
 
 		void MarkField (ref ReflectionPatternContext reflectionContext, FieldDefinition field)
