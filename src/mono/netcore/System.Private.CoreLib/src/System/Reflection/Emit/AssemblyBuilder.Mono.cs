@@ -173,7 +173,7 @@ namespace System.Reflection.Emit
         //
         // AssemblyBuilder inherits from Assembly, but the runtime thinks its layout inherits from RuntimeAssembly
         //
-#region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h as well as DynamicDependency on basic_init
+#region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
         internal IntPtr _mono_assembly;
         private object? _evidence;
 
@@ -213,40 +213,13 @@ namespace System.Reflection.Emit
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [DynamicDependency("RuntimeResolve", typeof(ModuleBuilder))]
-
-        [DynamicDependency("_mono_assembly")]
-        [DynamicDependency("_evidence")]
-        [DynamicDependency("dynamic_assembly")]
-        [DynamicDependency("entry_point")]
-        [DynamicDependency("modules")]
-        [DynamicDependency("name")]
-        [DynamicDependency("dir")]
-        [DynamicDependency("cattrs")]
-        [DynamicDependency("resources")]
-        [DynamicDependency("public_key")]
-        [DynamicDependency("version")]
-        [DynamicDependency("culture")]
-        [DynamicDependency("algid")]
-        [DynamicDependency("flags")]
-        [DynamicDependency("pekind")]
-        [DynamicDependency("delay_sign")]
-        [DynamicDependency("access")]
-        [DynamicDependency("loaded_modules")]
-        [DynamicDependency("win32_resources")]
-        [DynamicDependency("permissions_minimum")]
-        [DynamicDependency("permissions_optional")]
-        [DynamicDependency("permissions_refused")]
-        [DynamicDependency("peKind")]
-        [DynamicDependency("machine")]
-        [DynamicDependency("corlib_internal")]
-        [DynamicDependency("type_forwarders")]
-        [DynamicDependency("pktoken")]
         private static extern void basic_init(AssemblyBuilder ab);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void UpdateNativeCustomAttributes(AssemblyBuilder ab);
 
-        internal AssemblyBuilder(AssemblyName n, string? directory, AssemblyBuilderAccess access, bool corlib_internal)
+        [DynamicDependency(nameof(pktoken))] // Automatically keeps all previous fields too due to StructLayout
+        private AssemblyBuilder(AssemblyName n, string? directory, AssemblyBuilderAccess access, bool corlib_internal)
         {
             aname = (AssemblyName)n.Clone();
 
