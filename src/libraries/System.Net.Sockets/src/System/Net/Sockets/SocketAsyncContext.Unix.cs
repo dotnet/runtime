@@ -727,12 +727,12 @@ namespace System.Net.Sockets
 
             public bool IsNextOperationSynchronous_Speculative => _isNextOperationSynchronous;
 
-            public void Init(bool isReady)
+            public void Init()
             {
                 Debug.Assert(_queueLock == null);
                 _queueLock = new object();
 
-                _state = isReady ? QueueState.Ready : QueueState.Waiting;
+                _state = QueueState.Ready;
                 _sequenceNumber = 0;
             }
 
@@ -1205,8 +1205,8 @@ namespace System.Net.Sockets
         {
             _socket = socket;
 
-            _receiveQueue.Init(isReady: false);
-            _sendQueue.Init(isReady: true);
+            _receiveQueue.Init();
+            _sendQueue.Init();
         }
 
         public bool PreferInlineCompletions
