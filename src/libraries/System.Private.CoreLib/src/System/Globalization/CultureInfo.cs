@@ -750,6 +750,9 @@ namespace System.Globalization
         public void ClearCachedData()
         {
             // reset the default culture values
+#if TARGET_WINDOWS
+            UserDefaultLocaleName = GetUserDefaultLocaleName();
+#endif
             s_userDefaultCulture = GetUserDefaultCulture();
             s_userDefaultUICulture = GetUserDefaultUICulture();
 
