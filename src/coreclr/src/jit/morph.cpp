@@ -7537,7 +7537,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // if the block containing this tail call is reachable without executing
         // any call.
         if (canFastTailCall || (fgFirstBB->bbFlags & BBF_GC_SAFE_POINT) || (compCurBB->bbFlags & BBF_GC_SAFE_POINT) ||
-            !fgCreateGCPoll(GCPOLL_INLINE, compCurBB))
+            (fgCreateGCPoll(GCPOLL_INLINE, compCurBB) == compCurBB))
         {
             // We didn't insert a poll block, so we need to morph the call now
             // (Normally it will get morphed when we get to the split poll block)
@@ -8828,12 +8828,11 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Regardless of the state of the basic block with respect to GC safe point,
     // we will always insert a GC Poll for scenarios involving a suppressed GC
-    // transition. Only insert the GC Poll on the first morph.
+    // transition. Only mark the block for GC Poll insertion on the first morph.
     if (fgGlobalMorph && call->IsUnmanaged() && call->IsSuppressGCTransition())
     {
-        // Insert a GC poll.
-        bool insertedBB = fgCreateGCPoll(GCPOLL_CALL, compCurBB, compCurStmt);
-        assert(!insertedBB); // No new block should be inserted
+        compCurBB->bbFlags |= (BBF_HAS_SUPPRESSGC_CALL | BBF_GC_SAFE_POINT);
+        optMethodFlags |= OMF_NEEDS_GCPOLLS;
     }
 
     // Morph Type.op_Equality, Type.op_Inequality, and Enum.HasFlag
