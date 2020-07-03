@@ -221,8 +221,37 @@ namespace CoreclrTestLib
                 createdumpInfo.Arguments = $"{createdumpPath} " + arguments;
             }
 
+            createdumpInfo.UseShellExecute = false;
+            createdumpInfo.RedirectStandardOutput = true;
+            createdumpInfo.RedirectStandardError = true;
+
             Process createdump = Process.Start(createdumpInfo);
-            return createdump.WaitForExit(DEFAULT_TIMEOUT) && createdump.ExitCode == 0;
+            var cts = new CancellationTokenSource();
+            using var stdoutStream = new MemoryStream();
+            using var stderrStream = new MemoryStream();
+            Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(stdoutStream, 4096, cts.Token);
+            Task copyError = process.StandardError.BaseStream.CopyToAsync(stderrStream, 4096, cts.Token);
+            bool fSuccess = createdump.WaitForExit(DEFAULT_TIMEOUT) && createdump.ExitCode == 0;
+            if (!fSuccess)
+                cts.Cancel();
+
+            try
+            {
+                Task.WaitAll(copyOutput, copyError);
+            }
+            catch (TaskCanceledException)
+            {}
+
+            stdoutStream.Seek(0, SeekOrigin.Begin);
+            stderrStream.Seek(0, SeekOrigin.Begin);
+
+
+            Console.WriteLine("createdump stdout:");
+            stdoutStream.CopyTo(Console.OpenStandardOutput());
+            Console.WriteLine("createdump stderr:");
+            stderrStream.CopyTo(Console.OpenStandardOutput());
+
+            return fSuccess;
         }
 
         // Finds all children processes starting with a process named childName
