@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\codegenerator\codegenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="JsonSerializerSourceGeneratorTests.cs" />
+  </ItemGroup>
+
+  <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <CustomAdditionalCompileInputs Include="@(Analyzer)" />
+    </ItemGroup>
+  </Target>
+</Project>

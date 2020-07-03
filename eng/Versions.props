@@ -88,6 +88,10 @@
     <optimizationwindows_ntx64IBCCoreCLRVersion>99.99.99-master-20200228.3</optimizationwindows_ntx64IBCCoreCLRVersion>
     <optimizationlinuxx64IBCCoreCLRVersion>99.99.99-master-20200228.3</optimizationlinuxx64IBCCoreCLRVersion>
     <optimizationPGOCoreCLRVersion>99.99.99-master-20200228.3</optimizationPGOCoreCLRVersion>
+        <!-- Roslyn dependencies for source generation -->
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>3.6.0-3.20207.2</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
+    <MicrosoftCodeAnalysisAnalyzersVersion>3.0.0-beta2.final</MicrosoftCodeAnalysisAnalyzersVersion>
+    <MicrosoftCodeAnalysisVersion>3.6.0.0</MicrosoftCodeAnalysisVersion>
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderNativeVersion>1.7.0</MicrosoftDiaSymReaderNativeVersion>
     <SystemCommandLineVersion>2.0.0-beta1.20253.1</SystemCommandLineVersion>
