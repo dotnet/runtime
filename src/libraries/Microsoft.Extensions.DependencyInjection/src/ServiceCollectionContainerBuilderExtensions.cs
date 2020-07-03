@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.DependencyInjection
             IServiceProviderEngine engine;
 
 #if !NETCOREAPP
-            engine = new DynamicServiceProviderEngine(serviceDescriptors);
+            engine = new DynamicServiceProviderEngine(services);
 #else
             if (RuntimeFeature.IsDynamicCodeCompiled)
             {
