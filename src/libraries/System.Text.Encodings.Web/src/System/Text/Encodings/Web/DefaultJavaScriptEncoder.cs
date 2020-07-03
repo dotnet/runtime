@@ -8,13 +8,9 @@ using System.Runtime.CompilerServices;
 using System.Text.Internal;
 using System.Text.Unicode;
 
-#if NETCOREAPP
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-#endif
-#if NETCOREAPP5_0
 using System.Runtime.Intrinsics.Arm;
-#endif
 
 namespace System.Text.Encodings.Web
 {
@@ -90,8 +86,8 @@ namespace System.Text.Encodings.Web
             {
                 int idx = 0;
 
-#if NETCOREAPP
-                if (AdvSimdHelper.IsSse2OrAdvSimdArm64Supported())
+#pragma warning disable 0162 // suppress dead code warnings on shimmed targets
+                if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
                 {
                     sbyte* startingAddress = (sbyte*)ptr;
                     while (utf8Text.Length - 16 >= idx)
@@ -100,19 +96,14 @@ namespace System.Text.Encodings.Web
 
                         bool containsNonAsciiBytes;
 
-                        if (AdvSimdHelper.IsAdvSimdArm64Supported())
+                        if (AdvSimd.Arm64.IsSupported)
                         {
-#if NETCOREAPP5_0
                             // Load the next 16 bytes.
                             Vector128<sbyte> sourceValue = AdvSimd.LoadVector128(startingAddress);
 
                             // Check for ASCII text. Any byte that's not in the ASCII range will already be negative when
                             // casted to signed byte.
                             containsNonAsciiBytes = AdvSimd.Arm64.MinAcross(sourceValue).ToScalar() < 0;
-#else
-                            Debug.Fail("AdvSimd not supported in this platform.");
-                            throw new NotSupportedException();
-#endif
                         }
                         else
                         {
@@ -193,7 +184,7 @@ namespace System.Text.Encodings.Web
                     // Process the remaining bytes.
                     Debug.Assert(utf8Text.Length - idx < 16);
                 }
-#endif
+#pragma warning restore 0162
 
                 while (idx < utf8Text.Length)
                 {

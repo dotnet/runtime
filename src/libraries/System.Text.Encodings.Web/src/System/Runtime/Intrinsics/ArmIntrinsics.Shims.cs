@@ -67,6 +67,8 @@
 
             public static Vector64<uint> ZipLow(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
+            public static Vector128<sbyte> MinAcross(Vector128<sbyte> sourceValue) { throw new PlatformNotSupportedException(); }
+
             public static Vector128<byte> ZipLow(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
 
             public static Vector128<double> ZipLow(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
@@ -99,5 +101,6 @@
         public static Vector128<ulong> DuplicateToVector128(ulong value) { throw new PlatformNotSupportedException(); }
 
         public static unsafe Vector128<byte> LoadVector128(byte* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<sbyte> LoadVector128(sbyte* address) { throw new PlatformNotSupportedException(); }
     }
 }

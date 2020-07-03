@@ -111,9 +111,11 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector128<byte> LoadAlignedVector128(byte* address) => throw new PlatformNotSupportedException();
         public static unsafe Vector128<ushort> LoadAlignedVector128(ushort* address) => throw new PlatformNotSupportedException();
         public static unsafe Vector128<byte> LoadVector128(byte* address) => throw new PlatformNotSupportedException();
+        public static unsafe Vector128<sbyte> LoadVector128(sbyte* address) => throw new PlatformNotSupportedException();
         public static unsafe Vector128<short> LoadVector128(short* address) => throw new PlatformNotSupportedException();
         public static unsafe Vector128<ushort> LoadVector128(ushort* address) => throw new PlatformNotSupportedException();
         public static int MoveMask(Vector128<byte> value) => throw new PlatformNotSupportedException();
+        public static int MoveMask(Vector128<sbyte> value) => throw new PlatformNotSupportedException();
         public static Vector128<short> Or(Vector128<short> left, Vector128<short> right) => throw new PlatformNotSupportedException();
         public static Vector128<ushort> Or(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
         public static Vector128<byte> PackUnsignedSaturate(Vector128<short> left, Vector128<short> right) => throw new PlatformNotSupportedException();
