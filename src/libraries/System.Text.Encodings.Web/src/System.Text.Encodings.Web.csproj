@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.1;netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
@@ -18,16 +18,20 @@
     <Compile Include="System\Text\Encodings\Web\UnsafeRelaxedJavaScriptEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\UrlEncoder.cs" />
     <Compile Include="System\Text\Internal\AllowedCharactersBitmap.cs" />
+    <Compile Include="System\Text\Encodings\Web\BitHelper.cs" />
+    <Compile Include="System\Text\Encodings\Web\Sse2Helper.cs" />
+    <Compile Include="System\Text\Encodings\Web\Ssse3Helper.cs" />
     <Compile Include="System\Text\Unicode\UnicodeHelpers.cs" />
     <Compile Include="System\Text\Unicode\UnicodeHelpers.generated.cs" />
     <Compile Include="System\Text\Unicode\UnicodeRange.cs" />
     <Compile Include="System\Text\Unicode\UnicodeRanges.cs" />
     <Compile Include="System\Text\Unicode\UnicodeRanges.generated.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
-    <Compile Include="System\Text\Encodings\Web\BitHelper.cs" />
-    <Compile Include="System\Text\Encodings\Web\Sse2Helper.cs" />
-    <Compile Include="System\Text\Encodings\Web\Ssse3Helper.cs" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'netstandard2.1'">
+    <Compile Include="System\Runtime\Intrinsics\X86Intrinsics.Shims.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'netstandard2.1' or '$(TargetFramework)' == 'netcoreapp3.0'">
+    <Compile Include="System\Runtime\Intrinsics\ArmIntrinsics.Shims.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs" Link="System\Text\UnicodeDebug.cs" />
