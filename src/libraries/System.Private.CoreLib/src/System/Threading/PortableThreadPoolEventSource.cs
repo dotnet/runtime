@@ -7,11 +7,10 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
 {
-#if CORECLR
     // Currently with EventPipe there isn't a way to move events from the native side to the managed side and get the same
     // experience. For now, the same provider name and guid are used as the native side and a temporary change has been made to
-    // EventPipe to get thread pool events in performance profiles when the portable thread pool is enabled, as that seems to be
-    // the easiest way currently and the closest to the experience when the portable thread pool is disabled.
+    // EventPipe in CoreCLR to get thread pool events in performance profiles when the portable thread pool is enabled, as that
+    // seems to be the easiest way currently and the closest to the experience when the portable thread pool is disabled.
     // TODO: Long-term options:
     // - Use NativeRuntimeEventSource instead, change its guid to match the provider guid from the native side, and fix the
     //   underlying issues such that duplicate events are not sent. This should get the same experience as sending events from
@@ -22,11 +21,6 @@ namespace System.Threading
     //   provider, and update PerfView with a trace event parser for the new provider so that it knows about the events and may
     //   use them to identify thread pool threads.
     [EventSource(Name = "Microsoft-Windows-DotNETRuntime", Guid = "e13c0d23-ccbc-4e12-931b-d9cc2eee27e4")]
-#else
-    // TODO: The temporary EventPipe change made for CoreCLR above is not in Mono, change this too along with one of the
-    // long-term solutions above
-    [EventSource(Name = "Microsoft-Windows-DotNETRuntime-ThreadPool", Guid = "58c5b76b-0800-5ada-2146-c766e26b61de")]
-#endif
     internal sealed class PortableThreadPoolEventSource : EventSource
     {
         // This value does not seem to be used, leaving it as zero for now. It may be useful for a scenario that may involve
@@ -84,14 +78,8 @@ namespace System.Threading
 
         private PortableThreadPoolEventSource()
             : base(
-#if CORECLR // see note above
                   new Guid(0xe13c0d23, 0xccbc, 0x4e12, 0x93, 0x1b, 0xd9, 0xcc, 0x2e, 0xee, 0x27, 0xe4),
-                  "Microsoft-Windows-DotNETRuntime"
-#else
-                  new Guid(0x58c5b76b, 0x0800, 0x5ada, 0x21, 0x46, 0xc7, 0x66, 0xe2, 0x6b, 0x61, 0xde),
-                  "Microsoft-Windows-DotNETRuntime-ThreadPool"
-#endif
-                  )
+                  "Microsoft-Windows-DotNETRuntime")
         {
         }
 
