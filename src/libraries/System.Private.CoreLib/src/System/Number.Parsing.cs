@@ -53,8 +53,8 @@ namespace System
             {
                 return false;
             }
-            byte* p = number.GetDigitsPointer();
-            Debug.Assert(p != null);
+            int p = 0;
+            Debug.Assert(number.Digits != null);
             int n = 0;
             while (--i >= 0)
             {
@@ -63,9 +63,9 @@ namespace System
                     return false;
                 }
                 n *= 10;
-                if (*p != '\0')
+                if (number.Digits[p] != '\0')
                 {
-                    n += (*p++ - '0');
+                    n += (number.Digits[p++] - '0');
                 }
             }
             if (number.IsNegative)
@@ -87,7 +87,7 @@ namespace System
             return true;
         }
 
-        private static unsafe bool TryNumberToInt64(ref NumberBuffer number, ref long value)
+        private static bool TryNumberToInt64(ref NumberBuffer number, ref long value)
         {
             number.CheckConsistency();
 
@@ -96,8 +96,8 @@ namespace System
             {
                 return false;
             }
-            byte* p = number.GetDigitsPointer();
-            Debug.Assert(p != null);
+            int p = 0;
+            Debug.Assert(number.Digits != null);
             long n = 0;
             while (--i >= 0)
             {
@@ -106,9 +106,9 @@ namespace System
                     return false;
                 }
                 n *= 10;
-                if (*p != '\0')
+                if (number.Digits[p] != '\0')
                 {
-                    n += (*p++ - '0');
+                    n += (number.Digits[p++] - '0');
                 }
             }
             if (number.IsNegative)
@@ -130,7 +130,7 @@ namespace System
             return true;
         }
 
-        private static unsafe bool TryNumberToUInt32(ref NumberBuffer number, ref uint value)
+        private static bool TryNumberToUInt32(ref NumberBuffer number, ref uint value)
         {
             number.CheckConsistency();
 
@@ -139,8 +139,8 @@ namespace System
             {
                 return false;
             }
-            byte* p = number.GetDigitsPointer();
-            Debug.Assert(p != null);
+            int p = 0;
+            Debug.Assert(number.Digits != null);
             uint n = 0;
             while (--i >= 0)
             {
@@ -149,9 +149,9 @@ namespace System
                     return false;
                 }
                 n *= 10;
-                if (*p != '\0')
+                if (number.Digits[p] != '\0')
                 {
-                    uint newN = n + (uint)(*p++ - '0');
+                    uint newN = n + (uint)(number.Digits[p++] - '0');
                     // Detect an overflow here...
                     if (newN < n)
                     {
@@ -164,7 +164,7 @@ namespace System
             return true;
         }
 
-        private static unsafe bool TryNumberToUInt64(ref NumberBuffer number, ref ulong value)
+        private static bool TryNumberToUInt64(ref NumberBuffer number, ref ulong value)
         {
             number.CheckConsistency();
 
@@ -173,8 +173,8 @@ namespace System
             {
                 return false;
             }
-            byte* p = number.GetDigitsPointer();
-            Debug.Assert(p != null);
+            int p = 0;
+            Debug.Assert(number.Digits != null);
             ulong n = 0;
             while (--i >= 0)
             {
@@ -183,9 +183,9 @@ namespace System
                     return false;
                 }
                 n *= 10;
-                if (*p != '\0')
+                if (number.Digits[p] != '\0')
                 {
-                    ulong newN = n + (ulong)(*p++ - '0');
+                    ulong newN = n + (ulong)(number.Digits[p++] - '0');
                     // Detect an overflow here...
                     if (newN < n)
                     {
@@ -244,7 +244,7 @@ namespace System
 
         private static bool TryParseNumber(ref ReadOnlySpan<char> str, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
         {
-            Debug.Assert(str != null);//TODO do we need this?
+            Debug.Assert(str != null);
             Debug.Assert((styles & NumberStyles.AllowHexSpecifier) == 0);
 
             const int StateSign = 0x0001;
@@ -1553,14 +1553,14 @@ namespace System
             return result;
         }
 
-        internal static unsafe bool TryNumberToDecimal(ref NumberBuffer number, ref decimal value)
+        internal static bool TryNumberToDecimal(ref NumberBuffer number, ref decimal value)
         {
             number.CheckConsistency();
 
-            byte* p = number.GetDigitsPointer();
+            int p = 0;
             int e = number.Scale;
             bool sign = number.IsNegative;
-            uint c = *p;
+            uint c = number.Digits[p];
             if (c == 0)
             {
                 // To avoid risking an app-compat issue with pre 4.5 (where some app was illegally using Reflection to examine the internal scale bits), we'll only force
@@ -1578,7 +1578,7 @@ namespace System
                 e--;
                 low64 *= 10;
                 low64 += c - '0';
-                c = *++p;
+                c = number.Digits[++p];
                 if (low64 >= ulong.MaxValue / 10)
                     break;
                 if (c == 0)
@@ -1610,7 +1610,7 @@ namespace System
                     low64 += c;
                     if (low64 < c)
                         high++;
-                    c = *++p;
+                    c = number.Digits[++p];
                 }
                 e--;
             }
@@ -1619,7 +1619,7 @@ namespace System
             {
                 if ((c == '5') && ((low64 & 1) == 0))
                 {
-                    c = *++p;
+                    c = number.Digits[++p];
 
                     bool hasZeroTail = !number.HasNonZeroTail;
 
@@ -1634,7 +1634,7 @@ namespace System
                     while ((c != 0) && hasZeroTail)
                     {
                         hasZeroTail &= (c == '0');
-                        c = *++p;
+                        c = number.Digits[++p];
                     }
 
                     // We should either be at the end of the stream or have a non-zero tail
@@ -1925,7 +1925,7 @@ namespace System
 
             ReadOnlySpan<char> p = value;
             if (!TryParseNumber(ref p, styles, ref number, info)
-                || ((value.Length - p.Length) < value.Length && !TrailingZeros(value, (value.Length - p.Length))))//TODO what this validation does?
+                || (!p.IsEmpty && !TrailingZeros(value, value.Length - p.Length)))
             {
                 number.CheckConsistency();
                 return false;
