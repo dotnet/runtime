@@ -4111,7 +4111,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	}
 	mono_mb_free (mb);
 
-	for (i = mono_method_signature_internal (invoke)->param_count; i >= 0; i--)
+	for (i = invoke_sig->param_count; i >= 0; i--)
 		if (mspecs [i])
 			mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
