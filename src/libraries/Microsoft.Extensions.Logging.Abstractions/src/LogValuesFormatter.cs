@@ -115,15 +115,18 @@ namespace Microsoft.Extensions.Logging
 
         public string Format(object[] values)
         {
+            object[] formattedValues = null;
+
             if (values != null)
             {
+                formattedValues = new object[values.Length];
                 for (int i = 0; i < values.Length; i++)
                 {
-                    values[i] = FormatArgument(values[i]);
+                    formattedValues[i] = FormatArgument(values[i]);
                 }
             }
 
-            return string.Format(CultureInfo.InvariantCulture, _format, values ?? Array.Empty<object>());
+            return string.Format(CultureInfo.InvariantCulture, _format, formattedValues ?? Array.Empty<object>());
         }
 
         internal string Format()

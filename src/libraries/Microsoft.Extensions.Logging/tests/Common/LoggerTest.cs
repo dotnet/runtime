@@ -109,6 +109,25 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        public void LoggerFormatterDoesNotMutatesParams()
+        {
+            var store = new List<string>();
+            var loggerFactory = new LoggerFactory();
+            var logger = loggerFactory.CreateLogger("Test");
+
+            loggerFactory.AddProvider(new CustomLoggerProvider("provider1", ThrowExceptionAt.None, store));
+
+            var values = new object[] { null, 5, 4.4, "Test", new object[] { }  };
+            logger.LogInformation("These are the values", values);
+
+            Assert.IsNotType<string>(values[0]);
+            Assert.IsType<int>(values[1]);
+            Assert.IsType<double>(values[2]);
+            Assert.IsType<string>(values[3]);
+            Assert.IsType<object[]>(values[4]);
+        }
+
+        [Fact]
         public void LoggerCanGetProviderAfterItIsCreated()
         {
             // Arrange
