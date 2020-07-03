@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
