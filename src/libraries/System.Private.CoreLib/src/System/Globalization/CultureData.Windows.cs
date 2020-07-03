@@ -149,7 +149,7 @@ namespace System.Globalization
             _bUseOverrides = useUserOverride && _sWindowsName == CultureInfo.UserDefaultLocaleName;
         }
 
-        internal bool IsWin32Installed => true;
+        internal static bool IsWin32Installed => true;
 
         internal static unsafe CultureData GetCurrentRegionData()
         {
