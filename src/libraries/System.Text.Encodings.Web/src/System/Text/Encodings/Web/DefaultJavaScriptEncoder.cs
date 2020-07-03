@@ -1,16 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Internal;
 using System.Text.Unicode;
 
+#if NETCOREAPP
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
+#endif
 
 namespace System.Text.Encodings.Web
 {
@@ -86,7 +87,7 @@ namespace System.Text.Encodings.Web
             {
                 int idx = 0;
 
-#pragma warning disable 0162 // suppress dead code warnings on shimmed targets
+#if NETCOREAPP
                 if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
                 {
                     sbyte* startingAddress = (sbyte*)ptr;
@@ -96,6 +97,7 @@ namespace System.Text.Encodings.Web
 
                         bool containsNonAsciiBytes;
 
+#pragma warning disable CS0162 // Unreachable code detected
                         if (AdvSimd.Arm64.IsSupported)
                         {
                             // Load the next 16 bytes.
@@ -105,6 +107,7 @@ namespace System.Text.Encodings.Web
                             // casted to signed byte.
                             containsNonAsciiBytes = AdvSimd.Arm64.MinAcross(sourceValue).ToScalar() < 0;
                         }
+#pragma warning restore CS0162 // Unreachable code detected
                         else
                         {
                             Debug.Assert(Sse2.IsSupported);
@@ -184,7 +187,7 @@ namespace System.Text.Encodings.Web
                     // Process the remaining bytes.
                     Debug.Assert(utf8Text.Length - idx < 16);
                 }
-#pragma warning restore 0162
+#endif
 
                 while (idx < utf8Text.Length)
                 {
