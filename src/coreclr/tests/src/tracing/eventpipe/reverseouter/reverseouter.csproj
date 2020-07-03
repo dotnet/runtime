@@ -7,8 +7,6 @@
     <CLRTestPriority>1</CLRTestPriority>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
-    <!-- Disable for GCStress due to test failure: https://github.com/dotnet/runtime/issues/38524 -->
-    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

@@ -20,10 +20,6 @@ namespace Tracing.Tests.ReverseValidation
 {
     public class ReverseValidation
     {
-        // The runtime will do an exponential falloff by a factor of 1.25 starting at 10ms with a max of 500ms
-        // We can time tests out after waiting 30s which should have sufficient attempts
-        private static int _maxPollTimeMS = 30_000;
-
         public static async Task<bool> TEST_RuntimeIsResilientToServerClosing()
         {
             bool fSuccess = true;
@@ -38,18 +34,18 @@ namespace Tracing.Tests.ReverseValidation
                 },
                 duringExecution: async (_) =>
                 {
-                    var ad1 = await Utils.WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
+                    var ad1 = await ReverseServer.CreateServerAndReceiveAdvertisement(serverName);
                     Logger.logger.Log(ad1.ToString());
-                    var ad2 = await Utils.WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
+                    var ad2 = await ReverseServer.CreateServerAndReceiveAdvertisement(serverName);
                     Logger.logger.Log(ad2.ToString());
-                    var ad3 = await Utils.WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
+                    var ad3 = await ReverseServer.CreateServerAndReceiveAdvertisement(serverName);
                     Logger.logger.Log(ad3.ToString());
-                    var ad4 = await Utils.WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
+                    var ad4 = await ReverseServer.CreateServerAndReceiveAdvertisement(serverName);
                     Logger.logger.Log(ad4.ToString());
                 }
             );
 
-            fSuccess &= await Utils.WaitTillTimeout(subprocessTask, TimeSpan.FromMinutes(1));
+            fSuccess &= await subprocessTask;
 
             return fSuccess;
         }
@@ -69,12 +65,12 @@ namespace Tracing.Tests.ReverseValidation
                 },
                 duringExecution: async (_) => 
                 {
-                    IpcAdvertise advertise = await Utils.WaitTillTimeout(advertiseTask, TimeSpan.FromMilliseconds(_maxPollTimeMS));
+                    IpcAdvertise advertise = await advertiseTask;
                     Logger.logger.Log(advertise.ToString());
                 }
             );
 
-            fSuccess &= await Utils.WaitTillTimeout(subprocessTask, TimeSpan.FromMinutes(1));
+            fSuccess &= await subprocessTask;
 
             return fSuccess;
         }
@@ -128,7 +124,7 @@ namespace Tracing.Tests.ReverseValidation
                 }
             );
 
-            fSuccess &= await Utils.WaitTillTimeout(subprocessTask, TimeSpan.FromMinutes(1));
+            fSuccess &= await subprocessTask;
             server.Shutdown();
 
             return fSuccess;
@@ -168,7 +164,7 @@ namespace Tracing.Tests.ReverseValidation
                 }
             );
 
-            fSuccess &= await Utils.WaitTillTimeout(subprocessTask, TimeSpan.FromMinutes(1));
+            fSuccess &= await subprocessTask;
             server.Shutdown();
 
             return true;
@@ -210,63 +206,8 @@ namespace Tracing.Tests.ReverseValidation
                 }
             );
 
-            fSuccess &= await Utils.WaitTillTimeout(subprocessTask, TimeSpan.FromMinutes(1));
+            fSuccess &= await subprocessTask;
             server.Shutdown();
-
-            return fSuccess;
-        }
-
-        public static async Task<bool> TEST_ReverseConnectionCanRecycleWhileTracing()
-        {
-            bool fSuccess = true;
-            string serverName = ReverseServer.MakeServerAddress();
-            Logger.logger.Log($"Server name is '{serverName}'");
-            Task<bool> subprocessTask = Utils.RunSubprocess(
-                currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> 
-                {
-                    { Utils.DiagnosticsMonitorAddressEnvKey, serverName },
-                    { Utils.DiagnosticsMonitorPauseOnStartEnvKey, "0" }
-                },
-                duringExecution: async (int pid) =>
-                {
-                    Task regularTask = Task.Run(async () => 
-                    {
-                        var config = new SessionConfiguration(
-                            circularBufferSizeMB: 1000,
-                            format: EventPipeSerializationFormat.NetTrace,
-                            providers: new List<Provider> { 
-                                new Provider("Microsoft-DotNETCore-SampleProfiler")
-                            });
-                        Logger.logger.Log("Starting EventPipeSession over standard connection");
-                        using Stream stream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
-                        Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
-                        using var source = new EventPipeEventSource(stream);
-                        Task readerTask = Task.Run(() => source.Process());
-                        await Task.Delay(500);
-                        Logger.logger.Log("Stopping EventPipeSession over standard connection");
-                        EventPipeClient.StopTracing(pid, sessionId);
-                        await readerTask;
-                        Logger.logger.Log("Stopped EventPipeSession over standard connection");
-                    });
-
-                    Task reverseTask = Task.Run(async () => 
-                    {
-                        var ad1 = await Utils.WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
-                        Logger.logger.Log(ad1.ToString());
-                        var ad2 = await Utils.WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
-                        Logger.logger.Log(ad2.ToString());
-                        var ad3 = await Utils.WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
-                        Logger.logger.Log(ad3.ToString());
-                        var ad4 = await Utils.WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
-                        Logger.logger.Log(ad4.ToString());
-                    });
-
-                    await Task.WhenAll(reverseTask, regularTask);
-                }
-            );
-
-            fSuccess &= await Utils.WaitTillTimeout(subprocessTask, TimeSpan.FromMinutes(1));
 
             return fSuccess;
         }
@@ -304,7 +245,7 @@ namespace Tracing.Tests.ReverseValidation
                 }
             );
 
-            fSuccess &= await Utils.WaitTillTimeout(subprocessTask, TimeSpan.FromMinutes(1));
+            fSuccess &= await subprocessTask;
 
             return fSuccess;
         }
@@ -320,6 +261,8 @@ namespace Tracing.Tests.ReverseValidation
             }
 
             bool fSuccess = true;
+            if (!IpcTraceTest.EnsureCleanEnvironment())
+                return -1;
             IEnumerable<MethodInfo> tests = typeof(ReverseValidation).GetMethods().Where(mi => mi.Name.StartsWith("TEST_"));
             foreach (var test in tests)
             {
