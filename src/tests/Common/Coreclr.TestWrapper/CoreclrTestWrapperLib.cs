@@ -118,6 +118,7 @@ namespace CoreclrTestLib
                     {
                         if (processEntry.ParentProcessID == ppid)
                         {
+                            Console.WriteLine($"found child: {processEntry.ProcessID}");
                             try
                             {
                                 children.Add(Process.GetProcessById(processEntry.ProcessID));
