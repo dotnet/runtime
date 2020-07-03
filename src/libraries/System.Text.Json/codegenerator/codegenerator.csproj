@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="CodeGenerator.cs" />
     <Compile Include="JsonSerializerSourceGenerator.cs" />
   </ItemGroup>
 
