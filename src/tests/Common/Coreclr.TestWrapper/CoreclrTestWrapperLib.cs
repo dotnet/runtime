@@ -241,8 +241,8 @@ namespace CoreclrTestLib
             createdump.Start();
             Console.WriteLine($"createdump PID: {createdump.Id}");
 
-            Task<string> copyOutput = process.StandardOutput.ReadToEndAsync();
-            Task<string> copyError = process.StandardError.ReadToEndAsync();
+            Task<string> copyOutput = createdump.StandardOutput.ReadToEndAsync();
+            Task<string> copyError = createdump.StandardError.ReadToEndAsync();
             bool fSuccess = createdump.WaitForExit(DEFAULT_TIMEOUT) && createdump.ExitCode == 0;
 
             if (fSuccess)
