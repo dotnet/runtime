@@ -6786,19 +6786,21 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         switch (MetaSig::GetCallingConvention(pVASigCookie->pModule, pVASigCookie->signature))
         {
             case IMAGE_CEE_CS_CALLCONV_C:
-                    unmgdCallConv = pmCallConvCdecl;
-                    break;
+                unmgdCallConv = pmCallConvCdecl;
+                break;
             case IMAGE_CEE_CS_CALLCONV_STDCALL:
-                    unmgdCallConv = pmCallConvStdcall;
-                    break;
+                unmgdCallConv = pmCallConvStdcall;
+                break;
             case IMAGE_CEE_CS_CALLCONV_THISCALL:
-                    unmgdCallConv = pmCallConvThiscall;
-                    break;
+                unmgdCallConv = pmCallConvThiscall;
+                break;
             case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-                    unmgdCallConv = pmCallConvFastcall;
-                    break;
+                unmgdCallConv = pmCallConvFastcall;
+                break;
+            case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
+                COMPlusThrow(kNotImplementedException);
             default:
-                    COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
+                COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
         }
 
         LoaderHeap *pHeap = pVASigCookie->pModule->GetLoaderAllocator()->GetHighFrequencyHeap();

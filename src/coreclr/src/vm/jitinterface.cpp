@@ -567,6 +567,11 @@ CEEInfo::ConvToJitSig(
         sigRet->args = (CORINFO_ARG_LIST_HANDLE)sig.GetPtr();
     }
 
+    if (sigRet->callConv == CORINFO_CALLCONV_UNMANAGED)
+    {
+        COMPlusThrowHR(E_NOTIMPL);
+    }
+
     // Set computed flags
     sigRet->flags = sigRetFlags;
 

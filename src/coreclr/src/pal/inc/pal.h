@@ -449,12 +449,10 @@ BOOL
 PALAPI
 PAL_NotifyRuntimeStarted();
 
-#ifdef __APPLE__
 PALIMPORT
 LPCSTR
 PALAPI
 PAL_GetApplicationGroupId();
-#endif
 
 static const unsigned int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = MAX_PATH;
 

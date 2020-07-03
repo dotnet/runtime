@@ -32,6 +32,7 @@
 
 #if MONO_FEATURE_SRE
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -146,6 +147,8 @@ namespace System.Reflection.Emit
             return parameters![pos];
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't analyze RuntimeResolve but it's an identity function")]
         internal MethodBase RuntimeResolve()
         {
             return type.RuntimeResolve().GetConstructor(this);

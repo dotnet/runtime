@@ -790,10 +790,93 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if (compExactlyDependsOn(InstructionSet_SSE) && varTypeIsFloating(baseType))
+            bool isSupported = false;
+
+            switch (baseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                case TYP_SHORT:
+                case TYP_USHORT:
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    isSupported = compExactlyDependsOn(InstructionSet_SSE2);
+                    break;
+                }
+
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    isSupported = compExactlyDependsOn(InstructionSet_SSE2_X64);
+                    break;
+                }
+
+                case TYP_FLOAT:
+                case TYP_DOUBLE:
+                {
+                    isSupported = compExactlyDependsOn(InstructionSet_SSE);
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            if (isSupported)
             {
                 op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, 16);
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Vector256_ToScalar:
+        {
+            assert(sig->numArgs == 1);
+
+            bool isSupported = false;
+
+            switch (baseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                case TYP_SHORT:
+                case TYP_USHORT:
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    isSupported = compExactlyDependsOn(InstructionSet_AVX);
+                    break;
+                }
+
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    isSupported =
+                        compExactlyDependsOn(InstructionSet_AVX) && compExactlyDependsOn(InstructionSet_SSE2_X64);
+                    break;
+                }
+
+                case TYP_FLOAT:
+                case TYP_DOUBLE:
+                {
+                    isSupported = compExactlyDependsOn(InstructionSet_AVX);
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            if (isSupported)
+            {
+                op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
             }
             break;
         }
@@ -842,18 +925,6 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             {
                 op1     = impPopStack().val;
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
-            }
-            break;
-        }
-
-        case NI_Vector256_ToScalar:
-        {
-            assert(sig->numArgs == 1);
-
-            if (compExactlyDependsOn(InstructionSet_AVX) && varTypeIsFloating(baseType))
-            {
-                op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, 32);
             }
             break;
         }

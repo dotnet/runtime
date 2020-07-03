@@ -98,6 +98,12 @@ jobs:
       - name: enforcePgoArg
         value: '-enforcepgo'
 
+    - name: clrInterpreterBuildArg
+      value: ''
+    - ${{ if eq(parameters.testGroup, 'clrinterpreter') }}:
+      - name: clrInterpreterBuildArg
+        value: '-cmakeargs "-DFEATURE_INTERPRETER=1"'
+
     - ${{ parameters.variables }}
 
     steps:
@@ -129,10 +135,10 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(officialBuildIdArg)
+      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg)
+      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 

@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 namespace System.Data
 {
     public interface IDbTransaction : IDisposable
     {
-        IDbConnection Connection { get; }
+        IDbConnection? Connection { get; }
         IsolationLevel IsolationLevel { get; }
         void Commit();
         void Rollback();

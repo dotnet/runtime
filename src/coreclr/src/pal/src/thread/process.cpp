@@ -2011,12 +2011,7 @@ PAL_NotifyRuntimeStarted()
     _ASSERTE(ret == TRUE || processIdDisambiguationKey == 0);
 
     UnambiguousProcessDescriptor unambiguousProcessDescriptor(gPID, processIdDisambiguationKey);
-    LPCSTR applicationGroupId =
-#ifdef __APPLE__
-        PAL_GetApplicationGroupId();
-#else
-        nullptr;
-#endif
+    LPCSTR applicationGroupId = PAL_GetApplicationGroupId();
     CreateSemaphoreName(startupSemName, RuntimeStartupSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
     CreateSemaphoreName(continueSemName, RuntimeContinueSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
 
@@ -2066,13 +2061,18 @@ exit:
     return launched;
 }
 
-#ifdef __APPLE__
 LPCSTR
 PALAPI
 PAL_GetApplicationGroupId()
 {
+#ifdef __APPLE__
     return gApplicationGroupId;
+#else
+    return nullptr;
+#endif
 }
+
+#ifdef __APPLE__
 
 // We use 7bits from each byte, so this computes the extra size we need to encode a given byte count
 constexpr int GetExtraEncodedAreaSize(UINT rawByteCount)

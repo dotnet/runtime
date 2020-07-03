@@ -46,6 +46,10 @@
              Link="ProductionCode\System\Net\Security\SslApplicationProtocol.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslConnectionInfo.cs"
              Link="ProductionCode\System\Net\Security\SslConnectionInfo.cs" />
+    <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.cs"
+             Link="ProductionCode\System\Net\Security\SslStreamCertificateContext.cs" />
+    <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.Windows.cs"
+             Link="ProductionCode\System\Net\Security\SslStreamCertificateContext.Windows.cs" />
     <Compile Include="..\..\src\System\Net\Security\ReadWriteAdapter.cs"
              Link="ProductionCode\System\Net\Security\ReadWriteAdapter.cs" />
     <Compile Include="..\..\src\System\Net\SslStreamContext.cs"

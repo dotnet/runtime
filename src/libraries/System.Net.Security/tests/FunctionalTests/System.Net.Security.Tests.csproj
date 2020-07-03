@@ -61,6 +61,10 @@
              Link="Common\System\Net\VirtualNetwork\VirtualNetwork.cs" />
     <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetworkStream.cs"
              Link="Common\System\Net\VirtualNetwork\VirtualNetworkStream.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs"
+             Link="CommonTest\System\Security\Cryptography\509Certificates\CertificateAuthority.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
+             Link="CommonTest\System\Security\Cryptography\509Certificates\RevocationResponder.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"

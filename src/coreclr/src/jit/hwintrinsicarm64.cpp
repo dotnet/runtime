@@ -225,6 +225,7 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_AdvSimd_ExtractVector128:
             case NI_AdvSimd_ExtractVector64:
             case NI_AdvSimd_Insert:
+            case NI_AdvSimd_InsertScalar:
             case NI_AdvSimd_LoadAndInsertScalar:
             case NI_AdvSimd_StoreSelectedScalar:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:

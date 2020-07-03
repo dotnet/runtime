@@ -3475,19 +3475,10 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
     bool bRet = FALSE;
 
     PAL_CPP_TRY {
-        if((*pComSig & IMAGE_CEE_CS_CALLCONV_MASK) > IMAGE_CEE_CS_CALLCONV_VARARG)
-        {
-            sprintf_s(szString,SZSTRING_SIZE,"%sERROR: signature of method '%s' has invalid calling convention 0x%2.2X",g_szAsmCodeIndent,pszMemberName,*pComSig);
-            printError(GUICookie,ERRORMSG(szString));
-            bRet = TRUE;
-            goto lDone;
-        }
-
         g_tkMVarOwner = FuncToken;
         szString[0] = 0;
         DumpGenericPars(szString,FuncToken); //,NULL,FALSE);
         pszMemberSig = PrettyPrintSig(pComSig, cComSig, szString, &qbMemberSig, g_pImport,NULL);
-lDone: ;
     } PAL_CPP_CATCH_ALL {
         printError(GUICookie,"INVALID DATA ADDRESS");
         bRet = TRUE;

@@ -1885,6 +1885,8 @@ namespace System
             return GetCorrespondingInflatedConstructor(fromNoninstanciated);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "We already have a FieldInfo so this will succeed")]
         internal override FieldInfo GetField(FieldInfo fromNoninstanciated)
         {
             /* create sensible flags from given FieldInfo */

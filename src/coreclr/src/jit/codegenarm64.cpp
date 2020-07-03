@@ -3855,18 +3855,11 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             genSIMDIntrinsicNarrow(simdNode);
             break;
 
-        case SIMDIntrinsicAdd:
         case SIMDIntrinsicSub:
-        case SIMDIntrinsicMul:
-        case SIMDIntrinsicDiv:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicEqual:
             genSIMDIntrinsicBinOp(simdNode);
-            break;
-
-        case SIMDIntrinsicDotProduct:
-            genSIMDIntrinsicDotProduct(simdNode);
             break;
 
         case SIMDIntrinsicGetItem:
@@ -3945,9 +3938,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
     {
         switch (intrinsicId)
         {
-            case SIMDIntrinsicAdd:
-                result = INS_fadd;
-                break;
             case SIMDIntrinsicBitwiseAnd:
                 result = INS_and;
                 break;
@@ -3961,14 +3951,8 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             case SIMDIntrinsicConvertToInt64:
                 result = INS_fcvtzs;
                 break;
-            case SIMDIntrinsicDiv:
-                result = INS_fdiv;
-                break;
             case SIMDIntrinsicEqual:
                 result = INS_fcmeq;
-                break;
-            case SIMDIntrinsicMul:
-                result = INS_fmul;
                 break;
             case SIMDIntrinsicNarrow:
                 // Use INS_fcvtn lower bytes of result followed by INS_fcvtn2 for upper bytes
@@ -3995,9 +3979,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
 
         switch (intrinsicId)
         {
-            case SIMDIntrinsicAdd:
-                result = INS_add;
-                break;
             case SIMDIntrinsicBitwiseAnd:
                 result = INS_and;
                 break;
@@ -4013,9 +3994,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
                 break;
             case SIMDIntrinsicEqual:
                 result = INS_cmeq;
-                break;
-            case SIMDIntrinsicMul:
-                result = INS_mul;
                 break;
             case SIMDIntrinsicNarrow:
                 // Use INS_xtn lower bytes of result followed by INS_xtn2 for upper bytes
@@ -4326,9 +4304,7 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicAdd || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicSub ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicMul || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicDiv ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAnd ||
+    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicSub || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAnd ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseOr || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicEqual);
 
     GenTree*  op1       = simdNode->gtGetOp1();
@@ -4353,90 +4329,6 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
     insOpts     opt  = genGetSimdInsOpt(attr, baseType);
 
     GetEmitter()->emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, opt);
-
-    genProduceReg(simdNode);
-}
-
-//--------------------------------------------------------------------------------
-// genSIMDIntrinsicDotProduct: Generate code for SIMD Intrinsic Dot Product.
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
-{
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicDotProduct);
-
-    GenTree*  op1      = simdNode->gtGetOp1();
-    GenTree*  op2      = simdNode->gtGetOp2();
-    var_types baseType = simdNode->gtSIMDBaseType;
-    var_types simdType = op1->TypeGet();
-
-    regNumber targetReg = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-
-    var_types targetType = simdNode->TypeGet();
-    assert(targetType == baseType);
-
-    genConsumeOperands(simdNode);
-    regNumber op1Reg = op1->GetRegNum();
-    regNumber op2Reg = op2->GetRegNum();
-    regNumber tmpReg = targetReg;
-
-    if (!varTypeIsFloating(baseType))
-    {
-        tmpReg = simdNode->GetSingleTempReg(RBM_ALLFLOAT);
-    }
-
-    instruction ins  = getOpForSIMDIntrinsic(SIMDIntrinsicMul, baseType);
-    emitAttr    attr = (simdNode->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
-    insOpts     opt  = genGetSimdInsOpt(attr, baseType);
-
-    // Vector multiply
-    GetEmitter()->emitIns_R_R_R(ins, attr, tmpReg, op1Reg, op2Reg, opt);
-
-    if ((simdNode->gtFlags & GTF_SIMD12_OP) != 0)
-    {
-        // For 12Byte vectors we must zero upper bits to get correct dot product
-        // We do not assume upper bits are zero.
-        GetEmitter()->emitIns_R_R_I(INS_ins, EA_4BYTE, tmpReg, REG_ZR, 3);
-    }
-
-    // Vector add horizontal
-    if (varTypeIsFloating(baseType))
-    {
-        if (baseType == TYP_FLOAT)
-        {
-            if (opt == INS_OPTS_4S)
-            {
-                GetEmitter()->emitIns_R_R_R(INS_faddp, EA_16BYTE, tmpReg, tmpReg, tmpReg, INS_OPTS_4S);
-            }
-            GetEmitter()->emitIns_R_R(INS_faddp, EA_8BYTE, targetReg, tmpReg, INS_OPTS_2S);
-        }
-        else
-        {
-            GetEmitter()->emitIns_R_R(INS_faddp, EA_16BYTE, targetReg, tmpReg, INS_OPTS_2D);
-        }
-    }
-    else
-    {
-        ins = varTypeIsUnsigned(baseType) ? INS_uaddlv : INS_saddlv;
-
-        GetEmitter()->emitIns_R_R(ins, attr, tmpReg, tmpReg, opt);
-
-        // Mov to integer register
-        if (varTypeIsUnsigned(baseType) || (genTypeSize(baseType) < 4))
-        {
-            GetEmitter()->emitIns_R_R_I(INS_mov, emitTypeSize(baseType), targetReg, tmpReg, 0);
-        }
-        else
-        {
-            GetEmitter()->emitIns_R_R_I(INS_smov, emitActualTypeSize(baseType), targetReg, tmpReg, 0);
-        }
-    }
 
     genProduceReg(simdNode);
 }

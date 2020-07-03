@@ -42,6 +42,7 @@ int32_t mini_parse_debug_option (const char *option);
 static MonoClass* datetime_class;
 static MonoClass* datetimeoffset_class;
 static MonoClass* uri_class;
+static MonoClass* task_class;
 static MonoClass* safehandle_class;
 
 int mono_wasm_enable_gc = 1;
@@ -491,8 +492,10 @@ mono_wasm_string_from_js (const char *str)
 static int
 class_is_task (MonoClass *klass)
 {
-	if (!strcmp ("System.Threading.Tasks", mono_class_get_namespace (klass)) &&
-		(!strcmp ("Task", mono_class_get_name (klass)) || !strcmp ("Task`1", mono_class_get_name (klass))))
+	if (!task_class)
+		task_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "Task");
+
+	if (task_class && (klass == task_class || mono_class_is_subclass_of(klass, task_class, 0)))
 		return 1;
 
 	return 0;
