@@ -23,7 +23,6 @@ namespace System.Net.Http
             }
 
             _content = content;
-            _offset = 0;
             _count = content.Length;
         }
 
