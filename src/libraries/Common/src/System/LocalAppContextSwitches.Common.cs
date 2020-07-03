@@ -52,6 +52,11 @@ namespace System
                 return true;
             }
 
+            if (switchName == "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization")
+            {
+                return true;
+            }
+
             return false;
         }
     }

@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.IO;
 
 namespace System.Runtime.Serialization.Formatters.Binary
 {
@@ -38,10 +36,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _context = context;
         }
 
-        public object Deserialize(Stream serializationStream) => Deserialize(serializationStream, true);
-
-        internal object Deserialize(Stream serializationStream, bool check)
+        public object Deserialize(Stream serializationStream)
         {
+            // don't refactor this check out into a helper method; linker will have difficulty pruning
+            if (!SerializationInfo.BinaryFormatterEnabled)
+            {
+                throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
+            }
+
             if (serializationStream == null)
             {
                 throw new ArgumentNullException(nameof(serializationStream));
@@ -66,7 +68,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             try
             {
                 var parser = new BinaryParser(serializationStream, reader);
-                return reader.Deserialize(parser, check);
+                return reader.Deserialize(parser);
             }
             catch (SerializationException)
             {
@@ -78,11 +80,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        public void Serialize(Stream serializationStream, object graph) =>
-            Serialize(serializationStream, graph, true);
-
-        internal void Serialize(Stream serializationStream, object graph, bool check)
+        public void Serialize(Stream serializationStream, object graph)
         {
+            // don't refactor this check out into a helper method; linker will have difficulty pruning
+            if (!SerializationInfo.BinaryFormatterEnabled)
+            {
+                throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
+            }
+
             if (serializationStream == null)
             {
                 throw new ArgumentNullException(nameof(serializationStream));
@@ -97,7 +102,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             var sow = new ObjectWriter(_surrogates, _context, formatterEnums, _binder);
             BinaryFormatterWriter binaryWriter = new BinaryFormatterWriter(serializationStream, sow, _typeFormat);
-            sow.Serialize(graph, binaryWriter, check);
+            sow.Serialize(graph, binaryWriter);
             _crossAppDomainArray = sow._crossAppDomainArray;
         }
 

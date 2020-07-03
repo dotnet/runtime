@@ -42,6 +42,13 @@ namespace System
             get => GetCachedSwitchValue("Switch.System.Diagnostics.EventSource.PreserveEventListnerObjectIdentity", ref s_preserveEventListnerObjectIdentity);
         }
 
+        private static int s_binaryFormatterEnabled;
+        public static bool BinaryFormatterEnabled
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetCachedSwitchValue("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", ref s_binaryFormatterEnabled);
+        }
+
         private static int s_serializationGuard;
         public static bool SerializationGuard
         {
