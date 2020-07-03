@@ -3337,7 +3337,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_CNS_STR:
 #ifdef TARGET_AMD64
                 costSz = 10;
-                costEx = 1;
+                costEx = 2;
 #else // TARGET_X86
                 costSz = 4;
                 costEx = 1;
@@ -3381,7 +3381,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 else if (!GenTreeIntConCommon::FitsInI32(conVal))
                 {
                     costSz = 10;
-                    costEx = 1;
+                    costEx = 2;
                 }
 #endif // TARGET_AMD64
                 else
@@ -10843,16 +10843,30 @@ void Compiler::gtDispConst(GenTree* tree)
                 else if ((tree->AsIntCon()->gtIconVal > -1000) && (tree->AsIntCon()->gtIconVal < 1000))
                 {
                     printf(" %ld", dspIconVal);
-#ifdef TARGET_64BIT
                 }
+#ifdef TARGET_64BIT
                 else if ((tree->AsIntCon()->gtIconVal & 0xFFFFFFFF00000000LL) != 0)
                 {
-                    printf(" 0x%llx", dspIconVal);
-#endif
+                    if (dspIconVal >= 0)
+                    {
+                        printf(" 0x%llx", dspIconVal);
+                    }
+                    else
+                    {
+                        printf(" -0x%llx", -dspIconVal);
+                    }
                 }
+#endif
                 else
                 {
-                    printf(" 0x%X", dspIconVal);
+                    if (dspIconVal >= 0)
+                    {
+                        printf(" 0x%X", dspIconVal);
+                    }
+                    else
+                    {
+                        printf(" -0x%X", -dspIconVal);
+                    }
                 }
 
                 if (tree->IsIconHandle())
