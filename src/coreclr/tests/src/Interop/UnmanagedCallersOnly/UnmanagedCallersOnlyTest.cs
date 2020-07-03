@@ -767,15 +767,6 @@ public class Program
 
         IntNativeMethodInvoker testNativeMethod = (IntNativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(IntNativeMethodInvoker));
 
-        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
-        {
-            // This is due to a semantic change in NDirect::MarshalingRequired().
-            // See https://github.com/dotnet/runtime/issues/38697#issuecomment-653310319.
-            Assert.Throws<InvalidProgramException>(() => testNativeMethod());
-        }
-        else
-        {
-            Assert.Throws<NotSupportedException>(() => testNativeMethod());
-        }
+        Assert.Throws<NotSupportedException>(() => testNativeMethod());
     }
 }

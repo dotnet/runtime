@@ -9824,7 +9824,15 @@ BOOL CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
 
     JIT_TO_EE_TRANSITION();
 
-    if (method != 0)
+    if (method == NULL)
+    {
+        // check the call site signature
+        result = NDirect::MarshalingRequired(
+                    NULL,
+                    callSiteSig->pSig,
+                    GetModule(callSiteSig->scope));
+    }
+    else
     {
         MethodDesc* ftn = GetMethod(method);
         _ASSERTE(ftn->IsNDirect());
@@ -9853,14 +9861,6 @@ BOOL CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
         // without NDirectImportPrecode.
         result = TRUE;
 #endif
-    }
-    else
-    {
-        // check the call site signature
-        result = NDirect::MarshalingRequired(
-                    GetMethod(method),
-                    callSiteSig->pSig,
-                    GetModule(callSiteSig->scope));
     }
 
     EE_TO_JIT_TRANSITION();
