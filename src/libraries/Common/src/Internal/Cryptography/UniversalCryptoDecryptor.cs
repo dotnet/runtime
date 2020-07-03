@@ -82,16 +82,21 @@ namespace Internal.Cryptography
 
             if (_heldoverCipher == null)
             {
-                // Pinned so that we can avoid the `fixed` to stop the decrypt buffer from getting
-                // copied around by the GC.
-                ciphertext = GC.AllocateUninitializedArray<byte>(inputBuffer.Length, pinned: true);
+#if NET5_0
+                ciphertext = GC.AllocateUninitializedArray<byte>(inputBuffer.Length);
+#else
+                ciphertext = new byte[inputBuffer.Length];
+#endif
                 inputCiphertext = inputBuffer;
             }
             else
             {
-                // Pinned so that we can avoid the `fixed` to stop the decrypt buffer from getting
-                // copied around by the GC.
-                Span<byte> continuedCiphertext =  GC.AllocateUninitializedArray<byte>(_heldoverCipher.Length + inputBuffer.Length, pinned: true);
+                Span<byte> continuedCiphertext;
+#if NET5_0
+                continuedCiphertext = GC.AllocateUninitializedArray<byte>(_heldoverCipher.Length + inputBuffer.Length);
+#else
+                continuedCiphertext = new byte[_heldoverCipher.Length + inputBuffer.Length];
+#endif
                 _heldoverCipher.AsSpan().CopyTo(continuedCiphertext);
                 inputBuffer.CopyTo(continuedCiphertext.Slice(_heldoverCipher.Length));
 
@@ -100,18 +105,21 @@ namespace Internal.Cryptography
                 inputCiphertext = continuedCiphertext;
             }
 
-            // Decrypt the data, then strip the padding to get the final decrypted data. Note that even if the cipherText length is 0, we must
-            // invoke TransformFinal() so that the cipher object knows to reset for the next cipher operation.
-            int decryptWritten = BasicSymmetricCipher.TransformFinal(inputCiphertext, ciphertext);
-            Span<byte> decryptedBytes = ciphertext.Slice(0, decryptWritten);
-
             int unpaddedLength = 0;
 
-            if (decryptedBytes.Length > 0)
+            fixed (byte* pCiphertext = ciphertext)
             {
-                unpaddedLength = GetPaddingLength(decryptedBytes);
-                decryptedBytes.Slice(0, unpaddedLength).CopyTo(outputBuffer);
-                CryptographicOperations.ZeroMemory(decryptedBytes);
+                // Decrypt the data, then strip the padding to get the final decrypted data. Note that even if the cipherText length is 0, we must
+                // invoke TransformFinal() so that the cipher object knows to reset for the next cipher operation.
+                int decryptWritten = BasicSymmetricCipher.TransformFinal(inputCiphertext, ciphertext);
+                Span<byte> decryptedBytes = ciphertext.Slice(0, decryptWritten);
+
+                if (decryptedBytes.Length > 0)
+                {
+                    unpaddedLength = GetPaddingLength(decryptedBytes);
+                    decryptedBytes.Slice(0, unpaddedLength).CopyTo(outputBuffer);
+                    CryptographicOperations.ZeroMemory(decryptedBytes);
+                }
             }
 
             Reset();
@@ -140,7 +148,11 @@ namespace Internal.Cryptography
             }
             else
             {
+#if NET5_0
                 byte[] buffer = GC.AllocateUninitializedArray<byte>(inputCount);
+#else
+                byte[] buffer = new byte[inputCount];
+#endif
                 int written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), buffer);
                 Debug.Assert(written == buffer.Length);
                 return buffer;
