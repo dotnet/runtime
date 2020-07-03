@@ -47,6 +47,10 @@
 #include <sys/sendfile.h>
 #endif
 #include <sys/stat.h>
+#include <time.h>
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 
 #include "w32socket.h"
 #include "w32socket-internals.h"
@@ -306,6 +310,9 @@ mono_w32socket_recvfrom (SOCKET sock, char *buf, int len, int flags, struct sock
 	SocketHandle *sockethandle;
 	int ret;
 	MonoThreadInfo *info;
+	struct timeval tstart, tlimit, timeout;
+	socklen_t timevallen = sizeof(struct timeval);
+	int timeoutchanged = 0;
 
 	if (!mono_fdhandle_lookup_and_ref(sock, (MonoFDHandle**) &sockethandle)) {
 		mono_w32error_set_last (WSAENOTSOCK);
@@ -320,11 +327,58 @@ mono_w32socket_recvfrom (SOCKET sock, char *buf, int len, int flags, struct sock
 
 	info = mono_thread_info_current ();
 
+	if (blocking) {
+		memset(&tstart, 0, timevallen);
+		memset(&tlimit, 0, timevallen);
+		memset(&timeout, 0, timevallen);
+
+		MONO_ENTER_GC_SAFE;
+		getsockopt (((MonoFDHandle*) sockethandle)->fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, &timevallen);
+		MONO_EXIT_GC_SAFE;
+
+		if (timeout.tv_sec > 0 || timeout.tv_usec > 0) {
+			gettimeofday(&tstart, NULL);
+			timeradd(&tstart, &timeout, &tlimit);
+		}
+	}
+
 	do {
 		MONO_ENTER_GC_SAFE;
 		ret = recvfrom (((MonoFDHandle*) sockethandle)->fd, buf, len, flags, from, fromlen);
 		MONO_EXIT_GC_SAFE;
-	} while (ret == -1 && errno == EINTR && !mono_thread_info_is_interrupt_state (info));
+
+		if(ret == -1 && errno == EINTR && !mono_thread_info_is_interrupt_state (info)) {
+			if (blocking && (timeout.tv_sec > 0 || timeout.tv_usec > 0)) {
+				struct timeval tnow, tremaining;
+
+				gettimeofday(&tnow, NULL);
+				if(!timercmp(&tnow, &tlimit, <)) { //< timeout exceeded
+					errno = EWOULDBLOCK;
+					break;
+				}
+
+				timersub(&tlimit, &tnow, &tremaining);
+				timeoutchanged = 1;
+
+				MONO_ENTER_GC_SAFE;
+				setsockopt (((MonoFDHandle*) sockethandle)->fd, SOL_SOCKET, SO_RCVTIMEO, &tremaining, timevallen);
+				MONO_EXIT_GC_SAFE;
+
+				errno = EINTR; //< restore original errno
+			}
+			continue; //< Try recv again
+		}
+
+		break; //< No need to retry
+	} while (1);
+
+	if(timeoutchanged > 0) {
+		int serrno = errno;
+		MONO_ENTER_GC_SAFE;
+		setsockopt(((MonoFDHandle*) sockethandle)->fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timevallen);
+		MONO_EXIT_GC_SAFE;
+		errno = serrno;
+	}
 
 	if (ret == 0 && len > 0) {
 		/* According to the Linux man page, recvfrom only
