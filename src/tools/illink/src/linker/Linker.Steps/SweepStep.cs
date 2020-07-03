@@ -368,6 +368,23 @@ namespace Mono.Linker.Steps
 				UpdateCustomAttributesTypesScopes (provider);
 		}
 
+		static void UpdateCustomAttributesTypesScopes (Collection<MethodDefinition> methods)
+		{
+			foreach (var method in methods) {
+				UpdateCustomAttributesTypesScopes (method);
+
+				UpdateCustomAttributesTypesScopes (method.MethodReturnType);
+
+				if (method.HasGenericParameters)
+					UpdateCustomAttributesTypesScopes (method.GenericParameters);
+
+				if (method.HasParameters) {
+					foreach (var parameter in method.Parameters)
+						UpdateCustomAttributesTypesScopes (parameter);
+				}
+			}
+		}
+
 		static void UpdateCustomAttributesTypesScopes (Collection<GenericParameter> genericParameters)
 		{
 			foreach (var gp in genericParameters) {
