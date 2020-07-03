@@ -17,55 +17,49 @@ namespace System.Text.Json.Serialization.Tests
         public static DeserializationWrapper StringDeserializer => new StringDeserializerWrapper();
         public static DeserializationWrapper StreamDeserializer => new StreamDeserializerWrapper();
 
-        protected internal abstract T Deserialize<T>(string json, JsonSerializerOptions options = null);
+        protected internal abstract Task<T> DeserializeAsync<T>(string json, JsonSerializerOptions options = null);
 
-        protected internal abstract object Deserialize(string json, Type type, JsonSerializerOptions options = null);
+        protected internal abstract Task<object> DeserializeAsync(string json, Type type, JsonSerializerOptions options = null);
 
         private class StringDeserializerWrapper : DeserializationWrapper
         {
-            protected internal override T Deserialize<T>(string json, JsonSerializerOptions options = null)
+            protected internal override Task<T> DeserializeAsync<T>(string json, JsonSerializerOptions options = null)
             {
-                return JsonSerializer.Deserialize<T>(json, options);
+                return Task.FromResult(JsonSerializer.Deserialize<T>(json, options));
             }
 
-            protected internal override object Deserialize(string json, Type type, JsonSerializerOptions options = null)
+            protected internal override Task<object> DeserializeAsync(string json, Type type, JsonSerializerOptions options = null)
             {
-                return JsonSerializer.Deserialize(json, type, options);
+                return Task.FromResult(JsonSerializer.Deserialize(json, type, options));
             }
         }
 
         private class StreamDeserializerWrapper : DeserializationWrapper
         {
-            protected internal override T Deserialize<T>(string json, JsonSerializerOptions options = null)
+            protected internal override async Task<T> DeserializeAsync<T>(string json, JsonSerializerOptions options = null)
             {
                 if (options == null)
                 {
                     options = _optionsWithSmallBuffer;
                 }
 
-                return Task.Run(async () =>
+                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
-                    using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
-                    {
-                        return await JsonSerializer.DeserializeAsync<T>(stream, options);
-                    }
-                }).GetAwaiter().GetResult();
+                    return await JsonSerializer.DeserializeAsync<T>(stream, options);
+                }
             }
 
-            protected internal override object Deserialize(string json, Type type, JsonSerializerOptions options = null)
+            protected internal override async Task<object> DeserializeAsync(string json, Type type, JsonSerializerOptions options = null)
             {
                 if (options == null)
                 {
                     options = _optionsWithSmallBuffer;
                 }
 
-                return Task.Run(async () =>
+                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
-                    using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
-                    {
-                        return await JsonSerializer.DeserializeAsync(stream, type, options);
-                    }
-                }).GetAwaiter().GetResult();
+                    return await JsonSerializer.DeserializeAsync(stream, type, options);
+                }
             }
         }
     }

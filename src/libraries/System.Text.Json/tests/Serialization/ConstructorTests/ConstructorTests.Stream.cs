@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Tests
     public abstract partial class ConstructorTests
     {
         [Fact]
-        public void ReadSimpleObjectAsync()
+        public async Task ReadSimpleObjectAsync()
         {
             async Task RunTest<T>(byte[] testData)
             {
@@ -28,36 +28,31 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
-            // Array size is the count of the following tests.
-            Task[] tasks = new Task[14];
-
             // Simple models can be deserialized.
-            tasks[0] = Task.Run(async () => await RunTest<Parameterized_IndexViewModel_Immutable>(Parameterized_IndexViewModel_Immutable.s_data));
+            await RunTest<Parameterized_IndexViewModel_Immutable>(Parameterized_IndexViewModel_Immutable.s_data);
             // Complex models can be deserialized.
-            tasks[1] = Task.Run(async () => await RunTest<ClassWithConstructor_SimpleAndComplexParameters>(ClassWithConstructor_SimpleAndComplexParameters.s_data));
-            tasks[2] = Task.Run(async () => await RunTest<Parameterized_Class_With_ComplexTuple>(Parameterized_Class_With_ComplexTuple.s_data));
+            await RunTest<ClassWithConstructor_SimpleAndComplexParameters>(ClassWithConstructor_SimpleAndComplexParameters.s_data);
+            await RunTest<Parameterized_Class_With_ComplexTuple>(Parameterized_Class_With_ComplexTuple.s_data);
             // JSON that doesn't bind to ctor args are matched with properties or ignored (as appropriate).
-            tasks[3] = Task.Run(async () => await RunTest<Person_Class>(Person_Class.s_data));
-            tasks[4] = Task.Run(async () => await RunTest<Person_Struct>(Person_Struct.s_data));
+            await RunTest<Person_Class>(Person_Class.s_data);
+            await RunTest<Person_Struct>(Person_Struct.s_data);
             // JSON that doesn't bind to ctor args or properties are sent to ext data if avaiable.
-            tasks[5] = Task.Run(async () => await RunTest<Parameterized_Person>(Parameterized_Person.s_data));
-            tasks[6] = Task.Run(async () => await RunTest<Parameterized_Person_ObjExtData>(Parameterized_Person_ObjExtData.s_data));
+            await RunTest<Parameterized_Person>(Parameterized_Person.s_data);
+            await RunTest<Parameterized_Person_ObjExtData>(Parameterized_Person_ObjExtData.s_data);
             // Up to 64 ctor args are supported.
-            tasks[7] = Task.Run(async () => await RunTest<Class_With_Ctor_With_64_Params>(Class_With_Ctor_With_64_Params.Data));
+            await RunTest<Class_With_Ctor_With_64_Params>(Class_With_Ctor_With_64_Params.Data);
             // Arg deserialization honors attributes on matching property.
-            tasks[8] = Task.Run(async () => await RunTest<Point_MembersHave_JsonPropertyName>(Point_MembersHave_JsonPropertyName.s_data));
-            tasks[9] = Task.Run(async () => await RunTest<Point_MembersHave_JsonConverter>(Point_MembersHave_JsonConverter.s_data));
-            tasks[10] = Task.Run(async () => await RunTest<Point_MembersHave_JsonIgnore>(Point_MembersHave_JsonIgnore.s_data));
+            await RunTest<Point_MembersHave_JsonPropertyName>(Point_MembersHave_JsonPropertyName.s_data);
+            await RunTest<Point_MembersHave_JsonConverter>(Point_MembersHave_JsonConverter.s_data);
+            await RunTest<Point_MembersHave_JsonIgnore>(Point_MembersHave_JsonIgnore.s_data);
             // Complex JSON as last argument works
-            tasks[11] = Task.Run(async () => await RunTest<Point_With_Array>(Point_With_Array.s_data));
-            tasks[12] = Task.Run(async () => await RunTest<Point_With_Dictionary>(Point_With_Dictionary.s_data));
-            tasks[13] = Task.Run(async () => await RunTest<Point_With_Object>(Point_With_Object.s_data));
-
-            Task.WaitAll(tasks);
+            await RunTest<Point_With_Array>(Point_With_Array.s_data);
+            await RunTest<Point_With_Dictionary>(Point_With_Dictionary.s_data);
+            await RunTest<Point_With_Object>(Point_With_Object.s_data);
         }
 
         [Fact]
-        public void ReadSimpleObjectWithTrailingTriviaAsync()
+        public async Task ReadSimpleObjectWithTrailingTriviaAsync()
         {
             async Task RunTest<T>(string testData)
             {
@@ -75,36 +70,31 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
-            // Array size is the count of the following tests.
-            Task[] tasks = new Task[14];
-
             // Simple models can be deserialized.
-            tasks[0] = Task.Run(async () => await RunTest<Parameterized_IndexViewModel_Immutable>(Parameterized_IndexViewModel_Immutable.s_json));
+            await RunTest<Parameterized_IndexViewModel_Immutable>(Parameterized_IndexViewModel_Immutable.s_json);
             // Complex models can be deserialized.
-            tasks[1] = Task.Run(async () => await RunTest<ClassWithConstructor_SimpleAndComplexParameters>(ClassWithConstructor_SimpleAndComplexParameters.s_json));
-            tasks[2] = Task.Run(async () => await RunTest<Parameterized_Class_With_ComplexTuple>(Parameterized_Class_With_ComplexTuple.s_json));
+            await RunTest<ClassWithConstructor_SimpleAndComplexParameters>(ClassWithConstructor_SimpleAndComplexParameters.s_json);
+            await RunTest<Parameterized_Class_With_ComplexTuple>(Parameterized_Class_With_ComplexTuple.s_json);
             // JSON that doesn't bind to ctor args are matched with properties or ignored (as appropriate).
-            tasks[3] = Task.Run(async () => await RunTest<Person_Class>(Person_Class.s_json));
-            tasks[4] = Task.Run(async () => await RunTest<Person_Struct>(Person_Struct.s_json));
+            await RunTest<Person_Class>(Person_Class.s_json);
+            await RunTest<Person_Struct>(Person_Struct.s_json);
             // JSON that doesn't bind to ctor args or properties are sent to ext data if avaiable.
-            tasks[5] = Task.Run(async () => await RunTest<Parameterized_Person>(Parameterized_Person.s_json));
-            tasks[6] = Task.Run(async () => await RunTest<Parameterized_Person_ObjExtData>(Parameterized_Person_ObjExtData.s_json));
+            await RunTest<Parameterized_Person>(Parameterized_Person.s_json);
+            await RunTest<Parameterized_Person_ObjExtData>(Parameterized_Person_ObjExtData.s_json);
             // Up to 64 ctor args are supported.
-            tasks[7] = Task.Run(async () => await RunTest<Class_With_Ctor_With_64_Params>(Encoding.UTF8.GetString(Class_With_Ctor_With_64_Params.Data)));
+            await RunTest<Class_With_Ctor_With_64_Params>(Encoding.UTF8.GetString(Class_With_Ctor_With_64_Params.Data));
             // Arg8deserialization honors attributes on matching property.
-            tasks[8] = Task.Run(async () => await RunTest<Point_MembersHave_JsonPropertyName>(Point_MembersHave_JsonPropertyName.s_json));
-            tasks[9] = Task.Run(async () => await RunTest<Point_MembersHave_JsonConverter>(Point_MembersHave_JsonConverter.s_json));
-            tasks[10] = Task.Run(async () => await RunTest<Point_MembersHave_JsonIgnore>(Point_MembersHave_JsonIgnore.s_json));
+            await RunTest<Point_MembersHave_JsonPropertyName>(Point_MembersHave_JsonPropertyName.s_json);
+            await RunTest<Point_MembersHave_JsonConverter>(Point_MembersHave_JsonConverter.s_json);
+            await RunTest<Point_MembersHave_JsonIgnore>(Point_MembersHave_JsonIgnore.s_json);
             // Complex JSON as last argument works
-            tasks[11] = Task.Run(async () => await RunTest<Point_With_Array>(Point_With_Array.s_json));
-            tasks[12] = Task.Run(async () => await RunTest<Point_With_Dictionary>(Point_With_Dictionary.s_json));
-            tasks[13] = Task.Run(async () => await RunTest<Point_With_Object>(Point_With_Object.s_json));
-
-            Task.WaitAll(tasks);
+            await RunTest<Point_With_Array>(Point_With_Array.s_json);
+            await RunTest<Point_With_Dictionary>(Point_With_Dictionary.s_json);
+            await RunTest<Point_With_Object>(Point_With_Object.s_json);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void Cannot_DeserializeAsync_ObjectWith_Ctor_With_65_Params()
+        [Fact]
+        public async Task Cannot_DeserializeAsync_ObjectWith_Ctor_With_65_Params()
         {
             async Task RunTest<T>()
             {
@@ -140,12 +130,8 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
-            Task[] tasks = new Task[2];
-
-            tasks[0] = Task.Run(async () => await RunTest<Class_With_Ctor_With_65_Params>());
-            tasks[1] = Task.Run(async () => await RunTest<Struct_With_Ctor_With_65_Params>());
-
-            Task.WaitAll(tasks);
+            await RunTest<Class_With_Ctor_With_65_Params>();
+            await RunTest<Struct_With_Ctor_With_65_Params>();
         }
 
         [Fact]
@@ -156,7 +142,7 @@ namespace System.Text.Json.Serialization.Tests
 
             static byte[] GeneratePayload(int i, string value)
             {
-                string whiteSpace = new string(' ', 16 );
+                string whiteSpace = new string(' ', 16);
 
                 StringBuilder sb;
 

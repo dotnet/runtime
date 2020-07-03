@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using Microsoft.DotNet.XUnitExtensions;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -1609,7 +1610,7 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(4)]
@@ -1626,6 +1627,11 @@ namespace System.Text.Json.Tests
         [InlineData(512)]
         public static void TestDepth(int depth)
         {
+            if (PlatformDetection.IsMonoInterpreter && depth >= 256)
+            {
+                throw new SkipTestException("Takes very long to run on interpreter.");
+            }
+
             foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
             {
                 for (int i = 0; i < depth; i++)

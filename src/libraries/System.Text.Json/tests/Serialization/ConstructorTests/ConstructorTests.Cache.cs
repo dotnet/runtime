@@ -10,7 +10,8 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class ConstructorTests
     {
-        [Fact, OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [OuterLoop]
         public void MultipleThreadsLooping()
         {
             const int Iterations = 100;
@@ -21,35 +22,35 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void MultipleThreads()
         {
             // Verify the test class has >32 properties since that is a threshold for using the fallback dictionary.
             Assert.True(typeof(ClassWithConstructor_SimpleAndComplexParameters).GetProperties(BindingFlags.Instance | BindingFlags.Public).Length > 32);
 
-            void DeserializeObject(string json, Type type, JsonSerializerOptions options)
+            async Task DeserializeObject(string json, Type type, JsonSerializerOptions options)
             {
-                var obj = Serializer.Deserialize(json, type, options);
+                var obj = await Serializer.DeserializeAsync(json, type, options);
                 ((ITestClassWithParameterizedCtor)obj).Verify();
             }
 
-            void DeserializeObjectMinimal(Type type, JsonSerializerOptions options)
+            async Task DeserializeObjectMinimal(Type type, JsonSerializerOptions options)
             {
                 string json = (string)type.GetProperty("s_json_minimal").GetValue(null);
-                var obj = Serializer.Deserialize(json, type, options);
+                var obj = await Serializer.DeserializeAsync(json, type, options);
                 ((ITestClassWithParameterizedCtor)obj).VerifyMinimal();
             };
 
-            void DeserializeObjectFlipped(Type type, JsonSerializerOptions options)
+            async Task DeserializeObjectFlipped(Type type, JsonSerializerOptions options)
             {
                 string json = (string)type.GetProperty("s_json_flipped").GetValue(null);
-                DeserializeObject(json, type, options);
+                await DeserializeObject(json, type, options);
             };
 
-            void DeserializeObjectNormal(Type type, JsonSerializerOptions options)
+            async Task DeserializeObjectNormal(Type type, JsonSerializerOptions options)
             {
                 string json = (string)type.GetProperty("s_json").GetValue(null);
-                DeserializeObject(json, type, options);
+                await DeserializeObject(json, type, options);
             };
 
             void SerializeObject(Type type, JsonSerializerOptions options)
@@ -87,24 +88,24 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void PropertyCacheWithMinInputsFirst()
+        public async Task PropertyCacheWithMinInputsFirst()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.
             var options = new JsonSerializerOptions();
 
             string json = "{}";
-            Serializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            await Serializer.DeserializeAsync<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
 
             ClassWithConstructor_SimpleAndComplexParameters testObj = ClassWithConstructor_SimpleAndComplexParameters.GetInstance();
             testObj.Verify();
 
             json = JsonSerializer.Serialize(testObj, options);
-            testObj = Serializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            testObj = await Serializer.DeserializeAsync<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
             testObj.Verify();
         }
 
         [Fact]
-        public void PropertyCacheWithMinInputsLast()
+        public async Task PropertyCacheWithMinInputsLast()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.
             var options = new JsonSerializerOptions();
@@ -113,18 +114,18 @@ namespace System.Text.Json.Serialization.Tests
             testObj.Verify();
 
             string json = JsonSerializer.Serialize(testObj, options);
-            testObj = Serializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            testObj = await Serializer.DeserializeAsync<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
             testObj.Verify();
 
             json = "{}";
-            Serializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            await Serializer.DeserializeAsync<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
         }
 
         // Use a common options instance to encourage additional metadata collisions across types. Also since
         // this options is not the default options instance the tests will not use previously cached metadata.
         private JsonSerializerOptions s_options = new JsonSerializerOptions();
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void MultipleTypes()
         {
             void Serialize<T>(object[] args)
@@ -137,9 +138,9 @@ namespace System.Text.Json.Serialization.Tests
                 string json = JsonSerializer.Serialize(localTestObj, s_options);
             };
 
-            void Deserialize<T>(string json)
+            async Task Deserialize<T>(string json)
             {
-                ITestClass obj = (ITestClass)Serializer.Deserialize<T>(json, s_options);
+                ITestClass obj = (ITestClass)await Serializer.DeserializeAsync<T>(json, s_options);
                 obj.Verify();
             };
 
