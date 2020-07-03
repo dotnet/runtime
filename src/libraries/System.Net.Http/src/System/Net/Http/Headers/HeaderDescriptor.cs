@@ -25,7 +25,7 @@ namespace System.Net.Http.Headers
         }
 
         // This should not be used directly; use static TryGet below
-        private HeaderDescriptor(string headerName)
+        internal HeaderDescriptor(string headerName)
         {
             _headerName = headerName;
             _knownHeader = null;
@@ -90,10 +90,11 @@ namespace System.Net.Http.Headers
         internal static bool TryGetStaticQPackHeader(int index, out HeaderDescriptor descriptor, [NotNullWhen(true)] out string? knownValue)
         {
             Debug.Assert(index >= 0);
-            Debug.Assert(s_qpackHeaderLookup.Length == 99);
 
             // Micro-opt: store field to variable to prevent Length re-read and use unsigned to avoid bounds check.
-            (HeaderDescriptor descriptor, string value)[] qpackStaticTable = s_qpackHeaderLookup;
+            (HeaderDescriptor descriptor, string value)[] qpackStaticTable = QPackStaticTable.HeaderLookup;
+            Debug.Assert(qpackStaticTable.Length == 99);
+
             uint uindex = (uint)index;
 
             if (uindex < (uint)qpackStaticTable.Length)
@@ -263,11 +264,13 @@ namespace System.Net.Http.Headers
             decoded = null;
             return false;
         }
+    }
 
-        // QPack Static Table
+    internal static class QPackStaticTable
+    {
         // https://tools.ietf.org/html/draft-ietf-quic-qpack-11#appendix-A
         // TODO: can we put some of this logic into H3StaticTable and/or generate it using data that is already there?
-        private static readonly (HeaderDescriptor descriptor, string value)[] s_qpackHeaderLookup = new (HeaderDescriptor descriptor, string value)[]
+        internal static (HeaderDescriptor descriptor, string value)[] HeaderLookup { get; } = new (HeaderDescriptor descriptor, string value)[]
         {
             (new HeaderDescriptor(":authority"), ""),
             (new HeaderDescriptor(":path"), "/"),
