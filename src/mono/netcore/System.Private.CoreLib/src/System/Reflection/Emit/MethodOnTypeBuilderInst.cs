@@ -33,41 +33,36 @@ using System.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
-
 namespace System.Reflection.Emit
 {
     /*
      * This class represents a method of an instantiation of a generic type builder.
      */
-    [StructLayout(LayoutKind.Sequential)]
-    internal class MethodOnTypeBuilderInst : MethodInfo
+    internal sealed class MethodOnTypeBuilderInst : MethodInfo
     {
-        #region Keep in sync with object-internals.h
         private Type instantiation;
-        private MethodInfo base_method = null!; /*This is the base method definition, it must be non-inflated and belong to a non-inflated type.*/
+        private MethodInfo base_method; /*This is the base method definition, it must be non-inflated and belong to a non-inflated type.*/
         private Type[]? method_arguments;
-        #endregion
+
         private MethodInfo? generic_method_definition;
 
-        public MethodOnTypeBuilderInst(TypeBuilderInstantiation instantiation, MethodInfo base_method)
+        internal MethodOnTypeBuilderInst(Type instantiation, MethodInfo base_method)
         {
             this.instantiation = instantiation;
             this.base_method = base_method;
         }
 
         internal MethodOnTypeBuilderInst(MethodOnTypeBuilderInst gmd, Type[] typeArguments)
+            : this(gmd.instantiation, gmd.base_method)
         {
-            this.instantiation = gmd.instantiation;
-            this.base_method = gmd.base_method;
             this.method_arguments = new Type[typeArguments.Length];
             typeArguments.CopyTo(this.method_arguments, 0);
             this.generic_method_definition = gmd;
         }
 
         internal MethodOnTypeBuilderInst(MethodInfo method, Type[] typeArguments)
+            : this(method.DeclaringType!, ExtractBaseMethod(method))
         {
-            this.instantiation = method.DeclaringType!;
-            this.base_method = ExtractBaseMethod(method);
             this.method_arguments = new Type[typeArguments.Length];
             typeArguments.CopyTo(this.method_arguments, 0);
             if (base_method != method)

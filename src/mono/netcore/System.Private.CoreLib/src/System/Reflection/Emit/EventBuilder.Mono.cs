@@ -32,13 +32,14 @@
 
 #if MONO_FEATURE_SRE
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
     public sealed partial class EventBuilder
     {
-#pragma warning disable 169, 414
+#region Sync with MonoReflectionEventBuilder in object-internals.h
         internal string name;
         private Type type;
         private TypeBuilder typeb;
@@ -49,8 +50,9 @@ namespace System.Reflection.Emit
         internal MethodBuilder[]? other_methods;
         internal EventAttributes attrs;
         private int table_idx;
-#pragma warning restore 169, 414
+#endregion
 
+        [DynamicDependency(nameof(table_idx))]  // Automatically keeps all previous fields too due to StructLayout
         internal EventBuilder(TypeBuilder tb, string eventName, EventAttributes eventAttrs, Type eventType)
         {
             name = eventName;

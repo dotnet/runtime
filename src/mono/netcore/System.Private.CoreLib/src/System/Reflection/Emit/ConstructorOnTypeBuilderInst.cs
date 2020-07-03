@@ -37,13 +37,10 @@ namespace System.Reflection.Emit
     /*
      * This class represents a ctor of an instantiation of a generic type builder.
      */
-    [StructLayout(LayoutKind.Sequential)]
-    internal class ConstructorOnTypeBuilderInst : ConstructorInfo
+    internal sealed class ConstructorOnTypeBuilderInst : ConstructorInfo
     {
-        #region Keep in sync with object-internals.h
         internal TypeBuilderInstantiation instantiation;
         internal ConstructorInfo cb;
-        #endregion
 
         public ConstructorOnTypeBuilderInst(TypeBuilderInstantiation instantiation, ConstructorInfo cb)
         {
