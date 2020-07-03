@@ -6320,7 +6320,7 @@ protected:
     {
         CSEdsc* csdNextInBucket; // used by the hash table
 
-        ssize_t  csdHashKey;       // the orginal hashkey
+        size_t   csdHashKey;       // the orginal hashkey
         ssize_t  csdConstDefValue; // When we CSE similar constants this is the value that we use as the def
         ValueNum csdConstDefVN;    // When we CSE similar constants this is the ValueNumber that we use for the LclVar
                                    // assignment
@@ -6355,6 +6355,19 @@ protected:
         ValueNum defConservNormVN; // if all def occurrences share the same conservative normal value
                                    // number, this will reflect it; otherwise, NoVN.
     };
+
+#if defined(TARGET_XARCH)
+#define CSE_CONST_SHARED_LOW_BITS 16
+#else
+// ARM64 or ARM32
+#define CSE_CONST_SHARED_LOW_BITS 12
+#endif
+
+#ifdef TARGET_64BIT
+#define TARGET_SIGN_BIT (1ULL << 63)
+#else
+#define TARGET_SIGN_BIT (1ULL << 31)
+#endif
 
     static const size_t s_optCSEhashSize;
     CSEdsc**            optCSEhash;

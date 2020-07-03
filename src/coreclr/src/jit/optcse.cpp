@@ -401,7 +401,7 @@ void Compiler::optValnumCSE_Init()
 //
 unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 {
-    ssize_t  key;
+    size_t   key;
     unsigned hash;
     unsigned hval;
     CSEdsc*  hashDsc;
@@ -463,11 +463,11 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         //
         if (vnOp2Lib != vnLib)
         {
-            key = (ssize_t)vnLib; // include the exc set in the hash key
+            key = vnLib; // include the exc set in the hash key
         }
         else
         {
-            key = (ssize_t)vnLibNorm;
+            key = vnLibNorm;
         }
 
         // If we didn't do the above we would have op1 as the CSE def
@@ -479,25 +479,25 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     else if (enableSharedConstCSE && tree->IsIntegralConst())
     {
         assert(vnStore->IsVNConstant(vnLibNorm));
-        key = vnStore->CoercedConstantValue<ssize_t>(vnLibNorm);
+        key = vnStore->CoercedConstantValue<size_t>(vnLibNorm);
 
         // We don't shared small offset constants when we require a reloc
         if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this))
         {
             // Make constants that have the same upper bits use the same key
 
-            // Shift the key right by 12 bits
-            key = (ssize_t)(((size_t)key) >> 12);
+            // Shift the key right by CSE_CONST_SHARED_LOW_BITS bits and set the upper bits to zero
+            key >>= CSE_CONST_SHARED_LOW_BITS;
         }
-        assert(key > 0);
+        assert((key & TARGET_SIGN_BIT) == 0);
 
-        // We use negative values for 'key' as the flag
-        // that we are hashing constants (with a 12-bit offset)
-        key = -key;
+        // We use the sign bit of 'key' as the flag
+        // that we are hashing constants (with a shared offset)
+        key |= TARGET_SIGN_BIT;
     }
     else // Not a GT_COMMA or a GT_CNS_INT
     {
-        key = (ssize_t)vnLibNorm;
+        key = vnLibNorm;
     }
 
     // Compute the hash value for the expression
@@ -517,7 +517,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
     for (hashDsc = optCSEhash[hval]; hashDsc; hashDsc = hashDsc->csdNextInBucket)
     {
-        if (hashDsc->csdHashKey == (ssize_t)key)
+        if (hashDsc->csdHashKey == key)
         {
             // Check for mismatched types on GT_CNS_INT nodes
             if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeGet() != hashDsc->csdTree->TypeGet()))
@@ -629,7 +629,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         {
             hashDsc = new (this, CMK_CSE) CSEdsc;
 
-            hashDsc->csdHashKey        = (ssize_t)key;
+            hashDsc->csdHashKey        = key;
             hashDsc->csdConstDefValue  = 0;
             hashDsc->csdConstDefVN     = vnStore->VNForNull(); // uninit value
             hashDsc->csdIndex          = 0;
@@ -699,8 +699,8 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             }
             else
             {
-                INT64 kVal = (-key) << 12;
-                printf("K_%012I64x", kVal);
+                size_t kVal = (key & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
+                printf("K_%p", dspPtr(kVal));
             }
 
             printf(" in " FMT_BB ", [cost=%2u, size=%2u]: \n", compCurBB->bbNum, tree->GetCostEx(), tree->GetCostSz());
@@ -766,9 +766,12 @@ unsigned Compiler::optValnumCSE_Locate()
 
                 // Don't allow CSE of constants if it is disabled
                 //
-                if (disableConstCSE && tree->IsIntegralConst())
+                if (tree->IsIntegralConst())
                 {
-                    continue;
+                    if (disableConstCSE)
+                    {
+                        continue;
+                    }
                 }
 
                 if (!optIsCSEcandidate(tree))
@@ -1976,7 +1979,7 @@ public:
                     cost = dsc->csdTree->GetCostEx();
                 }
 
-                if (dsc->csdHashKey >= 0)
+                if ((dsc->csdHashKey & TARGET_SIGN_BIT) == 0)
                 {
                     printf("CSE #%02u, {$%-3x, $%-3x} useCnt=%d: [def=%3u, use=%3u, cost=%3u%s]\n        :: ",
                            dsc->csdIndex, dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
@@ -1984,9 +1987,9 @@ public:
                 }
                 else
                 {
-                    INT64 kVal = (-dsc->csdHashKey) >> 12;
-                    printf("CSE #%02u, {K_%012I64x} useCnt=%d: [def=%3u, use=%3u, cost=%3u%s]\n        :: ",
-                           dsc->csdIndex, kVal, dsc->csdUseCount, def, use, cost,
+                    size_t kVal = (dsc->csdHashKey & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
+                    printf("CSE #%02u, {K_%p} useCnt=%d: [def=%3u, use=%3u, cost=%3u%s]\n        :: ", dsc->csdIndex,
+                           dspPtr(kVal), dsc->csdUseCount, def, use, cost,
                            dsc->csdLiveAcrossCall ? ", call" : "      ");
                 }
 
@@ -2777,14 +2780,30 @@ public:
         ValueNum currVN;
         bool     setRefCnt  = true;
         bool     allSame    = true;
-        bool     isConstCSE = (dsc->csdHashKey < 0);
+        bool     isConstCSE = ((dsc->csdHashKey & TARGET_SIGN_BIT) != 0);
+        unsigned maxItem    = 0;
 
-        BasicBlock::weight_t maxWeight = 0;
-        dsc->csdConstDefValue          = -1;
+        struct constCSE_entry
+        {
+            ValueNum             constVN;
+            BasicBlock::weight_t totalWeight;
+            ssize_t              constValue;
+        } item[8];
+
+        unsigned i, j;
+        for (i = 0; i < 8; i++)
+        {
+            // Initialize to values that sort last
+            //
+            item[i].constVN     = ValueNumStore::NoVN;
+            item[i].totalWeight = 0;
+            item[i].constValue  = 0;
+        }
 
         lst = dsc->csdTreeList;
         while (lst != nullptr)
         {
+            bool isLastNode = (lst->tslNext == nullptr);
             // Ignore this node if the gtCSEnum value has been cleared
             if (IS_CSE_INDEX(lst->tslTree->gtCSEnum))
             {
@@ -2801,29 +2820,120 @@ public:
                     allSame = false;
                 }
 
+                BasicBlock*                blk       = lst->tslBlock;
+                const BasicBlock::weight_t curWeight = blk->getBBWeight(m_pCompiler);
                 if (isConstCSE)
                 {
-                    BasicBlock::weight_t curWeight = lst->tslBlock->getBBWeight(m_pCompiler);
-                    if ((curWeight > maxWeight) || (dsc->csdConstDefValue == -1))
+                    // See if we already have this const in our item[] table
+                    bool match = false;
+                    for (i = 0; i < maxItem; i++)
                     {
-                        maxWeight             = curWeight;
-                        dsc->csdConstDefValue = m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
-                        dsc->csdConstDefVN    = currVN;
+                        if (item[i].constVN == currVN)
+                        {
+                            item[i].totalWeight += curWeight;
+                            match = true;
+                        }
+                    }
+
+                    bool sortAndAdd = false;
+                    if (match == false)
+                    {
+                        if (maxItem < 8)
+                        {
+                            j = maxItem;
+                            // Add the new value as item[j]
+                            //
+                            item[j].constVN     = currVN;
+                            item[j].totalWeight = curWeight;
+                            item[j].constValue  = m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
+
+                            if (j == 0)
+                            {
+                                // Prefer to sort the very first entry as highest, so bump up its weight by 1
+                                item[j].totalWeight += 1;
+                            }
+                            maxItem++;
+                        }
+                        else
+                        {
+                            // We will sort item[*] and add this value, replacing the lowest value in item[7]
+                            sortAndAdd = true;
+                        }
+                    }
+
+                    // We always need to perform one sort before finishing
+                    // so we will sort if islastNode is true
+                    //
+                    if (isLastNode || sortAndAdd)
+                    {
+                        // sort the item[8] by totalWeight
+                        bool            firstPass = true;
+                        bool            done;
+                        static unsigned swapTies = 0x539C6A; // 24-bits semi-randomly set
+                        do
+                        {
+                            done = true;
+                            for (i = 0; i < maxItem - 1; i++)
+                            {
+                                bool doSwap = (item[i].totalWeight < item[i + 1].totalWeight);
+                                if (doSwap)
+                                {
+                                    // We need to keep sorting as long as we perform a swap operation
+                                    done = false;
+                                }
+                                else
+                                {
+                                    // In the first pass we will semi-randomly swap when the weights are the same
+                                    if (firstPass)
+                                    {
+                                        // If the weights are the same then semi-randomly chose to swap
+                                        //
+                                        if (item[i].totalWeight == item[i + 1].totalWeight)
+                                        {
+                                            // We will swap if the low bit of 'swapTies' is set
+                                            doSwap = (swapTies & 1);
+                                            if (doSwap)
+                                            {
+                                                // We will rotate 'swapTies' right by one bit
+                                                // this moves the low bit to become the upper bit
+                                                swapTies |= 0x1000000;
+                                            }
+                                            swapTies >>= 1;
+                                        }
+                                    }
+                                }
+
+                                if (doSwap)
+                                {
+                                    // swap item[i] and item[i+1]
+                                    struct constCSE_entry temp;
+                                    temp        = item[i];
+                                    item[i]     = item[i + 1];
+                                    item[i + 1] = temp;
+                                }
+                            }
+                            firstPass = false;
+                        } while (!done);
+
+                        if (sortAndAdd)
+                        {
+                            j                   = 7;
+                            item[j].constVN     = currVN;
+                            item[j].totalWeight = curWeight;
+                            item[j].constValue  = m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
+                        }
                     }
                 }
-
-                BasicBlock*                blk    = lst->tslBlock;
-                const BasicBlock::weight_t weight = blk->getBBWeight(m_pCompiler);
 
                 if (setRefCnt)
                 {
                     m_pCompiler->lvaTable[cseLclVarNum].setLvRefCnt(1);
-                    m_pCompiler->lvaTable[cseLclVarNum].setLvRefCntWtd(weight);
+                    m_pCompiler->lvaTable[cseLclVarNum].setLvRefCntWtd(curWeight);
                     setRefCnt = false;
                 }
                 else
                 {
-                    m_pCompiler->lvaTable[cseLclVarNum].incRefCnts(weight, m_pCompiler);
+                    m_pCompiler->lvaTable[cseLclVarNum].incRefCnts(curWeight, m_pCompiler);
                 }
 
                 // A CSE Def references the LclVar twice
@@ -2831,30 +2941,42 @@ public:
                 GenTree* exp = lst->tslTree;
                 if (IS_CSE_DEF(exp->gtCSEnum))
                 {
-                    m_pCompiler->lvaTable[cseLclVarNum].incRefCnts(weight, m_pCompiler);
+                    m_pCompiler->lvaTable[cseLclVarNum].incRefCnts(curWeight, m_pCompiler);
                 }
             }
             lst = lst->tslNext;
         }
 
+        dsc->csdConstDefValue = item[0].constValue;
+        dsc->csdConstDefVN    = item[0].constVN;
+
 #ifdef DEBUG
-        if (!allSame && !isConstCSE)
+        if (m_pCompiler->verbose)
         {
-            lst                = dsc->csdTreeList;
-            GenTree* firstTree = lst->tslTree;
-            printf("In %s, CSE (oper = %s, type = %s) has differing VNs: ", m_pCompiler->info.compFullName,
-                   GenTree::OpName(firstTree->OperGet()), varTypeName(firstTree->TypeGet()));
-            while (lst != nullptr)
+            if (isConstCSE && (maxItem > 1))
             {
-                if (IS_CSE_INDEX(lst->tslTree->gtCSEnum))
-                {
-                    currVN = m_pCompiler->vnStore->VNLiberalNormalValue(lst->tslTree->gtVNPair);
-                    printf("0x%x(%s " FMT_VN ") ", lst->tslTree, IS_CSE_USE(lst->tslTree->gtCSEnum) ? "use" : "def",
-                           currVN);
-                }
-                lst = lst->tslNext;
+                printf("\nWe have shared Const CSE's and selected " FMT_VN " with a value of 0x%p as the base.\n",
+                       dsc->csdConstDefVN, dspPtr(dsc->csdConstDefValue));
             }
-            printf("\n");
+
+            if (!allSame && !isConstCSE)
+            {
+                lst                = dsc->csdTreeList;
+                GenTree* firstTree = lst->tslTree;
+                printf("In %s, CSE (oper = %s, type = %s) has differing VNs: ", m_pCompiler->info.compFullName,
+                       GenTree::OpName(firstTree->OperGet()), varTypeName(firstTree->TypeGet()));
+                while (lst != nullptr)
+                {
+                    if (IS_CSE_INDEX(lst->tslTree->gtCSEnum))
+                    {
+                        currVN = m_pCompiler->vnStore->VNLiberalNormalValue(lst->tslTree->gtVNPair);
+                        printf("0x%x(%s " FMT_VN ") ", lst->tslTree, IS_CSE_USE(lst->tslTree->gtCSEnum) ? "use" : "def",
+                               currVN);
+                    }
+                    lst = lst->tslNext;
+                }
+                printf("\n");
+            }
         }
 #endif // DEBUG
 
@@ -3244,7 +3366,7 @@ public:
 #ifdef DEBUG
             if (m_pCompiler->verbose)
             {
-                if (dsc->csdHashKey >= 0)
+                if ((dsc->csdHashKey & TARGET_SIGN_BIT) == 0)
                 {
                     printf("\nConsidering CSE #%02u {$%-3x, $%-3x} [def=%3u, use=%3u, cost=%3u%s]\n",
                            candidate.CseIndex(), dsc->csdHashKey, dsc->defExcSetPromise, candidate.DefCount(),
@@ -3252,9 +3374,9 @@ public:
                 }
                 else
                 {
-                    INT64 kVal = (-dsc->csdHashKey) >> 12;
-                    printf("\nConsidering CSE #%02u {K_%012I64x} [def=%3u, use=%3u, cost=%3u%s]\n",
-                           candidate.CseIndex(), kVal, candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
+                    size_t kVal = (dsc->csdHashKey & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
+                    printf("\nConsidering CSE #%02u {K_%p} [def=%3u, use=%3u, cost=%3u%s]\n", candidate.CseIndex(),
+                           dspPtr(kVal), candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
                            dsc->csdLiveAcrossCall ? ", call" : "      ");
                 }
                 printf("CSE Expression : \n");
@@ -3491,8 +3613,11 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
             return (tree->AsOp()->gtOp1->gtOper != GT_ARR_ELEM);
 
-        case GT_CNS_INT:
         case GT_CNS_LNG:
+#ifndef TARGET_64BIT
+            return false; // Don't CSE 64-bit constants on 32-bit platforms
+#endif
+        case GT_CNS_INT:
         case GT_CNS_DBL:
         case GT_CNS_STR:
             return true; // We reach here only when CSE_CONSTS is enabled
