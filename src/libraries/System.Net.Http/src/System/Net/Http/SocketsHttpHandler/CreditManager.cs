@@ -40,21 +40,7 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException($"{nameof(CreditManager)}:{_owner.GetType().Name}:{_name}");
-                }
-
-                if (_current > 0)
-                {
-                    Debug.Assert(_waitersTail is null, "Shouldn't have waiters when credit is available");
-
-                    int granted = Math.Min(amount, _current);
-                    if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, current={_current}, granted={granted}");
-                    _current -= granted;
-                    return true;
-                }
-                return false;
+                return TryRequestCreditNoLock(amount) > 0;
             }
         }
 
@@ -62,19 +48,11 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException($"{nameof(CreditManager)}:{_owner.GetType().Name}:{_name}");
-                }
-
                 // If we can satisfy the request with credit already available, do so synchronously.
-                if (_current > 0)
-                {
-                    Debug.Assert(_waitersTail is null, "Shouldn't have waiters when credit is available");
+                int granted = TryRequestCreditNoLock(amount);
 
-                    int granted = Math.Min(amount, _current);
-                    if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, current={_current}, granted={granted}");
-                    _current -= granted;
+                if (granted > 0)
+                {
                     return new ValueTask<int>(granted);
                 }
 
@@ -177,6 +155,25 @@ namespace System.Net.Http
                     _waitersTail = null;
                 }
             }
+        }
+
+        private int TryRequestCreditNoLock(int amount)
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException($"{nameof(CreditManager)}:{_owner.GetType().Name}:{_name}");
+            }
+
+            if (_current > 0)
+            {
+                Debug.Assert(_waitersTail is null, "Shouldn't have waiters when credit is available");
+
+                int granted = Math.Min(amount, _current);
+                if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, current={_current}, granted={granted}");
+                _current -= granted;
+                return granted;
+            }
+            return 0;
         }
     }
 }
