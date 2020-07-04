@@ -11,6 +11,38 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
     public static class AiaTests
     {
         [Fact]
+        public static void EmptyAiaResponseIsIgnored()
+        {
+            CertificateAuthority.BuildPrivatePki(
+                PkiOptions.AllRevocation,
+                out RevocationResponder responder,
+                out CertificateAuthority root,
+                out CertificateAuthority intermediate,
+                out X509Certificate2 endEntity,
+                pkiOptionsInSubject: false);
+
+            using (responder)
+            using (root)
+            using (intermediate)
+            using (endEntity)
+            using (ChainHolder holder = new ChainHolder())
+            using (X509Certificate2 rootCert = root.CloneIssuerCert())
+            using (X509Certificate2 intermediateCert = intermediate.CloneIssuerCert())
+            {
+                responder.RespondEmpty = true;
+
+                X509Chain chain = holder.Chain;
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
+                chain.ChainPolicy.UrlRetrievalTimeout = DynamicRevocationTests.s_urlRetrievalLimit;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+
+                Assert.False(chain.Build(endEntity));
+                Assert.True(chain.AllStatusFlags().HasFlag(X509ChainStatusFlags.PartialChain), "expected partial chain");
+            }
+        }
+
+        [Fact]
         public static void DisableAiaOptionWorks()
         {
             CertificateAuthority.BuildPrivatePki(
