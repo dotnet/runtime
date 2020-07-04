@@ -33,15 +33,14 @@
 #if MONO_FEATURE_SRE
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
     public sealed partial class PropertyBuilder : PropertyInfo
     {
-
-        // Managed version of MonoReflectionPropertyBuilder
-#pragma warning disable 169, 414
+#region Sync with MonoReflectionPropertyBuilder in object-internals.h
         private PropertyAttributes attrs;
         private string name;
         private Type type;
@@ -57,7 +56,7 @@ namespace System.Reflection.Emit
         private Type[][]? paramModReq;
         private Type[][]? paramModOpt;
         private CallingConventions callingConvention;
-#pragma warning restore 169, 414
+#endregion
 
         internal PropertyBuilder(TypeBuilder tb, string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
         {

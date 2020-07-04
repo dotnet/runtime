@@ -40,8 +40,7 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     public sealed partial class ConstructorBuilder : ConstructorInfo
     {
-
-#pragma warning disable 169, 414
+#region Sync with MonoReflectionCtorBuilder in object-internals.h
         private RuntimeMethodHandle mhandle;
         private ILGenerator? ilgen;
         internal Type[]? parameters;
@@ -56,9 +55,11 @@ namespace System.Reflection.Emit
         private Type[][]? paramModReq;
         private Type[][]? paramModOpt;
         private object? permissions;
-#pragma warning restore 169, 414
+#endregion
+
         internal bool finished;
 
+        [DynamicDependency(nameof(permissions))] // Automatically keeps all previous fields too due to StructLayout
         internal ConstructorBuilder(TypeBuilder tb, MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
         {
             attrs = attributes | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName;
