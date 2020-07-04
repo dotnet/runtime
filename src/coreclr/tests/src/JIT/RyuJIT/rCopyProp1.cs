@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // This test is primarily for detecting bad reverse copy prop on 
 // newobj calls.   If the intended target has any interference with the sources 

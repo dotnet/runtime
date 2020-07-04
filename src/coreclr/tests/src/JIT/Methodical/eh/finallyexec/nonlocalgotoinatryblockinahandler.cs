@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //112256
 // [karimf] If we happen to have a try that is in nested CATCHs, and the try has a nonLocalGoto 

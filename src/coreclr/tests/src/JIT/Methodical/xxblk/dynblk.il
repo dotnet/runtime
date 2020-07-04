@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Test for a bug involving an initblk with a non-constant size,
 // for which the DYN_BLK(ADDR(lcl)) can't be optimized away.

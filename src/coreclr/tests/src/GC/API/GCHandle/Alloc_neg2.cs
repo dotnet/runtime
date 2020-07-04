@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
 This test verifies GCHandle.Alloc's ability to validate bad GCHandleTypes, since any int can be cast as a GCHandleType

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // the subtypes here that contain a Canonical type are Node<NodeSys<a>> and NodeSys<a>.
 // Both Node and NodeSys contain static fields.

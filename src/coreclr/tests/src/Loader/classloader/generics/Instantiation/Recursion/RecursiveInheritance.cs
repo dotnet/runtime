@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This test contains a large number of various types that are loaded recursively through inheritance
 // either by extending a class or implementing an interface.

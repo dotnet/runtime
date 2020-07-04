@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This test was originally a repro for an assertion regarding incorrect value number of the tree in cse.
 // The repro requires that the tree and its child are considered by cse and child is binary sub (a - b).
