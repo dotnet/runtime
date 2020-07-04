@@ -5277,6 +5277,13 @@ call_newobj:
 			++ip;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_INTRINS_U32_TO_DECSTR) {
+			MonoArray **cache_addr = (MonoArray**)frame->imethod->data_items [ip [1]];
+			MonoVTable *string_vtable = (MonoVTable*)frame->imethod->data_items [ip [2]];
+			sp [-1].data.o = (MonoObject*)interp_intrins_u32_to_decstr ((guint32)sp [-1].data.i, *cache_addr, string_vtable);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_INTRINS_UNSAFE_BYTE_OFFSET) {
 			sp -= 2;
 			sp [0].data.nati = (guint8*)sp [1].data.p - (guint8*)sp [0].data.p;

@@ -1491,6 +1491,27 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_INTRINS_ORDINAL_IGNORE_CASE_ASCII;
 		else if (!strcmp (tm, "UInt64OrdinalIgnoreCaseAscii"))
 			*op = MINT_INTRINS_64ORDINAL_IGNORE_CASE_ASCII;
+	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Number")) {
+		if (!strcmp (tm, "UInt32ToDecStr") && csignature->param_count == 1) {
+			ERROR_DECL(error);
+			MonoVTable *vtable = mono_class_vtable_checked (td->rtm->domain, target_method->klass, error);
+			if (!is_ok (error)) {
+				mono_error_cleanup (error);
+				return FALSE;
+			}
+			/* Don't use intrinsic if cctor not yet run */
+			if (!vtable->initialized)
+				return FALSE;
+			/* The cache is the first static field. Update this if bcl code changes */
+			MonoClassField *field = m_class_get_fields (target_method->klass);
+			g_assert (!strcmp (field->name, "s_singleDigitStringCache"));
+			interp_add_ins (td, MINT_INTRINS_U32_TO_DECSTR);
+			td->last_ins->data [0] = get_data_item_index (td, (char*)mono_vtable_get_static_field_data (vtable) + field->offset);
+			td->last_ins->data [1] = get_data_item_index (td, mono_class_vtable_checked (td->rtm->domain, mono_defaults.string_class, error));
+			SET_TYPE (td->sp - 1, STACK_TYPE_O, mono_defaults.string_class);
+			td->ip += 5;
+			return TRUE;
+		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") &&
 			(!strcmp (klass_name, "Math") || !strcmp (klass_name, "MathF"))) {
 		gboolean is_float = strcmp (klass_name, "MathF") == 0;

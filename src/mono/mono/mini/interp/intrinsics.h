@@ -2,6 +2,7 @@
 #define __MONO_MINI_INTERP_INTRINSICS_H__
 
 #include <glib.h>
+#include <mono/metadata/object.h>
 
 void
 interp_intrins_marvin_block (guint32 *pp0, guint32 *pp1);
@@ -14,5 +15,8 @@ interp_intrins_ordinal_ignore_case_ascii (guint32 valueA, guint32 valueB);
 
 int
 interp_intrins_64ordinal_ignore_case_ascii (guint64 valueA, guint64 valueB);
+
+MonoString*
+interp_intrins_u32_to_decstr (guint32 value, MonoArray *cache, MonoVTable *vtable);
 
 #endif /* __MONO_MINI_INTERP_INTRINSICS_H__ */
