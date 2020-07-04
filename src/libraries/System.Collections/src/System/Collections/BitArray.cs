@@ -190,6 +190,8 @@ namespace System.Collections
                         // Same logic as SSE2 path, however we lack MoveMask (equivalent) instruction
                         // As a workaround, mask out the relevant bit after comparison
                         // and combine by ORing all of them together (In this case, adding all of them does the same thing)
+
+                        // Future opportunity: those two loads can be combined into a single `LDP` (See dotnet/runtime#37014)
                         Vector128<byte> lowerVector = AdvSimd.LoadVector128((byte*)ptr + i);
                         Vector128<byte> lowerIsFalse = AdvSimd.CompareEqual(lowerVector, zero);
                         Vector128<byte> bitsExtracted1 = AdvSimd.And(lowerIsFalse, s_bitMask128);
@@ -634,7 +636,7 @@ namespace System.Collections
             uint i = 0;
             if (Avx2.IsSupported)
             {
-                Vector256<int> ones = Vector256.Create(-1);
+                Vector256<int> ones = Vector256<int>.AllBitsSet;
                 fixed (int* ptr = thisArray)
                 {
                     for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
@@ -646,7 +648,7 @@ namespace System.Collections
             }
             else if (Sse2.IsSupported)
             {
-                Vector128<int> ones = Vector128.Create(-1);
+                Vector128<int> ones = Vector128<int>.AllBitsSet;
                 fixed (int* ptr = thisArray)
                 {
                     for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
@@ -839,11 +841,14 @@ namespace System.Collections
             }
         }
 
-        // The mask used when shuffling a single int into Vector128/256.
+        // The shuffle control mask used when shuffling a single int into Vector128/256.
         // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
+        // (And on big endian, upper 8 bits in the first byte, next upper 8 bits in the second...)
         // We place the bytes that contain the bits to its respective byte so that we can mask out only the relevant bits later.
-        private static readonly Vector128<byte> s_lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
-        private static readonly Vector128<byte> s_upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
+        private static readonly Vector128<byte> s_lowerShuffleMask_CopyToBoolArray =
+            BitConverter.IsLittleEndian ? Vector128.Create(0, 0x01010101_01010101).AsByte() : Vector128.Create(0x03030303_03030303, 0x02020202_02020202).AsByte();
+        private static readonly Vector128<byte> s_upperShuffleMask_CopyToBoolArray =
+            BitConverter.IsLittleEndian ? Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte() : Vector128.Create(0x01010101_01010101, 0).AsByte();
 
         public unsafe void CopyTo(Array array, int index)
         {
@@ -985,36 +990,23 @@ namespace System.Collections
                 else if (AdvSimd.IsSupported)
                 {
                     Vector128<byte> ones = Vector128.Create((byte)1);
+                    Vector128<byte> lowerIndices = s_lowerShuffleMask_CopyToBoolArray;
+                    Vector128<byte> upperIndices = s_upperShuffleMask_CopyToBoolArray;
+
                     fixed (bool* destination = &boolArray[index])
                     {
+                        // Future opportunity: those two stores can be combined into a single `STP` (See dotnet/runtime#33532)
                         for (; (i + Vector128ByteCount * 2u) <= (uint)m_length; i += Vector128ByteCount * 2u)
                         {
                             int bits = m_array[i / (uint)BitsPerInt32];
-                            // Same logic as SSSE3 path, except we do not have Shuffle instruction.
-                            // (TableVectorLookup could be an alternative - dotnet/runtime#1277)
-                            // Instead we use chained ZIP1/2 instructions:
-                            // (A0 is the byte containing LSB, A3 is the byte containing MSB)
-                            // bits (on Big endian)                 - A3 A2 A1 A0
-                            // bits (Little endian) / Byte reversal - A0 A1 A2 A3
-                            // v1 = Vector128.Create                - A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3
-                            // v2 = ZipLow(v1, v1)                  - A0 A0 A1 A1 A2 A2 A3 A3 A0 A0 A1 A1 A2 A2 A3 A3
-                            // v3 = ZipLow(v2, v2)                  - A0 A0 A0 A0 A1 A1 A1 A1 A2 A2 A2 A2 A3 A3 A3 A3
-                            // shuffledLower = ZipLow(v3, v3)       - A0 A0 A0 A0 A0 A0 A0 A0 A1 A1 A1 A1 A1 A1 A1 A1
-                            // shuffledHigher = ZipHigh(v3, v3)     - A2 A2 A2 A2 A2 A2 A2 A2 A3 A3 A3 A3 A3 A3 A3 A3
-                            if (!BitConverter.IsLittleEndian)
-                            {
-                                bits = BinaryPrimitives.ReverseEndianness(bits);
-                            }
-                            Vector128<byte> vector = Vector128.Create(bits).AsByte();
-                            vector = AdvSimd.Arm64.ZipLow(vector, vector);
-                            vector = AdvSimd.Arm64.ZipLow(vector, vector);
+                            Vector128<byte> vector = Vector128.CreateScalarUnsafe(bits).AsByte();
 
-                            Vector128<byte> shuffledLower = AdvSimd.Arm64.ZipLow(vector, vector);
+                            Vector128<byte> shuffledLower = AdvSimd.Arm64.VectorTableLookup(vector, lowerIndices);
                             Vector128<byte> extractedLower = AdvSimd.And(shuffledLower, s_bitMask128);
                             Vector128<byte> normalizedLower = AdvSimd.Min(extractedLower, ones);
                             AdvSimd.Store((byte*)destination + i, normalizedLower);
 
-                            Vector128<byte> shuffledHigher = AdvSimd.Arm64.ZipHigh(vector, vector);
+                            Vector128<byte> shuffledHigher = AdvSimd.Arm64.VectorTableLookup(vector, upperIndices);
                             Vector128<byte> extractedHigher = AdvSimd.And(shuffledHigher, s_bitMask128);
                             Vector128<byte> normalizedHigher = AdvSimd.Min(extractedHigher, ones);
                             AdvSimd.Store((byte*)destination + i + Vector128<byte>.Count, normalizedHigher);
