@@ -179,7 +179,6 @@ namespace System.Resources
             _userResourceSet = userResourceSet;
             _resourceSets = new Dictionary<string, ResourceSet>();
             _lastUsedResourceCache = new CultureNameResourceSetPair();
-            _useManifest = false;
 
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
             _resourceGroveler = new FileBasedResourceGroveler(mediator);

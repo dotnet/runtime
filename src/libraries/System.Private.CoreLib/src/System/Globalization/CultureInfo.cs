@@ -187,7 +187,6 @@ namespace System.Globalization
             Debug.Assert(cultureData != null);
             _cultureData = cultureData;
             _name = cultureData.CultureName;
-            _isInherited = false;
             _isReadOnly = isReadOnly;
         }
 

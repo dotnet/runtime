@@ -6512,7 +6512,7 @@ namespace System.Threading.Tasks
         private const byte STATE_WAITING_ON_INNER_TASK = 1; // Invoke() means "process completed inner task"
         private const byte STATE_DONE = 2;                  // Invoke() means "something went wrong and we are hosed!"
 
-        // Keep track of our state; initialized to STATE_WAITING_ON_OUTER_TASK in the constructor
+        // Keep track of our state; defaults to STATE_WAITING_ON_OUTER_TASK
         private byte _state;
 
         // "Should we check for OperationCanceledExceptions on the outer task and interpret them as proxy cancellation?"
@@ -6524,7 +6524,6 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(outerTask != null, "Expected non-null outerTask");
             _lookForOce = lookForOce;
-            _state = STATE_WAITING_ON_OUTER_TASK;
 
             if (TplEventSource.Log.IsEnabled())
                 TplEventSource.Log.TraceOperationBegin(this.Id, "Task.Unwrap", 0);
