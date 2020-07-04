@@ -12118,7 +12118,7 @@ void emitter::emitDispIns(
                         // future, once it is is implemented, no changes will be needed here.
                         if (stringLiteral == nullptr)
                         {
-                            stringLiteral = L"String handle";
+                            targetName = "String handle";
                         }
                     }
                     else if ((idFlags == GTF_ICON_FIELD_HDL) || (idFlags == GTF_ICON_STATIC_HDL))
