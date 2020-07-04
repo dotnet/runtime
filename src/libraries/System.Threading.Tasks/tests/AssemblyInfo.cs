@@ -5,4 +5,4 @@
 using System;
 using Xunit;
 
-[assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/35916", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
+[assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/35916", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter), nameof(PlatformDetection.IsNotBrowser))]
