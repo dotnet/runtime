@@ -83,6 +83,7 @@
     <Compile Include="System\Net\Http\Headers\ProductHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\ProductInfoHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ProductInfoHeaderValue.cs" />
+    <Compile Include="System\Net\Http\Headers\QPackStaticTable.cs" />
     <Compile Include="System\Net\Http\Headers\RangeConditionHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\RangeHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\RangeItemHeaderValue.cs" />
@@ -337,7 +338,7 @@
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs">
       <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs</Link>
     </Compile>
-  </ItemGroup>    
+  </ItemGroup>
   <!-- Linux specific files -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
@@ -731,5 +732,5 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <ProjectReference Include="..\..\System.Runtime.InteropServices.JavaScript/src/System.Runtime.InteropServices.JavaScript.csproj" />
-  </ItemGroup>  
+  </ItemGroup>
 </Project>
