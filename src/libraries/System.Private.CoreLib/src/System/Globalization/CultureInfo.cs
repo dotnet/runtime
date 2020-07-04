@@ -674,7 +674,7 @@ namespace System.Globalization
                     CultureTypes.NeutralCultures :
                     CultureTypes.SpecificCultures;
 
-                if (_cultureData.IsWin32Installed)
+                if (CultureData.IsWin32Installed)
                 {
                     types |= CultureTypes.InstalledWin32Cultures;
                 }
