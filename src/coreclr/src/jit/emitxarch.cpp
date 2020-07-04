@@ -216,12 +216,12 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
 //------------------------------------------------------------------------
 // AreFlagsSetToZeroCmp: Checks if the previous instruction set the SZ, and optionally OC, flags to
-//                       the the same values as if there were a compare to 0
+//                       the same values as if there were a compare to 0
 //
 // Arguments:
 //    reg - register of interest
 //    opSize - size of register
-//    needsOCFlags - additionally check the carry and overflow flag
+//    needsOCFlags - additionally check the overflow and carry flags
 //
 // Return Value:
 //    true if the previous instruction set the flags for reg
