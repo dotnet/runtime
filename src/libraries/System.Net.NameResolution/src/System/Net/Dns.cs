@@ -540,21 +540,17 @@ namespace System.Net
                         throw;
                     }
 
-                    // Only pay for the overhead if events will be fired
-                    if (stopwatch.IsActive)
-                    {
-                        coreTask.ContinueWith(
-                            (task, state) =>
-                            {
-                                NameResolutionTelemetry.Log.AfterResolution(
-                                    stopwatch: (ValueStopwatch)state!,
-                                    successful: task.IsCompletedSuccessfully);
-                            },
-                            state: stopwatch,
-                            cancellationToken: default,
-                            TaskContinuationOptions.ExecuteSynchronously,
-                            TaskScheduler.Default);
-                    }
+                    coreTask.ContinueWith(
+                        (task, state) =>
+                        {
+                            NameResolutionTelemetry.Log.AfterResolution(
+                                stopwatch: (ValueStopwatch)state!,
+                                successful: task.IsCompletedSuccessfully);
+                        },
+                        state: stopwatch,
+                        cancellationToken: default,
+                        TaskContinuationOptions.ExecuteSynchronously,
+                        TaskScheduler.Default);
 
                     // coreTask is not actually a base Task, but Task<IPHostEntry> / Task<IPAddress[]>
                     // We have to return it and not the continuation
