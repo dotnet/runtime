@@ -4,7 +4,7 @@
 
 namespace System.Data.Odbc
 {
-    // We need this class in the implementation broswer assembly for building the system.data facade.
+    // We need this class in the implementation browser assembly for building the system.data facade.
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public static class ODBC32
     {
