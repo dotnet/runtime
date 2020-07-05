@@ -78,6 +78,12 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
     else
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$scriptroot/../common/cross/toolchain.cmake"
     fi
+
+    if [ -z "$TOOLCHAIN_FILE" ]; then
+        TOOLCHAIN_FILE="$scriptroot/../common/cross/toolchain.cmake"
+    fi
+
+    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_FILE"
 fi
 
 if [[ "$build_arch" == "armel" ]]; then
