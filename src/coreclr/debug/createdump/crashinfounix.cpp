@@ -33,7 +33,7 @@ CrashInfo::CleanupAndResumeProcess()
     // Resume all the threads suspended in EnumerateAndSuspendThreads
     for (ThreadInfo* thread : m_threads)
     {
-        if (ptrace(PTRACE_DETACH, thread->Tid(), nullptr, nullptr) != -1)
+        if (ptrace((enum __ptrace_request)PTRACE_DETACH, thread->Tid(), nullptr, nullptr) != -1)
         {
             int waitStatus;
             waitpid(thread->Tid(), &waitStatus, __WALL);
@@ -69,7 +69,7 @@ CrashInfo::EnumerateAndSuspendThreads()
         if (tid != 0)
         {
             //  Reference: http://stackoverflow.com/questions/18577956/how-to-use-ptrace-to-get-a-consistent-view-of-multiple-threads
-            if (ptrace(PTRACE_ATTACH, tid, nullptr, nullptr) != -1)
+            if (ptrace((enum __ptrace_request)PTRACE_ATTACH, tid, nullptr, nullptr) != -1)
             {
                 int waitStatus;
                 waitpid(tid, &waitStatus, __WALL);

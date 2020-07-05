@@ -861,7 +861,7 @@ check_include_files(
     HAVE_NET_IFMEDIA_H)
 
 check_include_files(
-    linux/rtnetlink.h
+    "sys/socket.h;linux/rtnetlink.h"
     HAVE_LINUX_RTNETLINK_H)
 
 check_include_files(

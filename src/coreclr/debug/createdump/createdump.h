@@ -59,7 +59,7 @@ typedef int T_CONTEXT;
 #include <sys/wait.h>
 #ifndef __APPLE__
 #include <sys/procfs.h>
-#include <asm/ptrace.h>
+#include <linux/ptrace.h>
 #endif
 #ifdef HAVE_PROCESS_VM_READV
 #include <sys/uio.h>
