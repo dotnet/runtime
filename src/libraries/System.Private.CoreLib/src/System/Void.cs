@@ -10,7 +10,7 @@
 namespace System
 {
     // This class represents the void return type
-    public struct Void
+    public readonly struct Void
     {
     }
 }
