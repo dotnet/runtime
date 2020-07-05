@@ -758,7 +758,7 @@ CorUnix::InternalCreateThread(
         }
 
         st = pthread_attr_setaffinity_np(&pthreadAttr, sizeof(cpu_set_t), &cpuSet);
-        if (st != 0)
+        if (st != 0 && st != EPERM)
         {
             if (st == ENOMEM)
             {
