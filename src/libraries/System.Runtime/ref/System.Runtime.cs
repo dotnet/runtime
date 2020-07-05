@@ -3072,6 +3072,7 @@ namespace System
         Unix = 4,
         Xbox = 5,
         MacOSX = 6,
+        Unknown = 7,
     }
     public partial class PlatformNotSupportedException : System.NotSupportedException
     {
