@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System
 {
-    internal unsafe partial class Number
+    internal partial class Number
     {
         public readonly struct FloatingPointInfo
         {
@@ -117,7 +117,7 @@ namespace System
         {
             BigInteger.SetZero(out result);
 
-            byte* src = number.GetDigitsPointer() + firstIndex;
+            Span<byte> src = number.Digits.Slice((int)firstIndex);
             uint remaining = lastIndex - firstIndex;
 
             while (remaining != 0)
@@ -128,7 +128,7 @@ namespace System
                 result.MultiplyPow10(count);
                 result.Add(value);
 
-                src += count;
+                src = src.Slice((int)count);
                 remaining -= count;
             }
         }
@@ -305,32 +305,30 @@ namespace System
         }
 
         // get 32-bit integer from at most 9 digits
-        private static uint DigitsToUInt32(byte* p, int count)
+        private static uint DigitsToUInt32(Span<byte> p, int count)
         {
             Debug.Assert((1 <= count) && (count <= 9));
 
-            byte* end = (p + count);
             uint res = (uint)(p[0] - '0');
 
-            for (p++; p < end; p++)
+            for (int i = 1; i < count; i++)
             {
-                res = (10 * res) + p[0] - '0';
+                res = (10 * res) + p[i] - '0';
             }
 
             return res;
         }
 
         // get 64-bit integer from at most 19 digits
-        private static ulong DigitsToUInt64(byte* p, int count)
+        private static ulong DigitsToUInt64(Span<byte> p, int count)
         {
             Debug.Assert((1 <= count) && (count <= 19));
 
-            byte* end = (p + count);
             ulong res = (ulong)(p[0] - '0');
 
-            for (p++; p < end; p++)
+            for (int i = 1; i < count; i++)
             {
-                res = (10 * res) + p[0] - '0';
+                res = (10 * res) + p[i] - '0';
             }
 
             return res;
@@ -338,7 +336,7 @@ namespace System
 
         private static ulong NumberToFloatingPointBits(ref NumberBuffer number, in FloatingPointInfo info)
         {
-            Debug.Assert(number.GetDigitsPointer()[0] != '0');
+            Debug.Assert(number.Digits[0] != '0');
 
             Debug.Assert(number.Scale <= FloatingPointMaxExponent);
             Debug.Assert(number.Scale >= FloatingPointMinExponent);
@@ -370,7 +368,7 @@ namespace System
             // computed to the infinitely precise result and then rounded, which means that
             // we can rely on it to produce the correct result when both inputs are exact.
 
-            byte* src = number.GetDigitsPointer();
+            Span<byte> src = number.Digits;
 
             if ((info.DenormalMantissaBits <= 23) && (totalDigits <= 7) && (fastExponent <= 10))
             {

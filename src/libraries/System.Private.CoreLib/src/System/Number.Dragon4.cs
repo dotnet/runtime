@@ -40,7 +40,7 @@ namespace System
             number.DigitsCount = length;
         }
 
-        public static unsafe void Dragon4Half(Half value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
+        public static void Dragon4Half(Half value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
         {
             Half v = Half.IsNegative(value) ? Half.Negate(value) : value;
 
@@ -70,7 +70,7 @@ namespace System
             number.DigitsCount = length;
         }
 
-        public static unsafe void Dragon4Single(float value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
+        public static void Dragon4Single(float value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
         {
             float v = float.IsNegative(value) ? -value : value;
 
