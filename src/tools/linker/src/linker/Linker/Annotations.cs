@@ -428,12 +428,6 @@ namespace Mono.Linker
 			return marked_types_with_cctor.Add (type);
 		}
 
-		public void AddRemovableAttribute (IMemberDefinition member)
-		{
-			var linkerAttributesInformation = new LinkerAttributesInformation (context, member, true);
-			linker_attributes.Add (member, linkerAttributesInformation);
-		}
-
 		public bool HasLinkerAttribute<T> (IMemberDefinition member) where T : Attribute
 		{
 			// Avoid setting up and inserting LinkerAttributesInformation for members without attributes.
