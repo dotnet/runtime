@@ -292,9 +292,9 @@ void Compiler::lvaInitTypeRef()
     }
 
     if ( // If there already exist unsafe buffers, don't mark more structs as unsafe
-        // as that will cause them to be placed along with the real unsafe buffers,
-        // unnecessarily exposing them to overruns. This can affect GS tests which
-        // intentionally do buffer-overruns.
+         // as that will cause them to be placed along with the real unsafe buffers,
+         // unnecessarily exposing them to overruns. This can affect GS tests which
+         // intentionally do buffer-overruns.
         !getNeedsGSSecurityCookie() &&
         // GS checks require the stack to be re-ordered, which can't be done with EnC
         !opts.compDbgEnC && compStressCompile(STRESS_UNSAFE_BUFFER_CHECKS, 25))
@@ -352,7 +352,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     /* If we have a hidden return-buffer parameter, that comes here */
     lvaInitRetBuffArg(varDscInfo);
 
-//======================================================================
+    //======================================================================
 
 #if USER_ARGS_COME_LAST
     //@GENERICS: final instantiation-info argument for shared generic methods
@@ -559,9 +559,9 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo)
 /*****************************************************************************/
 void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 {
-//-------------------------------------------------------------------------
-// Walk the function signature for the explicit arguments
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
+    // Walk the function signature for the explicit arguments
+    //-------------------------------------------------------------------------
 
 #if defined(TARGET_X86)
     // Only (some of) the implicit args are enregistered for varargs
@@ -1033,8 +1033,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 #if defined(TARGET_X86)
             varDsc->lvStkOffs = compArgSize;
 #else  // !TARGET_X86
-            // TODO-CQ: We shouldn't have to go as far as to declare these
-            // address-exposed -- DoNotEnregister should suffice.
+       // TODO-CQ: We shouldn't have to go as far as to declare these
+       // address-exposed -- DoNotEnregister should suffice.
             lvaSetVarAddrExposed(varDscInfo->varNum);
 #endif // !TARGET_X86
         }
@@ -1313,7 +1313,7 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     varDsc->lvIsImplicitByRef = 0;
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
-// Set the lvType (before this point it is TYP_UNDEF).
+    // Set the lvType (before this point it is TYP_UNDEF).
 
 #ifdef FEATURE_HFA
     varDsc->SetHfaType(TYP_UNDEF);
@@ -2198,7 +2198,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
             compiler->compFloatingPointUsed = true;
         }
 
-// Now grab the temp for the field local.
+        // Now grab the temp for the field local.
 
 #ifdef DEBUG
         char buf[200];
@@ -3394,8 +3394,8 @@ void Compiler::lvaSortByRefCount()
         if (varDsc->lvAddrExposed)
         {
             varDsc->lvTracked = 0;
-            assert(varDsc->lvType != TYP_STRUCT ||
-                   varDsc->lvDoNotEnregister); // For structs, should have set this when we set lvAddrExposed.
+            assert(varDsc->lvType != TYP_STRUCT || varDsc->lvDoNotEnregister); // For structs, should have set this when
+                                                                               // we set lvAddrExposed.
         }
         else if (varTypeIsStruct(varDsc))
         {
@@ -3549,8 +3549,8 @@ void LclVarDsc::lvaDisqualifyVar()
 #endif // ASSERTION_PROP
 
 /**********************************************************************************
-* Get stack size of the varDsc.
-*/
+ * Get stack size of the varDsc.
+ */
 size_t LclVarDsc::lvArgStackSize() const
 {
     // Make sure this will have a stack size
@@ -3591,8 +3591,8 @@ size_t LclVarDsc::lvArgStackSize() const
 }
 
 /**********************************************************************************
-* Get type of a variable when passed as an argument.
-*/
+ * Get type of a variable when passed as an argument.
+ */
 var_types LclVarDsc::lvaArgType()
 {
     var_types type = TypeGet();
@@ -4368,11 +4368,11 @@ inline void Compiler::lvaIncrementFrameSize(unsigned size)
 }
 
 /****************************************************************************
-*
-*  Return true if absolute offsets of temps are larger than vars, or in other
-*  words, did we allocate temps before of after vars.  The /GS buffer overrun
-*  checks want temps to be at low stack addresses than buffers
-*/
+ *
+ *  Return true if absolute offsets of temps are larger than vars, or in other
+ *  words, did we allocate temps before of after vars.  The /GS buffer overrun
+ *  checks want temps to be at low stack addresses than buffers
+ */
 bool Compiler::lvaTempsHaveLargerOffsetThanVars()
 {
 #ifdef TARGET_ARM
@@ -4391,10 +4391,10 @@ bool Compiler::lvaTempsHaveLargerOffsetThanVars()
 }
 
 /****************************************************************************
-*
-*  Return an upper bound estimate for the size of the compiler spill temps
-*
-*/
+ *
+ *  Return an upper bound estimate for the size of the compiler spill temps
+ *
+ */
 unsigned Compiler::lvaGetMaxSpillTempSize()
 {
     unsigned result = 0;
@@ -5002,7 +5002,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 #endif
                     )
 #endif // !defined(TARGET_AMD64)
-                    )
+            )
             {
                 doAssignStkOffs = false; // Not on frame or an incomming stack arg
             }
@@ -5311,8 +5311,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 //        ret address slot, stack frame padding, alloca instructions, etc.
 //  Note: This is the implementation for UNIX_AMD64 System V platforms.
 //
-int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
-                                               unsigned argSize,
+int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned    lclNum,
+                                               unsigned    argSize,
                                                int argOffs UNIX_AMD64_ABI_ONLY_ARG(int* callerArgOffset))
 {
     noway_assert(lclNum < info.compArgsCount);
@@ -5665,8 +5665,8 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                             (codeGen->regSet.rsMaskPreSpillAlign & genRegMask(REG_ARG_LAST));
 
                 noway_assert(cond);
-                noway_assert(sizeofPreSpillRegArgs <=
-                             argOffs + TARGET_POINTER_SIZE); // at most one register of alignment
+                noway_assert(sizeofPreSpillRegArgs <= argOffs + TARGET_POINTER_SIZE); // at most one register of
+                                                                                      // alignment
             }
             argOffs = sizeofPreSpillRegArgs;
         }
@@ -5707,8 +5707,8 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     if ((varDsc->TypeGet() == TYP_LONG) && varDsc->lvPromoted)
     {
         noway_assert(varDsc->lvFieldCnt == 2);
-        fieldVarNum                         = varDsc->lvFieldLclStart;
-        lvaTable[fieldVarNum].lvStkOffs     = varDsc->lvStkOffs;
+        fieldVarNum = varDsc->lvFieldLclStart;
+        lvaTable[fieldVarNum].lvStkOffs = varDsc->lvStkOffs;
         lvaTable[fieldVarNum + 1].lvStkOffs = varDsc->lvStkOffs + genTypeSize(TYP_INT);
     }
     else
@@ -5836,8 +5836,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= initialStkOffs;
     }
 
-    if (codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() ||
-        !isFramePointerUsed()) // Note that currently we always have a frame pointer
+    if (codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() || !isFramePointerUsed()) // Note that currently we always have
+                                                                                   // a frame pointer
     {
         stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
     }
@@ -5931,10 +5931,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // Allocate a pointer sized stack slot, since we may need to double align here
             // when lvaDoneFrameLayout == FINAL_FRAME_LAYOUT
             //
-            if (compMethodID == 39739)
-            {
-                printf("lvaAssignVirtualFrameOffsetsToLocal1 : %u\n", compLclFrameSize);
-            }
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
             stkOffs -= TARGET_POINTER_SIZE;
 
@@ -5945,10 +5941,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // offsets that we calculate for the stack frame will always
             // be greater (or equal) to what they can be in the final layout.
             //
-            if (compMethodID == 39739)
-            {
-                printf("lvaAssignVirtualFrameOffsetsToLocal2 : %u\n", compLclFrameSize);
-            }
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
             stkOffs -= TARGET_POINTER_SIZE;
         }
@@ -5956,10 +5948,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         {
             if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
             {
-                if (compMethodID == 39739)
-                {
-                    printf("lvaAssignVirtualFrameOffsetsToLocal3 : %u\n", compLclFrameSize);
-                }
                 lvaIncrementFrameSize(TARGET_POINTER_SIZE);
                 stkOffs -= TARGET_POINTER_SIZE;
             }
@@ -6002,10 +5990,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         noway_assert(codeGen->isFramePointerUsed());
 #endif
         // For CORINFO_CALLCONV_PARAMTYPE (if needed)
-        if (compMethodID == 39739)
-        {
-            printf("lvaAssignVirtualFrameOffsetsToLocal4 : %u\n", compLclFrameSize);
-        }
         lvaIncrementFrameSize(TARGET_POINTER_SIZE);
         stkOffs -= TARGET_POINTER_SIZE;
         lvaCachedGenericContextArgOffs = stkOffs;
@@ -6014,10 +5998,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     else if (lvaKeepAliveAndReportThis())
     {
         // When "this" is also used as generic context arg.
-        if (compMethodID == 39739)
-        {
-            printf("lvaAssignVirtualFrameOffsetsToLocal5 : %u\n", compLclFrameSize);
-        }
         lvaIncrementFrameSize(TARGET_POINTER_SIZE);
         stkOffs -= TARGET_POINTER_SIZE;
         lvaCachedGenericContextArgOffs = stkOffs;
@@ -6366,10 +6346,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                     // stack slot since we may need to double align this LclVar
                     // when lvaDoneFrameLayout == FINAL_FRAME_LAYOUT
                     //
-                    if (compMethodID == 39739)
-                    {
-                        printf("lvaAssignVirtualFrameOffsetsToLocal6 : %u\n", compLclFrameSize);
-                    }
                     lvaIncrementFrameSize(TARGET_POINTER_SIZE);
                     stkOffs -= TARGET_POINTER_SIZE;
                 }
@@ -6377,10 +6353,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 {
                     if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
                     {
-                        if (compMethodID == 39739)
-                        {
-                            printf("lvaAssignVirtualFrameOffsetsToLocal7 : %u\n", compLclFrameSize);
-                        }
                         lvaIncrementFrameSize(TARGET_POINTER_SIZE);
                         stkOffs -= TARGET_POINTER_SIZE;
                     }
@@ -6476,10 +6448,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // Allocate a pointer sized stack slot, since we may need to double align here
             // when lvaDoneFrameLayout == FINAL_FRAME_LAYOUT
             //
-            if (compMethodID == 39739)
-            {
-                printf("lvaAssignVirtualFrameOffsetsToLocal8 : %u\n", compLclFrameSize);
-            }
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
             stkOffs -= TARGET_POINTER_SIZE;
 
@@ -6492,10 +6460,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 // calculate for the stack frame are always greater than they will
                 // be in the final layout.
                 //
-                if (compMethodID == 39739)
-                {
-                    printf("lvaAssignVirtualFrameOffsetsToLocal9 : %u\n", compLclFrameSize);
-                }
                 lvaIncrementFrameSize(TARGET_POINTER_SIZE);
                 stkOffs -= TARGET_POINTER_SIZE;
             }
@@ -6504,10 +6468,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         {
             if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
             {
-                if (compMethodID == 39739)
-                {
-                    printf("lvaAssignVirtualFrameOffsetsToLocal10 : %u\n", compLclFrameSize);
-                }
                 lvaIncrementFrameSize(TARGET_POINTER_SIZE);
                 stkOffs -= TARGET_POINTER_SIZE;
             }
@@ -6528,8 +6488,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif // FEATURE_EH_FUNCLETS && defined(TARGET_AMD64)
 
 #ifdef TARGET_ARM64
-    if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() &&
-        isFramePointerUsed()) // Note that currently we always have a frame pointer
+    if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() && isFramePointerUsed()) // Note that currently we always have
+                                                                                   // a frame pointer
     {
         // Create space for saving FP and LR.
         stkOffs -= 2 * REGSIZE_BYTES;
@@ -6655,10 +6615,6 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 
     /* Reserve space on the stack by bumping the frame size */
 
-    if (compMethodID == 39739)
-    {
-        printf("lvaAllocLocalAndSetVirtualOffset : %u\n", compLclFrameSize);
-    }
     lvaIncrementFrameSize(size);
     stkOffs -= size;
     lvaTable[lclNum].lvStkOffs = stkOffs;
@@ -6764,7 +6720,7 @@ void Compiler::lvaAlignFrame()
     // Ensure that the stack is always 16-byte aligned by grabbing an unused QWORD
     // if needed.
     bool regPushedCountAligned = (compCalleeRegsPushed % (16 / REGSIZE_BYTES)) == 0;
-    bool lclFrameSizeAligned   = (compLclFrameSize % 16) == 0;
+    bool lclFrameSizeAligned = (compLclFrameSize % 16) == 0;
 
     // If this isn't the final frame layout, assume we have to push an extra QWORD
     // Just so the offsets are true upper limits.
@@ -6777,16 +6733,12 @@ void Compiler::lvaAlignFrame()
 
     // Ensure that stack offsets will be double-aligned by grabbing an unused DWORD if needed.
     //
-    bool lclFrameSizeAligned   = (compLclFrameSize % sizeof(double)) == 0;
+    bool lclFrameSizeAligned = (compLclFrameSize % sizeof(double)) == 0;
     bool regPushedCountAligned = ((compCalleeRegsPushed + genCountBits(codeGen->regSet.rsMaskPreSpillRegs(true))) %
                                   (sizeof(double) / TARGET_POINTER_SIZE)) == 0;
 
     if (regPushedCountAligned != lclFrameSizeAligned)
     {
-        if (compMethodID == 39739)
-        {
-            printf("lvaAlignFrame : %u\n", compLclFrameSize);
-        }
         lvaIncrementFrameSize(TARGET_POINTER_SIZE);
     }
 
@@ -6863,7 +6815,7 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
             && !varDsc->lvIsParam
 #endif // !defined(TARGET_ARM)
 #endif // !UNIX_AMD64_ABI
-            )
+        )
         {
             LclVarDsc*       parentvarDsc  = &lvaTable[varDsc->lvParentLcl];
             lvaPromotionType promotionType = lvaGetPromotionType(parentvarDsc);
@@ -6945,10 +6897,6 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
                 if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
                 {
                     spillTempSize += TARGET_POINTER_SIZE;
-                    if (compMethodID == 39739)
-                    {
-                        printf("lvaAllocateTemp1 : %u\n", compLclFrameSize);
-                    }
                     lvaIncrementFrameSize(TARGET_POINTER_SIZE);
                     stkOffs -= TARGET_POINTER_SIZE;
                 }
@@ -6957,10 +6905,6 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
             }
 
             spillTempSize += size;
-            if (compMethodID == 39739)
-            {
-                printf("lvaAllocateTemp2 : %u\n", compLclFrameSize);
-            }
             lvaIncrementFrameSize(size);
             stkOffs -= size;
             temp->tdSetTempOffs(stkOffs);
@@ -6974,10 +6918,6 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
     {
         unsigned size = lvaGetMaxSpillTempSize();
 
-        if (compMethodID == 39739)
-        {
-            printf("lvaAllocateTemp3 : %u\n", compLclFrameSize);
-        }
         lvaIncrementFrameSize(size);
         stkOffs -= size;
     }
@@ -7026,7 +6966,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum)
     offset = lvaFrameAddress(lclNum, compLocallocUsed, &baseReg, 0, /* isFloatUsage */ false);
 #else
     bool EBPbased;
-    offset  = lvaFrameAddress(lclNum, &EBPbased);
+    offset = lvaFrameAddress(lclNum, &EBPbased);
     baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
 #endif
 
@@ -7287,9 +7227,9 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
 }
 
 /*****************************************************************************
-*
-*  dump the lvaTable
-*/
+ *
+ *  dump the lvaTable
+ */
 
 void Compiler::lvaTableDump(FrameLayoutState curState)
 {
