@@ -45,7 +45,7 @@ jobs:
       - name: _cxx11Parameter
         ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'arm64')) }}:
           value: /p:MonoLLVMUseCxx11Abi=true
-        ${{ if or(eq(parameters.osGroup, 'Linux'), ne(parameters.archType, 'arm64')) }}:
+        ${{ if not(and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'arm64'))) }}:
           value: /p:MonoLLVMUseCxx11Abi=false
 
       - name: _officialBuildParameter
