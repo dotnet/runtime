@@ -127,13 +127,13 @@ CLiteWeightStgdbRW::~CLiteWeightStgdbRW()
     {
         delete [] m_wszFileName;
     }
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     if (m_pPdbHeap != NULL)
     {
         delete m_pPdbHeap;
         m_pPdbHeap = NULL;
     }
-#endif // FEATURE_METADATA_EMIT_PORT_PDB
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 }
 
 //*****************************************************************************
@@ -514,7 +514,7 @@ HRESULT CLiteWeightStgdbRW::InitNew()
 {
     InitializeLogging();
     LOG((LF_METADATA, LL_INFO10, "Metadata logging enabled\n"));
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     m_pPdbHeap = new PdbHeap();
 #endif
     //<TODO>@FUTURE: should probably init the pools here instead of in the MiniMd.</TODO>
@@ -563,7 +563,7 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
         }
     }
 
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     // [IMPORTANT]:
     // Apparently, string pool must exist in the portable PDB metadata in order to be recognized
     // by the VS debugger. For this purpose, we are adding a dummy " " value in cases when
@@ -579,7 +579,7 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
             IfFailGo(m_MiniMd.m_StringHeap.AddString(" ", &nIndex_Ignore));
         }
     }
-#endif // FEATURE_METADATA_EMIT_PORT_PDB
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
     // If we're saving a delta metadata, figure out how much space it will take to
     // save the minimal metadata stream (used only to identify that we have a delta
@@ -642,7 +642,7 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
     cbTotal += cbSize;
     IfFailGo(GetPoolSaveSize(BLOB_POOL_STREAM, MDPoolBlobs, &cbSize));
     cbTotal += cbSize;
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     IfFailGo(GetPoolSaveSize(PDB_STREAM, NULL, &cbSize));
     cbTotal += cbSize;
 #endif
@@ -691,7 +691,7 @@ CLiteWeightStgdbRW::GetPoolSaveSize(
 
     *pcbSaveSize = 0;
 
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     // Treat PDB stream differently since we are not using StgPools
     if (wcscmp(PDB_STREAM, szHeap) == 0)
     {
@@ -708,7 +708,7 @@ CLiteWeightStgdbRW::GetPoolSaveSize(
         }
     }
     else
-#endif // FEATURE_METADATA_EMIT_PORT_PDB
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
     {
         // If there is no data, then don't bother.
         if (m_MiniMd.IsPoolEmpty(iPool))
@@ -948,7 +948,7 @@ HRESULT CLiteWeightStgdbRW::SaveToStorage(
     IfFailGo(SavePool(US_BLOB_POOL_STREAM, pStorage, MDPoolUSBlobs));
     IfFailGo(SavePool(GUID_POOL_STREAM, pStorage, MDPoolGuids));
     IfFailGo(SavePool(BLOB_POOL_STREAM, pStorage, MDPoolBlobs));
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     IfFailGo(SavePool(PDB_STREAM, pStorage, NULL));
 #endif
 
@@ -986,7 +986,7 @@ HRESULT CLiteWeightStgdbRW::SavePool(   // Return code.
     IStream     *pIStream=0;            // For writing.
     HRESULT     hr = S_OK;
 
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     // Treat PDB stream differently since we are not using StgPools
     if (wcscmp(PDB_STREAM, szName) == 0)
     {
@@ -1003,7 +1003,7 @@ HRESULT CLiteWeightStgdbRW::SavePool(   // Return code.
         }
     }
     else
-#endif // FEATURE_METADATA_EMIT_PORT_PDB
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
     {
         // If there is no data, then don't bother.
         if (m_MiniMd.IsPoolEmpty(iPool))

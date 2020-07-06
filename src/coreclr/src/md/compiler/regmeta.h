@@ -149,7 +149,7 @@ class RegMeta :
     , public IMetaDataInfo
 
 #ifdef FEATURE_METADATA_EMIT
-#ifndef FEATURE_METADATA_EMIT_PORT_PDB
+#ifndef FEATURE_METADATA_EMIT_PORTABLE_PDB
     , public IMetaDataEmit2
 #else
     , public IMetaDataEmit3
@@ -1109,7 +1109,7 @@ public:
         DWORD        reserved,                // [IN] For future use (e.g. non-type parameters)
         mdToken      rtkConstraints[]);     // [IN] Array of type constraints (TypeDef,TypeRef,TypeSpec)
 
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 //*****************************************************************************
 // IMetaDataEmit3 methods
 //*****************************************************************************
@@ -1148,7 +1148,7 @@ public:
         USHORT      index,                  // [IN] Variable index (slot).
         char        *name,                  // [IN] Variable name.
         mdLocalVariable *locVarToken);      // [OUT] Token of the defined variable.
-#endif // FEATURE_METADATA_EMIT_PORT_PDB
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 //*****************************************************************************
 // IMetaDataAssemblyEmit
@@ -1301,7 +1301,7 @@ public:
     STDMETHOD(SetMDUpdateMode)(
         ULONG updateMode, ULONG *pPreviousUpdateMode);
 
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     STDMETHODIMP GetPathSeparator(          // S_OK or error.
         char        *path,                  // [IN] Path string to search.
         char        *separator,             // [OUT] Separator used in path string, NULL if none.
@@ -1614,7 +1614,7 @@ public:
 
     HRESULT CreateNewMD();
 
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     HRESULT CreateNewPortablePdbMD();
 #endif
 
@@ -1981,7 +1981,7 @@ protected:
 #undef MiniMdTable
 #define MiniMdTable(x) HRESULT Validate##x(RID rid);
     MiniMdTables()
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     PortablePdbMiniMdTables()
 #endif
 

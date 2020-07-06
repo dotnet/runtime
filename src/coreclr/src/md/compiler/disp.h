@@ -16,7 +16,7 @@
 
 
 class Disp :
-#ifndef FEATURE_METADATA_EMIT_PORT_PDB
+#ifndef FEATURE_METADATA_EMIT_PORTABLE_PDB
     public IMetaDataDispenserEx
 #else
     public IMetaDataDispenserEx2
@@ -93,7 +93,7 @@ public:
         ULONG    cchName,                   // [IN]  the name buffer's size
         ULONG    *pcName);                  // [OUT] the number of characters returend in the buffer
 
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     STDMETHODIMP DefinePortablePdbScope(    // Return code.
         REFCLSID    rclsid,                 // [in] What version to create.
         DWORD       dwCreateFlags,          // [in] Flags on the create.

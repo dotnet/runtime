@@ -4,7 +4,7 @@ add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 add_definitions(-D_FEATURE_NO_HOST)
 add_definitions(-D__ILASM__)
-add_definitions(-DFEATURE_METADATA_EMIT_PORT_PDB)
+add_definitions(-DFEATURE_METADATA_EMIT_PORTABLE_PDB)
 
 add_definitions(-DFEATURE_CORECLR)
 

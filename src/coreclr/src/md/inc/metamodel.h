@@ -22,7 +22,7 @@
 #include "../datablob.h"
 #include "../debug_metadata.h"
 
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 #include "portablepdbmdds.h"
 #include "portablepdbmdi.h"
 #endif
@@ -1601,7 +1601,7 @@ public:
 #undef MiniMdTable
 #define MiniMdTable(tbl) ULONG getCount##tbl##s() { return _TBLCNT(tbl); }
     MiniMdTables();
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     PortablePdbMiniMdTables();
 #endif
     // macro misspells some names.
@@ -1616,7 +1616,7 @@ public:
 #define MiniMdTable(tbl) __checkReturn HRESULT Get##tbl##Record(RID rid, tbl##Rec **ppRecord) { \
         return getRow(TBL_##tbl, rid, reinterpret_cast<void **>(ppRecord)); }
     MiniMdTables();
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     PortablePdbMiniMdTables();
 #endif
 

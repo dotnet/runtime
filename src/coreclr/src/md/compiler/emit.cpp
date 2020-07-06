@@ -2045,7 +2045,7 @@ ErrExit:
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::_SetGenericParamProps
 
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 //*****************************************************************************
 // Get referenced type system metadata tables.
 //*****************************************************************************
@@ -2366,7 +2366,7 @@ ErrExit:
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineLocalVariable
-#endif // FEATURE_METADATA_EMIT_PORT_PDB
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 //*****************************************************************************
 // Create and set a MethodSpec record.

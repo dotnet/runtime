@@ -22,7 +22,7 @@
 class StgIO;
 
 #include "mdcommon.h"
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 #include "pdbheap.h"
 #endif
 
@@ -113,7 +113,7 @@ public:
         m_dwPEKind = (DWORD)(-1);
         m_dwDatabaseLFS = 0;
         m_dwDatabaseLFT = 0;
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
         m_pPdbHeap = NULL;
 #endif
     }
@@ -257,7 +257,7 @@ private:
     DWORD    m_dwDatabaseLFT;   // Low bytes of the database file's last write time
     DWORD    m_dwDatabaseLFS;   // Low bytes of the database file's size
     StgIO *  m_pStgIO;          // For file i/o.
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     PdbHeap *m_pPdbHeap;
 #endif
 };  // class CLiteWeightStgdbRW

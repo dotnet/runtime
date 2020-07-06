@@ -277,7 +277,7 @@ ErrExit:
     return hr;
 } // RegMeta::CreateNewMD
 
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 //*****************************************************************************
 // Create new stgdb for portable pdb
 //*****************************************************************************
@@ -322,7 +322,7 @@ RegMeta::CreateNewPortablePdbMD()
 ErrExit:
     return hr;
 } // RegMeta::CreateNewPortablePdbMD
-#endif // FEATURE_METADATA_EMIT_PORT_PDB
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 #endif //FEATURE_METADATA_EMIT
 
@@ -593,7 +593,7 @@ RegMeta::QueryInterface(
         *ppUnk = (IMetaDataEmit2 *)this;
         fIsInterfaceRW = true;
     }
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     else if (riid == IID_IMetaDataEmit3)
     {
         *ppUnk = (IMetaDataEmit3 *)this;

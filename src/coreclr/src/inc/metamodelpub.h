@@ -1521,7 +1521,7 @@ public:
     };
 };
 
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 /* Portable PDB tables */
 // -- Dummy records to fill the gap to 0x30
 class DummyRec
@@ -1646,7 +1646,7 @@ public:
 // TODO:
 // class StateMachineMethodRec
 // class CustomDebugInformationRec
-#endif // FEATURE_METADATA_EMIT_PORT_PDB
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 #include <poppack.h>
 
@@ -1699,7 +1699,7 @@ public:
     MiniMdTable(MethodSpec)     \
     MiniMdTable(GenericParamConstraint)
 
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 #define PortablePdbMiniMdTables() \
     /* Dummy tables to fill the gap to 0x30 */ \
     MiniMdTable(Dummy1)                             /* 0x2D */ \
@@ -1715,18 +1715,18 @@ public:
     // TODO:
     // MiniMdTable(StateMachineMethod)                 /* 0x36 */
     // MiniMdTable(CustomDebugInformation)             /* 0x37 */
-#endif // FEATURE_METADATA_EMIT_PORT_PDB
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 #undef MiniMdTable
 #define MiniMdTable(x) TBL_##x,
 enum {
     MiniMdTables()
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     PortablePdbMiniMdTables()
 #endif
     TBL_COUNT,                              // Highest table.
     TBL_COUNT_V1 = TBL_NestedClass + 1,    // Highest table in v1.0 database
-#ifndef FEATURE_METADATA_EMIT_PORT_PDB
+#ifndef FEATURE_METADATA_EMIT_PORTABLE_PDB
     TBL_COUNT_V2 = TBL_GenericParamConstraint + 1 // Highest in v2.0 database
 #else
     TBL_COUNT_V2 = TBL_ImportScope + 1 // Highest in portable PDB database

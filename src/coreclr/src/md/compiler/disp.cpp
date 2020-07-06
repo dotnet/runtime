@@ -479,7 +479,7 @@ HRESULT Disp::OpenScopeOnITypeInfo(     // Return code.
     return E_NOTIMPL;
 } // Disp::OpenScopeOnITypeInfo
 
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 //*****************************************************************************
 // Create a brand new scope which will be used for portable PDB metadata.
 // This is based on the CLSID that was used to get the dispenser.
@@ -552,7 +552,7 @@ ErrExit:
     return E_NOTIMPL;
 #endif //!FEATURE_METADATA_EMIT
 } // Disp::DefineScope
-#endif // FEATURE_METADATA_EMIT_PORT_PDB
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
 
@@ -671,7 +671,7 @@ HRESULT Disp::QueryInterface(REFIID riid, void **ppUnk)
         *ppUnk = (IMetaDataDispenser *) this;
     else if (riid == IID_IMetaDataDispenserEx)
         *ppUnk = (IMetaDataDispenserEx *) this;
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     else if (riid == IID_IMetaDataDispenserEx2)
         *ppUnk = (IMetaDataDispenserEx2 *) this;
 #endif

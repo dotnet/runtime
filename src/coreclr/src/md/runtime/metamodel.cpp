@@ -76,7 +76,7 @@
 #undef SCHEMA_ITEM_CDTKN
 #undef SCHEMA_TABLE_END
 
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 //Dummy tables to fill the gap to 0x30
 static CMiniColDef rDummy1Cols[] = { { 0 } };
 static CMiniColDef rDummy2Cols[] = { { 0 } };
@@ -84,7 +84,7 @@ static CMiniColDef rDummy3Cols[] = { { 0 } };
 static const char* rDummy1ColNames[] = { "" };
 static const char* rDummy2ColNames[] = { "" };
 static const char* rDummy3ColNames[] = { "" };
-#endif // FEATURE_METADATA_EMIT_PORT_PDB
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 //-----------------------------------------------------------------------------
 // End of column definitions.
@@ -102,7 +102,7 @@ const CCodedTokenDef g_CodedTokens [] = {
 #define MiniMdTable(x) { { r##x##Cols, lengthof(r##x##Cols), x##Rec::COL_KEY, 0 }, r##x##ColNames, #x},
 const CMiniTableDefEx g_Tables[TBL_COUNT] = {
     MiniMdTables()
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     PortablePdbMiniMdTables()
 #endif
 };
@@ -118,7 +118,7 @@ const CMiniTableDefEx g_Table_GenericParamV1_1 = { { rGenericParamV1_1Cols, leng
 #define MiniMdTable(x) { TBL_COUNT, 0 },
 TblCol g_PtrTableIxs[TBL_COUNT] = {
     MiniMdTables()
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     PortablePdbMiniMdTables()
 #endif
 };
@@ -457,7 +457,7 @@ CMiniMdBase::CMiniMdBase()
         m_TableDefs[TBL_##tbl] = g_Tables[TBL_##tbl].m_Def; \
         m_TableDefs[TBL_##tbl].m_pColDefs = BYTEARRAY_TO_COLDES(s_##tbl##Col);
     MiniMdTables()
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     PortablePdbMiniMdTables()
 #endif
 
@@ -491,7 +491,7 @@ CMiniMdBase::CMiniMdBase()
     _ASSERTE((TypeFromToken(mdtGenericParam) >> 24)     == TBL_GenericParam);
     _ASSERTE((TypeFromToken(mdtMethodSpec) >> 24)       == TBL_MethodSpec);
     _ASSERTE((TypeFromToken(mdtGenericParamConstraint) >> 24) == TBL_GenericParamConstraint);
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     _ASSERTE((TypeFromToken(mdtDocument) >> 24)         == TBL_Document);
     _ASSERTE((TypeFromToken(mdtMethodDebugInformation) >> 24) == TBL_MethodDebugInformation);
     _ASSERTE((TypeFromToken(mdtLocalScope) >> 24)       == TBL_LocalScope);
@@ -501,7 +501,7 @@ CMiniMdBase::CMiniMdBase()
     // TODO:
     // _ASSERTE((TypeFromToken(mdtStateMachineMethod) >> 24) == TBL_StateMachineMethod);
     // _ASSERTE((TypeFromToken(mdtCustomDebugInformation) >> 24) == TBL_CustomDebugInformation);
-#endif // FEATURE_METADATA_EMIT_PORT_PDB
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 } // CMiniMdBase::CMiniMdBase
 
 
@@ -776,7 +776,7 @@ CMiniMdBase::InitColsForTable(
         {   // Fixed type.
             switch (pCols[ixCol].m_Type)
             {
-#ifdef FEATURE_METADATA_EMIT_PORT_PDB
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
             /* Portable PDB tables */
             // Commenting out column offset asserts.
             // It makes sense to assert calculated offsets against values from the table
@@ -790,7 +790,7 @@ CMiniMdBase::InitColsForTable(
             case iBYTE:
                 iSize = 1;
                 _ASSERTE(pCols[ixCol].m_cbColumn == iSize);
-#ifndef FEATURE_METADATA_EMIT_PORT_PDB
+#ifndef FEATURE_METADATA_EMIT_PORTABLE_PDB
                  _ASSERTE(pCols[ixCol].m_oColumn == iOffset);
 #endif
                 break;
@@ -798,7 +798,7 @@ CMiniMdBase::InitColsForTable(
             case iUSHORT:
                 iSize = 2;
                 _ASSERTE(pCols[ixCol].m_cbColumn == iSize);
-#ifndef FEATURE_METADATA_EMIT_PORT_PDB
+#ifndef FEATURE_METADATA_EMIT_PORTABLE_PDB
                 _ASSERTE(pCols[ixCol].m_oColumn == iOffset);
 #endif
                 break;
@@ -806,7 +806,7 @@ CMiniMdBase::InitColsForTable(
             case iULONG:
                 iSize = 4;
                 _ASSERTE(pCols[ixCol].m_cbColumn == iSize);
-#ifndef FEATURE_METADATA_EMIT_PORT_PDB
+#ifndef FEATURE_METADATA_EMIT_PORTABLE_PDB
                 _ASSERTE(pCols[ixCol].m_oColumn == iOffset);
 #endif
                 break;
