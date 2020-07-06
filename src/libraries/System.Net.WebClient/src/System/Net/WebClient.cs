@@ -144,7 +144,7 @@ namespace System.Net
             get { return _encoding; }
             set
             {
-                ThrowIfNull(value, nameof(Encoding));
+                ThrowIfNull(value, nameof(value));
                 _encoding = value;
             }
         }
