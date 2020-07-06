@@ -1,8 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+using System;
 
-namespace System.Diagnostics.CodeAnalysis
+namespace Mono.Linker
 {
 	/// <summary>
 	/// This attribute name will be the name hardcoded in linker which will remove all 
@@ -10,7 +11,7 @@ namespace System.Diagnostics.CodeAnalysis
 	/// </summary>
 	[AttributeUsage (
 		AttributeTargets.Class, Inherited = false)]
-	public sealed class LinkerRemovableAttribute : Attribute
+	public sealed class RemoveAttributeInstancesAttribute : Attribute
 	{
 	}
 }
