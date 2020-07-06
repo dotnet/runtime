@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization
         private const string CreateRangeMethodNameForEnumerable = "CreateRange`1";
         private const string CreateRangeMethodNameForDictionary = "CreateRange`2";
 
-        private const string ImmutableCollectionsNamespace = "System.Collections.Immutable";
+        private const string ImmutableCollectionsAssembly = "System.Collections.Immutable";
 
         internal static Type? GetCompatibleGenericBaseClass(this Type type, Type baseType)
         {
@@ -142,12 +142,12 @@ namespace System.Text.Json.Serialization
             }
         }
 
-        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableArrayTypeName, ImmutableCollectionsNamespace)]
-        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableListTypeName, ImmutableCollectionsNamespace)]
-        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableStackTypeName, ImmutableCollectionsNamespace)]
-        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableQueueTypeName, ImmutableCollectionsNamespace)]
-        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableSortedSetTypeName, ImmutableCollectionsNamespace)]
-        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableHashSetTypeName, ImmutableCollectionsNamespace)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableArrayTypeName, ImmutableCollectionsAssembly)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableListTypeName, ImmutableCollectionsAssembly)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableStackTypeName, ImmutableCollectionsAssembly)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableQueueTypeName, ImmutableCollectionsAssembly)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableSortedSetTypeName, ImmutableCollectionsAssembly)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableHashSetTypeName, ImmutableCollectionsAssembly)]
         public static MethodInfo GetImmutableEnumerableCreateRangeMethod(this Type type, Type elementType)
         {
             Type? constructingType = GetImmutableEnumerableConstructingType(type);
@@ -170,8 +170,8 @@ namespace System.Text.Json.Serialization
             return null!;
         }
 
-        [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableDictionaryTypeName, ImmutableCollectionsNamespace)]
-        [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableSortedDictionaryTypeName, ImmutableCollectionsNamespace)]
+        [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableDictionaryTypeName, ImmutableCollectionsAssembly)]
+        [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableSortedDictionaryTypeName, ImmutableCollectionsAssembly)]
         public static MethodInfo GetImmutableDictionaryCreateRangeMethod(this Type type, Type elementType)
         {
             Type? constructingType = GetImmutableDictionaryConstructingType(type);
