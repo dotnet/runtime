@@ -4019,7 +4019,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	m.csig = csig;
 	m.image = get_method_image (method);
 
-	mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
+	if (invoke)
+		mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
 
 	/* The attribute is only available in Net 2.0 */
 	if (delegate_klass && mono_class_try_get_unmanaged_function_pointer_attribute_class ()) {
