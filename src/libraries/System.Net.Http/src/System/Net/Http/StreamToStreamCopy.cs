@@ -102,7 +102,7 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 // Dispose() should never throw, but since we're on an async codepath, make sure to catch the exception.
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
             }
         }
     }

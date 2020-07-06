@@ -107,7 +107,7 @@ namespace System.Net.Mail
                     _shouldAbort = false;
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _connection);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _connection);
 
                 if (EnableSsl)
                 {
@@ -122,12 +122,12 @@ namespace System.Net.Mail
 
         internal IAsyncResult BeginGetConnection(ContextAwareResult outerResult, AsyncCallback? callback, object? state, string host, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             IAsyncResult? result = null;
             try
             {
                 _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
-                if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _connection);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _connection);
                 if (EnableSsl)
                 {
                     _connection.EnableSsl = true;
@@ -141,7 +141,7 @@ namespace System.Net.Mail
                 throw new SmtpException(SR.MailHostNotFound, innerException);
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(this, "Sync completion");
                 NetEventSource.Exit(this);
@@ -151,14 +151,14 @@ namespace System.Net.Mail
 
         internal void EndGetConnection(IAsyncResult result)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             try
             {
                 _connection!.EndGetConnection(result);
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 

@@ -66,20 +66,20 @@ namespace System.Net.Mail
 
         public SmtpClient()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             try
             {
                 Initialize();
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 
         public SmtpClient(string? host)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, host);
             try
             {
                 _host = host;
@@ -87,13 +87,13 @@ namespace System.Net.Mail
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 
         public SmtpClient(string? host, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host, port);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, host, port);
             try
             {
                 if (port < 0)
@@ -107,7 +107,7 @@ namespace System.Net.Mail
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 
@@ -117,7 +117,7 @@ namespace System.Net.Mail
         private void Initialize()
         {
             _transport = new SmtpTransport(this);
-            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _transport);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _transport);
             _onSendCompletedDelegate = new SendOrPostCallback(SendCompletedWaitCallback);
 
             if (_host != null && _host.Length != 0)
@@ -399,7 +399,7 @@ namespace System.Net.Mail
 
         internal MailWriter GetFileMailWriter(string? pickupDirectory)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"{nameof(pickupDirectory)}={pickupDirectory}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{nameof(pickupDirectory)}={pickupDirectory}");
 
             if (!Path.IsPathRooted(pickupDirectory))
                 throw new SmtpException(SR.SmtpNeedAbsolutePickupDirectory);
@@ -440,7 +440,7 @@ namespace System.Net.Mail
 
         public void Send(MailMessage message)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, message);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, message);
 
             if (_disposed)
             {
@@ -448,7 +448,7 @@ namespace System.Net.Mail
             }
             try
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(this, $"DeliveryMethod={DeliveryMethod}");
                     NetEventSource.Associate(this, message);
@@ -552,7 +552,7 @@ namespace System.Net.Mail
                 }
                 catch (Exception e)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
 
                     if (e is SmtpFailedRecipientException && !((SmtpFailedRecipientException)e).fatal)
                     {
@@ -585,7 +585,7 @@ namespace System.Net.Mail
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 
@@ -605,7 +605,7 @@ namespace System.Net.Mail
                 throw new ObjectDisposedException(GetType().FullName);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, message, userToken, _transport);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, message, userToken, _transport);
 
             try
             {
@@ -700,7 +700,7 @@ namespace System.Net.Mail
                             _operationCompletedResult = new ContextAwareResult(_transport.IdentityRequired, true, null, this, s_contextSafeCompleteCallback);
                             lock (_operationCompletedResult.StartPostingAsyncOp())
                             {
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Calling BeginConnect. Transport: {_transport}");
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Calling BeginConnect. Transport: {_transport}");
                                 _transport.BeginGetConnection(_operationCompletedResult, ConnectCallback, _operationCompletedResult, Host!, Port);
                                 _operationCompletedResult.FinishPostingAsyncOp();
                             }
@@ -711,7 +711,7 @@ namespace System.Net.Mail
                 {
                     InCall = false;
 
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
 
                     if (e is SmtpFailedRecipientException && !((SmtpFailedRecipientException)e).fatal)
                     {
@@ -732,7 +732,7 @@ namespace System.Net.Mail
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 
@@ -757,7 +757,7 @@ namespace System.Net.Mail
                 throw new ObjectDisposedException(GetType().FullName);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             try
             {
@@ -771,7 +771,7 @@ namespace System.Net.Mail
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 
@@ -901,7 +901,7 @@ namespace System.Net.Mail
         private void Complete(Exception? exception, IAsyncResult result)
         {
             ContextAwareResult operationCompletedResult = (ContextAwareResult)result.AsyncState!;
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             try
             {
                 if (_cancelled)
@@ -913,7 +913,7 @@ namespace System.Net.Mail
                 // An individual failed recipient exception is benign, only abort here if ALL the recipients failed.
                 else if (exception != null && (!(exception is SmtpFailedRecipientException) || ((SmtpFailedRecipientException)exception).fatal))
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                     Abort();
 
                     if (!(exception is SmtpException))
@@ -942,7 +942,7 @@ namespace System.Net.Mail
                 operationCompletedResult.InvokeCallback(exception);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Complete");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Complete");
         }
 
         private static void ContextSafeCompleteCallback(IAsyncResult ar)
@@ -959,7 +959,7 @@ namespace System.Net.Mail
 
         private void SendMessageCallback(IAsyncResult result)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             try
             {
                 _message!.EndSend(result);
@@ -972,14 +972,14 @@ namespace System.Net.Mail
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 
 
         private void SendMailCallback(IAsyncResult result)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             try
             {
                 _writer = _transport.EndSendMail(result);
@@ -993,7 +993,7 @@ namespace System.Net.Mail
             catch (Exception e)
             {
                 Complete(e, result);
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 return;
             }
 
@@ -1015,13 +1015,13 @@ namespace System.Net.Mail
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 
         private void ConnectCallback(IAsyncResult result)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             try
             {
                 _transport.EndGetConnection(result);
@@ -1045,7 +1045,7 @@ namespace System.Net.Mail
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 

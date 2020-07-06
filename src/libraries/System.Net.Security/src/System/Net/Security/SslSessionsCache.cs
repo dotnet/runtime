@@ -117,7 +117,7 @@ namespace System.Net.Security
         {
             if (s_cachedCreds.Count == 0)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Not found, Current Cache Count = {s_cachedCreds.Count}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Not found, Current Cache Count = {s_cachedCreds.Count}");
                 return null;
             }
 
@@ -126,11 +126,11 @@ namespace System.Net.Security
             SafeCredentialReference? cached;
             if (!s_cachedCreds.TryGetValue(key, out cached) || cached.IsClosed || cached.Target.IsInvalid)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Not found or invalid, Current Cache Coun = {s_cachedCreds.Count}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Not found or invalid, Current Cache Coun = {s_cachedCreds.Count}");
                 return null;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Found a cached Handle = {cached.Target}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Found a cached Handle = {cached.Target}");
 
             return cached.Target;
         }
@@ -149,7 +149,7 @@ namespace System.Net.Security
 
             if (creds!.IsInvalid)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Refused to cache an Invalid Handle {creds}, Current Cache Count = {s_cachedCreds.Count}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Refused to cache an Invalid Handle {creds}, Current Cache Count = {s_cachedCreds.Count}");
                 return;
             }
 
@@ -172,7 +172,7 @@ namespace System.Net.Security
                         }
 
                         s_cachedCreds[key] = cached;
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Caching New Handle = {creds}, Current Cache Count = {s_cachedCreds.Count}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Caching New Handle = {creds}, Current Cache Count = {s_cachedCreds.Count}");
 
                         //
                         // A simplest way of preventing infinite cache grows.
@@ -207,18 +207,18 @@ namespace System.Net.Security
                                     }
                                 }
                             }
-                            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Scavenged cache, New Cache Count = {s_cachedCreds.Count}");
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Scavenged cache, New Cache Count = {s_cachedCreds.Count}");
                         }
                     }
-                    else if (NetEventSource.IsEnabled)
+                    else if (NetEventSource.Log.IsEnabled())
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"CacheCredential() (locked retry) Found already cached Handle = {cached.Target}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"CacheCredential() (locked retry) Found already cached Handle = {cached.Target}");
                     }
                 }
             }
-            else if (NetEventSource.IsEnabled)
+            else if (NetEventSource.Log.IsEnabled())
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"CacheCredential() Ignoring incoming handle = {creds} since found already cached Handle = {cached.Target}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"CacheCredential() Ignoring incoming handle = {creds} since found already cached Handle = {cached.Target}");
             }
         }
     }

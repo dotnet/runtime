@@ -134,7 +134,7 @@ namespace System.Net
 
             if (result != SocketError.Success)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"GetHostName failed with {result}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"GetHostName failed with {result}");
                 throw new SocketException();
             }
 

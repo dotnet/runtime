@@ -254,7 +254,7 @@ namespace System.Net.Http
                 PreAuthCredentials = new CredentialCache();
             }
 
-            if (NetEventSource.IsEnabled) Trace($"{this}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{this}");
         }
 
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http3 };
@@ -276,7 +276,7 @@ namespace System.Net.Http
             // pretends they're part of the default when running on Win7/2008R2.
             if (s_isWindows7Or2008R2 && sslOptions.EnabledSslProtocols == SslProtocols.None)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(poolManager, $"Win7OrWin2K8R2 platform, Changing default TLS protocols to {SecurityProtocol.DefaultSecurityProtocols}");
                 }
@@ -429,7 +429,7 @@ namespace System.Net.Http
                     if (validConnection)
                     {
                         // We found a valid connection.  Return it.
-                        if (NetEventSource.IsEnabled) conn.Trace("Found usable connection in pool.");
+                        if (NetEventSource.Log.IsEnabled()) conn.Trace("Found usable connection in pool.");
                         return new ValueTask<HttpConnection?>(conn);
                     }
                 }
@@ -437,12 +437,12 @@ namespace System.Net.Http
                 // We got a connection, but it was already closed by the server or the
                 // server sent unexpected data or the connection is too old.  In any case,
                 // we can't use the connection, so get rid of it and loop around to try again.
-                if (NetEventSource.IsEnabled) conn.Trace("Found invalid connection in pool.");
+                if (NetEventSource.Log.IsEnabled()) conn.Trace("Found invalid connection in pool.");
                 conn.Dispose();
             }
 
             // We are at the connection limit. Wait for an available connection or connection count (indicated by null).
-            if (NetEventSource.IsEnabled) Trace("Connection limit reached, waiting for available connection.");
+            if (NetEventSource.Log.IsEnabled()) Trace("Connection limit reached, waiting for available connection.");
             return async ?
                 waiter.WaitWithCancellationAsync(cancellationToken) :
                 new ValueTask<HttpConnection?>(waiter.Task.GetAwaiter().GetResult());
@@ -457,7 +457,7 @@ namespace System.Net.Http
                 return (connection, false, null);
             }
 
-            if (NetEventSource.IsEnabled) Trace("Creating new connection for pool.");
+            if (NetEventSource.Log.IsEnabled()) Trace("Creating new connection for pool.");
 
             try
             {
@@ -497,7 +497,7 @@ namespace System.Net.Http
                 else
                 {
                     // Connection exist and it is still good to use.
-                    if (NetEventSource.IsEnabled) Trace("Using existing HTTP2 connection.");
+                    if (NetEventSource.Log.IsEnabled()) Trace("Using existing HTTP2 connection.");
                     _usedSinceLastCleanup = true;
                     return (http2Connection, false, null);
                 }
@@ -528,7 +528,7 @@ namespace System.Net.Http
                 {
                     // Someone beat us to it
 
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace("Using existing HTTP2 connection.");
                     }
@@ -539,7 +539,7 @@ namespace System.Net.Http
                 // Recheck if HTTP2 has been disabled by a previous attempt.
                 if (_http2Enabled)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace("Attempting new HTTP2 connection.");
                     }
@@ -561,7 +561,7 @@ namespace System.Net.Http
                         Debug.Assert(_http2Connection == null);
                         _http2Connection = http2Connection;
 
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             Trace("New unencrypted HTTP2 connection established.");
                         }
@@ -585,7 +585,7 @@ namespace System.Net.Http
                         Debug.Assert(_http2Connection == null);
                         _http2Connection = http2Connection;
 
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             Trace("New HTTP2 connection established.");
                         }
@@ -603,7 +603,7 @@ namespace System.Net.Http
             {
                 // We established an SSL connection, but the server denied our request for HTTP2.
                 // Continue as an HTTP/1.1 connection.
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     Trace("Server does not support HTTP2; disabling HTTP2 use and proceeding with HTTP/1.1 connection");
                 }
@@ -635,7 +635,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace("Discarding downgraded HTTP/1.1 connection because connection limit is exceeded");
                     }
@@ -668,7 +668,7 @@ namespace System.Net.Http
                 else
                 {
                     // Connection exists and it is still good to use.
-                    if (NetEventSource.IsEnabled) Trace("Using existing HTTP3 connection.");
+                    if (NetEventSource.Log.IsEnabled()) Trace("Using existing HTTP3 connection.");
                     _usedSinceLastCleanup = true;
                     return (http3Connection, false, null);
                 }
@@ -693,7 +693,7 @@ namespace System.Net.Http
                 {
                     // Someone beat us to creating the connection.
 
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace("Using existing HTTP3 connection.");
                     }
@@ -701,7 +701,7 @@ namespace System.Net.Http
                     return (_http3Connection, false, null);
                 }
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     Trace("Attempting new HTTP3 connection.");
                 }
@@ -720,7 +720,7 @@ namespace System.Net.Http
                 http3Connection = new Http3Connection(this, _originAuthority, authority, quicConnection);
                 _http3Connection = http3Connection;
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     Trace("New HTTP3 connection established.");
                 }
@@ -773,7 +773,7 @@ namespace System.Net.Http
                 }
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnLowerHttpVersion)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace($"Retrying request after exception on existing connection: {e}");
                     }
@@ -786,7 +786,7 @@ namespace System.Net.Http
                 }
                 catch (HttpRequestException e) when (!isNewConnection && e.AllowRetry == RequestRetryType.RetryOnSameOrNextProxy)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace($"Retrying request after exception on existing connection: {e}");
                     }
@@ -1223,7 +1223,7 @@ namespace System.Net.Http
         {
             Debug.Assert(Monitor.IsEntered(SyncObj), $"Expected to be holding {nameof(SyncObj)}");
 
-            if (NetEventSource.IsEnabled) Trace(null);
+            if (NetEventSource.Log.IsEnabled()) Trace(null);
             _usedSinceLastCleanup = true;
 
             Debug.Assert(
@@ -1268,7 +1268,7 @@ namespace System.Net.Http
         /// </summary>
         public void DecrementConnectionCount()
         {
-            if (NetEventSource.IsEnabled) Trace(null);
+            if (NetEventSource.Log.IsEnabled()) Trace(null);
             lock (SyncObj)
             {
                 Debug.Assert(_associatedConnectionCount > 0 && _associatedConnectionCount <= _maxConnections,
@@ -1279,7 +1279,7 @@ namespace System.Net.Http
 
                 if (TransferConnection(null))
                 {
-                    if (NetEventSource.IsEnabled) Trace("Transferred connection count to waiter.");
+                    if (NetEventSource.Log.IsEnabled()) Trace("Transferred connection count to waiter.");
                     return;
                 }
 
@@ -1314,7 +1314,7 @@ namespace System.Net.Http
                         receivedUnexpectedData = connection.EnsureReadAheadAndPollRead();
                         if (!receivedUnexpectedData && TransferConnection(connection))
                         {
-                            if (NetEventSource.IsEnabled) connection.Trace("Transferred connection to waiter.");
+                            if (NetEventSource.Log.IsEnabled()) connection.Trace("Transferred connection to waiter.");
                             return;
                         }
                     }
@@ -1332,7 +1332,7 @@ namespace System.Net.Http
                     {
                         // Pool the connection by adding it to the list.
                         list.Add(new CachedConnection(connection));
-                        if (NetEventSource.IsEnabled) connection.Trace("Stored connection in pool.");
+                        if (NetEventSource.Log.IsEnabled()) connection.Trace("Stored connection in pool.");
                         return;
                     }
                 }
@@ -1340,7 +1340,7 @@ namespace System.Net.Http
 
             // The connection could be not be reused.  Dispose of it.
             // Disposing it will alert any waiters that a connection slot has become available.
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 connection.Trace(
                     lifetimeExpired ? "Disposing connection return to pool. Connection lifetime expired." :
@@ -1384,7 +1384,7 @@ namespace System.Net.Http
             {
                 if (!_disposed)
                 {
-                    if (NetEventSource.IsEnabled) Trace("Disposing pool.");
+                    if (NetEventSource.Log.IsEnabled()) Trace("Disposing pool.");
                     _disposed = true;
                     list.ForEach(c => c._connection.Dispose());
                     list.Clear();
@@ -1430,7 +1430,7 @@ namespace System.Net.Http
 
             try
             {
-                if (NetEventSource.IsEnabled) Trace("Cleaning pool.");
+                if (NetEventSource.Log.IsEnabled()) Trace("Cleaning pool.");
                 Monitor.Enter(SyncObj, ref tookLock);
 
                 // Get the current time.  This is compared against each connection's last returned
@@ -1592,7 +1592,7 @@ namespace System.Net.Http
                 if ((pooledConnectionIdleTimeout != Timeout.InfiniteTimeSpan) &&
                     ((nowTicks - _returnedTickCount) > pooledConnectionIdleTimeout.TotalMilliseconds))
                 {
-                    if (NetEventSource.IsEnabled) _connection.Trace($"Connection no longer usable. Idle {TimeSpan.FromMilliseconds((nowTicks - _returnedTickCount))} > {pooledConnectionIdleTimeout}.");
+                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Connection no longer usable. Idle {TimeSpan.FromMilliseconds((nowTicks - _returnedTickCount))} > {pooledConnectionIdleTimeout}.");
                     return false;
                 }
 
@@ -1605,7 +1605,7 @@ namespace System.Net.Http
                 // Validate that the connection hasn't received any stray data while in the pool.
                 if (poll && _connection.PollRead())
                 {
-                    if (NetEventSource.IsEnabled) _connection.Trace($"Connection no longer usable. Unexpected data received.");
+                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Connection no longer usable. Unexpected data received.");
                     return false;
                 }
 

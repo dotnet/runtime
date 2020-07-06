@@ -21,19 +21,19 @@ namespace System.Net.Http
 
         public HttpMessageInvoker(HttpMessageHandler handler, bool disposeHandler)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, handler);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, handler);
 
             if (handler == null)
             {
                 throw new ArgumentNullException(nameof(handler));
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, handler);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, handler);
 
             _handler = handler;
             _disposeHandler = disposeHandler;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public virtual HttpResponseMessage Send(HttpRequestMessage request,
@@ -45,11 +45,11 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, request);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, request);
 
             HttpResponseMessage response = _handler.Send(request, cancellationToken);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, response);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, response);
 
             return response;
         }
@@ -63,11 +63,11 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, request);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, request);
 
             Task<HttpResponseMessage> task = _handler.SendAsync(request, cancellationToken);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, task);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, task);
 
             return task;
         }

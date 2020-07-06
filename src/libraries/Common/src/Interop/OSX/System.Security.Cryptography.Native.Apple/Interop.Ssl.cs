@@ -399,7 +399,7 @@ internal static partial class Interop
                 case 1:
                     return true;
                 default:
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                         NetEventSource.Error(null, $"AppleCryptoNative_SslIsHostnameMatch returned '{result}' for '{hostName}'");
                     Debug.Fail($"AppleCryptoNative_SslIsHostnameMatch returned {result}");
                     throw new SslException();

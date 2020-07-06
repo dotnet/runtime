@@ -44,7 +44,7 @@ namespace System.Net.Http
             if (!isProxyAuth && connection.Kind == HttpConnectionKind.Proxy && !ProxySupportsConnectionAuth(response))
             {
                 // Proxy didn't indicate that it supports connection-based auth, so we can't proceed.
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(connection, $"Proxy doesn't support connection-based auth, uri={authUri}");
                 }
@@ -77,7 +77,7 @@ namespace System.Net.Http
                             needDrain = false;
                         }
 
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             NetEventSource.Info(connection, $"Authentication: {challenge.AuthenticationType}, Uri: {authUri.AbsoluteUri.ToString()}");
                         }
@@ -91,7 +91,7 @@ namespace System.Net.Http
                         {
                             // Use the host name without any normalization.
                             hostName = request.Headers.Host;
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                             {
                                 NetEventSource.Info(connection, $"Authentication: {challenge.AuthenticationType}, Host: {hostName}");
                             }
@@ -115,7 +115,7 @@ namespace System.Net.Http
                         }
 
                         string spn = "HTTP/" + hostName;
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             NetEventSource.Info(connection, $"Authentication: {challenge.AuthenticationType}, SPN: {spn}");
                         }

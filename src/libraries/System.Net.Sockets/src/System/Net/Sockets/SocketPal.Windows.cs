@@ -49,12 +49,12 @@ namespace System.Net.Sockets
             if (socket.IsInvalid)
             {
                 SocketError error = GetLastSocketError();
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"WSASocketW failed with error {error}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"WSASocketW failed with error {error}");
                 socket.Dispose();
                 return error;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
             return SocketError.Success;
         }
 
@@ -92,7 +92,7 @@ namespace System.Net.Sockets
                 if (socket.IsInvalid)
                 {
                     SocketError error = GetLastSocketError();
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"WSASocketW failed with error {error}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"WSASocketW failed with error {error}");
                     socket.Dispose();
                     return error;
                 }
@@ -102,13 +102,13 @@ namespace System.Net.Sockets
                     // Returning SocketError for consistency, since the call site can deal with conversion, and
                     // the most common SetHandleInformation error (AccessDenied) is included in SocketError anyways:
                     SocketError error = GetLastSocketError();
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"SetHandleInformation failed with error {error}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"SetHandleInformation failed with error {error}");
                     socket.Dispose();
 
                     return error;
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
                 Interop.Winsock.WSAPROTOCOL_INFOW* protocolInfo = (Interop.Winsock.WSAPROTOCOL_INFOW*)protocolInfoBytes;
                 addressFamily = protocolInfo->iAddressFamily;
@@ -181,7 +181,7 @@ namespace System.Net.Sockets
             IntPtr handle = Interop.Winsock.accept(listenSocket, socketAddress, ref socketAddressSize);
 
             socket = new SafeSocketHandle(handle, ownsHandle: true);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
             return socket.IsInvalid ? GetLastSocketError() : SocketError.Success;
         }
@@ -986,7 +986,7 @@ namespace System.Net.Sockets
                                 IntPtr.Zero);
                     }
                 }
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Info(null, $"Interop.Winsock.select returns socketCount:{socketCount}");
 
                 if ((SocketError)socketCount == SocketError.SocketError)

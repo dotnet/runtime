@@ -19,7 +19,7 @@ namespace System.Net
         [NonEvent]
         public static void Accepted(Socket socket, object? remoteEp, object? localEp)
         {
-            if (IsEnabled)
+            if (Log.IsEnabled())
             {
                 Log.Accepted(IdOf(remoteEp), IdOf(localEp), GetHashCode(socket));
             }
@@ -34,7 +34,7 @@ namespace System.Net
         [NonEvent]
         public static void Connected(Socket socket, object? localEp, object? remoteEp)
         {
-            if (IsEnabled)
+            if (Log.IsEnabled())
             {
                 Log.Connected(IdOf(localEp), IdOf(remoteEp), GetHashCode(socket));
             }
@@ -49,7 +49,7 @@ namespace System.Net
         [NonEvent]
         public static void ConnectedAsyncDns(Socket socket)
         {
-            if (IsEnabled)
+            if (Log.IsEnabled())
             {
                 Log.ConnectedAsyncDns(GetHashCode(socket));
             }
@@ -64,7 +64,7 @@ namespace System.Net
         [NonEvent]
         public static void NotLoggedFile(string filePath, Socket socket, SocketAsyncOperation completedOperation)
         {
-            if (IsEnabled)
+            if (Log.IsEnabled())
             {
                 Log.NotLoggedFile(filePath, GetHashCode(socket), completedOperation);
             }
@@ -95,7 +95,7 @@ namespace System.Net
         [NonEvent]
         public static void DumpBuffer(object thisOrContextObject, Memory<byte> buffer, int offset, int count, [CallerMemberName] string? memberName = null)
         {
-            if (IsEnabled)
+            if (Log.IsEnabled())
             {
                 if (offset < 0 || offset > buffer.Length - count)
                 {

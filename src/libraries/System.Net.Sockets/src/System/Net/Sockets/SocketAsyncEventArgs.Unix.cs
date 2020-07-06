@@ -334,7 +334,7 @@ namespace System.Net.Sockets
             // This should only be called if tracing is enabled. However, there is the potential for a race
             // condition where tracing is disabled between a calling check and here, in which case the assert
             // may fire erroneously.
-            Debug.Assert(NetEventSource.IsEnabled);
+            Debug.Assert(NetEventSource.Log.IsEnabled());
 
             if (_bufferList == null)
             {

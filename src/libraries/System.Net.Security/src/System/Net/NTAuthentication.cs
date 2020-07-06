@@ -20,7 +20,7 @@ namespace System.Net
                 }
 
                 string? name = NegotiateStreamPal.QueryContextAssociatedName(_securityContext!);
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"NTAuthentication: The context is associated with [{name}]");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"NTAuthentication: The context is associated with [{name}]");
                 return name;
             }
         }

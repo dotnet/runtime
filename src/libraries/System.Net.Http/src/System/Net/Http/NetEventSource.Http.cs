@@ -22,7 +22,7 @@ namespace System.Net
         [NonEvent]
         public static void UriBaseAddress(object obj, Uri? baseAddress)
         {
-            Debug.Assert(IsEnabled);
+            Debug.Assert(Log.IsEnabled());
             Log.UriBaseAddress(baseAddress?.ToString(), IdOf(obj), GetHashCode(obj));
         }
 
@@ -33,7 +33,7 @@ namespace System.Net
         [NonEvent]
         public static void ContentNull(object obj)
         {
-            Debug.Assert(IsEnabled);
+            Debug.Assert(Log.IsEnabled());
             Log.ContentNull(IdOf(obj), GetHashCode(obj));
         }
 
@@ -44,7 +44,7 @@ namespace System.Net
         [NonEvent]
         public static void ClientSendCompleted(HttpClient httpClient, HttpResponseMessage response, HttpRequestMessage request)
         {
-            Debug.Assert(IsEnabled);
+            Debug.Assert(Log.IsEnabled());
             Log.ClientSendCompleted(response?.ToString(), GetHashCode(request), GetHashCode(response), GetHashCode(httpClient));
         }
 
@@ -67,7 +67,7 @@ namespace System.Net
         [NonEvent]
         public static void AuthenticationInfo(Uri uri, string message)
         {
-            Debug.Assert(IsEnabled);
+            Debug.Assert(Log.IsEnabled());
             Log.AuthenticationInfo(uri?.ToString(), message);
         }
 
@@ -78,7 +78,7 @@ namespace System.Net
         [NonEvent]
         public static void AuthenticationError(Uri? uri, string message)
         {
-            Debug.Assert(IsEnabled);
+            Debug.Assert(Log.IsEnabled());
             Log.AuthenticationError(uri?.ToString(), message);
         }
 

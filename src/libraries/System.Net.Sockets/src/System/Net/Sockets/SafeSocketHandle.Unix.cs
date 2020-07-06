@@ -243,7 +243,7 @@ namespace System.Net.Sockets
             // EWOULDBLOCK, in which case we need to do some recovery.
             if (!abortive)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle} Following 'non-abortive' branch.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle} Following 'non-abortive' branch.");
 
                 // Close, and if its errno is other than EWOULDBLOCK, there's nothing more to do - we either succeeded or failed.
                 errorCode = CloseHandle(handle);
@@ -274,7 +274,7 @@ namespace System.Net.Sockets
 #if DEBUG
             _closeSocketLinger = SocketPal.GetSocketErrorForErrorCode(errorCode);
 #endif
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, setsockopt():{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, setsockopt():{errorCode}");
 
             switch (errorCode)
             {
@@ -309,7 +309,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(this, remappedError ?
                     $"handle:{handle}, close():ECONNRESET, but treating it as SUCCESS" :

@@ -14,7 +14,7 @@ namespace System.Net.Http
         {
             public RawConnectionStream(HttpConnection connection) : base(connection)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
             }
 
             public sealed override bool CanRead => true;

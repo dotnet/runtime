@@ -305,7 +305,7 @@ namespace System.Net.Http
 
                 if (frameType != Http3FrameType.Headers)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace($"Expected HEADERS as first response frame; recieved {frameType}.");
                     }
@@ -454,7 +454,7 @@ namespace System.Net.Http
                         // Per spec, 0-length payload is allowed.
                         if (payloadLength != 0)
                         {
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                             {
                                 Trace("Response content exceeded Content-Length.");
                             }
@@ -794,7 +794,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        if (NetEventSource.IsEnabled) Trace($"Server closed response stream before entire header payload could be read. {headersLength:N0} bytes remaining.");
+                        if (NetEventSource.Log.IsEnabled()) Trace($"Server closed response stream before entire header payload could be read. {headersLength:N0} bytes remaining.");
                         throw new HttpRequestException(SR.net_http_invalid_response_premature_eof);
                     }
                 }
@@ -836,7 +836,7 @@ namespace System.Net.Http
         {
             if (!HeaderDescriptor.TryGetStaticQPackHeader(index, out descriptor, out knownValue))
             {
-                if (NetEventSource.IsEnabled) Trace($"Response contains invalid static header index '{index}'.");
+                if (NetEventSource.Log.IsEnabled()) Trace($"Response contains invalid static header index '{index}'.");
                 throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
             }
         }
@@ -852,13 +852,13 @@ namespace System.Net.Http
             {
                 if (descriptor.KnownHeader != KnownHeaders.PseudoStatus)
                 {
-                    if (NetEventSource.IsEnabled) Trace($"Received unknown pseudo-header '{descriptor.Name}'.");
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Received unknown pseudo-header '{descriptor.Name}'.");
                     throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
                 }
 
                 if (_headerState != HeaderState.StatusHeader)
                 {
-                    if (NetEventSource.IsEnabled) Trace("Received extra status header.");
+                    if (NetEventSource.Log.IsEnabled()) Trace("Received extra status header.");
                     throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
                 }
 
@@ -907,7 +907,7 @@ namespace System.Net.Http
                         // If the final status code is >= 300, skip sending the body.
                         bool shouldSendBody = (statusCode < 300);
 
-                        if (NetEventSource.IsEnabled) Trace($"Expecting 100 Continue but received final status {statusCode}.");
+                        if (NetEventSource.Log.IsEnabled()) Trace($"Expecting 100 Continue but received final status {statusCode}.");
                         _expect100ContinueCompletionSource.TrySetResult(shouldSendBody);
                     }
                 }
@@ -924,7 +924,7 @@ namespace System.Net.Http
                 switch (_headerState)
                 {
                     case HeaderState.StatusHeader:
-                        if (NetEventSource.IsEnabled) Trace($"Received headers without :status.");
+                        if (NetEventSource.Log.IsEnabled()) Trace($"Received headers without :status.");
                         throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
                     case HeaderState.ResponseHeaders when descriptor.HeaderType.HasFlag(HttpHeaderType.Content):
                         _response!.Content!.Headers.TryAddWithoutValidation(descriptor, headerValue);

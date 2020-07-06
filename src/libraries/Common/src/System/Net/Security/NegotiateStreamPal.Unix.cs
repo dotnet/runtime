@@ -284,7 +284,7 @@ namespace System.Net.Security
 
             if (context == null)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     string protocol = isNtlmOnly ? "NTLM" : "SPNEGO";
                     NetEventSource.Info(context, $"requested protocol = {protocol}, target = {targetName}");
@@ -315,7 +315,7 @@ namespace System.Net.Security
 
                 if (done)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         string protocol = isNtlmOnly ? "NTLM" : isNtlmUsed ? "SPNEGO-NTLM" : "SPNEGO-Kerberos";
                         NetEventSource.Info(context, $"actual protocol = {protocol}");
@@ -344,7 +344,7 @@ namespace System.Net.Security
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
             }
         }
@@ -431,7 +431,7 @@ namespace System.Net.Security
                 SecurityStatusPalErrorCode errorCode;
                 if (done)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         string protocol = isNtlmUsed ? "SPNEGO-NTLM" : "SPNEGO-Kerberos";
                         NetEventSource.Info(securityContext, $"AcceptSecurityContext: actual protocol = {protocol}");
@@ -449,12 +449,12 @@ namespace System.Net.Security
             }
             catch (Interop.NetSecurityNative.GssApiException gex)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, gex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
                 return new SecurityStatusPal(GetErrorCode(gex), gex);
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
             }
         }
@@ -495,7 +495,7 @@ namespace System.Net.Security
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
                 throw;
             }
         }

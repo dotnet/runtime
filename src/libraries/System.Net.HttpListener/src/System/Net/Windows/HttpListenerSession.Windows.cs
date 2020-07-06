@@ -23,7 +23,7 @@ namespace System.Net
                         if (_requestQueueBoundHandle == null)
                         {
                             _requestQueueBoundHandle = ThreadPoolBoundHandle.BindHandle(RequestQueueHandle);
-                            if (NetEventSource.IsEnabled) NetEventSource.Info($"ThreadPoolBoundHandle.BindHandle({RequestQueueHandle}) -> {_requestQueueBoundHandle}");
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"ThreadPoolBoundHandle.BindHandle({RequestQueueHandle}) -> {_requestQueueBoundHandle}");
                         }
                     }
                 }
@@ -64,7 +64,7 @@ namespace System.Net
             {
                 if (!RequestQueueHandle.IsInvalid)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info($"Dispose ThreadPoolBoundHandle: {_requestQueueBoundHandle}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"Dispose ThreadPoolBoundHandle: {_requestQueueBoundHandle}");
                     _requestQueueBoundHandle?.Dispose();
                     RequestQueueHandle.Dispose();
 

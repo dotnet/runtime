@@ -383,7 +383,7 @@ namespace System.Net.Http
                         default:
                         case ParsingState.Done: // shouldn't be called once we're done
                             Debug.Fail($"Unexpected state: {_state}");
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                             {
                                 NetEventSource.Error(this, $"Unexpected state: {_state}");
                             }

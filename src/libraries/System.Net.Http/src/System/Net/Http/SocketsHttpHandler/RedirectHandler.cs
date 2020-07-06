@@ -27,7 +27,7 @@ namespace System.Net.Http
 
         internal override async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, request, cancellationToken);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, request, cancellationToken);
 
             HttpResponseMessage response = await _initialInnerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
 
@@ -42,7 +42,7 @@ namespace System.Net.Http
                 {
                     // If we exceed the maximum number of redirects
                     // then just return the 3xx response.
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         TraceError($"Exceeded max number of redirects. Redirect from {request.RequestUri} to {redirectUri} blocked.", request.GetHashCode());
                     }
@@ -55,7 +55,7 @@ namespace System.Net.Http
                 // Clear the authorization header.
                 request.Headers.Authorization = null;
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     Trace($"Redirecting from {request.RequestUri} to {redirectUri} in response to status code {(int)response.StatusCode} '{response.StatusCode}'.", request.GetHashCode());
                 }
@@ -64,7 +64,7 @@ namespace System.Net.Http
                 request.RequestUri = redirectUri;
                 if (RequestRequiresForceGet(response.StatusCode, request.Method))
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace($"Modified request from {request.Method} to {HttpMethod.Get} in response to status code {(int)response.StatusCode} '{response.StatusCode}'.", request.GetHashCode());
                     }
@@ -81,7 +81,7 @@ namespace System.Net.Http
                 response = await _redirectInnerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
 
             return response;
         }
@@ -129,7 +129,7 @@ namespace System.Net.Http
             // Disallow automatic redirection from secure to non-secure schemes
             if (HttpUtilities.IsSupportedSecureScheme(requestUri.Scheme) && !HttpUtilities.IsSupportedSecureScheme(location.Scheme))
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     TraceError($"Insecure https to http redirect from '{requestUri}' to '{location}' blocked.", response.RequestMessage!.GetHashCode());
                 }

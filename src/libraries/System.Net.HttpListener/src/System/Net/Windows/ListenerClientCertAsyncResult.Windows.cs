@@ -114,7 +114,7 @@ namespace System.Net
                     Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO* pClientCertInfo = asyncResult._memoryBlob;
                     if (pClientCertInfo != null)
                     {
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                             NetEventSource.Info(null,
   $"pClientCertInfo:{(IntPtr)pClientCertInfo} pClientCertInfo->CertFlags: {pClientCertInfo->CertFlags} pClientCertInfo->CertEncodedSize: {pClientCertInfo->CertEncodedSize} pClientCertInfo->pCertEncoded: {(IntPtr)pClientCertInfo->pCertEncoded} pClientCertInfo->Token: {(IntPtr)pClientCertInfo->Token} pClientCertInfo->CertDeniedByMapper: {pClientCertInfo->CertDeniedByMapper}");
                         if (pClientCertInfo->pCertEncoded != null)
@@ -127,14 +127,14 @@ namespace System.Net
                             }
                             catch (CryptographicException exception)
                             {
-                                if (NetEventSource.IsEnabled)
+                                if (NetEventSource.Log.IsEnabled())
                                     NetEventSource.Info(null,
           $"HttpListenerRequest: {httpListenerRequest} caught CryptographicException: {exception}");
                                 result = exception;
                             }
                             catch (SecurityException exception)
                             {
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"HttpListenerRequest: {httpListenerRequest} caught SecurityException: {exception}");
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"HttpListenerRequest: {httpListenerRequest} caught SecurityException: {exception}");
                                 result = exception;
                             }
                         }
@@ -143,7 +143,7 @@ namespace System.Net
                 }
 
                 // complete the async IO and invoke the callback
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Calling Complete()");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Calling Complete()");
             }
             catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
             {
@@ -163,7 +163,7 @@ namespace System.Net
         private static unsafe void WaitCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
             ListenerClientCertAsyncResult asyncResult = (ListenerClientCertAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"errorCode:[{errorCode}] numBytes:[{numBytes}] nativeOverlapped:[{((long)nativeOverlapped)}]");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode:[{errorCode}] numBytes:[{numBytes}] nativeOverlapped:[{((long)nativeOverlapped)}]");
             IOCompleted(asyncResult, errorCode, numBytes);
         }
 

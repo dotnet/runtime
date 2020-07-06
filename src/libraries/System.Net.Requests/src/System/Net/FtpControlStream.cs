@@ -222,7 +222,7 @@ namespace System.Net
         //    This function controls the setting up of a data socket/connection, and of saving off the server responses.
         protected override PipelineInstruction PipelineCallback(PipelineEntry? entry, ResponseDescription? response, bool timeout, ref Stream? stream)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Command:{entry?.Command} Description:{response?.StatusDescription}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Command:{entry?.Command} Description:{response?.StatusDescription}");
 
             // null response is not expected
             if (response == null)
@@ -453,7 +453,7 @@ namespace System.Net
             bool resetLoggedInState = false;
             FtpWebRequest request = (FtpWebRequest)req;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
 
             _responseUri = request.RequestUri;
             ArrayList commandList = new ArrayList();
@@ -690,7 +690,7 @@ namespace System.Net
             {
                 IPEndPoint passiveEndPoint = _passiveEndPoint;
                 _passiveEndPoint = null;
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "starting Connect()");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "starting Connect()");
                 if (_isAsync)
                 {
                     _dataSocket!.BeginConnect(passiveEndPoint, s_connectCallbackDelegate, this);
@@ -704,7 +704,7 @@ namespace System.Net
             }
             else
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "starting Accept()");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "starting Accept()");
 
                 if (_isAsync)
                 {
@@ -1152,7 +1152,7 @@ namespace System.Net
 
         protected override bool CheckValid(ResponseDescription response, ref int validThrough, ref int completeLength)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"CheckValid({response.StatusBuffer})");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"CheckValid({response.StatusBuffer})");
 
             // If the response is less than 4 bytes long, it is too short to tell, so return true, valid so far.
             if (response.StatusBuffer.Length < 4)

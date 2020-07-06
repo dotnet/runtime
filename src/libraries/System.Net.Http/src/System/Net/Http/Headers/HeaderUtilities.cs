@@ -142,7 +142,7 @@ namespace System.Net.Http.Headers
                     return qualityValue;
                 }
                 // If the stored value is an invalid quality value, just return null and log a warning.
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_invalid_quality, qualityParameter.Value));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_invalid_quality, qualityParameter.Value));
             }
             return null;
         }
@@ -381,7 +381,7 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_wrong_email_format, value));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_wrong_email_format, value));
                 return false;
             }
         }

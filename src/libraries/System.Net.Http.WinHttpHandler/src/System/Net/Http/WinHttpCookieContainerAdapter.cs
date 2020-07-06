@@ -32,12 +32,12 @@ namespace System.Net.Http
                 try
                 {
                     cookieContainer.SetCookies(request.RequestUri, cookieHeader);
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(cookieContainer, $"Added cookie: {cookieHeader}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(cookieContainer, $"Added cookie: {cookieHeader}");
                 }
                 catch (CookieException)
                 {
                     // We ignore malformed cookies in the response.
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(cookieContainer, $"Ignoring invalid cookie: {cookieHeader}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(cookieContainer, $"Ignoring invalid cookie: {cookieHeader}");
                 }
             }
         }

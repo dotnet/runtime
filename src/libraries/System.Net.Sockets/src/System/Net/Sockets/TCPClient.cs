@@ -30,7 +30,7 @@ namespace System.Net.Sockets
         // Initializes a new instance of the System.Net.Sockets.TcpClient class.
         public TcpClient(AddressFamily family)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, family);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, family);
 
             // Validate parameter
             if (family != AddressFamily.InterNetwork &&
@@ -43,13 +43,13 @@ namespace System.Net.Sockets
             _family = family;
             InitializeClientSocket();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Initializes a new instance of the System.Net.Sockets.TcpClient class with the specified end point.
         public TcpClient(IPEndPoint localEP)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, localEP);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, localEP);
 
             if (localEP == null)
             {
@@ -60,14 +60,14 @@ namespace System.Net.Sockets
             InitializeClientSocket();
             _clientSocket.Bind(localEP);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Initializes a new instance of the System.Net.Sockets.TcpClient class and connects to the specified port on
         // the specified host.
         public TcpClient(string hostname, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, hostname);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, hostname);
 
             if (hostname == null)
             {
@@ -88,18 +88,18 @@ namespace System.Net.Sockets
                 throw;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Used by TcpListener.Accept().
         internal TcpClient(Socket acceptedSocket)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, acceptedSocket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, acceptedSocket);
 
             _clientSocket = acceptedSocket;
             _active = true;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Used by the class to indicate that a connection has been made.
@@ -139,7 +139,7 @@ namespace System.Net.Sockets
         // Connects the Client to the specified port on the specified host.
         public void Connect(string hostname, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, hostname);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, hostname);
 
             ThrowIfDisposed();
 
@@ -229,13 +229,13 @@ namespace System.Net.Sockets
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Connects the Client to the specified port on the specified host.
         public void Connect(IPAddress address, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, address);
 
             ThrowIfDisposed();
 
@@ -251,13 +251,13 @@ namespace System.Net.Sockets
             IPEndPoint remoteEP = new IPEndPoint(address, port);
             Connect(remoteEP);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Connect the Client to the specified end point.
         public void Connect(IPEndPoint remoteEP)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, remoteEP);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, remoteEP);
 
             ThrowIfDisposed();
 
@@ -270,47 +270,47 @@ namespace System.Net.Sockets
             _family = Client.AddressFamily;
             _active = true;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public void Connect(IPAddress[] ipAddresses, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, ipAddresses);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, ipAddresses);
 
             Client.Connect(ipAddresses, port);
             _family = Client.AddressFamily;
             _active = true;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public Task ConnectAsync(IPAddress address, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, address);
 
             Task result = CompleteConnectAsync(Client.ConnectAsync(address, port));
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             return result;
         }
 
         public Task ConnectAsync(string host, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, host);
 
             Task result = CompleteConnectAsync(Client.ConnectAsync(host, port));
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             return result;
         }
 
         public Task ConnectAsync(IPAddress[] addresses, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, addresses);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, addresses);
 
             Task result = CompleteConnectAsync(Client.ConnectAsync(addresses, port));
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             return result;
         }
 
@@ -322,48 +322,48 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback? requestCallback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, address);
 
             IAsyncResult result = Client.BeginConnect(address, port, requestCallback, state);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             return result;
         }
 
         public IAsyncResult BeginConnect(string host, int port, AsyncCallback? requestCallback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, (string)host);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, (string)host);
 
             IAsyncResult result = Client.BeginConnect(host, port, requestCallback, state);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             return result;
         }
 
         public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback? requestCallback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, addresses);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, addresses);
 
             IAsyncResult result = Client.BeginConnect(addresses, port, requestCallback, state);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             return result;
         }
 
         public void EndConnect(IAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, asyncResult);
 
             _clientSocket.EndConnect(asyncResult);
             _active = true;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Returns the stream used to read and write data to the remote host.
         public NetworkStream GetStream()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             ThrowIfDisposed();
 
@@ -377,7 +377,7 @@ namespace System.Net.Sockets
                 _dataStream = new NetworkStream(Client, true);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, _dataStream);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, _dataStream);
             return _dataStream;
         }
 
@@ -386,7 +386,7 @@ namespace System.Net.Sockets
         // Disposes the Tcp connection.
         protected virtual void Dispose(bool disposing)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
             {
@@ -421,7 +421,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public void Dispose() => Dispose(true);

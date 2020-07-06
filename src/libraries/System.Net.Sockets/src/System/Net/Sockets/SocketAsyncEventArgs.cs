@@ -671,7 +671,7 @@ namespace System.Net.Sockets
         {
             SetResults(SocketError.Success, bytesTransferred, flags);
 
-            if (NetEventSource.IsEnabled && bytesTransferred > 0)
+            if (NetEventSource.Log.IsEnabled() && bytesTransferred > 0)
             {
                 LogBuffer(bytesTransferred);
             }
@@ -689,7 +689,7 @@ namespace System.Net.Sockets
                     {
                         _acceptSocket = _currentSocket.UpdateAcceptSocket(_acceptSocket!, _currentSocket._rightEndPoint!.Create(remoteSocketAddress));
 
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             try
                             {
@@ -710,7 +710,7 @@ namespace System.Net.Sockets
                     socketError = FinishOperationConnect();
                     if (socketError == SocketError.Success)
                     {
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             try
                             {

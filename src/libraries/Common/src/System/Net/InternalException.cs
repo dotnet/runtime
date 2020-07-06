@@ -16,7 +16,7 @@ namespace System.Net
         internal InternalException(object unexpectedValue)
         {
             _unexpectedValue = unexpectedValue;
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Fail(this, $"InternalException thrown for unexpected value: {unexpectedValue}");
             }

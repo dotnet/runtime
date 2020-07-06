@@ -22,7 +22,7 @@ namespace System.Net.Sockets
             if (errorCode == SocketError.Success)
             {
                 _numBytes = numBytes;
-                if (NetEventSource.IsEnabled) LogBuffer(numBytes);
+                if (NetEventSource.Log.IsEnabled()) LogBuffer(numBytes);
 
                 // get the endpoint
                 remoteSocketAddress = IPEndPointExtensions.Serialize(_listenSocket._rightEndPoint!);
@@ -64,7 +64,7 @@ namespace System.Net.Sockets
                         errorCode = SocketPal.GetLastSocketError();
                     }
 
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"setsockopt handle:{handle}, AcceptSocket:{_acceptSocket}, returns:{errorCode}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"setsockopt handle:{handle}, AcceptSocket:{_acceptSocket}, returns:{errorCode}");
                 }
                 catch (ObjectDisposedException)
                 {
@@ -110,7 +110,7 @@ namespace System.Net.Sockets
             // This should only be called if tracing is enabled. However, there is the potential for a race
             // condition where tracing is disabled between a calling check and here, in which case the assert
             // may fire erroneously.
-            Debug.Assert(NetEventSource.IsEnabled);
+            Debug.Assert(NetEventSource.Log.IsEnabled());
             Debug.Assert(_buffer != null);
 
             if (size > -1)

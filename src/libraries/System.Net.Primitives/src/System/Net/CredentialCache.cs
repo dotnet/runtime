@@ -44,7 +44,7 @@ namespace System.Net
 
             var key = new CredentialKey(uriPrefix, authType);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Adding key:[{key}], cred:[{cred.Domain}],[{cred.UserName}]");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Adding key:[{key}], cred:[{cred.Domain}],[{cred.UserName}]");
 
             if (_cache == null)
             {
@@ -89,7 +89,7 @@ namespace System.Net
 
             var key = new CredentialHostKey(host, port, authenticationType);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Adding key:[{key}], cred:[{credential.Domain}],[{credential.UserName}]");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Adding key:[{key}], cred:[{credential.Domain}],[{credential.UserName}]");
 
             if (_cacheForHosts == null)
             {
@@ -110,7 +110,7 @@ namespace System.Net
 
             if (_cache == null)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Short-circuiting because the dictionary is null.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Short-circuiting because the dictionary is null.");
                 return;
             }
 
@@ -118,7 +118,7 @@ namespace System.Net
 
             var key = new CredentialKey(uriPrefix, authType);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Removing key:[{key}]");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Removing key:[{key}]");
 
             _cache.Remove(key);
         }
@@ -139,7 +139,7 @@ namespace System.Net
 
             if (_cacheForHosts == null)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Short-circuiting because the dictionary is null.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Short-circuiting because the dictionary is null.");
                 return;
             }
 
@@ -147,7 +147,7 @@ namespace System.Net
 
             var key = new CredentialHostKey(host, port, authenticationType);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Removing key:[{key}]");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Removing key:[{key}]");
 
             _cacheForHosts.Remove(key);
         }
@@ -163,11 +163,11 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(authType));
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, uriPrefix, authType);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, uriPrefix, authType);
 
             if (_cache == null)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
                 return null;
             }
 
@@ -194,7 +194,7 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Returning {(mostSpecificMatch == null ? "null" : "(" + mostSpecificMatch.UserName + ":" + mostSpecificMatch.Domain + ")")}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Returning {(mostSpecificMatch == null ? "null" : "(" + mostSpecificMatch.UserName + ":" + mostSpecificMatch.Domain + ")")}");
 
             return mostSpecificMatch;
         }
@@ -218,11 +218,11 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host, port, authenticationType);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, host, port, authenticationType);
 
             if (_cacheForHosts == null)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
                 return null;
             }
 
@@ -231,7 +231,7 @@ namespace System.Net
             NetworkCredential? match = null;
             _cacheForHosts.TryGetValue(key, out match);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Returning {((match == null) ? "null" : "(" + match.UserName + ":" + match.Domain + ")")}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Returning {((match == null) ? "null" : "(" + match.UserName + ":" + match.Domain + ")")}");
 
             return match;
         }
@@ -446,7 +446,7 @@ namespace System.Net
                 string.Equals(Host, other.Host, StringComparison.OrdinalIgnoreCase) &&
                 Port == other.Port;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Equals({this},{other}) returns {equals}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Equals({this},{other}) returns {equals}");
 
             return equals;
         }
@@ -487,7 +487,7 @@ namespace System.Net
                 return false;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Match({UriPrefix} & {uri})");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Match({UriPrefix} & {uri})");
 
             return IsPrefix(uri, UriPrefix);
         }
@@ -538,7 +538,7 @@ namespace System.Net
                 string.Equals(AuthenticationType, other.AuthenticationType, StringComparison.OrdinalIgnoreCase) &&
                 UriPrefix.Equals(other.UriPrefix);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Equals({this},{other}) returns {equals}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Equals({this},{other}) returns {equals}");
 
             return equals;
         }

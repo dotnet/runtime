@@ -33,7 +33,7 @@ namespace System.Net
 
         ~DebugSafeHandle()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, _trace);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, _trace);
         }
     }
 #endif // DEBUG
