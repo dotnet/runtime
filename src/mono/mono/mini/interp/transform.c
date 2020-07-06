@@ -6209,13 +6209,25 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					m = mono_marshal_get_synchronized_wrapper (m);
 
 				if (G_UNLIKELY (*td->ip == CEE_LDFTN &&
-						(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
-						method->wrapper_type == MONO_WRAPPER_NONE &&
-						mono_method_has_unmanaged_callers_only_attribute (method))) {
+						(m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
+						m->wrapper_type == MONO_WRAPPER_NONE &&
+						mono_method_has_unmanaged_callers_only_attribute (m))) {
 					MonoClass *delegate_klass = NULL;
 					MonoGCHandle target_handle = 0;
 					m = mono_marshal_get_managed_wrapper (m, delegate_klass, target_handle, error);
 					goto_if_nok (error, exit);
+					/* push a pointer to a trampoline that calls m */
+					gpointer entry = mini_get_interp_callbacks ()->create_method_pointer (m, TRUE, error);
+#if SIZEOF_VOID_P == 8
+					interp_add_ins (td, MINT_LDC_I8);
+					WRITE64_INS (td->last_ins, 0, &entry);
+#else
+					interp_add_ins (td, MINT_LDC_I4);
+					WRITE32_INS (td->last_ins, 0, &entry);
+#endif
+					td->ip += 5;
+					PUSH_SIMPLE_TYPE (td, STACK_TYPE_I8);
+					break;
 				}
 
 				interp_add_ins (td, *td->ip == CEE_LDFTN ? MINT_LDFTN : MINT_LDVIRTFTN);
