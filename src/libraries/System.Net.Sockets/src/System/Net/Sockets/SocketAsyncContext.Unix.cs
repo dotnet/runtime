@@ -1074,7 +1074,7 @@ namespace System.Net.Sockets
                         {
                             // Pop current operation
                             _tail.Next = op.Next;
-                            _isNextOperationSynchronous = op.Next != null;
+                            _isNextOperationSynchronous = op.Next.Event != null;
 
                             if (op.HasExhaustedIoSpace)
                             {
