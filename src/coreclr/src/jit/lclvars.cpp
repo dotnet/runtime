@@ -352,7 +352,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     /* If we have a hidden return-buffer parameter, that comes here */
     lvaInitRetBuffArg(varDscInfo);
 
-    //======================================================================
+//======================================================================
 
 #if USER_ARGS_COME_LAST
     //@GENERICS: final instantiation-info argument for shared generic methods
@@ -559,9 +559,9 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo)
 /*****************************************************************************/
 void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 {
-    //-------------------------------------------------------------------------
-    // Walk the function signature for the explicit arguments
-    //-------------------------------------------------------------------------
+//-------------------------------------------------------------------------
+// Walk the function signature for the explicit arguments
+//-------------------------------------------------------------------------
 
 #if defined(TARGET_X86)
     // Only (some of) the implicit args are enregistered for varargs
@@ -1033,8 +1033,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 #if defined(TARGET_X86)
             varDsc->lvStkOffs = compArgSize;
 #else  // !TARGET_X86
-       // TODO-CQ: We shouldn't have to go as far as to declare these
-       // address-exposed -- DoNotEnregister should suffice.
+            // TODO-CQ: We shouldn't have to go as far as to declare these
+            // address-exposed -- DoNotEnregister should suffice.
             lvaSetVarAddrExposed(varDscInfo->varNum);
 #endif // !TARGET_X86
         }
@@ -1313,7 +1313,7 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     varDsc->lvIsImplicitByRef = 0;
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
-    // Set the lvType (before this point it is TYP_UNDEF).
+// Set the lvType (before this point it is TYP_UNDEF).
 
 #ifdef FEATURE_HFA
     varDsc->SetHfaType(TYP_UNDEF);
@@ -2198,7 +2198,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
             compiler->compFloatingPointUsed = true;
         }
 
-        // Now grab the temp for the field local.
+// Now grab the temp for the field local.
 
 #ifdef DEBUG
         char buf[200];
@@ -5002,7 +5002,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 #endif
                     )
 #endif // !defined(TARGET_AMD64)
-            )
+                    )
             {
                 doAssignStkOffs = false; // Not on frame or an incomming stack arg
             }
@@ -5311,8 +5311,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 //        ret address slot, stack frame padding, alloca instructions, etc.
 //  Note: This is the implementation for UNIX_AMD64 System V platforms.
 //
-int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned    lclNum,
-                                               unsigned    argSize,
+int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
+                                               unsigned argSize,
                                                int argOffs UNIX_AMD64_ABI_ONLY_ARG(int* callerArgOffset))
 {
     noway_assert(lclNum < info.compArgsCount);
@@ -5707,8 +5707,8 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     if ((varDsc->TypeGet() == TYP_LONG) && varDsc->lvPromoted)
     {
         noway_assert(varDsc->lvFieldCnt == 2);
-        fieldVarNum = varDsc->lvFieldLclStart;
-        lvaTable[fieldVarNum].lvStkOffs = varDsc->lvStkOffs;
+        fieldVarNum                         = varDsc->lvFieldLclStart;
+        lvaTable[fieldVarNum].lvStkOffs     = varDsc->lvStkOffs;
         lvaTable[fieldVarNum + 1].lvStkOffs = varDsc->lvStkOffs + genTypeSize(TYP_INT);
     }
     else
@@ -6720,7 +6720,7 @@ void Compiler::lvaAlignFrame()
     // Ensure that the stack is always 16-byte aligned by grabbing an unused QWORD
     // if needed.
     bool regPushedCountAligned = (compCalleeRegsPushed % (16 / REGSIZE_BYTES)) == 0;
-    bool lclFrameSizeAligned = (compLclFrameSize % 16) == 0;
+    bool lclFrameSizeAligned   = (compLclFrameSize % 16) == 0;
 
     // If this isn't the final frame layout, assume we have to push an extra QWORD
     // Just so the offsets are true upper limits.
@@ -6733,7 +6733,7 @@ void Compiler::lvaAlignFrame()
 
     // Ensure that stack offsets will be double-aligned by grabbing an unused DWORD if needed.
     //
-    bool lclFrameSizeAligned = (compLclFrameSize % sizeof(double)) == 0;
+    bool lclFrameSizeAligned   = (compLclFrameSize % sizeof(double)) == 0;
     bool regPushedCountAligned = ((compCalleeRegsPushed + genCountBits(codeGen->regSet.rsMaskPreSpillRegs(true))) %
                                   (sizeof(double) / TARGET_POINTER_SIZE)) == 0;
 
@@ -6815,7 +6815,7 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
             && !varDsc->lvIsParam
 #endif // !defined(TARGET_ARM)
 #endif // !UNIX_AMD64_ABI
-        )
+            )
         {
             LclVarDsc*       parentvarDsc  = &lvaTable[varDsc->lvParentLcl];
             lvaPromotionType promotionType = lvaGetPromotionType(parentvarDsc);
@@ -6966,7 +6966,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum)
     offset = lvaFrameAddress(lclNum, compLocallocUsed, &baseReg, 0, /* isFloatUsage */ false);
 #else
     bool EBPbased;
-    offset = lvaFrameAddress(lclNum, &EBPbased);
+    offset  = lvaFrameAddress(lclNum, &EBPbased);
     baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
 #endif
 

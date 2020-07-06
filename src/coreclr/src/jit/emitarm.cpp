@@ -3552,7 +3552,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     int      disp;
     unsigned undisp;
 
-    //if (offs == 1208)
+    // if (offs == 1208)
     //{
     //    printf("----debug break - this is it 2B!----");
     //}
@@ -3566,7 +3566,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     disp   = base + offs;
     undisp = unsigned_abs(disp);
-    //if (undisp == 0x1000)
+    // if (undisp == 0x1000)
     //{
     //    printf("----debug break - this is it!----");
     //}
@@ -3614,17 +3614,18 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             // Load disp into a register
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
             emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false);
-            fmt = IF_T2_E0; // not sure if here too there could be case where we set the regBase inside emitIns_genStackOffset() but then don't use it further while generating the offset.
+            fmt = IF_T2_E0; // not sure if here too there could be case where we set the regBase inside
+                            // emitIns_genStackOffset() but then don't use it further while generating the offset.
         }
     }
     else if (ins == INS_add) // no one calls this case.
     {
         assert(!"someone is calling emitIns_R_S(INS_add)");
-        //if (isLowRegister(reg1) && (reg2 == REG_SP) && ((disp & 0x03fc) == disp))
+        // if (isLowRegister(reg1) && (reg2 == REG_SP) && ((disp & 0x03fc) == disp))
         //{
         //    fmt = IF_T1_J2;
         //}
-        //else if (undisp <= 0x0fff)
+        // else if (undisp <= 0x0fff)
         //{
         //    if (disp < 0)
         //    {
@@ -3636,12 +3637,13 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         //    ins = (ins == INS_add) ? INS_addw : INS_subw;
         //    fmt = IF_T2_M0;
         //}
-        //else
+        // else
         //{
         //    // Load disp into a register
         //    regNumber rsvdReg = codeGen->rsGetRsvdReg();
         //    emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false);
-        //    emitIns_R_R_R(ins, attr, reg1, reg2, rsvdReg);  // not sure if here too there could be case where we set the regBase inside emitIns_genStackOffset() but then don't use it further while generating the offset.
+        //    emitIns_R_R_R(ins, attr, reg1, reg2, rsvdReg);  // not sure if here too there could be case where we set
+        //    the regBase inside emitIns_genStackOffset() but then don't use it further while generating the offset.
         //    return;
         //}
     }
