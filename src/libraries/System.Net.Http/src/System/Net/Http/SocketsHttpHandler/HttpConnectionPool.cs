@@ -67,7 +67,8 @@ namespace System.Net.Http
         private readonly int _maxConnections;
 
         private bool _http2Enabled;
-        private IReadOnlyList<Http2Connection>? _http2Connections;
+        // This array must be treated as immutable. It can only be replaced with a new value in AddHttp2Connection method.
+        private Http2Connection[]? _http2Connections;
         private SemaphoreSlim? _http2ConnectionCreateLock;
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
@@ -324,7 +325,7 @@ namespace System.Net.Http
             }
         }
 
-        public bool ThrowOnStreamLimitReached => _http2Connections != null && _http2Connections.Count < _poolManager.Settings._maxHttp2ConnectionsPerServer;
+        public bool ThrowOnStreamLimitReached => _http2Connections != null && _http2Connections.Length < _poolManager.Settings._maxHttp2ConnectionsPerServer;
 
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _idleConnections;
@@ -660,17 +661,14 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
-                IReadOnlyList<Http2Connection>? localHttp2Connections = _http2Connections;
-                int newCollectionSize = localHttp2Connections == null ? 1 : localHttp2Connections.Count + 1;
+                Http2Connection[]? localHttp2Connections = _http2Connections;
+                int newCollectionSize = localHttp2Connections == null ? 1 : localHttp2Connections.Length + 1;
                 Http2Connection[] newHttp2Connections = new Http2Connection[newCollectionSize];
                 newHttp2Connections[0] = newConnection;
 
                 if (localHttp2Connections != null)
                 {
-                    for (int i = 0; i < localHttp2Connections.Count; i++)
-                    {
-                        newHttp2Connections[i + 1] = localHttp2Connections[i];
-                    }
+                    Array.Copy(localHttp2Connections, 0, newHttp2Connections, 1, localHttp2Connections.Length);
                 }
 
                 _http2Connections = newHttp2Connections;
@@ -1394,7 +1392,7 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
-                Http2Connection[]? localHttp2Connections = (Http2Connection[]?) _http2Connections;
+                Http2Connection[]? localHttp2Connections = _http2Connections;
 
                 if (localHttp2Connections == null)
                 {
@@ -1411,32 +1409,23 @@ namespace System.Net.Http
                     return;
                 }
 
-                for (int i = 0; i < localHttp2Connections.Length; i++)
+                int invalidatedIndex = Array.IndexOf(localHttp2Connections, connection);
+
+                if (invalidatedIndex >= 0)
                 {
-                    if (localHttp2Connections[i] == connection)
+                    Http2Connection[] newHttp2Connections = new Http2Connection[localHttp2Connections.Length - 1];
+
+                    if (invalidatedIndex > 0)
                     {
-                        if (localHttp2Connections.Length > 1)
-                        {
-                            Http2Connection[] newHttp2Connections = new Http2Connection[localHttp2Connections.Length - 1];
-
-                            if (i > 0)
-                            {
-                                Array.Copy(localHttp2Connections, newHttp2Connections, i);
-                            }
-
-                            if (i < localHttp2Connections.Length - 1)
-                            {
-                                Array.Copy(localHttp2Connections, i + 1, newHttp2Connections, i, newHttp2Connections.Length - i);
-                            }
-
-                            _http2Connections = newHttp2Connections;
-                        }
-                        else
-                        {
-                            _http2Connections = null;
-                        }
-                        return;
+                        Array.Copy(localHttp2Connections, newHttp2Connections, invalidatedIndex);
                     }
+
+                    if (invalidatedIndex < localHttp2Connections.Length - 1)
+                    {
+                        Array.Copy(localHttp2Connections, invalidatedIndex + 1, newHttp2Connections, invalidatedIndex, newHttp2Connections.Length - i);
+                    }
+
+                    _http2Connections = newHttp2Connections;
                 }
             }
         }
