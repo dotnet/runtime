@@ -166,7 +166,7 @@ var MonoSupportLib = {
 		 *
 		 * @returns {WasmId}
 		 */
-		_split_object_id: function (idStr, throwOnError = false) {
+		_parse_object_id: function (idStr, throwOnError = false) {
 			if (idStr === undefined || idStr == "" || !idStr.startsWith ('dotnet:')) {
 				if (throwOnError)
 					throw new Error (`Invalid id: ${idStr}`);
@@ -544,7 +544,7 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_get_details: function (objectId, args) {
-			let id = this._split_object_id (objectId, true);
+			let id = this._parse_object_id (objectId, true);
 
 			switch (id.scheme) {
 				case "object": {
@@ -590,7 +590,7 @@ var MonoSupportLib = {
 		 * @returns {object} return value
 		 */
 		_invoke_getter: function (objectIdStr, name) {
-			const id = this._split_object_id (objectIdStr);
+			const id = this._parse_object_id (objectIdStr);
 			if (id === undefined)
 				throw new Error (`Invalid object id: ${objectIdStr}`);
 
