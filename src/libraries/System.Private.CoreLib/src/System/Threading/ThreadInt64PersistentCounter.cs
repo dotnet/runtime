@@ -13,9 +13,7 @@ namespace System.Threading
         private static readonly LowLevelLock s_lock = new LowLevelLock();
 
         private long _overflowCount;
-
-        // This should be a HashSet, that type is currently not available in CoreLib
-        private Dictionary<ThreadLocalNode, bool> _nodes = new Dictionary<ThreadLocalNode, bool>();
+        private HashSet<ThreadLocalNode> _nodes = new HashSet<ThreadLocalNode>();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Increment(object threadLocalCountObject)
@@ -31,7 +29,7 @@ namespace System.Threading
             s_lock.Acquire();
             try
             {
-                _nodes.Add(node, false);
+                _nodes.Add(node);
             }
             finally
             {
@@ -49,7 +47,7 @@ namespace System.Threading
                 long count = _overflowCount;
                 try
                 {
-                    foreach (ThreadLocalNode node in _nodes.Keys)
+                    foreach (ThreadLocalNode node in _nodes)
                     {
                         count += node.Count;
                     }

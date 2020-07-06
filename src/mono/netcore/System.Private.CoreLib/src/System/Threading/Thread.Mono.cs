@@ -128,10 +128,7 @@ namespace System.Threading
                 else
                 {
                     ClrState(this, ThreadState.Background);
-                    if (!_mayNeedResetForThreadPool)
-                    {
-                        _mayNeedResetForThreadPool = value;
-                    }
+                    _mayNeedResetForThreadPool = true;
                 }
             }
         }
@@ -171,7 +168,7 @@ namespace System.Threading
             {
                 // TODO: arguments check
                 SetPriority(this, (int)value);
-                if (value != ThreadPriority.Normal && !_mayNeedResetForThreadPool)
+                if (value != ThreadPriority.Normal)
                 {
                     _mayNeedResetForThreadPool = true;
                 }

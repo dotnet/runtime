@@ -348,9 +348,9 @@ namespace System.Threading
             set
             {
                 SetBackgroundNative(value);
-                if (!value && !_mayNeedResetForThreadPool)
+                if (!value)
                 {
-                    _mayNeedResetForThreadPool = value;
+                    _mayNeedResetForThreadPool = true;
                 }
             }
         }
@@ -377,7 +377,7 @@ namespace System.Threading
             set
             {
                 SetPriorityNative((int)value);
-                if (value != ThreadPriority.Normal && !_mayNeedResetForThreadPool)
+                if (value != ThreadPriority.Normal)
                 {
                     _mayNeedResetForThreadPool = true;
                 }

@@ -675,74 +675,85 @@ namespace System.Threading.ThreadPools.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void WorkerThreadStateResetTest()
         {
-            int processorCount = Environment.ProcessorCount;
-            int startedWorkItemCount = 0;
-            AutoResetEvent allWorkItemsStarted = new AutoResetEvent(false);
-            ManualResetEvent unblockChangeStateWorkItems = new ManualResetEvent(false);
-            ManualResetEvent unblockVerifyStateWorkItems = new ManualResetEvent(false);
-
-            WaitCallback changeStateWorkItem = _ =>
+            RemoteExecutor.Invoke(() =>
             {
-                Thread currentThread = Thread.CurrentThread;
-                currentThread.Name = nameof(WorkerThreadStateResetTest);
-                currentThread.IsBackground = false;
-                currentThread.Priority = ThreadPriority.AboveNormal;
-
-                if (Interlocked.Increment(ref startedWorkItemCount) == processorCount)
+                ThreadPool.GetMinThreads(out int minw, out int minc);
+                ThreadPool.GetMaxThreads(out int maxw, out int maxc);
+                try
                 {
-                    allWorkItemsStarted.Set();
+                    // Use maximum one worker thread to have all work items below run on the same thread
+                    Assert.True(ThreadPool.SetMinThreads(1, minc));
+                    Assert.True(ThreadPool.SetMaxThreads(1, maxc));
+
+                    var done = new AutoResetEvent(false);
+                    string failureMessage = string.Empty;
+                    WaitCallback setNameWorkItem = null;
+                    WaitCallback verifyNameWorkItem = null;
+                    WaitCallback setIsBackgroundWorkItem = null;
+                    WaitCallback verifyIsBackgroundWorkItem = null;
+                    WaitCallback setPriorityWorkItem = null;
+                    WaitCallback verifyPriorityWorkItem = null;
+
+                    setNameWorkItem = _ =>
+                    {
+                        Thread.CurrentThread.Name = nameof(WorkerThreadStateResetTest);
+                        ThreadPool.QueueUserWorkItem(verifyNameWorkItem);
+                    };
+
+                    verifyNameWorkItem = _ =>
+                    {
+                        Thread currentThread = Thread.CurrentThread;
+                        if (currentThread.Name != null)
+                        {
+                            failureMessage += $"Name was not reset: {currentThread.Name}{Environment.NewLine}";
+                        }
+                        ThreadPool.QueueUserWorkItem(setIsBackgroundWorkItem);
+                    };
+
+                    setIsBackgroundWorkItem = _ =>
+                    {
+                        Thread.CurrentThread.IsBackground = false;
+                        ThreadPool.QueueUserWorkItem(verifyIsBackgroundWorkItem);
+                    };
+
+                    verifyIsBackgroundWorkItem = _ =>
+                    {
+                        Thread currentThread = Thread.CurrentThread;
+                        if (!currentThread.IsBackground)
+                        {
+                            failureMessage += $"IsBackground was not reset: {currentThread.IsBackground}{Environment.NewLine}";
+                            currentThread.IsBackground = true;
+                        }
+                        ThreadPool.QueueUserWorkItem(setPriorityWorkItem);
+                    };
+
+                    setPriorityWorkItem = _ =>
+                    {
+                        Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+                        ThreadPool.QueueUserWorkItem(verifyPriorityWorkItem);
+                    };
+
+                    verifyPriorityWorkItem = _ =>
+                    {
+                        Thread currentThread = Thread.CurrentThread;
+                        if (currentThread.Priority != ThreadPriority.Normal)
+                        {
+                            failureMessage += $"Priority was not reset: {currentThread.Priority}{Environment.NewLine}";
+                            currentThread.Priority = ThreadPriority.Normal;
+                        }
+                        done.Set();
+                    };
+
+                    ThreadPool.QueueUserWorkItem(setNameWorkItem);
+                    done.CheckedWait();
+                    Assert.Equal(string.Empty, failureMessage);
                 }
-
-                // Block the thread to force using multiple threads to run the work items
-                unblockChangeStateWorkItems.CheckedWait();
-            };
-
-            string failureMessage = string.Empty;
-            WaitCallback verifyStateWorkItem = _ =>
-            {
-                Thread currentThread = Thread.CurrentThread;
-                if (currentThread.Name != null)
+                finally
                 {
-                    failureMessage += $"Name was not reset: {currentThread.Name}{Environment.NewLine}";
+                    Assert.True(ThreadPool.SetMaxThreads(maxw, maxc));
+                    Assert.True(ThreadPool.SetMinThreads(minw, minc));
                 }
-                else if (!currentThread.IsBackground)
-                {
-                    failureMessage += $"IsBackground was not reset: {currentThread.IsBackground}{Environment.NewLine}";
-                    currentThread.IsBackground = true;
-                }
-                else if (currentThread.Priority != ThreadPriority.Normal)
-                {
-                    failureMessage += $"Priority was not reset: {currentThread.Priority}{Environment.NewLine}";
-                    currentThread.Priority = ThreadPriority.Normal;
-                }
-
-                if (Interlocked.Increment(ref startedWorkItemCount) == processorCount)
-                {
-                    allWorkItemsStarted.Set();
-                }
-
-                // Block the thread to force using multiple threads to run the work items
-                unblockVerifyStateWorkItems.CheckedWait();
-            };
-
-            for (int i = 0; i < processorCount; ++i)
-            {
-                ThreadPool.QueueUserWorkItem(changeStateWorkItem);
-            }
-
-            allWorkItemsStarted.CheckedWait();
-            unblockChangeStateWorkItems.Set();
-            Interlocked.Exchange(ref startedWorkItemCount, 0);
-
-            for (int i = 0; i < processorCount; ++i)
-            {
-                ThreadPool.QueueUserWorkItem(verifyStateWorkItem);
-            }
-
-            allWorkItemsStarted.CheckedWait();
-            unblockVerifyStateWorkItems.Set();
-
-            Assert.Equal(string.Empty, failureMessage);
+            }).Dispose();
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

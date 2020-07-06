@@ -173,7 +173,7 @@ namespace System.Threading
 
                     _name = value;
                     ThreadNameChanged(value);
-                    if (value != null && !_mayNeedResetForThreadPool)
+                    if (value != null)
                     {
                         _mayNeedResetForThreadPool = true;
                     }
