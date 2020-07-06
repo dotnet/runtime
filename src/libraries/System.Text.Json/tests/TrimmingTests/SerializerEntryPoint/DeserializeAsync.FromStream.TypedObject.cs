@@ -23,7 +23,7 @@ namespace SerializerTrimmingTest
             using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
             {
                 int[] arr = (int[])(await JsonSerializer.DeserializeAsync<int[]>(stream));
-                if (!TestHelper.VerifyWithSerialize(arr, json))
+                if (arr == null)
                 {
                     return -1;
                 }
@@ -32,8 +32,8 @@ namespace SerializerTrimmingTest
             json = @"{""X"":1,""Y"":2}";
             using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
             {
-                MyStruct obj = (MyStruct)(await JsonSerializer.DeserializeAsync<MyStruct>(stream));
-                if (!TestHelper.VerifyWithSerialize(obj, json))
+                var obj = (MyClassWithParameterizedCtor)(await JsonSerializer.DeserializeAsync<MyClassWithParameterizedCtor>(stream));
+                if (obj == null)
                 {
                     return -1;
                 }

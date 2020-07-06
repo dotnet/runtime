@@ -85,16 +85,6 @@ namespace SerializerTrimmingTest
             }
         }
 
-        /// <summary>
-        /// Verifies the result of deserialization by serializing and comparing the output
-        /// with the expected payload. With this call pattern, the serialize should preserve
-        /// properties on typeof(object), but that would not be helpful to the calling test.
-        /// </summary>
-        public static bool VerifyWithSerialize(object obj, string expected)
-        {
-            return JsonEqual(expected, JsonSerializer.Serialize(obj));
-        }
-
         public static bool AssertCollectionAndSerialize<T>(object obj, string json)
         {
             return obj is T && JsonSerializer.Serialize(obj) == json;
@@ -114,6 +104,14 @@ namespace SerializerTrimmingTest
 
         [JsonConstructor]
         public MyStruct(int x, int y) => (X, Y) = (x, y);
+    }
+
+    internal class MyClassWithParameterizedCtor
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+
+        public MyClassWithParameterizedCtor(int x, int y) => (X, Y) = (x, y);
     }
 
     internal class MyBigClass

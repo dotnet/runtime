@@ -20,15 +20,15 @@ namespace SerializerTrimmingTest
             string json = "[1]";
             Utf8JsonReader reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
             int[] arr = JsonSerializer.Deserialize<int[]>(ref reader);
-            if (!TestHelper.VerifyWithSerialize(arr, json))
+            if (arr == null)
             {
                 return -1;
             }
 
             json = @"{""X"":1,""Y"":2}";
             reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
-            MyStruct obj = JsonSerializer.Deserialize<MyStruct>(ref reader);
-            if (!TestHelper.VerifyWithSerialize(obj, json))
+            MyClassWithParameterizedCtor obj = JsonSerializer.Deserialize<MyClassWithParameterizedCtor>(ref reader);
+            if (obj == null)
             {
                 return -1;
             }
