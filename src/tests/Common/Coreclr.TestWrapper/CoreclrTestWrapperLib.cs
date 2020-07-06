@@ -59,14 +59,6 @@ namespace CoreclrTestLib
         public static extern bool Process32NextW(IntPtr snapshot, ref ProcessEntry32W entry);
     }
 
-    static class libSystem
-    {
-        [DllImport(nameof(libSystem))]
-        public static extern int kill(int pid, int signal);
-
-        public const int SIGABRT = 0x6;
-    }
-
     static class libproc
     {
         [DllImport(nameof(libproc))]
@@ -118,7 +110,6 @@ namespace CoreclrTestLib
                     {
                         if (processEntry.ParentProcessID == ppid)
                         {
-                            Console.WriteLine($"found child: {processEntry.ProcessID}");
                             try
                             {
                                 children.Add(Process.GetProcessById(processEntry.ProcessID));
@@ -155,9 +146,6 @@ namespace CoreclrTestLib
             {
                 // Some distros might not have the /proc/pid/task/tid/children entry enabled in the kernel
                 // attempt to use pgrep then
-                Console.WriteLine($"Failed read proc file: /proc/{process.Id}/task/{process.Id}/children");
-                Console.WriteLine("\tfalling back to `pgrep`");
-
                 var pgrepInfo = new ProcessStartInfo("pgrep");
                 pgrepInfo.RedirectStandardOutput = true;
                 pgrepInfo.Arguments = $"-P {process.Id}";
@@ -219,7 +207,7 @@ namespace CoreclrTestLib
             ProcessStartInfo createdumpInfo = null;
             string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
             string createdumpPath = Path.Combine(coreRoot, "createdump");
-            string arguments = $"--name \"{path}\" {process.Id} --withheap --diag";
+            string arguments = $"--name \"{path}\" {process.Id} --withheap";
             Process createdump = new Process();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -239,7 +227,6 @@ namespace CoreclrTestLib
 
             Console.WriteLine($"Invoking: {createdump.StartInfo.FileName} {createdump.StartInfo.Arguments}");
             createdump.Start();
-            Console.WriteLine($"createdump PID: {createdump.Id}");
 
             Task<string> copyOutput = createdump.StandardOutput.ReadToEndAsync();
             Task<string> copyError = createdump.StandardError.ReadToEndAsync();
