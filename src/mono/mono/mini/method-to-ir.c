@@ -11106,6 +11106,17 @@ mono_ldptr:
 				}
 			}
 
+			/* UnmanagedCallersOnlyAttribute means ldftn should return a method callable from native */
+			if (G_UNLIKELY ((cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
+					cmethod->wrapper_type == MONO_WRAPPER_NONE &&
+					mono_method_has_unmanaged_callers_only_attribute (cmethod))) {
+				MonoClass *delegate_klass = NULL;
+				MonoGCHandle target_handle = 0;
+				cmethod = mono_marshal_get_managed_wrapper (cmethod, delegate_klass, target_handle, cfg->error);
+				CHECK_CFG_ERROR;
+			}
+
+
 			argconst = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD);
 			ins = mono_emit_jit_icall (cfg, mono_ldftn, &argconst);
 			*sp++ = ins;
