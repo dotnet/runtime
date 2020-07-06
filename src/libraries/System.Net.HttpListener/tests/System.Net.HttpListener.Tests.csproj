@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-OSX</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GetContextHelper.cs" />
