@@ -6779,9 +6779,6 @@ get_marshal_cb (void)
 gboolean
 mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method)
 {
-	/* TODO: if this is slow and called repeatedly for the same method, add a bit to MonoMethod that is true if the
-	 * method doesn't have the UnmanagedCallersOnlyAttribute, and false if we haven't checked yet, or if the
-	 * attribute is present. */
 	ERROR_DECL (attr_error);
 	MonoClass *attr_klass = NULL;
 #ifdef ENABLE_NETCORE
