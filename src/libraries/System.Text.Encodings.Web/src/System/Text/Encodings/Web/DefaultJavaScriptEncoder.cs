@@ -99,7 +99,6 @@ namespace System.Text.Encodings.Web
 
                         if (Sse2.IsSupported)
                         {
-                            Debug.Assert(Sse2.IsSupported);
 
                             // Load the next 16 bytes.
                             Vector128<sbyte> sourceValue = Sse2.LoadVector128(startingAddress);
@@ -110,6 +109,8 @@ namespace System.Text.Encodings.Web
                         }
                         else
                         {
+                            Debug.Assert(AdvSimd.Arm64.IsSupported);
+
                             // Load the next 16 bytes.
                             Vector128<sbyte> sourceValue = AdvSimd.LoadVector128(startingAddress);
 

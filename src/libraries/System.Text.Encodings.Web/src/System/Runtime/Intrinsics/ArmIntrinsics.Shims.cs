@@ -8,6 +8,7 @@
             public static int LeadingZeroCount(ulong value) => throw new PlatformNotSupportedException();
             public static uint ReverseElementBits(ulong value) => throw new PlatformNotSupportedException();
         }
+
         public const bool IsSupported = false;
         public static int LeadingZeroCount(uint value) => throw new PlatformNotSupportedException();
         public static uint ReverseElementBits(uint value) => throw new PlatformNotSupportedException();
@@ -109,6 +110,13 @@
         public static Vector128<ulong> DuplicateToVector128(ulong value) => throw new PlatformNotSupportedException();
 
         public static unsafe Vector128<byte> LoadVector128(byte* address) => throw new PlatformNotSupportedException();
+
         public static unsafe Vector128<sbyte> LoadVector128(sbyte* address) => throw new PlatformNotSupportedException();
+
+        public static unsafe Vector128<short> LoadVector128(short* address) => throw new PlatformNotSupportedException();
+
+        public static Vector64<sbyte> ExtractNarrowingSaturateLower(Vector128<short> value) => throw new PlatformNotSupportedException();
+
+        public static Vector128<sbyte> ExtractNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> right) => throw new PlatformNotSupportedException();
     }
 }

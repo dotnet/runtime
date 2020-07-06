@@ -91,9 +91,12 @@ namespace System.Text.Encodings.Web
             short* end = ptr + (uint)textLength;
 
 #if NETCOREAPP
-            if (Sse2.IsSupported && textLength >= Vector128<short>.Count)
+            if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
             {
-                goto VectorizedStart;
+                if (textLength >= Vector128<short>.Count)
+                {
+                    goto VectorizedStart;
+                }
             }
 
         Sequential:
@@ -132,9 +135,21 @@ namespace System.Text.Encodings.Web
                     // Load the next 16 characters, combine them to one byte vector.
                     // Chars that don't cleanly convert to ASCII bytes will get converted (saturated) to
                     // somewhere in the range [0x7F, 0xFF], which the NeedsEscaping method will detect.
-                    Vector128<sbyte> sourceValue = Sse2.PackSignedSaturate(
-                        Sse2.LoadVector128(ptr),
-                        Sse2.LoadVector128(ptr + Vector128<short>.Count));
+                    Vector128<sbyte> sourceValue;
+
+                    if (Sse2.IsSupported)
+                    {
+                        sourceValue = Sse2.PackSignedSaturate(
+                            Sse2.LoadVector128(ptr),
+                            Sse2.LoadVector128(ptr + Vector128<short>.Count));
+                    }
+                    else
+                    {
+                        Debug.Assert(AdvSimd.Arm64.IsSupported);
+
+                        Vector64<sbyte> tmp = AdvSimd.ExtractNarrowingSaturateLower(AdvSimd.LoadVector128(ptr));
+                        sourceValue = AdvSimd.ExtractNarrowingSaturateUpper(tmp, AdvSimd.LoadVector128(ptr + Vector128<short>.Count));
+                    }
 
                     // Check if any of the 16 characters need to be escaped.
                     index = NeedsEscaping(sourceValue);
@@ -163,9 +178,21 @@ namespace System.Text.Encodings.Web
 
                     // Load the next 8 characters + a dummy known that it must not be escaped.
                     // Put the dummy second, so it's easier for GetIndexOfFirstNeedToEscape.
-                    Vector128<sbyte> sourceValue = Sse2.PackSignedSaturate(
-                        Sse2.LoadVector128(ptr),
-                        Vector128.Create((short)'A'));  // max. one "iteration", so no need to cache this vector
+                    Vector128<sbyte> sourceValue;
+
+                    if (Sse2.IsSupported)
+                    {
+                        sourceValue = Sse2.PackSignedSaturate(
+                            Sse2.LoadVector128(ptr),
+                            Vector128.Create((short)'A'));  // max. one "iteration", so no need to cache this vector
+                    }
+                    else
+                    {
+                        Debug.Assert(AdvSimd.Arm64.IsSupported);
+
+                        Vector64<sbyte> saturated = AdvSimd.ExtractNarrowingSaturateLower(Sse2.LoadVector128(ptr));
+                        sourceValue = Vector128.Create(saturated, Vector64.Create((sbyte)'A'));
+                    }
 
                     index = NeedsEscaping(sourceValue);
 
