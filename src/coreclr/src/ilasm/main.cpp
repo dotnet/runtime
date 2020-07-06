@@ -167,8 +167,8 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
       printf("\n/DLL            Compile to .dll");
       printf("\n/EXE            Compile to .exe (default)");
       printf("\n/PDB            Create the PDB file without enabling debug info tracking");
-      printf("\n/PDBFMT=CLA     Use classic PDB format for PDB file generation (default)");
-      printf("\n/PDBFMT=PORT    Use portable PDB format for PDB file generation");
+      printf("\n/PDBFMT=CLASSIC     Use classic PDB format for PDB file generation (default)");
+      printf("\n/PDBFMT=PORTABLE    Use portable PDB format for PDB file generation");
       printf("\n/APPCONTAINER   Create an AppContainer exe or dll");
       printf("\n/DEBUG          Disable JIT optimization, create PDB file, use sequence points from PDB");
       printf("\n/DEBUG=IMPL     Disable JIT optimization, create PDB file, use implicit sequence points");
@@ -296,12 +296,12 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                 }
                                 else
                                 {
-                                    WCHAR wzSubOpt[4 + 1];
-                                    wcsncpy_s(wzSubOpt, 5, pStr, 4);
-                                    wzSubOpt[4] = 0;
-                                    if (0 == _wcsicmp(wzSubOpt, W("CLA")))
+                                    WCHAR wzSubOpt[8 + 1];
+                                    wcsncpy_s(wzSubOpt, 8 + 1, pStr, 8);
+                                    wzSubOpt[8] = 0;
+                                    if (0 == _wcsicmp(wzSubOpt, W("CLASSIC")))
                                         pdbFormat = CLASSIC;
-                                    else if (0 == _wcsicmp(wzSubOpt, W("PORT")))
+                                    else if (0 == _wcsicmp(wzSubOpt, W("PORTABLE")))
                                         pdbFormat = PORTABLE;
                                     else
                                         goto InvalidOption;                 // bad subooption
@@ -643,7 +643,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                 // https://github.com/dotnet/coreclr/issues/2982
 
                 printf("WARNING: Classic PDB format is not supported on CoreCLR.\n");
-                printf("Use '/PDBFMT=PORT' option in order to generate portable PDB format. \n");
+                printf("Use '/PDBFMT=PORTABLE' option in order to generate portable PDB format. \n");
             }
             if (!pAsm->Init(bGeneratePdb, pdbFormat))
             {
