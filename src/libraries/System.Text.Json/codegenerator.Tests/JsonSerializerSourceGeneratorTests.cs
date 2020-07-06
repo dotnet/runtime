@@ -1,11 +1,13 @@
-﻿using Xunit;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using Xunit;
 
 namespace System.Text.Json.CodeGenerator.Tests
 {
-    // TODO(@kevinwkt): Temporary end2end tests to use the generated code using codegen.
     public class JsonSerializerSouceGeneratorTests
     {
-        // Temporary test to make sure code was generated.
         [Fact]
         public static void TestGeneratedCode()
         {
