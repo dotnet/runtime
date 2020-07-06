@@ -5931,6 +5931,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // Allocate a pointer sized stack slot, since we may need to double align here
             // when lvaDoneFrameLayout == FINAL_FRAME_LAYOUT
             //
+            if (compMethodID == 39739)
+            {
+                printf("lvaAssignVirtualFrameOffsetsToLocal1 : %u\n", compLclFrameSize);
+            }
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
             stkOffs -= TARGET_POINTER_SIZE;
 
@@ -5941,6 +5945,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // offsets that we calculate for the stack frame will always
             // be greater (or equal) to what they can be in the final layout.
             //
+            if (compMethodID == 39739)
+            {
+                printf("lvaAssignVirtualFrameOffsetsToLocal2 : %u\n", compLclFrameSize);
+            }
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
             stkOffs -= TARGET_POINTER_SIZE;
         }
@@ -5948,6 +5956,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         {
             if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
             {
+                if (compMethodID == 39739)
+                {
+                    printf("lvaAssignVirtualFrameOffsetsToLocal3 : %u\n", compLclFrameSize);
+                }
                 lvaIncrementFrameSize(TARGET_POINTER_SIZE);
                 stkOffs -= TARGET_POINTER_SIZE;
             }
@@ -5990,6 +6002,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         noway_assert(codeGen->isFramePointerUsed());
 #endif
         // For CORINFO_CALLCONV_PARAMTYPE (if needed)
+        if (compMethodID == 39739)
+        {
+            printf("lvaAssignVirtualFrameOffsetsToLocal4 : %u\n", compLclFrameSize);
+        }
         lvaIncrementFrameSize(TARGET_POINTER_SIZE);
         stkOffs -= TARGET_POINTER_SIZE;
         lvaCachedGenericContextArgOffs = stkOffs;
@@ -5998,6 +6014,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     else if (lvaKeepAliveAndReportThis())
     {
         // When "this" is also used as generic context arg.
+        if (compMethodID == 39739)
+        {
+            printf("lvaAssignVirtualFrameOffsetsToLocal5 : %u\n", compLclFrameSize);
+        }
         lvaIncrementFrameSize(TARGET_POINTER_SIZE);
         stkOffs -= TARGET_POINTER_SIZE;
         lvaCachedGenericContextArgOffs = stkOffs;
@@ -6346,6 +6366,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                     // stack slot since we may need to double align this LclVar
                     // when lvaDoneFrameLayout == FINAL_FRAME_LAYOUT
                     //
+                    if (compMethodID == 39739)
+                    {
+                        printf("lvaAssignVirtualFrameOffsetsToLocal6 : %u\n", compLclFrameSize);
+                    }
                     lvaIncrementFrameSize(TARGET_POINTER_SIZE);
                     stkOffs -= TARGET_POINTER_SIZE;
                 }
@@ -6353,6 +6377,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 {
                     if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
                     {
+                        if (compMethodID == 39739)
+                        {
+                            printf("lvaAssignVirtualFrameOffsetsToLocal7 : %u\n", compLclFrameSize);
+                        }
                         lvaIncrementFrameSize(TARGET_POINTER_SIZE);
                         stkOffs -= TARGET_POINTER_SIZE;
                     }
@@ -6448,6 +6476,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // Allocate a pointer sized stack slot, since we may need to double align here
             // when lvaDoneFrameLayout == FINAL_FRAME_LAYOUT
             //
+            if (compMethodID == 39739)
+            {
+                printf("lvaAssignVirtualFrameOffsetsToLocal8 : %u\n", compLclFrameSize);
+            }
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
             stkOffs -= TARGET_POINTER_SIZE;
 
@@ -6460,6 +6492,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 // calculate for the stack frame are always greater than they will
                 // be in the final layout.
                 //
+                if (compMethodID == 39739)
+                {
+                    printf("lvaAssignVirtualFrameOffsetsToLocal9 : %u\n", compLclFrameSize);
+                }
                 lvaIncrementFrameSize(TARGET_POINTER_SIZE);
                 stkOffs -= TARGET_POINTER_SIZE;
             }
@@ -6468,6 +6504,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         {
             if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
             {
+                if (compMethodID == 39739)
+                {
+                    printf("lvaAssignVirtualFrameOffsetsToLocal10 : %u\n", compLclFrameSize);
+                }
                 lvaIncrementFrameSize(TARGET_POINTER_SIZE);
                 stkOffs -= TARGET_POINTER_SIZE;
             }
@@ -6615,6 +6655,10 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 
     /* Reserve space on the stack by bumping the frame size */
 
+    if (compMethodID == 39739)
+    {
+        printf("lvaAllocLocalAndSetVirtualOffset : %u\n", compLclFrameSize);
+    }
     lvaIncrementFrameSize(size);
     stkOffs -= size;
     lvaTable[lclNum].lvStkOffs = stkOffs;
@@ -6739,6 +6783,10 @@ void Compiler::lvaAlignFrame()
 
     if (regPushedCountAligned != lclFrameSizeAligned)
     {
+        if (compMethodID == 39739)
+        {
+            printf("lvaAlignFrame : %u\n", compLclFrameSize);
+        }
         lvaIncrementFrameSize(TARGET_POINTER_SIZE);
     }
 
@@ -6897,6 +6945,10 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
                 if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
                 {
                     spillTempSize += TARGET_POINTER_SIZE;
+                    if (compMethodID == 39739)
+                    {
+                        printf("lvaAllocateTemp1 : %u\n", compLclFrameSize);
+                    }
                     lvaIncrementFrameSize(TARGET_POINTER_SIZE);
                     stkOffs -= TARGET_POINTER_SIZE;
                 }
@@ -6905,6 +6957,10 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
             }
 
             spillTempSize += size;
+            if (compMethodID == 39739)
+            {
+                printf("lvaAllocateTemp2 : %u\n", compLclFrameSize);
+            }
             lvaIncrementFrameSize(size);
             stkOffs -= size;
             temp->tdSetTempOffs(stkOffs);
@@ -6918,6 +6974,10 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
     {
         unsigned size = lvaGetMaxSpillTempSize();
 
+        if (compMethodID == 39739)
+        {
+            printf("lvaAllocateTemp3 : %u\n", compLclFrameSize);
+        }
         lvaIncrementFrameSize(size);
         stkOffs -= size;
     }

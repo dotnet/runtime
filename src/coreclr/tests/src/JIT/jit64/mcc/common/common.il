@@ -96,7 +96,7 @@
     // Code size       34 (0x22)
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  ldstr      "FAILED: [field {0}] => expected = {1}, actual = {2}"
+    IL_0001:  ldstr      "FAILED: [field {0}] => actual = {1}, expected = {2}"
     IL_0006:  ldarg.1
     IL_0007:  ldarg.3
     IL_0008:  box        [mscorlib]System.Double

@@ -4920,6 +4920,10 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             else
             {
                 printf("\nG_M%03u_IG%02u:\n", emitComp->compMethodID, ig->igNum);
+                if (ig->igNum == 1720)
+                {
+                    printf("\n--------debug break--------\n");
+                }
             }
         }
 #endif // DEBUG

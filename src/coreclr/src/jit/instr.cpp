@@ -1308,7 +1308,7 @@ void CodeGen::inst_RV_ST(instruction ins, emitAttr size, regNumber reg, GenTree*
     inst_RV_TT(ins, reg, tree, 0, size);
 }
 
-void CodeGen::inst_RV_ST(instruction ins, regNumber reg, TempDsc* tmp, unsigned ofs, var_types type, emitAttr size)
+void CodeGen::inst_RV_ST(instruction ins, regNumber reg, TempDsc* tmp, unsigned ofs, var_types type, emitAttr size)  // delete this method
 {
     if (size == EA_UNKNOWN)
     {
