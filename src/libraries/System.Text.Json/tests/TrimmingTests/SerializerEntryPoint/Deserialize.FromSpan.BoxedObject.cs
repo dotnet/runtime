@@ -19,7 +19,7 @@ namespace SerializerTrimmingTest
         {
             string json = "[1]";
             int[] arr = (int[])JsonSerializer.Deserialize(Encoding.UTF8.GetBytes(json), typeof(int[]));
-            if (arr == null)
+            if (arr == null || arr.Length != 1 || arr[0] != 1)
             {
                 return -1;
             }

@@ -24,7 +24,7 @@ namespace SerializerTrimmingTest
             using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
             {
                 int[] arr = (int[])(await JsonSerializer.DeserializeAsync(stream, typeof(int[])));
-                if (arr == null)
+                if (arr == null || arr.Length != 1 || arr[0] != 1)
                 {
                     return -1;
                 }
