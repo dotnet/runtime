@@ -230,7 +230,7 @@ namespace CoreclrTestLib
 
             Task<string> copyOutput = createdump.StandardOutput.ReadToEndAsync();
             Task<string> copyError = createdump.StandardError.ReadToEndAsync();
-            bool fSuccess = createdump.WaitForExit(DEFAULT_TIMEOUT);
+            bool fSuccess = createdump.WaitForExit(DEFAULT_TIMEOUT * 2);
 
             if (fSuccess)
             {
