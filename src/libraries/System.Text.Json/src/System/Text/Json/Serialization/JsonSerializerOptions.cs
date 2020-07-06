@@ -39,6 +39,7 @@ namespace System.Text.Json
         private int _maxDepth;
         private bool _allowTrailingCommas;
         private bool _haveTypesBeenCreated;
+        private bool _ignoreNullValues;
         private bool _ignoreReadOnlyProperties;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
@@ -76,6 +77,7 @@ namespace System.Text.Json
             _defaultBufferSize = options._defaultBufferSize;
             _maxDepth = options._maxDepth;
             _allowTrailingCommas = options._allowTrailingCommas;
+            _ignoreNullValues = options._ignoreNullValues;
             _ignoreReadOnlyProperties = options._ignoreReadOnlyProperties;
             _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
             _writeIndented = options._writeIndented;
@@ -207,19 +209,20 @@ namespace System.Text.Json
         {
             get
             {
-                return DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingNull;
+                return _ignoreNullValues;
             }
             set
             {
                 VerifyMutable();
 
-                if (value && _defaultIgnoreCondition != JsonIgnoreCondition.Never && _defaultIgnoreCondition != JsonIgnoreCondition.WhenWritingNull)
+                if (value && _defaultIgnoreCondition != JsonIgnoreCondition.Never)
                 {
-                    Debug.Assert(_defaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault);
+                    Debug.Assert(_defaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault
+                        || _defaultIgnoreCondition == JsonIgnoreCondition.WhenWritingNull);
                     throw new InvalidOperationException(SR.DefaultIgnoreConditionAlreadySpecified);
                 }
 
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+                _ignoreNullValues = value;
             }
         }
 
@@ -247,6 +250,11 @@ namespace System.Text.Json
                 if (value == JsonIgnoreCondition.Always)
                 {
                     throw new ArgumentException(SR.DefaultIgnoreConditionInvalid);
+                }
+
+                if (value != JsonIgnoreCondition.Never && _ignoreNullValues)
+                {
+                    throw new InvalidOperationException(SR.DefaultIgnoreConditionAlreadySpecified);
                 }
 
                 _defaultIgnoreCondition = value;

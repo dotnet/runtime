@@ -125,11 +125,10 @@ namespace System.Text.Json
             }
         }
 
-        private void DetermineIgnoreCondition(JsonIgnoreCondition? ignoreCondition)
+        private void DetermineIgnoreConditionInternal(JsonIgnoreCondition ignoreCondition)
         {
-            switch (ignoreCondition ?? Options.DefaultIgnoreCondition)
+            switch (ignoreCondition)
             {
-                case JsonIgnoreCondition.Never:
                 case JsonIgnoreCondition.WhenWritingDefault:
                     IgnoreDefaultValuesForReferenceTypesOnWrite = true;
                     IgnoreDefaultValuesForValueTypesOnWrite = true;
@@ -137,6 +136,27 @@ namespace System.Text.Json
                 case JsonIgnoreCondition.WhenWritingNull:
                     IgnoreDefaultValuesForReferenceTypesOnWrite = true;
                     break;
+            }
+        }
+
+        private void DetermineIgnoreCondition(JsonIgnoreCondition? ignoreCondition)
+        {
+            if (ignoreCondition != null)
+            {
+                DetermineIgnoreConditionInternal(ignoreCondition.Value);
+            }
+#pragma warning disable CS0618 // IgnoreNullValues is obsolete
+            else if (Options.IgnoreNullValues)
+            {
+                Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
+                IgnoreDefaultValuesOnRead = true;
+                IgnoreDefaultValuesForReferenceTypesOnWrite = true;
+                IgnoreDefaultValuesForValueTypesOnWrite = true;
+            }
+#pragma warning restore CS0618 // IgnoreNullValues is obsolete
+            else
+            {
+                DetermineIgnoreConditionInternal(Options.DefaultIgnoreCondition);
             }
         }
 
