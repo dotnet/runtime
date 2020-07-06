@@ -54,6 +54,15 @@ typedef enum {
 
 #define MONO_METHOD_PROP_GENERIC_CONTAINER 0
 #define MONO_METHOD_PROP_VERIFICATION_SUCCESS 1
+#define MONO_METHOD_PROP_INFREQUENT_BITS 2
+
+/* Infrequently accessed bits of method definitions stored in the image properties.
+ * The method must not be inflated.
+ */
+typedef struct _MonoMethodDefInfrequentBits {
+	unsigned int is_reabstracted:1;  /* whenever this is a reabstraction of another interface */
+	unsigned int is_covariant_override_impl:1; /* whether this is an override with a signature different from its declared method */
+} MonoMethodDefInfrequentBits;
 
 struct _MonoMethod {
 	guint16 flags;  /* method flags */
@@ -74,8 +83,6 @@ struct _MonoMethod {
 	unsigned int is_generic:1; /* whenever this is a generic method definition */
 	unsigned int is_inflated:1; /* whether we're a MonoMethodInflated */
 	unsigned int skip_visibility:1; /* whenever to skip JIT visibility checks */
-	unsigned int is_reabstracted:1; /* whenever this is a reabstraction of another interface */
-	unsigned int is_covariant_override_impl:1; /* whether this is an override with a signature different from its declared method */
 	signed int slot : 16;
 
 	/*
@@ -892,6 +899,24 @@ mono_method_set_verification_success (MonoMethod *method);
 
 gboolean
 mono_method_get_verification_success (MonoMethod *method);
+
+const MonoMethodDefInfrequentBits *
+mono_method_lookup_infrequent_bits (MonoMethod *methoddef);
+
+MonoMethodDefInfrequentBits *
+mono_method_get_infrequent_bits (MonoMethod *methoddef);
+
+gboolean
+mono_method_get_is_reabstracted (MonoMethod *method);
+
+void
+mono_method_set_is_reabstracted (MonoMethod *methoddef);
+
+gboolean
+mono_method_get_is_covariant_override_impl (MonoMethod *method);
+
+void
+mono_method_set_is_covariant_override_impl (MonoMethod *methoddef);
 
 MonoMethod*
 mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context, MonoError *error);
