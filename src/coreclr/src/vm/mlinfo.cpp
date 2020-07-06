@@ -2963,7 +2963,7 @@ void MarshalInfo::GenerateReturnIL(NDirectStubLinker* psl,
         // now for backward compatibility.
         X86_ONLY(wNativeSize = StackElemSize(wNativeSize));
 
-        pMarshaler->EmitMarshalReturnValue(pcsMarshal, pcsUnmarshal, pcsDispatch, m_paramidx + argOffset, wNativeSize, dwMarshalFlags, &m_args);
+        pMarshaler->EmitMarshalReturnValue(pcsMarshal, pcsUnmarshal, pcsDispatch, argOffset, wNativeSize, dwMarshalFlags, &m_args);
 
         pcsMarshal->EmitNOP("// } return");
         pcsUnmarshal->EmitNOP("// } return");
