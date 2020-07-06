@@ -127,32 +127,17 @@ namespace System.Text.Json
 
         private void DetermineIgnoreCondition(JsonIgnoreCondition? ignoreCondition)
         {
-            if (ignoreCondition != null)
+            switch (ignoreCondition ?? Options.DefaultIgnoreCondition)
             {
-                Debug.Assert(PropertyInfo != null);
-                Debug.Assert(ignoreCondition != JsonIgnoreCondition.Always);
-
-                if (ignoreCondition != JsonIgnoreCondition.Never)
-                {
-                    Debug.Assert(ignoreCondition == JsonIgnoreCondition.WhenWritingDefault);
+                case JsonIgnoreCondition.Never:
+                case JsonIgnoreCondition.WhenWritingDefault:
                     IgnoreDefaultValuesForReferenceTypesOnWrite = true;
                     IgnoreDefaultValuesForValueTypesOnWrite = true;
-                }
+                    break;
+                case JsonIgnoreCondition.WhenWritingNull:
+                    IgnoreDefaultValuesForReferenceTypesOnWrite = true;
+                    break;
             }
-#pragma warning disable CS0618 // IgnoreNullValues is obsolete
-            else if (Options.IgnoreNullValues)
-            {
-                Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
-                IgnoreDefaultValuesOnRead = true;
-                IgnoreDefaultValuesForReferenceTypesOnWrite = true;
-            }
-            else if (Options.DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault)
-            {
-                Debug.Assert(!Options.IgnoreNullValues);
-                IgnoreDefaultValuesForReferenceTypesOnWrite = true;
-                IgnoreDefaultValuesForValueTypesOnWrite = true;
-            }
-#pragma warning restore CS0618 // IgnoreNullValues is obsolete
         }
 
         public static TAttribute? GetAttribute<TAttribute>(PropertyInfo propertyInfo) where TAttribute : Attribute

@@ -1644,5 +1644,30 @@ namespace System.Text.Json.Serialization.Tests
             public int MyInt { get; set; } = -1;
             public Point_2D_Struct MyPoint { get; set; } = new Point_2D_Struct(-1, -1);
         }
+
+        public class ClassWithReferenceAndValueTypeFieldsUsingIgnoreWhenWritingNullAttribute
+        {
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public int[] ReferenceType { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public int ValueType { get; set; }
+        }
+
+        [Fact]
+        public static void Serialize_value_type_but_not_reference_type()
+        {
+            string json = @"{""ReferenceType"":[5], ""ValueType"":18}";
+
+            var obj = JsonSerializer.Deserialize<ClassWithReferenceAndValueTypeFieldsUsingIgnoreWhenWritingNullAttribute>(json);
+
+            // Class is deserialized.
+            Assert.NotNull(obj.ReferenceType);
+            Assert.Equal(18, obj.ValueType);
+
+            obj = new ClassWithReferenceAndValueTypeFieldsUsingIgnoreWhenWritingNullAttribute();
+            json = JsonSerializer.Serialize(obj);
+            Assert.Equal(@"{""ValueType"":0}", json);
+        }
     }
 }
