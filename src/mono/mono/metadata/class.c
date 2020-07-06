@@ -1379,6 +1379,41 @@ mono_method_set_generic_container (MonoMethod *method, MonoGenericContainer* con
 	mono_image_property_insert (mono_method_get_image (method), method, MONO_METHOD_PROP_GENERIC_CONTAINER, container);
 }
 
+/**
+ * mono_method_set_verification_success:
+ *
+ * Sets a bit indicating that the method has been verified.
+ *
+ * LOCKING: acquires the image lock.
+ */
+void
+mono_method_set_verification_success (MonoMethod *method)
+{
+	g_assert (!method->is_inflated);
+
+	mono_image_property_insert (mono_method_get_image (method), method, MONO_METHOD_PROP_VERIFICATION_SUCCESS, GUINT_TO_POINTER(1));
+}
+
+/**
+ * mono_method_get_verification_sucess:
+ *
+ * Returns \c TRUE if the method has been verified successfully.
+ *
+ * LOCKING: acquires the image lock.
+ */
+gboolean
+mono_method_get_verification_success (MonoMethod *method)
+{
+	if (method->is_inflated)
+		method = ((MonoMethodInflated *)method)->declaring;
+
+	gpointer value = mono_image_property_lookup (mono_method_get_image (method), method, MONO_METHOD_PROP_VERIFICATION_SUCCESS);
+
+	if (!value)
+		return FALSE;
+	return TRUE;
+}
+
 /** 
  * mono_class_find_enum_basetype:
  * \param class The enum class
