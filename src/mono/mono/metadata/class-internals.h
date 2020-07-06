@@ -53,11 +53,16 @@ typedef enum {
 } MonoRemotingTarget;
 
 #define MONO_METHOD_PROP_GENERIC_CONTAINER 0
+/* verification success bit, protected by the image lock */
 #define MONO_METHOD_PROP_VERIFICATION_SUCCESS 1
+/* infrequent vtable layout bits protected by the loader lock */
 #define MONO_METHOD_PROP_INFREQUENT_BITS 2
 
 /* Infrequently accessed bits of method definitions stored in the image properties.
  * The method must not be inflated.
+ *
+ * LOCKING: Reading the bits acquires the image lock.  Writing the bits assumes
+ * the loader lock is held.
  */
 typedef struct _MonoMethodDefInfrequentBits {
 	unsigned int is_reabstracted:1;  /* whenever this is a reabstraction of another interface */
