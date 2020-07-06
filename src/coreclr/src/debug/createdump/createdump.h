@@ -10,13 +10,11 @@
 #define _countof(x) (sizeof(x)/sizeof(x[0]))
 #endif
 
+extern void trace_printf(const char* format, ...);
 extern bool g_diagnostics;
 
 #ifdef HOST_UNIX
-#define TRACE(args...) \
-        if (g_diagnostics) { \
-            printf(args); \
-        }
+#define TRACE(args...) trace_printf(args)
 #define TRACE_VERBOSE(args...)
 #else
 #define TRACE(args, ...)

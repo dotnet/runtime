@@ -193,6 +193,8 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
 
     if (!m_coreclrPath.empty())
     {
+        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED\n");
+
         // We assume that the DAC is in the same location as the libcoreclr.so module
         std::string dacPath;
         dacPath.append(m_coreclrPath);
@@ -233,6 +235,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
             fprintf(stderr, "CLRDataCreateInstance(IXCLRDataProcess) FAILED %08x\n", hr);
             goto exit;
         }
+        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration FINISHED\n");
         if (!EnumerateManagedModules(pClrDataProcess))
         {
             goto exit;
@@ -540,8 +543,8 @@ CrashInfo::ValidRegion(const MemoryRegion& region)
 void
 CrashInfo::CombineMemoryRegions()
 {
+    TRACE("CombineMemoryRegions: STARTED\n");
     assert(!m_memoryRegions.empty());
-
     std::set<MemoryRegion> memoryRegionsNew;
 
     // MEMORY_REGION_FLAG_SHARED and MEMORY_REGION_FLAG_PRIVATE are internal flags that
@@ -576,6 +579,8 @@ CrashInfo::CombineMemoryRegions()
     memoryRegionsNew.insert(memoryRegion);
 
     m_memoryRegions = memoryRegionsNew;
+
+    TRACE("CombineMemoryRegions: FINISHED\n");
 
     if (g_diagnostics)
     {
