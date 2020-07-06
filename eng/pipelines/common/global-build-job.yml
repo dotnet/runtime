@@ -42,6 +42,12 @@ jobs:
       - name: _crossBuildPropertyArg
         value: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
 
+      - name: _cxx11Parameter
+        ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'arm64')) }}:
+          value: /p:MonoLLVMUseCxx11Abi=true
+        ${{ if or(eq(parameters.osGroup, 'Linux'), ne(parameters.archType, 'arm64')) }}:
+          value: /p:MonoLLVMUseCxx11Abi=false
+
       - name: _officialBuildParameter
         ${{ if eq(parameters.isOfficialBuild, true) }}:
           value: /p:OfficialBuildId=$(Build.BuildNumber)
