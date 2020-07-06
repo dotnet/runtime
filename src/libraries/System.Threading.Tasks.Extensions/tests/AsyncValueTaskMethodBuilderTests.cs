@@ -398,7 +398,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static async Task AwaitTasksAndValueTasks_InTaskAndValueTaskMethods()
         {
             for (int i = 0; i < 2; i++)
@@ -520,7 +520,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task NonGeneric_ConcurrentBuilders_WorkCorrectly()
         {
             await Task.WhenAll(Enumerable.Range(0, Environment.ProcessorCount).Select(async _ =>
@@ -537,7 +537,7 @@ namespace System.Threading.Tasks.Tests
             }));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Generic_ConcurrentBuilders_WorkCorrectly()
         {
             await Task.WhenAll(Enumerable.Range(0, Environment.ProcessorCount).Select(async _ =>

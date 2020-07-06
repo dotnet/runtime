@@ -3,13 +3,14 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Threading.Tasks.Sources.Tests
 {
     public class ManualResetValueTaskSourceTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ReuseInstanceWithResets_Success()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -61,7 +62,7 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Throws<InvalidOperationException>(() => mrvts.GetResult(0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SetResult_BeforeOnCompleted_ResultAvailableSynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -81,7 +82,7 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Equal(2, mrvts.Version);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SetResult_AfterOnCompleted_ResultAvailableAsynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -108,7 +109,7 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Equal(2, mrvts.Version);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SetException_BeforeOnCompleted_ResultAvailableSynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -129,7 +130,7 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Equal(2, mrvts.Version);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SetException_AfterOnCompleted_ResultAvailableAsynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -169,7 +170,7 @@ namespace System.Threading.Tasks.Sources.Tests
         }
 
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void FlowContext_SetBeforeOnCompleted_FlowsIfExpected(bool flowContext)
@@ -193,7 +194,7 @@ namespace System.Threading.Tasks.Sources.Tests
         }
 
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void FlowContext_SetAfterOnCompleted_FlowsIfExpected(bool flowContext)
@@ -238,7 +239,7 @@ namespace System.Threading.Tasks.Sources.Tests
             mrvts.OnCompleted(_ => { }, new object(), 0, (ValueTaskSourceOnCompletedFlags)int.MaxValue);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void OnCompleted_ContinuationAlwaysInvokedAsynchronously(bool runContinuationsAsynchronously)
@@ -264,11 +265,16 @@ namespace System.Threading.Tasks.Sources.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
         public void SetResult_RunContinuationsAsynchronously_ContinuationInvokedAccordingly(bool runContinuationsAsynchronously)
         {
+            if (runContinuationsAsynchronously && !PlatformDetection.IsThreadingSupported)
+            {
+                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+            }
+
             var mres = new ManualResetEventSlim();
             var mrvts = new ManualResetValueTaskSource<int>() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
             for (short i = 0; i < 10; i++)
@@ -400,7 +406,7 @@ namespace System.Threading.Tasks.Sources.Tests
             protected override IEnumerable<Task> GetScheduledTasks() => null;
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]

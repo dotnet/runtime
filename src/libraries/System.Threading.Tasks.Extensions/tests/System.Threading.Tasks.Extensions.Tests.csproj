@@ -5,7 +5,6 @@
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AsyncMethodBuilderAttributeTests.cs" />
     <Compile Include="AsyncValueTaskMethodBuilderTests.cs" />
     <Compile Include="ManualResetValueTaskSourceTests.cs" />
