@@ -16,7 +16,7 @@ namespace System
 
             if (directory == null)
                 return string.Empty;
-            
+
             if (!Path.EndsInDirectorySeparator(directory))
                 directory += PathInternal.DirectorySeparatorCharAsString;
 
