@@ -39,9 +39,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Validate the error message when annotated parameter is passed to another annotated parameter
 		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) },
-			"The parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow::DefaultConstructorParameter(System.Type)' " +
+			"The parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow.DefaultConstructorParameter(Type)' " +
 			"with dynamically accessed member kinds 'DefaultConstructor' is passed into the parameter 'type' " +
-			"of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow::RequirePublicConstructors(System.Type)' " +
+			"of method 'Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow.RequirePublicConstructors(Type)' " +
 			"which requires dynamically accessed member kinds 'PublicConstructors'. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicConstructors'.")]
 		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
@@ -151,9 +151,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Validate the error message for the case of unannotated method return value passed to an annotated parameter.
 		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequireDefaultConstructor), new Type[] { typeof (Type) },
-			"The parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow::NoAnnotation(System.Type)' " +
+			"The parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow.NoAnnotation(Type)' " +
 			"with dynamically accessed member kinds 'None' is passed into " +
-			"the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow::RequireDefaultConstructor(System.Type)' " +
+			"the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow.RequireDefaultConstructor(Type)' " +
 			"which requires dynamically accessed member kinds 'DefaultConstructor'. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'DefaultConstructor'.")]
 		private void NoAnnotation (Type type)
@@ -164,7 +164,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// Validate error message when untracable value is passed to an annotated parameter.
 		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequireDefaultConstructor), new Type[] { typeof (Type) },
 			"A value from unknown source is passed " +
-			"into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow::RequireDefaultConstructor(System.Type)' " +
+			"into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow.RequireDefaultConstructor(Type)' " +
 			"which requires dynamically accessed member kinds 'DefaultConstructor'. " +
 			"It's not possible to guarantee that these requirements are met by the application.")]
 		private void UnknownValue ()

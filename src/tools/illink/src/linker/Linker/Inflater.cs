@@ -11,7 +11,7 @@ namespace Mono.Linker
 		{
 			var typeDefinition = InflateTypeWithoutException (context, typeReference);
 			if (typeDefinition == null)
-				throw new InvalidOperationException ($"Unable to resolve a reference to the type '{typeReference.FullName}' in the assembly '{typeReference.Module.Assembly.FullName}'. Does this type exist in a different assembly in the project?");
+				throw new InvalidOperationException ($"Unable to resolve a reference to the type '{typeReference.GetDisplayName ()}' in the assembly '{typeReference.Module.Assembly.FullName}'. Does this type exist in a different assembly in the project?");
 
 			return typeDefinition;
 		}
