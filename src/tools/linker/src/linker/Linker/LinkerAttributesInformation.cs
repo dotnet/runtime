@@ -29,8 +29,10 @@ namespace Mono.Linker
 					AddAttribute (ref _linkerAttributes, attributeValue);
 				}
 			}
-			if (removable)
-				AddAttribute (ref _linkerAttributes, new LinkerRemovableAttribute ());
+			if (context.CustomAttributes.HasInternalAttributes (provider)) {
+				foreach (var internalAttribute in context.CustomAttributes.GetInternalAttributes (provider))
+					AddAttribute (ref _linkerAttributes, internalAttribute);
+			}
 		}
 
 		static void AddAttribute (ref Dictionary<Type, List<Attribute>> attributes, Attribute attributeValue)

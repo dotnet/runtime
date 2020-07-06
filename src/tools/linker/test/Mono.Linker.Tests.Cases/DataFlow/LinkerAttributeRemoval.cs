@@ -10,15 +10,17 @@ using System.Reflection;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[SetupLinkAttributesFile ("LinkerRemovable.xml")]
+	[SetupLinkAttributesFile ("LinkerAttributeRemoval.xml")]
 	[IgnoreLinkAttributes (false)]
 	[KeptMember (".ctor()")]
-	[LogContains ("IL2045: Mono.Linker.Tests.Cases.DataFlow.LinkerRemovable.TestType(): Custom Attribute System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute is being referenced in code after Custom Attribute type was removed")]
-	class LinkerRemovable
+	[LogContains ("IL2045: Mono.Linker.Tests.Cases.DataFlow.LinkerAttributeRemoval.TestType(): Custom Attribute System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute is " +
+		"being referenced in code but the linker was instructed to remove all instances of this attribute. If the attribute instances are necessary make sure to either remove " +
+		"the linker attribute XML portion which removes the attribute instances, or to override this use the linker XML descriptor to keep the attribute type (which in turn keeps all of its instances).")]
+	class LinkerAttributeRemoval
 	{
 		public static void Main ()
 		{
-			var instance = new LinkerRemovable ();
+			var instance = new LinkerAttributeRemoval ();
 			instance._fieldWithCustomAttribute = null;
 			string value = instance.methodWithCustomAttribute ("parameter");
 			TestType ();
@@ -28,6 +30,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		Type _fieldWithCustomAttribute;
 
 		[Kept]
+		[KeptAttributeAttribute (typeof (TestDontRemoveAttribute))]
+		[TestDontRemoveAttribute]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 		private string methodWithCustomAttribute ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)] string parameterWithCustomAttribute)
 		{
@@ -39,6 +43,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			const string reflectionTypeKeptString = "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+		}
+	}
+
+	[KeptBaseType (typeof (System.Attribute))]
+	class TestDontRemoveAttribute:Attribute
+	{
+		[Kept]
+		public TestDontRemoveAttribute ()
+		{
 		}
 	}
 }
