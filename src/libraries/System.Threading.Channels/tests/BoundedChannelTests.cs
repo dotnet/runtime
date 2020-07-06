@@ -177,7 +177,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(0, result);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task TryWrite_DropNewest_WrappedAroundInternalQueue()
         {
             var c = Channel.CreateBounded<int>(new BoundedChannelOptions(3) { FullMode = BoundedChannelFullMode.DropNewest });
@@ -249,7 +249,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(0, result);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task CancelPendingWrite_Reading_DataTransferredFromCorrectWriter()
         {
             var c = Channel.CreateBounded<int>(1);
@@ -288,7 +288,7 @@ namespace System.Threading.Channels.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(10000)]
@@ -314,7 +314,7 @@ namespace System.Threading.Channels.Tests
                 }));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(10000)]
@@ -371,7 +371,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal((NumItems * (NumItems + 1L)) / 2, readTotal);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task WaitToWriteAsync_AfterFullThenRead_ReturnsTrue()
         {
             var c = Channel.CreateBounded<int>(1);
@@ -389,7 +389,7 @@ namespace System.Threading.Channels.Tests
             Assert.True(await write2);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [MemberData(nameof(ThreeBools))]
         public void AllowSynchronousContinuations_Reading_ContinuationsInvokedAccordingToSetting(bool allowSynchronousContinuations, bool cancelable, bool waitToReadAsync)
         {
@@ -409,7 +409,7 @@ namespace System.Threading.Channels.Tests
             r.GetAwaiter().GetResult();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void AllowSynchronousContinuations_CompletionTask_ContinuationsInvokedAccordingToSetting(bool allowSynchronousContinuations)
@@ -427,7 +427,7 @@ namespace System.Threading.Channels.Tests
             r.GetAwaiter().GetResult();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task TryWrite_NoBlockedReaders_WaitingReader_WaiterNotified()
         {
             Channel<int> c = CreateChannel();

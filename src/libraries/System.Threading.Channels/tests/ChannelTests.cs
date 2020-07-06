@@ -113,7 +113,7 @@ namespace System.Threading.Channels.Tests
             Assert.False(t.IsCompleted);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task DefaultWriteAsync_CatchesTryWriteExceptions()
         {
             var w = new TryWriteThrowingWriter<int>();
@@ -122,7 +122,7 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAsync<FormatException>(async () => await t);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task DefaultReadAsync_CatchesTryWriteExceptions()
         {
             var r = new TryReadThrowingReader<int>();
@@ -131,7 +131,7 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAsync<FieldAccessException>(() => t);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task TestBaseClassReadAsync()
         {
             WrapperChannel<int> channel = new WrapperChannel<int>(10);

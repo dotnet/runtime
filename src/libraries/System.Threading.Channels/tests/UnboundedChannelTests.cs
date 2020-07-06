@@ -137,7 +137,7 @@ namespace System.Threading.Channels.Tests
             await c.Reader.Completion;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void AllowSynchronousContinuations_WaitToReadAsync_ContinuationsInvokedAccordingToSetting()
         {
             Channel<int> c = CreateChannel();
@@ -153,7 +153,7 @@ namespace System.Threading.Channels.Tests
             r.GetAwaiter().GetResult();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void AllowSynchronousContinuations_CompletionTask_ContinuationsInvokedAccordingToSetting()
         {
             Channel<int> c = CreateChannel();
@@ -208,7 +208,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(42, await t2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Stress_TryWrite_TryRead()
         {
             const int NumItems = 3000000;
