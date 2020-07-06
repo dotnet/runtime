@@ -123,14 +123,14 @@ SupportedISA DetermineSupportedISA()
 static bool s_initialized;
 static SupportedISA s_supportedISA;
 
-bool IsSupportedInstructionSet(InstructionSet instructionSet)
+bool IsSupportedInstructionSet (InstructionSet instructionSet)
 {
     assert(s_initialized);
     assert(instructionSet == InstructionSet::AVX2 || instructionSet == InstructionSet::AVX512F);
     return ((int)s_supportedISA & (1 << (int)instructionSet)) != 0;
 }
 
-void InitSupportedInstructionSet(int32_t configSetting)
+void InitSupportedInstructionSet (int32_t configSetting)
 {
     s_supportedISA = (SupportedISA)((int)DetermineSupportedISA() & configSetting);
     // we are assuming that AVX2 can be used if AVX521F can,

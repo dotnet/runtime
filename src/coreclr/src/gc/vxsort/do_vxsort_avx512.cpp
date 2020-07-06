@@ -52,7 +52,7 @@ namespace std
 
 #ifndef max
 template <typename T>
-T max(T a, T b)
+T max (T a, T b)
 {
     if (a > b) return a; else return b;
 }
@@ -61,16 +61,16 @@ T max(T a, T b)
 #include "vxsort.h"
 #include "machine_traits.avx512.h"
 
-void do_vxsort_avx512(uint8_t** low, uint8_t** high)
+void do_vxsort_avx512 (uint8_t** low, uint8_t** high)
 {
   auto sorter = vxsort::vxsort<int64_t, vxsort::vector_machine::AVX512, 8>();
-  sorter.sort((int64_t*)low, (int64_t*)high);
+  sorter.sort ((int64_t*)low, (int64_t*)high);
 }
 
-void do_vxsort_avx512(int32_t* low, int32_t* high)
+void do_vxsort_avx512 (int32_t* low, int32_t* high)
 {
   auto sorter = vxsort::vxsort<int32_t, vxsort::vector_machine::AVX512, 8>();
-  sorter.sort(low, high);
+  sorter.sort (low, high);
 }
 
 #include "vxsort_targets_disable.h"

@@ -52,7 +52,7 @@ namespace std
 
 #ifndef max
 template <typename T>
-T max(T a, T b)
+T max (T a, T b)
 {
     if (a > b) return a; else return b;
 }
@@ -61,27 +61,27 @@ T max(T a, T b)
 #include "machine_traits.avx2.h"
 #include "packer.h"
 
-void do_vxsort_avx2(uint8_t** low, uint8_t** high)
+void do_vxsort_avx2 (uint8_t** low, uint8_t** high)
 {
   auto sorter = vxsort::vxsort<int64_t, vxsort::vector_machine::AVX2, 8>();
-  sorter.sort((int64_t*)low, (int64_t*)high);
+  sorter.sort ((int64_t*)low, (int64_t*)high);
 }
 
-void do_vxsort_avx2(int32_t* low, int32_t* high)
+void do_vxsort_avx2 (int32_t* low, int32_t* high)
 {
   auto sorter = vxsort::vxsort<int32_t, vxsort::vector_machine::AVX2, 8>();
-  sorter.sort(low, high);
+  sorter.sort (low, high);
 }
 
-void do_pack_avx2(uint8_t** mem, size_t len, uint8_t* base)
+void do_pack_avx2 (uint8_t** mem, size_t len, uint8_t* base)
 {
     auto packer = vxsort::packer<int64_t, int32_t, vxsort::vector_machine::AVX2, 3>();
-    packer.pack((int64_t*)mem, len, (int64_t)base);
+    packer.pack ((int64_t*)mem, len, (int64_t)base);
 }
 
-void do_unpack_avx2(int32_t* mem, size_t len, uint8_t* base)
+void do_unpack_avx2 (int32_t* mem, size_t len, uint8_t* base)
 {
     auto packer = vxsort::packer<int64_t, int32_t, vxsort::vector_machine::AVX2, 3>();
-    packer.unpack(mem, len, (int64_t)base);
+    packer.unpack (mem, len, (int64_t)base);
 }
 #include "vxsort_targets_disable.h"

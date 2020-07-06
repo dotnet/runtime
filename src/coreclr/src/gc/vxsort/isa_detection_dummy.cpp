@@ -9,11 +9,11 @@
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 
-void InitSupportedInstructionSet(int32_t)
+void InitSupportedInstructionSet (int32_t)
 {
 }
 
-bool IsSupportedInstructionSet(InstructionSet)
+bool IsSupportedInstructionSet (InstructionSet)
 {
     return false;
 }
