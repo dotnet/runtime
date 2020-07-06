@@ -75,12 +75,10 @@ namespace System.Text.Json
 
         internal JsonConverter GetDictionaryKeyConverter(Type keyType)
         {
-            if (_dictionaryKeyConverters == null)
-            {
-                _dictionaryKeyConverters = GetDictionaryKeyConverters();
-            }
+            _dictionaryKeyConverters ??= GetDictionaryKeyConverters();
 
-            if (!_dictionaryKeyConverters.TryGetValue(keyType, out JsonConverter? converter)){
+            if (!_dictionaryKeyConverters.TryGetValue(keyType, out JsonConverter? converter))
+            {
                 if (keyType.IsEnum)
                 {
                     converter = GetEnumConverter();
@@ -94,6 +92,8 @@ namespace System.Text.Json
 
             return converter!;
 
+            // Use factory pattern to generate an EnumConverter with AllowStrings and AllowNumbers options for dictionary keys.
+            // There will be one converter created for each enum type.
             JsonConverter GetEnumConverter()
                 => (JsonConverter)Activator.CreateInstance(
                         typeof(EnumConverter<>).MakeGenericType(keyType),
@@ -111,24 +111,24 @@ namespace System.Text.Json
             var converters = new ConcurrentDictionary<Type, JsonConverter>(Environment.ProcessorCount, NumberOfConverters);
 
             // When adding to this, update NumberOfConverters above.
-            Add(new BooleanConverter());
-            Add(new ByteConverter());
-            Add(new CharConverter());
-            Add(new DateTimeConverter());
-            Add(new DateTimeOffsetConverter());
-            Add(new DoubleConverter());
-            Add(new DecimalConverter());
-            Add(new GuidConverter());
-            Add(new Int16Converter());
-            Add(new Int32Converter());
-            Add(new Int64Converter());
-            Add(new ObjectConverter());
-            Add(new SByteConverter());
-            Add(new SingleConverter());
-            Add(new StringConverter());
-            Add(new UInt16Converter());
-            Add(new UInt32Converter());
-            Add(new UInt64Converter());
+            Add(s_defaultSimpleConverters[typeof(bool)]);
+            Add(s_defaultSimpleConverters[typeof(byte)]);
+            Add(s_defaultSimpleConverters[typeof(char)]);
+            Add(s_defaultSimpleConverters[typeof(DateTime)]);
+            Add(s_defaultSimpleConverters[typeof(DateTimeOffset)]);
+            Add(s_defaultSimpleConverters[typeof(double)]);
+            Add(s_defaultSimpleConverters[typeof(decimal)]);
+            Add(s_defaultSimpleConverters[typeof(Guid)]);
+            Add(s_defaultSimpleConverters[typeof(short)]);
+            Add(s_defaultSimpleConverters[typeof(int)]);
+            Add(s_defaultSimpleConverters[typeof(long)]);
+            Add(s_defaultSimpleConverters[typeof(object)]);
+            Add(s_defaultSimpleConverters[typeof(sbyte)]);
+            Add(s_defaultSimpleConverters[typeof(float)]);
+            Add(s_defaultSimpleConverters[typeof(string)]);
+            Add(s_defaultSimpleConverters[typeof(ushort)]);
+            Add(s_defaultSimpleConverters[typeof(uint)]);
+            Add(s_defaultSimpleConverters[typeof(ulong)]);
 
             Debug.Assert(NumberOfConverters == converters.Count);
 

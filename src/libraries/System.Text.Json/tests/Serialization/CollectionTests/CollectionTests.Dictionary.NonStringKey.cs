@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             [Fact]
-            public void TestDictinaryKey()
+            public void TestDictionaryKey()
             {
                 Dictionary<TKey, TValue> dictionary = BuildDictionary();
 
