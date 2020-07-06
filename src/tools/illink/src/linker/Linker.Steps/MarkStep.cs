@@ -108,6 +108,9 @@ namespace Mono.Linker.Steps
 			DependencyKind.ReturnType,
 			DependencyKind.UnreachableBodyRequirement,
 			DependencyKind.VariableType,
+			DependencyKind.ParameterMarshalSpec,
+			DependencyKind.FieldMarshalSpec,
+			DependencyKind.ReturnTypeMarshalSpec,
 		};
 
 		static readonly DependencyKind[] _methodReasons = new DependencyKind[] {
@@ -151,6 +154,9 @@ namespace Mono.Linker.Steps
 			DependencyKind.UnreachableBodyRequirement,
 			DependencyKind.VirtualCall,
 			DependencyKind.VirtualNeededDueToPreservedScope,
+			DependencyKind.ParameterMarshalSpec,
+			DependencyKind.FieldMarshalSpec,
+			DependencyKind.ReturnTypeMarshalSpec,
 		};
 #endif
 
@@ -518,8 +524,10 @@ namespace Mono.Linker.Steps
 			if (!spec.HasMarshalInfo)
 				return;
 
-			if (spec.MarshalInfo is CustomMarshalInfo marshaler)
+			if (spec.MarshalInfo is CustomMarshalInfo marshaler) {
 				MarkType (marshaler.ManagedType, reason, sourceLocationMember);
+				MarkGetInstanceMethod (marshaler.ManagedType.Resolve (), in reason, sourceLocationMember);
+			}
 		}
 
 		void MarkCustomAttributes (ICustomAttributeProvider provider, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
@@ -1885,6 +1893,16 @@ namespace Mono.Linker.Steps
 				return false;
 
 			return MarkMethodIf (type.Methods, MethodDefinitionExtensions.IsDefaultConstructor, reason, sourceLocationMember) != null;
+		}
+
+		void MarkGetInstanceMethod (TypeDefinition type, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
+		{
+			if (type?.HasMethods != true)
+				return;
+
+			MarkMethodIf (type.Methods, m =>
+				m.Name == "GetInstance" && m.Parameters.Count == 1 && m.Parameters[0].ParameterType.MetadataType == MetadataType.String,
+				reason, sourceLocationMember);
 		}
 
 		static bool IsNonEmptyStaticConstructor (MethodDefinition method)
