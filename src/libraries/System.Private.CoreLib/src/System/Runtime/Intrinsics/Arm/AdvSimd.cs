@@ -10845,6 +10845,55 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<float> ReciprocalStep(Vector128<float> left, Vector128<float> right) => ReciprocalStep(left, right);
 
         /// <summary>
+        /// int16x4_t vrev32_s16 (int16x4_t vec)
+        ///   A32: VREV32.16 Dd, Dm
+        ///   A64: REV32 Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<int> ReverseElement16(Vector64<int> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// int16x4_t vrev64_s16 (int16x4_t vec)
+        ///   A32: VREV64.16 Dd, Dm
+        ///   A64: REV64 Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<long> ReverseElement16(Vector64<long> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// uint16x4_t vrev32_u16 (uint16x4_t vec)
+        ///   A32: VREV32.16 Dd, Dm
+        ///   A64: REV32 Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<uint> ReverseElement16(Vector64<uint> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// uint16x4_t vrev64_u16 (uint16x4_t vec)
+        ///   A32: VREV64.16 Dd, Dm
+        ///   A64: REV64 Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<ulong> ReverseElement16(Vector64<ulong> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// int16x8_t vrev32q_s16 (int16x8_t vec)
+        ///   A32: VREV32.16 Qd, Qm
+        ///   A64: REV32 Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<int> ReverseElement16(Vector128<int> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// int16x8_t vrev64q_s16 (int16x8_t vec)
+        ///   A32: VREV64.16 Qd, Qm
+        ///   A64: REV64 Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<long> ReverseElement16(Vector128<long> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// uint16x8_t vrev32q_u16 (uint16x8_t vec)
+        ///   A32: VREV32.16 Qd, Qm
+        ///   A64: REV32 Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<uint> ReverseElement16(Vector128<uint> value) => ReverseElement16(value);
+
+        /// <summary>
         /// int8x8_t vrev16_s8 (int8x8_t vec)
         ///   A32: VREV16.8 Dd, Dm
         ///   A64: REV16 Vd.8B, Vn.8B
