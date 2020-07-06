@@ -10894,6 +10894,41 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> ReverseElement16(Vector128<uint> value) => ReverseElement16(value);
 
         /// <summary>
+        /// uint16x8_t vrev64q_u16 (uint16x8_t vec)
+        ///   A32: VREV64.16 Qd, Qm
+        ///   A64: REV64 Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<ulong> ReverseElement16(Vector128<ulong> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// int32x2_t vrev64_s32 (int32x2_t vec)
+        ///   A32: VREV64.32 Dd, Dm
+        ///   A64: REV64 Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<long> ReverseElement32(Vector64<long> value) => ReverseElement32(value);
+
+        /// <summary>
+        /// uint32x2_t vrev64_u32 (uint32x2_t vec)
+        ///   A32: VREV64.32 Dd, Dm
+        ///   A64: REV64 Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<ulong> ReverseElement32(Vector64<ulong> value) => ReverseElement32(value);
+
+        /// <summary>
+        /// int32x4_t vrev64q_s32 (int32x4_t vec)
+        ///   A32: VREV64.32 Qd, Qm
+        ///   A64: REV64 Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<long> ReverseElement32(Vector128<long> value) => ReverseElement32(value);
+
+        /// <summary>
+        /// uint32x4_t vrev64q_u32 (uint32x4_t vec)
+        ///   A32: VREV64.32 Qd, Qm
+        ///   A64: REV64 Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<ulong> ReverseElement32(Vector128<ulong> value) => ReverseElement32(value);
+
+        /// <summary>
         /// int8x8_t vrev16_s8 (int8x8_t vec)
         ///   A32: VREV16.8 Dd, Dm
         ///   A64: REV16 Vd.8B, Vn.8B
