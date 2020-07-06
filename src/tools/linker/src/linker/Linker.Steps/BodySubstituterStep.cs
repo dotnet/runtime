@@ -74,7 +74,7 @@ namespace Mono.Linker.Steps
 
 			MethodDefinition method = FindMethod (type, signature);
 			if (method == null) {
-				Context.LogWarning ($"Could not find method '{signature}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2009, _xmlDocumentLocation);
+				Context.LogWarning ($"Could not find method '{signature}' in type '{type.GetDisplayName ()}' specified in {_xmlDocumentLocation}", 2009, _xmlDocumentLocation);
 				return;
 			}
 
@@ -110,7 +110,7 @@ namespace Mono.Linker.Steps
 
 			var field = type.Fields.FirstOrDefault (f => f.Name == name);
 			if (field == null) {
-				Context.LogWarning ($"Could not find field '{name}' in type '{type.FullName}' specified in { _xmlDocumentLocation}", 2012, _xmlDocumentLocation);
+				Context.LogWarning ($"Could not find field '{name}' in type '{type.GetDisplayName ()}' specified in { _xmlDocumentLocation}", 2012, _xmlDocumentLocation);
 				return;
 			}
 

@@ -82,7 +82,7 @@ namespace Mono.Linker
 				return new RequiresUnreferencedCodeAttribute (message) { Url = url };
 			}
 
-			context.LogWarning ($"Attribute '{typeof (RequiresUnreferencedCodeAttribute).FullName}' on '{method}' doesn't have a required constructor argument.", 2028, method);
+			context.LogWarning ($"Attribute '{typeof (RequiresUnreferencedCodeAttribute).FullName}' on '{method.GetDisplayName ()}' doesn't have a required constructor argument.", 2028, method);
 			return null;
 		}
 	}

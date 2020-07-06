@@ -41,7 +41,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) },
 			"The field 'System.Type Mono.Linker.Tests.Cases.DataFlow.FieldDataFlow::_typeWithDefaultConstructor' " +
 			"with dynamically accessed member kinds 'DefaultConstructor' is passed into " +
-			"the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.FieldDataFlow::RequirePublicConstructors(System.Type)' " +
+			"the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.FieldDataFlow.RequirePublicConstructors(Type)' " +
 			"which requires dynamically accessed member kinds 'PublicConstructors'. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicConstructors'.")]
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]

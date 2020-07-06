@@ -24,7 +24,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		[LogContains (
 			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresWithMessageOnlyOnMethod(): " +
-			"Calling 'System.Void Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::RequiresWithMessageOnly()' " +
+			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.RequiresWithMessageOnly()' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --RequiresWithMessageOnly--.")]
 		static void TestRequiresWithMessageOnlyOnMethod ()
@@ -39,7 +39,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		[LogContains (
 			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresWithMessageAndUrlOnMethod(): " +
-			"Calling 'System.Void Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::RequiresWithMessageAndUrl()' " +
+			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.RequiresWithMessageAndUrl()' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --RequiresWithMessageAndUrl--. " +
 			"https://helpurl")]
@@ -55,7 +55,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		[LogContains (
 			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresOnConstructor(): " +
-			"Calling 'System.Void Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability/ConstructorRequires::.ctor()' " +
+			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.ConstructorRequires.ConstructorRequires()' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --ConstructorRequires--.")]
 		static void TestRequiresOnConstructor ()
@@ -73,12 +73,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		[LogContains (
 			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresOnPropertyGetterAndSetter(): " +
-			"Calling 'System.Int32 Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::get_PropertyRequires()' " +
+			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.get_PropertyRequires()' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --getter PropertyRequires--.")]
 		[LogContains (
 			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresOnPropertyGetterAndSetter(): " +
-			"Calling 'System.Void Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::set_PropertyRequires(System.Int32)' " +
+			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.set_PropertyRequires(Int32)' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --setter PropertyRequires--.")]
 		static void TestRequiresOnPropertyGetterAndSetter ()
@@ -97,7 +97,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		[LogContains (
 			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresSuppressesWarningsFromReflectionAnalysis(): " +
-			"Calling 'System.Void Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability::RequiresAndCallsOtherRequiresMethods()' " +
+			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.RequiresAndCallsOtherRequiresMethods<TPublicMethods>()' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --RequiresAndCallsOtherRequiresMethods--.")]
 		static void TestRequiresSuppressesWarningsFromReflectionAnalysis ()
