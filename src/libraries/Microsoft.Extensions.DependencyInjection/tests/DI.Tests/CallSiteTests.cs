@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public void BuiltExpressionWillReturnResolvedServiceWhenAppropriate(
             ServiceDescriptor[] descriptors, Type serviceType, Func<object, object, bool> compare)
         {
-            var provider = new DynamicServiceProviderEngine(descriptors, null);
+            var provider = new DynamicServiceProviderEngine(descriptors);
 
             var callSite = provider.CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
             var collectionCallSite = provider.CallSiteFactory.GetCallSite(typeof(IEnumerable<>).MakeGenericType(serviceType), new CallSiteChain());
@@ -111,7 +111,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             descriptors.AddScoped<ServiceB>();
             descriptors.AddScoped<ServiceC>();
 
-            var provider = new DynamicServiceProviderEngine(descriptors, null);
+            var provider = new DynamicServiceProviderEngine(descriptors);
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             descriptors.Add(ServiceDescriptor.Describe(typeof(ServiceC), typeof(DisposableServiceC), lifetime));
 
             var disposables = new List<object>();
-            var provider = new DynamicServiceProviderEngine(descriptors, null);
+            var provider = new DynamicServiceProviderEngine(descriptors);
             provider.Root._captureDisposableCallback = obj =>
             {
                 disposables.Add(obj);
@@ -159,7 +159,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 typeof(ServiceC), p => new DisposableServiceC(p.GetService<ServiceB>()), lifetime));
 
             var disposables = new List<object>();
-            var provider = new DynamicServiceProviderEngine(descriptors, null);
+            var provider = new DynamicServiceProviderEngine(descriptors);
             provider.Root._captureDisposableCallback = obj =>
             {
                 disposables.Add(obj);
@@ -188,7 +188,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             descriptors.AddTransient<ServiceC>();
 
             var disposables = new List<object>();
-            var provider = new DynamicServiceProviderEngine(descriptors, null);
+            var provider = new DynamicServiceProviderEngine(descriptors);
             provider.Root._captureDisposableCallback = obj =>
             {
                 disposables.Add(obj);
@@ -213,7 +213,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             descriptors.Add(ServiceDescriptor.Describe(typeof(ServiceD), typeof(ServiceD), lifetime));
 
             var disposables = new List<object>();
-            var provider = new DynamicServiceProviderEngine(descriptors, null);
+            var provider = new DynamicServiceProviderEngine(descriptors);
             provider.Root._captureDisposableCallback = obj =>
             {
                 disposables.Add(obj);
@@ -234,7 +234,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             descriptors.AddTransient<ClassWithThrowingCtor>();
             descriptors.AddTransient<IFakeService, FakeService>();
 
-            var provider = new DynamicServiceProviderEngine(descriptors, null);
+            var provider = new DynamicServiceProviderEngine(descriptors);
 
             var callSite1 = provider.CallSiteFactory.GetCallSite(typeof(ClassWithThrowingEmptyCtor), new CallSiteChain());
             var compiledCallSite1 = CompileCallSite(callSite1, provider);
@@ -257,7 +257,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             descriptors.AddTransient<ServiceD>();
             descriptors.AddTransient<ServiceE>();
 
-            var provider = new DynamicServiceProviderEngine(descriptors, null);
+            var provider = new DynamicServiceProviderEngine(descriptors);
 
             var callSite1 = provider.CallSiteFactory.GetCallSite(typeof(ServiceE), new CallSiteChain());
             var compileCallSite = CompileCallSite(callSite1, provider);

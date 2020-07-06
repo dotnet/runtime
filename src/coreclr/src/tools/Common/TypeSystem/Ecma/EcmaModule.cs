@@ -419,12 +419,12 @@ namespace Internal.TypeSystem.Ecma
                 {
                     MethodSignature sig = parser.ParseMethodSignature();
                     TypeDesc typeDescToInspect = parentTypeDesc;
+                    Instantiation substitution = default(Instantiation);
 
                     // Try to resolve the name and signature in the current type, or any of the base types.
                     do
                     {
-                        // TODO: handle substitutions
-                        MethodDesc method = typeDescToInspect.GetMethod(name, sig);
+                        MethodDesc method = typeDescToInspect.GetMethod(name, sig, substitution);
                         if (method != null)
                         {
                             // If this resolved to one of the base types, make sure it's not a constructor.
@@ -434,7 +434,31 @@ namespace Internal.TypeSystem.Ecma
 
                             return method;
                         }
-                        typeDescToInspect = typeDescToInspect.BaseType;
+                        var baseType = typeDescToInspect.BaseType;
+                        if (baseType != null)
+                        {
+                            if (!baseType.HasInstantiation)
+                            {
+                                substitution = default(Instantiation);
+                            }
+                            else
+                            {
+                                // If the base type is generic, any signature match for methods on the base type with the generic details from
+                                // the deriving type
+                                Instantiation newSubstitution = typeDescToInspect.GetTypeDefinition().BaseType.Instantiation;
+                                if (!substitution.IsNull)
+                                {
+                                    TypeDesc[] newSubstitutionTypes = new TypeDesc[newSubstitution.Length];
+                                    for (int i = 0; i < newSubstitution.Length; i++)
+                                    {
+                                        newSubstitutionTypes[i] = newSubstitution[i].InstantiateSignature(substitution, default(Instantiation));
+                                    }
+                                    newSubstitution = new Instantiation(newSubstitutionTypes);
+                                }
+                                substitution = newSubstitution;
+                            }
+                        }
+                        typeDescToInspect = baseType;
                     } while (typeDescToInspect != null);
 
                     ThrowHelper.ThrowMissingMethodException(parentTypeDesc, name, sig);

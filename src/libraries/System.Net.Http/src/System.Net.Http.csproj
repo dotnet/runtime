@@ -337,7 +337,7 @@
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs">
       <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs</Link>
     </Compile>
-  </ItemGroup>    
+  </ItemGroup>
   <!-- Linux specific files -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
@@ -641,6 +641,20 @@
     <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs"
              Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs"
+             Link="Common\System\StringExtensions.cs" />
+    <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs"
+             Link="Common\System\Net\HttpStatusDescription.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="System\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\SystemProxyInfo.Browser.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
@@ -697,39 +711,7 @@
   <ItemGroup>
     <None Include="Resources\SR.resx" />
   </ItemGroup>
-  <!-- Browser specific implementation -->
-  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs"
-             Link="Common\System\CharArrayHelpers.cs" />
-    <Compile Include="$(CommonPath)\System\StringExtensions.cs"
-             Link="Common\System\StringExtensions.cs" />
-    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs"
-             Link="Common\System\Net\HttpKnownHeaderNames.cs" />
-    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs"
-             Link="Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />
-    <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs"
-             Link="Common\System\Net\HttpStatusDescription.cs" />
-    <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs"
-             Link="Common\System\Net\SecurityProtocol.cs" />
-    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs"
-             Link="Common\System\Net\UriScheme.cs" />
-    <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs"
-             Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
-             Link="Common\System\Text\ValueStringBuilder.cs" />
-    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs"
-             Link="Common\System\Net\Security\CertificateHelper.cs" />
-    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Unix.cs"
-             Link="Common\System\Net\Security\CertificateHelper.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="System\System\Threading\Tasks\TaskToApm.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
-    <Compile Include="System\Net\Http\BrowserHttpHandler\SystemProxyInfo.Browser.cs" />
-    <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
-    <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
-  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <ProjectReference Include="..\..\System.Runtime.InteropServices.JavaScript/src/System.Runtime.InteropServices.JavaScript.csproj" />
-  </ItemGroup>  
+  </ItemGroup>
 </Project>

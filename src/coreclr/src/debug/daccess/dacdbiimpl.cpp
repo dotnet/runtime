@@ -6604,6 +6604,8 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
     dac_generation gen1 = *GenerationTableIndex(g_gcDacGlobals->generation_table, 1);
     dac_generation gen2 = *GenerationTableIndex(g_gcDacGlobals->generation_table, 2);
     dac_generation loh  = *GenerationTableIndex(g_gcDacGlobals->generation_table, 3);
+    dac_generation poh  = *GenerationTableIndex(g_gcDacGlobals->generation_table, 4);
+
     pHeaps[0].YoungestGenPtr = (CORDB_ADDRESS)gen0.allocation_context.alloc_ptr;
     pHeaps[0].YoungestGenLimit = (CORDB_ADDRESS)gen0.allocation_context.alloc_limit;
 
@@ -6613,6 +6615,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
 
     // Segments
     int count = GetSegmentCount(loh.start_segment);
+    count += GetSegmentCount(poh.start_segment);
     count += GetSegmentCount(gen2.start_segment);
 
     pHeaps[0].SegmentCount = count;
@@ -6646,6 +6649,17 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
     for (; seg && (i < count); ++i)
     {
         pHeaps[0].Segments[i].Generation = 3;
+        pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
+        pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
+
+        seg = seg->next;
+    }
+
+    // Pinned object heap segments
+    seg = poh.start_segment;
+    for (; seg && (i < count); ++i)
+    {
+        pHeaps[0].Segments[i].Generation = 4;
         pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
         pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
 
@@ -6815,7 +6829,7 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
                 seg.start = heaps[i].Segments[j].Start;
                 seg.end = heaps[i].Segments[j].End;
 
-                _ASSERTE(heaps[i].Segments[j].Generation <= CorDebug_LOH);
+                _ASSERTE(heaps[i].Segments[j].Generation <= CorDebug_POH);
                 seg.type = (CorDebugGenerationTypes)heaps[i].Segments[j].Generation;
                 seg.heap = (ULONG)i;
             }

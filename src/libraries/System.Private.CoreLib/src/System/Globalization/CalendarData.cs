@@ -105,9 +105,7 @@ namespace System.Globalization
 
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            bool loadedCalendarData = GlobalizationMode.UseNls ?
-                                        NlsLoadCalendarDataFromSystem(localeName, calendarId) :
-                                        IcuLoadCalendarDataFromSystem(localeName, calendarId);
+            bool loadedCalendarData = LoadCalendarDataFromSystemCore(localeName, calendarId);
 
             if (!loadedCalendarData)
             {

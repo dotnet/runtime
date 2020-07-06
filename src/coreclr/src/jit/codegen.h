@@ -980,7 +980,6 @@ protected:
     void genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode);

@@ -100,8 +100,17 @@
 
   <Target Name="GenerateDepsJsonFile" Returns="$(ProjectDepsFilePath)" DependsOnTargets="GenerateBuildDependencyFile" />
 
-  <Target Name="RemoveLongNameDacFromDepsJson" AfterTargets="ResolveRuntimePackAssets" BeforeTargets="GenerateBuildDependencyFile" Condition="'$(RemoveLongNameDac)' == 'true'">
+  <Target Name="RemoveUnusedFilesFromDepsJson" AfterTargets="ResolveRuntimePackAssets" BeforeTargets="GenerateBuildDependencyFile">
+    <PropertyGroup>
+      <StaticLibraryFileExtension>.a</StaticLibraryFileExtension>
+      <StaticLibraryFileExtension Condition="'$(TargetOS)' == 'Windows_NT'">.lib</StaticLibraryFileExtension>
+    </PropertyGroup>
+
     <ItemGroup>
+      <RuntimePackAsset Remove="@(RuntimePackAsset)" Condition="'%(Extension)' == '$(StaticLibraryFileExtension)'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RemoveLongNameDac)' == 'true'">
       <RuntimePackAsset Remove="@(RuntimePackAsset)" Condition="$([System.String]::new('%(FileName)').StartsWith('mscordaccore_'))" />
     </ItemGroup>
   </Target>

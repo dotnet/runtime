@@ -68,7 +68,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32744", TestRuntimes.Mono)]
         public void ExportInterfaceWithTypeOf1()
         {
             var ctx = new RegistrationBuilder();
@@ -84,7 +83,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32744", TestRuntimes.Mono)]
         public void ExportInterfaceWithTypeOf2()
         {
             var ctx = new RegistrationBuilder();
@@ -100,7 +98,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32744", TestRuntimes.Mono)]
         public void ExportInheritedInterfaceWithImplements1()
         {
             var ctx = new RegistrationBuilder();
@@ -116,7 +113,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32744", TestRuntimes.Mono)]
         public void ExportInheritedInterfaceWithImplements2()
         {
             var ctx = new RegistrationBuilder();

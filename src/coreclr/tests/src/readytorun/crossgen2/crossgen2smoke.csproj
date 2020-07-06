@@ -5,6 +5,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>0</CLRTestPriority>
 
+    <!-- ilasm round-trip testing doesn't make sense for this test -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    
     <!-- Crossgen2 currently targets x64 and ARM64 only -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64'">true</CLRTestTargetUnsupported>
 

@@ -2,8 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <ApplicationManifest>App.manifest</ApplicationManifest>
-    <!-- Blocked on ILAsm supporting embedding resources. See https://github.com/dotnet/coreclr/issues/20819 -->
-    <IlrtTestKind>BuildOnly</IlrtTestKind>
+    <!-- ilasm round-trip testing blocked on ILAsm supporting embedding resources. See https://github.com/dotnet/runtime/issues/11412 -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <!-- This test would require the runincontext.exe to include App.manifest describing the COM interfaces -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- Test unsupported outside of windows -->

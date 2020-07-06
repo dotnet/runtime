@@ -103,6 +103,7 @@ namespace Internal.TypeSystem
                     type,
                     type.Context.Target.GetWellKnownTypeSize(type),
                     type.Context.Target.GetWellKnownTypeAlignment(type),
+                    0,
                     out instanceByteSizeAndAlignment
                     );
 
@@ -358,13 +359,8 @@ namespace Internal.TypeSystem
                 fieldOrdinal++;
             }
 
-            if (type.IsValueType)
-            {
-                instanceSize = LayoutInt.Max(new LayoutInt(layoutMetadata.Size), instanceSize);
-            }
-
             SizeAndAlignment instanceByteSizeAndAlignment;
-            var instanceSizeAndAlignment = ComputeInstanceSize(type, instanceSize, largestAlignmentRequired, out instanceByteSizeAndAlignment);
+            var instanceSizeAndAlignment = ComputeInstanceSize(type, instanceSize, largestAlignmentRequired, layoutMetadata.Size, out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
@@ -407,13 +403,8 @@ namespace Internal.TypeSystem
                 fieldOrdinal++;
             }
 
-            if (type.IsValueType)
-            {
-                cumulativeInstanceFieldPos = LayoutInt.Max(cumulativeInstanceFieldPos, new LayoutInt(layoutMetadata.Size));
-            }
-
             SizeAndAlignment instanceByteSizeAndAlignment;
-            var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos, largestAlignmentRequirement, out instanceByteSizeAndAlignment);
+            var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos, largestAlignmentRequirement, layoutMetadata.Size, out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
@@ -675,7 +666,7 @@ namespace Internal.TypeSystem
             }
 
             SizeAndAlignment instanceByteSizeAndAlignment;
-            var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos, minAlign, out instanceByteSizeAndAlignment);
+            var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos, minAlign, 0/* specified field size unused */, out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
@@ -788,21 +779,40 @@ namespace Internal.TypeSystem
                 return layoutMetadata.PackingSize;
         }
 
-        private static SizeAndAlignment ComputeInstanceSize(MetadataType type, LayoutInt instanceSize, LayoutInt alignment, out SizeAndAlignment byteCount)
+        private static SizeAndAlignment ComputeInstanceSize(MetadataType type, LayoutInt instanceSize, LayoutInt alignment, int classLayoutSize, out SizeAndAlignment byteCount)
         {
             SizeAndAlignment result;
-
-            TargetDetails target = type.Context.Target;
-
+            
             // Pad the length of structs to be 1 if they are empty so we have no zero-length structures
             if (type.IsValueType && instanceSize == LayoutInt.Zero)
             {
                 instanceSize = LayoutInt.One;
             }
 
+            TargetDetails target = type.Context.Target;
+
+            if (classLayoutSize != 0)
+            {
+                LayoutInt parentSize;
+                if (type.IsValueType)
+                    parentSize = new LayoutInt(0);
+                else
+                    parentSize = type.BaseType.InstanceByteCountUnaligned;
+
+                LayoutInt specifiedInstanceSize = parentSize + new LayoutInt(classLayoutSize);
+
+                instanceSize = LayoutInt.Max(specifiedInstanceSize, instanceSize);
+            }
+            else
+            {
+                if (type.IsValueType)
+                {
+                    instanceSize = LayoutInt.AlignUp(instanceSize, alignment, target);
+                }
+            }
+
             if (type.IsValueType)
             {
-                instanceSize = LayoutInt.AlignUp(instanceSize, alignment, target);
                 result.Size = instanceSize;
                 result.Alignment = alignment;
             }

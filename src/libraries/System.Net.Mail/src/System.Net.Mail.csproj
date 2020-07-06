@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetMailNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\Base64Stream.cs" />
     <Compile Include="System\Net\Mime\MimePart.cs" />
     <Compile Include="System\Net\Mime\Base64WriteStateInfo.cs" />
@@ -119,7 +120,7 @@
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
-  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsBrowser)' != 'true'">
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"
              Link="Common\System\Net\ContextAwareResult.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Unix.cs"
