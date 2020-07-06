@@ -1486,7 +1486,7 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
         // COM+ objects are now apartment agile), we only care that a CoInitializeEx
         // has been performed on this thread by us.
         if (fCoInitCurrentThread)
-            GetThread()->SetApartment(Thread::AS_InMTA, FALSE);
+            GetThread()->SetApartment(Thread::AS_InMTA);
 
         // set the finalizer event
         FinalizerThread::EnableFinalization();

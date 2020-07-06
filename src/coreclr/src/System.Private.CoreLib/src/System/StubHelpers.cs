@@ -1187,9 +1187,6 @@ namespace System.StubHelpers
     internal static class StubHelpers
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsQCall(IntPtr pMD);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void InitDeclaringType(IntPtr pMD);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
