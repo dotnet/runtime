@@ -1063,7 +1063,7 @@ public:
     // Portable PDB paraphernalia
 public:
     PdbFormat           m_pdbFormat;
-    PortablePdbWritter* m_pPortablePdbWritter;
+    PortablePdbWriter* m_pPortablePdbWriter;
     char                m_szPdbFileName[MAX_FILENAME_LENGTH * 3 + 1];
     WCHAR               m_wzPdbFileName[MAX_FILENAME_LENGTH];
 

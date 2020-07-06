@@ -2395,7 +2395,7 @@ void Assembler::SetSourceFileName(__in __nullterminated char* szName)
             {
                 if (IsPortablePdb())
                 {
-                    if (FAILED(m_pPortablePdbWritter->DefineDocument(szName, &m_guidLang)))
+                    if (FAILED(m_pPortablePdbWriter->DefineDocument(szName, &m_guidLang)))
                     {
                         report->error("Failed to define a document: '%s'", szName);
                     }
@@ -2476,18 +2476,18 @@ HRESULT Assembler::SavePdbFile()
 
     if (m_pdbFormat == PORTABLE)
     {
-        if (FAILED(hr = (m_pPortablePdbWritter == NULL ? E_FAIL : S_OK))) goto exit;
-        if (FAILED(hr = (m_pPortablePdbWritter->GetEmitter() == NULL ? E_FAIL : S_OK))) goto exit;
+        if (FAILED(hr = (m_pPortablePdbWriter == NULL ? E_FAIL : S_OK))) goto exit;
+        if (FAILED(hr = (m_pPortablePdbWriter->GetEmitter() == NULL ? E_FAIL : S_OK))) goto exit;
         if (FAILED(hr = m_pCeeFileGen->GetEntryPoint(m_pCeeFile, &entryPoint))) goto exit;
-        if (FAILED(hr = m_pPortablePdbWritter->BuildPdbStream(m_pEmitter, entryPoint))) goto exit;
-        if (FAILED(hr = m_pPortablePdbWritter->GetEmitter()->Save(m_wzPdbFileName, NULL))) goto exit;
+        if (FAILED(hr = m_pPortablePdbWriter->BuildPdbStream(m_pEmitter, entryPoint))) goto exit;
+        if (FAILED(hr = m_pPortablePdbWriter->GetEmitter()->Save(m_wzPdbFileName, NULL))) goto exit;
     }
 exit:
     return hr;
 }
 BOOL Assembler::IsPortablePdb()
 {
-    return (m_pdbFormat == PORTABLE) && (m_pPortablePdbWritter != NULL);
+    return (m_pdbFormat == PORTABLE) && (m_pPortablePdbWriter != NULL);
 }
 
 void Assembler::RecordTypeConstraints(GenericParamConstraintList* pGPCList, int numTyPars, TyParDescr* tyPars)

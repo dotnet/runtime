@@ -55,8 +55,8 @@ HRESULT Assembler::InitMetaData()
 
     if (m_pdbFormat == PdbFormat::PORTABLE)
     {
-        m_pPortablePdbWritter = new PortablePdbWritter();
-        if (FAILED(hr = m_pPortablePdbWritter->Init(m_pDisp))) goto exit;
+        m_pPortablePdbWriter = new PortablePdbWriter();
+        if (FAILED(hr = m_pPortablePdbWriter->Init(m_pDisp))) goto exit;
     }
 
     //m_Parser = new AsmParse(m_pEmitter);
@@ -267,14 +267,14 @@ HRESULT Assembler::CreateDebugDirectory()
         DWORD offset = 0;
         memcpy_s(dbgDirData + offset, len, &rsds, sizeof(rsds));                            // RSDS
         offset += sizeof(rsds);
-        memcpy_s(dbgDirData + offset, len, m_pPortablePdbWritter->GetGuid(), sizeof(GUID)); // PDB GUID
+        memcpy_s(dbgDirData + offset, len, m_pPortablePdbWriter->GetGuid(), sizeof(GUID)); // PDB GUID
         offset += sizeof(GUID);
         memcpy_s(dbgDirData + offset, len, &pdbAge, sizeof(pdbAge));                        // PDB AGE
         offset += sizeof(pdbAge);
         memcpy_s(dbgDirData + offset, len, m_szPdbFileName, strlen(m_szPdbFileName) + 1);   // PDB PATH
 
         debugDirIDD.Characteristics = 0;
-        debugDirIDD.TimeDateStamp = m_pPortablePdbWritter->GetTimestamp();
+        debugDirIDD.TimeDateStamp = m_pPortablePdbWriter->GetTimestamp();
         debugDirIDD.MajorVersion = 0x100;
         debugDirIDD.MinorVersion = 0x504d;
         debugDirIDD.Type = IMAGE_DEBUG_TYPE_CODEVIEW;

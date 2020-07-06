@@ -48,9 +48,9 @@ void Document::SetToken(mdDocument token)
 
 
 //*****************************************************************************
-// PortablePdbWritter
+// PortablePdbWriter
 //*****************************************************************************
-PortablePdbWritter::PortablePdbWritter()
+PortablePdbWriter::PortablePdbWriter()
 {
     m_pdbStream.id.pdbGuid = { 0 };
     m_pdbStream.id.pdbTimeStamp = 0;
@@ -62,7 +62,7 @@ PortablePdbWritter::PortablePdbWritter()
     m_pdbEmitter = NULL;
 }
 
-PortablePdbWritter::~PortablePdbWritter()
+PortablePdbWriter::~PortablePdbWriter()
 {
     if (m_pdbEmitter != NULL)
     {
@@ -78,7 +78,7 @@ PortablePdbWritter::~PortablePdbWritter()
     m_documentList.RESET(true);
 }
 
-HRESULT PortablePdbWritter::Init(IMetaDataDispenserEx2* mdDispenser)
+HRESULT PortablePdbWriter::Init(IMetaDataDispenserEx2* mdDispenser)
 {
     HRESULT hr = S_OK;
     if (m_pdbEmitter != NULL)
@@ -106,27 +106,27 @@ exit:
     return hr;
 }
 
-IMetaDataEmit3* PortablePdbWritter::GetEmitter()
+IMetaDataEmit3* PortablePdbWriter::GetEmitter()
 {
     return m_pdbEmitter;
 }
 
-GUID* PortablePdbWritter::GetGuid()
+GUID* PortablePdbWriter::GetGuid()
 {
     return &m_pdbStream.id.pdbGuid;
 }
 
-ULONG PortablePdbWritter::GetTimestamp()
+ULONG PortablePdbWriter::GetTimestamp()
 {
     return m_pdbStream.id.pdbTimeStamp;
 }
 
-Document* PortablePdbWritter::GetCurrentDocument()
+Document* PortablePdbWriter::GetCurrentDocument()
 {
     return m_currentDocument;
 }
 
-HRESULT PortablePdbWritter::BuildPdbStream(IMetaDataEmit3* peEmitter, mdMethodDef entryPoint)
+HRESULT PortablePdbWriter::BuildPdbStream(IMetaDataEmit3* peEmitter, mdMethodDef entryPoint)
 {
     HRESULT hr = S_OK;
 
@@ -144,7 +144,7 @@ exit:
     return hr;
 }
 
-HRESULT PortablePdbWritter::DefineDocument(char* name, GUID* language)
+HRESULT PortablePdbWriter::DefineDocument(char* name, GUID* language)
 {
     HRESULT hr = S_OK;
     Document* document = NULL;
@@ -199,7 +199,7 @@ HRESULT PortablePdbWritter::DefineDocument(char* name, GUID* language)
     return hr;
 }
 
-HRESULT PortablePdbWritter::DefineSequencePoints(Method* method)
+HRESULT PortablePdbWriter::DefineSequencePoints(Method* method)
 {
     HRESULT hr = S_OK;
     BinStr* blob = new BinStr();
@@ -315,7 +315,7 @@ HRESULT PortablePdbWritter::DefineSequencePoints(Method* method)
     return hr;
 }
 
-HRESULT PortablePdbWritter::DefineLocalScope(Method* method)
+HRESULT PortablePdbWriter::DefineLocalScope(Method* method)
 {
     if (!_DefineLocalScope(method->m_Tok, &method->m_MainScope))
         return E_FAIL;
@@ -323,7 +323,7 @@ HRESULT PortablePdbWritter::DefineLocalScope(Method* method)
         return S_OK;
 }
 
-BOOL PortablePdbWritter::_DefineLocalScope(mdMethodDef methodDefToken, Scope* currScope)
+BOOL PortablePdbWriter::_DefineLocalScope(mdMethodDef methodDefToken, Scope* currScope)
 {
     BOOL fSuccess = FALSE;
     ARG_NAME_LIST* pLocalVar = currScope->pLocals;
@@ -364,7 +364,7 @@ exit:
     return fSuccess;
 }
 
-BOOL PortablePdbWritter::VerifySequencePoint(LinePC* curr, LinePC* next)
+BOOL PortablePdbWriter::VerifySequencePoint(LinePC* curr, LinePC* next)
 {
     if (!curr->IsHidden)
     {
@@ -386,13 +386,13 @@ BOOL PortablePdbWritter::VerifySequencePoint(LinePC* curr, LinePC* next)
     return TRUE;
 }
 
-void PortablePdbWritter::CompressUnsignedLong(ULONG srcData, BinStr* dstBuffer)
+void PortablePdbWriter::CompressUnsignedLong(ULONG srcData, BinStr* dstBuffer)
 {
     ULONG cnt = CorSigCompressData(srcData, dstBuffer->getBuff(sizeof(ULONG) + 1));
     dstBuffer->remove((sizeof(ULONG) + 1) - cnt);
 }
 
-void PortablePdbWritter::CompressSignedLong(LONG srcData, BinStr* dstBuffer)
+void PortablePdbWriter::CompressSignedLong(LONG srcData, BinStr* dstBuffer)
 {
     ULONG cnt = CorSigCompressSignedInt(srcData, dstBuffer->getBuff(sizeof(LONG) + 1));
     dstBuffer->remove((sizeof(LONG) + 1) - cnt);

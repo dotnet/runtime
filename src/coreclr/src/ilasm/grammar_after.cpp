@@ -306,7 +306,7 @@ Instr* SetupInstr(unsigned short opcode)
                 pVal->column_end = PASM->IsPortablePdb() ? 2 : 0;
                 pVal->pc = PASM->m_CurPC;
             }
-            pVal->pOwnerDocument = PASM->IsPortablePdb() ? PASM->m_pPortablePdbWritter->GetCurrentDocument() : NULL;
+            pVal->pOwnerDocument = PASM->IsPortablePdb() ? PASM->m_pPortablePdbWriter->GetCurrentDocument() : NULL;
         }
     }
     return pVal;

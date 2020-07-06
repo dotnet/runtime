@@ -160,7 +160,7 @@ Assembler::Assembler()
     indexKeywords(&indxKeywords);
 
     m_pdbFormat = CLASSIC;
-    m_pPortablePdbWritter = NULL;
+    m_pPortablePdbWriter = NULL;
 }
 
 
@@ -222,10 +222,10 @@ Assembler::~Assembler()
         m_pEmitter->Release();
         m_pEmitter = NULL;
     }
-    if (m_pPortablePdbWritter != NULL)
+    if (m_pPortablePdbWriter != NULL)
     {
-        delete m_pPortablePdbWritter;
-        m_pPortablePdbWritter = NULL;
+        delete m_pPortablePdbWriter;
+        m_pPortablePdbWriter = NULL;
     }
     if (m_pDisp != NULL)
     {
@@ -582,9 +582,9 @@ BOOL Assembler::EmitMethodBody(Method* pMethod, BinStr* pbsOut)
                 }
                 else if (IsPortablePdb())
                 {
-                    if (FAILED(m_pPortablePdbWritter->DefineSequencePoints(pMethod)))
+                    if (FAILED(m_pPortablePdbWriter->DefineSequencePoints(pMethod)))
                         return FALSE;
-                    if (FAILED(m_pPortablePdbWritter->DefineLocalScope(pMethod)))
+                    if (FAILED(m_pPortablePdbWriter->DefineLocalScope(pMethod)))
                         return FALSE;
                 }
             } // end if(fIncludeDebugInfo)

@@ -34,10 +34,10 @@ HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileNam
         m_pEmitter->Release();
         m_pEmitter = NULL;
     }
-    if (m_pPortablePdbWritter != NULL)
+    if (m_pPortablePdbWriter != NULL)
     {
-        delete m_pPortablePdbWritter;
-        m_pPortablePdbWritter = NULL;
+        delete m_pPortablePdbWriter;
+        m_pPortablePdbWriter = NULL;
     }
     //WszSetEnvironmentVariable(L"COMP_ENC_OPENSCOPE", wzOrigFileName);
     //hr = m_pDisp->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit2,
@@ -451,10 +451,10 @@ REPT_STEP
         m_pEmitter->Release();
         m_pEmitter = NULL;
     }
-    if (m_pPortablePdbWritter != NULL)
+    if (m_pPortablePdbWriter != NULL)
     {
-        delete m_pPortablePdbWritter;
-        m_pPortablePdbWritter = NULL;
+        delete m_pPortablePdbWriter;
+        m_pPortablePdbWriter = NULL;
     }
 
     return S_OK;

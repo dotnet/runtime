@@ -36,13 +36,13 @@ class Scope;
 struct LinePC;
 
 //*****************************************************************************
-// PortablePdbWritter
+// PortablePdbWriter
 //*****************************************************************************
-class PortablePdbWritter
+class PortablePdbWriter
 {
 public:
-    PortablePdbWritter();
-    ~PortablePdbWritter();
+    PortablePdbWriter();
+    ~PortablePdbWriter();
     HRESULT         Init(IMetaDataDispenserEx2* mdDispenser);
     IMetaDataEmit3* GetEmitter();
     GUID*           GetGuid();
