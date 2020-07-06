@@ -8,15 +8,15 @@ using System.Text.Json;
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests that (de)serializing ImmutableStack<T> is linker-safe.
+    /// Tests that the serializer's warm up routine for (de)serializing IImmutableSet<T> is linker-safe.
     /// </summary>
     internal class Program
     {
         static int Main(string[] args)
         {
             string json = "[1]";
-            object obj = JsonSerializer.Deserialize(json, typeof(ImmutableStack<int>));
-            if (!(TestHelper.AssertCollectionAndSerialize<ImmutableStack<int>>(obj, json)))
+            object obj = JsonSerializer.Deserialize(json, typeof(IImmutableSet<int>));
+            if (!(TestHelper.AssertCollectionAndSerialize<IImmutableSet<int>>(obj, json)))
             {
                 return -1;
             }

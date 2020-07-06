@@ -8,7 +8,7 @@ using System.Text.Json;
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests that (de)serializing ImmutableSortedDictionary<TKey, TValue> is linker-safe.
+    /// Tests that the serializer's warm up routine for (de)serializing ImmutableSortedDictionary<TKey, TValue> is linker-safe.
     /// </summary>
     internal class Program
     {

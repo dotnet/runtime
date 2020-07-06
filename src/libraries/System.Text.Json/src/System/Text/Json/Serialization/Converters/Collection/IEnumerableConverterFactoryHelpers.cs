@@ -35,6 +35,12 @@ namespace System.Text.Json.Serialization
         private const string ImmutableDictionaryTypeName = "System.Collections.Immutable.ImmutableDictionary";
         private const string ImmutableSortedDictionaryTypeName = "System.Collections.Immutable.ImmutableSortedDictionary";
 
+        private const string CreateRangeMethodName = "CreateRange";
+        private const string CreateRangeMethodNameForEnumerable = "CreateRange`1";
+        private const string CreateRangeMethodNameForDictionary = "CreateRange`2";
+
+        private const string ImmutableCollectionsNamespace = "System.Collections.Immutable";
+
         internal static Type? GetCompatibleGenericBaseClass(this Type type, Type baseType)
         {
             Debug.Assert(baseType.IsGenericType);
@@ -136,12 +142,12 @@ namespace System.Text.Json.Serialization
             }
         }
 
-        [DynamicDependency("CreateRange`1", "System.Collections.Immutable.ImmutableArray", "System.Collections.Immutable")]
-        [DynamicDependency("CreateRange`1", "System.Collections.Immutable.ImmutableList", "System.Collections.Immutable")]
-        [DynamicDependency("CreateRange`1", "System.Collections.Immutable.ImmutableStack", "System.Collections.Immutable")]
-        [DynamicDependency("CreateRange`1", "System.Collections.Immutable.ImmutableQueue", "System.Collections.Immutable")]
-        [DynamicDependency("CreateRange`1", "System.Collections.Immutable.ImmutableSortedSet", "System.Collections.Immutable")]
-        [DynamicDependency("CreateRange`1", "System.Collections.Immutable.ImmutableHashSet", "System.Collections.Immutable")]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableArrayTypeName, ImmutableCollectionsNamespace)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableListTypeName, ImmutableCollectionsNamespace)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableStackTypeName, ImmutableCollectionsNamespace)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableQueueTypeName, ImmutableCollectionsNamespace)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableSortedSetTypeName, ImmutableCollectionsNamespace)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableHashSetTypeName, ImmutableCollectionsNamespace)]
         public static MethodInfo GetImmutableEnumerableCreateRangeMethod(this Type type, Type elementType)
         {
             Type? constructingType = GetImmutableEnumerableConstructingType(type);
@@ -150,7 +156,7 @@ namespace System.Text.Json.Serialization
                 MethodInfo[] constructingTypeMethods = constructingType.GetMethods();
                 foreach (MethodInfo method in constructingTypeMethods)
                 {
-                    if (method.Name == "CreateRange" &&
+                    if (method.Name == CreateRangeMethodName &&
                         method.GetParameters().Length == 1 &&
                         method.IsGenericMethod &&
                         method.GetGenericArguments().Length == 1)
@@ -164,8 +170,8 @@ namespace System.Text.Json.Serialization
             return null!;
         }
 
-        [DynamicDependency("CreateRange`2", "System.Collections.Immutable.ImmutableDictionary", "System.Collections.Immutable")]
-        [DynamicDependency("CreateRange`2", "System.Collections.Immutable.ImmutableSortedDictionary", "System.Collections.Immutable")]
+        [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableDictionaryTypeName, ImmutableCollectionsNamespace)]
+        [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableSortedDictionaryTypeName, ImmutableCollectionsNamespace)]
         public static MethodInfo GetImmutableDictionaryCreateRangeMethod(this Type type, Type elementType)
         {
             Type? constructingType = GetImmutableDictionaryConstructingType(type);
@@ -174,7 +180,7 @@ namespace System.Text.Json.Serialization
                 MethodInfo[] constructingTypeMethods = constructingType.GetMethods();
                 foreach (MethodInfo method in constructingTypeMethods)
                 {
-                    if (method.Name == "CreateRange" &&
+                    if (method.Name == CreateRangeMethodName &&
                         method.GetParameters().Length == 1 &&
                         method.IsGenericMethod &&
                         method.GetGenericArguments().Length == 2)

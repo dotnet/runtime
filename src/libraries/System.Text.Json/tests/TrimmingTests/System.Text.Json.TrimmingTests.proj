@@ -2,46 +2,100 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
-    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.cs">
+    <TestConsoleAppSourceFiles Include="Collections\Array.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.IImmutableDictionary.cs">
+    <TestConsoleAppSourceFiles Include="Collections\ConcurrentDictionary.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.IImmutableList.cs">
+    <TestConsoleAppSourceFiles Include="Collections\ConcurrentQueue.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.IImmutableQueue.cs">
+    <TestConsoleAppSourceFiles Include="Collections\ConcurrentStack.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.IImmutableSet.cs">
+    <TestConsoleAppSourceFiles Include="Collections\DictionaryOfTKeyTValue.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.IImmutableStack.cs">
+    <TestConsoleAppSourceFiles Include="Collections\HashSetOfT.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableArray.cs">
+    <TestConsoleAppSourceFiles Include="Collections\Hashtable.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableDictionary.cs">
+    <TestConsoleAppSourceFiles Include="Collections\ICollectionOfT.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableHashSet.cs">
+    <TestConsoleAppSourceFiles Include="Collections\IDictionary.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableList.cs">
+    <TestConsoleAppSourceFiles Include="Collections\IDictionaryOfTKeyTValue.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableQueue.cs">
+    <TestConsoleAppSourceFiles Include="Collections\IEnumerable.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableSortedDictionary.cs">
+    <TestConsoleAppSourceFiles Include="Collections\IEnumerableOfT.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableSortedSet.cs">
+    <TestConsoleAppSourceFiles Include="Collections\IImmutableDictionary.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="CollectionConverters\CollectionConvertersTest.ImmutableStack.cs">
+    <TestConsoleAppSourceFiles Include="Collections\IImmutableList.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\IImmutableQueue.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\IImmutableSet.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\IImmutableStack.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\IList.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\IListOfT.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ImmutableArray.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ImmutableDictionary.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ImmutableHashSet.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ImmutableList.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ImmutableQueue.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ImmutableSortedDictionary.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ImmutableSortedSet.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ImmutableStack.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\IReadOnlyDictionaryOfTKeyTValue.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ISetOfT.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ListOfT.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\QueueOfT.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\StackOfT.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromReader.BoxedObject.cs">
