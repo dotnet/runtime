@@ -14,7 +14,7 @@ namespace SerializerTrimmingTest
     {
         static int Main(string[] args)
         {
-            string json = @"{""Key"":1}";
+            string json = "[1]";
             object obj = JsonSerializer.Deserialize(json, typeof(Queue<int>));
             if (!(TestHelper.AssertCollectionAndSerialize<Queue<int>>(obj, json)))
             {
