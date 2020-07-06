@@ -13,9 +13,14 @@ namespace System
         {
             // Fallback path for hosts that do not set APP_CONTEXT_BASE_DIRECTORY explicitly
             string? directory = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-            if (directory != null && !Path.EndsInDirectorySeparator(directory))
+
+            if (directory == null)
+                return string.Empty;
+            
+            if (!Path.EndsInDirectorySeparator(directory))
                 directory += PathInternal.DirectorySeparatorCharAsString;
-            return directory ?? string.Empty;
+
+            return directory;
         }
     }
 }
