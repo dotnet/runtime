@@ -476,7 +476,7 @@ check_symbol_exists(
     HAVE_DISCONNECTX)
 
 set(PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
-set(CMAKE_REQUIRED_FLAGS "-Wsign-conversion")
+set(CMAKE_REQUIRED_FLAGS "-Werror=sign-conversion")
 check_c_source_compiles(
      "
      #include <stddef.h>
