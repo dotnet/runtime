@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <Compile Include="JsonSerializerSourceGeneratorTests.cs" />
-    <Compile Include="TestClasses\SampleClass.cs" />
   </ItemGroup>
 
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">

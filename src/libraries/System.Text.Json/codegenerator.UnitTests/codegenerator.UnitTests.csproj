@@ -9,7 +9,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="CodeGeneratorTests.cs" />
     <Compile Include="JsonSerializerSourceGeneratorTests.cs" />
   </ItemGroup>
 
