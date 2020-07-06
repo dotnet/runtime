@@ -9,6 +9,7 @@ using System.Text.Unicode;
 #if NETCOREAPP
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Arm;
 #endif
 
 namespace System.Text.Encodings.Web
@@ -231,10 +232,12 @@ namespace System.Text.Encodings.Web
                 byte* end = ptr + textLength;
 
 #if NETCOREAPP
-
-                if (Sse2.IsSupported && textLength >= Vector128<sbyte>.Count)
+                if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
                 {
-                    goto Vectorized;
+                    if (textLength >= Vector128<sbyte>.Count)
+                    {
+                        goto Vectorized;
+                    }
                 }
 
             Sequential:
@@ -265,8 +268,11 @@ namespace System.Text.Encodings.Web
                 do
                 {
                     Debug.Assert(pValue <= ptr && ptr <= (pValue + utf8Text.Length - Vector128<byte>.Count));
+
                     // Load the next 16 bytes
-                    Vector128<sbyte> sourceValue = Sse2.LoadVector128((sbyte*)ptr);
+                    Vector128<sbyte> sourceValue = Sse2.IsSupported ?
+                        Sse2.LoadVector128((sbyte*)ptr) :
+                        AdvSimd.LoadVector128((sbyte*)ptr);
 
                     index = NeedsEscaping(sourceValue);
 
@@ -296,7 +302,9 @@ namespace System.Text.Encodings.Web
                     Debug.Assert(pValue <= vectorizedEnd && vectorizedEnd <= (pValue + utf8Text.Length - Vector128<byte>.Count));
 
                     // Load the last 16 bytes
-                    Vector128<sbyte> sourceValue = Sse2.LoadVector128((sbyte*)vectorizedEnd);
+                    Vector128<sbyte> sourceValue = Sse2.IsSupported ?
+                        Sse2.LoadVector128((sbyte*)vectorizedEnd) :
+                        AdvSimd.LoadVector128((sbyte*)vectorizedEnd);
 
                     index = NeedsEscaping(sourceValue);
                     if (index != 0)
@@ -425,15 +433,24 @@ namespace System.Text.Encodings.Web
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int NeedsEscaping(Vector128<sbyte> sourceValue)
         {
-            Debug.Assert(Sse2.IsSupported);
+            Debug.Assert(Sse2.IsSupported || AdvSimd.Arm64.IsSupported);
 
-            // Check if any of the 16 bytes need to be escaped.
-            Vector128<sbyte> mask = Ssse3.IsSupported
-                ? Ssse3Helper.CreateEscapingMask_DefaultJavaScriptEncoderBasicLatin(sourceValue)
-                : Sse2Helper.CreateEscapingMask_DefaultJavaScriptEncoderBasicLatin(sourceValue);
+            if (Sse2.IsSupported)
+            {
+                // Check if any of the 16 bytes need to be escaped.
+                Vector128<sbyte> mask = Ssse3.IsSupported
+                    ? Ssse3Helper.CreateEscapingMask_DefaultJavaScriptEncoderBasicLatin(sourceValue)
+                    : Sse2Helper.CreateEscapingMask_DefaultJavaScriptEncoderBasicLatin(sourceValue);
 
-            int index = Sse2.MoveMask(mask.AsByte());
-            return index;
+                int index = Sse2.MoveMask(mask.AsByte());
+                return index;
+            }
+            else
+            {
+                Vector128<sbyte> mask = AdvSimdHelper.CreateEscapingMask_DefaultJavaScriptEncoderBasicLatin(sourceValue);
+                int index = AdvSimdHelper.MoveMask(mask.AsByte());
+                return index;
+            }
         }
 #endif
     }

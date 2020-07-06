@@ -97,18 +97,7 @@ namespace System.Text.Encodings.Web
 
                         bool containsNonAsciiBytes;
 
-#pragma warning disable CS0162 // Unreachable code detected
-                        if (AdvSimd.Arm64.IsSupported)
-                        {
-                            // Load the next 16 bytes.
-                            Vector128<sbyte> sourceValue = AdvSimd.LoadVector128(startingAddress);
-
-                            // Check for ASCII text. Any byte that's not in the ASCII range will already be negative when
-                            // casted to signed byte.
-                            containsNonAsciiBytes = AdvSimd.Arm64.MinAcross(sourceValue).ToScalar() < 0;
-                        }
-#pragma warning restore CS0162 // Unreachable code detected
-                        else
+                        if (Sse2.IsSupported)
                         {
                             Debug.Assert(Sse2.IsSupported);
 
@@ -118,6 +107,15 @@ namespace System.Text.Encodings.Web
                             // Check for ASCII text. Any byte that's not in the ASCII range will already be negative when
                             // casted to signed byte.
                             containsNonAsciiBytes = Sse2.MoveMask(sourceValue) != 0;
+                        }
+                        else
+                        {
+                            // Load the next 16 bytes.
+                            Vector128<sbyte> sourceValue = AdvSimd.LoadVector128(startingAddress);
+
+                            // Check for ASCII text. Any byte that's not in the ASCII range will already be negative when
+                            // casted to signed byte.
+                            containsNonAsciiBytes = AdvSimd.Arm64.MinAcross(sourceValue).ToScalar() < 0;
                         }
 
                         if (containsNonAsciiBytes)
