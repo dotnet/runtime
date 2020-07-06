@@ -3518,7 +3518,7 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
  *
  *  Add an instruction referencing a register and a stack-based local variable.
  */
-void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
+void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, regNumber* baseReg)
 {
     if (ins == INS_mov)
     {
@@ -3564,6 +3564,10 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     base = emitComp->lvaFrameAddress(varx, emitComp->funCurrentFunc()->funKind != FUNC_ROOT, &reg2, offs,
                                      CodeGen::instIsFP(ins));
+    if (baseReg != nullptr)
+    {
+        *baseReg = reg2;
+    }
 
     disp   = base + offs;
     undisp = unsigned_abs(disp);
@@ -3587,8 +3591,11 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         else
         {
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ true);
-            emitIns_R_R(INS_add, EA_4BYTE, rsvdReg, reg2);
+            regNumber baseRegUsed;
+            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ true, &baseRegUsed);
+
+            // Make sure to use updated baseReg
+            emitIns_R_R(INS_add, EA_4BYTE, rsvdReg, baseRegUsed);
             emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
             return;
         }
@@ -3675,7 +3682,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 }
 
 // generate the offset of &varx + offs into a register
-void emitter::emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFloatUsage)
+void emitter::emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFloatUsage, regNumber* baseReg)
 {
     regNumber regBase;
     int       base;
@@ -3685,11 +3692,18 @@ void emitter::emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFlo
         emitComp->lvaFrameAddress(varx, emitComp->funCurrentFunc()->funKind != FUNC_ROOT, &regBase, offs, isFloatUsage);
     disp = base + offs;
 
-    emitIns_R_S(INS_movw, EA_4BYTE, r, varx, offs);
+    emitIns_R_S(INS_movw, EA_4BYTE, r, varx, offs, &regBase);
 
     if ((disp & 0xffff) != disp)
     {
-        emitIns_R_S(INS_movt, EA_4BYTE, r, varx, offs);
+        regNumber regBaseUsedInMovT;
+        emitIns_R_S(INS_movt, EA_4BYTE, r, varx, offs, &regBaseUsedInMovT);
+        assert(regBase == regBaseUsedInMovT);
+    }
+
+    if (baseReg != nullptr)
+    {
+        *baseReg = regBase;
     }
 }
 
