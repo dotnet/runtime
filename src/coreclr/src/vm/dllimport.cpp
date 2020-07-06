@@ -3019,7 +3019,11 @@ HRESULT NDirect::HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken t
 
 // Either MD or signature & module must be given.
 /*static*/
-BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*/, Module *pModule /*= NULL*/)
+BOOL NDirect::MarshalingRequired(
+    _In_opt_ MethodDesc* pMD,
+    _In_opt_ PCCOR_SIGNATURE pSig,
+    _In_opt_ Module* pModule,
+    _In_ bool unmanagedCallersOnlyRequiresMarshalling)
 {
     CONTRACTL
     {
@@ -3060,7 +3064,9 @@ BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*
             // don't support a DllImport with this attribute and we
             // error out during IL Stub generation so we indicate that
             // when checking if an IL Stub is needed.
-            if (pMD->HasUnmanagedCallersOnlyAttribute())
+            //
+            // Callers can indicate the check doesn't need to be performed.
+            if (unmanagedCallersOnlyRequiresMarshalling && pMD->HasUnmanagedCallersOnlyAttribute())
                 return TRUE;
 
             NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
@@ -6786,19 +6792,21 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         switch (MetaSig::GetCallingConvention(pVASigCookie->pModule, pVASigCookie->signature))
         {
             case IMAGE_CEE_CS_CALLCONV_C:
-                    unmgdCallConv = pmCallConvCdecl;
-                    break;
+                unmgdCallConv = pmCallConvCdecl;
+                break;
             case IMAGE_CEE_CS_CALLCONV_STDCALL:
-                    unmgdCallConv = pmCallConvStdcall;
-                    break;
+                unmgdCallConv = pmCallConvStdcall;
+                break;
             case IMAGE_CEE_CS_CALLCONV_THISCALL:
-                    unmgdCallConv = pmCallConvThiscall;
-                    break;
+                unmgdCallConv = pmCallConvThiscall;
+                break;
             case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-                    unmgdCallConv = pmCallConvFastcall;
-                    break;
+                unmgdCallConv = pmCallConvFastcall;
+                break;
+            case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
+                COMPlusThrow(kNotImplementedException);
             default:
-                    COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
+                COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
         }
 
         LoaderHeap *pHeap = pVASigCookie->pModule->GetLoaderAllocator()->GetHighFrequencyHeap();

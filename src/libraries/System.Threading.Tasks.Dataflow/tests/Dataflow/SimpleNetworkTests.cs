@@ -169,7 +169,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: Iterations / b.BatchSize, actual: completedCount);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task BroadcastToActions()
         {
             var b = new BroadcastBlock<int>(i => i);

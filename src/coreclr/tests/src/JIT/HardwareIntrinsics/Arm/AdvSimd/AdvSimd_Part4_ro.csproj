@@ -8,6 +8,9 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ShiftArithmeticRoundedSaturate.Vector64.Int16.cs" />
+    <Compile Include="ShiftArithmeticRoundedSaturate.Vector64.Int32.cs" />
+    <Compile Include="ShiftArithmeticRoundedSaturate.Vector64.SByte.cs" />
     <Compile Include="ShiftArithmeticRoundedSaturate.Vector128.Int16.cs" />
     <Compile Include="ShiftArithmeticRoundedSaturate.Vector128.Int32.cs" />
     <Compile Include="ShiftArithmeticRoundedSaturate.Vector128.Int64.cs" />
@@ -23,6 +26,22 @@
     <Compile Include="ShiftArithmeticSaturate.Vector128.SByte.cs" />
     <Compile Include="ShiftArithmeticSaturateScalar.Vector64.Int64.cs" />
     <Compile Include="ShiftArithmeticScalar.Vector64.Int64.cs" />
+    <Compile Include="ShiftLeftAndInsert.Vector64.Byte.cs" />
+    <Compile Include="ShiftLeftAndInsert.Vector64.Int16.cs" />
+    <Compile Include="ShiftLeftAndInsert.Vector64.Int32.cs" />
+    <Compile Include="ShiftLeftAndInsert.Vector64.SByte.cs" />
+    <Compile Include="ShiftLeftAndInsert.Vector64.UInt16.cs" />
+    <Compile Include="ShiftLeftAndInsert.Vector64.UInt32.cs" />
+    <Compile Include="ShiftLeftAndInsert.Vector128.Byte.cs" />
+    <Compile Include="ShiftLeftAndInsert.Vector128.Int16.cs" />
+    <Compile Include="ShiftLeftAndInsert.Vector128.Int32.cs" />
+    <Compile Include="ShiftLeftAndInsert.Vector128.Int64.cs" />
+    <Compile Include="ShiftLeftAndInsert.Vector128.SByte.cs" />
+    <Compile Include="ShiftLeftAndInsert.Vector128.UInt16.cs" />
+    <Compile Include="ShiftLeftAndInsert.Vector128.UInt32.cs" />
+    <Compile Include="ShiftLeftAndInsert.Vector128.UInt64.cs" />
+    <Compile Include="ShiftLeftAndInsertScalar.Vector64.Int64.cs" />
+    <Compile Include="ShiftLeftAndInsertScalar.Vector64.UInt64.cs" />
     <Compile Include="ShiftLeftLogical.Vector64.Byte.1.cs" />
     <Compile Include="ShiftLeftLogical.Vector64.Int16.1.cs" />
     <Compile Include="ShiftLeftLogical.Vector64.Int32.1.cs" />
@@ -36,22 +55,6 @@
     <Compile Include="ShiftLeftLogical.Vector128.UInt16.1.cs" />
     <Compile Include="ShiftLeftLogical.Vector128.UInt32.1.cs" />
     <Compile Include="ShiftLeftLogical.Vector128.UInt64.1.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsert.Vector64.Byte.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsert.Vector64.Int16.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsert.Vector64.Int32.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsert.Vector64.SByte.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsert.Vector64.UInt16.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsert.Vector64.UInt32.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsert.Vector128.Byte.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsert.Vector128.Int16.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsert.Vector128.Int32.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsert.Vector128.Int64.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsert.Vector128.SByte.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsert.Vector128.UInt16.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsert.Vector128.UInt32.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsert.Vector128.UInt64.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsertScalar.Vector64.Int64.cs" />
-    <Compile Include="ShiftLeftLogicalAndInsertScalar.Vector64.UInt64.cs" />
     <Compile Include="ShiftLeftLogicalSaturate.Vector64.Byte.1.cs" />
     <Compile Include="ShiftLeftLogicalSaturate.Vector64.Int16.1.cs" />
     <Compile Include="ShiftLeftLogicalSaturate.Vector64.Int32.1.cs" />
@@ -168,6 +171,8 @@
     <Compile Include="ShiftRightAndInsert.Vector128.UInt16.cs" />
     <Compile Include="ShiftRightAndInsert.Vector128.UInt32.cs" />
     <Compile Include="ShiftRightAndInsert.Vector128.UInt64.cs" />
+    <Compile Include="ShiftRightAndInsertScalar.Vector64.Int64.cs" />
+    <Compile Include="ShiftRightAndInsertScalar.Vector64.UInt64.cs" />
     <Compile Include="ShiftRightArithmetic.Vector64.Int16.1.cs" />
     <Compile Include="ShiftRightArithmetic.Vector64.Int32.1.cs" />
     <Compile Include="ShiftRightArithmetic.Vector64.SByte.1.cs" />
@@ -254,16 +259,11 @@
     <Compile Include="ShiftRightLogicalAdd.Vector128.UInt64.1.cs" />
     <Compile Include="ShiftRightLogicalAddScalar.Vector64.Int64.1.cs" />
     <Compile Include="ShiftRightLogicalAddScalar.Vector64.UInt64.1.cs" />
-    <Compile Include="ShiftRightLogicalAndInsertScalar.Vector64.Int64.cs" />
-    <Compile Include="ShiftRightLogicalAndInsertScalar.Vector64.UInt64.cs" />
     <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.Byte.1.cs" />
     <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.Int16.1.cs" />
     <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.Int32.1.cs" />
     <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.SByte.1.cs" />
     <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.UInt16.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.UInt32.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.Byte.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.Int16.1.cs" />
     <Compile Include="Program.AdvSimd_Part4.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />

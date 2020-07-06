@@ -4866,7 +4866,12 @@ namespace System.Diagnostics.Tracing
     {
         /// <summary>Construct an EventAttribute with specified eventId</summary>
         /// <param name="eventId">ID of the ETW event (an integer between 1 and 65535)</param>
-        public EventAttribute(int eventId) { this.EventId = eventId; Level = EventLevel.Informational; this.m_opcodeSet = false; }
+        public EventAttribute(int eventId)
+        {
+            this.EventId = eventId;
+            Level = EventLevel.Informational;
+        }
+
         /// <summary>Event's ID</summary>
         public int EventId { get; private set; }
         /// <summary>Event's severity level: indicates the severity or verbosity of the event</summary>

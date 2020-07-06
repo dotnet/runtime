@@ -186,6 +186,7 @@ namespace System.Data
         public DataException(string s) { }
         public DataException(string s, System.Exception innerException) { }
     }
+#nullable enable
     public static partial class DataReaderExtensions
     {
         public static bool GetBoolean(this System.Data.Common.DbDataReader reader, string name) { throw null; }
@@ -218,6 +219,7 @@ namespace System.Data
         public static bool IsDBNull(this System.Data.Common.DbDataReader reader, string name) { throw null; }
         public static System.Threading.Tasks.Task<bool> IsDBNullAsync(this System.Data.Common.DbDataReader reader, string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
+#nullable disable
     [System.ComponentModel.DefaultPropertyAttribute("RelationName")]
     public partial class DataRelation
     {
@@ -1162,15 +1164,18 @@ namespace System.Data
         System.Data.IDataParameter[] GetFillParameters();
         int Update(System.Data.DataSet dataSet);
     }
+#nullable enable
     public partial interface IDataParameter
     {
         System.Data.DbType DbType { get; set; }
         System.Data.ParameterDirection Direction { get; set; }
         bool IsNullable { get; }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         string ParameterName { get; set; }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         string SourceColumn { get; set; }
         System.Data.DataRowVersion SourceVersion { get; set; }
-        object Value { get; set; }
+        object? Value { get; set; }
     }
     public partial interface IDataParameterCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
@@ -1219,23 +1224,25 @@ namespace System.Data
     }
     public partial interface IDbCommand : System.IDisposable
     {
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         string CommandText { get; set; }
         int CommandTimeout { get; set; }
         System.Data.CommandType CommandType { get; set; }
-        System.Data.IDbConnection Connection { get; set; }
+        System.Data.IDbConnection? Connection { get; set; }
         System.Data.IDataParameterCollection Parameters { get; }
-        System.Data.IDbTransaction Transaction { get; set; }
+        System.Data.IDbTransaction? Transaction { get; set; }
         System.Data.UpdateRowSource UpdatedRowSource { get; set; }
         void Cancel();
         System.Data.IDbDataParameter CreateParameter();
         int ExecuteNonQuery();
         System.Data.IDataReader ExecuteReader();
         System.Data.IDataReader ExecuteReader(System.Data.CommandBehavior behavior);
-        object ExecuteScalar();
+        object? ExecuteScalar();
         void Prepare();
     }
     public partial interface IDbConnection : System.IDisposable
     {
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         string ConnectionString { get; set; }
         int ConnectionTimeout { get; }
         string Database { get; }
@@ -1247,6 +1254,7 @@ namespace System.Data
         System.Data.IDbCommand CreateCommand();
         void Open();
     }
+#nullable disable
     public partial interface IDbDataAdapter : System.Data.IDataAdapter
     {
         System.Data.IDbCommand DeleteCommand { get; set; }
@@ -1254,6 +1262,7 @@ namespace System.Data
         System.Data.IDbCommand SelectCommand { get; set; }
         System.Data.IDbCommand UpdateCommand { get; set; }
     }
+#nullable enable
     public partial interface IDbDataParameter : System.Data.IDataParameter
     {
         byte Precision { get; set; }
@@ -1262,11 +1271,12 @@ namespace System.Data
     }
     public partial interface IDbTransaction : System.IDisposable
     {
-        System.Data.IDbConnection Connection { get; }
+        System.Data.IDbConnection? Connection { get; }
         System.Data.IsolationLevel IsolationLevel { get; }
         void Commit();
         void Rollback();
     }
+#nullable disable
     public partial class InRowChangingEventException : System.Data.DataException
     {
         public InRowChangingEventException() { }
@@ -1467,6 +1477,7 @@ namespace System.Data
         DateTime2 = 33,
         DateTimeOffset = 34,
     }
+#nullable enable
     public sealed partial class StateChangeEventArgs : System.EventArgs
     {
         public StateChangeEventArgs(System.Data.ConnectionState originalState, System.Data.ConnectionState currentState) { }
@@ -1474,6 +1485,7 @@ namespace System.Data
         public System.Data.ConnectionState OriginalState { get { throw null; } }
     }
     public delegate void StateChangeEventHandler(object sender, System.Data.StateChangeEventArgs e);
+#nullable disable
     public sealed partial class StatementCompletedEventArgs : System.EventArgs
     {
         public StatementCompletedEventArgs(int recordCount) { }
@@ -1758,20 +1770,21 @@ namespace System.Data.Common
         System.Data.ITableMapping System.Data.ITableMappingCollection.Add(string sourceTableName, string dataSetTableName) { throw null; }
         System.Data.ITableMapping System.Data.ITableMappingCollection.GetByDataSetTable(string dataSetTableName) { throw null; }
     }
+#nullable enable
     public abstract partial class DbColumn
     {
         protected DbColumn() { }
         public bool? AllowDBNull { get { throw null; } protected set { } }
-        public string BaseCatalogName { get { throw null; } protected set { } }
-        public string BaseColumnName { get { throw null; } protected set { } }
-        public string BaseSchemaName { get { throw null; } protected set { } }
-        public string BaseServerName { get { throw null; } protected set { } }
-        public string BaseTableName { get { throw null; } protected set { } }
+        public string? BaseCatalogName { get { throw null; } protected set { } }
+        public string? BaseColumnName { get { throw null; } protected set { } }
+        public string? BaseSchemaName { get { throw null; } protected set { } }
+        public string? BaseServerName { get { throw null; } protected set { } }
+        public string? BaseTableName { get { throw null; } protected set { } }
         public string ColumnName { get { throw null; } protected set { } }
         public int? ColumnOrdinal { get { throw null; } protected set { } }
         public int? ColumnSize { get { throw null; } protected set { } }
-        public System.Type DataType { get { throw null; } protected set { } }
-        public string DataTypeName { get { throw null; } protected set { } }
+        public System.Type? DataType { get { throw null; } protected set { } }
+        public string? DataTypeName { get { throw null; } protected set { } }
         public bool? IsAliased { get { throw null; } protected set { } }
         public bool? IsAutoIncrement { get { throw null; } protected set { } }
         public bool? IsExpression { get { throw null; } protected set { } }
@@ -1781,16 +1794,17 @@ namespace System.Data.Common
         public bool? IsLong { get { throw null; } protected set { } }
         public bool? IsReadOnly { get { throw null; } protected set { } }
         public bool? IsUnique { get { throw null; } protected set { } }
-        public virtual object this[string property] { get { throw null; } }
+        public virtual object? this[string property] { get { throw null; } }
         public int? NumericPrecision { get { throw null; } protected set { } }
         public int? NumericScale { get { throw null; } protected set { } }
-        public string UdtAssemblyQualifiedName { get { throw null; } protected set { } }
+        public string? UdtAssemblyQualifiedName { get { throw null; } protected set { } }
     }
     public abstract partial class DbCommand : System.ComponentModel.Component, System.Data.IDbCommand, System.IDisposable, System.IAsyncDisposable
     {
         protected DbCommand() { }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public abstract string CommandText { get; set; }
         public abstract int CommandTimeout { get; set; }
         [System.ComponentModel.DefaultValueAttribute(System.Data.CommandType.Text)]
@@ -1799,10 +1813,10 @@ namespace System.Data.Common
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DefaultValueAttribute(null)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public System.Data.Common.DbConnection Connection { get { throw null; } set { } }
-        protected abstract System.Data.Common.DbConnection DbConnection { get; set; }
+        public System.Data.Common.DbConnection? Connection { get { throw null; } set { } }
+        protected abstract System.Data.Common.DbConnection? DbConnection { get; set; }
         protected abstract System.Data.Common.DbParameterCollection DbParameterCollection { get; }
-        protected abstract System.Data.Common.DbTransaction DbTransaction { get; set; }
+        protected abstract System.Data.Common.DbTransaction? DbTransaction { get; set; }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DefaultValueAttribute(true)]
         [System.ComponentModel.DesignOnlyAttribute(true)]
@@ -1811,13 +1825,13 @@ namespace System.Data.Common
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public System.Data.Common.DbParameterCollection Parameters { get { throw null; } }
-        System.Data.IDbConnection System.Data.IDbCommand.Connection { get { throw null; } set { } }
+        System.Data.IDbConnection? System.Data.IDbCommand.Connection { get { throw null; } set { } }
         System.Data.IDataParameterCollection System.Data.IDbCommand.Parameters { get { throw null; } }
-        System.Data.IDbTransaction System.Data.IDbCommand.Transaction { get { throw null; } set { } }
+        System.Data.IDbTransaction? System.Data.IDbCommand.Transaction { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DefaultValueAttribute(null)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public System.Data.Common.DbTransaction Transaction { get { throw null; } set { } }
+        public System.Data.Common.DbTransaction? Transaction { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.UpdateRowSource.Both)]
         public abstract System.Data.UpdateRowSource UpdatedRowSource { get; set; }
         public abstract void Cancel();
@@ -1835,15 +1849,16 @@ namespace System.Data.Common
         public System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteReaderAsync(System.Data.CommandBehavior behavior) { throw null; }
         public System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteReaderAsync(System.Data.CommandBehavior behavior, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteReaderAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
-        public abstract object ExecuteScalar();
-        public System.Threading.Tasks.Task<object> ExecuteScalarAsync() { throw null; }
-        public virtual System.Threading.Tasks.Task<object> ExecuteScalarAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public abstract object? ExecuteScalar();
+        public System.Threading.Tasks.Task<object?> ExecuteScalarAsync() { throw null; }
+        public virtual System.Threading.Tasks.Task<object?> ExecuteScalarAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public abstract void Prepare();
         public virtual System.Threading.Tasks.Task PrepareAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         System.Data.IDbDataParameter System.Data.IDbCommand.CreateParameter() { throw null; }
         System.Data.IDataReader System.Data.IDbCommand.ExecuteReader() { throw null; }
         System.Data.IDataReader System.Data.IDbCommand.ExecuteReader(System.Data.CommandBehavior behavior) { throw null; }
     }
+#nullable disable
     public abstract partial class DbCommandBuilder : System.ComponentModel.Component
     {
         protected DbCommandBuilder() { }
@@ -1883,6 +1898,7 @@ namespace System.Data.Common
         protected abstract void SetRowUpdatingHandler(System.Data.Common.DbDataAdapter adapter);
         public virtual string UnquoteIdentifier(string quotedIdentifier) { throw null; }
     }
+#nullable enable
     public abstract partial class DbConnection : System.ComponentModel.Component, System.Data.IDbConnection, System.IDisposable, System.IAsyncDisposable
     {
         protected DbConnection() { }
@@ -1890,16 +1906,17 @@ namespace System.Data.Common
         [System.ComponentModel.RecommendedAsConfigurableAttribute(true)]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         [System.ComponentModel.SettingsBindableAttribute(true)]
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public abstract string ConnectionString { get; set; }
         public virtual int ConnectionTimeout { get { throw null; } }
         public abstract string Database { get; }
         public abstract string DataSource { get; }
-        protected virtual System.Data.Common.DbProviderFactory DbProviderFactory { get { throw null; } }
+        protected virtual System.Data.Common.DbProviderFactory? DbProviderFactory { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public abstract string ServerVersion { get; }
         [System.ComponentModel.BrowsableAttribute(false)]
         public abstract System.Data.ConnectionState State { get; }
-        public virtual event System.Data.StateChangeEventHandler StateChange { add { } remove { } }
+        public virtual event System.Data.StateChangeEventHandler? StateChange { add { } remove { } }
         protected abstract System.Data.Common.DbTransaction BeginDbTransaction(System.Data.IsolationLevel isolationLevel);
         protected virtual System.Threading.Tasks.ValueTask<System.Data.Common.DbTransaction> BeginDbTransactionAsync(System.Data.IsolationLevel isolationLevel, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Data.Common.DbTransaction BeginTransaction() { throw null; }
@@ -1913,10 +1930,10 @@ namespace System.Data.Common
         public System.Data.Common.DbCommand CreateCommand() { throw null; }
         protected abstract System.Data.Common.DbCommand CreateDbCommand();
         public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
-        public virtual void EnlistTransaction(System.Transactions.Transaction transaction) { }
+        public virtual void EnlistTransaction(System.Transactions.Transaction? transaction) { }
         public virtual System.Data.DataTable GetSchema() { throw null; }
         public virtual System.Data.DataTable GetSchema(string collectionName) { throw null; }
-        public virtual System.Data.DataTable GetSchema(string collectionName, string[] restrictionValues) { throw null; }
+        public virtual System.Data.DataTable GetSchema(string collectionName, string?[] restrictionValues) { throw null; }
         protected virtual void OnStateChange(System.Data.StateChangeEventArgs stateChange) { }
         public abstract void Open();
         public System.Threading.Tasks.Task OpenAsync() { throw null; }
@@ -1935,6 +1952,7 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public bool BrowsableConnectionString { get { throw null; } set { } }
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public string ConnectionString { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public virtual int Count { get { throw null; } }
@@ -1943,17 +1961,18 @@ namespace System.Data.Common
         [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsReadOnly { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public virtual object this[string keyword] { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public virtual System.Collections.ICollection Keys { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
-        object System.Collections.IDictionary.this[object keyword] { get { throw null; } set { } }
+        object? System.Collections.IDictionary.this[object keyword] { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public virtual System.Collections.ICollection Values { get { throw null; } }
         public void Add(string keyword, object value) { }
-        public static void AppendKeyValuePair(System.Text.StringBuilder builder, string keyword, string value) { }
-        public static void AppendKeyValuePair(System.Text.StringBuilder builder, string keyword, string value, bool useOdbcRules) { }
+        public static void AppendKeyValuePair(System.Text.StringBuilder builder, string keyword, string? value) { }
+        public static void AppendKeyValuePair(System.Text.StringBuilder builder, string keyword, string? value, bool useOdbcRules) { }
         public virtual void Clear() { }
         protected internal void ClearPropertyDescriptors() { }
         public virtual bool ContainsKey(string keyword) { throw null; }
@@ -1962,11 +1981,12 @@ namespace System.Data.Common
         public virtual bool Remove(string keyword) { throw null; }
         public virtual bool ShouldSerialize(string keyword) { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object keyword, object value) { }
+        void System.Collections.IDictionary.Add(object keyword, object? value) { }
         bool System.Collections.IDictionary.Contains(object keyword) { throw null; }
         System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
         void System.Collections.IDictionary.Remove(object keyword) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+#nullable disable
         System.ComponentModel.AttributeCollection System.ComponentModel.ICustomTypeDescriptor.GetAttributes() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetClassName() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetComponentName() { throw null; }
@@ -1979,9 +1999,11 @@ namespace System.Data.Common
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[] attributes) { throw null; }
         object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
+#nullable enable
         public override string ToString() { throw null; }
-        public virtual bool TryGetValue(string keyword, out object value) { throw null; }
+        public virtual bool TryGetValue(string keyword, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) { throw null; }
     }
+#nullable disable
     public abstract partial class DbDataAdapter : System.Data.Common.DataAdapter, System.Data.IDataAdapter, System.Data.IDbDataAdapter, System.ICloneable
     {
         public const string DefaultSourceTableName = "Table";
@@ -2040,6 +2062,7 @@ namespace System.Data.Common
         public int Update(System.Data.DataSet dataSet, string srcTable) { throw null; }
         public int Update(System.Data.DataTable dataTable) { throw null; }
     }
+#nullable enable
     public abstract partial class DbDataReader : System.MarshalByRefObject, System.Collections.IEnumerable, System.Data.IDataReader, System.Data.IDataRecord, System.IDisposable, System.IAsyncDisposable
     {
         protected DbDataReader() { }
@@ -2059,9 +2082,9 @@ namespace System.Data.Common
         public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public abstract bool GetBoolean(int ordinal);
         public abstract byte GetByte(int ordinal);
-        public abstract long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length);
+        public abstract long GetBytes(int ordinal, long dataOffset, byte[]? buffer, int bufferOffset, int length);
         public abstract char GetChar(int ordinal);
-        public abstract long GetChars(int ordinal, long dataOffset, char[] buffer, int bufferOffset, int length);
+        public abstract long GetChars(int ordinal, long dataOffset, char[]? buffer, int bufferOffset, int length);
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public System.Data.Common.DbDataReader GetData(int ordinal) { throw null; }
         public abstract string GetDataTypeName(int ordinal);
@@ -2139,6 +2162,7 @@ namespace System.Data.Common
         public abstract object GetValue(int i);
         public abstract int GetValues(object[] values);
         public abstract bool IsDBNull(int i);
+#nullable disable
         System.ComponentModel.AttributeCollection System.ComponentModel.ICustomTypeDescriptor.GetAttributes() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetClassName() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetComponentName() { throw null; }
@@ -2151,12 +2175,14 @@ namespace System.Data.Common
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[] attributes) { throw null; }
         object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
+#nullable enable
     }
     public abstract partial class DbDataSourceEnumerator
     {
         protected DbDataSourceEnumerator() { }
         public abstract System.Data.DataTable GetDataSources();
     }
+#nullable disable
     public partial class DbEnumerator : System.Collections.IEnumerator
     {
         public DbEnumerator(System.Data.Common.DbDataReader reader) { }
@@ -2168,13 +2194,14 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void Reset() { }
     }
+#nullable enable
     public abstract partial class DbException : System.Runtime.InteropServices.ExternalException
     {
         protected DbException() { }
         protected DbException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        protected DbException(string message) { }
-        protected DbException(string message, System.Exception innerException) { }
-        protected DbException(string message, int errorCode) { }
+        protected DbException(string? message) { }
+        protected DbException(string? message, System.Exception? innerException) { }
+        protected DbException(string? message, int errorCode) { }
     }
     public static partial class DbMetaDataCollectionNames
     {
@@ -2245,11 +2272,13 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public abstract bool IsNullable { get; set; }
         [System.ComponentModel.DefaultValueAttribute("")]
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public abstract string ParameterName { get; set; }
         public virtual byte Precision { get { throw null; } set { } }
         public virtual byte Scale { get { throw null; } set { } }
         public abstract int Size { get; set; }
         [System.ComponentModel.DefaultValueAttribute("")]
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public abstract string SourceColumn { get; set; }
         [System.ComponentModel.DefaultValueAttribute(false)]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -2261,7 +2290,7 @@ namespace System.Data.Common
         byte System.Data.IDbDataParameter.Scale { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
-        public abstract object Value { get; set; }
+        public abstract object? Value { get; set; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public abstract void ResetDbType();
     }
@@ -2289,11 +2318,13 @@ namespace System.Data.Common
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public abstract object SyncRoot { get; }
-        object System.Collections.IList.this[int index] { get { throw null; } set { } }
+        object? System.Collections.IList.this[int index] { get { throw null; } set { } }
         object System.Data.IDataParameterCollection.this[string parameterName] { get { throw null; } set { } }
+        int System.Collections.IList.Add(object? value) { throw null; }
         public abstract int Add(object value);
         public abstract void AddRange(System.Array values);
         public abstract void Clear();
+        bool System.Collections.IList.Contains(object? value) { throw null; }
         public abstract bool Contains(object value);
         public abstract bool Contains(string value);
         public abstract void CopyTo(System.Array array, int index);
@@ -2301,9 +2332,12 @@ namespace System.Data.Common
         public abstract System.Collections.IEnumerator GetEnumerator();
         protected abstract System.Data.Common.DbParameter GetParameter(int index);
         protected abstract System.Data.Common.DbParameter GetParameter(string parameterName);
+        int System.Collections.IList.IndexOf(object? value) { throw null; }
         public abstract int IndexOf(object value);
         public abstract int IndexOf(string parameterName);
+        void System.Collections.IList.Insert(int index, object? value) { throw null; }
         public abstract void Insert(int index, object value);
+        void System.Collections.IList.Remove(object? value) { throw null; }
         public abstract void Remove(object value);
         public abstract void RemoveAt(int index);
         public abstract void RemoveAt(string parameterName);
@@ -2312,7 +2346,7 @@ namespace System.Data.Common
     }
     public static partial class DbProviderFactories
     {
-        public static System.Data.Common.DbProviderFactory GetFactory(System.Data.Common.DbConnection connection) { throw null; }
+        public static System.Data.Common.DbProviderFactory? GetFactory(System.Data.Common.DbConnection connection) { throw null; }
         public static System.Data.Common.DbProviderFactory GetFactory(System.Data.DataRow providerRow) { throw null; }
         public static System.Data.Common.DbProviderFactory GetFactory(string providerInvariantName) { throw null; }
         public static System.Data.DataTable GetFactoryClasses() { throw null; }
@@ -2320,7 +2354,7 @@ namespace System.Data.Common
         public static void RegisterFactory(string providerInvariantName, System.Data.Common.DbProviderFactory factory) { }
         public static void RegisterFactory(string providerInvariantName, string factoryTypeAssemblyQualifiedName) { }
         public static void RegisterFactory(string providerInvariantName, System.Type providerFactoryClass) { }
-        public static bool TryGetFactory(string providerInvariantName, out System.Data.Common.DbProviderFactory factory) { throw null; }
+        public static bool TryGetFactory(string providerInvariantName, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Data.Common.DbProviderFactory? factory) { throw null; }
         public static bool UnregisterFactory(string providerInvariantName) { throw null; }
     }
     public abstract partial class DbProviderFactory
@@ -2329,13 +2363,13 @@ namespace System.Data.Common
         public virtual bool CanCreateCommandBuilder { get { throw null; } }
         public virtual bool CanCreateDataAdapter { get { throw null; } }
         public virtual bool CanCreateDataSourceEnumerator { get { throw null; } }
-        public virtual System.Data.Common.DbCommand CreateCommand() { throw null; }
-        public virtual System.Data.Common.DbCommandBuilder CreateCommandBuilder() { throw null; }
-        public virtual System.Data.Common.DbConnection CreateConnection() { throw null; }
-        public virtual System.Data.Common.DbConnectionStringBuilder CreateConnectionStringBuilder() { throw null; }
-        public virtual System.Data.Common.DbDataAdapter CreateDataAdapter() { throw null; }
-        public virtual System.Data.Common.DbDataSourceEnumerator CreateDataSourceEnumerator() { throw null; }
-        public virtual System.Data.Common.DbParameter CreateParameter() { throw null; }
+        public virtual System.Data.Common.DbCommand? CreateCommand() { throw null; }
+        public virtual System.Data.Common.DbCommandBuilder? CreateCommandBuilder() { throw null; }
+        public virtual System.Data.Common.DbConnection? CreateConnection() { throw null; }
+        public virtual System.Data.Common.DbConnectionStringBuilder? CreateConnectionStringBuilder() { throw null; }
+        public virtual System.Data.Common.DbDataAdapter? CreateDataAdapter() { throw null; }
+        public virtual System.Data.Common.DbDataSourceEnumerator? CreateDataSourceEnumerator() { throw null; }
+        public virtual System.Data.Common.DbParameter? CreateParameter() { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false, Inherited=true)]
     public sealed partial class DbProviderSpecificTypePropertyAttribute : System.Attribute
@@ -2346,10 +2380,10 @@ namespace System.Data.Common
     public abstract partial class DbTransaction : System.MarshalByRefObject, System.Data.IDbTransaction, System.IDisposable, System.IAsyncDisposable
     {
         protected DbTransaction() { }
-        public System.Data.Common.DbConnection Connection { get { throw null; } }
-        protected abstract System.Data.Common.DbConnection DbConnection { get; }
+        public System.Data.Common.DbConnection? Connection { get { throw null; } }
+        protected abstract System.Data.Common.DbConnection? DbConnection { get; }
         public abstract System.Data.IsolationLevel IsolationLevel { get; }
-        System.Data.IDbConnection System.Data.IDbTransaction.Connection { get { throw null; } }
+        System.Data.IDbConnection? System.Data.IDbTransaction.Connection { get { throw null; } }
         public abstract void Commit();
         public virtual System.Threading.Tasks.Task CommitAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void Dispose() { }
@@ -2376,6 +2410,7 @@ namespace System.Data.Common
         Insensitive = 1,
         Sensitive = 2,
     }
+#nullable disable
     public partial class RowUpdatedEventArgs : System.EventArgs
     {
         public RowUpdatedEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { }

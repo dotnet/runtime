@@ -351,6 +351,7 @@ namespace Internal.JitInterface
         CORINFO_CALLCONV_FIELD = 0x6,
         CORINFO_CALLCONV_LOCAL_SIG = 0x7,
         CORINFO_CALLCONV_PROPERTY = 0x8,
+        CORINFO_CALLCONV_UNMANAGED = 0x9,
         CORINFO_CALLCONV_NATIVEVARARG = 0xb,    // used ONLY for IL stub PInvoke vararg calls
 
         CORINFO_CALLCONV_MASK = 0x0f,     // Calling convention is bottom 4 bits

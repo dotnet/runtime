@@ -57,14 +57,11 @@
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface$(LibraryFileExtension)" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit-$(TargetSpec)$(LibraryFileExtension)" />
       <!-- Include the native and managed files from the Microsoft.NETCore.App shared framework -->
-      <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/native'" />
+      <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/native' and '%(RuntimeFile.Extension)' != '$(StaticLibraryFileExtension)'" />
       <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/lib/$(NetCoreAppCurrent)'" />
       <!-- Include the native hosting layer -->
       <Crossgen2File Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)" />
       <Crossgen2File Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)" />
-      <!-- Include native runtime components -->
-      <Crossgen2File Include="$(LibrariesNativeArtifactsPath)$(LibraryFilePrefix)*$(LibraryFileExtension)"
-        Exclude="$(LibrariesNativeArtifactsPath)$(LibraryFilePrefix)System.IO.Ports.Native$(LibraryFileExtension)" />
     </ItemGroup>
 
     <MSBuild Projects="$(CoreClrProjectRoot)src/tools/aot/crossgen2/crossgen2.csproj"

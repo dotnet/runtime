@@ -12,6 +12,9 @@ namespace JIT.HardwareIntrinsics.Arm
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
+                ["ShiftRightLogicalNarrowingLower.Vector64.UInt32.1"] = ShiftRightLogicalNarrowingLower_Vector64_UInt32_1,
+                ["ShiftRightLogicalNarrowingSaturateLower.Vector64.Byte.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_Byte_1,
+                ["ShiftRightLogicalNarrowingSaturateLower.Vector64.Int16.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_Int16_1,
                 ["ShiftRightLogicalNarrowingSaturateLower.Vector64.Int32.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_Int32_1,
                 ["ShiftRightLogicalNarrowingSaturateLower.Vector64.SByte.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_SByte_1,
                 ["ShiftRightLogicalNarrowingSaturateLower.Vector64.UInt16.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_UInt16_1,

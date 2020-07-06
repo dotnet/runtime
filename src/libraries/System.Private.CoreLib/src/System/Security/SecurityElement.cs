@@ -43,7 +43,6 @@ namespace System.Security
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
 
             _tag = tag;
-            _text = null;
         }
 
         public SecurityElement(string tag, string? text)

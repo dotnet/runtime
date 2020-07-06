@@ -3519,7 +3519,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             if ((ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
             {
-                return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
+                // These intrinsics aren't defined recursively and so they will never be mustExpand
+                // Instead, they provide software fallbacks that will be executed instead.
+
+                assert(!mustExpand);
+                return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis);
             }
 #endif // FEATURE_HW_INTRINSICS
         }
