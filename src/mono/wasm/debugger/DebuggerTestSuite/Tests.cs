@@ -1485,6 +1485,43 @@ namespace DebuggerTests
             });
         }
 
+        [Fact]
+        public async Task InvalidValueTypeData()
+        {
+            await CheckInspectLocalsAtBreakpointSite(
+                "dotnet://debugger-test.dll/debugger-test.cs", 85, 8,
+                "OuterMethod",
+                "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:OuterMethod'); })",
+                wait_for_event_fn : async(pause_location) =>
+                {
+                    var new_id = await CreateNewId(@"MONO._new_or_add_id_props ({ scheme: 'valuetype', idArgs: { containerId: 1 }, props: { klass: 3, value64: 4 }});");
+                    await _invoke_getter(new_id, "NonExistant", expect_ok : false);
+
+                    new_id = await CreateNewId(@"MONO._new_or_add_id_props ({ scheme: 'valuetype', idArgs: { containerId: 1 }, props: { klass: 3 }});");
+                    await _invoke_getter(new_id, "NonExistant", expect_ok : false);
+
+                    new_id = await CreateNewId(@"MONO._new_or_add_id_props ({ scheme: 'valuetype', idArgs: { containerId: 1 }, props: { klass: 3, value64: 'AA' }});");
+                    await _invoke_getter(new_id, "NonExistant", expect_ok : false);
+                });
+
+            async Task<string> CreateNewId(string expr)
+            {
+                var res = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), ctx.token);
+                Assert.True(res.IsOk, "Expected Runtime.evaluate to succeed");
+                AssertEqual("string", res.Value["result"] ? ["type"]?.Value<string>(), "Expected Runtime.evaluate to return a string type result");
+                return res.Value["result"] ? ["value"]?.Value<string>();
+            }
+
+            async Task<Result> _invoke_getter(string obj_id, string property_name, bool expect_ok)
+            {
+                var expr = $"MONO._invoke_getter ('{obj_id}', '{property_name}')";
+                var res = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), ctx.token);
+                AssertEqual(expect_ok, res.IsOk, "Runtime.evaluate result not as expected for {expr}");
+
+                return res;
+            }
+        }
+
         //TODO add tests covering basic stepping behavior as step in/out/over
     }
 }

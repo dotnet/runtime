@@ -202,7 +202,7 @@ var MonoSupportLib = {
 			if (!isNaN (id.o.containerId))
 				this._get_object_properties (id.o.containerId, true);
 			else if (!isNaN (id.o.arrayId))
-				this._get_array_values (id, id.o.arrayIdx, 1, true);
+				this._get_array_values (id, Number (id.o.arrayIdx), 1, true);
 			else
 				throw new Error (`Invalid valuetype id (${id.idStr}). Can't get properties for it.`);
 
@@ -309,7 +309,7 @@ var MonoSupportLib = {
 		 * @returns {object[]}
 		 */
 		_get_array_values: function (id, startIdx = 0, count = -1, expandValueTypes = false) {
-			if (isNaN (id.o.arrayId))
+			if (isNaN (id.o.arrayId) || isNaN (startIdx))
 				throw new Error (`Invalid array id: ${id.idStr}`);
 
 			let { res_ok, res } = this.mono_wasm_get_array_values_info (id.o.arrayId, startIdx, count, expandValueTypes);
@@ -529,11 +529,10 @@ var MonoSupportLib = {
 
 			switch (id.scheme) {
 				case "object": {
-					const id_num = Number (id.value);
-					if (id_num === undefined)
+					if (isNaN (id.value))
 						throw new Error (`Invalid objectId: ${objectId}. Expected a numeric id.`);
 
-					return this._get_object_properties(id_num, false);
+					return this._get_object_properties(id.value, false);
 				}
 
 				case "array":
@@ -590,8 +589,8 @@ var MonoSupportLib = {
 				if (id_props === undefined)
 					throw new Error (`Unknown valuetype id: ${objectIdStr}`);
 
-				if (id_props.value64 === undefined || id_props.klass === undefined)
-					throw new Error (`Bug: Cannot invoke getter on ${objectIdStr}, because of missing klass/value64 fields`);
+				if (typeof id_props.value64 !== 'string' || isNaN (id_props.klass))
+					throw new Error (`Bug: Cannot invoke getter on ${objectIdStr}, because of missing or invalid klass/value64 fields. idProps: ${JSON.stringify (id_props)}`);
 
 				const dataPtr = Module._malloc (id_props.value64.length);
 				const dataHeap = new Uint8Array (Module.HEAPU8.buffer, dataPtr, id_props.value64.length);
@@ -644,9 +643,12 @@ var MonoSupportLib = {
 			const objId = request.objectId;
 			let proxy;
 
-			if (objId in this._call_function_res_cache) {
-				proxy = this._call_function_res_cache [objId];
-			} else if (!objId.startsWith ('dotnet:cfo_res:')) {
+			if (objId.startsWith ('dotnet:cfo_res:')) {
+				if (objId in this._call_function_res_cache)
+					proxy = this._call_function_res_cache [objId];
+				else
+					throw new Error (`Unknown object id ${objId}`);
+			} else {
 				proxy = this._create_proxy_from_object_id (objId);
 			}
 
@@ -654,8 +656,11 @@ var MonoSupportLib = {
 			const fn_eval_str = `var fn = ${request.functionDeclaration}; fn.call (proxy, ...[${fn_args}]);`;
 
 			const fn_res = eval (fn_eval_str);
-			if (fn_res == undefined) // should we just return undefined?
-				throw Error ('Function returned undefined result');
+			if (fn_res === undefined)
+				return { type: "undefined" };
+
+			if (fn_res === null || (fn_res.subtype === 'null' && fn_res.value === undefined))
+				return fn_res;
 
 			// primitive type
 			if (Object (fn_res) !== fn_res)

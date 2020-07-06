@@ -1392,6 +1392,14 @@ EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name)
 {
 	DEBUG_PRINTF (2, "mono_wasm_invoke_getter_on_value: v: %p klass: %p, name: %s\n", value, klass, name);
+	if (!klass || !value)
+		return FALSE;
+
+	if (!m_class_is_valuetype (klass)) {
+		DEBUG_PRINTF (2, "mono_wasm_invoke_getter_on_value: klass is not a valuetype. name: %s\n", mono_class_full_name (klass));
+		return FALSE;
+	}
+
 	return invoke_getter (value, klass, name);
 }
 
