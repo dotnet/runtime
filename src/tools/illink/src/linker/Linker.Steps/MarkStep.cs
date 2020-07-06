@@ -1300,6 +1300,8 @@ namespace Mono.Linker.Steps
 			// could be incorrect) or IsAssignableFrom (where assignability of unconstructed types might change).
 			Annotations.MarkRelevantToVariantCasting (reference.Resolve ());
 
+			MarkImplicitlyUsedFields (reference.Resolve ());
+
 			return MarkType (reference, reason, sourceLocationMember);
 		}
 
@@ -1387,10 +1389,6 @@ namespace Mono.Linker.Steps
 			MarkTypeSpecialCustomAttributes (type);
 
 			MarkGenericParameterProvider (type, sourceLocationMember);
-
-			// keep fields for value-types and for classes with LayoutKind.Sequential or Explicit
-			if (type.IsValueType || !type.IsAutoLayout)
-				MarkFields (type, includeStatic: type.IsEnum, reason: new DependencyInfo (DependencyKind.MemberOfType, type));
 
 			// There are a number of markings we can defer until later when we know it's possible a reference type could be instantiated
 			// For example, if no instance of a type exist, then we don't need to mark the interfaces on that type
@@ -2359,6 +2357,16 @@ namespace Mono.Linker.Steps
 		{
 		}
 
+		void MarkImplicitlyUsedFields (TypeDefinition type)
+		{
+			if (type?.HasFields != true)
+				return;
+
+			// keep fields for types with explicit layout and for enums
+			if (!type.IsAutoLayout || type.IsEnum)
+				MarkFields (type, includeStatic: type.IsEnum, reason: new DependencyInfo (DependencyKind.MemberOfType, type));
+		}
+
 		protected virtual void MarkRequirementsForInstantiatedTypes (TypeDefinition type)
 		{
 			if (Annotations.IsInstantiated (type))
@@ -2370,6 +2378,8 @@ namespace Mono.Linker.Steps
 
 			foreach (var method in GetRequiredMethodsForInstantiatedType (type))
 				MarkMethod (method, new DependencyInfo (DependencyKind.MethodForInstantiatedType, type), type);
+
+			MarkImplicitlyUsedFields (type);
 
 			DoAdditionalInstantiatedTypeProcessing (type);
 		}
