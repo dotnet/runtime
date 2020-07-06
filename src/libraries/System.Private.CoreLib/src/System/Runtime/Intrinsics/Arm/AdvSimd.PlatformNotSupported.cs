@@ -10842,6 +10842,90 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<float> ReciprocalStep(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int8x8_t vrev16_s8 (int8x8_t vec)
+        ///   A32: VREV16.8 Dd, Dm
+        ///   A64: REV16 Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<short> ReverseElement8(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vrev32_s8 (int8x8_t vec)
+        ///   A32: VREV32.8 Dd, Dm
+        ///   A64: REV32 Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<int> ReverseElement8(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vrev64_s8 (int8x8_t vec)
+        ///   A32: VREV64.8 Dd, Dm
+        ///   A64: REV64 Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<long> ReverseElement8(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vrev16_u8 (uint8x8_t vec)
+        ///   A32: VREV16.8 Dd, Dm
+        ///   A64: REV16 Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<ushort> ReverseElement8(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vrev32_u8 (uint8x8_t vec)
+        ///   A32: VREV32.8 Dd, Dm
+        ///   A64: REV32 Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<uint> ReverseElement8(Vector64<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vrev64_u8 (uint8x8_t vec)
+        ///   A32: VREV64.8 Dd, Dm
+        ///   A64: REV64 Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<ulong> ReverseElement8(Vector64<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vrev16q_s8 (int8x16_t vec)
+        ///   A32: VREV16.8 Qd, Qm
+        ///   A64: REV16 Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<short> ReverseElement8(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vrev32q_s8 (int8x16_t vec)
+        ///   A32: VREV32.8 Qd, Qm
+        ///   A64: REV32 Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<int> ReverseElement8(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vrev64q_s8 (int8x16_t vec)
+        ///   A32: VREV64.8 Qd, Qm
+        ///   A64: REV64 Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<long> ReverseElement8(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vrev16q_u8 (uint8x16_t vec)
+        ///   A32: VREV16.8 Qd, Qm
+        ///   A64: REV16 Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<ushort> ReverseElement8(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vrev32q_u8 (uint8x16_t vec)
+        ///   A32: VREV32.8 Qd, Qm
+        ///   A64: REV32 Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<uint> ReverseElement8(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vrev64q_u8 (uint8x16_t vec)
+        ///   A32: VREV64.8 Qd, Qm
+        ///   A64: REV64 Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<ulong> ReverseElement8(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float32x2_t vrnda_f32 (float32x2_t a)
         ///   A32: VRINTA.F32 Dd, Dm
         ///   A64: FRINTA Vd.2S, Vn.2S
