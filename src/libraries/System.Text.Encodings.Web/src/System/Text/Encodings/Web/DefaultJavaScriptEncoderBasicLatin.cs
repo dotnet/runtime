@@ -82,7 +82,7 @@ namespace System.Text.Encodings.Web
 
             if (textLength == 0)
             {
-                goto AllAllowed;
+                return -1;
             }
 
             int idx = 0;
@@ -92,7 +92,7 @@ namespace System.Text.Encodings.Web
 #if NETCOREAPP
             if (Sse2.IsSupported && textLength >= Vector128<short>.Count)
             {
-                goto VectorizedEntry;
+                goto VectorizedStart;
             }
 
         Sequential:
@@ -105,7 +105,7 @@ namespace System.Text.Encodings.Web
 
                 if (NeedsEscaping(*(char*)ptr))
                 {
-                    goto Return;
+                    return idx;
                 }
 
                 ptr++;
@@ -113,14 +113,10 @@ namespace System.Text.Encodings.Web
             }
             while (ptr < end);
 
-        AllAllowed:
-            idx = -1;
-
-        Return:
-            return idx;
+            return -1;
 
 #if NETCOREAPP
-        VectorizedEntry:
+        VectorizedStart:
             int index;
             short* vectorizedEnd;
 
@@ -204,7 +200,7 @@ namespace System.Text.Encodings.Web
                 goto Sequential;
             }
 
-            goto AllAllowed;
+            return -1;
 
         VectorizedFound:
             idx = BitHelper.GetIndexOfFirstNeedToEscape(index);
@@ -227,7 +223,7 @@ namespace System.Text.Encodings.Web
 
                 if (textLength == 0)
                 {
-                    goto AllAllowed;
+                    return -1;
                 }
 
                 int idx = 0;
@@ -251,7 +247,7 @@ namespace System.Text.Encodings.Web
 
                     if (NeedsEscaping(*ptr))
                     {
-                        goto Return;
+                        return idx;
                     }
 
                     ptr++;
@@ -259,11 +255,7 @@ namespace System.Text.Encodings.Web
                 }
                 while (ptr < end);
 
-            AllAllowed:
-                idx = -1;
-
-            Return:
-                return idx;
+                return -1;
 
 #if NETCOREAPP
             Vectorized:
@@ -313,8 +305,7 @@ namespace System.Text.Encodings.Web
                         goto VectorizedFound;
                     }
 
-                    idx = -1;
-                    goto Return;
+                    return -1;
                 }
 
                 idx = CalculateIndex(ptr, pValue);
@@ -324,7 +315,7 @@ namespace System.Text.Encodings.Web
                     goto Sequential;
                 }
 
-                goto AllAllowed;
+                return -1;
 
             VectorizedFound:
                 idx = BitHelper.GetIndexOfFirstNeedToEscape(index);
