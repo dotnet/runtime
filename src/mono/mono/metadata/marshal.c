@@ -113,7 +113,7 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_function_pointer_attribute, 
 
 #ifdef ENABLE_NETCORE
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (suppress_gc_transition_attribute, "System.Runtime.InteropServices", "SuppressGCTransitionAttribute")
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "System.Runtime.InteropServicea", "UnmanagedCallersOnlyAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
 #endif
 
 static MonoImage*
