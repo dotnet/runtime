@@ -121,3 +121,20 @@ interp_intrins_u32_to_decstr (guint32 value, MonoArray *cache, MonoVTable *vtabl
 	} while (value != 0);
 	return result;
 }
+
+mono_u
+interp_intrins_widen_ascii_to_utf16 (guint8 *pAsciiBuffer, mono_unichar2 *pUtf16Buffer, mono_u elementCount)
+{
+	// ASCIIUtility.WidenAsciiToUtf16
+	mono_u currentOffset = 0;
+
+	while (currentOffset < elementCount) {
+		guint16 asciiData = pAsciiBuffer [currentOffset];
+		if ((asciiData & 0x80) != 0)
+			return currentOffset;
+
+		pUtf16Buffer [currentOffset] = (mono_unichar2)asciiData;
+		currentOffset++;
+	}
+	return currentOffset;
+}
