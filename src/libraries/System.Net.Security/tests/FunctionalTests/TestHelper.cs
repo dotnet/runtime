@@ -55,13 +55,14 @@ namespace System.Net.Security.Tests
             X509Certificate2Collection chain = new X509Certificate2Collection();
 
             CertificateAuthority.BuildPrivatePki(
-                PkiOptions.IssuerRevocationViaCrl,
+                PkiOptions.IssuerRevocationViaCrl | PkiOptions.EndEntityIsServer,
                 out RevocationResponder responder,
                 out CertificateAuthority root,
                 out CertificateAuthority intermediate,
                 out X509Certificate2 endEntity,
                 subjectName: name,
-                testName: testName);
+                testName: testName,
+                KeySize: 2048);
 
             chain.Add(intermediate.CloneIssuerCert());
             chain.Add(root.CloneIssuerCert());

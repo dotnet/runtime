@@ -25,6 +25,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         IssuerRevocationViaOcsp = 1 << 1,
         EndEntityRevocationViaCrl = 1 << 2,
         EndEntityRevocationViaOcsp = 1 << 3,
+        EndEntityIsServer = 1 << 4,
 
         CrlEverywhere = IssuerRevocationViaCrl | EndEntityRevocationViaCrl,
         OcspEverywhere = IssuerRevocationViaOcsp | EndEntityRevocationViaOcsp,
@@ -106,6 +107,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         internal DateTimeOffset? RevocationExpiration { get; set; }
         internal bool CorruptRevocationIssuerName { get; set; }
 
+        // All keys created in this method are smaller than recommended,
+        // but they only live for a few seconds (at most),
+        // and never communicate out of process.
+        const int DefaultKeySize = 1024;
+
         internal CertificateAuthority(
             X509Certificate2 cert,
             string aiaHttpUrl,
@@ -169,6 +175,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         }
 
         internal X509Certificate2 CreateEndEntity(string subject, RSA publicKey, X509Extension altName)
+        {
+            return CreateCertificate(
+                subject,
+                publicKey,
+                TimeSpan.FromSeconds(2),
+                s_eeConstraints,
+                s_eeKeyUsage,
+                s_tlsClientEku,
+                altName: altName);
+        }
+
+        internal X509Certificate2 CreateServerEndEntity(string subject, RSA publicKey, X509Extension altName)
         {
             return CreateCertificate(
                 subject,
@@ -841,7 +859,8 @@ SingleResponse ::= SEQUENCE {
             string testName = null,
             bool registerAuthorities = true,
             bool pkiOptionsInSubject = false,
-            string subjectName = null)
+            string subjectName = null,
+            int KeySize = DefaultKeySize)
         {
             bool rootDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoRootCertDistributionUri);
             bool issuerRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl);
@@ -849,16 +868,12 @@ SingleResponse ::= SEQUENCE {
             bool issuerDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoIssuerCertDistributionUri);
             bool endEntityRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
             bool endEntityRevocationViaOcsp = pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaOcsp);
+            bool endEntityIsServer = pkiOptions.HasFlag(PkiOptions.EndEntityIsServer);
 
             Assert.True(
                 issuerRevocationViaCrl || issuerRevocationViaOcsp ||
                     endEntityRevocationViaCrl || endEntityRevocationViaOcsp,
                 "At least one revocation mode is enabled");
-
-            // All keys created in this method are smaller than recommended,
-            // but they only live for a few seconds (at most),
-            // and never communicate out of process.
-            const int KeySize = 1024;
 
             using (RSA rootKey = RSA.Create(KeySize))
             using (RSA intermedKey = RSA.Create(KeySize))
@@ -929,10 +944,14 @@ SingleResponse ::= SEQUENCE {
                     altName = builder.Build();
                 }
 
-                endEntityCert = intermediateAuthority.CreateEndEntity(
-                    BuildSubject(subjectName ?? "A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
-                    eeKey,
-                    altName);
+                endEntityCert = endEntityIsServer ?
+                    intermediateAuthority.CreateServerEndEntity(
+                        BuildSubject(subjectName ?? "A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
+                        eeKey, altName) :
+                    intermediateAuthority.CreateEndEntity(
+                        BuildSubject(subjectName ?? "A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
+                        eeKey, altName);
+
                 endEntityCert = endEntityCert.CopyWithPrivateKey(eeKey);
             }
 
