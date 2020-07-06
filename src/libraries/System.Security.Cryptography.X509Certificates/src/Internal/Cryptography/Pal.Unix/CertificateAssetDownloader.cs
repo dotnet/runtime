@@ -23,14 +23,16 @@ namespace Internal.Cryptography.Pal
         {
             byte[]? data = DownloadAsset(uri, ref remainingDownloadTime);
 
-            if (data == null)
+            if (data == null || data.Length == 0)
             {
                 return null;
             }
 
             try
             {
-                return new X509Certificate2(data);
+                X509Certificate2 certificate = new X509Certificate2(data);
+                certificate.ThrowIfInvalid();
+                return certificate;
             }
             catch (CryptographicException)
             {
