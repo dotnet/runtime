@@ -476,10 +476,11 @@ check_symbol_exists(
     HAVE_DISCONNECTX)
 
 set(PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
-set(CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
+set(CMAKE_REQUIRED_FLAGS "-Wsign-conversion")
 check_c_source_compiles(
      "
      #include <stddef.h>
+     #include <sys/socket.h>
      #include <sys/types.h>
      #include <netdb.h>
 
