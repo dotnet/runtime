@@ -379,14 +379,14 @@ namespace System
         {
             Span<byte> pDigits = stackalloc byte[DoubleNumberBufferLength];
             var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            return FormatDouble(ref sb, pDigits, value, format, info) ?? sb.ToString();
+            return FormatDouble(ref sb, ref pDigits, value, format, info) ?? sb.ToString();
         }
 
         public static bool TryFormatDouble(double value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
         {
             Span<byte> pDigits = stackalloc byte[DoubleNumberBufferLength];
             var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            string? s = FormatDouble(ref sb, pDigits, value, format, info);
+            string? s = FormatDouble(ref sb, ref pDigits, value, format, info);
             return s != null ?
                 TryCopyTo(s, destination, out charsWritten) :
                 sb.TryCopyTo(destination, out charsWritten);
@@ -517,7 +517,7 @@ namespace System
         /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
         /// Null if no existing string was returned, in which case the formatted output is in the builder.
         /// </returns>
-        private static string? FormatDouble(ref ValueStringBuilder sb, Span<byte> pDigits, double value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        private static string? FormatDouble(ref ValueStringBuilder sb, ref Span<byte> pDigits, double value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             if (!double.IsFinite(value))
             {
@@ -586,14 +586,14 @@ namespace System
         {
             Span<byte> pDigits = stackalloc byte[SingleNumberBufferLength];
             var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            return FormatSingle(ref sb, pDigits, value, format, info) ?? sb.ToString();
+            return FormatSingle(ref sb, ref pDigits, value, format, info) ?? sb.ToString();
         }
 
         public static bool TryFormatSingle(float value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
         {
             Span<byte> pDigits = stackalloc byte[SingleNumberBufferLength];
             var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            string? s = FormatSingle(ref sb, pDigits, value, format, info);
+            string? s = FormatSingle(ref sb, ref pDigits, value, format, info);
             return s != null ?
                 TryCopyTo(s, destination, out charsWritten) :
                 sb.TryCopyTo(destination, out charsWritten);
@@ -604,7 +604,7 @@ namespace System
         /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
         /// Null if no existing string was returned, in which case the formatted output is in the builder.
         /// </returns>
-        private static string? FormatSingle(ref ValueStringBuilder sb, Span<byte> pDigits, float value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        private static string? FormatSingle(ref ValueStringBuilder sb, ref Span<byte> pDigits, float value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             if (!float.IsFinite(value))
             {
@@ -673,7 +673,7 @@ namespace System
         {
             Span<byte> pDigits = stackalloc byte[HalfNumberBufferLength];
             var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            return FormatHalf(ref sb, pDigits, value, format, info) ?? sb.ToString();
+            return FormatHalf(ref sb, ref pDigits, value, format, info) ?? sb.ToString();
         }
 
         /// <summary>Formats the specified value according to the specified format and info.</summary>
@@ -681,7 +681,7 @@ namespace System
         /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
         /// Null if no existing string was returned, in which case the formatted output is in the builder.
         /// </returns>
-        private static string? FormatHalf(ref ValueStringBuilder sb, Span<byte> pDigits, Half value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        private static string? FormatHalf(ref ValueStringBuilder sb, ref Span<byte> pDigits, Half value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             if (!Half.IsFinite(value))
             {
@@ -748,7 +748,7 @@ namespace System
         {
             Span<byte> pDigits = stackalloc byte[HalfNumberBufferLength];
             var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            string? s = FormatHalf(ref sb, pDigits, value, format, info);
+            string? s = FormatHalf(ref sb, ref pDigits, value, format, info);
             return s != null ?
                 TryCopyTo(s, destination, out charsWritten) :
                 sb.TryCopyTo(destination, out charsWritten);
