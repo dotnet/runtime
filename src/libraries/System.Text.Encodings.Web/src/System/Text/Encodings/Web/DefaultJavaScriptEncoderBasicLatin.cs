@@ -190,7 +190,7 @@ namespace System.Text.Encodings.Web
                     {
                         Debug.Assert(AdvSimd.Arm64.IsSupported);
 
-                        Vector64<sbyte> saturated = AdvSimd.ExtractNarrowingSaturateLower(Sse2.LoadVector128(ptr));
+                        Vector64<sbyte> saturated = AdvSimd.ExtractNarrowingSaturateLower(AdvSimd.LoadVector128(ptr));
                         sourceValue = Vector128.Create(saturated, Vector64.Create((sbyte)'A'));
                     }
 
