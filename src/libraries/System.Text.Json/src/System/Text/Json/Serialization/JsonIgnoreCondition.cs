@@ -24,5 +24,9 @@ namespace System.Text.Json.Serialization
         /// If the value is the default, the property is ignored during serialization.
         /// </summary>
         WhenWritingDefault = 2,
+        /// <summary>
+        /// If the value is null, the property is ignored during serialization.
+        /// </summary>
+        WhenWritingNull = 3,
     }
 }

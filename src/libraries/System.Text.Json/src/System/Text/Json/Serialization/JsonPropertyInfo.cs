@@ -135,7 +135,8 @@ namespace System.Text.Json
                 if (ignoreCondition != JsonIgnoreCondition.Never)
                 {
                     Debug.Assert(ignoreCondition == JsonIgnoreCondition.WhenWritingDefault);
-                    IgnoreDefaultValuesOnWrite = true;
+                    IgnoreDefaultValuesForReferenceTypesOnWrite = true;
+                    IgnoreDefaultValuesForValueTypesOnWrite = true;
                 }
             }
 #pragma warning disable CS0618 // IgnoreNullValues is obsolete
@@ -143,12 +144,13 @@ namespace System.Text.Json
             {
                 Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
                 IgnoreDefaultValuesOnRead = true;
-                IgnoreDefaultValuesOnWrite = true;
+                IgnoreDefaultValuesForReferenceTypesOnWrite = true;
             }
             else if (Options.DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault)
             {
                 Debug.Assert(!Options.IgnoreNullValues);
-                IgnoreDefaultValuesOnWrite = true;
+                IgnoreDefaultValuesForReferenceTypesOnWrite = true;
+                IgnoreDefaultValuesForValueTypesOnWrite = true;
             }
 #pragma warning restore CS0618 // IgnoreNullValues is obsolete
         }
@@ -195,7 +197,8 @@ namespace System.Text.Json
         }
 
         public bool IgnoreDefaultValuesOnRead { get; private set; }
-        public bool IgnoreDefaultValuesOnWrite { get; private set; }
+        public bool IgnoreDefaultValuesForReferenceTypesOnWrite { get; private set; }
+        public bool IgnoreDefaultValuesForValueTypesOnWrite { get; private set; }
 
         /// <summary>
         /// True if the corresponding cref="JsonClassInfo.PropertyInfoForClassInfo"/> is this instance.
