@@ -1121,6 +1121,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38817", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         public async Task TestReceiveAsync_LongChain()
         {
             const int Length = 10000;
@@ -1921,6 +1922,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36217", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         public async Task TestOutputAvailableAsync_LongSequence()
         {
             const int iterations = 10000; // enough to stack overflow if there's a problem
