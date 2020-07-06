@@ -47,7 +47,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	}
 
 	[KeptBaseType (typeof (System.Attribute))]
-	class TestDontRemoveAttribute:Attribute
+	class TestDontRemoveAttribute : Attribute
 	{
 		[Kept]
 		public TestDontRemoveAttribute ()
