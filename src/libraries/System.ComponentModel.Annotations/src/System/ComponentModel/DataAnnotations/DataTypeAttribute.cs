@@ -67,12 +67,12 @@ namespace System.ComponentModel.DataAnnotations
         ///     Gets the string representing a custom data type. Returns a non-null value only if <see cref="DataType" /> is
         ///     DataType.Custom.
         /// </summary>
-        public string CustomDataType { get; }
+        public string? CustomDataType { get; }
 
         /// <summary>
         ///     Gets the default display format that gets used along with this DataType.
         /// </summary>
-        public DisplayFormatAttribute DisplayFormat { get; protected set; }
+        public DisplayFormatAttribute? DisplayFormat { get; protected set; }
 
         /// <summary>
         ///     Return the name of the data type, either using the <see cref="DataType" /> enum or <see cref="CustomDataType" />
@@ -87,7 +87,7 @@ namespace System.ComponentModel.DataAnnotations
             if (DataType == DataType.Custom)
             {
                 // If it's a custom type string, use it as the template name
-                return CustomDataType;
+                return CustomDataType!;
             }
             // If it's an enum, turn it into a string
             // Use the cached array with enum string values instead of ToString() as the latter is too slow
@@ -101,7 +101,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="value">The value to validate</param>
         /// <returns>Unconditionally returns <c>true</c></returns>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is ill-formed.</exception>
-        public override bool IsValid(object value)
+        public override bool IsValid(object? value)
         {
             EnsureValidDataType();
 
