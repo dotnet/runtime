@@ -1078,7 +1078,7 @@ class TestHFAandHVA
 
     struct Vector2Wrapper
     {
-        Vector2 f1;
+        public Vector2 f1;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1087,9 +1087,20 @@ class TestHFAandHVA
         return new Vector2Wrapper();
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector2Wrapper ReturnVector2WrapperPromoted()
+    {
+        var a = new Vector2Wrapper
+        {
+            f1 = Vector2.Zero
+        };
+
+        return a;
+    }
+
     struct Vector3Wrapper
     {
-        Vector3 f1;
+        public Vector3 f1;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1098,15 +1109,37 @@ class TestHFAandHVA
         return new Vector3Wrapper();
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector3Wrapper ReturnVector3WrapperPromoted()
+    {
+        var a = new Vector3Wrapper
+        {
+            f1 = Vector3.Zero
+        };
+
+        return a;
+    }
+
     struct Vector4Wrapper
     {
-        Vector4 f1;
+        public Vector4 f1;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector4Wrapper ReturnVector4Wrapper()
     {
         return new Vector4Wrapper();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector4Wrapper ReturnVector4WrapperPromoted()
+    {
+        var a = new Vector4Wrapper
+        {
+            f1 = Vector4.Zero
+        };
+
+        return a;
     }
 
     struct Vector2x2Wrapper
@@ -1133,8 +1166,11 @@ class TestHFAandHVA
         ReturnFloats4Wrapper();
         ReturnDoubles4Wrapper();
         ReturnVector2Wrapper();
+        ReturnVector2WrapperPromoted();
         ReturnVector3Wrapper();
+        ReturnVector3WrapperPromoted();
         ReturnVector4Wrapper();
+        ReturnVector4WrapperPromoted();
         ReturnVector2x2Wrapper();
     }
 
@@ -1226,13 +1262,23 @@ class TestHFAandHVA
 
     struct VectorShortWrapper
     {
-        Vector<short> f;
+        public Vector<short> f;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static VectorShortWrapper ReturnVectorShortWrapper()
     {
         return new VectorShortWrapper();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static VectorShortWrapper ReturnVectorShortWrapperPromoted()
+    {
+        var a = new VectorShortWrapper()
+        {
+            f = Vector<short>.Zero
+        };
+        return a;
     }
 
     struct VectorLongWrapper
@@ -1355,6 +1401,7 @@ class TestHFAandHVA
         ReturnVectorTWithMerge<Vector<Single>>(3, new Vector<Single>(0), new Vector<Single>(0), new Vector<Single>(0), new Vector<Single>(0));
 
         ReturnVectorShortWrapper();
+        ReturnVectorShortWrapperPromoted();
         ReturnVectorLongWrapper();
         ReturnVectorDoubleWrapper();
         ReturnVectorTWrapper<bool>();
@@ -1508,6 +1555,60 @@ class TestHFAandHVA
         }
     }
 
+    public struct Vector64Wrapped
+    {
+        public Vector64<float> f;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Vector64Wrapped TestReturnVector64WrappedPromoted()
+    {
+        var a = new Vector64Wrapped
+        {
+            f = Vector64<float>.Zero
+        };
+        return a;
+    }
+
+    public struct Vector128Wrapped
+    {
+        public Vector128<short> f;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Vector128Wrapped TestReturnVector128WrappedPromoted()
+    {
+        var a = new Vector128Wrapped
+        {
+            f = Vector128<short>.Zero
+        };
+        return a;
+    }
+
+    public struct Vector256Wrapped
+    {
+        public Vector256<byte> f;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Vector256Wrapped TestReturnVector256WrappedPromoted()
+    {
+        var a = new Vector256Wrapped
+        {
+            f = Vector256<byte>.Zero
+        };
+        return a;
+    }
+
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void TestReturnVectorNWrappedPromoted()
+    {
+        TestReturnVector64WrappedPromoted();
+        TestReturnVector128WrappedPromoted();
+        TestReturnVector256WrappedPromoted();
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test()
     {
@@ -1517,6 +1618,7 @@ class TestHFAandHVA
         TestReturnVector64(1);
         TestReturnVector128(1);
         TestReturnVector256(1);
+        TestReturnVectorNWrappedPromoted();
     }
 }
 
