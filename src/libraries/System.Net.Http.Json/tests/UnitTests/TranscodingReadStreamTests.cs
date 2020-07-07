@@ -233,15 +233,6 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ReadAsyncInputLatin), "utf-7")]
-        [MemberData(nameof(ReadAsyncInputUnicode), "utf-7")]
-        public Task ReadAsync_Works_WhenInputIs_UTF7(string message)
-        {
-            Encoding sourceEncoding = Encoding.UTF7;
-            return ReadAsyncTest(sourceEncoding, message);
-        }
-
-        [Theory]
         [MemberData(nameof(ReadAsyncInputLatin), "iso-8859-1")]
         public Task ReadAsync_Works_WhenInputIs_WesternEuropeanEncoding(string message)
         {

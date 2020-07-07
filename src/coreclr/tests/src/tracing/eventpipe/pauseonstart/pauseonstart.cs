@@ -43,7 +43,7 @@ namespace Tracing.Tests.PauseOnStartValidation
                 }
             );
 
-            fSuccess &= await Utils.WaitTillTimeout(subprocessTask, TimeSpan.FromMinutes(1));
+            fSuccess &= await subprocessTask;
 
             return fSuccess;
         }
@@ -90,7 +90,7 @@ namespace Tracing.Tests.PauseOnStartValidation
                 }
             );
 
-            fSuccess &= await Utils.WaitTillTimeout(subprocessTask, TimeSpan.FromMinutes(1));
+            fSuccess &= await subprocessTask;
 
             memoryStream.Seek(0, SeekOrigin.Begin);
             using var source = new EventPipeEventSource(memoryStream);
@@ -164,7 +164,7 @@ namespace Tracing.Tests.PauseOnStartValidation
                 }
             );
 
-            fSuccess &= await Utils.WaitTillTimeout(subprocessTask, TimeSpan.FromMinutes(1));
+            fSuccess &= await subprocessTask;
 
             int nStartupEventsSeen = 0;
 
@@ -256,7 +256,7 @@ namespace Tracing.Tests.PauseOnStartValidation
                 }
             );
 
-            fSuccess &= await Utils.WaitTillTimeout(subprocessTask, TimeSpan.FromMinutes(1));
+            fSuccess &= await subprocessTask;
 
             return fSuccess;
         }
@@ -301,7 +301,7 @@ namespace Tracing.Tests.PauseOnStartValidation
                 }
             );
 
-            fSuccess &= await Utils.WaitTillTimeout(subprocessTask, TimeSpan.FromMinutes(1));
+            fSuccess &= await subprocessTask;
 
             return fSuccess;
         }
@@ -317,6 +317,8 @@ namespace Tracing.Tests.PauseOnStartValidation
             }
 
             bool fSuccess = true;
+            if (!IpcTraceTest.EnsureCleanEnvironment())
+                return -1;
             IEnumerable<MethodInfo> tests = typeof(PauseOnStartValidation).GetMethods().Where(mi => mi.Name.StartsWith("TEST_"));
             foreach (var test in tests)
             {

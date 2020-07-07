@@ -874,9 +874,9 @@ protected:
     SArray<ILStubEHClauseBuilder> m_buildingEHClauses;
     SArray<ILStubEHClauseBuilder> m_finishedEHClauses;
 
-#ifndef HOST_64BIT
+#ifndef TARGET_64BIT
     const static UINT32 SPECIAL_VALUE_NAN_64_ON_32 = 0xFFFFFFFF;
-#endif // HOST_64BIT
+#endif // TARGET_64BIT
 };
 #endif // DACCESS_COMPILE
 

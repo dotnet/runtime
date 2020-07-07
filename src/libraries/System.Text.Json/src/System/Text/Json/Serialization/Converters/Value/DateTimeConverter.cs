@@ -15,5 +15,15 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WriteStringValue(value);
         }
+
+        internal override DateTime ReadWithQuotes(ref Utf8JsonReader reader)
+        {
+            return reader.GetDateTimeNoValidation();
+        }
+
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            writer.WritePropertyName(value);
+        }
     }
 }

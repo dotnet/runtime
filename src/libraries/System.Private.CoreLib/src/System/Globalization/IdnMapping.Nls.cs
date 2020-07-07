@@ -104,10 +104,6 @@ namespace System.Globalization
             return GetStringForOutput(asciiString, ascii, count, output, length);
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private uint NlsFlags
         {
             get

@@ -12,7 +12,7 @@ if(MSVC)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     # Prevents libc from calling pthread_cond_destroy on static objects in
     # dlopen()'ed library which we dlclose() in pal::unload_library.
-    add_compile_options(-fno-use-cxa-atexit)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-use-cxa-atexit>)
 endif()
 
 add_subdirectory(cli)

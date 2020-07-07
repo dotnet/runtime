@@ -31,6 +31,9 @@
     <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_timeZoneInfo.c">
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\entrypoints.c">
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
     <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_calendarData.h" />
     <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_casing.h" />
     <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_collation.h" />

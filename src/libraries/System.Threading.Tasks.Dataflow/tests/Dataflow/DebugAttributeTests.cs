@@ -9,7 +9,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 {
     public class DebugAttributeTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TestDebuggerDisplaysAndTypeProxies()
         {
             // Test both canceled and non-canceled

@@ -84,3 +84,50 @@ int32_t CryptoNative_HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len)
     *len = Uint32ToInt32(unsignedLen);
     return ret;
 }
+
+static HMAC_CTX* CryptoNative_HmacDup(const HMAC_CTX* ctx)
+{
+    assert(ctx != NULL);
+
+    HMAC_CTX* dup = HMAC_CTX_new();
+
+    if (dup == NULL)
+    {
+        return NULL;
+    }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+    if (!HMAC_CTX_copy(dup, (HMAC_CTX*)ctx))
+#pragma clang diagnostic pop
+    {
+        HMAC_CTX_free(dup);
+        return NULL;
+    }
+
+    return dup;
+}
+
+int32_t CryptoNative_HmacCurrent(const HMAC_CTX* ctx, uint8_t* md, int32_t* len)
+{
+    assert(ctx != NULL);
+    assert(len != NULL);
+    assert(md != NULL || *len == 0);
+    assert(*len >= 0);
+
+    if (len == NULL || *len < 0)
+    {
+        return 0;
+    }
+
+    HMAC_CTX* dup = CryptoNative_HmacDup(ctx);
+
+    if (dup != NULL)
+    {
+        int ret = CryptoNative_HmacFinal(dup, md, len);
+        HMAC_CTX_free(dup);
+        return ret;
+    }
+
+    return 0;
+}

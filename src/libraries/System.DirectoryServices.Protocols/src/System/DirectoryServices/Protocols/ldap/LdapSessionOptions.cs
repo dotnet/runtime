@@ -118,15 +118,15 @@ namespace System.DirectoryServices.Protocols
 
     public partial class LdapSessionOptions
     {
-        private readonly LdapConnection _connection = null;
+        private readonly LdapConnection _connection;
         private ReferralCallback _callbackRoutine = new ReferralCallback();
-        internal QueryClientCertificateCallback _clientCertificateDelegate = null;
-        private VerifyServerCertificateCallback _serverCertificateDelegate = null;
+        internal QueryClientCertificateCallback _clientCertificateDelegate;
+        private VerifyServerCertificateCallback _serverCertificateDelegate;
 
-        private readonly QUERYFORCONNECTIONInternal _queryDelegate = null;
-        private readonly NOTIFYOFNEWCONNECTIONInternal _notifiyDelegate = null;
-        private readonly DEREFERENCECONNECTIONInternal _dereferenceDelegate = null;
-        private readonly VERIFYSERVERCERT _serverCertificateRoutine = null;
+        private readonly QUERYFORCONNECTIONInternal _queryDelegate;
+        private readonly NOTIFYOFNEWCONNECTIONInternal _notifiyDelegate;
+        private readonly DEREFERENCECONNECTIONInternal _dereferenceDelegate;
+        private readonly VERIFYSERVERCERT _serverCertificateRoutine;
 
         internal LdapSessionOptions(LdapConnection connection)
         {

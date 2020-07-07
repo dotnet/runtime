@@ -10,5 +10,10 @@ namespace System.Security.Cryptography.X509Certificates
             : base(oid, rawData)
         {
         }
+
+        internal X501Attribute(Oid oid, byte[] rawData)
+            : base(oid, rawData)
+        {
+        }
     }
 }

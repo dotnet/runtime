@@ -1481,10 +1481,10 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #endif
         {
 #if defined(CROSSGEN_COMPILE)
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
             if ((!IsNgenPDBCompilationProcess()
                 && GetAppDomain()->ToCompilationDomain()->GetTargetModule() != g_pObjectClass->GetModule()))
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
             {
                 // Disable AOT compiling for managed implementation of hardware intrinsics.
                 // We specially treat them here to ensure correct ISA features are set during compilation
@@ -5389,7 +5389,7 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
     {
         bmtRTMethod * pCurDeclMethod = slotIt->Decl().AsRTMethod();
 
-        if (declSig.ExactlyEqual(pCurDeclMethod->GetMethodSignature()))
+        if (declSig.ExactlyEqual(pCurDeclMethod->GetMethodSignature().GetSignatureWithoutSubstitution()))
         {
             declMethod = slotIt->Decl();
             break;
@@ -5405,7 +5405,7 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
             bmtRTMethod * pCurDeclMethod = slotIt->Decl().AsRTMethod();
 
             // Type Equivalence is forbidden in MethodImpl MemberRefs
-            if (declSig.Equivalent(pCurDeclMethod->GetMethodSignature()))
+            if (declSig.Equivalent(pCurDeclMethod->GetMethodSignature().GetSignatureWithoutSubstitution()))
             {
                 declMethod = slotIt->Decl();
                 break;
@@ -5523,8 +5523,7 @@ MethodTableBuilder::ProcessInexactMethodImpls()
                 }
             }
 
-            Substitution *pDeclSubst = &bmtMetaData->pMethodDeclSubsts[m];
-            MethodSignature declSig(GetModule(), szName, pSig, cbSig, pDeclSubst);
+            MethodSignature declSig(GetModule(), szName, pSig, cbSig, NULL);
             bmtInterfaceEntry * pItfEntry = NULL;
 
             for (DWORD i = 0; i < bmtInterface->dwInterfaceMapSize; i++)
@@ -5683,7 +5682,7 @@ MethodTableBuilder::ProcessMethodImpls()
 
                         Substitution *pDeclSubst = &bmtMetaData->pMethodDeclSubsts[m];
                         MethodTable * pDeclMT = NULL;
-                        MethodSignature declSig(GetModule(), szName, pSig, cbSig, pDeclSubst);
+                        MethodSignature declSig(GetModule(), szName, pSig, cbSig, NULL);
 
                         {   // 1. Load the approximate type.
                             // Block for the LoadsTypeViolation.
@@ -5700,13 +5699,12 @@ MethodTableBuilder::ProcessMethodImpls()
                         }
 
                         {   // 2. Get or create the correct substitution
-                            bmtRTType * pDeclType = NULL;
-
                             if (pDeclMT->IsInterface())
-                            {   // If the declaration method is a part of an interface, search through
+                            {   
+                                // If the declaration method is a part of an interface, search through
                                 // the interface map to find the matching interface so we can provide
                                 // the correct substitution chain.
-                                pDeclType = NULL;
+                                bmtRTType *pDeclType = NULL;
 
                                 bmtInterfaceEntry * pItfEntry = NULL;
                                 for (DWORD i = 0; i < bmtInterface->dwInterfaceMapSize; i++)
@@ -5786,78 +5784,8 @@ MethodTableBuilder::ProcessMethodImpls()
                                 declMethod = FindDeclMethodOnInterfaceEntry(pItfEntry, declSig);
                             }
                             else
-                            {   // Assume the MethodTable is a parent of the current type,
-                                // and create the substitution chain to match it.
-
-                                pDeclType = NULL;
-
-                                for (bmtRTType *pCur = GetParentType();
-                                     pCur != NULL;
-                                     pCur = pCur->GetParentType())
-                                {
-                                    if (pCur->GetMethodTable() == pDeclMT)
-                                    {
-                                        pDeclType = pCur;
-                                        break;
-                                    }
-                                }
-
-                                if (pDeclType == NULL)
-                                {   // Method's type is not a parent.
-                                    BuildMethodTableThrowException(IDS_CLASSLOAD_MI_DECLARATIONNOTFOUND, it.Token());
-                                }
-
-                                // 3. Find the matching method.
-                                bmtRTType *pCurDeclType = pDeclType;
-                                do
-                                {
-                                    // two pass algorithm. search for exact matches followed
-                                    // by equivalent matches.
-                                    for (int iPass = 0; (iPass < 2) && (declMethod.IsNull()); iPass++)
-                                    {
-                                        MethodTable *pCurDeclMT = pCurDeclType->GetMethodTable();
-
-                                        MethodTable::IntroducedMethodIterator methIt(pCurDeclMT);
-                                        for(; methIt.IsValid(); methIt.Next())
-                                        {
-                                            MethodDesc * pCurMD = methIt.GetMethodDesc();
-
-                                            if (pCurDeclMT != pDeclMT)
-                                            {
-                                                // If the method isn't on the declaring type, then it must be virtual.
-                                                if (!pCurMD->IsVirtual())
-                                                    continue;
-                                            }
-                                            if (strcmp(szName, pCurMD->GetName()) == 0)
-                                            {
-                                                PCCOR_SIGNATURE pCurMDSig;
-                                                DWORD cbCurMDSig;
-                                                pCurMD->GetSig(&pCurMDSig, &cbCurMDSig);
-
-                                                // First pass searches for declaration methods should not use type equivalence
-                                                TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
-
-                                                if (MetaSig::CompareMethodSigs(
-                                                    declSig.GetSignature(),
-                                                    static_cast<DWORD>(declSig.GetSignatureLength()),
-                                                    declSig.GetModule(),
-                                                    &declSig.GetSubstitution(),
-                                                    pCurMDSig,
-                                                    cbCurMDSig,
-                                                    pCurMD->GetModule(),
-                                                    &pCurDeclType->GetSubstitution(),
-                                                    FALSE,
-                                                    iPass == 0 ? &newVisited : NULL))
-                                                {
-                                                    declMethod = (*bmtParent->pSlotTable)[pCurMD->GetSlot()].Decl();
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    pCurDeclType = pCurDeclType->GetParentType();
-                                } while ((pCurDeclType != NULL) && (declMethod.IsNull()));
+                            {
+                                declMethod = FindDeclMethodOnClassInHierarchy(it, pDeclMT, declSig);
                             }
 
                             if (declMethod.IsNull())
@@ -5899,6 +5827,105 @@ MethodTableBuilder::ProcessMethodImpls()
     } /* end ... for each member */
 }
 
+
+MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInHierarchy(const DeclaredMethodIterator& it, MethodTable * pDeclMT, MethodSignature &declSig)
+{
+    bmtRTType * pDeclType = NULL;
+    bmtMethodHandle declMethod;
+    // Assume the MethodTable is a parent of the current type,
+    // and create the substitution chain to match it.
+
+    for (bmtRTType *pCur = GetParentType();
+            pCur != NULL;
+            pCur = pCur->GetParentType())
+    {
+        if (pCur->GetMethodTable() == pDeclMT)
+        {
+            pDeclType = pCur;
+            break;
+        }
+    }
+
+    // Instead of using the Substitution chain that reaches back to the type being loaded, instead
+    // use a substitution chain that points back to the open type associated with the memberref of the declsig.
+    Substitution emptySubstitution;
+    Substitution* pDeclTypeSubstitution = &emptySubstitution;
+    DWORD lengthOfSubstitutionChainHandled = pDeclType->GetSubstitution().GetLength();
+
+    if (pDeclType == NULL)
+    {   // Method's type is not a parent.
+        BuildMethodTableThrowException(IDS_CLASSLOAD_MI_DECLARATIONNOTFOUND, it.Token());
+    }
+
+    // 3. Find the matching method.
+    bmtRTType *pCurDeclType = pDeclType;
+    do
+    {
+        // Update the substitution in use for matching the method. If the substitution length is greater
+        // than the previously processed data, add onto the end of the chain.
+        {
+            DWORD declTypeSubstitionLength = pCurDeclType->GetSubstitution().GetLength();
+            if (declTypeSubstitionLength > lengthOfSubstitutionChainHandled)
+            {
+                void *pNewSubstitutionMem = _alloca(sizeof(Substitution));
+                Substitution substitutionToClone = pCurDeclType->GetSubstitution();
+
+                Substitution *pNewSubstitution = new(pNewSubstitutionMem) Substitution(substitutionToClone.GetModule(), substitutionToClone.GetInst(), pDeclTypeSubstitution);
+                pDeclTypeSubstitution = pNewSubstitution;
+                lengthOfSubstitutionChainHandled = declTypeSubstitionLength;
+            }
+        }
+
+        // two pass algorithm. search for exact matches followed
+        // by equivalent matches.
+        for (int iPass = 0; (iPass < 2) && (declMethod.IsNull()); iPass++)
+        {
+            MethodTable *pCurDeclMT = pCurDeclType->GetMethodTable();
+
+            MethodTable::IntroducedMethodIterator methIt(pCurDeclMT);
+            for(; methIt.IsValid(); methIt.Next())
+            {
+                MethodDesc * pCurMD = methIt.GetMethodDesc();
+
+                if (pCurDeclMT != pDeclMT)
+                {
+                    // If the method isn't on the declaring type, then it must be virtual.
+                    if (!pCurMD->IsVirtual())
+                        continue;
+                }
+                if (strcmp(declSig.GetName(), pCurMD->GetName()) == 0)
+                {
+                    PCCOR_SIGNATURE pCurMDSig;
+                    DWORD cbCurMDSig;
+                    pCurMD->GetSig(&pCurMDSig, &cbCurMDSig);
+
+                    // First pass searches for declaration methods should not use type equivalence
+                    TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
+
+                    if (MetaSig::CompareMethodSigs(
+                        declSig.GetSignature(),
+                        static_cast<DWORD>(declSig.GetSignatureLength()),
+                        declSig.GetModule(),
+                        NULL, // Do not use the substitution of declSig, as we have adjusted the pDeclTypeSubstitution such that it must not be used.
+                        pCurMDSig,
+                        cbCurMDSig,
+                        pCurMD->GetModule(),
+                        pDeclTypeSubstitution,
+                        FALSE,
+                        iPass == 0 ? &newVisited : NULL))
+                    {
+                        declMethod = (*bmtParent->pSlotTable)[pCurMD->GetSlot()].Decl();
+                        break;
+                    }
+                }
+            }
+        }
+
+        pCurDeclType = pCurDeclType->GetParentType();
+    } while ((pCurDeclType != NULL) && (declMethod.IsNull()));
+
+    return declMethod;
+}
 //*******************************************************************************
 // InitMethodDesc takes a pointer to space that's already allocated for the
 // particular type of MethodDesc, and initializes based on the other info.
@@ -9697,23 +9724,6 @@ void MethodTableBuilder::CheckForSystemTypes()
             pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
         }
 #endif
-#if defined(ALIGN_ACCESS) || defined(FEATURE_64BIT_ALIGNMENT)
-        else if (strcmp(name, g_DecimalName) == 0)
-        {
-            // This is required because native layout of System.Decimal causes it to be aligned
-            // differently to the layout of the native DECIMAL structure, which will cause
-            // data misalignent exceptions if Decimal is embedded in another type.
-
-            EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
-            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = sizeof(ULONGLONG);
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-            // Also need to mark the type so it will be allocated on a 64-bit boundary for
-            // platforms that won't do this naturally.
-            SetAlign8Candidate();
-#endif
-        }
-#endif // ALIGN_ACCESS || FEATURE_64BIT_ALIGNMENT
     }
     else
     {

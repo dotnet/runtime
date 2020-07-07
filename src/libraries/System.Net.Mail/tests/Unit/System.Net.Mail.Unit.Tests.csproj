@@ -6,6 +6,7 @@
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Base64EncodingTest.cs" />
     <Compile Include="ByteEncodingTest.cs" />
     <Compile Include="EightBitStreamTest.cs" />

@@ -42,6 +42,13 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowNotSupportedException_DictionaryKeyTypeNotSupported(Type keyType)
+        {
+            throw new NotSupportedException(SR.Format(SR.DictionaryKeyTypeNotSupported, keyType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
         {
             var ex = new JsonException(SR.Format(SR.DeserializeUnableToConvertValue, propertyType));

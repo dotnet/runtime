@@ -254,6 +254,36 @@ namespace System.Net.Http
             return _bufferedContent.ToArray();
         }
 
+        public Stream ReadAsStream() =>
+            ReadAsStream(CancellationToken.None);
+
+        public Stream ReadAsStream(CancellationToken cancellationToken)
+        {
+            CheckDisposed();
+
+            // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
+            // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized
+            // in ReadAsStreamAsync).
+
+            if (_contentReadStream == null) // don't yet have a Stream
+            {
+                Stream s = TryGetBuffer(out ArraySegment<byte> buffer) ?
+                    new MemoryStream(buffer.Array!, buffer.Offset, buffer.Count, writable: false) :
+                    CreateContentReadStream(cancellationToken);
+                _contentReadStream = s;
+                return s;
+            }
+            else if (_contentReadStream is Stream stream) // have a Stream
+            {
+                return stream;
+            }
+            else // have a Task<Stream>
+            {
+                // Throw if ReadAsStreamAsync has been called previously since _contentReadStream contains a cached task.
+                throw new HttpRequestException(SR.net_http_content_read_as_stream_has_task);
+            }
+        }
+
         public Task<Stream> ReadAsStreamAsync() =>
             ReadAsStreamAsync(CancellationToken.None);
 
@@ -262,7 +292,7 @@ namespace System.Net.Http
             CheckDisposed();
 
             // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
-            // initialized in TryReadAsStream), or a Task<Stream> (it was previously initialized here
+            // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized here
             // in ReadAsStreamAsync).
 
             if (_contentReadStream == null) // don't yet have a Stream
@@ -291,7 +321,7 @@ namespace System.Net.Http
             CheckDisposed();
 
             // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
-            // initialized here in TryReadAsStream), or a Task<Stream> (it was previously initialized
+            // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized here
             // in ReadAsStreamAsync).
 
             if (_contentReadStream == null) // don't yet have a Stream
@@ -316,6 +346,14 @@ namespace System.Net.Http
 
         protected abstract Task SerializeToStreamAsync(Stream stream, TransportContext? context);
 
+        // We cannot add abstract member to a public class in order to not to break already established contract of this class.
+        // So we add virtual method, override it everywhere internally and provide proper implementation.
+        // Unfortunately we cannot force everyone to implement so in such case we throw NSE.
+        protected virtual void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException(SR.Format(SR.net_http_missing_sync_implementation, GetType(), nameof(HttpContent), nameof(SerializeToStream)));
+        }
+
         protected virtual Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             SerializeToStreamAsync(stream, context);
 
@@ -326,6 +364,31 @@ namespace System.Net.Http
         // completes, which could lead to spurious failures in unsuspecting client code.  To mitigate that, we prohibit duplex
         // on all known HttpContent types, waiting for the request content to complete before completing the SendAsync task.
         internal virtual bool AllowDuplex => true;
+
+        public void CopyTo(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        {
+            CheckDisposed();
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
+            try
+            {
+                if (TryGetBuffer(out ArraySegment<byte> buffer))
+                {
+                    stream.Write(buffer.Array!, buffer.Offset, buffer.Count);
+                }
+                else
+                {
+                    SerializeToStream(stream, context, cancellationToken);
+                }
+            }
+            catch (Exception e) when (StreamCopyExceptionNeedsWrapping(e))
+            {
+                throw GetStreamCopyException(e);
+            }
+        }
 
         public Task CopyToAsync(Stream stream) =>
             CopyToAsync(stream, CancellationToken.None);
@@ -378,6 +441,56 @@ namespace System.Net.Http
             return new ValueTask(task);
         }
 
+        internal void LoadIntoBuffer(long maxBufferSize, CancellationToken cancellationToken)
+        {
+            CheckDisposed();
+
+            if (!CreateTemporaryBuffer(maxBufferSize, out MemoryStream? tempBuffer, out Exception? error))
+            {
+                // If we already buffered the content, just return.
+                return;
+            }
+
+            if (tempBuffer == null)
+            {
+                throw error!;
+            }
+
+            // Register for cancellation and tear down the underlying stream in case of cancellation/timeout.
+            // We're only comfortable disposing of the HttpContent instance like this because LoadIntoBuffer is internal and
+            // we're only using it on content instances we get back from a handler's Send call that haven't been given out to the user yet.
+            // If we were to ever make LoadIntoBuffer public, we'd need to rethink this.
+            CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(s => ((HttpContent)s!).Dispose(), this);
+
+            try
+            {
+                SerializeToStream(tempBuffer, null, cancellationToken);
+                tempBuffer.Seek(0, SeekOrigin.Begin); // Rewind after writing data.
+                _bufferedContent = tempBuffer;
+            }
+            catch (Exception e)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+
+                if (CancellationHelper.ShouldWrapInOperationCanceledException(e, cancellationToken))
+                {
+                    throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
+                }
+
+                if (StreamCopyExceptionNeedsWrapping(e))
+                {
+                    throw GetStreamCopyException(e);
+                }
+
+                throw;
+            }
+            finally
+            {
+                // Clean up the cancellation registration.
+                cancellationRegistration.Dispose();
+            }
+        }
+
         public Task LoadIntoBufferAsync() =>
             LoadIntoBufferAsync(MaxBufferSize);
 
@@ -393,22 +506,13 @@ namespace System.Net.Http
         internal Task LoadIntoBufferAsync(long maxBufferSize, CancellationToken cancellationToken)
         {
             CheckDisposed();
-            if (maxBufferSize > HttpContent.MaxBufferSize)
-            {
-                // This should only be hit when called directly; HttpClient/HttpClientHandler
-                // will not exceed this limit.
-                throw new ArgumentOutOfRangeException(nameof(maxBufferSize), maxBufferSize,
-                    SR.Format(System.Globalization.CultureInfo.InvariantCulture,
-                    SR.net_http_content_buffersize_limit, HttpContent.MaxBufferSize));
-            }
 
-            if (IsBuffered)
+            if (!CreateTemporaryBuffer(maxBufferSize, out MemoryStream? tempBuffer, out Exception? error))
             {
                 // If we already buffered the content, just return a completed task.
                 return Task.CompletedTask;
             }
 
-            MemoryStream? tempBuffer = CreateMemoryStream(maxBufferSize, out Exception? error);
             if (tempBuffer == null)
             {
                 // We don't throw in LoadIntoBufferAsync(): return a faulted task.
@@ -452,6 +556,12 @@ namespace System.Net.Http
                 if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
                 throw;
             }
+        }
+
+        protected virtual Stream CreateContentReadStream(CancellationToken cancellationToken)
+        {
+            LoadIntoBuffer(MaxBufferSize, cancellationToken);
+            return _bufferedContent!;
         }
 
         protected virtual Task<Stream> CreateContentReadStreamAsync()
@@ -503,6 +613,29 @@ namespace System.Net.Http
                 _canCalculateLength = false;
             }
             return null;
+        }
+
+        private bool CreateTemporaryBuffer(long maxBufferSize, out MemoryStream? tempBuffer, out Exception? error)
+        {
+            if (maxBufferSize > HttpContent.MaxBufferSize)
+            {
+                // This should only be hit when called directly; HttpClient/HttpClientHandler
+                // will not exceed this limit.
+                throw new ArgumentOutOfRangeException(nameof(maxBufferSize), maxBufferSize,
+                    SR.Format(System.Globalization.CultureInfo.InvariantCulture,
+                        SR.net_http_content_buffersize_limit, HttpContent.MaxBufferSize));
+            }
+
+            if (IsBuffered)
+            {
+                // If we already buffered the content, just return false.
+                tempBuffer = default;
+                error = default;
+                return false;
+            }
+
+            tempBuffer = CreateMemoryStream(maxBufferSize, out error);
+            return true;
         }
 
         private MemoryStream? CreateMemoryStream(long maxBufferSize, out Exception? error)

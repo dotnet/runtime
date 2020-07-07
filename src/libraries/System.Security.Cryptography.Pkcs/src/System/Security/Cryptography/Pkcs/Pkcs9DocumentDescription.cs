@@ -16,20 +16,18 @@ namespace System.Security.Cryptography.Pkcs
         //
 
         public Pkcs9DocumentDescription()
-            : base(new Oid(Oids.DocumentDescription))
+            : base(Oids.DocumentDescriptionOid.CopyOid())
         {
-            // CAPI doesn't have an OID mapping for szOID_CAPICOM_documentDescription, so we cannot use the faster
-            // FromOidValue factory
         }
 
         public Pkcs9DocumentDescription(string documentDescription)
-            : base(Oids.DocumentDescription, Encode(documentDescription))
+            : base(Oids.DocumentDescriptionOid.CopyOid(), Encode(documentDescription))
         {
             _lazyDocumentDescription = documentDescription;
         }
 
         public Pkcs9DocumentDescription(byte[] encodedDocumentDescription)
-            : base(Oids.DocumentDescription, encodedDocumentDescription)
+            : base(Oids.DocumentDescriptionOid.CopyOid(), encodedDocumentDescription)
         {
         }
 
@@ -74,6 +72,6 @@ namespace System.Security.Cryptography.Pkcs
             return PkcsHelpers.EncodeOctetString(octets);
         }
 
-        private volatile string? _lazyDocumentDescription = null;
+        private volatile string? _lazyDocumentDescription;
     }
 }

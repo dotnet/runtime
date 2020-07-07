@@ -22,7 +22,7 @@ internal static partial class Interop
 
             unsafe
             {
-                int result = GetAllMountPoints((byte* name) =>
+                GetAllMountPoints((byte* name) =>
                 {
                     if (count == found.Length)
                     {

@@ -13,8 +13,13 @@ CrashInfo::CrashInfo(pid_t pid) :
     m_ppid(-1)
 {
     g_crashInfo = this;
-#ifndef __APPLE__
+#ifdef __APPLE__
+    m_task = 0;
+#else
     m_auxvValues.fill(0);
+#ifndef HAVE_PROCESS_VM_READV
+    m_fd = -1;
+#endif
 #endif
 }
 
@@ -26,6 +31,16 @@ CrashInfo::~CrashInfo()
         delete thread;
     }
     m_threads.clear();
+#ifdef __APPLE__
+    if (m_task != 0)
+    {
+        kern_return_t result = ::mach_port_deallocate(mach_task_self(), m_task);
+        if (result != KERN_SUCCESS)
+        {
+            fprintf(stderr, "~CrashInfo: mach_port_deallocate FAILED %x %s\n", result, mach_error_string(result));
+        }
+    }
+#endif
 }
 
 STDMETHODIMP

@@ -263,7 +263,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// We don't have Activities in NetStanard1.1. but it is a pain to ifdef out all references to the Activity type
+        /// We don't have Activities in NetStandard1.1. but it is a pain to ifdef out all references to the Activity type
         /// in DiagnosticSubscription so we just define a private type for it here just so things compile.
         /// </summary>
 #if NETSTANDARD1_1

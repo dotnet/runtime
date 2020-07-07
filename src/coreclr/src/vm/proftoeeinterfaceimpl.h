@@ -644,13 +644,32 @@ public:
 
     // begin ICorProfilerInfo12
 
+    COM_METHOD EventPipeStartSession(
+        UINT32 cProviderConfigs,
+        COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[],
+        BOOL requestRundown,
+        EVENTPIPE_SESSION* pSession);
+
+    COM_METHOD EventPipeAddProviderToSession(
+        EVENTPIPE_SESSION session,
+        COR_PRF_EVENTPIPE_PROVIDER_CONFIG providerConfig);
+
+    COM_METHOD EventPipeStopSession(
+        EVENTPIPE_SESSION session);
+
     COM_METHOD EventPipeCreateProvider(
-        const WCHAR *szName,
-        EVENTPIPE_PROVIDER *pProviderHandle);
+        const WCHAR *providerName,
+        EVENTPIPE_PROVIDER *pProvider);
+
+    COM_METHOD EventPipeGetProviderInfo(
+                EVENTPIPE_PROVIDER provider,
+                ULONG      cchName,
+                ULONG      *pcchName,
+                WCHAR      providerName[]);
 
     COM_METHOD EventPipeDefineEvent(
-        EVENTPIPE_PROVIDER provHandle,
-        const WCHAR *szName,
+        EVENTPIPE_PROVIDER provider,
+        const WCHAR *eventName,
         UINT32 eventID,
         UINT64 keywords,
         UINT32 eventVersion,
@@ -659,10 +678,10 @@ public:
         BOOL needStack,
         UINT32 cParamDescs,
         COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
-        EVENTPIPE_EVENT *pEventHandle);
+        EVENTPIPE_EVENT *pEvent);
 
     COM_METHOD EventPipeWriteEvent(
-        EVENTPIPE_EVENT eventHandle,
+        EVENTPIPE_EVENT event,
         UINT32 cData,
         COR_PRF_EVENT_DATA data[],
         LPCGUID pActivityId,
@@ -673,6 +692,19 @@ public:
 protected:
 
     // Internal Helper Functions
+
+    static void EventPipeCallbackHelper(EventPipeProvider *provider,
+                                        DWORD eventId,
+                                        DWORD eventVersion,
+                                        ULONG cbMetadataBlob,
+                                        LPCBYTE metadataBlob,
+                                        ULONG cbEventData,
+                                        LPCBYTE eventData,
+                                        LPCGUID pActivityId,
+                                        LPCGUID pRelatedActivityId,
+                                        Thread *pEventThread,
+                                        ULONG numStackFrames,
+                                        UINT_PTR stackFrames[]);
 
     HRESULT GetCodeInfoHelper(FunctionID functionId,
                                ReJITID  reJitId,

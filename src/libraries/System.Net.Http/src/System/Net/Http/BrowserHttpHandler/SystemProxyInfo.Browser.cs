@@ -6,10 +6,6 @@ namespace System.Net.Http
 {
     internal static partial class SystemProxyInfo
     {
-        // On Browser we do not support proxy.
-        public static IWebProxy ConstructSystemProxy()
-        {
-            return new HttpNoProxy();
-        }
+        public static IWebProxy Proxy => new HttpNoProxy();
     }
 }

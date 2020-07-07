@@ -366,7 +366,7 @@ namespace System.Formats.Asn1
                 return bytesWritten;
             }
 
-            throw new ArgumentException(SR.Argument_EncodeDestinationTooSmall, nameof(destination));
+            throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
         }
 
         /// <summary>

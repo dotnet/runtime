@@ -95,7 +95,7 @@ namespace System.Net.Test.Common
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void VirtualNetworkStream_MultiThreadIntegrityTest_Ok()
         {
             int maxFrameSize = 2048;

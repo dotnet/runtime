@@ -12,7 +12,7 @@ namespace System.CodeDom
         private readonly CodeTypeMemberCollection _members = new CodeTypeMemberCollection();
         private bool _isEnum;
         private bool _isStruct;
-        private int _populated = 0x0;
+        private int _populated;
         private const int BaseTypesCollection = 0x1;
         private const int MembersCollection = 0x2;
         private CodeTypeParameterCollection _typeParameters;

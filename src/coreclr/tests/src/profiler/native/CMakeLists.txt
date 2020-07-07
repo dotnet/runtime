@@ -4,7 +4,10 @@ project(Profiler)
 
 set(GCBASIC_SOURCES gcbasicprofiler/gcbasicprofiler.cpp)
 set(REJIT_SOURCES rejitprofiler/rejitprofiler.cpp rejitprofiler/ilrewriter.cpp rejitprofiler/sigparse.cpp)
-set(EVENTPIPE_SOURCES eventpipeprofiler/eventpipeprofiler.cpp)
+set(EVENTPIPE_SOURCES
+    eventpipeprofiler/eventpipereadingprofiler.cpp
+    eventpipeprofiler/eventpipewritingprofiler.cpp
+    eventpipeprofiler/eventpipemetadatareader.cpp)
 set(METADATAGETDISPENSER_SOURCES metadatagetdispenser/metadatagetdispenser.cpp)
 set(GETAPPDOMAINSTATICADDRESS_SOURCES getappdomainstaticaddress/getappdomainstaticaddress.cpp)
 

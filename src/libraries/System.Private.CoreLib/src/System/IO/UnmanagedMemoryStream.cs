@@ -55,11 +55,6 @@ namespace System.IO
         // Needed for subclasses that need to map a file, etc.
         protected UnmanagedMemoryStream()
         {
-            unsafe
-            {
-                _mem = null;
-            }
-            _isOpen = false;
         }
 
         /// <summary>

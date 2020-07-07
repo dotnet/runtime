@@ -33,7 +33,7 @@ namespace System.Threading.ThreadPools.Tests
             select new object[] { b1, b2 };
 
         // Tests concurrent calls to ThreadPool.SetMinThreads
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ConcurrentInitializeTest()
         {
             int processorCount = Environment.ProcessorCount;
@@ -60,7 +60,7 @@ namespace System.Threading.ThreadPools.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void GetMinMaxThreadsTest()
         {
             int minw, minc;
@@ -74,7 +74,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.True(minc <= maxc);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void GetAvailableThreadsTest()
         {
             int w, c;
@@ -190,7 +190,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(expectedMaxc, maxc);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void SetMinThreadsTo0Test()
         {
             int minw, minc, maxw, maxc;
@@ -227,7 +227,7 @@ namespace System.Threading.ThreadPools.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void QueueRegisterPositiveAndFlowTest()
         {
             var asyncLocal = new AsyncLocal<int>();
@@ -339,7 +339,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(0, backgroundAsyncLocalValue);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void QueueRegisterNegativeTest()
         {
             Assert.Throws<ArgumentNullException>(() => ThreadPool.QueueUserWorkItem(null));
@@ -390,7 +390,7 @@ namespace System.Threading.ThreadPools.Tests
                     true));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(TwoBools))]
         public void QueueUserWorkItem_PreferLocal_InvalidArguments_Throws(bool preferLocal, bool useUnsafe)
         {
@@ -399,7 +399,7 @@ namespace System.Threading.ThreadPools.Tests
                 ThreadPool.QueueUserWorkItem(null, new object(), preferLocal));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(TwoBools))]
         public async Task QueueUserWorkItem_PreferLocal_NullValidForState(bool preferLocal, bool useUnsafe)
         {
@@ -415,7 +415,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(84, await tcs.Task);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(TwoBools))]
         public async Task QueueUserWorkItem_PreferLocal_ReferenceTypeStateObjectPassedThrough(bool preferLocal, bool useUnsafe)
         {
@@ -431,7 +431,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(84, await tcs.Task);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(TwoBools))]
         public async Task QueueUserWorkItem_PreferLocal_ValueTypeStateObjectPassedThrough(bool preferLocal, bool useUnsafe)
         {
@@ -447,7 +447,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(42, await tcs.Task);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(TwoBools))]
         public async Task QueueUserWorkItem_PreferLocal_RunsAsynchronously(bool preferLocal, bool useUnsafe)
         {
@@ -467,7 +467,7 @@ namespace System.Threading.ThreadPools.Tests
             }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(TwoBools))]
         public async Task QueueUserWorkItem_PreferLocal_ExecutionContextFlowedIfSafe(bool preferLocal, bool useUnsafe)
         {
@@ -485,7 +485,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(useUnsafe ? 0 : 42, await tcs.Task);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(OneBool))]
         public void UnsafeQueueUserWorkItem_IThreadPoolWorkItem_Invalid_Throws(bool preferLocal)
         {
@@ -493,7 +493,7 @@ namespace System.Threading.ThreadPools.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("callBack", () => ThreadPool.UnsafeQueueUserWorkItem(new InvalidWorkItemAndTask(() => { }), preferLocal));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(OneBool))]
         public async Task UnsafeQueueUserWorkItem_IThreadPoolWorkItem_ManyIndividualItems_AllInvoked(bool preferLocal)
         {
@@ -509,7 +509,7 @@ namespace System.Threading.ThreadPools.Tests
             await Task.WhenAll(tasks.Select(t => t.Task));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(OneBool))]
         public async Task UnsafeQueueUserWorkItem_IThreadPoolWorkItem_SameObjectReused_AllInvoked(bool preferLocal)
         {
@@ -531,7 +531,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(0, remaining);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(OneBool))]
         public async Task UnsafeQueueUserWorkItem_IThreadPoolWorkItem_ExecutionContextNotFlowed(bool preferLocal)
         {

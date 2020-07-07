@@ -36,7 +36,6 @@ EventPipeBufferManager::EventPipeBufferManager(EventPipeSession* pSession, size_
     m_pThreadSessionStateList = new SList<SListElem<EventPipeThreadSessionState *>>();
     m_sizeOfAllBuffers = 0;
     m_lock.Init(LOCK_TYPE_DEFAULT);
-    m_writeEventSuspending = FALSE;
     m_waitEvent.CreateAutoEvent(TRUE);
 
 #ifdef _DEBUG
@@ -78,8 +77,6 @@ EventPipeBufferManager::~EventPipeBufferManager()
     }
     CONTRACTL_END;
 
-    // setting this true should have no practical effect other than satisfying asserts at this point.
-    m_writeEventSuspending = TRUE;
     DeAllocateBuffers();
 }
 
@@ -106,13 +103,6 @@ EventPipeBuffer* EventPipeBufferManager::AllocateBufferForThread(EventPipeThread
 
     // Allocating a buffer requires us to take the lock.
     SpinLockHolder _slh(&m_lock);
-
-    // if we are deallocating then give up, see the comments in SuspendWriteEvents() for why this is important.
-    if (m_writeEventSuspending.Load())
-    {
-        writeSuspended = TRUE;
-        return NULL;
-    }
 
     bool allocateNewBuffer = false;
 
@@ -393,11 +383,6 @@ bool EventPipeBufferManager::WriteEvent(Thread *pThread, EventPipeSession &sessi
     EventPipeThreadSessionState* pSessionState = NULL;
     {
         SpinLockHolder _slh(pEventPipeThread->GetLock());
-        if (m_writeEventSuspending.LoadWithoutBarrier())
-        {
-            // This session is suspending, we need to avoid initializing any session state and exit
-            return false;
-        }
         pSessionState = pEventPipeThread->GetOrCreateSessionState(m_pSession);
         if (pSessionState == NULL)
         {
@@ -458,28 +443,15 @@ bool EventPipeBufferManager::WriteEvent(Thread *pThread, EventPipeSession &sessi
             _ASSERTE(pEventPipeThread != NULL);
             {
                 SpinLockHolder _slh(pEventPipeThread->GetLock());
-                if (m_writeEventSuspending.LoadWithoutBarrier())
-                {
-                    // After leaving the manager's lock in AllocateBufferForThread some other thread decided to suspend writes.
-                    // We need to immediately return the buffer we just took without storing it or writing to it.
-                    // SuspendWriteEvent() is spinning waiting for this buffer to be relinquished.
-                    pBuffer->ConvertToReadOnly();
 
-                    // We treat this as the WriteEvent() call occurring after this session stopped listening for events, effectively the
-                    // same as if event.IsEnabled() returned false.
-                    return false;
-                }
-                else
-                {
-                    pSessionState->SetWriteBuffer(pBuffer);
+                pSessionState->SetWriteBuffer(pBuffer);
 
-                    // Try to write the event after we allocated a buffer.
-                    // This is the first time if the thread had no buffers before the call to this function.
-                    // This is the second time if this thread did have one or more buffers, but they were full.
-                    allocNewBuffer = !pBuffer->WriteEvent(pEventThread, session, event, payload, pActivityId, pRelatedActivityId, pStack);
-                    _ASSERTE(!allocNewBuffer);
-                    pSessionState->IncrementSequenceNumber();
-                }
+                // Try to write the event after we allocated a buffer.
+                // This is the first time if the thread had no buffers before the call to this function.
+                // This is the second time if this thread did have one or more buffers, but they were full.
+                allocNewBuffer = !pBuffer->WriteEvent(pEventThread, session, event, payload, pActivityId, pRelatedActivityId, pStack);
+                _ASSERTE(!allocNewBuffer);
+                pSessionState->IncrementSequenceNumber();
             }
         }
     }
@@ -1005,27 +977,22 @@ void EventPipeBufferManager::SuspendWriteEvent(uint32_t sessionIndex)
         SpinLockHolder _slh(&m_lock);
         _ASSERTE(EnsureConsistency());
 
-        m_writeEventSuspending.Store(TRUE);
-        // From this point until m_writeEventSuspending is reset to FALSE it is impossible
-        // for new EventPipeThreadSessionStates to be added to the m_pThreadSessionStateList or
-        // for new EventBuffers to be added to an existing EventPipeBufferList. The only
-        // way AllocateBufferForThread is allowed to add one is by:
-        // 1) take m_lock - AllocateBufferForThread can't own it now because this thread owns it,
-        //                  but after this thread gives it up lower in this function it could be acquired.
-        // 2) observe m_writeEventSuspending = False - that won't happen, acquiring m_lock
-        //                  guarantees AllocateBufferForThread will observe all the memory changes this
-        //                  thread made prior to releasing m_lock and we've already set it TRUE.
-        // This ensures that we iterate over the list of threads below we've got the complete list.
+        // Find all threads that have used this buffer manager.
         SListElem<EventPipeThreadSessionState *> *pElem = m_pThreadSessionStateList->GetHead();
         while (pElem != NULL)
         {
-            threadList.Push(pElem->GetValue()->GetThread());
+            EventPipeThread *pThread = pElem->GetValue()->GetThread();
+            threadList.Push(pThread);
             pElem = m_pThreadSessionStateList->GetNext(pElem);
+
+            // Once EventPipeSession::SuspendWriteEvent completes, we shouldn't have any
+            // in progress writes left.
+            _ASSERTE(pThread->GetSessionWriteInProgress() != sessionIndex);
         }
     }
 
-    // Iterate through all the threads, forcing them to finish writes in progress inside EventPipeThread::m_lock,
-    // relinquish any buffers stored in EventPipeThread::m_pWriteBuffer and prevent storing new ones.
+    // Iterate through all the threads, forcing them to relinquish any buffers stored in
+    // EventPipeThread::m_pWriteBuffer and prevent storing new ones.
     for (size_t i = 0; i < threadList.Size(); i++)
     {
         EventPipeThread *pThread = threadList[i];
@@ -1033,44 +1000,6 @@ void EventPipeBufferManager::SuspendWriteEvent(uint32_t sessionIndex)
             SpinLockHolder _slh(pThread->GetLock());
             EventPipeThreadSessionState *const pSessionState = pThread->GetSessionState(m_pSession);
             pSessionState->SetWriteBuffer(nullptr);
-            // From this point until m_writeEventSuspending is reset to FALSE it is impossible
-            // for this thread to set the write buffer to a non-null value which in turn means
-            // it can't write events into any buffer. To do this it would need to both:
-            // 1) Acquire the thread lock - it can't right now but it will be able to do so after
-            //                              we release the lock below
-            // 2) Observe m_writeEventSuspending = false - that won't happen, acquiring the thread
-            //                              lock guarantees WriteEvent will observe all the memory
-            //                              changes this thread made prior to releasing the thread
-            //                              lock and we already set it TRUE.
-        }
-    }
-
-    // Wait for any straggler WriteEvent threads that may have already allocated a buffer but
-    // hadn't yet relinquished it.
-    {
-        SpinLockHolder _slh(&m_lock);
-        SListElem<EventPipeThreadSessionState *> *pElem = m_pThreadSessionStateList->GetHead();
-        while (pElem != NULL)
-        {
-            // Get the list and remove it from the thread.
-            EventPipeBufferList *const pBufferList = pElem->GetValue()->GetBufferList();
-            if (pBufferList != nullptr)
-            {
-                EventPipeThread *const pEventPipeThread = pBufferList->GetThread();
-                if (pEventPipeThread != nullptr)
-                {
-                    YIELD_WHILE(pEventPipeThread->GetSessionWriteInProgress() == sessionIndex);
-                    // It still guarantees that the thread has returned its buffer, but it also now guarantees that
-                    // that the thread has returned from Session::WriteEvent() and has relinquished the session pointer
-                    // This yield is guaranteed to eventually finish because threads will eventually exit WriteEvent()
-                    // setting the flag back to -1. If the thread could quickly re-enter WriteEvent and set the flag
-                    // back to this_session_id we could theoretically get unlucky and never observe the gap, but
-                    // setting s_pSessions[this_session_id] = NULL above guaranteed that can't happen indefinately.
-                    // Sooner or later the thread is going to see the NULL value and once it does it won't store
-                    // this_session_id into the flag again.
-                }
-            }
-            pElem = m_pThreadSessionStateList->GetNext(pElem);
         }
     }
 }
@@ -1092,15 +1021,6 @@ void EventPipeBufferManager::DeAllocateBuffers()
         SpinLockHolder _slh(&m_lock);
 
         _ASSERTE(EnsureConsistency());
-        _ASSERTE(m_writeEventSuspending);
-
-        // This m_writeEventSuspending flag + locks ensures that no thread will touch any of the
-        // state we are dismantling here. This includes:
-        //   a) EventPipeThread m_sessions[session_id]
-        //   b) EventPipeThreadSessionState
-        //   c) EventPipeBufferList
-        //   d) EventPipeBuffer
-        //   e) EventPipeBufferManager.m_pThreadSessionStateList
 
         SListElem<EventPipeThreadSessionState*> *pElem = m_pThreadSessionStateList->GetHead();
         while (pElem != NULL)

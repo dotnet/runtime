@@ -9,12 +9,12 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ActiveDirectoryInterSiteTransport : IDisposable
     {
-        private readonly DirectoryContext _context = null;
-        private readonly DirectoryEntry _cachedEntry = null;
+        private readonly DirectoryContext _context;
+        private readonly DirectoryEntry _cachedEntry;
         private readonly ActiveDirectoryTransportType _transport;
-        private bool _disposed = false;
-        private bool _linkRetrieved = false;
-        private bool _bridgeRetrieved = false;
+        private bool _disposed;
+        private bool _linkRetrieved;
+        private bool _bridgeRetrieved;
 
         private readonly ReadOnlySiteLinkCollection _siteLinkCollection = new ReadOnlySiteLinkCollection();
         private readonly ReadOnlySiteLinkBridgeCollection _bridgeCollection = new ReadOnlySiteLinkBridgeCollection();

@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.CoreSetup.Test.HostActivation;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -67,25 +69,26 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _copies.Clear();
         }
 
+        private static readonly object _pathCountLock = new object();
         protected static string GetNewTestArtifactPath(string artifactName)
         {
             int projectCount = 0;
-            string projectDirectory = Path.Combine(TestArtifactsPath, projectCount.ToString(), artifactName);
+            string projectCountDir() => Path.Combine(TestArtifactsPath, projectCount.ToString(), artifactName);
 
-            while (Directory.Exists(projectDirectory))
+            for (; Directory.Exists(projectCountDir()); projectCount++);
+
+            lock (_pathCountLock)
             {
-                projectDirectory = Path.Combine(TestArtifactsPath, (++projectCount).ToString(), artifactName);
+                string projectDirectory;
+                for (; Directory.Exists(projectDirectory = projectCountDir()); projectCount++);
+                FileUtils.EnsureDirectoryExists(projectDirectory);
+                return projectDirectory;
             }
-
-            return projectDirectory;
         }
 
         protected static void CopyRecursive(string sourceDirectory, string destinationDirectory, bool overwrite = false)
         {
-            if (!Directory.Exists(destinationDirectory))
-            {
-                Directory.CreateDirectory(destinationDirectory);
-            }
+            FileUtils.EnsureDirectoryExists(destinationDirectory);
 
             foreach (var dir in Directory.EnumerateDirectories(sourceDirectory))
             {

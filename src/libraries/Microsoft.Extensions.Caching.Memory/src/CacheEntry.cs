@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Caching.Memory
 {
     internal class CacheEntry : ICacheEntry
     {
-        private bool _added = false;
+        private bool _added;
         private static readonly Action<object> ExpirationCallback = ExpirationTokensExpired;
         private readonly Action<CacheEntry> _notifyCacheOfExpiration;
         private readonly Action<CacheEntry> _notifyCacheEntryDisposed;
@@ -230,7 +230,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 for (int i = 0; i < _expirationTokens.Count; i++)
                 {
-                    var expiredToken = _expirationTokens[i];
+                    IChangeToken expiredToken = _expirationTokens[i];
                     if (expiredToken.HasChanged)
                     {
                         SetExpired(EvictionReason.TokenExpired);
@@ -249,14 +249,14 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     for (int i = 0; i < _expirationTokens.Count; i++)
                     {
-                        var expirationToken = _expirationTokens[i];
+                        IChangeToken expirationToken = _expirationTokens[i];
                         if (expirationToken.ActiveChangeCallbacks)
                         {
                             if (_expirationTokenRegistrations == null)
                             {
                                 _expirationTokenRegistrations = new List<IDisposable>(1);
                             }
-                            var registration = expirationToken.RegisterChangeCallback(ExpirationCallback, this);
+                            IDisposable registration = expirationToken.RegisterChangeCallback(ExpirationCallback, this);
                             _expirationTokenRegistrations.Add(registration);
                         }
                     }
@@ -277,15 +277,15 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void DetachTokens()
         {
-            lock(_lock)
+            lock (_lock)
             {
-                var registrations = _expirationTokenRegistrations;
+                IList<IDisposable> registrations = _expirationTokenRegistrations;
                 if (registrations != null)
                 {
                     _expirationTokenRegistrations = null;
                     for (int i = 0; i < registrations.Count; i++)
                     {
-                        var registration = registrations[i];
+                        IDisposable registration = registrations[i];
                         registration.Dispose();
                     }
                 }
@@ -303,7 +303,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private static void InvokeCallbacks(CacheEntry entry)
         {
-            var callbackRegistrations = Interlocked.Exchange(ref entry._postEvictionCallbacks, null);
+            IList<PostEvictionCallbackRegistration> callbackRegistrations = Interlocked.Exchange(ref entry._postEvictionCallbacks, null);
 
             if (callbackRegistrations == null)
             {
@@ -312,7 +312,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             for (int i = 0; i < callbackRegistrations.Count; i++)
             {
-                var registration = callbackRegistrations[i];
+                PostEvictionCallbackRegistration registration = callbackRegistrations[i];
 
                 try
                 {
@@ -341,7 +341,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     lock (parent._lock)
                     {
-                        foreach (var expirationToken in _expirationTokens)
+                        foreach (IChangeToken expirationToken in _expirationTokens)
                         {
                             parent.AddExpirationToken(expirationToken);
                         }

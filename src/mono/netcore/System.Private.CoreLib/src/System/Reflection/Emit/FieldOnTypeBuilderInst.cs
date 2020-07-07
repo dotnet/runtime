@@ -36,13 +36,10 @@ namespace System.Reflection.Emit
     /*
      * This class represents a field of an instantiation of a generic type builder.
      */
-    [StructLayout(LayoutKind.Sequential)]
-    internal class FieldOnTypeBuilderInst : FieldInfo
+    internal sealed class FieldOnTypeBuilderInst : FieldInfo
     {
-        #region Keep in sync with object-internals.h
         internal TypeBuilderInstantiation instantiation;
         internal FieldInfo fb;
-        #endregion
 
         public FieldOnTypeBuilderInst(TypeBuilderInstantiation instantiation, FieldInfo fb)
         {

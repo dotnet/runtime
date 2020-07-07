@@ -119,7 +119,7 @@ namespace System.Xml
         //the purpose is to make the Create of XmlReader do not block on IO.
         private class LaterInitParam
         {
-            public bool useAsync = false;
+            public bool useAsync;
 
             public Stream? inputStream;
             public byte[]? inputBytes;
@@ -133,7 +133,7 @@ namespace System.Xml
             public InitInputType initType = InitInputType.Invalid;
         }
 
-        private LaterInitParam? _laterInitParam = null;
+        private LaterInitParam? _laterInitParam;
 
         private enum InitInputType
         {
@@ -163,7 +163,7 @@ namespace System.Xml
         private NodeData _curNode;
 
         // current index
-        private int _index = 0;
+        private int _index;
 
         // attributes info
         private int _curAttrIndex = -1;
@@ -2189,7 +2189,7 @@ namespace System.Xml
         }
 
         // Specifies XmlResolver used for opening the XML document and other external references
-        internal XmlResolver XmlResolver
+        internal XmlResolver? XmlResolver
         {
             set
             {
@@ -4631,7 +4631,7 @@ namespace System.Xml
                 {
                     NodeData attr = _nodes[i];
 
-                    IDtdAttributeInfo attributeInfo = attlistInfo.LookupAttribute(attr.prefix, attr.localName);
+                    IDtdAttributeInfo? attributeInfo = attlistInfo.LookupAttribute(attr.prefix, attr.localName);
                     if (attributeInfo != null && attributeInfo.IsNonCDataType)
                     {
                         if (DtdValidation && _standalone && attributeInfo.IsDeclaredInExternal)

@@ -46,7 +46,7 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         // 24*7*4 = 672
         private readonly bool[] _scheduleArray = new bool[672];
-        private readonly long _utcOffSet = 0;
+        private readonly long _utcOffSet;
 
         public ActiveDirectorySchedule()
         {

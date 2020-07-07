@@ -33,6 +33,7 @@
       <BuildArgs Condition="'$(CrossBuild)' == 'true'">$(BuildArgs) -cross</BuildArgs>
       <BuildArgs Condition="'$(Compiler)' != ''">$(BuildArgs) $(Compiler)</BuildArgs>
       <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) $(CMakeArgs)</BuildArgs>
+      <BuildArgs>$(BuildArgs) -coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
     </PropertyGroup>
 
     <!--
@@ -85,6 +86,7 @@
       <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) portable</BuildArgs>
       <BuildArgs Condition="'$(IncrementalNativeBuild)' == 'true'">$(BuildArgs) incremental-native-build</BuildArgs>
       <BuildArgs>$(BuildArgs) rootdir $(RepoRoot)</BuildArgs>
+      <BuildArgs>$(BuildArgs) coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
     </PropertyGroup>
 
     <!--

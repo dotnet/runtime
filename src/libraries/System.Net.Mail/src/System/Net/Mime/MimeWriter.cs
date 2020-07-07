@@ -34,8 +34,8 @@ namespace System.Net.Mime
             if (headers == null)
                 throw new ArgumentNullException(nameof(headers));
 
-            foreach (string? key in headers) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
-                WriteHeader(key!, headers[key]!, allowUnicode);
+            foreach (string key in headers)
+                WriteHeader(key, headers[key]!, allowUnicode);
         }
 
         #region Cleanup

@@ -103,7 +103,7 @@ namespace System.Text.Json.Serialization.Tests
             Task.WaitAll(tasks);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Cannot_DeserializeAsync_ObjectWith_Ctor_With_65_Params()
         {
             async Task RunTest<T>()

@@ -92,8 +92,8 @@
     <Compile Include="XmlTextTests\SplitTextTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="example.xml">
+    <Content Include="example.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
 </Project>

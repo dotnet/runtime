@@ -105,10 +105,6 @@ namespace System.Globalization
             throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private uint IcuFlags
         {
             get

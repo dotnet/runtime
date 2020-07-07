@@ -7,6 +7,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -89,7 +90,7 @@ namespace System.Net.Http.Functional.Tests
                     var request = new HttpRequestMessage(HttpMethod.Post, url) { Version = UseVersion };
                     request.Headers.ExpectContinue = true;
                     request.Content = new SynchronizedSendContent(contentSending, connectionClosed.Task);
-                    await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(TestAsync, request));
                 }
             },
             async server =>
@@ -125,6 +126,11 @@ namespace System.Net.Http.Functional.Tests
                 _connectionClosed = connectionClosed;
                 _sendingContent = sendingContent;
             }
+
+#if NETCOREAPP
+            protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+                SerializeToStreamAsync(stream, context).GetAwaiter().GetResult();
+#endif
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {

@@ -452,7 +452,7 @@ namespace MS.Internal.Xml.XPath
             return argList;
         }
 
-        private int _parseDepth = 0;
+        private int _parseDepth;
         private const int MaxParseDepth = 1024;
 
         private Query ProcessNode(AstNode root, Flags flags, out Props props)

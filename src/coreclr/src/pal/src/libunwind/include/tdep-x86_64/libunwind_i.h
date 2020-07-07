@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
    to be shared with target-independent code.  */
 
 #include <stdlib.h>
+#include <stdatomic.h>
 #include <libunwind.h>
 
 #include "elf64.h"
@@ -64,11 +65,7 @@ struct unw_addr_space
   {
     struct unw_accessors acc;
     unw_caching_policy_t caching_policy;
-#ifdef HAVE_ATOMIC_OPS_H
-    AO_t cache_generation;
-#else
-    uint32_t cache_generation;
-#endif
+    _Atomic uint32_t cache_generation;
     unw_word_t dyn_generation;          /* see dyn-common.h */
     unw_word_t dyn_info_list_addr;      /* (cached) dyn_info_list_addr */
     struct dwarf_rs_cache global_cache;
@@ -130,8 +127,14 @@ dwarf_get_uc(const struct dwarf_cursor *cursor)
 #else /* !UNW_LOCAL_ONLY */
 
 # define DWARF_NULL_LOC         DWARF_LOC (0, 0)
-# define DWARF_IS_NULL_LOC(l)                                           \
-                ({ dwarf_loc_t _l = (l); _l.val == 0 && _l.type == 0; })
+
+static inline int
+dwarf_is_null_loc(dwarf_loc_t l)
+{
+  return l.val == 0 && l.type == 0;
+}
+
+# define DWARF_IS_NULL_LOC(l)   dwarf_is_null_loc(l)
 # define DWARF_REG_LOC(c,r)     DWARF_LOC((r), DWARF_LOC_TYPE_REG)
 # define DWARF_FPREG_LOC(c,r)   DWARF_LOC((r), (DWARF_LOC_TYPE_REG      \
                                                 | DWARF_LOC_TYPE_FP))
@@ -233,11 +236,7 @@ dwarf_put (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t val)
 #define tdep_get_ip(c)                  ((c)->dwarf.ip)
 #define tdep_big_endian(as)             0
 
-#ifdef HAVE_ATOMIC_OPS_H
-extern AO_t tdep_init_done;
-#else
-extern int tdep_init_done;
-#endif
+extern atomic_bool tdep_init_done;
 
 extern void tdep_init (void);
 extern void tdep_init_mem_validate (void);

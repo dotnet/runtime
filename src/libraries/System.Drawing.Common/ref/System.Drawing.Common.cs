@@ -2719,6 +2719,8 @@ namespace System.Drawing.Printing
         public virtual System.Drawing.Graphics? OnStartPage(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintPageEventArgs e) { throw null; }
         public virtual void OnStartPrint(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintEventArgs e) { }
     }
+    [System.ComponentModel.DefaultPropertyAttribute("DocumentName")]
+    [System.ComponentModel.DefaultEventAttribute("PrintPage")]
     public partial class PrintDocument : System.ComponentModel.Component
     {
         public PrintDocument() { }

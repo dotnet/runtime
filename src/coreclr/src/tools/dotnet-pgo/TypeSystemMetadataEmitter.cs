@@ -462,6 +462,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 case MethodSignatureFlags.UnmanagedCallingConventionThisCall:
                     sigCallingConvention = SignatureCallingConvention.ThisCall;
                     break;
+                case MethodSignatureFlags.UnmanagedCallingConvention:
+                    // [TODO] sigCallingConvention = SignatureCallingConvention.Unmanaged;
+                    sigCallingConvention = (SignatureCallingConvention)9;
+                    break;
             }
 
             signatureEncoder.MethodSignature(sigCallingConvention, genericParameterCount, isInstanceMethod);

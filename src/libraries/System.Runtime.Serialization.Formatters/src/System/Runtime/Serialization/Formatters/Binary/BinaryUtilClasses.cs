@@ -42,7 +42,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Array Element Type
         internal string? _arrayElementTypeString;
         internal Type? _arrayElementType;
-        internal bool _isArrayVariant = false;
+        internal bool _isArrayVariant;
         internal InternalPrimitiveTypeE _arrayElementTypeCode;
 
         // Parsed array information
@@ -62,7 +62,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal ReadObjectInfo? _objectInfo;
 
         // ValueType Fixup needed
-        internal bool _isValueTypeFixup = false;
+        internal bool _isValueTypeFixup;
 
         // Created object
         internal object? _newObj;
@@ -360,7 +360,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
     internal sealed class NameCache
     {
         private static readonly ConcurrentDictionary<string, object> s_ht = new ConcurrentDictionary<string, object>();
-        private string? _name = null;
+        private string? _name;
 
         internal object? GetCachedValue(string name)
         {
@@ -378,7 +378,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal ValueFixupEnum _valueFixupEnum = ValueFixupEnum.Empty;
         internal Array? _arrayObj;
         internal int[]? _indexMap;
-        internal object? _header = null;
         internal object? _memberObject;
         internal ReadObjectInfo? _objectInfo;
         internal string? _memberName;
@@ -450,7 +449,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal bool _transmitTypeOnMember;
         internal bool _isParentTypeOnObject;
         internal InternalArrayTypeE _arrayEnum;
-        private bool _sealedStatusChecked = false;
+        private bool _sealedStatusChecked;
 
         internal NameInfo() { }
 

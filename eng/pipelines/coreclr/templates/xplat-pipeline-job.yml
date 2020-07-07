@@ -104,7 +104,8 @@ jobs:
     - name: priorityArg
       value: ''
 
-    - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+    # 'innerloop' and 'clrinterpreter' jobs run the Priority 0 tests; everything else runs the Priority 1 tests.
+    - ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.testGroup, 'clrinterpreter')) }}:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
         - name: priorityArg
           value: 'priority1'
