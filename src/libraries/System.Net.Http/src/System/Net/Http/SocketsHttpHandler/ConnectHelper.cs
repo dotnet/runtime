@@ -101,7 +101,7 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 socket.Dispose();
-                throw CreateWrappedException(e, cancellationToken);
+                throw CreateWrappedException(e, host, port, cancellationToken);
             }
 
             return new NetworkStream(socket, ownsSocket: true);
