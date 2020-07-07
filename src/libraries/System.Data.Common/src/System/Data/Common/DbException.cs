@@ -8,8 +8,6 @@ namespace System.Data.Common
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class DbException : System.Runtime.InteropServices.ExternalException
     {
-        public virtual bool IsTransient => false;
-
         protected DbException() : base() { }
 
         protected DbException(string message) : base(message) { }
@@ -21,5 +19,7 @@ namespace System.Data.Common
         protected DbException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context)
         {
         }
+
+        public virtual bool IsTransient => false;
     }
 }

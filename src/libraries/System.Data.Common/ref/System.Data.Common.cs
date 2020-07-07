@@ -2170,12 +2170,12 @@ namespace System.Data.Common
     }
     public abstract partial class DbException : System.Runtime.InteropServices.ExternalException
     {
-        public virtual bool IsTransient { get { throw null; } }
         protected DbException() { }
         protected DbException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected DbException(string message) { }
         protected DbException(string message, System.Exception innerException) { }
         protected DbException(string message, int errorCode) { }
+        public virtual bool IsTransient { get { throw null; } }
     }
     public static partial class DbMetaDataCollectionNames
     {

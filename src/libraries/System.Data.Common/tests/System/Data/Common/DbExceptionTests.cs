@@ -16,7 +16,13 @@ namespace System.Data.Common.Tests
             Assert.Null(defaultException.InnerException);
             Assert.Equal(-2147467259, defaultException.ErrorCode);
         }
+        [Fact]
+        public void Ctor_IsTransient_IsFalse()
+        {
+            var defaultException = new CustomDbException();
 
+            Assert.False(defaultException.IsTransient);
+        }
         [Fact]
         public void Ctor_ArgumentsRoundtrip()
         {
