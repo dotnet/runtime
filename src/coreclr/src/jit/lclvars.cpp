@@ -3684,17 +3684,9 @@ bool LclVarDsc::CanBeReplacedWithItsField(Compiler* comp) const
     // In order to do that we have to have its field `a` in memory. Right now lowering cannot
     // handle RETURN struct(multiple registers)->SIMD16(one register), but it can be improved.
     LclVarDsc* fieldDsc = comp->lvaGetDesc(lvFieldLclStart);
-    if (fieldDsc->TypeGet() == TYP_SIMD12 || fieldDsc->TypeGet() == TYP_SIMD16)
+    if (varTypeIsSIMD(fieldDsc))
     {
-#if defined(TARGET_ARM64)
-        if (!comp->isOpaqueSIMDLclVar(fieldDsc))
-        {
-            return false;
-        }
-#else  // !TARGET_ARM64
-        // TODO-X64-CQ: check for `isOpaqueSIMDLclVar` after https://github.com/dotnet/runtime/issues/9578.
         return false;
-#endif //! TARGET_ARM64
     }
 #endif // FEATURE_SIMD
 
