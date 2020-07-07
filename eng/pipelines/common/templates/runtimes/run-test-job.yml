@@ -126,7 +126,7 @@ jobs:
       # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
       - name: timeoutPerTestInMinutes
         value: 240
-    - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
+    - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitstress2-jitstressregs-armarch', 'jitelthookenabled' ) }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 120
       - name: timeoutPerTestInMinutes
@@ -169,7 +169,7 @@ jobs:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       timeoutInMinutes: 480
-    ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
+    ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitstress2-jitstressregs-armarch', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
       timeoutInMinutes: 390
     ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'gcstress-extra', 'r2r-extra', 'clrinterpreter') }}:
       timeoutInMinutes: 510
@@ -390,6 +390,16 @@ jobs:
           - jitstress2_jitstressregs0x10
           - jitstress2_jitstressregs0x80
           - jitstress2_jitstressregs0x1000
+        ${{ if in(parameters.testGroup, 'jitstress2-jitstressregs-armarch') }}:
+          scenarios:
+          - jitstress2_jitstressregs1
+          - jitstress2_jitstressregs2
+          - jitstress2_jitstressregs3
+          - jitstress2_jitstressregs4
+          - jitstress2_jitstressregs8
+          - jitstress2_jitstressregs0x10
+          - jitstress2_jitstressregs0x80
+          - jitstress2_jitstressregs0x1000          
         ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
           scenarios:
           - gcstress0x3
