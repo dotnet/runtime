@@ -18,5 +18,25 @@ namespace System.Text.Json.Serialization.Converters
         {
             throw new InvalidOperationException();
         }
+
+        internal override object ReadWithQuotes(ref Utf8JsonReader reader)
+            => throw new NotSupportedException();
+
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            JsonConverter runtimeConverter = GetRuntimeConverter(value.GetType(), options);
+            runtimeConverter.WriteWithQuotesAsObject(writer, value, options, ref state);
+        }
+
+        private JsonConverter GetRuntimeConverter(Type runtimeType, JsonSerializerOptions options)
+        {
+            JsonConverter runtimeConverter = options.GetDictionaryKeyConverter(runtimeType);
+            if (runtimeConverter == this)
+            {
+                ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(runtimeType);
+            }
+
+            return runtimeConverter;
+        }
     }
 }

@@ -567,6 +567,11 @@ CEEInfo::ConvToJitSig(
         sigRet->args = (CORINFO_ARG_LIST_HANDLE)sig.GetPtr();
     }
 
+    if (sigRet->callConv == CORINFO_CALLCONV_UNMANAGED)
+    {
+        COMPlusThrowHR(E_NOTIMPL);
+    }
+
     // Set computed flags
     sigRet->flags = sigRetFlags;
 
@@ -9819,7 +9824,15 @@ BOOL CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
 
     JIT_TO_EE_TRANSITION();
 
-    if (method != 0)
+    if (method == NULL)
+    {
+        // check the call site signature
+        result = NDirect::MarshalingRequired(
+                    NULL,
+                    callSiteSig->pSig,
+                    GetModule(callSiteSig->scope));
+    }
+    else
     {
         MethodDesc* ftn = GetMethod(method);
         _ASSERTE(ftn->IsNDirect());
@@ -9848,14 +9861,6 @@ BOOL CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
         // without NDirectImportPrecode.
         result = TRUE;
 #endif
-    }
-    else
-    {
-        // check the call site signature
-        result = NDirect::MarshalingRequired(
-                    GetMethod(method),
-                    callSiteSig->pSig,
-                    GetModule(callSiteSig->scope));
     }
 
     EE_TO_JIT_TRANSITION();
@@ -13759,13 +13764,30 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         break;
 
     case ENCODE_CHECK_TYPE_LAYOUT:
+    case ENCODE_VERIFY_TYPE_LAYOUT:
         {
             TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
             MethodTable * pMT = th.AsMethodTable();
             _ASSERTE(pMT->IsValueType());
 
             if (!TypeLayoutCheck(pMT, pBlob))
-                return FALSE;
+            {
+                if (kind == ENCODE_CHECK_TYPE_LAYOUT)
+                {
+                    return FALSE;
+                }
+                else
+                {
+                    // Verification failures are failfast events
+                    DefineFullyQualifiedNameForClassW();
+                    SString fatalErrorString;
+                    fatalErrorString.Printf(W("Verify_TypeLayout '%s' failed to verify type layout"), 
+                        GetFullyQualifiedNameForClassW(pMT));
+
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
+                    return FALSE;
+                }
+            }
 
             result = 1;
         }
@@ -13788,6 +13810,49 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             result = 1;
         }
         break;
+
+    case ENCODE_VERIFY_FIELD_OFFSET:
+        {
+            DWORD baseOffset = CorSigUncompressData(pBlob);
+            DWORD fieldOffset = CorSigUncompressData(pBlob);
+            FieldDesc* pField = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
+            pField->GetEnclosingMethodTable()->CheckRestore();
+            DWORD actualFieldOffset = pField->GetOffset();
+            if (!pField->IsStatic() && !pField->IsFieldOfValueType())
+            {
+                actualFieldOffset += sizeof(Object);
+            }
+
+            DWORD actualBaseOffset = 0;
+            if (!pField->IsStatic() && 
+                pField->GetEnclosingMethodTable()->GetParentMethodTable() != NULL &&
+                !pField->GetEnclosingMethodTable()->IsValueType())
+            {
+                actualBaseOffset = ReadyToRunInfo::GetFieldBaseOffset(pField->GetEnclosingMethodTable());
+            }
+
+            if ((fieldOffset != actualFieldOffset) || (baseOffset != actualBaseOffset))
+            {
+                // Verification failures are failfast events
+                DefineFullyQualifiedNameForClassW();
+                SString ssFieldName(SString::Utf8, pField->GetName());
+
+                SString fatalErrorString;
+                fatalErrorString.Printf(W("Verify_FieldOffset '%s.%s' %d!=%d || %d!=%d"), 
+                    GetFullyQualifiedNameForClassW(pField->GetEnclosingMethodTable()),
+                    ssFieldName.GetUnicode(),
+                    fieldOffset,
+                    actualFieldOffset,
+                    baseOffset,
+                    actualBaseOffset);
+
+                EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
+                return FALSE;
+            }
+            result = 1;
+        }
+        break;
+
 
     case ENCODE_CHECK_INSTRUCTION_SET_SUPPORT:
         {

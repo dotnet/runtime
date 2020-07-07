@@ -1,4 +1,8 @@
 #include "mono/eventpipe/ep.h"
+#include "mono/eventpipe/ep-block.h"
+#include "mono/eventpipe/ep-event.h"
+#include "mono/eventpipe/ep-event-instance.h"
+#include "mono/eventpipe/ep-stream.h"
 #include "eglib/test/test.h"
 
 #define TEST_PROVIDER_NAME "MyTestProvider"

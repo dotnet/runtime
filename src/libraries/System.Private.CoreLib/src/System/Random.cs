@@ -70,7 +70,6 @@ namespace System
                     if (_seedArray[i] < 0) _seedArray[i] += MBIG;
                 }
             }
-            _inext = 0;
             _inextp = 21;
         }
 

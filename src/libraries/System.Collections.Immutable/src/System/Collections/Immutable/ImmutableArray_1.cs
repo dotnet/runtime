@@ -823,7 +823,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See <see cref="IImmutableList{T}"/>
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.Clear()
         {
             var self = this;
@@ -834,7 +833,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See <see cref="IImmutableList{T}"/>
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.Add(T value)
         {
             var self = this;
@@ -845,7 +843,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See <see cref="IImmutableList{T}"/>
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.AddRange(IEnumerable<T> items)
         {
             var self = this;
@@ -856,7 +853,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See <see cref="IImmutableList{T}"/>
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.Insert(int index, T element)
         {
             var self = this;
@@ -867,7 +863,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See <see cref="IImmutableList{T}"/>
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.InsertRange(int index, IEnumerable<T> items)
         {
             var self = this;
@@ -878,7 +873,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See <see cref="IImmutableList{T}"/>
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.Remove(T value, IEqualityComparer<T>? equalityComparer)
         {
             var self = this;
@@ -889,7 +883,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See <see cref="IImmutableList{T}"/>
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.RemoveAll(Predicate<T> match)
         {
             var self = this;
@@ -900,7 +893,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See <see cref="IImmutableList{T}"/>
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer)
         {
             var self = this;
@@ -911,7 +903,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See <see cref="IImmutableList{T}"/>
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.RemoveRange(int index, int count)
         {
             var self = this;
@@ -922,7 +913,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See <see cref="IImmutableList{T}"/>
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.RemoveAt(int index)
         {
             var self = this;
@@ -933,7 +923,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See <see cref="IImmutableList{T}"/>
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.SetItem(int index, T value)
         {
             var self = this;
@@ -959,7 +948,6 @@ namespace System.Collections.Immutable
         /// The position into which the new element was inserted, or -1 to indicate that the item was not inserted into the collection,
         /// </returns>
         /// <exception cref="System.NotSupportedException"></exception>
-        [ExcludeFromCodeCoverage]
         int IList.Add(object? value)
         {
             throw new NotSupportedException();
@@ -969,7 +957,6 @@ namespace System.Collections.Immutable
         /// Removes all items from the <see cref="ICollection{T}"/>.
         /// </summary>
         /// <exception cref="System.NotSupportedException"></exception>
-        [ExcludeFromCodeCoverage]
         void IList.Clear()
         {
             throw new NotSupportedException();
@@ -982,7 +969,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// true if the <see cref="object"/> is found in the <see cref="IList"/>; otherwise, false.
         /// </returns>
-        [ExcludeFromCodeCoverage]
         bool IList.Contains(object? value)
         {
             var self = this;
@@ -997,7 +983,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The index of <paramref name="value"/> if found in the list; otherwise, -1.
         /// </returns>
-        [ExcludeFromCodeCoverage]
         int IList.IndexOf(object? value)
         {
             var self = this;
@@ -1011,7 +996,6 @@ namespace System.Collections.Immutable
         /// <param name="index">The zero-based index at which <paramref name="value"/> should be inserted.</param>
         /// <param name="value">The object to insert into the <see cref="IList"/>.</param>
         /// <exception cref="System.NotSupportedException"></exception>
-        [ExcludeFromCodeCoverage]
         void IList.Insert(int index, object? value)
         {
             throw new NotSupportedException();
@@ -1023,7 +1007,6 @@ namespace System.Collections.Immutable
         /// <value>
         /// <c>true</c> if this instance is fixed size; otherwise, <c>false</c>.
         /// </value>
-        [ExcludeFromCodeCoverage]
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         bool IList.IsFixedSize
         {
@@ -1036,7 +1019,6 @@ namespace System.Collections.Immutable
         /// <value>
         /// <c>true</c> if this instance is read only; otherwise, <c>false</c>.
         /// </value>
-        [ExcludeFromCodeCoverage]
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         bool IList.IsReadOnly
         {
@@ -1047,7 +1029,6 @@ namespace System.Collections.Immutable
         /// Gets the size of the array.
         /// </summary>
         /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
-        [ExcludeFromCodeCoverage]
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         int ICollection.Count
         {
@@ -1062,7 +1043,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="ICollection"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         bool ICollection.IsSynchronized
         {
@@ -1076,7 +1056,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets the sync root.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         object ICollection.SyncRoot
         {
@@ -1088,7 +1067,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="value">The object to remove from the <see cref="IList"/>.</param>
         /// <exception cref="System.NotSupportedException"></exception>
-        [ExcludeFromCodeCoverage]
         void IList.Remove(object? value)
         {
             throw new NotSupportedException();
@@ -1099,7 +1077,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="index">The zero-based index of the item to remove.</param>
         /// <exception cref="System.NotSupportedException"></exception>
-        [ExcludeFromCodeCoverage]
         void IList.RemoveAt(int index)
         {
             throw new NotSupportedException();
@@ -1115,7 +1092,6 @@ namespace System.Collections.Immutable
         /// <returns></returns>
         /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
         /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
-        [ExcludeFromCodeCoverage]
         object? IList.this[int index]
         {
             get
@@ -1132,7 +1108,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="array">The one-dimensional <see cref="Array"/> that is the destination of the elements copied from <see cref="ICollection"/>. The <see cref="Array"/> must have zero-based indexing.</param>
         /// <param name="index">The zero-based index in <paramref name="array"/> at which copying begins.</param>
-        [ExcludeFromCodeCoverage]
         void ICollection.CopyTo(Array array, int index)
         {
             var self = this;

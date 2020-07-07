@@ -1749,12 +1749,12 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
     // Are all the variables becoming alive (in the backwards traversal), or just a subset?
     if (!VarSetOps::IsEmptyIntersection(this, fieldSet, life))
     {
-        // Only a subset of the variables are become live; we must record that subset.
+        // Only a subset of the variables are becoming alive; we must record that subset.
         // (Lack of an entry for "lclVarNode" will be considered to imply all become dead in the
         // forward traversal.)
         VARSET_TP* deadVarSet = new (this, CMK_bitset) VARSET_TP;
         VarSetOps::AssignNoCopy(this, *deadVarSet, VarSetOps::Diff(this, fieldSet, life));
-        GetPromotedStructDeathVars()->Set(lclVarNode, deadVarSet);
+        GetPromotedStructDeathVars()->Set(lclVarNode, deadVarSet, NodeToVarsetPtrMap::Overwrite);
     }
 
     // In any case, all the field vars are now live (in the backwards traversal).

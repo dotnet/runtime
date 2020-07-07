@@ -447,8 +447,13 @@ namespace System.Text.Tests
             yield return Map(1200, "utf-16");
             yield return Map(12000, "utf-32");
             yield return Map(20127, "us-ascii");
-            yield return Map(65000, "utf-7");
             yield return Map(65001, "utf-8");
+
+            if (!PlatformDetection.IsNetCore)
+            {
+                // Encoding.GetEncodings() doesn't include UTF-7 in the result set as of .NET 5.0
+                yield return Map(65000, "utf-7");
+            }
         }
 
         private static KeyValuePair<int, string> Map(int codePage, string webName)

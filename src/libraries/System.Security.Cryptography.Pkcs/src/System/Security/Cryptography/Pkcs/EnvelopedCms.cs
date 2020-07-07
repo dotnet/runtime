@@ -130,6 +130,20 @@ namespace System.Security.Cryptography.Pkcs
             if (encodedMessage == null)
                 throw new ArgumentNullException(nameof(encodedMessage));
 
+            Decode(new ReadOnlySpan<byte>(encodedMessage));
+        }
+
+        /// <summary>
+        ///   Decodes the provided data as a CMS/PKCS#7 EnvelopedData message.
+        /// </summary>
+        /// <param name="encodedMessage">
+        ///   The data to decode.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   The <paramref name="encodedMessage"/> parameter was not successfully decoded.
+        /// </exception>
+        public void Decode(ReadOnlySpan<byte> encodedMessage)
+        {
             if (_decryptorPal != null)
             {
                 _decryptorPal.Dispose();

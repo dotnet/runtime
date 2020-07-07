@@ -255,6 +255,15 @@ namespace System.Text.Json
             _tokenType = JsonTokenType.PropertyName;
         }
 
+        private void WritePropertyNameUnescaped(ReadOnlySpan<byte> utf8PropertyName)
+        {
+            JsonWriterHelper.ValidateProperty(utf8PropertyName);
+            WriteStringByOptionsPropertyName(utf8PropertyName);
+
+            _currentDepth &= JsonConstants.RemoveFlagsBitMask;
+            _tokenType = JsonTokenType.PropertyName;
+        }
+
         private void WriteStringEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);

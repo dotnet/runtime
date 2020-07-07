@@ -46,8 +46,8 @@ MONO_API void mono_ee_interp_init (const char *);
 
 #ifdef TARGET_WASM
 
-void
-mono_wasm_interp_to_native_trampoline (void *target_func, InterpMethodArguments *margs);
+gpointer
+mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig);
 
 #endif
 

@@ -440,7 +440,7 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
         /// <summary>True if the regex has debugging enabled.</summary>
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         internal bool IsDebug => (roptions & RegexOptions.Debug) != 0;
 #endif
     }

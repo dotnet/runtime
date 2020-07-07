@@ -41,7 +41,6 @@ namespace System.IO
 
         protected TextWriter()
         {
-            _internalFormatProvider = null;  // Ask for CurrentCulture all the time.
         }
 
         protected TextWriter(IFormatProvider? formatProvider)

@@ -43,5 +43,16 @@ namespace System.Reflection.Metadata.Decoding.Tests
             Assert.Equal(0xff, new SignatureHeader(0, (SignatureCallingConvention)0xff, 0).RawValue);
             Assert.Equal(0xff, new SignatureHeader(0, 0, (SignatureAttributes)0xff).RawValue);
         }
+
+        [Fact]
+        public void VerifyConstructor3()
+        {
+            var header = new SignatureHeader(SignatureKind.Method, SignatureCallingConvention.Unmanaged, SignatureAttributes.Instance);
+            Assert.Equal(0x29, header.RawValue);
+
+            Assert.Equal(SignatureKind.Method, header.Kind);
+            Assert.Equal(SignatureCallingConvention.Unmanaged, header.CallingConvention);
+            Assert.Equal(SignatureAttributes.Instance, header.Attributes);
+        }
     }
 }

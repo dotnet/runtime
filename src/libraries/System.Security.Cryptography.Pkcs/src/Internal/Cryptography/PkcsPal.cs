@@ -32,12 +32,12 @@ namespace Internal.Cryptography
         ///    Call RecipientInfos on the returned pal object to get the recipients.
         ///    Call TryDecrypt() on the returned pal object to attempt a decrypt for a single recipient.
         /// </summary>
-        public abstract DecryptorPal Decode(byte[] encodedMessage, out int version, out ContentInfo contentInfo, out AlgorithmIdentifier contentEncryptionAlgorithm, out X509Certificate2Collection originatorCerts, out CryptographicAttributeObjectCollection unprotectedAttributes);
+        public abstract DecryptorPal Decode(ReadOnlySpan<byte> encodedMessage, out int version, out ContentInfo contentInfo, out AlgorithmIdentifier contentEncryptionAlgorithm, out X509Certificate2Collection originatorCerts, out CryptographicAttributeObjectCollection unprotectedAttributes);
 
         /// <summary>
         /// Implements the ContentInfo.GetContentType() behavior.
         /// </summary>
-        public abstract Oid GetEncodedMessageType(byte[] encodedMessage);
+        public abstract Oid GetEncodedMessageType(ReadOnlySpan<byte> encodedMessage);
 
         /// <summary>
         /// EnvelopedCms.Decrypt() looks for qualifying certs from the "MY" store (as well as any "extraStore" passed to Decrypt()).

@@ -169,11 +169,8 @@ namespace System.IO
             _byteBuffer = new byte[bufferSize];
             _maxCharsPerBuffer = encoding.GetMaxCharCount(bufferSize);
             _charBuffer = new char[_maxCharsPerBuffer];
-            _byteLen = 0;
-            _bytePos = 0;
             _detectEncoding = detectEncodingFromByteOrderMarks;
             _checkPreamble = encoding.Preamble.Length > 0;
-            _isBlocked = false;
             _closable = !leaveOpen;
         }
 

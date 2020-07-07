@@ -40,5 +40,10 @@ namespace System.Reflection.Metadata
         /// Managed calling convention for passing extra arguments.
         /// </summary>
         VarArgs = 0x5,
+
+        /// <summary>
+        /// Indicating the specifics of the unmanaged calling convention are encoded as modopts.
+        /// </summary>
+        Unmanaged = 0x9,
     }
 }

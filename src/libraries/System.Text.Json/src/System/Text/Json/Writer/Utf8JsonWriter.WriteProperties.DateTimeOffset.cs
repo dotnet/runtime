@@ -374,5 +374,12 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
         }
+
+        internal void WritePropertyName(DateTimeOffset value)
+        {
+            Span<byte> buffer = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
+            JsonWriterHelper.WriteDateTimeOffsetTrimmed(buffer, value, out int bytesWritten);
+            WritePropertyNameUnescaped(buffer.Slice(0, bytesWritten));
+        }
     }
 }
