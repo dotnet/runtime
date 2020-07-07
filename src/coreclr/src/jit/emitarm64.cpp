@@ -5539,6 +5539,12 @@ void emitter::emitIns_R_R_I(
                 assert(!"Instruction cannot be encoded: IF_LS_2B");
             }
         }
+
+        // Is the ldr/str even necessary?
+        if (emitComp->opts.OptimizationEnabled() && IsRedundantLdStr(ins, reg1, reg2, size))
+        {
+            return;
+        }
     }
     else if (isAddSub)
     {
@@ -15461,6 +15467,70 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
             }
 
             // For mov of other sizes, don't optimize because it has side-effect of clearing the upper bits.
+        }
+    }
+
+    return false;
+}
+
+//----------------------------------------------------------------------------------------
+// IsRedundantLdStr:
+//    For ldr/str pair next to each other, check if the current load or store is needed or is
+//    the value already present as of previous instruction.
+//
+//    ldr x1,  [x2, #56]
+//    str x1,  [x2, #56]   <-- redundant
+//
+//          OR
+//
+//    str x1,  [x2, #56]
+//    ldr x1,  [x2, #56]   <-- redundant
+
+// Arguments:
+//    ins - The current instruction
+//    dst - The current destination
+//    src - The current source
+//    imm - Immediate offset
+// Return Value:
+//    true if previous instruction already has desired value in register/memory location.
+
+bool emitter::IsRedundantLdStr(instruction ins, regNumber dst, regNumber src, ssize_t imm)
+{
+    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+
+    if ((ins != INS_ldr) || (ins != INS_str) || (isFirstInstrInBlock) || (emitLastIns == nullptr))
+    {
+        return false;
+    }
+
+    regNumber prevDst = emitLastIns->idReg1();
+    regNumber prevSrc = emitLastIns->idReg2();
+    insFormat lastInsfmt = emitLastIns->idInsFmt();
+    ssize_t prevImm = emitLastIns->idIsLargeCns() ? ((instrDescCns*)emitLastIns)->idcCnsVal : emitLastIns->idSmallCns();
+
+    // Only optimize for "base" or "base plus immediate offset" addressing modes.
+    if ((lastInsfmt == IF_LS_2A) || (lastInsfmt == IF_LS_2B))
+    {
+        return false;
+    }
+
+    if (((ins == INS_ldr) && (emitLastIns->idIns() == INS_str)) ||
+        ((ins == INS_str) && (emitLastIns->idIns() == INS_ldr)))
+    {
+        // Make sure src and dst registers are not same.
+        //  ldr x0, [x0, #3]
+        //  str x0, [x0, #3]  <-- can't eliminate because [x0+3] is not same destination as previous source.
+        if ((src != dst) && (prevDst == src) && (prevSrc == dst) && (imm == prevImm))
+        {
+            if ((ins == INS_ldr) && (emitLastIns->idIns() == INS_str))
+            {
+                JITDUMP("\n -- suppressing 'ldr' as previous 'str' was from same location.\n");
+            }
+            else
+            {
+                JITDUMP("\n -- suppressing 'str' as previous 'ldr' was from same location.\n");
+            }
+            return true;
         }
     }
 
