@@ -6,14 +6,14 @@ using System.Collections.Generic;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class ImmutableDictionaryOfStringTValueConverter<TCollection, TValue>
-        : DictionaryDefaultConverter<TCollection, TValue>
-        where TCollection : IReadOnlyDictionary<string, TValue>
+    internal sealed class ImmutableDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>
+        : DictionaryDefaultConverter<TCollection, TKey, TValue>
+        where TCollection : IReadOnlyDictionary<TKey, TValue>
+        where TKey : notnull
     {
-        protected override void Add(in TValue value, JsonSerializerOptions options, ref ReadStack state)
+        protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
-            string key = state.Current.JsonPropertyNameAsString!;
-            ((Dictionary<string, TValue>)state.Current.ReturnValue!)[key] = value;
+            ((Dictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
         }
 
         internal override bool CanHaveIdMetadata => false;
@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Converters
 
         protected internal override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
         {
-            IEnumerator<KeyValuePair<string, TValue>> enumerator;
+            IEnumerator<KeyValuePair<TKey, TValue>> enumerator;
             if (state.Current.CollectionEnumerator == null)
             {
                 enumerator = value.GetEnumerator();
@@ -50,10 +50,11 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                enumerator = (IEnumerator<KeyValuePair<string, TValue>>)state.Current.CollectionEnumerator;
+                enumerator = (IEnumerator<KeyValuePair<TKey, TValue>>)state.Current.CollectionEnumerator;
             }
 
-            JsonConverter<TValue> converter = GetValueConverter(ref state);
+            JsonConverter<TKey> keyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
+            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo);
             do
             {
                 if (ShouldFlush(writer, ref state))
@@ -65,12 +66,13 @@ namespace System.Text.Json.Serialization.Converters
                 if (state.Current.PropertyState < StackFramePropertyState.Name)
                 {
                     state.Current.PropertyState = StackFramePropertyState.Name;
-                    string key = GetKeyName(enumerator.Current.Key, ref state, options);
-                    writer.WritePropertyName(key);
+
+                    TKey key = enumerator.Current.Key;
+                    keyConverter.WriteWithQuotes(writer, key, options, ref state);
                 }
 
                 TValue element = enumerator.Current.Value;
-                if (!converter.TryWrite(writer, element, options, ref state))
+                if (!valueConverter.TryWrite(writer, element, options, ref state))
                 {
                     state.Current.CollectionEnumerator = enumerator;
                     return false;

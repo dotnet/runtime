@@ -9095,16 +9095,22 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         static ConfigDWORD s_InterpreterHWIntrinsicsIsSupportedFalse;
         if (s_InterpreterHWIntrinsicsIsSupportedFalse.val(CLRConfig::INTERNAL_InterpreterHWIntrinsicsIsSupportedFalse) != 0)
         {
-            if (strcmp(methToCall->GetModule()->GetSimpleName(), "System.Private.CoreLib") == 0 &&
-#ifdef _DEBUG // GetDebugClassName() is only available in _DEBUG builds
+            GCX_PREEMP();
+
+            // Hardware intrinsics are recognized by name.
+            const char* namespaceName = NULL;
+            const char* className = NULL;
+            const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
+            if (
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-                strncmp(methToCall->GetClass()->GetDebugClassName(), "System.Runtime.Intrinsics.X86", 29) == 0 &&
+                strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0 &&
 #elif defined(TARGET_ARM64)
-                strncmp(methToCall->GetClass()->GetDebugClassName(), "System.Runtime.Intrinsics.Arm", 29) == 0 &&
+                strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0 &&
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
-#endif // _DEBUG
-                strcmp(methToCall->GetName(), "get_IsSupported") == 0)
+                strcmp(methodName, "get_IsSupported") == 0
+            )
             {
+                GCX_COOP();
                 DoGetIsSupported();
                 didIntrinsic = true;
             }

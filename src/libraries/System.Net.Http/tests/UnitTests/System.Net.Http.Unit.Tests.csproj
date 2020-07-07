@@ -160,6 +160,8 @@
              Link="ProductionCode\System\Net\Http\Headers\ProductInfoHeaderParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\ProductInfoHeaderValue.cs"
              Link="ProductionCode\System\Net\Http\Headers\ProductInfoHeaderValue.cs" />
+    <Compile Include="..\..\src\System\Net\Http\Headers\QPackStaticTable.cs"
+             Link="ProductionCode\System\Net\Http\Headers\QPackStaticTable.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\RangeConditionHeaderValue.cs"
              Link="ProductionCode\System\Net\Http\Headers\RangeConditionHeaderValue.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\RangeHeaderValue.cs"

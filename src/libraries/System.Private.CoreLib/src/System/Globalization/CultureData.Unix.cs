@@ -120,10 +120,10 @@ namespace System.Globalization
             return ebcdicCodePage == -1 ? CultureData.Invariant.EBCDICCodePage : ebcdicCodePage;
         }
 
-        internal bool IsWin32Installed => false;
+        internal static bool IsWin32Installed => false;
 
         internal static unsafe CultureData GetCurrentRegionData() => CultureInfo.CurrentCulture._cultureData;
 
-        private bool ShouldUseUserOverrideNlsData => false;
+        private static bool ShouldUseUserOverrideNlsData => false;
     }
 }

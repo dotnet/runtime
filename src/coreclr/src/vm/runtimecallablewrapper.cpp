@@ -2225,7 +2225,7 @@ HRESULT RCW::SafeQueryInterfaceRemoteAware(REFIID iid, IUnknown** ppResUnk)
     if (hr == CO_E_OBJNOTCONNECTED || hr == RPC_E_INVALID_OBJECT || hr == RPC_E_INVALID_OBJREF || hr == CO_E_OBJNOTREG)
     {
         // set apartment state
-        GetThread()->SetApartment(Thread::AS_InMTA, FALSE);
+        GetThread()->SetApartment(Thread::AS_InMTA);
 
         // Release the stream of the IUnkEntry to force UnmarshalIUnknownForCurrContext
         // to remarshal to the stream.

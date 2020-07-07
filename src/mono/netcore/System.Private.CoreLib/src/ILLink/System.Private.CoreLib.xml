@@ -614,38 +614,6 @@
 			<method signature="System.Void .ctor(System.String)" />
 		</type>
 
-		<type fullname="System.Reflection.Emit.ConstructorBuilder" preserve="fields" required="false" feature="sre"/>
-		<type fullname="System.Reflection.Emit.DynamicMethod" preserve="fields" required="false" feature="sre" />
-		<!-- mono_dynamic_image_register_token -->
-		<type fullname="System.Reflection.Emit.EnumBuilder" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.EventBuilder" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.FieldBuilder" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.GenericTypeParameterBuilder" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.ILExceptionBlock" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.ILExceptionInfo" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.ILGenerator" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.LocalBuilder" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.MethodBuilder" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.ModuleBuilder" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.ParameterBuilder" preserve="nothing" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.PropertyBuilder" preserve="nothing" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.SignatureHelper" preserve="nothing" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.TypeBuilder" preserve="fields" required="false" feature="sre">
-			<method name="SetCharSet" feature="sre" />
-			<!-- reflection.c mono_reflection_call_is_assignable_to () -->
-			<method name="IsAssignableTo" feature="sre" />
-		</type>
-		<type fullname="System.Reflection.Emit.UnmanagedMarshal" preserve="fields" required="false" feature="sre" >
-			<method name="DefineCustom" feature="sre" />
-			<method name="DefineLPArrayInternal" feature="sre" />
-		</type>
-		<type fullname="System.Reflection.Emit.ArrayType" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.ByRefType" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.PointerType" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.FieldOnTypeBuilderInst" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.MethodOnTypeBuilderInst" preserve="fields" required="false" feature="sre" />
-		<type fullname="System.Reflection.Emit.ConstructorOnTypeBuilderInst" preserve="fields" required="false" feature="sre" />
-
 		<!-- exception.c: mono_get_exception_runtime_wrapped () -->
 		<type fullname="System.Runtime.CompilerServices.RuntimeWrappedException">
 			<method signature="System.Void .ctor(System.Object)" />

@@ -15,5 +15,15 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WriteNumberValue(value);
         }
+
+        internal override sbyte ReadWithQuotes(ref Utf8JsonReader reader)
+        {
+            return reader.GetSByteWithQuotes();
+        }
+
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, sbyte value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            writer.WritePropertyName(value);
+        }
     }
 }

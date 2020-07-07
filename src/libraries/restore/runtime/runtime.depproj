@@ -70,9 +70,6 @@
         <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
       </BinPlaceItem>
     </ItemGroup>
-    <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
-      <TestHostBinPlaceItem Include="@(RuntimeFiles)" />
-    </ItemGroup>
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"

@@ -24126,17 +24126,24 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
     }
 
 #ifdef FEATURE_LOH_COMPACTION
-    if (loh_compacted_p)
+    if (settings.loh_compaction)
     {
         heap_segment* pSegment = seg_mapping_table_segment_of ((uint8_t*)old_address);
-        size_t flags = pSegment->flags;
-        if ((flags & heap_segment_flags_loh)
-#ifdef FEATURE_BASICFREEZE
-            && !(flags & heap_segment_flags_readonly)
+#ifdef MULTIPLE_HEAPS
+        if (heap_segment_heap (pSegment)->loh_compacted_p)
+#else
+        if (loh_compacted_p)
 #endif
-            )
         {
-            *pold_address = old_address + loh_node_relocation_distance (old_address);
+            size_t flags = pSegment->flags;
+            if ((flags & heap_segment_flags_loh)
+#ifdef FEATURE_BASICFREEZE
+                && !(flags & heap_segment_flags_readonly)
+#endif
+                )
+            {
+                *pold_address = old_address + loh_node_relocation_distance (old_address);
+            }
         }
     }
 #endif //FEATURE_LOH_COMPACTION

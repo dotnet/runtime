@@ -496,13 +496,6 @@ FCIMPL0(void, StubHelpers::ClearLastError)
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, StubHelpers::IsQCall, NDirectMethodDesc* pNMD)
-{
-    FCALL_CONTRACT;
-    FC_RETURN_BOOL(pNMD->IsQCall());
-}
-FCIMPLEND
-
 NOINLINE static void InitDeclaringTypeHelper(MethodTable *pMT)
 {
     FC_INNER_PROLOG(StubHelpers::InitDeclaringType);
