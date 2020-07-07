@@ -854,6 +854,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+            case NI_AdvSimd_ReverseElement16:
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg,
+                                          (emitSize == EA_8BYTE) ? INS_OPTS_4H : INS_OPTS_8H);
+                break;
+
+            case NI_AdvSimd_ReverseElement32:
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg,
+                                          (emitSize == EA_8BYTE) ? INS_OPTS_2S : INS_OPTS_4S);
+                break;
+
+            case NI_AdvSimd_ReverseElement8:
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg,
+                                          (emitSize == EA_8BYTE) ? INS_OPTS_8B : INS_OPTS_16B);
+                break;
+
             default:
                 unreached();
         }
