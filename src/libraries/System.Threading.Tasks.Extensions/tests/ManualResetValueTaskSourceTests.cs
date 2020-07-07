@@ -62,7 +62,7 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Throws<InvalidOperationException>(() => mrvts.GetResult(0));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task SetResult_BeforeOnCompleted_ResultAvailableSynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -109,7 +109,7 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Equal(2, mrvts.Version);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task SetException_BeforeOnCompleted_ResultAvailableSynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -239,7 +239,7 @@ namespace System.Threading.Tasks.Sources.Tests
             mrvts.OnCompleted(_ => { }, new object(), 0, (ValueTaskSourceOnCompletedFlags)int.MaxValue);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task OnCompleted_ContinuationAlwaysInvokedAsynchronously(bool runContinuationsAsynchronously)
@@ -266,7 +266,7 @@ namespace System.Threading.Tasks.Sources.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task SetResult_RunContinuationsAsynchronously_ContinuationInvokedAccordingly(bool runContinuationsAsynchronously)
