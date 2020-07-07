@@ -275,7 +275,7 @@ namespace System.Security.Cryptography.X509Certificates
                 X500DistinguishedName? issuerName = _lazyIssuerName;
                 if (issuerName == null)
                     issuerName = _lazyIssuerName = Pal.IssuerName;
-                return new X500DistinguishedName(issuerName);
+                return issuerName;
             }
         }
 
@@ -356,7 +356,7 @@ namespace System.Security.Cryptography.X509Certificates
                 X500DistinguishedName? subjectName = _lazySubjectName;
                 if (subjectName == null)
                     subjectName = _lazySubjectName = Pal.SubjectName;
-                return new X500DistinguishedName(subjectName);
+                return subjectName;
             }
         }
 

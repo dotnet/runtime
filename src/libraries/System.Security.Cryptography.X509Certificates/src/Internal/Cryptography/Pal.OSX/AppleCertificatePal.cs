@@ -186,10 +186,23 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public string Issuer
+        {
+            get
+            {
+                EnsureCertData();
+                return _certData.IssuerName;
+            }
+        }
 
-        public string Issuer => IssuerName.Name;
-
-        public string Subject => SubjectName.Name;
+        public string Subject
+        {
+            get
+            {
+                EnsureCertData();
+                return _certData.SubjectName;
+            }
+        }
 
         public string LegacyIssuer => IssuerName.Decode(X500DistinguishedNameFlags.None);
 

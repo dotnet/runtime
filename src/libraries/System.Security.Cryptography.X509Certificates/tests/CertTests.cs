@@ -446,26 +446,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void CopyResult_IssuerName()
+        public static void MutateDistinguishedName_IssuerName_DoesNotImpactIssuer()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
             {
-                X500DistinguishedName first = cert.IssuerName;
-                X500DistinguishedName second = cert.IssuerName;
-                Assert.NotSame(first, second);
-                Assert.NotSame(first.RawData, second.RawData);
+                byte[] issuerBytes = cert.IssuerName.RawData;
+                Array.Clear(issuerBytes, 0, issuerBytes.Length);
+                Assert.Equal("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US", cert.Issuer);
             }
         }
 
         [Fact]
-        public static void CopyResult_SubjectName()
+        public static void MutateDistinguishedName_SubjectName_DoesNotImpactSubject()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
             {
-                X500DistinguishedName first = cert.SubjectName;
-                X500DistinguishedName second = cert.SubjectName;
-                Assert.NotSame(first, second);
-                Assert.NotSame(first.RawData, second.RawData);
+                byte[] subjectBytes = cert.SubjectName.RawData;
+                Array.Clear(subjectBytes, 0, subjectBytes.Length);
+                Assert.Equal("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US", cert.Subject);
             }
         }
 
