@@ -908,7 +908,8 @@ SingleResponse ::= SEQUENCE {
 
                 endEntityCert = intermediateAuthority.CreateEndEntity(
                         BuildSubject(subjectName ?? "A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
-                        eeKey, extensions);
+                        eeKey,
+                        extensions);
 
                 endEntityCert = endEntityCert.CopyWithPrivateKey(eeKey);
             }
