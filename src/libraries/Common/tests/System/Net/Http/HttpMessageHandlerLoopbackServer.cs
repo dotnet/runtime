@@ -61,6 +61,13 @@ namespace System.Net.Test.Common
                 _serverFunc = serverFunc;
             }
 
+#if NETCOREAPP
+            protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                return SendAsync(request, cancellationToken).GetAwaiter().GetResult();
+            }
+#endif
+
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 var server = new HttpMessageHandlerLoopbackServer(request);

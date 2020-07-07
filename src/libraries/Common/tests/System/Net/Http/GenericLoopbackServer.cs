@@ -130,7 +130,7 @@ namespace System.Net.Test.Common
         {
             var result = new HttpRequestData();
             result.Method = request.Method.ToString();
-            result.Path = request.RequestUri.AbsolutePath;
+            result.Path = request.RequestUri?.AbsolutePath;
 
             foreach (var header in request.Headers)
             {
