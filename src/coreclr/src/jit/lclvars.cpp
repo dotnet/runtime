@@ -1974,6 +1974,12 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
             shouldPromote = false;
         }
     }
+    else if (!compiler->compDoOldStructRetyping() && (lclNum == compiler->genReturnLocal) &&
+             (structPromotionInfo.fieldCnt > 1))
+    {
+        // TODO-1stClassStructs: a temporary solution to keep diffs small, it will be fixed later.
+        shouldPromote = false;
+    }
 
     //
     // If the lvRefCnt is zero and we have a struct promoted parameter we can end up with an extra store of
@@ -3638,6 +3644,53 @@ var_types LclVarDsc::lvaArgType()
 #endif // TARGET_AMD64
 
     return type;
+}
+
+//----------------------------------------------------------------------------------------------
+// CanBeReplacedWithItsField: check if a whole struct reference could be replaced by a field.
+//
+// Arguments:
+//    comp - the compiler instance;
+//
+// Return Value:
+//    true if that can be replaced, false otherwise.
+//
+// Notes:
+//    The replacement can be made only for independently promoted structs
+//    with 1 field without holes.
+//
+bool LclVarDsc::CanBeReplacedWithItsField(Compiler* comp) const
+{
+    if (!lvPromoted)
+    {
+        return false;
+    }
+
+    if (comp->lvaGetPromotionType(this) != Compiler::PROMOTION_TYPE_INDEPENDENT)
+    {
+        return false;
+    }
+    if (lvFieldCnt != 1)
+    {
+        return false;
+    }
+    if (lvContainsHoles)
+    {
+        return false;
+    }
+
+#if defined(FEATURE_SIMD)
+    // If we return `struct A { SIMD16 a; }` we split the struct into several fields.
+    // In order to do that we have to have its field `a` in memory. Right now lowering cannot
+    // handle RETURN struct(multiple registers)->SIMD16(one register), but it can be improved.
+    LclVarDsc* fieldDsc = comp->lvaGetDesc(lvFieldLclStart);
+    if (varTypeIsSIMD(fieldDsc))
+    {
+        return false;
+    }
+#endif // FEATURE_SIMD
+
+    return true;
 }
 
 //------------------------------------------------------------------------
