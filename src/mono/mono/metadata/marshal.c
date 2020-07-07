@@ -3987,6 +3987,14 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 		}
 		invoke = NULL;
 		invoke_sig = mono_method_signature_internal (method);
+		if (invoke_sig->hasthis) {
+			mono_error_set_invalid_program (error, "method %s with UnamanagedCallersOnlyAttribute is an instance method", mono_method_full_name (method, TRUE));
+			return NULL;
+		}
+		if (method->is_generic || method->is_inflated || mono_class_is_ginst (method->klass)) {
+			mono_error_set_invalid_program (error, "method %s with UnamangedCallersOnlyAttribute is generic", mono_method_full_name (method, TRUE));
+			return NULL;
+		}
 		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
 	} else {
 		invoke = mono_get_delegate_invoke_internal (delegate_klass);
