@@ -1219,27 +1219,26 @@ class TestHFAandHVA
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector<T> ReturnVectorTWithMerge<T>(int v, T init1, T init2, T init3, T init4) where T : struct
     {
-        // issue https://github.com/dotnet/runtime/issues/37341
-        // if (v == 0)
-        // {
-            // return new Vector<T>();
-        // }
-        // else if (v == 1)
-        // {
-            // return new Vector<T>(init1);
-        // }
-        // else if (v == 2)
-        // {
-            // return new Vector<T>(init2);
-        // }
-        // else if (v == 3)
-        // {
-            // return new Vector<T>(init3);
-        // }
-        // else
-        // {
-            // return new Vector<T>(init4);
-        // }
+        if (v == 0)
+        {
+            return new Vector<T>();
+        }
+        else if (v == 1)
+        {
+            return new Vector<T>(init1);
+        }
+        else if (v == 2)
+        {
+            return new Vector<T>(init2);
+        }
+        else if (v == 3)
+        {
+            return new Vector<T>(init3);
+        }
+        else
+        {
+            return new Vector<T>(init4);
+        }
         return new Vector<T>();
     }
 
