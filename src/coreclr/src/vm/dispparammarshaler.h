@@ -102,9 +102,9 @@ class DispParamInterfaceMarshaler : public DispParamMarshaler
 {
 public:
     DispParamInterfaceMarshaler(BOOL bDispatch, MethodTable* pIntfMT, MethodTable *pClassMT, BOOL bClassIsHint) :
-    m_bDispatch(bDispatch),
     m_pIntfMT(pIntfMT),
     m_pClassMT(pClassMT),
+    m_bDispatch(bDispatch),
     m_bClassIsHint(bClassIsHint)
     {
         WRAPPER_NO_CONTRACT;
@@ -127,7 +127,6 @@ private:
     BOOL                    m_bClassIsHint;
 };
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
 class DispParamArrayMarshaler : public DispParamMarshaler
 {
 public:
@@ -151,7 +150,6 @@ private:
     VARTYPE                 m_ElementVT;
     MethodTable*            m_pElementMT;
 };
-#endif // FEATURE_CLASSIC_COMINTEROP
 
 
 class DispParamRecordMarshaler : public DispParamMarshaler

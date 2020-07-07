@@ -100,7 +100,7 @@ namespace System.Linq.Parallel
         // Returns an enumerable that represents the query executing sequentially.
         //
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "AsSequentialQuery is not supported on ForAllOperator")]
         internal override IEnumerable<TInput> AsSequentialQuery(CancellationToken token)
         {
             Debug.Fail("AsSequentialQuery is not supported on ForAllOperator");

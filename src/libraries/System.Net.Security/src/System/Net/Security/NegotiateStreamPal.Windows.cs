@@ -4,6 +4,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Principal;
@@ -85,12 +86,10 @@ namespace System.Net.Security
 
         internal static int Encrypt(
             SafeDeleteContext securityContext,
-            byte[] buffer,
-            int offset,
-            int count,
+            ReadOnlySpan<byte> buffer,
             bool isConfidential,
             bool isNtlm,
-            ref byte[]? output,
+            [NotNull] ref byte[]? output,
             uint sequenceNumber)
         {
             SecPkgContext_Sizes sizes = default;
@@ -101,9 +100,9 @@ namespace System.Net.Security
             {
                 int maxCount = checked(int.MaxValue - 4 - sizes.cbBlockSize - sizes.cbSecurityTrailer);
 
-                if (count > maxCount || count < 0)
+                if (buffer.Length > maxCount)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.net_io_out_range, maxCount));
+                    throw new ArgumentOutOfRangeException(nameof(buffer.Length), SR.Format(SR.net_io_out_range, maxCount));
                 }
             }
             catch (Exception e) when (!ExceptionCheck.IsFatal(e))
@@ -112,21 +111,21 @@ namespace System.Net.Security
                 throw;
             }
 
-            int resultSize = count + sizes.cbSecurityTrailer + sizes.cbBlockSize;
+            int resultSize = buffer.Length + sizes.cbSecurityTrailer + sizes.cbBlockSize;
             if (output == null || output.Length < resultSize + 4)
             {
                 output = new byte[resultSize + 4];
             }
 
             // Make a copy of user data for in-place encryption.
-            Buffer.BlockCopy(buffer, offset, output, 4 + sizes.cbSecurityTrailer, count);
+            buffer.CopyTo(output.AsSpan(4 + sizes.cbSecurityTrailer));
 
             // Prepare buffers TOKEN(signature), DATA and Padding.
             ThreeSecurityBuffers buffers = default;
             var securityBuffer = MemoryMarshal.CreateSpan(ref buffers._item0, 3);
             securityBuffer[0] = new SecurityBuffer(output, 4, sizes.cbSecurityTrailer, SecurityBufferType.SECBUFFER_TOKEN);
-            securityBuffer[1] = new SecurityBuffer(output, 4 + sizes.cbSecurityTrailer, count, SecurityBufferType.SECBUFFER_DATA);
-            securityBuffer[2] = new SecurityBuffer(output, 4 + sizes.cbSecurityTrailer + count, sizes.cbBlockSize, SecurityBufferType.SECBUFFER_PADDING);
+            securityBuffer[1] = new SecurityBuffer(output, 4 + sizes.cbSecurityTrailer, buffer.Length, SecurityBufferType.SECBUFFER_DATA);
+            securityBuffer[2] = new SecurityBuffer(output, 4 + sizes.cbSecurityTrailer + buffer.Length, sizes.cbBlockSize, SecurityBufferType.SECBUFFER_PADDING);
 
             int errorCode;
             if (isConfidential)
@@ -160,7 +159,7 @@ namespace System.Net.Security
             }
 
             resultSize += securityBuffer[1].size;
-            if (securityBuffer[2].size != 0 && (forceCopy || resultSize != (count + sizes.cbSecurityTrailer)))
+            if (securityBuffer[2].size != 0 && (forceCopy || resultSize != (buffer.Length + sizes.cbSecurityTrailer)))
             {
                 Buffer.BlockCopy(output, securityBuffer[2].offset, output, 4 + resultSize, securityBuffer[2].size);
             }

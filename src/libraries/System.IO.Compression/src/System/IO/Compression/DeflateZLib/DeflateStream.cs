@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +15,7 @@ namespace System.IO.Compression
     {
         private const int DefaultBufferSize = 8192;
 
-        private Stream _stream = null!; // field initialized in init methods called from constructor
+        private Stream _stream;
         private CompressionMode _mode;
         private bool _leaveOpen;
         private Inflater? _inflater;
@@ -89,6 +90,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Sets up this DeflateStream to be used for Zlib Deflation/Compression
         /// </summary>
+        [MemberNotNull(nameof(_stream))]
         internal void InitializeDeflater(Stream stream, bool leaveOpen, int windowBits, CompressionLevel compressionLevel)
         {
             Debug.Assert(stream != null);
@@ -378,7 +380,7 @@ namespace System.IO.Compression
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             EnsureBufferInitialized();
@@ -810,7 +812,7 @@ namespace System.IO.Compression
             EnsureNotDisposed();
 
             return cancellationToken.IsCancellationRequested ?
-                new ValueTask(Task.FromCanceled<int>(cancellationToken)) :
+                ValueTask.FromCanceled(cancellationToken) :
                 WriteAsyncMemoryCore(buffer, cancellationToken);
         }
 

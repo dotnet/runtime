@@ -228,7 +228,7 @@ namespace System.Diagnostics.Tracing
                 }
                 catch (NotImplementedException)
                 {
-#if (!ES_BUILD_PCL && !ES_BUILD_PN)
+#if (!ES_BUILD_PCL)
                     // send message to debugger without delay
                     System.Diagnostics.Debugger.Log(0, null, "Activity Enabled() called but AsyncLocals Not Supported (pre V4.6).  Ignoring Enable");
 #endif
@@ -381,7 +381,7 @@ namespace System.Diagnostics.Tracing
                     {
                         // TODO FIXME - differentiate between AD inside PCL
                         int appDomainID = 0;
-#if (!ES_BUILD_STANDALONE && !ES_BUILD_PN)
+#if (!ES_BUILD_STANDALONE)
                         appDomainID = System.Threading.Thread.GetDomainID();
 #endif
                         // We start with the appdomain number to make this unique among appdomains.
@@ -604,7 +604,7 @@ namespace System.Diagnostics.Tracing
         private static readonly ActivityTracker s_activityTrackerInstance = new ActivityTracker();
 
         // Used to create unique IDs at the top level.  Not used for nested Ids (each activity has its own id generator)
-        private static long m_nextId = 0;
+        private static long m_nextId;
         private const ushort MAX_ACTIVITY_DEPTH = 100;            // Limit maximum depth of activities to be tracked at 100.
                                                                   // This will avoid leaking memory in case of activities that are never stopped.
 

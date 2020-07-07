@@ -55,5 +55,12 @@ namespace System.Reflection.Emit.Tests
             Assert.True(arrType.IsArray);
             Assert.False(arrType.IsSZArray);
         }
+
+        [Fact]
+        public void IsByRefLikeReturnsFalse()
+        {
+            EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
+            Assert.False(enumBuilder.IsByRefLike);
+        }
     }
 }

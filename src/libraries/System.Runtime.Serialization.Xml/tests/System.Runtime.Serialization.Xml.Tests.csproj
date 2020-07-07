@@ -15,12 +15,10 @@
     <Compile Include="$(TestSourceFolder)SerializationTestTypes\DCRSampleType.cs" />
     <Compile Include="$(TestSourceFolder)SerializationTestTypes\DCRTypeLibrary.cs" />
     <Compile Include="$(TestSourceFolder)SerializationTestTypes\Primitives.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\DataContractSerializerHelper.cs">
-      <Link>Common\System\Runtime\Serialization\DataContractSerializerHelper.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\DataContractSerializerHelper.cs"
+             Link="Common\System\Runtime\Serialization\DataContractSerializerHelper.cs" />
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs" />
     <Compile Include="$(TestSourceFolder)SerializationTestTypes\ObjRefSample.cs" />
     <Compile Include="SerializationTestTypes\Collections.cs" />

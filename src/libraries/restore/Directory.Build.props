@@ -2,10 +2,13 @@
   <Import Project="..\Directory.Build.props" />
 
   <PropertyGroup>
-      <!-- We need configuration-specific assets files. -->
+    <!-- We need configuration-specific assets files which requires the IntermeidateOutputPath to be set. -->
+    <IntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)'))</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(Configuration)'))</IntermediateOutputPath>
     <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
     <ProjectAssetsFile>$(RestoreOutputPath)/project.assets.json</ProjectAssetsFile>
     <MSBuildProjectExtensionsPath>$(IntermediateOutputPath)</MSBuildProjectExtensionsPath>
+
     <SkipDeriveTargetFrameworks>true</SkipDeriveTargetFrameworks>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <AdditionalBuildTargetFrameworks Condition="'$(BuildAllProjects)' == 'true'">netstandard2.0</AdditionalBuildTargetFrameworks>

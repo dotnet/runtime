@@ -252,7 +252,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ReadAsyncCancelledFile()
         {
             string fileName = GetTestFilePath();

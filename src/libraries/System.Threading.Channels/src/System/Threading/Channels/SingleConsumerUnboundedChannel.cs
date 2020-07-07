@@ -32,13 +32,11 @@ namespace System.Threading.Channels
         /// <summary>non-null if the channel has been marked as complete for writing.</summary>
         private volatile Exception? _doneWriting;
 
-#pragma warning disable CA1823 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/38195
         /// <summary>An <see cref="AsyncOperation{T}"/> if there's a blocked reader.</summary>
         private AsyncOperation<T>? _blockedReader;
 
         /// <summary>A waiting reader (e.g. WaitForReadAsync) if there is one.</summary>
         private AsyncOperation<bool>? _waitingReader;
-#pragma warning restore CA1823
 
         /// <summary>Initialize the channel.</summary>
         /// <param name="runContinuationsAsynchronously">Whether to force continuations to be executed asynchronously.</param>

@@ -22,7 +22,10 @@ namespace System.Collections
         // GetCurrent with no intervening calls to MoveNext
         // will return the same object.
         //
-        object? Current
+
+#nullable disable // explicitly leaving Current as "oblivious" to avoid spurious warnings in foreach over non-generic enumerables
+        object Current
+#nullable restore
         {
             get;
         }

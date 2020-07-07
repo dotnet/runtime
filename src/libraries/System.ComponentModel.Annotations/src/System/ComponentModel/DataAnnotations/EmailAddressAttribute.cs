@@ -11,7 +11,7 @@ namespace System.ComponentModel.DataAnnotations
         public EmailAddressAttribute()
             : base(DataType.EmailAddress)
         {
-            // Set DefaultErrorMessage not ErrrorMessage, allowing user to set
+            // Set DefaultErrorMessage not ErrorMessage, allowing user to set
             // ErrorMessageResourceType and ErrorMessageResourceName to use localized messages.
             DefaultErrorMessage = SR.EmailAddressAttribute_Invalid;
         }

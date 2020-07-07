@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.X509Certificates.Tests.Common;
+using System.Text;
 
 namespace System.Net.Security.Tests
 {
@@ -33,6 +35,9 @@ namespace System.Net.Security.Tests
                 clientSocket.Connect(listener.LocalEndPoint);
                 Socket serverSocket = listener.Accept();
 
+                serverSocket.NoDelay = true;
+                clientSocket.NoDelay = true;
+
                 return (new NetworkStream(clientSocket, ownsSocket: true), new NetworkStream(serverSocket, ownsSocket: true));
             }
 
@@ -43,6 +48,29 @@ namespace System.Net.Security.Tests
             VirtualNetwork vn = new VirtualNetwork();
 
             return (new VirtualNetworkStream(vn, isServer: false), new VirtualNetworkStream(vn, isServer: true));
+        }
+
+        internal static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string name, string? testName = null)
+        {
+            X509Certificate2Collection chain = new X509Certificate2Collection();
+
+            CertificateAuthority.BuildPrivatePki(
+                PkiOptions.IssuerRevocationViaCrl,
+                out RevocationResponder responder,
+                out CertificateAuthority root,
+                out CertificateAuthority intermediate,
+                out X509Certificate2 endEntity,
+                subjectName: name,
+                testName: testName);
+
+            chain.Add(intermediate.CloneIssuerCert());
+            chain.Add(root.CloneIssuerCert());
+
+            responder.Dispose();
+            root.Dispose();
+            intermediate.Dispose();
+
+            return (endEntity, chain);
         }
     }
 }

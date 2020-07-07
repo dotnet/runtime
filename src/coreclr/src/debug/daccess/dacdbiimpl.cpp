@@ -3753,45 +3753,7 @@ void DacDbiInterfaceImpl::GetCachedWinRTTypesForIIDs(
 					DacDbiArrayList<GUID> & iids,
     				OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes)
 {
-#ifdef FEATURE_COMINTEROP
-
-    DD_ENTER_MAY_THROW;
-
-    AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-
-    {
-        pTypes->Alloc(iids.Count());
-
-        for (unsigned int i = 0; i < iids.Count(); ++i)
-        {
-            // There is the possiblity that we'll get this far with a dump and not fail, but still
-            // not be able to get full info for a particular param.
-            EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            {
-                PTR_MethodTable pMT = pAppDomain->LookupTypeByGuid(iids[i]);
-
-                // Fill in the struct using the current TypeHandle
-                VMPTR_TypeHandle vmTypeHandle = VMPTR_TypeHandle::NullPtr();
-                TypeHandle th = TypeHandle::FromTAddr(dac_cast<TADDR>(pMT));
-                vmTypeHandle.SetDacTargetPtr(th.AsTAddr());
-                TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                             vmAppDomain,
-                                             vmTypeHandle,
-                                             &((*pTypes)[i]));
-            }
-            EX_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            {
-                // On failure for a particular type, default it to NULL.
-                (*pTypes)[i].elementType = ELEMENT_TYPE_END;
-            }
-            EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-        }
-    }
-#else // FEATURE_COMINTEROP
-    {
-        pTypes->Alloc(0);
-    }
-#endif // FEATURE_COMINTEROP
+    pTypes->Alloc(0);
 }
 
 void DacDbiInterfaceImpl::GetCachedWinRTTypes(
@@ -3799,52 +3761,7 @@ void DacDbiInterfaceImpl::GetCachedWinRTTypes(
                     OUT DacDbiArrayList<GUID> * pGuids,
                     OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes)
 {
-#ifdef FEATURE_COMINTEROP
-
-    DD_ENTER_MAY_THROW;
-
-    AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-
-    InlineSArray<PTR_MethodTable, 32> rgMT;
-    InlineSArray<GUID, 32> rgGuid;
-
-    {
-        pAppDomain->GetCachedWinRTTypes(&rgMT, &rgGuid, 0, NULL);
-
-        pTypes->Alloc(rgMT.GetCount());
-        pGuids->Alloc(rgGuid.GetCount());
-
-        for (COUNT_T i = 0; i < rgMT.GetCount(); ++i)
-        {
-            // There is the possiblity that we'll get this far with a dump and not fail, but still
-            // not be able to get full info for a particular param.
-            EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            {
-                // Fill in the struct using the current TypeHandle
-                VMPTR_TypeHandle vmTypeHandle = VMPTR_TypeHandle::NullPtr();
-                TypeHandle th = TypeHandle::FromTAddr(dac_cast<TADDR>(rgMT[i]));
-                vmTypeHandle.SetDacTargetPtr(th.AsTAddr());
-                TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                             vmAppDomain,
-                                             vmTypeHandle,
-                                             &((*pTypes)[i]));
-            }
-            EX_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            {
-                // On failure for a particular type, default it to NULL.
-                (*pTypes)[i].elementType = ELEMENT_TYPE_END;
-            }
-            EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            (*pGuids)[i] = rgGuid[i];
-
-        }
-
-    }
-#else // FEATURE_COMINTEROP
-    {
-        pTypes->Alloc(0);
-    }
-#endif // FEATURE_COMINTEROP
+    pTypes->Alloc(0);
 }
 
 //-----------------------------------------------------------------------------
@@ -5863,13 +5780,6 @@ HRESULT DacDbiInterfaceImpl::IsWinRTModule(VMPTR_Module vmModule, BOOL& isWinRT)
     HRESULT hr = S_OK;
     isWinRT = FALSE;
 
-    EX_TRY
-    {
-        Module* pModule = vmModule.GetDacPtr();
-        isWinRT = pModule->GetFile()->GetAssembly()->IsWindowsRuntime();
-    }
-    EX_CATCH_HRESULT(hr);
-
     return hr;
 }
 
@@ -6694,6 +6604,8 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
     dac_generation gen1 = *GenerationTableIndex(g_gcDacGlobals->generation_table, 1);
     dac_generation gen2 = *GenerationTableIndex(g_gcDacGlobals->generation_table, 2);
     dac_generation loh  = *GenerationTableIndex(g_gcDacGlobals->generation_table, 3);
+    dac_generation poh  = *GenerationTableIndex(g_gcDacGlobals->generation_table, 4);
+
     pHeaps[0].YoungestGenPtr = (CORDB_ADDRESS)gen0.allocation_context.alloc_ptr;
     pHeaps[0].YoungestGenLimit = (CORDB_ADDRESS)gen0.allocation_context.alloc_limit;
 
@@ -6703,6 +6615,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
 
     // Segments
     int count = GetSegmentCount(loh.start_segment);
+    count += GetSegmentCount(poh.start_segment);
     count += GetSegmentCount(gen2.start_segment);
 
     pHeaps[0].SegmentCount = count;
@@ -6736,6 +6649,17 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
     for (; seg && (i < count); ++i)
     {
         pHeaps[0].Segments[i].Generation = 3;
+        pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
+        pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
+
+        seg = seg->next;
+    }
+
+    // Pinned object heap segments
+    seg = poh.start_segment;
+    for (; seg && (i < count); ++i)
+    {
+        pHeaps[0].Segments[i].Generation = 4;
         pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
         pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
 
@@ -6905,7 +6829,7 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
                 seg.start = heaps[i].Segments[j].Start;
                 seg.end = heaps[i].Segments[j].End;
 
-                _ASSERTE(heaps[i].Segments[j].Generation <= CorDebug_LOH);
+                _ASSERTE(heaps[i].Segments[j].Generation <= CorDebug_POH);
                 seg.type = (CorDebugGenerationTypes)heaps[i].Segments[j].Generation;
                 seg.heap = (ULONG)i;
             }
@@ -7491,8 +7415,8 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
     if ((mHandleMask & CorHandleWeakRefCount) || (mHandleMask & CorHandleStrongRefCount))
         result |= (1 << HNDTYPE_REFCOUNTED);
 
-    if (mHandleMask & CorHandleWeakWinRT)
-        result |= (1 << HNDTYPE_WEAK_WINRT);
+    if (mHandleMask & CorHandleWeakNativeCom)
+        result |= (1 << HNDTYPE_WEAK_NATIVE_COM);
 #endif // FEATURE_COMINTEROP
 
     if (mHandleMask & CorHandleStrongDependent)
@@ -7667,8 +7591,8 @@ void CALLBACK DacHandleWalker::EnumCallbackDac(PTR_UNCHECKED_OBJECTREF handle, u
             data.i64ExtraData = refCnt;
             break;
 
-        case HNDTYPE_WEAK_WINRT:
-            data.dwType = (DWORD)CorHandleWeakWinRT;
+        case HNDTYPE_WEAK_NATIVE_COM:
+            data.dwType = (DWORD)CorHandleWeakNativeCom;
             break;
 #endif
 

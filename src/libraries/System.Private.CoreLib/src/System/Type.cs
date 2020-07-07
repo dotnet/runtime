@@ -119,10 +119,20 @@ namespace System
         public virtual bool IsSecurityTransparent => throw NotImplemented.ByDesign;
 
         public virtual StructLayoutAttribute? StructLayoutAttribute => throw new NotSupportedException();
-        public ConstructorInfo? TypeInitializer => GetConstructorImpl(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, Type.EmptyTypes, null);
 
+        public ConstructorInfo? TypeInitializer
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            get => GetConstructorImpl(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, Type.EmptyTypes, null);
+        }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         public ConstructorInfo? GetConstructor(Type[] types) => GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, types, null);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public ConstructorInfo? GetConstructor(BindingFlags bindingAttr, Binder? binder, Type[] types, ParameterModifier[]? modifiers) => GetConstructor(bindingAttr, binder, CallingConventions.Any, types, modifiers);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public ConstructorInfo? GetConstructor(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
             if (types == null)
@@ -134,31 +144,73 @@ namespace System
             }
             return GetConstructorImpl(bindingAttr, binder, callConvention, types, modifiers);
         }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected abstract ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't recognize GetConstructors(BindingFlags.Public) but this is what the body is doing")]
         public ConstructorInfo[] GetConstructors() => GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public abstract ConstructorInfo[] GetConstructors(BindingFlags bindingAttr);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
         public EventInfo? GetEvent(string name) => GetEvent(name, Type.DefaultLookup);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public abstract EventInfo? GetEvent(string name, BindingFlags bindingAttr);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't recognize GetEvents(BindingFlags.Public) but this is what the body is doing")]
         public virtual EventInfo[] GetEvents() => GetEvents(Type.DefaultLookup);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public abstract EventInfo[] GetEvents(BindingFlags bindingAttr);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
         public FieldInfo? GetField(string name) => GetField(name, Type.DefaultLookup);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public abstract FieldInfo? GetField(string name, BindingFlags bindingAttr);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't recognize GetFields(BindingFlags.Public) but this is what the body is doing")]
         public FieldInfo[] GetFields() => GetFields(Type.DefaultLookup);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public abstract FieldInfo[] GetFields(BindingFlags bindingAttr);
 
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.PublicMethods
+            | DynamicallyAccessedMemberTypes.PublicEvents
+            | DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors
+            | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't recognize GetMember(BindingFlags.Public) but this is what the body is doing")]
         public MemberInfo[] GetMember(string name) => GetMember(name, Type.DefaultLookup);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public virtual MemberInfo[] GetMember(string name, BindingFlags bindingAttr) => GetMember(name, MemberTypes.All, bindingAttr);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public virtual MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public MemberInfo[] GetMembers() => GetMembers(Type.DefaultLookup);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public abstract MemberInfo[] GetMembers(BindingFlags bindingAttr);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         public MethodInfo? GetMethod(string name) => GetMethod(name, Type.DefaultLookup);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public MethodInfo? GetMethod(string name, BindingFlags bindingAttr)
         {
             if (name == null)
@@ -166,9 +218,16 @@ namespace System
             return GetMethodImpl(name, bindingAttr, null, CallingConventions.Any, null, null);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         public MethodInfo? GetMethod(string name, Type[] types) => GetMethod(name, types, null);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         public MethodInfo? GetMethod(string name, Type[] types, ParameterModifier[]? modifiers) => GetMethod(name, Type.DefaultLookup, null, types, modifiers);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Binder? binder, Type[] types, ParameterModifier[]? modifiers) => GetMethod(name, bindingAttr, binder, CallingConventions.Any, types, modifiers);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
             if (name == null)
@@ -183,11 +242,19 @@ namespace System
             return GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected abstract MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         public MethodInfo? GetMethod(string name, int genericParameterCount, Type[] types) => GetMethod(name, genericParameterCount, types, null);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         public MethodInfo? GetMethod(string name, int genericParameterCount, Type[] types, ParameterModifier[]? modifiers) => GetMethod(name, genericParameterCount, Type.DefaultLookup, null, types, modifiers);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public MethodInfo? GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, Type[] types, ParameterModifier[]? modifiers) => GetMethod(name, genericParameterCount, bindingAttr, binder, CallingConventions.Any, types, modifiers);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public MethodInfo? GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
             if (name == null)
@@ -204,18 +271,35 @@ namespace System
             return GetMethodImpl(name, genericParameterCount, bindingAttr, binder, callConvention, types, modifiers);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected virtual MethodInfo? GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) => throw new NotSupportedException();
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't recognize GetMethods(BindingFlags.Public) but this is what the body is doing")]
         public MethodInfo[] GetMethods() => GetMethods(Type.DefaultLookup);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public abstract MethodInfo[] GetMethods(BindingFlags bindingAttr);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public Type? GetNestedType(string name) => GetNestedType(name, Type.DefaultLookup);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public abstract Type? GetNestedType(string name, BindingFlags bindingAttr);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't recognize GetNestedTypes(BindingFlags.Public) but this is what the body is doing")]
         public Type[] GetNestedTypes() => GetNestedTypes(Type.DefaultLookup);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public abstract Type[] GetNestedTypes(BindingFlags bindingAttr);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         public PropertyInfo? GetProperty(string name) => GetProperty(name, Type.DefaultLookup);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public PropertyInfo? GetProperty(string name, BindingFlags bindingAttr)
         {
             if (name == null)
@@ -223,6 +307,9 @@ namespace System
             return GetPropertyImpl(name, bindingAttr, null, null, null, null);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't recognize GetPropertyImpl(BindingFlags.Public) but this is what the body is doing")]
         public PropertyInfo? GetProperty(string name, Type? returnType)
         {
             if (name == null)
@@ -230,9 +317,16 @@ namespace System
             return GetPropertyImpl(name, Type.DefaultLookup, null, returnType, null, null);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         public PropertyInfo? GetProperty(string name, Type[] types) => GetProperty(name, null, types);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         public PropertyInfo? GetProperty(string name, Type? returnType, Type[] types) => GetProperty(name, returnType, types, null);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         public PropertyInfo? GetProperty(string name, Type? returnType, Type[] types, ParameterModifier[]? modifiers) => GetProperty(name, Type.DefaultLookup, null, returnType, types, modifiers);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public PropertyInfo? GetProperty(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[] types, ParameterModifier[]? modifiers)
         {
             if (name == null)
@@ -242,11 +336,24 @@ namespace System
             return GetPropertyImpl(name, bindingAttr, binder, returnType, types, modifiers);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected abstract PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't recognize GetProperties(BindingFlags.Public) but this is what the body is doing")]
         public PropertyInfo[] GetProperties() => GetProperties(Type.DefaultLookup);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public abstract PropertyInfo[] GetProperties(BindingFlags bindingAttr);
 
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.PublicMethods
+            | DynamicallyAccessedMemberTypes.PublicEvents
+            | DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors
+            | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public virtual MemberInfo[] GetDefaultMembers() => throw NotImplemented.ByDesign;
 
         public virtual RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
@@ -267,7 +374,7 @@ namespace System
             for (int i = 0; i < cls.Length; i++)
             {
                 if (args[i] == null)
-                    throw new ArgumentNullException();
+                    throw new ArgumentException(SR.ArgumentNull_ArrayValue, nameof(args));
                 cls[i] = args[i].GetType();
             }
             return cls;
@@ -302,11 +409,15 @@ namespace System
 
         [DebuggerHidden]
         [DebuggerStepThrough]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args) => InvokeMember(name, invokeAttr, binder, target, args, null, null, null);
 
         [DebuggerHidden]
         [DebuggerStepThrough]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, CultureInfo? culture) => InvokeMember(name, invokeAttr, binder, target, args, null, culture, null);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public abstract object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters);
 
         public Type? GetInterface(string name) => GetInterface(name, ignoreCase: false);
@@ -318,6 +429,8 @@ namespace System
         public virtual bool IsInstanceOfType([NotNullWhen(true)] object? o) => o == null ? false : IsAssignableFrom(o.GetType());
         public virtual bool IsEquivalentTo([NotNullWhen(true)] Type? other) => this == other;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "The single instance field on enum types is never trimmed")]
         public virtual Type GetEnumUnderlyingType()
         {
             if (!IsEnum)

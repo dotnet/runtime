@@ -10,13 +10,6 @@ using System.Text;
 
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nint = System.Int64;
-#else
-using nint = System.Int32;
-#endif
-
 namespace System.Numerics
 {
     /* Note: The following patterns are used throughout the code here and are described here
@@ -75,11 +68,12 @@ namespace System.Numerics
         public static Vector<T> Zero
         {
             [Intrinsic]
-            get => s_zero;
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                return default;
+            }
         }
-#pragma warning disable 0649 // never assigned to
-        private static readonly Vector<T> s_zero;
-#pragma warning restore 0649
 
         /// <summary>
         /// Returns a vector containing all ones.
@@ -87,16 +81,22 @@ namespace System.Numerics
         public static Vector<T> One
         {
             [Intrinsic]
-            get => s_one;
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                return new Vector<T>(GetOneValue());
+            }
         }
-        private static readonly Vector<T> s_one = new Vector<T>(GetOneValue());
 
-        internal static Vector<T> AllOnes
+        internal static Vector<T> AllBitsSet
         {
             [Intrinsic]
-            get => s_allOnes;
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                return new Vector<T>(GetAllBitsSetValue());
+            }
         }
-        private static readonly Vector<T> s_allOnes = new Vector<T>(GetAllBitsSetValue());
         #endregion Static Members
 
         #region Constructors
@@ -107,6 +107,8 @@ namespace System.Numerics
         public unsafe Vector(T value)
             : this()
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if (Vector.IsHardwareAccelerated)
             {
                 if (typeof(T) == typeof(byte))
@@ -324,15 +326,19 @@ namespace System.Numerics
         [Intrinsic]
         public unsafe Vector(T[] values, int index)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if (values == null)
             {
                 // Match the JIT's exception type here. For perf, a NullReference is thrown instead of an ArgumentNull.
                 throw new NullReferenceException(SR.Arg_NullArgumentNullRef);
             }
+
             if (index < 0 || (values.Length - index) < Count)
             {
                 Vector.ThrowInsufficientNumberOfElementsException(Vector<T>.Count);
             }
+
             this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref values[index]));
         }
 
@@ -344,6 +350,7 @@ namespace System.Numerics
 
         private Vector(ref Register existingRegister)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
             this.register = existingRegister;
         }
 
@@ -354,10 +361,12 @@ namespace System.Numerics
         public Vector(ReadOnlySpan<byte> values)
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if (values.Length < Vector<byte>.Count)
             {
                 Vector.ThrowInsufficientNumberOfElementsException(Vector<byte>.Count);
             }
+
             this = Unsafe.ReadUnaligned<Vector<T>>(ref MemoryMarshal.GetReference(values));
         }
 
@@ -367,10 +376,13 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(ReadOnlySpan<T> values)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if (values.Length < Count)
             {
                 Vector.ThrowInsufficientNumberOfElementsException(Vector<T>.Count);
             }
+
             this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
         }
 
@@ -380,10 +392,13 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(Span<T> values)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if (values.Length < Count)
             {
                 Vector.ThrowInsufficientNumberOfElementsException(Vector<T>.Count);
             }
+
             this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
         }
         #endregion Constructors
@@ -397,6 +412,7 @@ namespace System.Numerics
         public readonly void CopyTo(Span<byte> destination)
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if ((uint)destination.Length < (uint)Vector<byte>.Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
@@ -412,6 +428,8 @@ namespace System.Numerics
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination span</exception>
         public readonly void CopyTo(Span<T> destination)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if ((uint)destination.Length < (uint)Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
@@ -427,10 +445,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentNullException">If the destination array is null</exception>
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination array</exception>
         [Intrinsic]
-        public readonly void CopyTo(T[] destination)
-        {
-            CopyTo(destination, 0);
-        }
+        public readonly void CopyTo(T[] destination) => CopyTo(destination, 0);
 
         /// <summary>
         /// Copies the vector to the given destination array. The destination array must be at least size Vector'T.Count.
@@ -443,15 +458,19 @@ namespace System.Numerics
         [Intrinsic]
         public readonly unsafe void CopyTo(T[] destination, int startIndex)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if (destination == null)
             {
                 // Match the JIT's exception type here. For perf, a NullReference is thrown instead of an ArgumentNull.
                 throw new NullReferenceException(SR.Arg_NullArgumentNullRef);
             }
+
             if ((uint)startIndex >= (uint)destination.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Format(SR.Arg_ArgumentOutOfRangeException, startIndex));
             }
+
             if ((destination.Length - startIndex) < Count)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_ElementsInSourceIsGreaterThanDestination, startIndex));
@@ -468,6 +487,8 @@ namespace System.Numerics
             [Intrinsic]
             get
             {
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
                 if ((uint)index >= (uint)Count)
                 {
                     throw new IndexOutOfRangeException(SR.Format(SR.Arg_ArgumentOutOfRangeException, index));
@@ -483,14 +504,7 @@ namespace System.Numerics
         /// <param name="obj">The Object to compare against.</param>
         /// <returns>True if the Object is equal to this vector; False otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override readonly bool Equals(object? obj)
-        {
-            if (!(obj is Vector<T>))
-            {
-                return false;
-            }
-            return Equals((Vector<T>)obj);
-        }
+        public override readonly bool Equals(object? obj) => (obj is Vector<T> other) && Equals(other);
 
         /// <summary>
         /// Returns a boolean indicating whether the given vector is equal to this vector instance.
@@ -498,133 +512,7 @@ namespace System.Numerics
         /// <param name="other">The vector to compare this instance to.</param>
         /// <returns>True if the other vector is equal to this instance; False otherwise.</returns>
         [Intrinsic]
-        public readonly bool Equals(Vector<T> other)
-        {
-            if (Vector.IsHardwareAccelerated)
-            {
-                for (int g = 0; g < Count; g++)
-                {
-                    if (!ScalarEquals(this[g], other[g]))
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-            else
-            {
-                if (typeof(T) == typeof(byte))
-                {
-                    return
-                        this.register.byte_0 == other.register.byte_0
-                        && this.register.byte_1 == other.register.byte_1
-                        && this.register.byte_2 == other.register.byte_2
-                        && this.register.byte_3 == other.register.byte_3
-                        && this.register.byte_4 == other.register.byte_4
-                        && this.register.byte_5 == other.register.byte_5
-                        && this.register.byte_6 == other.register.byte_6
-                        && this.register.byte_7 == other.register.byte_7
-                        && this.register.byte_8 == other.register.byte_8
-                        && this.register.byte_9 == other.register.byte_9
-                        && this.register.byte_10 == other.register.byte_10
-                        && this.register.byte_11 == other.register.byte_11
-                        && this.register.byte_12 == other.register.byte_12
-                        && this.register.byte_13 == other.register.byte_13
-                        && this.register.byte_14 == other.register.byte_14
-                        && this.register.byte_15 == other.register.byte_15;
-                }
-                else if (typeof(T) == typeof(sbyte))
-                {
-                    return
-                        this.register.sbyte_0 == other.register.sbyte_0
-                        && this.register.sbyte_1 == other.register.sbyte_1
-                        && this.register.sbyte_2 == other.register.sbyte_2
-                        && this.register.sbyte_3 == other.register.sbyte_3
-                        && this.register.sbyte_4 == other.register.sbyte_4
-                        && this.register.sbyte_5 == other.register.sbyte_5
-                        && this.register.sbyte_6 == other.register.sbyte_6
-                        && this.register.sbyte_7 == other.register.sbyte_7
-                        && this.register.sbyte_8 == other.register.sbyte_8
-                        && this.register.sbyte_9 == other.register.sbyte_9
-                        && this.register.sbyte_10 == other.register.sbyte_10
-                        && this.register.sbyte_11 == other.register.sbyte_11
-                        && this.register.sbyte_12 == other.register.sbyte_12
-                        && this.register.sbyte_13 == other.register.sbyte_13
-                        && this.register.sbyte_14 == other.register.sbyte_14
-                        && this.register.sbyte_15 == other.register.sbyte_15;
-                }
-                else if (typeof(T) == typeof(ushort))
-                {
-                    return
-                        this.register.uint16_0 == other.register.uint16_0
-                        && this.register.uint16_1 == other.register.uint16_1
-                        && this.register.uint16_2 == other.register.uint16_2
-                        && this.register.uint16_3 == other.register.uint16_3
-                        && this.register.uint16_4 == other.register.uint16_4
-                        && this.register.uint16_5 == other.register.uint16_5
-                        && this.register.uint16_6 == other.register.uint16_6
-                        && this.register.uint16_7 == other.register.uint16_7;
-                }
-                else if (typeof(T) == typeof(short))
-                {
-                    return
-                        this.register.int16_0 == other.register.int16_0
-                        && this.register.int16_1 == other.register.int16_1
-                        && this.register.int16_2 == other.register.int16_2
-                        && this.register.int16_3 == other.register.int16_3
-                        && this.register.int16_4 == other.register.int16_4
-                        && this.register.int16_5 == other.register.int16_5
-                        && this.register.int16_6 == other.register.int16_6
-                        && this.register.int16_7 == other.register.int16_7;
-                }
-                else if (typeof(T) == typeof(uint))
-                {
-                    return
-                        this.register.uint32_0 == other.register.uint32_0
-                        && this.register.uint32_1 == other.register.uint32_1
-                        && this.register.uint32_2 == other.register.uint32_2
-                        && this.register.uint32_3 == other.register.uint32_3;
-                }
-                else if (typeof(T) == typeof(int))
-                {
-                    return
-                        this.register.int32_0 == other.register.int32_0
-                        && this.register.int32_1 == other.register.int32_1
-                        && this.register.int32_2 == other.register.int32_2
-                        && this.register.int32_3 == other.register.int32_3;
-                }
-                else if (typeof(T) == typeof(ulong))
-                {
-                    return
-                        this.register.uint64_0 == other.register.uint64_0
-                        && this.register.uint64_1 == other.register.uint64_1;
-                }
-                else if (typeof(T) == typeof(long))
-                {
-                    return
-                        this.register.int64_0 == other.register.int64_0
-                        && this.register.int64_1 == other.register.int64_1;
-                }
-                else if (typeof(T) == typeof(float))
-                {
-                    return
-                        this.register.single_0 == other.register.single_0
-                        && this.register.single_1 == other.register.single_1
-                        && this.register.single_2 == other.register.single_2
-                        && this.register.single_3 == other.register.single_3;
-                }
-                else if (typeof(T) == typeof(double))
-                {
-                    return
-                        this.register.double_0 == other.register.double_0
-                        && this.register.double_1 == other.register.double_1;
-                }
-                else
-                {
-                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
-                }
-            }
-        }
+        public readonly bool Equals(Vector<T> other) => this == other;
 
         /// <summary>
         /// Returns the hash code for this instance.
@@ -674,20 +562,14 @@ namespace System.Numerics
         /// Returns a String representing this vector.
         /// </summary>
         /// <returns>The string representation.</returns>
-        public override readonly string ToString()
-        {
-            return ToString("G", CultureInfo.CurrentCulture);
-        }
+        public override readonly string ToString() => ToString("G", CultureInfo.CurrentCulture);
 
         /// <summary>
         /// Returns a String representing this vector, using the specified format string to format individual elements.
         /// </summary>
         /// <param name="format">The format of individual elements.</param>
         /// <returns>The string representation.</returns>
-        public readonly string ToString(string? format)
-        {
-            return ToString(format, CultureInfo.CurrentCulture);
-        }
+        public readonly string ToString(string? format) => ToString(format, CultureInfo.CurrentCulture);
 
         /// <summary>
         /// Returns a String representing this vector, using the specified format string to format individual elements
@@ -698,6 +580,8 @@ namespace System.Numerics
         /// <returns>The string representation.</returns>
         public readonly string ToString(string? format, IFormatProvider? formatProvider)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             StringBuilder sb = new StringBuilder();
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
             sb.Append('<');
@@ -722,6 +606,7 @@ namespace System.Numerics
         public readonly bool TryCopyTo(Span<byte> destination)
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if ((uint)destination.Length < (uint)Vector<byte>.Count)
             {
                 return false;
@@ -739,6 +624,8 @@ namespace System.Numerics
         /// <paramref name="destination"/> is not large enough to hold the source vector.</returns>
         public readonly bool TryCopyTo(Span<T> destination)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             if ((uint)destination.Length < (uint)Count)
             {
                 return false;
@@ -759,6 +646,8 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator +(Vector<T> left, Vector<T> right)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             unchecked
             {
                 if (Vector.IsHardwareAccelerated)
@@ -971,6 +860,8 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator -(Vector<T> left, Vector<T> right)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             unchecked
             {
                 if (Vector.IsHardwareAccelerated)
@@ -1184,6 +1075,8 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator *(Vector<T> left, Vector<T> right)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             unchecked
             {
                 if (Vector.IsHardwareAccelerated)
@@ -1394,8 +1287,7 @@ namespace System.Numerics
         /// <param name="factor">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator *(Vector<T> value, T factor) =>
-            new Vector<T>(factor) * value;
+        public static Vector<T> operator *(Vector<T> value, T factor) => new Vector<T>(factor) * value;
 
         /// <summary>
         /// Multiplies a vector by the given scalar.
@@ -1404,8 +1296,7 @@ namespace System.Numerics
         /// <param name="value">The source vector.</param>
         /// <returns>The scaled vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator *(T factor, Vector<T> value) =>
-            new Vector<T>(factor) * value;
+        public static Vector<T> operator *(T factor, Vector<T> value) => new Vector<T>(factor) * value;
 
         // This method is intrinsic only for certain types. It cannot access fields directly unless we are sure the context is unaccelerated.
         /// <summary>
@@ -1417,6 +1308,8 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator /(Vector<T> left, Vector<T> right)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             unchecked
             {
                 if (Vector.IsHardwareAccelerated)
@@ -1638,6 +1531,8 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator &(Vector<T> left, Vector<T> right)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             Vector<T> result = default;
             unchecked
             {
@@ -1669,6 +1564,8 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator |(Vector<T> left, Vector<T> right)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             Vector<T> result = default;
             unchecked
             {
@@ -1700,6 +1597,8 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator ^(Vector<T> left, Vector<T> right)
         {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
             Vector<T> result = default;
             unchecked
             {
@@ -1728,8 +1627,7 @@ namespace System.Numerics
         /// <param name="value">The source vector.</param>
         /// <returns>The one's complement vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator ~(Vector<T> value) =>
-            s_allOnes ^ value;
+        public static Vector<T> operator ~(Vector<T> value) => AllBitsSet ^ value;
         #endregion Bitwise Operators
 
         #region Logical Operators
@@ -1741,8 +1639,133 @@ namespace System.Numerics
         /// <returns>True if all elements are equal; False otherwise.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(Vector<T> left, Vector<T> right) =>
-            left.Equals(right);
+        public static bool operator ==(Vector<T> left, Vector<T> right)
+        {
+            if (Vector.IsHardwareAccelerated)
+            {
+                for (int g = 0; g < Count; g++)
+                {
+                    if (!ScalarEquals(left[g], right[g]))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else
+            {
+                if (typeof(T) == typeof(byte))
+                {
+                    return
+                        left.register.byte_0 == right.register.byte_0
+                        && left.register.byte_1 == right.register.byte_1
+                        && left.register.byte_2 == right.register.byte_2
+                        && left.register.byte_3 == right.register.byte_3
+                        && left.register.byte_4 == right.register.byte_4
+                        && left.register.byte_5 == right.register.byte_5
+                        && left.register.byte_6 == right.register.byte_6
+                        && left.register.byte_7 == right.register.byte_7
+                        && left.register.byte_8 == right.register.byte_8
+                        && left.register.byte_9 == right.register.byte_9
+                        && left.register.byte_10 == right.register.byte_10
+                        && left.register.byte_11 == right.register.byte_11
+                        && left.register.byte_12 == right.register.byte_12
+                        && left.register.byte_13 == right.register.byte_13
+                        && left.register.byte_14 == right.register.byte_14
+                        && left.register.byte_15 == right.register.byte_15;
+                }
+                else if (typeof(T) == typeof(sbyte))
+                {
+                    return
+                        left.register.sbyte_0 == right.register.sbyte_0
+                        && left.register.sbyte_1 == right.register.sbyte_1
+                        && left.register.sbyte_2 == right.register.sbyte_2
+                        && left.register.sbyte_3 == right.register.sbyte_3
+                        && left.register.sbyte_4 == right.register.sbyte_4
+                        && left.register.sbyte_5 == right.register.sbyte_5
+                        && left.register.sbyte_6 == right.register.sbyte_6
+                        && left.register.sbyte_7 == right.register.sbyte_7
+                        && left.register.sbyte_8 == right.register.sbyte_8
+                        && left.register.sbyte_9 == right.register.sbyte_9
+                        && left.register.sbyte_10 == right.register.sbyte_10
+                        && left.register.sbyte_11 == right.register.sbyte_11
+                        && left.register.sbyte_12 == right.register.sbyte_12
+                        && left.register.sbyte_13 == right.register.sbyte_13
+                        && left.register.sbyte_14 == right.register.sbyte_14
+                        && left.register.sbyte_15 == right.register.sbyte_15;
+                }
+                else if (typeof(T) == typeof(ushort))
+                {
+                    return
+                        left.register.uint16_0 == right.register.uint16_0
+                        && left.register.uint16_1 == right.register.uint16_1
+                        && left.register.uint16_2 == right.register.uint16_2
+                        && left.register.uint16_3 == right.register.uint16_3
+                        && left.register.uint16_4 == right.register.uint16_4
+                        && left.register.uint16_5 == right.register.uint16_5
+                        && left.register.uint16_6 == right.register.uint16_6
+                        && left.register.uint16_7 == right.register.uint16_7;
+                }
+                else if (typeof(T) == typeof(short))
+                {
+                    return
+                        left.register.int16_0 == right.register.int16_0
+                        && left.register.int16_1 == right.register.int16_1
+                        && left.register.int16_2 == right.register.int16_2
+                        && left.register.int16_3 == right.register.int16_3
+                        && left.register.int16_4 == right.register.int16_4
+                        && left.register.int16_5 == right.register.int16_5
+                        && left.register.int16_6 == right.register.int16_6
+                        && left.register.int16_7 == right.register.int16_7;
+                }
+                else if (typeof(T) == typeof(uint))
+                {
+                    return
+                        left.register.uint32_0 == right.register.uint32_0
+                        && left.register.uint32_1 == right.register.uint32_1
+                        && left.register.uint32_2 == right.register.uint32_2
+                        && left.register.uint32_3 == right.register.uint32_3;
+                }
+                else if (typeof(T) == typeof(int))
+                {
+                    return
+                        left.register.int32_0 == right.register.int32_0
+                        && left.register.int32_1 == right.register.int32_1
+                        && left.register.int32_2 == right.register.int32_2
+                        && left.register.int32_3 == right.register.int32_3;
+                }
+                else if (typeof(T) == typeof(ulong))
+                {
+                    return
+                        left.register.uint64_0 == right.register.uint64_0
+                        && left.register.uint64_1 == right.register.uint64_1;
+                }
+                else if (typeof(T) == typeof(long))
+                {
+                    return
+                        left.register.int64_0 == right.register.int64_0
+                        && left.register.int64_1 == right.register.int64_1;
+                }
+                else if (typeof(T) == typeof(float))
+                {
+                    return
+                        left.register.single_0 == right.register.single_0
+                        && left.register.single_1 == right.register.single_1
+                        && left.register.single_2 == right.register.single_2
+                        && left.register.single_3 == right.register.single_3;
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return
+                        left.register.double_0 == right.register.double_0
+                        && left.register.double_1 == right.register.double_1;
+                }
+                else
+                {
+                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                }
+            }
+        }
 
         /// <summary>
         /// Returns a boolean indicating whether any single pair of elements in the given vectors are not equal.
@@ -1762,8 +1785,11 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<byte>(Vector<T> value) =>
-            new Vector<byte>(ref value.register);
+        public static explicit operator Vector<byte>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<byte>(ref value.register);
+        }
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -1772,8 +1798,11 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static explicit operator Vector<sbyte>(Vector<T> value) =>
-            new Vector<sbyte>(ref value.register);
+        public static explicit operator Vector<sbyte>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<sbyte>(ref value.register);
+        }
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -1782,8 +1811,11 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static explicit operator Vector<ushort>(Vector<T> value) =>
-            new Vector<ushort>(ref value.register);
+        public static explicit operator Vector<ushort>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<ushort>(ref value.register);
+        }
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -1791,27 +1823,11 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<short>(Vector<T> value) =>
-            new Vector<short>(ref value.register);
-
-        /// <summary>
-        /// Reinterprets the bits of the given vector into those of another type.
-        /// </summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [CLSCompliant(false)]
-        [Intrinsic]
-        public static explicit operator Vector<uint>(Vector<T> value) =>
-            new Vector<uint>(ref value.register);
-
-        /// <summary>
-        /// Reinterprets the bits of the given vector into those of another type.
-        /// </summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [Intrinsic]
-        public static explicit operator Vector<int>(Vector<T> value) =>
-            new Vector<int>(ref value.register);
+        public static explicit operator Vector<short>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<short>(ref value.register);
+        }
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -1820,8 +1836,11 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static explicit operator Vector<ulong>(Vector<T> value) =>
-            new Vector<ulong>(ref value.register);
+        public static explicit operator Vector<uint>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<uint>(ref value.register);
+        }
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -1829,8 +1848,24 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<long>(Vector<T> value) =>
-            new Vector<long>(ref value.register);
+        public static explicit operator Vector<int>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<int>(ref value.register);
+        }
+
+        /// <summary>
+        /// Reinterprets the bits of the given vector into those of another type.
+        /// </summary>
+        /// <param name="value">The source vector</param>
+        /// <returns>The reinterpreted vector.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static explicit operator Vector<ulong>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<ulong>(ref value.register);
+        }
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -1838,8 +1873,11 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<float>(Vector<T> value) =>
-            new Vector<float>(ref value.register);
+        public static explicit operator Vector<long>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<long>(ref value.register);
+        }
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -1847,8 +1885,23 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<double>(Vector<T> value) =>
-            new Vector<double>(ref value.register);
+        public static explicit operator Vector<float>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<float>(ref value.register);
+        }
+
+        /// <summary>
+        /// Reinterprets the bits of the given vector into those of another type.
+        /// </summary>
+        /// <param name="value">The source vector</param>
+        /// <returns>The reinterpreted vector.</returns>
+        [Intrinsic]
+        public static explicit operator Vector<double>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return new Vector<double>(ref value.register);
+        }
 
         #endregion Conversions
 

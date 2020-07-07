@@ -241,7 +241,7 @@ namespace System.IO.Tests
             watcher.Filter = "abc.dll";
             Assert.Equal("abc.dll", watcher.Filter);
 
-            if (!(PlatformDetection.IsOSX))
+            if (!PlatformDetection.IsOSXLike)
             {
                 watcher.Filter = "ABC.DLL";
                 Assert.Equal("ABC.DLL", watcher.Filter);
@@ -1054,7 +1054,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void FileSystemWatcher_ModifyFiltersConcurrentWithEvents()
         {
             DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());

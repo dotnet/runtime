@@ -4,7 +4,9 @@
 
 using System.Diagnostics.Tracing;
 using System.Globalization;
+using System.IO;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
@@ -34,6 +36,9 @@ namespace System.Net
         private const int RemoteVertificateValidId = RemoteCertificateErrorId + 1;
         private const int RemoteCertificateSuccesId = RemoteVertificateValidId + 1;
         private const int RemoteCertificateInvalidId = RemoteCertificateSuccesId + 1;
+        private const int SslStreamCtorId = RemoteCertificateInvalidId + 1;
+        private const int SentFrameId = SslStreamCtorId + 1;
+        private const int ReceivedFrameId = SentFrameId + 1;
 
         [Event(EnumerateSecurityPackagesId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
         public void EnumerateSecurityPackages(string? securityPackage)
@@ -54,23 +59,57 @@ namespace System.Net
         }
 
         [NonEvent]
-        public void SecureChannelCtor(SecureChannel secureChannel, string hostname, X509CertificateCollection? clientCertificates, EncryptionPolicy encryptionPolicy)
+        public void SslStreamCtor(SslStream sslStream, Stream innerStream)
         {
             if (IsEnabled())
             {
-                SecureChannelCtor(hostname, GetHashCode(secureChannel), clientCertificates?.Count ?? 0, encryptionPolicy);
+                string? localId = null;
+                string? remoteId = null;
+
+                NetworkStream? ns = innerStream as NetworkStream;
+                if (ns != null)
+                {
+                    try
+                    {
+                        localId = ns.Socket.LocalEndPoint?.ToString();
+                        remoteId = ns.Socket.RemoteEndPoint?.ToString();
+
+                    }
+                    catch { };
+                }
+
+                if (localId == null)
+                {
+                    localId = IdOf(innerStream);
+                }
+
+                SslStreamCtor(IdOf(sslStream), localId, remoteId);
             }
         }
-        [Event(SecureChannelCtorId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
-        private unsafe void SecureChannelCtor(string hostname, int secureChannelHash, int clientCertificatesCount, EncryptionPolicy encryptionPolicy) =>
-            WriteEvent(SecureChannelCtorId, hostname, secureChannelHash, clientCertificatesCount, (int)encryptionPolicy);
+
+        [Event(SslStreamCtorId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        private unsafe void SslStreamCtor(string thisOrContextObject, string? localId, string? remoteId) =>
+              WriteEvent(SslStreamCtorId, thisOrContextObject, localId, remoteId);
 
         [NonEvent]
-        public void LocatingPrivateKey(X509Certificate x509Certificate, SecureChannel secureChannel)
+        public void SecureChannelCtor(SecureChannel secureChannel, SslStream sslStream, string hostname, X509CertificateCollection? clientCertificates, EncryptionPolicy encryptionPolicy)
         {
             if (IsEnabled())
             {
-                LocatingPrivateKey(x509Certificate.ToString(true), GetHashCode(secureChannel));
+                SecureChannelCtor(IdOf(secureChannel), hostname, GetHashCode(secureChannel), clientCertificates?.Count ?? 0, encryptionPolicy);
+            }
+        }
+
+        [Event(SecureChannelCtorId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        private unsafe void SecureChannelCtor(string sslStream, string hostname, int secureChannelHash, int clientCertificatesCount, EncryptionPolicy encryptionPolicy) =>
+            WriteEvent(SecureChannelCtorId, sslStream, hostname, secureChannelHash, clientCertificatesCount, (int)encryptionPolicy);
+
+        [NonEvent]
+        public void LocatingPrivateKey(X509Certificate x509Certificate, object instance)
+        {
+            if (IsEnabled())
+            {
+                LocatingPrivateKey(x509Certificate.ToString(true), GetHashCode(instance));
             }
         }
         [Event(LocatingPrivateKeyId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
@@ -78,11 +117,11 @@ namespace System.Net
             WriteEvent(LocatingPrivateKeyId, x509Certificate, secureChannelHash);
 
         [NonEvent]
-        public void CertIsType2(SecureChannel secureChannel)
+        public void CertIsType2(object instance)
         {
             if (IsEnabled())
             {
-                CertIsType2(GetHashCode(secureChannel));
+                CertIsType2(GetHashCode(instance));
             }
         }
         [Event(CertIsType2Id, Keywords = Keywords.Default, Level = EventLevel.Informational)]
@@ -90,11 +129,11 @@ namespace System.Net
             WriteEvent(CertIsType2Id, secureChannelHash);
 
         [NonEvent]
-        public void FoundCertInStore(bool serverMode, SecureChannel secureChannel)
+        public void FoundCertInStore(bool serverMode, object instance)
         {
             if (IsEnabled())
             {
-                FoundCertInStore(serverMode ? "LocalMachine" : "CurrentUser", GetHashCode(secureChannel));
+                FoundCertInStore(serverMode ? "LocalMachine" : "CurrentUser", GetHashCode(instance));
             }
         }
         [Event(FoundCertInStoreId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
@@ -102,11 +141,11 @@ namespace System.Net
             WriteEvent(FoundCertInStoreId, store, secureChannelHash);
 
         [NonEvent]
-        public void NotFoundCertInStore(SecureChannel secureChannel)
+        public void NotFoundCertInStore(object instance)
         {
             if (IsEnabled())
             {
-                NotFoundCertInStore(GetHashCode(secureChannel));
+                NotFoundCertInStore(GetHashCode(instance));
             }
         }
         [Event(NotFoundCertInStoreId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
@@ -312,70 +351,48 @@ namespace System.Net
         private void RemoteCertUserDeclaredInvalid(int secureChannelHash) =>
             WriteEvent(RemoteCertificateInvalidId, secureChannelHash);
 
+        [NonEvent]
+        public void SentFrame(SslStream sslStream, ReadOnlySpan<byte> frame)
+        {
+            if (IsEnabled())
+            {
+               TlsFrameHelper.TlsFrameInfo info = default;
+               bool isComplete = TlsFrameHelper.TryGetFrameInfo(frame, ref info);
+               SentFrame(IdOf(sslStream), info.ToString(), isComplete ? 1 : 0);
+            }
+        }
+        [Event(SentFrameId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
+        private void SentFrame(string sslStream, string tlsFrame, int isComplete) =>
+            WriteEvent(SentFrameId, sslStream, tlsFrame, isComplete);
+
+        [NonEvent]
+        public void ReceivedFrame(SslStream sslStream, TlsFrameHelper.TlsFrameInfo frameInfo)
+        {
+            if (IsEnabled())
+            {
+                ReceivedFrame(IdOf(sslStream), frameInfo.ToString(), 1);
+            }
+        }
+        [NonEvent]
+        public void ReceivedFrame(SslStream sslStream, ReadOnlySpan<byte> frame)
+        {
+            if (IsEnabled())
+            {
+                TlsFrameHelper.TlsFrameInfo info = default;
+                bool isComplete = TlsFrameHelper.TryGetFrameInfo(frame, ref info);
+                ReceivedFrame(IdOf(sslStream), info.ToString(), isComplete ? 1 : 0);
+            }
+        }
+        [Event(ReceivedFrameId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
+        private void ReceivedFrame(string sslStream, string tlsFrame, int isComplete) =>
+            WriteEvent(ReceivedFrameId, sslStream, tlsFrame, isComplete);
+
         static partial void AdditionalCustomizedToString<T>(T value, ref string? result)
         {
             X509Certificate? cert = value as X509Certificate;
             if (cert != null)
             {
                 result = cert.ToString(fVerbose: true);
-            }
-        }
-
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, string arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8)
-        {
-            if (IsEnabled())
-            {
-                if (arg1 == null) arg1 = "";
-
-                fixed (char* arg1Ptr = arg1)
-                {
-                    const int NumEventDatas = 8;
-                    var descrs = stackalloc EventData[NumEventDatas];
-
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg1Ptr),
-                        Size = (arg1.Length + 1) * sizeof(char)
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg2),
-                        Size = sizeof(int)
-                    };
-                    descrs[2] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg3),
-                        Size = sizeof(int)
-                    };
-                    descrs[3] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg4),
-                        Size = sizeof(int)
-                    };
-                    descrs[4] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg5),
-                        Size = sizeof(int)
-                    };
-                    descrs[5] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg6),
-                        Size = sizeof(int)
-                    };
-                    descrs[6] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg7),
-                        Size = sizeof(int)
-                    };
-                    descrs[7] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg8),
-                        Size = sizeof(int)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
             }
         }
     }

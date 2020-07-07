@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
         {
-            foreach (var resolver in _resolvers)
+            foreach (ICompilationAssemblyResolver resolver in _resolvers)
             {
                 if (resolver.TryResolveAssemblyPaths(library, assemblies))
                 {

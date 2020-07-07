@@ -8,7 +8,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 {
     internal sealed class DisposableReflectionComposablePart : ReflectionComposablePart, IDisposable
     {
-        private volatile int _isDisposed = 0;
+        private volatile int _isDisposed;
 
         public DisposableReflectionComposablePart(ReflectionComposablePartDefinition definition)
             : base(definition)

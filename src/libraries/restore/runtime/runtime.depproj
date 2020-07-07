@@ -1,15 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
-    <!-- We're using ToolRuntimeRID as a placeholder for the real corelib/runtime components until we have an actual set of runtime bits to consume for webassembly/ios/android. -->
-    <RuntimeIdentifier Condition="'$(RuntimeOS)' == 'webassembly' or '$(RuntimeOS)' == 'ios' or '$(RuntimeOS)' == 'android'">$(ToolRuntimeRID)</RuntimeIdentifier>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
     <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
-    <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
-    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
-    <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(Configuration)</MonoConfiguration>
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
+    <BinPlaceNative>true</BinPlaceNative>
+    <BinPlaceRuntime>false</BinPlaceRuntime>
     <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0-Unix;$(netcoreappCurrent)-Windows_NT;$(netcoreappCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
 
@@ -17,20 +13,13 @@
     <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.7.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' != 'true'">
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
     <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreDotNetHostVersion)" />
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreDotNetHostPolicyVersion)" />
     <!-- We do not need apphost.exe and the 3.0 SDK will actually remove it.
          Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework.
          This can be removed once we have a new SDK -->
     <FileToExclude Include="apphost" />
-
-    <!-- System.Data.SqlClient is not live-built anymore -->
-    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
-    <!-- Exclude live-built dependencies -->
-    <FileToExclude Include="Microsoft.Win32.Registry" />
-    <FileToExclude Include="System.Security.AccessControl" />
-    <FileToExclude Include="System.Security.Principal.Windows" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,6 +33,8 @@
     <PropertyGroup>
       <HostFxrFileName Condition="'$(TargetsWindows)' == 'true'">hostfxr</HostFxrFileName>
       <HostFxrFileName Condition="'$(TargetsWindows)' != 'true'">libhostfxr</HostFxrFileName>
+      <HostPolicyFileName Condition="'$(TargetsWindows)' == 'true'">hostpolicy</HostPolicyFileName>
+      <HostPolicyFileName Condition="'$(TargetsWindows)' != 'true'">libhostpolicy</HostPolicyFileName>
 
       <UseHardlink>true</UseHardlink>
       <!-- workaround core-setup problem for hardlinking dotnet executable to testhost: core-setup #4742 -->
@@ -69,16 +60,18 @@
   </Target>
 
   <Target Name="SetupRuntimePackNative"
-          Condition="'$(BinPlaceTestRuntimePack)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
           AfterTargets="AfterResolveReferences">
     <ItemGroup>
-      <NativeBinPlaceItem Include="@(RuntimeFiles)" />
-      <NativeBinPlaceItem Include="@(MonoCrossFiles)">
+      <BinPlaceItem Include="@(RuntimeFiles)" />
+      <BinPlaceItem Include="@(MonoCrossFiles)">
         <DestinationSubDirectory>cross/</DestinationSubDirectory>
-      </NativeBinPlaceItem>
-      <NativeBinPlaceItem Include="@(MonoIncludeFiles)">
+      </BinPlaceItem>
+      <BinPlaceItem Include="@(MonoIncludeFiles)">
         <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
-      </NativeBinPlaceItem>
+      </BinPlaceItem>
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+      <TestHostBinPlaceItem Include="@(RuntimeFiles)" />
     </ItemGroup>
   </Target>
 
@@ -97,11 +90,7 @@
   <Target Name="OverrideRuntimeMono"
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
-          Condition="'$(RuntimeFlavor)' == 'Mono'">
-    <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' != 'true'">
-      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
-    </ItemGroup>
-  </Target>
+          Condition="'$(RuntimeFlavor)' == 'Mono'" />
 
   <Target Name="GetCoreCLRILFiles" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>

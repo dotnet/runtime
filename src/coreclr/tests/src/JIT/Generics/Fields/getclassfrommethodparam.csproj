@@ -3,8 +3,7 @@
     <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Test unsupported outside of windows -->
-    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->

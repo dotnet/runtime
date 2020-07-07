@@ -19,7 +19,7 @@ namespace System.Xml.Serialization
         private string _ns;
         private string _dataType;
         private bool _nullable;
-        private bool _nullableSpecified = false;
+        private bool _nullableSpecified;
         private XmlSchemaForm _form = XmlSchemaForm.None;
         private int _nestingLevel;
 

@@ -45,7 +45,6 @@ public:
 
 typedef DPTR(class ReadyToRunInfo) PTR_ReadyToRunInfo;
 typedef DPTR(class ReadyToRunCoreInfo) PTR_ReadyToRunCoreInfo;
-typedef DPTR(class NativeImage) PTR_NativeImage;
 
 class ReadyToRunInfo
 {

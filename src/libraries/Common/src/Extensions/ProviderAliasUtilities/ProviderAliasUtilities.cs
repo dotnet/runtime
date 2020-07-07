@@ -14,11 +14,11 @@ namespace Microsoft.Extensions.Logging
 
         internal static string GetAlias(Type providerType)
         {
-            foreach (var attribute in providerType.GetTypeInfo().GetCustomAttributes(inherit: false))
+            foreach (object attribute in providerType.GetTypeInfo().GetCustomAttributes(inherit: false))
             {
                 if (attribute.GetType().FullName == AliasAttibuteTypeFullName)
                 {
-                    var valueProperty = attribute
+                    PropertyInfo valueProperty = attribute
                         .GetType()
                         .GetProperty(AliasAttibuteAliasProperty, BindingFlags.Public | BindingFlags.Instance);
 

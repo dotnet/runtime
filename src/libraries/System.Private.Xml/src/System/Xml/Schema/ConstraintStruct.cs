@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System;
@@ -18,8 +19,8 @@ namespace System.Xml.Schema
         internal CompiledIdentityConstraint constraint;     // pointer to constraint
         internal SelectorActiveAxis axisSelector;
         internal ArrayList axisFields;                     // Add tableDim * LocatedActiveAxis in a loop
-        internal Hashtable qualifiedTable;                 // Checking confliction
-        internal Hashtable keyrefTable;                    // several keyref tables having connections to this one is possible
+        internal Hashtable? qualifiedTable;                 // Checking confliction
+        internal Hashtable? keyrefTable;                    // several keyref tables having connections to this one is possible
         private readonly int _tableDim;                               // dimension of table = numbers of fields;
 
         internal int TableDim
@@ -80,11 +81,11 @@ namespace System.Xml.Schema
     {
         private readonly ConstraintStruct _cs;            // pointer of constraintstruct, to enable 6
         private readonly ArrayList _KSs;                  // stack of KSStruct, will not become less
-        private int _KSpointer = 0;              // indicate current stack top (next available element);
+        private int _KSpointer;              // indicate current stack top (next available element);
 
         public int lastDepth
         {
-            get { return (_KSpointer == 0) ? -1 : ((KSStruct)_KSs[_KSpointer - 1]).depth; }
+            get { return (_KSpointer == 0) ? -1 : ((KSStruct)_KSs[_KSpointer - 1]!).depth; }
         }
 
         public SelectorActiveAxis(Asttree axisTree, ConstraintStruct cs) : base(axisTree)
@@ -93,7 +94,7 @@ namespace System.Xml.Schema
             _cs = cs;
         }
 
-        public override bool EndElement(string localname, string URN)
+        public override bool EndElement(string localname, string? URN)
         {
             base.EndElement(localname, URN);
             if (_KSpointer > 0 && this.CurrentDepth == lastDepth)
@@ -115,7 +116,7 @@ namespace System.Xml.Schema
             if (_KSpointer < _KSs.Count)
             {
                 // reuse, clear up KSs.KSpointer
-                kss = (KSStruct)_KSs[_KSpointer];
+                kss = (KSStruct)_KSs[_KSpointer]!;
                 kss.ks = ks;
                 // reactivate LocatedActiveAxis
                 for (int i = 0; i < _cs.TableDim; i++)
@@ -141,7 +142,7 @@ namespace System.Xml.Schema
 
         public KeySequence PopKS()
         {
-            return ((KSStruct)_KSs[--_KSpointer]).ks;
+            return ((KSStruct)_KSs[--_KSpointer]!).ks;
         }
     }
 
@@ -162,7 +163,7 @@ namespace System.Xml.Schema
     {
         private class DecimalStruct
         {
-            private bool _isDecimal = false;         // rare case it will be used...
+            private bool _isDecimal;         // rare case it will be used...
             private readonly decimal[] _dvalue;               // to accelerate equals operation.  array <-> list
 
             public bool IsDecimal
@@ -187,12 +188,12 @@ namespace System.Xml.Schema
             }
         }
 
-        private DecimalStruct _dstruct = null;
-        private object _ovalue;
+        private DecimalStruct? _dstruct;
+        private object? _ovalue;
         private readonly string _svalue;      // only for output
         private XmlSchemaDatatype _xsdtype;
         private readonly int _dim = 1;
-        private readonly bool _isList = false;
+        private readonly bool _isList;
 
         public int Dim
         {
@@ -221,7 +222,7 @@ namespace System.Xml.Schema
             }
         }
 
-        public object Value
+        public object? Value
         {
             get { return _ovalue; }
             set { _ovalue = value; }
@@ -233,7 +234,7 @@ namespace System.Xml.Schema
             set { _xsdtype = value; }
         }
 
-        public TypedObject(object obj, string svalue, XmlSchemaDatatype xsdtype)
+        public TypedObject(object? obj, string svalue, XmlSchemaDatatype xsdtype)
         {
             _ovalue = obj;
             _svalue = svalue;
@@ -243,7 +244,7 @@ namespace System.Xml.Schema
                 xsdtype is Datatype_hexBinary)
             {
                 _isList = true;
-                _dim = ((Array)obj).Length;
+                _dim = ((Array)obj!).Length;
             }
         }
 
@@ -283,7 +284,7 @@ namespace System.Xml.Schema
                         _dstruct = new DecimalStruct(_dim);
                         for (int i = 0; i < _dim; i++)
                         {
-                            _dstruct.Dvalue[i] = Convert.ToDecimal(((Array)_ovalue).GetValue(i), NumberFormatInfo.InvariantInfo);
+                            _dstruct.Dvalue[i] = Convert.ToDecimal(((Array)_ovalue!).GetValue(i), NumberFormatInfo.InvariantInfo);
                         }
                     }
                     else
@@ -348,38 +349,40 @@ namespace System.Xml.Schema
             {
                 if (other.IsList)
                 { //Both are lists and values are XmlAtomicValue[] or clrvalue[]. So use Datatype_List.Compare
-                    return this.Type.Compare(this.Value, other.Value) == 0;
+                    return this.Type.Compare(this.Value!, other.Value!) == 0;
                 }
                 else
                 { //this is a list and other is a single value
-                    Array arr1 = this.Value as System.Array;
-                    XmlAtomicValue[] atomicValues1 = arr1 as XmlAtomicValue[];
+                    Array? arr1 = this.Value as System.Array;
+                    XmlAtomicValue[]? atomicValues1 = arr1 as XmlAtomicValue[];
                     if (atomicValues1 != null)
                     { // this is a list of union
-                        return atomicValues1.Length == 1 && atomicValues1.GetValue(0).Equals(other.Value);
+                        return atomicValues1.Length == 1 && atomicValues1.GetValue(0)!.Equals(other.Value);
                     }
                     else
                     {
-                        return arr1.Length == 1 && arr1.GetValue(0).Equals(other.Value);
+                        Debug.Assert(arr1 != null);
+                        return arr1.Length == 1 && arr1.GetValue(0)!.Equals(other.Value);
                     }
                 }
             }
             else if (other.IsList)
             {
-                Array arr2 = other.Value as System.Array;
-                XmlAtomicValue[] atomicValues2 = arr2 as XmlAtomicValue[];
+                Array? arr2 = other.Value as System.Array;
+                XmlAtomicValue[]? atomicValues2 = arr2 as XmlAtomicValue[];
                 if (atomicValues2 != null)
                 { // other is a list of union
-                    return atomicValues2.Length == 1 && atomicValues2.GetValue(0).Equals(this.Value);
+                    return atomicValues2.Length == 1 && atomicValues2.GetValue(0)!.Equals(this.Value);
                 }
                 else
                 {
-                    return arr2.Length == 1 && arr2.GetValue(0).Equals(this.Value);
+                    Debug.Assert(arr2 != null);
+                    return arr2.Length == 1 && arr2.GetValue(0)!.Equals(this.Value);
                 }
             }
             else
             { //Both are not lists
-                return this.Value.Equals(other.Value);
+                return this.Value!.Equals(other.Value);
             }
         }
     }
@@ -456,28 +459,27 @@ namespace System.Xml.Schema
                 // BUGBUG: will need to change below parts, using canonical presentation.
                 else
                 {
-                    Array arr = _ks[i].Value as System.Array;
-                    if (arr != null)
+                    if (_ks[i].Value is Array arr)
                     {
-                        XmlAtomicValue[] atomicValues = arr as XmlAtomicValue[];
+                        XmlAtomicValue[]? atomicValues = arr as XmlAtomicValue[];
                         if (atomicValues != null)
                         {
                             for (int j = 0; j < atomicValues.Length; j++)
                             {
-                                _hashcode += ((XmlAtomicValue)atomicValues.GetValue(j)).TypedValue.GetHashCode();
+                                _hashcode += ((XmlAtomicValue)atomicValues.GetValue(j)!).TypedValue.GetHashCode();
                             }
                         }
                         else
                         {
-                            for (int j = 0; j < ((Array)_ks[i].Value).Length; j++)
+                            for (int j = 0; j < ((Array)_ks[i].Value!).Length; j++)
                             {
-                                _hashcode += ((Array)_ks[i].Value).GetValue(j).GetHashCode();
+                                _hashcode += ((Array)_ks[i].Value!).GetValue(j)!.GetHashCode();
                             }
                         }
                     }
                     else
                     { //not a list
-                        _hashcode += _ks[i].Value.GetHashCode();
+                        _hashcode += _ks[i].Value!.GetHashCode();
                     }
                 }
             }
@@ -485,18 +487,26 @@ namespace System.Xml.Schema
         }
 
         // considering about derived type
-        public override bool Equals(object other)
+        public override bool Equals(object? other)
         {
             // each key sequence member can have different type
-            KeySequence keySequence = (KeySequence)other;
-            for (int i = 0; i < _ks.Length; i++)
+            if (other is KeySequence keySequence)
             {
-                if (!_ks[i].Equals(keySequence._ks[i]))
+                for (int i = 0; i < _ks.Length; i++)
                 {
-                    return false;
+                    if (!_ks[i].Equals(keySequence._ks[i]))
+                    {
+                        return false;
+                    }
                 }
+
+                return true;
             }
-            return true;
+            else
+            {
+                Debug.Fail($"{nameof(other)} is not of type {nameof(KeySequence)}");
+                return false;
+            }
         }
 
         public override string ToString()

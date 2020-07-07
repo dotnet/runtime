@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.Build.Traversal">
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)**\*.csproj" Exclude="$(MSBuildProjectFullPath)" />
+    <ProjectReference Remove="$(MSBuildThisFileDirectory)mobile.tasks\AndroidAppBuilder\AndroidAppBuilder.csproj"
+                      Condition="'$(TargetOS)' != 'Android'" />
+    <ProjectReference Remove="$(MSBuildThisFileDirectory)mobile.tasks\AppleAppBuilder\AppleAppBuilder.csproj"
+                      Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" />
+    <ProjectReference Remove="$(MSBuildThisFileDirectory)mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj"
+                      Condition="'$(TargetOS)' != 'Browser'" />
+    <ProjectReference Remove="$(MSBuildThisFileDirectory)mobile.tasks\AotCompilerTask\MonoAOTCompiler.csproj"
+                      Condition="'$(TargetsMobile)' != 'true'" />
+  </ItemGroup>
+
+  <!--
+    Use synthetic inputs/outputs to avoid building it all the time. This should let devs build with
+    MSBuild node reuse enabled (the Arcade default). If it were built every time, it would hit file
+    locking issues vs. the persistent nodes that loaded the task DLL for the previous build. It
+    isn't particularly accurate, but better than nothing.
+  -->
+  <Target Name="BuildAndRestoreIncrementally"
+          DependsOnTargets="GetTasksSrc"
+          Inputs="@(TasksSrc)"
+          Outputs="$(TasksIntermediateFile)">
+    <ItemGroup>
+      <TaskProject Include="$(MSBuildProjectFullPath)" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(TaskProject)"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=Debug;Platform=AnyCPU"
+             Targets="Restore"/>
+
+    <MSBuild Projects="@(TaskProject)"
+             Properties="Configuration=Debug;Platform=AnyCPU"
+             Targets="Build"/>
+
+    <WriteLinesToFile File="$(TasksIntermediateFile)"
+                      Lines="$(TasksIntermediateFile)"
+                      Overwrite="true" />
+  </Target>
+
+  <Target Name="GetTasksSrc">
+    <PropertyGroup>
+      <TasksIntermediateFile>$([MSBuild]::NormalizePath('$(ArtifactsObjDir)', '$(MSBuildProjectName)', 'Debug', 'build-semaphore.txt'))</TasksIntermediateFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <TasksSrc Include="$(MSBuildThisFileDirectory)**\*.cs*;$(MSBuildThisFileDirectory)**\*.*proj" />
+    </ItemGroup>
+  </Target>
+</Project>

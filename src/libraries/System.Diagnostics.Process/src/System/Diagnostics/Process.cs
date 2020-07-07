@@ -81,7 +81,7 @@ namespace System.Diagnostics
         internal bool _pendingOutputRead;
         internal bool _pendingErrorRead;
 
-        private static int s_cachedSerializationSwitch = 0;
+        private static int s_cachedSerializationSwitch;
 
         /// <devdoc>
         ///    <para>
@@ -1083,7 +1083,14 @@ namespace System.Diagnostics
             EventHandler? exited = _onExited;
             if (exited != null)
             {
-                exited(this, EventArgs.Empty);
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
+                {
+                    syncObj.BeginInvoke(exited, new object[] { this, EventArgs.Empty });
+                }
+                else
+                {
+                    exited(this, EventArgs.Empty);
+                }
             }
         }
 
@@ -1571,8 +1578,16 @@ namespace System.Diagnostics
             DataReceivedEventHandler? outputDataReceived = OutputDataReceived;
             if (outputDataReceived != null)
             {
+                // Call back to user informing data is available
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);
-                outputDataReceived(this, e);  // Call back to user informing data is available
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
+                {
+                    syncObj.Invoke(outputDataReceived, new object[] { this, e });
+                }
+                else
+                {
+                    outputDataReceived(this, e);
+                }
             }
         }
 
@@ -1582,18 +1597,15 @@ namespace System.Diagnostics
             DataReceivedEventHandler? errorDataReceived = ErrorDataReceived;
             if (errorDataReceived != null)
             {
+                // Call back to user informing data is available.
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);
-                errorDataReceived(this, e); // Call back to user informing data is available.
-            }
-        }
-
-        private static void AppendArguments(StringBuilder stringBuilder, Collection<string> argumentList)
-        {
-            if (argumentList.Count > 0)
-            {
-                foreach (string argument in argumentList)
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
                 {
-                    PasteArguments.AppendArgument(stringBuilder, argument);
+                    syncObj.Invoke(errorDataReceived, new object[] { this, e });
+                }
+                else
+                {
+                    errorDataReceived(this, e);
                 }
             }
         }

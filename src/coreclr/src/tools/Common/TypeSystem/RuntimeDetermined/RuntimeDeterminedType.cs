@@ -115,9 +115,9 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override MethodDesc GetMethod(string name, MethodSignature signature)
+        public override MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
         {
-            MethodDesc method = _rawCanonType.GetMethod(name, signature);
+            MethodDesc method = _rawCanonType.GetMethod(name, signature, substitution);
             if (method == null)
                 return null;
             return Context.GetMethodForRuntimeDeterminedType(method.GetTypicalMethodDefinition(), this);

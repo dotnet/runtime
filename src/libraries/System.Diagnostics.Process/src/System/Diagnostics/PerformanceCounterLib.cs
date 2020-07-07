@@ -9,6 +9,7 @@ using Microsoft.Win32;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Threading;
@@ -192,19 +193,22 @@ namespace System.Diagnostics
         internal class PerformanceMonitor
         {
 #if FEATURE_REGISTRY
-            private RegistryKey _perfDataKey = null!; // will be initialized by Init() method
+            private RegistryKey _perfDataKey;
 #endif
             private readonly string _machineName;
 
             internal PerformanceMonitor(string machineName)
             {
                 _machineName = machineName;
+#if FEATURE_REGISTRY
                 Init();
+#endif
             }
 
+#if FEATURE_REGISTRY
+            [MemberNotNull(nameof(_perfDataKey))]
             private void Init()
             {
-#if FEATURE_REGISTRY
                 if (ProcessManager.IsRemoteMachine(_machineName))
                 {
                     _perfDataKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.PerformanceData, _machineName);
@@ -213,8 +217,8 @@ namespace System.Diagnostics
                 {
                     _perfDataKey = Registry.PerformanceData;
                 }
-#endif
             }
+#endif
 
             // Win32 RegQueryValueEx for perf data could deadlock (for a Mutex) up to 2mins in some
             // scenarios before they detect it and exit gracefully. In the mean time, ERROR_BUSY,

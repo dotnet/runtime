@@ -38,19 +38,20 @@ namespace Microsoft.NET.HostModel.Bundle
                        BundleOptions options = BundleOptions.None,
                        OSPlatform? targetOS = null,
                        Version targetFrameworkVersion = null,
-                       bool diagnosticOutput = false)
+                       bool diagnosticOutput = false,
+                       string appAssemblyName = null)
         {
             Tracer = new Trace(diagnosticOutput);
 
             HostName = hostName;
             OutputDir = Path.GetFullPath(string.IsNullOrEmpty(outputDir) ? Environment.CurrentDirectory : outputDir);
-
-            string baseName = Path.GetFileNameWithoutExtension(HostName);
-            DepsJson = baseName + ".deps.json";
-            RuntimeConfigJson = baseName + ".runtimeconfig.json";
-            RuntimeConfigDevJson = baseName + ".runtimeconfig.dev.json";
-
             Target = new TargetInfo(targetOS, targetFrameworkVersion);
+
+            appAssemblyName ??= Target.GetAssemblyName(hostName);
+            DepsJson = appAssemblyName + ".deps.json";
+            RuntimeConfigJson = appAssemblyName + ".runtimeconfig.json";
+            RuntimeConfigDevJson = appAssemblyName + ".runtimeconfig.dev.json";
+
             BundleManifest = new Manifest(Target.BundleVersion, netcoreapp3CompatMode: options.HasFlag(BundleOptions.BundleAllContent));
             Options = Target.DefaultOptions | options;
         }

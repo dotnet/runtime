@@ -128,7 +128,7 @@ namespace System.Security.Authentication.ExtendedProtection
             else
             {
                 bool first = true;
-                foreach (string? serviceName in _customServiceNames)
+                foreach (string serviceName in _customServiceNames)
                 {
                     if (first)
                     {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Text;
@@ -12,11 +13,13 @@ namespace System.Xml.Schema
         private const int bitSlotShift = 5;
         private const int bitSlotMask = (1 << bitSlotShift) - 1;
 
-        private int _count;
+        private readonly int _count;
         private uint[] _bits;
 
-        private BitSet()
+        private BitSet(int count, uint[] bits)
         {
+            _count = count;
+            _bits = bits;
         }
 
         public BitSet(int count)
@@ -147,7 +150,7 @@ namespace System.Xml.Schema
         }
 
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             // assume the same type
             if (obj != null)
@@ -195,10 +198,7 @@ namespace System.Xml.Schema
 
         public BitSet Clone()
         {
-            BitSet newset = new BitSet();
-            newset._count = _count;
-            newset._bits = (uint[])_bits.Clone();
-            return newset;
+            return new BitSet(_count, (uint[])_bits.Clone());
         }
 
 

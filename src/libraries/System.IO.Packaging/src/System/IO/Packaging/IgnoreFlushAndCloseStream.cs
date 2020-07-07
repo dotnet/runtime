@@ -162,7 +162,7 @@ namespace System.IO.Packaging
             {
                 if (!_disposed)
                 {
-                    _stream = null;
+                    _stream = null!;
                     _disposed = true;
                 }
             }

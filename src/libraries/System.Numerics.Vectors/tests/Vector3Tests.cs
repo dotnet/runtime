@@ -364,15 +364,60 @@ namespace System.Numerics.Tests
         }
 
         // A test for Lerp (Vector3f, Vector3f, float)
-        // Lerp test from the same point
+        // Lerp test with special float value
         [Fact]
         public void Vector3LerpTest5()
+        {
+            Vector3 a = new Vector3(45.67f, 90.0f, 0f);
+            Vector3 b = new Vector3(float.PositiveInfinity, float.NegativeInfinity, 0);
+
+            float t = 0.408f;
+            Vector3 actual = Vector3.Lerp(a, b, t);
+            Assert.True(float.IsPositiveInfinity(actual.X), "Vector3f.Lerp did not return the expected value.");
+            Assert.True(float.IsNegativeInfinity(actual.Y), "Vector3f.Lerp did not return the expected value.");
+        }
+
+        // A test for Lerp (Vector3f, Vector3f, float)
+        // Lerp test from the same point
+        [Fact]
+        public void Vector3LerpTest6()
         {
             Vector3 a = new Vector3(1.68f, 2.34f, 5.43f);
             Vector3 b = a;
 
             float t = 0.18f;
             Vector3 expected = new Vector3(1.68f, 2.34f, 5.43f);
+            Vector3 actual = Vector3.Lerp(a, b, t);
+            Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Lerp did not return the expected value.");
+        }
+
+        // A test for Lerp (Vector3f, Vector3f, float)
+        // Lerp test with values known to be innacurate with the old lerp impl
+        [Fact]
+        public void Vector3LerpTest7()
+        {
+            Vector3 a = new Vector3(0.44728136f);
+            Vector3 b = new Vector3(0.46345946f);
+
+            float t = 0.26402435f;
+
+            Vector3 expected = new Vector3(0.45155275f);
+            Vector3 actual = Vector3.Lerp(a, b, t);
+            Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Lerp did not return the expected value.");
+        }
+
+        // A test for Lerp (Vector3f, Vector3f, float)
+        // Lerp test with values known to be innacurate with the old lerp impl
+        // (Old code incorrectly gets 0.33333588)
+        [Fact]
+        public void Vector3LerpTest8()
+        {
+            Vector3 a = new Vector3(-100);
+            Vector3 b = new Vector3(0.33333334f);
+
+            float t = 1f;
+
+            Vector3 expected = new Vector3(0.33333334f);
             Vector3 actual = Vector3.Lerp(a, b, t);
             Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Lerp did not return the expected value.");
         }

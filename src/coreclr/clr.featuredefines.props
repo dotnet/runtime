@@ -3,7 +3,6 @@
         <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeatureCollectibleALC>true</FeatureCollectibleALC>
         <FeatureEventTrace>true</FeatureEventTrace>
-        <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
         <FeatureICastable>true</FeatureICastable>
         <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
         <FeatureManagedEtw>true</FeatureManagedEtw>
@@ -30,11 +29,8 @@
         <FeatureStubsAsIL Condition="'$(Platform)' == 'arm64'">true</FeatureStubsAsIL>
         <FeatureComWrappers>true</FeatureComWrappers>
         <FeatureCominterop>true</FeatureCominterop>
-        <FeatureClassicCominterop>true</FeatureClassicCominterop>
         <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
-        <FeatureCominteropWinRTManagedActivation>true</FeatureCominteropWinRTManagedActivation>
         <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
-        <FeatureAppX>true</FeatureAppX>
         <FeatureWin32Registry>true</FeatureWin32Registry>
         <FeatureProfAttach>true</FeatureProfAttach>
         <FeaturePortableShuffleThunks Condition="'$(Platform)' != 'x86'">true</FeaturePortableShuffleThunks>
@@ -48,18 +44,15 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <DefineConstants Condition="'$(FeatureAppX)' == 'true'">$(DefineConstants);FEATURE_APPX</DefineConstants>
         <DefineConstants Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(DefineConstants);FEATURE_ARRAYSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureMulticastStubAsIL)' == 'true'">$(DefineConstants);FEATURE_MULTICASTSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureInstantiatingStubAsIL)' == 'true'">$(DefineConstants);FEATURE_INSTANTIATINGSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureStubsAsIL)' == 'true'">$(DefineConstants);FEATURE_STUBS_AS_IL</DefineConstants>
-        <DefineConstants Condition="'$(FeatureClassicCominterop)' == 'true'">$(DefineConstants);FEATURE_CLASSIC_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCollectibleALC)' == 'true'">$(DefineConstants);FEATURE_COLLECTIBLE_ALC</DefineConstants>
         <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">$(DefineConstants);FEATURE_COMWRAPPERS</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCominteropWinRTManagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
         <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>

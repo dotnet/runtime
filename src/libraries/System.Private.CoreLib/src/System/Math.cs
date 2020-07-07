@@ -17,7 +17,11 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Versioning;
 
 namespace System
@@ -27,6 +31,8 @@ namespace System
         public const double E = 2.7182818284590452354;
 
         public const double PI = 3.14159265358979323846;
+
+        public const double Tau = 6.283185307179586476925;
 
         private const int maxRoundingDigits = 15;
 
@@ -113,6 +119,61 @@ namespace System
             return ((long)a) * b;
         }
 
+        /// <summary>Produces the full product of two unsigned 64-bit numbers.</summary>
+        /// <param name="a">The first number to multiply.</param>
+        /// <param name="b">The second number to multiply.</param>
+        /// <param name="low">The low 64-bit of the product of the specied numbers.</param>
+        /// <returns>The high 64-bit of the product of the specied numbers.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe ulong BigMul(ulong a, ulong b, out ulong low)
+        {
+            if (Bmi2.X64.IsSupported)
+            {
+                ulong tmp;
+                ulong high = Bmi2.X64.MultiplyNoFlags(a, b, &tmp);
+                low = tmp;
+                return high;
+            }
+
+            return SoftwareFallback(a, b, out low);
+
+            static ulong SoftwareFallback(ulong a, ulong b, out ulong low)
+            {
+                // Adaptation of algorithm for multiplication
+                // of 32-bit unsigned integers described
+                // in Hacker's Delight by Henry S. Warren, Jr. (ISBN 0-201-91465-4), Chapter 8
+                // Basically, it's an optimized version of FOIL method applied to
+                // low and high dwords of each operand
+
+                // Use 32-bit uints to optimize the fallback for 32-bit platforms.
+                uint al = (uint)a;
+                uint ah = (uint)(a >> 32);
+                uint bl = (uint)b;
+                uint bh = (uint)(b >> 32);
+
+                ulong mull = ((ulong)al) * bl;
+                ulong t = ((ulong)ah) * bl + (mull >> 32);
+                ulong tl = ((ulong)al) * bh + (uint)t;
+
+                low = tl << 32 | (uint)mull;
+
+                return ((ulong)ah) * bh + (t >> 32) + (tl >> 32);
+            }
+        }
+
+        /// <summary>Produces the full product of two 64-bit numbers.</summary>
+        /// <param name="a">The first number to multiply.</param>
+        /// <param name="b">The second number to multiply.</param>
+        /// <param name="low">The low 64-bit of the product of the specied numbers.</param>
+        /// <returns>The high 64-bit of the product of the specied numbers.</returns>
+        public static long BigMul(long a, long b, out long low)
+        {
+            ulong high = BigMul((ulong)a, (ulong)b, out ulong ulow);
+            low = (long)ulow;
+            return (long)high - ((a >> 63) & b) - ((b >> 63) & a);
+        }
+
         public static double BitDecrement(double x)
         {
             long bits = BitConverter.DoubleToInt64Bits(x);
@@ -163,24 +224,34 @@ namespace System
             return BitConverter.Int64BitsToDouble(bits);
         }
 
-        public static unsafe double CopySign(double x, double y)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double CopySign(double x, double y)
         {
-            // This method is required to work for all inputs,
-            // including NaN, so we operate on the raw bits.
-
-            long xbits = BitConverter.DoubleToInt64Bits(x);
-            long ybits = BitConverter.DoubleToInt64Bits(y);
-
-            // If the sign bits of x and y are not the same,
-            // flip the sign bit of x and return the new value;
-            // otherwise, just return x
-
-            if ((xbits ^ ybits) < 0)
+            if (Sse.IsSupported || AdvSimd.IsSupported)
             {
-                return BitConverter.Int64BitsToDouble(xbits ^ long.MinValue);
+                return VectorMath.ConditionalSelectBitwise(Vector128.CreateScalarUnsafe(-0.0), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else
+            {
+                return SoftwareFallback(x, y);
             }
 
-            return x;
+            static double SoftwareFallback(double x, double y)
+            {
+                const long signMask = 1L << 63;
+
+                // This method is required to work for all inputs,
+                // including NaN, so we operate on the raw bits.
+                long xbits = BitConverter.DoubleToInt64Bits(x);
+                long ybits = BitConverter.DoubleToInt64Bits(y);
+
+                // Remove the sign from x, and remove everything but the sign from y
+                xbits &= ~signMask;
+                ybits &= signMask;
+
+                // Simply OR them to get the correct sign
+                return BitConverter.Int64BitsToDouble(xbits | ybits);
+            }
         }
 
         public static int DivRem(int a, int b, out int result)

@@ -24,9 +24,9 @@ ConnectionPoint::ConnectionPoint(ComCallWrapper *pWrap, MethodTable *pEventMT)
 , m_pTCEProviderMT(pWrap->GetSimpleWrapper()->GetMethodTable())
 , m_pEventItfMT(pEventMT)
 , m_Lock(CrstInterop)
-, m_cbRefCount(0)
 , m_apEventMethods(NULL)
 , m_NumEventMethods(0)
+, m_cbRefCount(0)
 , m_pLastInserted(NULL)
 {
     CONTRACTL

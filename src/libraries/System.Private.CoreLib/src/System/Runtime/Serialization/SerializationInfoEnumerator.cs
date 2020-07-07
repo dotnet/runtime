@@ -52,7 +52,6 @@ namespace System.Runtime.Serialization
             // in the enumerator, hence we subtract 1.
             _numItems = numItems - 1;
             _currItem = -1;
-            _current = false;
         }
 
         public bool MoveNext()

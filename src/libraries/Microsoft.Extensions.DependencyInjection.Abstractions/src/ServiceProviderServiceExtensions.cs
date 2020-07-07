@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -18,6 +19,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="T">The type of service object to get.</typeparam>
         /// <param name="provider">The <see cref="IServiceProvider"/> to retrieve the service object from.</param>
         /// <returns>A service object of type <typeparamref name="T"/> or null if there is no such service.</returns>
+        [return: MaybeNull]
         public static T GetService<T>(this IServiceProvider provider)
         {
             if (provider == null)
@@ -53,7 +55,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 return requiredServiceSupportingProvider.GetRequiredService(serviceType);
             }
 
-            var service = provider.GetService(serviceType);
+            object? service = provider.GetService(serviceType);
             if (service == null)
             {
                 throw new InvalidOperationException(SR.Format(SR.NoServiceRegistered, serviceType));
@@ -69,7 +71,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="provider">The <see cref="IServiceProvider"/> to retrieve the service object from.</param>
         /// <returns>A service object of type <typeparamref name="T"/>.</returns>
         /// <exception cref="System.InvalidOperationException">There is no service of type <typeparamref name="T"/>.</exception>
-        public static T GetRequiredService<T>(this IServiceProvider provider)
+        public static T GetRequiredService<T>(this IServiceProvider provider) where T : notnull
         {
             if (provider == null)
             {
@@ -101,7 +103,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="provider">The <see cref="IServiceProvider"/> to retrieve the services from.</param>
         /// <param name="serviceType">An object that specifies the type of service object to get.</param>
         /// <returns>An enumeration of services of type <paramref name="serviceType"/>.</returns>
-        public static IEnumerable<object> GetServices(this IServiceProvider provider, Type serviceType)
+        public static IEnumerable<object?> GetServices(this IServiceProvider provider, Type serviceType)
         {
             if (provider == null)
             {
@@ -113,7 +115,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            var genericEnumerable = typeof(IEnumerable<>).MakeGenericType(serviceType);
+            Type? genericEnumerable = typeof(IEnumerable<>).MakeGenericType(serviceType);
             return (IEnumerable<object>)provider.GetRequiredService(genericEnumerable);
         }
 

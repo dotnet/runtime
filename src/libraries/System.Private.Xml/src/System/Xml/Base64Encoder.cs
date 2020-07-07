@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Text;
 using System.Diagnostics;
 
@@ -9,7 +10,7 @@ namespace System.Xml
 {
     internal abstract partial class Base64Encoder
     {
-        private byte[] _leftOverBytes;
+        private byte[]? _leftOverBytes;
         private int _leftOverBytesCount;
         private readonly char[] _charsLine;
 
@@ -48,7 +49,7 @@ namespace System.Xml
                 int i = _leftOverBytesCount;
                 while (i < 3 && count > 0)
                 {
-                    _leftOverBytes[i++] = buffer[index++];
+                    _leftOverBytes![i++] = buffer[index++];
                     count--;
                 }
 
@@ -60,7 +61,7 @@ namespace System.Xml
                 }
 
                 // encode the left-over buffer and write out
-                int leftOverChars = Convert.ToBase64CharArray(_leftOverBytes, 0, 3, _charsLine, 0);
+                int leftOverChars = Convert.ToBase64CharArray(_leftOverBytes!, 0, 3, _charsLine, 0);
                 WriteChars(_charsLine, 0, leftOverChars);
             }
 
@@ -99,7 +100,7 @@ namespace System.Xml
         {
             if (_leftOverBytesCount > 0)
             {
-                int leftOverChars = Convert.ToBase64CharArray(_leftOverBytes, 0, _leftOverBytesCount, _charsLine, 0);
+                int leftOverChars = Convert.ToBase64CharArray(_leftOverBytes!, 0, _leftOverBytesCount, _charsLine, 0);
                 WriteChars(_charsLine, 0, leftOverChars);
                 _leftOverBytesCount = 0;
             }

@@ -53,7 +53,7 @@ namespace System.ComponentModel.Design.Tests
         public void CreateOptionCollection_EmptyName_ThrowsArgumentException()
         {
             var service = new TestDesignerOptionService();
-            AssertExtensions.Throws<ArgumentException>("name.Length", () => service.DoCreateOptionCollection(service.Options, string.Empty, "value"));
+            AssertExtensions.Throws<ArgumentException>("name", () => service.DoCreateOptionCollection(service.Options, string.Empty, "value"));
         }
 
         [Fact]

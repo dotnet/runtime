@@ -43,6 +43,6 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The message is a semicolon separated list of the <see cref="Failures"/>.
         /// </summary>
-        public override string Message => String.Join("; ", Failures);
+        public override string Message => string.Join("; ", Failures);
     }
 }

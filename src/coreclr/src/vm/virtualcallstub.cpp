@@ -95,6 +95,7 @@ extern size_t g_dispatch_cache_chain_success_counter;
 #undef DECLARE_DATA
 #include "profilepriv.h"
 #include "contractimpl.h"
+#include "dynamicinterfacecastable.h"
 
 SPTR_IMPL_INIT(VirtualCallStubManagerManager, VirtualCallStubManagerManager, g_pManager, NULL);
 
@@ -1836,8 +1837,9 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         patch = Resolver(objectType, token, protectedObj, &target, TRUE /* throwOnConflict */);
 
 #if defined(_DEBUG)
-        if ( !objectType->IsComObjectType() &&
-             !objectType->IsICastable())
+        if (!objectType->IsComObjectType()
+            && !objectType->IsICastable()
+            && !objectType->IsIDynamicInterfaceCastable())
         {
             CONSISTENCY_CHECK(!MethodTable::GetMethodDescForSlotAddress(target)->IsGenericMethodDefinition());
         }
@@ -1912,9 +1914,22 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                         PCODE addrOfResolver = (PCODE)(resolvers->Find(&probeR));
                         if (addrOfResolver == CALL_STUB_EMPTY_ENTRY)
                         {
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+                            MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, objectType);
+                            size_t stackArgumentsSize;
+                            {
+                                ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
+                                stackArgumentsSize = pMD->SizeOfArgStack();
+                            }
+#endif // TARGET_X86 && !UNIX_X86_ABI
+
                             pResolveHolder = GenerateResolveStub(pResolverFcn,
                                                              pBackPatchFcn,
-                                                             token.To_SIZE_T());
+                                                             token.To_SIZE_T()
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+                                                             , stackArgumentsSize
+#endif
+                                                             );
 
                             // Add the resolve entrypoint into the cache.
                             //@TODO: Can we store a pointer to the holder rather than the entrypoint?
@@ -2249,28 +2264,7 @@ VirtualCallStubManager::Resolver(
         MethodTable * pItfMT = GetTypeFromToken(token);
         implSlot = pItfMT->FindDispatchSlot(TYPE_ID_THIS_CLASS, token.GetSlotNumber(), throwOnConflict);
 
-        if (pItfMT->HasInstantiation())
-        {
-            DispatchSlot ds(implSlot);
-            MethodDesc * pTargetMD = ds.GetMethodDesc();
-            if (!pTargetMD->HasMethodInstantiation())
-            {
-                _ASSERTE(pItfMT->IsProjectedFromWinRT() || pItfMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative));
-
-                MethodDesc *pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                    pTargetMD,
-                    pItfMT,
-                    FALSE,              // forceBoxedEntryPoint
-                    Instantiation(),    // methodInst
-                    FALSE,              // allowInstParam
-                    TRUE);              // forceRemotableMethod
-
-                _ASSERTE(pInstMD->IsComPlusCall() || pInstMD->IsGenericComPlusCall());
-
-                *ppTarget = pInstMD->GetStableEntryPoint();
-                return TRUE;
-            }
-        }
+        _ASSERTE(!pItfMT->HasInstantiation());
 
         fShouldPatch = TRUE;
     }
@@ -2310,6 +2304,20 @@ VirtualCallStubManager::Resolver(
         return Resolver(pResultMT, token, protectedObj, ppTarget, throwOnConflict);
     }
 #endif // FEATURE_ICASTABLE
+    else if (pMT->IsIDynamicInterfaceCastable()
+        && protectedObj != NULL
+        && *protectedObj != NULL
+        && IsInterfaceToken(token))
+    {
+        MethodTable *pTokenMT = GetTypeFromToken(token);
+
+        OBJECTREF implTypeRef = DynamicInterfaceCastable::GetInterfaceImplementation(protectedObj, TypeHandle(pTokenMT));
+        _ASSERTE(implTypeRef != NULL);
+
+        ReflectClassBaseObject *implTypeObj = ((ReflectClassBaseObject *)OBJECTREFToObject(implTypeRef));
+        TypeHandle implTypeHandle = implTypeObj->GetType();
+        return Resolver(implTypeHandle.GetMethodTable(), token, protectedObj, ppTarget, throwOnConflict);
+    }
 
     if (implSlot.IsNull())
     {
@@ -2340,8 +2348,10 @@ VirtualCallStubManager::Resolver(
         }
         else
         {
-            // Method not found, and this should never happen for anything but equivalent types
-            CONSISTENCY_CHECK(!implSlot.IsNull() && "Valid method implementation was not found.");
+            // Method not found. In the castable object scenario where the method is being resolved on an interface itself,
+            // this can happen if the user tried to call a method without a default implementation. Outside of that case,
+            // this should never happen for anything but equivalent types
+            CONSISTENCY_CHECK((!implSlot.IsNull() || pMT->IsInterface()) && "Valid method implementation was not found.");
             COMPlusThrow(kEntryPointNotFoundException);
         }
     }
@@ -2848,7 +2858,11 @@ addrOfPatcher is who to call if the fail piece is being called too often by disp
 */
 ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addrOfResolver,
                                                            PCODE            addrOfPatcher,
-                                                           size_t           dispatchToken)
+                                                           size_t           dispatchToken
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+                                                           , size_t         stackArgumentsSize
+#endif
+                                                           )
 {
     CONTRACT (ResolveHolder*) {
         THROWS;
@@ -2912,7 +2926,11 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 
     holder->Initialize(addrOfResolver, addrOfPatcher,
                        dispatchToken, DispatchCache::HashToken(dispatchToken),
-                       g_resolveCache->GetCacheBaseAddr(), counterAddr);
+                       g_resolveCache->GetCacheBaseAddr(), counterAddr
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+                       , stackArgumentsSize
+#endif
+                       );
     ClrFlushInstructionCache(holder->stub(), holder->stub()->size());
 
     AddToCollectibleVSDRangeList(holder);

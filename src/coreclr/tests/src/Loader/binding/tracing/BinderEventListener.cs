@@ -164,10 +164,23 @@ namespace BinderTracingTests
 
         private readonly object eventsLock = new object();
         private readonly Dictionary<Guid, BindOperation> bindOperations = new Dictionary<Guid, BindOperation>();
+        private readonly string[] loadsToTrack;
+
+        public BinderEventListener(string[] loadsToTrack, bool log = false)
+        {
+            this.loadsToTrack = loadsToTrack;
+        }
 
         public BindOperation[] WaitAndGetEventsForAssembly(AssemblyName assemblyName)
         {
+            Assert.IsTrue(IsLoadToTrack(assemblyName.Name), $"Waiting for load for untracked name: {assemblyName.Name}. Tracking loads for: {string.Join(", ", loadsToTrack)}");
+
             const int waitIntervalInMs = 50;
+            int waitTimeoutInMs = Environment.GetEnvironmentVariable("COMPlus_GCStress") == null
+                ? 30 * 1000
+                : int.MaxValue;
+
+            int timeWaitedInMs = 0;
             while (true)
             {
                 lock (eventsLock)
@@ -180,6 +193,14 @@ namespace BinderTracingTests
                 }
 
                 Thread.Sleep(waitIntervalInMs);
+                timeWaitedInMs += waitIntervalInMs;
+
+                if (timeWaitedInMs > waitTimeoutInMs)
+                {
+                    var msg = new System.Text.StringBuilder($"Timed out waiting for bind events for {assemblyName}");
+                    msg.AppendLine(GetReceivedEventsAsString());
+                    throw new TimeoutException(msg.ToString());
+                }
             }
         }
 
@@ -212,6 +233,9 @@ namespace BinderTracingTests
                 case "AssemblyLoadStart":
                 {
                     BindOperation bindOperation = ParseAssemblyLoadStartEvent(data, GetDataString);
+                    if (!IsLoadToTrack(bindOperation.AssemblyName.Name))
+                        return;
+
                     lock (eventsLock)
                     {
                         Assert.IsTrue(!bindOperations.ContainsKey(data.ActivityId), "AssemblyLoadStart should not exist for same activity ID ");
@@ -226,12 +250,19 @@ namespace BinderTracingTests
                 }
                 case "AssemblyLoadStop":
                 {
+                    string assemblyName = GetDataString("AssemblyName");
+                    if (!IsLoadToTrack(new AssemblyName(assemblyName).Name))
+                        return;
+
+                    bool success = (bool)GetData("Success");
+                    string resultName = GetDataString("ResultAssemblyName");
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
+                        if (!bindOperations.ContainsKey(data.ActivityId))
+                            Assert.Fail(GetMisssingAssemblyBindStartMessage(data, $"Success={success}, Name={resultName}"));
+
                         BindOperation bind = bindOperations[data.ActivityId];
-                        bind.Success = (bool)GetData("Success");
-                        string resultName = GetDataString("ResultAssemblyName");
+                        bind.Success = success;
                         if (!string.IsNullOrEmpty(resultName))
                         {
                             bind.ResultAssemblyName = new AssemblyName(resultName);
@@ -245,9 +276,14 @@ namespace BinderTracingTests
                 case "ResolutionAttempted":
                 {
                     ResolutionAttempt attempt = ParseResolutionAttemptedEvent(GetData, GetDataString);
+                    if (!IsLoadToTrack(attempt.AssemblyName.Name))
+                        return;
+
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
+                        if (!bindOperations.ContainsKey(data.ActivityId))
+                            Assert.Fail(GetMisssingAssemblyBindStartMessage(data, attempt.ToString()));
+
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.ResolutionAttempts.Add(attempt);
                     }
@@ -256,9 +292,14 @@ namespace BinderTracingTests
                 case "AssemblyLoadContextResolvingHandlerInvoked":
                 {
                     HandlerInvocation handlerInvocation = ParseHandlerInvokedEvent(GetDataString);
+                    if (!IsLoadToTrack(handlerInvocation.AssemblyName.Name))
+                        return;
+
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
+                        if (!bindOperations.ContainsKey(data.ActivityId))
+                            Assert.Fail(GetMisssingAssemblyBindStartMessage(data, handlerInvocation.ToString()));
+
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.AssemblyLoadContextResolvingHandlers.Add(handlerInvocation);
                     }
@@ -267,9 +308,14 @@ namespace BinderTracingTests
                 case "AppDomainAssemblyResolveHandlerInvoked":
                 {
                     HandlerInvocation handlerInvocation = ParseHandlerInvokedEvent(GetDataString);
+                    if (!IsLoadToTrack(handlerInvocation.AssemblyName.Name))
+                        return;
+
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
+                        if (!bindOperations.ContainsKey(data.ActivityId))
+                            Assert.Fail(GetMisssingAssemblyBindStartMessage(data, handlerInvocation.ToString()));
+
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.AppDomainAssemblyResolveHandlers.Add(handlerInvocation);
                     }
@@ -278,9 +324,14 @@ namespace BinderTracingTests
                 case "AssemblyLoadFromResolveHandlerInvoked":
                 {
                     LoadFromHandlerInvocation loadFrom = ParseLoadFromHandlerInvokedEvent(GetData, GetDataString);
+                    if (!IsLoadToTrack(loadFrom.AssemblyName.Name))
+                        return;
+
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
+                        if (!bindOperations.ContainsKey(data.ActivityId))
+                            Assert.Fail(GetMisssingAssemblyBindStartMessage(data, loadFrom.ToString()));
+
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.AssemblyLoadFromHandler = loadFrom;
                     }
@@ -289,15 +340,53 @@ namespace BinderTracingTests
                 case "KnownPathProbed":
                 {
                     ProbedPath probedPath = ParseKnownPathProbedEvent(GetData, GetDataString);
+                    string name = System.IO.Path.GetFileNameWithoutExtension(probedPath.FilePath);
+                    if (!IsLoadToTrack(name.EndsWith(".ni") ? name.Remove(name.Length - 3) : name))
+                        return;
+
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
+                        if (!bindOperations.ContainsKey(data.ActivityId))
+                            Assert.Fail(GetMisssingAssemblyBindStartMessage(data, probedPath.ToString()));
+
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.ProbedPaths.Add(probedPath);
                     }
                     break;
                 }
             }
+        }
+
+        private bool IsLoadToTrack(string name)
+        {
+            return this.loadsToTrack.Any(n => n.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        private string GetMisssingAssemblyBindStartMessage(EventWrittenEventArgs data, string parsedEventAsString)
+        {
+            var msg = new System.Text.StringBuilder();
+            msg.AppendLine($"{data.EventName} (ActivityId: {data.ActivityId}) should have a matching AssemblyBindStart");
+            msg.AppendLine($"Parsed event: {parsedEventAsString}");
+            msg.AppendLine(GetReceivedEventsAsString());
+            return msg.ToString();
+        }
+
+        private string GetReceivedEventsAsString()
+        {
+            var msg = new System.Text.StringBuilder();
+            msg.AppendLine("Received events:");
+            lock (eventsLock)
+            {
+                foreach (BindOperation op in bindOperations.Values)
+                {
+                    msg.AppendLine(op.ToString());
+                    msg.AppendLine($" - ActivityId: {op.ActivityId}");
+                    msg.AppendLine($" - Completed: {op.Completed}");
+                    msg.AppendLine($" - Nested: {op.Nested}");
+                }
+            }
+
+            return msg.ToString();
         }
 
         private BindOperation ParseAssemblyLoadStartEvent(EventWrittenEventArgs data, Func<string, string> getDataString)

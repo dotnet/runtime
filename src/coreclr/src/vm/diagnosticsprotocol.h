@@ -75,10 +75,21 @@ namespace DiagnosticsIpc
         Server        = 0xFF,
     };
 
+    // Overlaps with DiagnosticServerResponseId
+    // DON'T create overlapping values
     enum class DiagnosticServerCommandId : uint8_t
     {
-        OK    = 0x00,
-        Error = 0xFF,
+        // 0x00 used in DiagnosticServerResponseId
+        ResumeRuntime = 0x01,
+        // 0xFF used DiagnosticServerResponseId
+    };
+
+    // Overlaps with DiagnosticServerCommandId
+    // DON'T create overlapping values
+    enum class DiagnosticServerResponseId : uint8_t
+    {
+        OK            = 0x00,
+        Error         = 0xFF,
     };
 
     struct MagicVersion
@@ -103,12 +114,66 @@ namespace DiagnosticsIpc
 
     const MagicVersion DotnetIpcMagic_V1 = { "DOTNET_IPC_V1" };
 
+    /**
+     * ==ADVERTISE PROTOCOL==
+     * Before standard IPC Protocol communication can occur on a client-mode connection
+     * the runtime must advertise itself over the connection.  ALL SUBSEQUENT COMMUNICATION 
+     * IS STANDARD DIAGNOSTICS IPC PROTOCOL COMMUNICATION.
+     * 
+     * See spec in: dotnet/diagnostics@documentation/design-docs/ipc-spec.md
+     * 
+     * The flow for Advertise is a one-way burst of 24 bytes consisting of
+     * 8 bytes  - "ADVR_V1\0" (ASCII chars + null byte)
+     * 16 bytes - random 128 bit number cookie (little-endian)
+     * 8 bytes  - PID (little-endian)
+     * 2 bytes  - unused 2 byte field for futureproofing
+     */
+
+    const uint8_t AdvertiseMagic_V1[8] = "ADVR_V1";
+
+    const uint32_t AdvertiseSize = 34;
+
+    static GUID AdvertiseCookie_V1 = GUID_NULL;
+
+    inline GUID GetAdvertiseCookie_V1()
+    {
+        if (AdvertiseCookie_V1 == GUID_NULL)
+        {
+            CoCreateGuid(&AdvertiseCookie_V1);
+        }
+
+        return AdvertiseCookie_V1;
+    }
+
+    inline bool SendIpcAdvertise_V1(IpcStream *pStream)
+    {
+        uint8_t advertiseBuffer[DiagnosticsIpc::AdvertiseSize];
+        GUID cookie = GetAdvertiseCookie_V1();
+        uint64_t pid = GetCurrentProcessId();
+
+        uint64_t *buffer = (uint64_t*)advertiseBuffer;
+        buffer[0] = *(uint64_t*)AdvertiseMagic_V1;
+        buffer[1] = (((uint64_t)VAL32(cookie.Data1) << 32) | ((uint64_t)VAL16(cookie.Data2) << 16) | VAL16((uint64_t)cookie.Data3));
+        buffer[2] = *(uint64_t*)cookie.Data4;
+        buffer[3] = VAL64(pid);
+
+        // zero out unused field
+        ((uint16_t*)advertiseBuffer)[16] = VAL16(0);
+
+        uint32_t nBytesWritten = 0;
+        if (!pStream->Write(advertiseBuffer, sizeof(advertiseBuffer), nBytesWritten, 100 /* ms */))
+            return false;
+
+        _ASSERTE(nBytesWritten == sizeof(advertiseBuffer));
+        return nBytesWritten == sizeof(advertiseBuffer);
+    }
+
     const IpcHeader GenericSuccessHeader =
     {
         { DotnetIpcMagic_V1 },
         (uint16_t)sizeof(IpcHeader),
         (uint8_t)DiagnosticServerCommandSet::Server,
-        (uint8_t)DiagnosticServerCommandId::OK,
+        (uint8_t)DiagnosticServerResponseId::OK,
         (uint16_t)0x0000
     };
 
@@ -117,7 +182,7 @@ namespace DiagnosticsIpc
         { DotnetIpcMagic_V1 },
         (uint16_t)sizeof(IpcHeader),
         (uint8_t)DiagnosticServerCommandSet::Server,
-        (uint8_t)DiagnosticServerCommandId::Error,
+        (uint8_t)DiagnosticServerResponseId::Error,
         (uint16_t)0x0000
     };
 

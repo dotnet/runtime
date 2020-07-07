@@ -52,10 +52,6 @@ namespace System.Diagnostics
         /// </summary>
         public TimeSpan UserProcessorTime => new TimeSpan((long)GetThreadInfo().pth_user_time);
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private Interop.libproc.proc_threadinfo GetThreadInfo()
         {
             Interop.libproc.proc_threadinfo? info = Interop.libproc.GetThreadInfoById(_processId, _threadInfo._threadId);

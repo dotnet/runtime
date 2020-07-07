@@ -603,7 +603,7 @@ namespace System.Xml.Xsl.XPath
 
             if (LexKind.LastNonChar < t)
             {
-                Debug.Assert("()[].@,*/$}".IndexOf((char)t) >= 0);
+                Debug.Assert("()[].@,*/$}".Contains((char)t));
                 return char.ToString((char)t);
             }
 

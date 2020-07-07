@@ -41,7 +41,7 @@ namespace Microsoft.VisualBasic.Tests
         //   public static void ChDrive(char Drive){ throw null; }
         //   public static void ChDrive(string Drive){ throw null; }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CloseAllFiles()
         {
             var fileName1 = GetTestFilePath();
@@ -574,7 +574,8 @@ namespace Microsoft.VisualBasic.Tests
         //   public static long Loc(int FileNumber) { throw null; }
 
         // Lock is supported on Windows only currently.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Lock_Unlock()
         {
             int fileNumber = FileSystem.FreeFile();

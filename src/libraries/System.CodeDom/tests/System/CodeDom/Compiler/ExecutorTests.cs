@@ -34,7 +34,7 @@ namespace System.CodeDom.Compiler.Tests
         // for the tests if other tests run concurrently and launch child processes, as those child
         // processes may then extend the lifetime of the opened files, leading to sharing errors in tests.
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ExecWait_OutputCaptured()
         {
             RemoteExecutor.Invoke(() =>
@@ -49,7 +49,7 @@ namespace System.CodeDom.Compiler.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ExecWaitWithCapture_NullNames_OutputCaptured()
         {
             RemoteExecutor.Invoke(() =>
@@ -74,7 +74,7 @@ namespace System.CodeDom.Compiler.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ExecWaitWithCapture_SpecifiedNames_OutputCaptured()
         {
             RemoteExecutor.Invoke(() =>
@@ -94,7 +94,7 @@ namespace System.CodeDom.Compiler.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ExecWaitWithCapture_CurrentDirectorySpecified_OutputIncludesSpecifiedDirectory()
         {
             RemoteExecutor.Invoke(() =>
@@ -111,7 +111,7 @@ namespace System.CodeDom.Compiler.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ExecWaitWithCapture_OutputIncludesCurrentDirectory()
         {
             RemoteExecutor.Invoke(() =>

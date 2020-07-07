@@ -6,7 +6,6 @@ using System;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Linq;
 
 using Internal.TypeSystem;
 using System.Collections.Generic;
@@ -269,6 +268,8 @@ namespace Internal.TypeSystem.Ecma
                 Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)SignatureCallingConvention.StdCall);
                 Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)SignatureCallingConvention.ThisCall);
                 Debug.Assert((int)MethodSignatureFlags.CallingConventionVarargs == (int)SignatureCallingConvention.VarArgs);
+                // [TODO] Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConvention == (int)SignatureCallingConvention.Unmanaged);
+                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConvention == 9);
 
                 flags = (MethodSignatureFlags)signatureCallConv;
             }

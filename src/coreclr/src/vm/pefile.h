@@ -195,7 +195,6 @@ public:
     CHECK CheckLoaded(BOOL allowNativeSkip = TRUE);
     void ValidateForExecution();
     BOOL IsMarkedAsNoPlatform();
-    BOOL IsMarkedAsContentTypeWindowsRuntime();
 
 
     // ------------------------------------------------------------
@@ -381,9 +380,7 @@ public:
 
     PEAssembly * LoadAssembly(
             mdAssemblyRef       kAssemblyRef,
-            IMDInternalImport * pImport = NULL,
-            LPCUTF8             szWinRtTypeNamespace = NULL,
-            LPCUTF8             szWinRtTypeClassName = NULL);
+            IMDInternalImport * pImport = NULL);
 
     // ------------------------------------------------------------
     // Logging
@@ -482,7 +479,10 @@ protected:
     IMetaDataEmit           *m_pEmitter;
     SimpleRWLock            *m_pMetadataLock;
     Volatile<LONG>           m_refCount;
-    int                     m_flags;
+    int                      m_flags;
+
+    // AssemblyLoadContext that this PEFile is associated with
+    PTR_AssemblyLoadContext  m_pAssemblyLoadContext;
 
 #ifdef DEBUGGING_SUPPORTED
 #ifdef FEATURE_PREJIT
@@ -569,19 +569,32 @@ public:
     // Returns the ICLRPrivBinder* instance associated with the PEFile
     PTR_ICLRPrivBinder GetBindingContext();
 
-    AssemblyLoadContext* GetAssemblyLoadContext();
+#ifndef DACCESS_COMPILE
+    void SetupAssemblyLoadContext();
+
+    void SetFallbackLoadContextBinder(PTR_ICLRPrivBinder pFallbackLoadContextBinder)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
+        SetupAssemblyLoadContext();
+    }
+
+#endif //!DACCESS_COMPILE
+
+    // Returns AssemblyLoadContext into which the current PEFile was loaded.
+    PTR_AssemblyLoadContext GetAssemblyLoadContext()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(m_pAssemblyLoadContext != NULL);
+        return m_pAssemblyLoadContext;
+    }
 
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }
 
     bool CanUseWithBindingCache()
     { LIMITED_METHOD_CONTRACT; return !HasHostAssembly(); }
-
-    void SetFallbackLoadContextBinder(PTR_ICLRPrivBinder pFallbackLoadContextBinder)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
-    }
 
     PTR_ICLRPrivBinder GetFallbackLoadContextBinder()
     {
@@ -720,20 +733,11 @@ class PEAssembly : public PEFile
     PTR_PEFile GetCreator()
     { LIMITED_METHOD_CONTRACT; return m_creator; }
 
-    // Returns TRUE if the assembly is .winmd file (WinRT assembly)
-    bool IsWindowsRuntime();
-
-    // Used to determine if this assembly has an identity that may be used for
-    // binding purposes. Currently this is true for standard .NET assemblies
-    // and false for WinRT assemblies (where assemblies are identified by their
-    // member types).
-    bool HasBindableIdentity();
-
     // Indicates if the assembly can be cached in a binding cache such as AssemblySpecBindingCache.
     inline bool CanUseWithBindingCache()
     {
         STATIC_CONTRACT_WRAPPER;
-        return (HasBindableIdentity());
+        return true;
     }
 };
 

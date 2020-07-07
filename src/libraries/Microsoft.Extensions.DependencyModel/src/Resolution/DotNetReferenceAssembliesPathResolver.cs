@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         internal static string Resolve(IEnvironment environment, IFileSystem fileSystem)
         {
-            var path = environment.GetEnvironmentVariable(DotNetReferenceAssembliesPathEnv);
+            string path = environment.GetEnvironmentVariable(DotNetReferenceAssembliesPathEnv);
             if (!string.IsNullOrEmpty(path))
             {
                 return path;

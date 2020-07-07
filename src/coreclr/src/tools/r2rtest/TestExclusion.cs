@@ -163,7 +163,8 @@ namespace R2RTest
 
                 Project project = new Project();
                 project.SetGlobalProperty("XunitTestBinBase", "*");
-                project.SetGlobalProperty("BuildArch", "x64");
+                project.SetGlobalProperty("TargetArchitecture", "x64");
+                project.SetGlobalProperty("RuntimeFlavor", "coreclr");
                 // TODO: cross-OS CPAOT
                 project.SetGlobalProperty("TargetsWindows", (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "true" : "false"));
                 project.SetGlobalProperty("AltJitArch", "x64");

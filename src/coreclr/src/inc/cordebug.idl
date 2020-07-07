@@ -2507,6 +2507,7 @@ typedef enum CorDebugGenerationTypes
     CorDebug_Gen1 = 1,
     CorDebug_Gen2 = 2,
     CorDebug_LOH  = 3,
+    CorDebug_POH  = 4,
 } CorDebugGenerationTypes;
 
 typedef struct _COR_SEGMENT
@@ -2567,7 +2568,8 @@ typedef enum CorGCReferenceType
     CorHandleStrongDependent = 1<<6,
     CorHandleStrongAsyncPinned = 1<<7,
     CorHandleStrongSizedByref = 1<<8,
-    CorHandleWeakWinRT = 1<<9,
+    CorHandleWeakNativeCom = 1<<9,
+    CorHandleWeakWinRT = CorHandleWeakNativeCom,
 
     CorReferenceStack = 0x80000001,
     CorReferenceFinalizer = 80000002,

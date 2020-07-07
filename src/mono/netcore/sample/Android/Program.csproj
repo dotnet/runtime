@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputPath>bin</OutputPath>
+    <DebugType>Portable</DebugType>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
+    <AndroidAppBuilderDir>$(ArtifactsBinDir)AndroidAppBuilder\$(Configuration)\$(NetCoreAppCurrent)</AndroidAppBuilderDir>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <PublishTrimmed>true</PublishTrimmed>
+    <_TrimmerDefaultAction>link</_TrimmerDefaultAction>
+  </PropertyGroup>
+
+  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <RuntimePack>
+        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)</PackageDirectory>
+      </RuntimePack>
+    </ItemGroup>
+    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
+  </Target>
+
+  <UsingTask TaskName="AndroidAppBuilderTask"
+             AssemblyFile="$(AndroidAppBuilderDir)\AndroidAppBuilder.dll" />
+
+  <!-- Build APK during 'dotnet publish' -->
+  <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
+    <PropertyGroup>
+      <AndroidAbi Condition="'$(Platform)'=='arm64'">arm64-v8a</AndroidAbi>
+      <AndroidAbi Condition="'$(Platform)'=='arm'">armeabi-v7a</AndroidAbi>
+      <AndroidAbi Condition="'$(Platform)'=='x64'">x86_64</AndroidAbi>
+      <AndroidAbi Condition="'$(AndroidAbi)'==''">$(Platform)</AndroidAbi>
+      <ApkDir>$(MSBuildThisFileDirectory)$(PublishDir)\apk</ApkDir>
+      <StripDebugSymbols>False</StripDebugSymbols>
+      <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
+      <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(ApkDir)" />
+
+    <!-- These native libs are not needed for HelloWorld
+         and can be deleted to save 0.4 Mb for APK size -->
+    <Delete Files="$(PublishDir)\libSystem.IO.Compression.Native.so" />
+    <Delete Files="$(PublishDir)\libSystem.Security.Cryptography.Native.OpenSsl.so" />
+
+    <AndroidAppBuilderTask
+        Abi="$(AndroidAbi)"
+        ProjectName="HelloAndroid"
+        MonoRuntimeHeaders="%(ResolvedRuntimePack.PackageDirectory)\runtimes\android-$(Platform)\native\include\mono-2.0"
+        MainLibraryFileName="Program.dll"
+        StripDebugSymbols="$(StripDebugSymbols)"
+        SourceDir="$(MSBuildThisFileDirectory)$(PublishDir)"
+        OutputDir="$(ApkDir)">
+        <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
+        <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
+    </AndroidAppBuilderTask>
+    <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
+    <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
+
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) kill-server"/>
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) start-server"/>
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) logcat -c" ContinueOnError="WarnAndContinue" />
+    <Message Condition="'$(DeployAndRun)' == 'true'" Importance="High" Text="Uninstalling app if it exists (throws an error if it doesn't but it can be ignored):"/>
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) uninstall net.dot.HelloAndroid" ContinueOnError="WarnAndContinue" />
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) install $(ApkDir)/bin/HelloAndroid.apk" />
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) shell am instrument -w net.dot.HelloAndroid/net.dot.MonoRunner" />
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) logcat -d -s DOTNET" />
+  </Target>
+</Project>

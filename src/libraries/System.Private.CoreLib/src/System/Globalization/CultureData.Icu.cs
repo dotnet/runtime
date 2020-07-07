@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Globalization
 {
@@ -12,77 +13,6 @@ namespace System.Globalization
         // ICU constants
         private const int ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY = 100; // max size of keyword or value
         private const int ICU_ULOC_FULLNAME_CAPACITY = 157;           // max size of locale name
-        private const string ICU_COLLATION_KEYWORD = "@collation=";
-
-        /// <summary>
-        /// This method uses the sRealName field (which is initialized by the constructor before this is called) to
-        /// initialize the rest of the state of CultureData based on the underlying OS globalization library.
-        /// </summary>
-        private unsafe bool IcuInitCultureData()
-        {
-            Debug.Assert(_sRealName != null);
-
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseNls);
-
-            string realNameBuffer = _sRealName;
-
-            // Basic validation
-            if (realNameBuffer.Contains('@'))
-            {
-                return false; // don't allow ICU variants to come in directly
-            }
-
-            // Replace _ (alternate sort) with @collation= for ICU
-            ReadOnlySpan<char> alternateSortName = default;
-            int index = realNameBuffer.IndexOf('_');
-            if (index > 0)
-            {
-                if (index >= (realNameBuffer.Length - 1) // must have characters after _
-                    || realNameBuffer.IndexOf('_', index + 1) >= 0) // only one _ allowed
-                {
-                    return false; // fail
-                }
-                alternateSortName = realNameBuffer.AsSpan(index + 1);
-                realNameBuffer = string.Concat(realNameBuffer.AsSpan(0, index), ICU_COLLATION_KEYWORD, alternateSortName);
-            }
-
-            // Get the locale name from ICU
-            if (!GetLocaleName(realNameBuffer, out _sWindowsName))
-            {
-                return false; // fail
-            }
-
-            // Replace the ICU collation keyword with an _
-            Debug.Assert(_sWindowsName != null);
-            index = _sWindowsName.IndexOf(ICU_COLLATION_KEYWORD, StringComparison.Ordinal);
-            if (index >= 0)
-            {
-                _sName = string.Concat(_sWindowsName.AsSpan(0, index), "_", alternateSortName);
-            }
-            else
-            {
-                _sName = _sWindowsName;
-            }
-            _sRealName = _sName;
-
-            _iLanguage = LCID;
-            if (_iLanguage == 0)
-            {
-                _iLanguage = CultureInfo.LOCALE_CUSTOM_UNSPECIFIED;
-            }
-
-            _bNeutral = TwoLetterISOCountryName.Length == 0;
-
-            _sSpecificCulture = _bNeutral ? IcuLocaleData.GetSpecificCultureName(_sRealName) : _sRealName;
-
-            // Remove the sort from sName unless custom culture
-            if (index > 0 && !_bNeutral && !IsCustomCultureId(_iLanguage))
-            {
-                _sName = _sWindowsName.Substring(0, index);
-            }
-            return true;
-        }
 
         internal static unsafe bool GetLocaleName(string localeName, out string? windowsName)
         {
@@ -99,7 +29,7 @@ namespace System.Globalization
             return true;
         }
 
-        internal static unsafe bool GetDefaultLocaleName(out string? windowsName)
+        internal static unsafe bool GetDefaultLocaleName([NotNullWhen(true)] out string? windowsName)
         {
             // Get the default (system) locale name from ICU
             char* buffer = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];
@@ -217,20 +147,6 @@ namespace System.Globalization
             return ConvertIcuTimeFormatString(span.Slice(0, span.IndexOf('\0')));
         }
 
-        private int IcuGetFirstDayOfWeek() => IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
-
-        private string[] IcuGetTimeFormats()
-        {
-            string format = IcuGetTimeFormatString(false);
-            return new string[] { format };
-        }
-
-        private string[] IcuGetShortTimeFormats()
-        {
-            string format = IcuGetTimeFormatString(true);
-            return new string[] { format };
-        }
-
         private static CultureData? IcuGetCultureDataFromRegionName(string? regionName)
         {
             // no support to lookup by region name, other than the hard-coded list in CultureData
@@ -304,14 +220,6 @@ namespace System.Globalization
             return result.Slice(0, resultPos).ToString();
         }
 
-        private static string? IcuLCIDToLocaleName(int culture)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseNls);
-
-            return IcuLocaleData.LCIDToLocaleName(culture);
-        }
-
         private static int IcuLocaleNameToLCID(string cultureName)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -319,34 +227,6 @@ namespace System.Globalization
 
             int lcid = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.Lcid);
             return lcid == -1 ? CultureInfo.LOCALE_CUSTOM_UNSPECIFIED : lcid;
-        }
-
-        private static int IcuGetAnsiCodePage(string cultureName)
-        {
-            Debug.Assert(!GlobalizationMode.UseNls);
-            int ansiCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.AnsiCodePage);
-            return ansiCodePage == -1 ? CultureData.Invariant.ANSICodePage : ansiCodePage;
-        }
-
-        private static int IcuGetOemCodePage(string cultureName)
-        {
-            Debug.Assert(!GlobalizationMode.UseNls);
-            int oemCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.OemCodePage);
-            return oemCodePage == -1 ? CultureData.Invariant.OEMCodePage : oemCodePage;
-        }
-
-        private static int IcuGetMacCodePage(string cultureName)
-        {
-            Debug.Assert(!GlobalizationMode.UseNls);
-            int macCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.MacCodePage);
-            return macCodePage == -1 ? CultureData.Invariant.MacCodePage : macCodePage;
-        }
-
-        private static int IcuGetEbcdicCodePage(string cultureName)
-        {
-            Debug.Assert(!GlobalizationMode.UseNls);
-            int ebcdicCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.EbcdicCodePage);
-            return ebcdicCodePage == -1 ? CultureData.Invariant.EBCDICCodePage : ebcdicCodePage;
         }
 
         private static int IcuGetGeoId(string cultureName)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14.2)
+cmake_minimum_required(VERSION 3.14.5)
 
 cmake_policy(SET CMP0042 NEW)
 
@@ -24,12 +24,6 @@ set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/src/inc)
 set(GENERATED_EVENTING_DIR ${CMAKE_CURRENT_BINARY_DIR}/Eventing)
 set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 set(PAL_REDEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/dlls/mscordac/palredefines.S)
-
-if(CLR_CMAKE_HOST_UNIX)
-    set(CLR_DOTNET_COMMAND ${CLR_REPO_ROOT_DIR}/dotnet.sh)
-elseif(CLR_CMAKE_HOST_WIN32)
-    set(CLR_DOTNET_COMMAND ${CLR_REPO_ROOT_DIR}/dotnet.cmd)
-endif(CLR_CMAKE_HOST_UNIX)
 
 # Avoid logging when skipping up-to-date copies
 set(CMAKE_INSTALL_MESSAGE LAZY)
@@ -81,6 +75,10 @@ if(CLR_CMAKE_HOST_UNIX)
 
     add_subdirectory(src/pal)
     add_subdirectory(src/hosts)
+else(CLR_CMAKE_HOST_UNIX)
+    if(CLR_CMAKE_TARGET_UNIX)
+        add_subdirectory(src/pal/src/libunwind)
+    endif(CLR_CMAKE_TARGET_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 # Add this subdir. We install the headers for the jit.
@@ -92,7 +90,7 @@ if(CLR_CMAKE_TARGET_WIN32)
   add_subdirectory(src/gc/sample)
 endif()
 
-add_subdirectory(src/tools/crossgen2/jitinterface)
+add_subdirectory(src/tools/aot/jitinterface)
 
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake

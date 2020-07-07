@@ -180,6 +180,9 @@
   <data name="net_http_content_stream_copy_error" xml:space="preserve">
     <value>Error while copying content to a stream.</value>
   </data>
+  <data name="net_http_content_read_as_stream_has_task" xml:space="preserve">
+    <value>The content's stream has already been retrieved via async ReadAsStreamAsync and cannot be subsequently accessed synchronously.</value>
+  </data>
   <data name="net_http_argument_empty_string" xml:space="preserve">
     <value>The value cannot be null or empty.</value>
   </data>
@@ -554,5 +557,11 @@
   </data>
   <data name="net_quic_streamaborted" xml:space="preserve">
     <value>Stream aborted by peer ({0}).</value>
+  </data>
+  <data name="net_http_missing_sync_implementation" xml:space="preserve">
+    <value>The synchronous method is not supported by '{0}'. If you're using a custom '{1}' and wish to use synchronous HTTP methods, you must override its '{2}' virtual method.</value>
+  </data>
+  <data name="net_http_http2_sync_not_supported" xml:space="preserve">
+    <value>The synchronous method is not supported by '{0}' for HTTP/2 or higher. Either use an asynchronous method or downgrade the request version to HTTP/1.1 or lower.</value>
   </data>
 </root>

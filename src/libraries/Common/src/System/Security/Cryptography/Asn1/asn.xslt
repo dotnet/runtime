@@ -54,9 +54,8 @@
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;<xsl:if test="asn:SequenceOf | asn:SetOf">
 using System.Collections.Generic;</xsl:if>
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace <xsl:value-of select="@namespace" />
 {
@@ -93,11 +92,18 @@ namespace <xsl:value-of select="@namespace" />
 
         internal static <xsl:value-of select="@name" /> Decode(Asn1Tag expectedTag, ReadOnlyMemory&lt;byte&gt; encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, expectedTag, encoded, out <xsl:value-of select="@name" /> decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                DecodeCore(ref reader, expectedTag, encoded, out <xsl:value-of select="@name" /> decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory&lt;byte&gt; rebind, out <xsl:value-of select="@name" /> decoded)
@@ -106,6 +112,18 @@ namespace <xsl:value-of select="@namespace" />
         }
 
         internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory&lt;byte&gt; rebind, out <xsl:value-of select="@name" /> decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory&lt;byte&gt; rebind, out <xsl:value-of select="@name" /> decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);<xsl:if test="*[@explicitTag]">
@@ -130,9 +148,8 @@ namespace <xsl:value-of select="@namespace" />
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;<xsl:if test="asn:SequenceOf | asn:SetOf">
 using System.Collections.Generic;</xsl:if>
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace <xsl:value-of select="@namespace" />
 {
@@ -169,14 +186,33 @@ namespace <xsl:value-of select="@namespace" />
 
         internal static <xsl:value-of select="@name" /> Decode(ReadOnlyMemory&lt;byte&gt; encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, encoded, out <xsl:value-of select="@name" /> decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                DecodeCore(ref reader, encoded, out <xsl:value-of select="@name" /> decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory&lt;byte&gt; rebind, out <xsl:value-of select="@name" /> decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory&lt;byte&gt; rebind, out <xsl:value-of select="@name" /> decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();<xsl:if test="*[@explicitTag]">
@@ -208,7 +244,7 @@ namespace <xsl:value-of select="@namespace" />
   </xsl:template>
 
   <xsl:template match="*[@defaultDerInit | @optional]" mode="ValidateChoice">
-    <xsl:message terminate="yes">Error: neiher optional or defaultDerInit may be specified for fields in a Choice type (<xsl:copy-of select="."/>)</xsl:message>
+    <xsl:message terminate="yes">Error: neither optional or defaultDerInit may be specified for fields in a Choice type (<xsl:copy-of select="."/>)</xsl:message>
   </xsl:template>
 
   <xsl:template match="*[@defaultDerInit]" mode="DefaultFieldDef">
@@ -230,22 +266,20 @@ namespace <xsl:value-of select="@namespace" />
   </xsl:template>
 
   <xsl:template match="*" mode="Encode" xml:space="default">
+    <xsl:param name="indent" />
     <xsl:choose>
       <xsl:when test="@defaultDerInit and not(@explicitTag)" xml:space="preserve">
 
             // DEFAULT value handler for <xsl:value-of select="@name" />.
             {
-                using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
-                {<xsl:apply-templates select="." mode="EncodeValue">
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);<xsl:apply-templates select="." mode="EncodeValue">
                       <xsl:with-param name="writerName" select="'tmp'" />
-                      <xsl:with-param name="indent" select="'        '" />
+                      <xsl:with-param name="indent" select="concat('    ', $indent)" />
                     </xsl:apply-templates>
-                    ReadOnlySpan&lt;byte&gt; encoded = tmp.EncodeAsSpan();
 
-                    if (!encoded.SequenceEqual(<xsl:call-template name="DefaultValueField"/>))
-                    {
-                        writer.WriteEncodedValue(encoded);
-                    }
+                if (!tmp.EncodedValueEquals(<xsl:call-template name="DefaultValueField"/>))
+                {
+                    tmp.CopyTo(writer);
                 }
             }
 </xsl:when>
@@ -304,19 +338,16 @@ namespace <xsl:value-of select="@namespace" />
 
             // DEFAULT value handler for <xsl:value-of select="@name" />.
             {
-                using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
-                {<xsl:apply-templates select="." mode="EncodeSimpleValue">
-                      <xsl:with-param name="writerName" select="'tmp'" />
-                      <xsl:with-param name="indent" select="'        '" />
-                    </xsl:apply-templates>
-                    ReadOnlySpan&lt;byte&gt; encoded = tmp.EncodeAsSpan();
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);<xsl:apply-templates select="." mode="EncodeSimpleValue">
+                  <xsl:with-param name="writerName" select="'tmp'" />
+                  <xsl:with-param name="indent" select="concat('    ', $indent)" />
+                </xsl:apply-templates>
 
-                    if (!encoded.SequenceEqual(<xsl:call-template name="DefaultValueField"/>))
-                    {
-                        writer.PushSequence(<xsl:call-template name="ContextTag" />);
-                        writer.WriteEncodedValue(encoded);
-                        writer.PopSequence(<xsl:call-template name="ContextTag" />);
-                    }
+                if (!tmp.EncodedValueEquals(<xsl:call-template name="DefaultValueField"/>))
+                {
+                    writer.PushSequence(<xsl:call-template name="ContextTag" />);
+                    tmp.CopyTo(writer);
+                    writer.PopSequence(<xsl:call-template name="ContextTag" />);
                 }
             }
 </xsl:when>
@@ -414,11 +445,11 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:choose>
       <xsl:when test="@optional | parent::asn:Choice" xml:space="preserve">
             <xsl:value-of select="$indent"/><xsl:value-of select="@typeName"/> tmp<xsl:value-of select="@name"/>;
-            <xsl:value-of select="$indent"/><xsl:value-of select="@typeName"/>.Decode(ref <xsl:value-of select="$readerName"/>, <xsl:call-template name="MaybeImplicitCallP"/>rebind, out tmp<xsl:value-of select="@name"/>);
+            <xsl:value-of select="$indent"/><xsl:value-of select="@typeName"/>.Decode(ref <xsl:value-of select="$readerName"/><xsl:call-template name="MaybeImplicitCallS"/>, rebind, out tmp<xsl:value-of select="@name"/>);
             <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = tmp<xsl:value-of select="@name"/>;
 </xsl:when>
       <xsl:otherwise xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="@typeName"/>.Decode(ref <xsl:value-of select="$readerName"/>, <xsl:call-template name="MaybeImplicitCallP"/>rebind, out <xsl:value-of select="$name"/>);</xsl:otherwise>
+            <xsl:value-of select="$indent"/><xsl:value-of select="@typeName"/>.Decode(ref <xsl:value-of select="$readerName"/><xsl:call-template name="MaybeImplicitCallS"/>, rebind, out <xsl:value-of select="$name"/>);</xsl:otherwise>
     </xsl:choose>
   </xsl:template>
 
@@ -445,7 +476,14 @@ namespace <xsl:value-of select="@namespace" />
             <xsl:value-of select="$indent"/>}
 </xsl:if>
     <xsl:if test="1" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteEncodedValue(<xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>.Span);</xsl:if>
+            <xsl:value-of select="$indent"/>try
+            <xsl:value-of select="$indent"/>{
+            <xsl:value-of select="$indent"/>    <xsl:value-of select="$writerName"/>.WriteEncodedValue(<xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>.Span);
+            <xsl:value-of select="$indent"/>}
+            <xsl:value-of select="$indent"/>catch (ArgumentException e)
+            <xsl:value-of select="$indent"/>{
+            <xsl:value-of select="$indent"/>    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            <xsl:value-of select="$indent"/>}</xsl:if>
   </xsl:template>
 
   <xsl:template match="asn:AnyValue" mode="DecodeSimpleValue" xml:space="default">
@@ -482,7 +520,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="name" select="@name"/>
     <xsl:variable name="nullable" select="@optional | parent::asn:Choice"/>
     <xsl:if test="1" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteBoolean(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>);</xsl:if>
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteBoolean(<xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if><xsl:call-template name="MaybeImplicitCallS"/>);</xsl:if>
   </xsl:template>
 
   <xsl:template match="asn:Boolean" mode="DecodeSimpleValue" xml:space="default">
@@ -501,15 +539,11 @@ namespace <xsl:value-of select="@namespace" />
   <xsl:template match="asn:Integer[@backingType = 'ReadOnlyMemory']" mode="FieldDef">
         internal ReadOnlyMemory&lt;byte&gt;<xsl:if test="@optional | parent::asn:Choice">?</xsl:if> <xsl:value-of select="@name" />;</xsl:template>
 
-  <xsl:template match="asn:Integer[@backingType = 'byte']" mode="FieldDef">
-        internal byte<xsl:if test="@optional | parent::asn:Choice">?</xsl:if> <xsl:value-of select="@name" />;</xsl:template>
-
   <xsl:template match="asn:Integer[@backingType = 'int']" mode="FieldDef">
         internal int<xsl:if test="@optional | parent::asn:Choice">?</xsl:if> <xsl:value-of select="@name" />;</xsl:template>
 
   <xsl:template match="asn:Integer[not(@backingType)] | asn:Integer[@backingType = 'BigInteger']" mode="CollectionElementType">System.Numerics.BigInteger</xsl:template>
   <xsl:template match="asn:Integer[@backingType = 'ReadOnlyMemory']" mode="CollectionElementType">ReadOnlyMemory&lt;byte&gt;</xsl:template>
-  <xsl:template match="asn:Integer[@backingType = 'byte']" mode="CollectionElementType">byte</xsl:template>
   <xsl:template match="asn:Integer[@backingType = 'int']" mode="CollectionElementType">int</xsl:template>
 
   <xsl:template match="asn:Integer[not(@backingType = 'ReadOnlyMemory')]" mode="EncodeSimpleValue" xml:space="default">
@@ -518,7 +552,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="name" select="@name"/>
     <xsl:variable name="nullable" select="@optional | parent::asn:Choice"/>
     <xsl:if test="1" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteInteger(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>);</xsl:if>
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteInteger(<xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if><xsl:call-template name="MaybeImplicitCallS"/>);</xsl:if>
   </xsl:template>
 
   <xsl:template match="asn:Integer[@backingType = 'ReadOnlyMemory']" mode="EncodeSimpleValue" xml:space="default">
@@ -527,7 +561,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="name" select="@name"/>
     <xsl:variable name="nullable" select="@optional | parent::asn:Choice"/>
     <xsl:if test="1" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteInteger(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>.Span);</xsl:if>
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteInteger(<xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>.Span<xsl:call-template name="MaybeImplicitCallS"/>);</xsl:if>
   </xsl:template>
 
   <xsl:template match="asn:Integer[not(@backingType)] | asn:Integer[@backingType = 'BigInteger']" mode="DecodeSimpleValue" xml:space="default">
@@ -546,32 +580,6 @@ namespace <xsl:value-of select="@namespace" />
             <xsl:value-of select="$indent"/>tmpSpan = <xsl:value-of select="$readerName"/>.ReadIntegerBytes(<xsl:call-template name="MaybeImplicitCall0"/>);<xsl:call-template name="RebindMemory"><xsl:with-param name="name" select="$name"/><xsl:with-param name="indent" select="$indent"/></xsl:call-template></xsl:if>
   </xsl:template>
 
-  <xsl:template match="asn:Integer[@backingType = 'byte']" mode="DecodeSimpleValue" xml:space="default">
-    <xsl:param name="readerName" />
-    <xsl:param name="indent" />
-    <xsl:param name="name" select="concat('decoded.', @name)"/>
-    <xsl:choose>
-      <xsl:when test="@optional | parent::asn:Choice" xml:space="preserve">
-
-            <xsl:value-of select="$indent"/>if (<xsl:value-of select="$readerName"/>.TryReadUInt8(<xsl:call-template name="MaybeImplicitCallP"/>out byte tmp<xsl:value-of select="@name"/>))
-            <xsl:value-of select="$indent"/>{
-            <xsl:value-of select="$indent"/>    <xsl:value-of select="$name"/> = tmp<xsl:value-of select="@name"/>;
-            <xsl:value-of select="$indent"/>}
-            <xsl:value-of select="$indent"/>else
-            <xsl:value-of select="$indent"/>{
-            <xsl:value-of select="$indent"/>    <xsl:value-of select="$readerName"/>.ThrowIfNotEmpty();
-            <xsl:value-of select="$indent"/>}
-</xsl:when>
-      <xsl:otherwise xml:space="preserve">
-
-            <xsl:value-of select="$indent"/>if (!<xsl:value-of select="$readerName"/>.TryReadUInt8(<xsl:call-template name="MaybeImplicitCallP"/>out <xsl:value-of select="$name"/>))
-            <xsl:value-of select="$indent"/>{
-            <xsl:value-of select="$indent"/>    <xsl:value-of select="$readerName"/>.ThrowIfNotEmpty();
-            <xsl:value-of select="$indent"/>}
-</xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
   <xsl:template match="asn:Integer[@backingType = 'int']" mode="DecodeSimpleValue" xml:space="default">
     <xsl:param name="readerName" />
     <xsl:param name="indent" />
@@ -579,7 +587,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:choose>
       <xsl:when test="@optional | parent::asn:Choice" xml:space="preserve">
 
-            <xsl:value-of select="$indent"/>if (<xsl:value-of select="$readerName"/>.TryReadInt32(<xsl:call-template name="MaybeImplicitCallP"/>out int tmp<xsl:value-of select="@name"/>))
+            <xsl:value-of select="$indent"/>if (<xsl:value-of select="$readerName"/>.TryReadInt32(out int tmp<xsl:value-of select="@name"/><xsl:call-template name="MaybeImplicitCallS"/>))
             <xsl:value-of select="$indent"/>{
             <xsl:value-of select="$indent"/>    <xsl:value-of select="$name"/> = tmp<xsl:value-of select="@name"/>;
             <xsl:value-of select="$indent"/>}
@@ -590,7 +598,7 @@ namespace <xsl:value-of select="@namespace" />
 </xsl:when>
       <xsl:otherwise xml:space="preserve">
 
-            <xsl:value-of select="$indent"/>if (!<xsl:value-of select="$readerName"/>.TryReadInt32(<xsl:call-template name="MaybeImplicitCallP"/>out <xsl:value-of select="$name"/>))
+            <xsl:value-of select="$indent"/>if (!<xsl:value-of select="$readerName"/>.TryReadInt32(out <xsl:value-of select="$name"/><xsl:call-template name="MaybeImplicitCallS"/>))
             <xsl:value-of select="$indent"/>{
             <xsl:value-of select="$indent"/>    <xsl:value-of select="$readerName"/>.ThrowIfNotEmpty();
             <xsl:value-of select="$indent"/>}
@@ -611,7 +619,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="name" select="@name"/>
     <xsl:variable name="nullable" select="@optional | parent::asn:Choice"/>
     <xsl:if test="1" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteBitString(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>.Span);</xsl:if>
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteBitString(<xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>.Span, 0<xsl:call-template name="MaybeImplicitCallS"/>);</xsl:if>
   </xsl:template>
 
   <xsl:template match="asn:BitString" mode="DecodeSimpleValue" xml:space="default">
@@ -620,12 +628,12 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="name" select="concat('decoded.', @name)"/>
     <xsl:if test="1" xml:space="preserve">
 
-            <xsl:value-of select="$indent"/>if (<xsl:value-of select="$readerName"/>.TryReadPrimitiveBitStringValue(<xsl:call-template name="MaybeImplicitCallP"/>out _, out tmpSpan))
+            <xsl:value-of select="$indent"/>if (<xsl:value-of select="$readerName"/>.TryReadPrimitiveBitString(out _, out tmpSpan<xsl:call-template name="MaybeImplicitCallS"/>))
             <xsl:value-of select="$indent"/>{<xsl:call-template name="RebindMemory"><xsl:with-param name="name" select="$name"/><xsl:with-param name="indent" select="concat('    ', $indent)"/></xsl:call-template>
             <xsl:value-of select="$indent"/>}
             <xsl:value-of select="$indent"/>else
             <xsl:value-of select="$indent"/>{
-            <xsl:value-of select="$indent"/>    <xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadBitString(<xsl:call-template name="MaybeImplicitCallP"/>out _);
+            <xsl:value-of select="$indent"/>    <xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadBitString(out _<xsl:call-template name="MaybeImplicitCallS"/>);
             <xsl:value-of select="$indent"/>}
 </xsl:if>
   </xsl:template>
@@ -643,7 +651,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="name" select="@name"/>
     <xsl:variable name="nullable" select="@optional | parent::asn:Choice"/>
     <xsl:if test="1" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteNamedBitList(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>);</xsl:if>
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteNamedBitList(<xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if><xsl:call-template name="MaybeImplicitCallS"/>);</xsl:if>
   </xsl:template>
 
   <xsl:template match="asn:NamedBitList" mode="DecodeSimpleValue" xml:space="default">
@@ -667,7 +675,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="name" select="@name"/>
     <xsl:variable name="nullable" select="@optional | parent::asn:Choice"/>
     <xsl:if test="1" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteOctetString(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>.Span);</xsl:if>
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteOctetString(<xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>.Span<xsl:call-template name="MaybeImplicitCallS"/>);</xsl:if>
   </xsl:template>
 
   <xsl:template match="asn:OctetString" mode="DecodeSimpleValue" xml:space="default">
@@ -676,7 +684,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="name" select="concat('decoded.', @name)"/>
     <xsl:if test="1" xml:space="preserve">
 
-            <xsl:value-of select="$indent"/>if (<xsl:value-of select="$readerName"/>.TryReadPrimitiveOctetStringBytes(<xsl:call-template name="MaybeImplicitCallP"/>out tmpSpan))
+            <xsl:value-of select="$indent"/>if (<xsl:value-of select="$readerName"/>.TryReadPrimitiveOctetString(out tmpSpan<xsl:call-template name="MaybeImplicitCallS"/>))
             <xsl:value-of select="$indent"/>{<xsl:call-template name="RebindMemory"><xsl:with-param name="name" select="$name"/><xsl:with-param name="indent" select="concat('    ', $indent)"/></xsl:call-template>
             <xsl:value-of select="$indent"/>}
             <xsl:value-of select="$indent"/>else
@@ -688,13 +696,10 @@ namespace <xsl:value-of select="@namespace" />
 
   <xsl:template match="asn:OctetString" mode="DefaultTag">Asn1Tag.PrimitiveOctetString</xsl:template>
 
-  <xsl:template match="asn:ObjectIdentifier[not(@backingType)] | asn:ObjectIdentifier[@backingType = 'Oid']" mode="FieldDef">
-        internal Oid<xsl:if test="@optional | parent::asn:Choice">?</xsl:if> <xsl:value-of select="@name" />;</xsl:template>
-  <xsl:template match="asn:ObjectIdentifier[@backingType = 'string']" mode="FieldDef">
+  <xsl:template match="asn:ObjectIdentifier" mode="FieldDef">
         internal string<xsl:if test="@optional | parent::asn:Choice">?</xsl:if> <xsl:value-of select="@name" />;</xsl:template>
 
-  <xsl:template match="asn:ObjectIdentifier[not(@backingType)] | asn:ObjectIdentifier[@backingType = 'Oid']" mode="CollectionElementType">Oid</xsl:template>
-  <xsl:template match="asn:ObjectIdentifier[@backingType = 'string']" mode="CollectionElementType">string</xsl:template>
+  <xsl:template match="asn:ObjectIdentifier" mode="CollectionElementType">string</xsl:template>
 
   <xsl:template match="asn:ObjectIdentifier" mode="EncodeSimpleValue" xml:space="default">
     <xsl:param name="writerName" />
@@ -704,11 +709,18 @@ namespace <xsl:value-of select="@namespace" />
       <!-- For when string and unpopulated friendly name are added -->
       <xsl:when test="0"></xsl:when>
       <xsl:otherwise xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteObjectIdentifier(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="$name"/>);</xsl:otherwise>
+            <xsl:value-of select="$indent"/>try
+            <xsl:value-of select="$indent"/>{
+            <xsl:value-of select="$indent"/>    <xsl:value-of select="$writerName"/>.WriteObjectIdentifier(<xsl:value-of select="$name"/><xsl:call-template name="MaybeImplicitCallS"/>);
+            <xsl:value-of select="$indent"/>}
+            <xsl:value-of select="$indent"/>catch (ArgumentException e)
+            <xsl:value-of select="$indent"/>{
+            <xsl:value-of select="$indent"/>    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            <xsl:value-of select="$indent"/>}</xsl:otherwise>
     </xsl:choose>
   </xsl:template>
 
-  <xsl:template match="asn:ObjectIdentifier[not(@backingType)] | asn:ObjectIdentifier[@backingType = 'Oid']" mode="DecodeSimpleValue" xml:space="default">
+  <xsl:template match="asn:ObjectIdentifier" mode="DecodeSimpleValue" xml:space="default">
     <xsl:param name="readerName" />
     <xsl:param name="indent" />
     <xsl:param name="name" select="concat('decoded.', @name)"/>
@@ -717,18 +729,6 @@ namespace <xsl:value-of select="@namespace" />
       <xsl:when test="0"></xsl:when>
       <xsl:otherwise xml:space="preserve">
             <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadObjectIdentifier(<xsl:call-template name="MaybeImplicitCall0"/>);</xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
-  <xsl:template match="asn:ObjectIdentifier[@backingType = 'string']" mode="DecodeSimpleValue" xml:space="default">
-    <xsl:param name="readerName" />
-    <xsl:param name="indent" />
-    <xsl:param name="name" select="concat('decoded.', @name)"/>
-    <xsl:choose>
-      <!-- For when string and unpopulated friendly name are added -->
-      <xsl:when test="0"></xsl:when>
-      <xsl:otherwise xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadObjectIdentifierAsString(<xsl:call-template name="MaybeImplicitCall0"/>);</xsl:otherwise>
     </xsl:choose>
   </xsl:template>
 
@@ -745,7 +745,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="name" select="@name"/>
     <xsl:variable name="nullable" select="@optional | parent::asn:Choice"/>
     <xsl:if test="1" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteEnumeratedValue(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>);</xsl:if>
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteEnumeratedValue(<xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if><xsl:call-template name="MaybeImplicitCallS"/>);</xsl:if>
   </xsl:template>
 
   <xsl:template match="asn:Enumerated" mode="DecodeSimpleValue" xml:space="default">
@@ -769,7 +769,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="indent" />
     <xsl:param name="name" select="@name"/>
     <xsl:if test="1" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteCharacterString(<xsl:call-template name="MaybeImplicitCallP"/>UniversalTagNumber.<xsl:value-of select="local-name()"/>, <xsl:value-of select="$name"/>);</xsl:if>
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteCharacterString(UniversalTagNumber.<xsl:value-of select="local-name()"/>, <xsl:value-of select="$name"/><xsl:call-template name="MaybeImplicitCallS"/>);</xsl:if>
   </xsl:template>
 
   <xsl:template match="asn:UTF8String | asn:PrintableString | asn:T61String | asn:IA5String | asn:VisibleString | asn:BMPString" mode="DecodeSimpleValue" xml:space="default">
@@ -777,7 +777,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="indent" />
     <xsl:param name="name" select="concat('decoded.', @name)"/>
     <xsl:if test="1" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadCharacterString(<xsl:call-template name="MaybeImplicitCallP"/>UniversalTagNumber.<xsl:value-of select="local-name()"/>);</xsl:if>
+            <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadCharacterString(UniversalTagNumber.<xsl:value-of select="local-name()"/><xsl:call-template name="MaybeImplicitCallS"/>);</xsl:if>
   </xsl:template>
 
   <xsl:template match="asn:UTF8String | asn:PrintableString | asn:T61String | asn:IA5String | asn:VisibleString | asn:BMPString" mode="DefaultTag">new Asn1Tag(UniversalTagNumber.<xsl:value-of select="local-name()"/>)</xsl:template>
@@ -846,7 +846,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="name" select="@name"/>
     <xsl:variable name="nullable" select="@optional | parent::asn:Choice"/>
     <xsl:if test="1" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteUtcTime(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>);</xsl:if>
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteUtcTime(<xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if><xsl:call-template name="MaybeImplicitCallS"/>);</xsl:if>
   </xsl:template>
 
   <xsl:template match="asn:UtcTime" mode="DecodeSimpleValue" xml:space="default">
@@ -855,7 +855,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="name" select="concat('decoded.', @name)"/>
     <xsl:choose>
       <xsl:when test="@twoDigitYearMax" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadUtcTime(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="@twoDigitYearMax"/>);</xsl:when>
+            <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadUtcTime(<xsl:value-of select="@twoDigitYearMax"/><xsl:call-template name="MaybeImplicitCallS"/>);</xsl:when>
       <xsl:otherwise xml:space="preserve">
             <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadUtcTime(<xsl:call-template name="MaybeImplicitCall0"/>);</xsl:otherwise>
     </xsl:choose>
@@ -870,9 +870,9 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:variable name="nullable" select="@optional | parent::asn:Choice"/>
     <xsl:choose>
       <xsl:when test="@omitFractionalSeconds" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteGeneralizedTime(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>, omitFractionalSeconds: <xsl:value-of select="@omitFractionalSeconds"/>);</xsl:when>
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteGeneralizedTime(<xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>, omitFractionalSeconds: <xsl:value-of select="@omitFractionalSeconds"/><xsl:call-template name="MaybeImplicitCallS"/>);</xsl:when>
       <xsl:otherwise xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteGeneralizedTime(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>);</xsl:otherwise>
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteGeneralizedTime(<xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>, false<xsl:call-template name="MaybeImplicitCallS"/>);</xsl:otherwise>
     </xsl:choose>
   </xsl:template>
 
@@ -880,21 +880,22 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="readerName" />
     <xsl:param name="indent" />
     <xsl:param name="name" select="concat('decoded.', @name)"/>
-    <xsl:choose>
-      <xsl:when test="@omitFractionalSeconds" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadGeneralizedTime(<xsl:call-template name="MaybeImplicitCallP"/>disallowFractions: <xsl:value-of select="@omitFractionalSeconds"/>);</xsl:when>
-      <xsl:otherwise xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadGeneralizedTime(<xsl:call-template name="MaybeImplicitCall0"/>);</xsl:otherwise>
-    </xsl:choose>
+    <xsl:variable name="nullable" select="@optional | parent::asn:Choice"/>
+    <xsl:if test="1" xml:space="preserve">
+            <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadGeneralizedTime(<xsl:call-template name="MaybeImplicitCall0"/>);</xsl:if>
+    <xsl:if test="@omitFractionalSeconds" xml:space="preserve">
+
+            <xsl:value-of select="$indent"/>if (<xsl:value-of select="$name"/><xsl:if test="$nullable">!.Value</xsl:if>.Ticks % TimeSpan.TicksPerSecond != 0)
+            <xsl:value-of select="$indent"/>{
+            <xsl:value-of select="$indent"/>    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            <xsl:value-of select="$indent"/>}
+</xsl:if>
   </xsl:template>
 
   <xsl:template match="asn:GeneralizedTime" mode="DefaultTag">Asn1Tag.GeneralizedTime</xsl:template>
 
   <!-- ReadBoolean() vs ReadBoolean(tag) -->
   <xsl:template name="MaybeImplicitCall0"><xsl:if test="@implicitTag"><xsl:call-template name="ContextTag"/></xsl:if></xsl:template>
-
-  <!-- TryReadInt32(out val) vs TryReadInt32(tag, out val) -->
-  <xsl:template name="MaybeImplicitCallP"><xsl:if test="@implicitTag"><xsl:call-template name="ContextTag"/>, </xsl:if></xsl:template>
 
   <!-- Encode(writer) vs Encode(writer, tag) -->
   <xsl:template name="MaybeImplicitCallS"><xsl:if test="@implicitTag">, <xsl:call-template name="ContextTag"/></xsl:if></xsl:template>

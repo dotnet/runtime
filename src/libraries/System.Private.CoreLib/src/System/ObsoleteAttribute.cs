@@ -29,14 +29,11 @@ namespace System
     {
         public ObsoleteAttribute()
         {
-            Message = null;
-            IsError = false;
         }
 
         public ObsoleteAttribute(string? message)
         {
             Message = message;
-            IsError = false;
         }
 
         public ObsoleteAttribute(string? message, bool error)

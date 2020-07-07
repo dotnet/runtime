@@ -102,7 +102,6 @@
 #include <stddef.h> // offsetof
 #include "static_assert.h"
 #include "metamodel.h"
-#include "WinMDInterfaces.h"
 #include "MDInternalRW.h"
 
 // other types provide friend access to this type so that the

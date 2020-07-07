@@ -15,6 +15,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>GenericVectorTests.tt</DependentUpon>
     </Compile>
+    <Compile Include="GenericVectorUnsupportedTests.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="Vector2Tests.cs" />
     <Compile Include="Vector3Tests.cs" />

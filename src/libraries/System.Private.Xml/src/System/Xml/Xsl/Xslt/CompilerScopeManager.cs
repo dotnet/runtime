@@ -51,7 +51,7 @@ namespace System.Xml.Xsl.Xslt
         // This is cache of records[lastRecord].scopeCount field;
         // most often we will have PushScope()/PopScope pare over the same record.
         // It has sence to avoid adresing this field through array access.
-        private int _lastScopes = 0;
+        private int _lastScopes;
 
         public CompilerScopeManager()
         {

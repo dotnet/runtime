@@ -18,6 +18,14 @@ namespace System.Data.Common.Tests
         }
 
         [Fact]
+        public void Ctor_IsTransient_IsFalse()
+        {
+            var defaultException = new CustomDbException();
+
+            Assert.False(defaultException.IsTransient);
+        }
+
+        [Fact]
         public void Ctor_ArgumentsRoundtrip()
         {
             var e = new CustomDbException("test");

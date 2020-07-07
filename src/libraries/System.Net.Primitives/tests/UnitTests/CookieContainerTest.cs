@@ -486,7 +486,7 @@ namespace System.Net.Primitives.Unit.Tests
         [Fact]
         public void Ctor_Capacity_Invalid()
         {
-            AssertExtensions.Throws<ArgumentException>("Capacity", () => new CookieContainer(0)); // Capacity <= 0
+            AssertExtensions.Throws<ArgumentException>("capacity", () => new CookieContainer(0)); // Capacity <= 0
         }
 
         [Fact]
@@ -543,7 +543,7 @@ namespace System.Net.Primitives.Unit.Tests
             Assert.Equal(4, cc.Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Add_ReachedMaxCountWithExpiredCookies_Added()
         {
             Cookie c1 = new Cookie("name1", "value", "", ".domain1.com");
@@ -595,7 +595,7 @@ namespace System.Net.Primitives.Unit.Tests
         {
             CookieContainer cc = new CookieContainer();
             Assert.Throws<ArgumentNullException>(() => cc.Add((Cookie)null)); // Null cookie
-            AssertExtensions.Throws<ArgumentException>("cookie.Domain", () => cc.Add(new Cookie("name", "value", "", ""))); // Empty domain
+            AssertExtensions.Throws<ArgumentException>("cookie", () => cc.Add(new Cookie("name", "value", "", ""))); // Empty domain
 
             cc.MaxCookieSize = 1;
             Assert.Throws<CookieException>(() => cc.Add(new Cookie("name", "long-text", "", "contoso.com"))); // Value.Length > MaxCookieSize
@@ -625,11 +625,11 @@ namespace System.Net.Primitives.Unit.Tests
         [Fact]
         public void Ctor_CapacityPerDomainCapacityMaxCookieSize_Invalid()
         {
-            AssertExtensions.Throws<ArgumentException>("Capacity", () => new CookieContainer(0, 10, 5)); // Capacity <= 0
+            AssertExtensions.Throws<ArgumentException>("capacity", () => new CookieContainer(0, 10, 5)); // Capacity <= 0
             Assert.Throws<ArgumentOutOfRangeException>(() => new CookieContainer(5, 0, 5)); // Per domain capacity <= 0
             Assert.Throws<ArgumentOutOfRangeException>(() => new CookieContainer(5, 10, 5)); // Per domain capacity > Capacity
 
-            AssertExtensions.Throws<ArgumentException>("MaxCookieSize", () => new CookieContainer(15, 10, 0)); // Max cookie size <= 0
+            AssertExtensions.Throws<ArgumentException>("maxCookieSize", () => new CookieContainer(15, 10, 0)); // Max cookie size <= 0
         }
 
         [Fact]
@@ -678,7 +678,7 @@ namespace System.Net.Primitives.Unit.Tests
             Assert.Equal(c1, cc3[1]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task GetCookies_RemovesExpired_Cookies()
         {
             Cookie c1 = new Cookie("name1", "value", "", ".url1.com");

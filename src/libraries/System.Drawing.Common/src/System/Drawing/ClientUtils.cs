@@ -112,8 +112,7 @@ namespace System.Drawing
                 {
                     if (InnerList[i] != other.InnerList[i])
                     {
-                        // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
-                        if (InnerList[i] == null || !InnerList[i]!.Equals(other.InnerList[i]))
+                        if (InnerList[i] == null || !InnerList[i]!.Equals(other.InnerList[i])) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                         {
                             return false;
                         }

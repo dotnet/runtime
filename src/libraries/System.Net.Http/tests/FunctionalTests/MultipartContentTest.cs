@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -127,9 +128,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(MultipartContentToStringMode.ReadAsStreamAsync)]
-        [InlineData(MultipartContentToStringMode.CopyToAsync)]
-        public async Task ReadAsStringAsync_NoSubContent_MatchesExpected(MultipartContentToStringMode mode)
+        [InlineData(MultipartContentToStringMode.ReadAsStreamAsync, false)]
+        [InlineData(MultipartContentToStringMode.ReadAsStreamAsync, true)]
+        [InlineData(MultipartContentToStringMode.CopyToAsync, false)]
+        [InlineData(MultipartContentToStringMode.CopyToAsync, true)]
+        public async Task ReadAsStringAsync_NoSubContent_MatchesExpected(MultipartContentToStringMode mode, bool async)
         {
             var mc = new MultipartContent("someSubtype", "theBoundary");
 
@@ -137,13 +140,15 @@ namespace System.Net.Http.Functional.Tests
                 "--theBoundary\r\n" +
                 "\r\n" +
                 "--theBoundary--\r\n",
-                await MultipartContentToStringAsync(mc, mode));
+                await MultipartContentToStringAsync(mc, mode, async));
         }
 
         [Theory]
-        [InlineData(MultipartContentToStringMode.ReadAsStreamAsync)]
-        [InlineData(MultipartContentToStringMode.CopyToAsync)]
-        public async Task ReadAsStringAsync_OneSubContentWithHeaders_MatchesExpected(MultipartContentToStringMode mode)
+        [InlineData(MultipartContentToStringMode.ReadAsStreamAsync, false)]
+        [InlineData(MultipartContentToStringMode.ReadAsStreamAsync, true)]
+        [InlineData(MultipartContentToStringMode.CopyToAsync, false)]
+        [InlineData(MultipartContentToStringMode.CopyToAsync, true)]
+        public async Task ReadAsStringAsync_OneSubContentWithHeaders_MatchesExpected(MultipartContentToStringMode mode, bool async)
         {
             var subContent = new ByteArrayContent(Encoding.UTF8.GetBytes("This is a ByteArrayContent"));
             subContent.Headers.Add("someHeaderName", "andSomeHeaderValue");
@@ -161,13 +166,15 @@ namespace System.Net.Http.Functional.Tests
                 "\r\n" +
                 "This is a ByteArrayContent\r\n" +
                 "--theBoundary--\r\n",
-                await MultipartContentToStringAsync(mc, mode));
+                await MultipartContentToStringAsync(mc, mode, async));
         }
 
         [Theory]
-        [InlineData(MultipartContentToStringMode.ReadAsStreamAsync)]
-        [InlineData(MultipartContentToStringMode.CopyToAsync)]
-        public async Task ReadAsStringAsync_TwoSubContents_MatchesExpected(MultipartContentToStringMode mode)
+        [InlineData(MultipartContentToStringMode.ReadAsStreamAsync, false)]
+        [InlineData(MultipartContentToStringMode.ReadAsStreamAsync, true)]
+        [InlineData(MultipartContentToStringMode.CopyToAsync, false)]
+        [InlineData(MultipartContentToStringMode.CopyToAsync, true)]
+        public async Task ReadAsStringAsync_TwoSubContents_MatchesExpected(MultipartContentToStringMode mode, bool async)
         {
             var mc = new MultipartContent("someSubtype", "theBoundary");
             mc.Add(new ByteArrayContent(Encoding.UTF8.GetBytes("This is a ByteArrayContent")));
@@ -182,11 +189,13 @@ namespace System.Net.Http.Functional.Tests
                 "\r\n" +
                 "This is a StringContent\r\n" +
                 "--theBoundary--\r\n",
-                await MultipartContentToStringAsync(mc, mode));
+                await MultipartContentToStringAsync(mc, mode, async));
         }
 
-        [Fact]
-        public async Task ReadAsStreamAsync_LargeContent_AllBytesRead()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsStreamAsync_LargeContent_AllBytesRead(bool readStreamAsync)
         {
             var form = new MultipartFormDataContent();
 
@@ -202,7 +211,7 @@ namespace System.Net.Http.Functional.Tests
             long totalAsyncRead = 0, totalSyncArrayRead = 0, totalSyncSpanRead = 0;
             int bytesRead;
 
-            using (Stream s = await form.ReadAsStreamAsync())
+            using (Stream s = await form.ReadAsStreamAsync(readStreamAsync))
             {
                 s.Position = 0;
                 while ((bytesRead = await s.ReadAsync(bytes, 0, bytes.Length)) > 0)
@@ -229,16 +238,20 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public async Task ReadAsStreamAsync_CanSeekEvenIfAllStreamsNotSeekale(bool firstContentSeekable, bool secondContentSeekable)
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public async Task ReadAsStreamAsync_CanSeekEvenIfAllStreamsNotSeekale(bool firstContentSeekable, bool secondContentSeekable, bool readStreamAsync)
         {
             var c = new MultipartContent();
             c.Add(new StreamContent(firstContentSeekable ? new MemoryStream(new byte[42]) : new NonSeekableMemoryStream(new byte[42])));
             c.Add(new StreamContent(secondContentSeekable ? new MemoryStream(new byte[42]) : new NonSeekableMemoryStream(new byte[1])));
-            using (Stream s = await c.ReadAsStreamAsync())
+            using (Stream s = await c.ReadAsStreamAsync(readStreamAsync))
             {
                 Assert.True(s.CanSeek);
                 Assert.InRange(s.Length, 43, int.MaxValue);
@@ -252,9 +265,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task ReadAsStreamAsync_Seek_JumpsToSpecifiedPosition(bool nestedContent)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task ReadAsStreamAsync_Seek_JumpsToSpecifiedPosition(bool nestedContent, bool readStreamAsync)
         {
             var mc = new MultipartContent();
             if (nestedContent)
@@ -268,7 +283,7 @@ namespace System.Net.Http.Functional.Tests
             await mc.CopyToAsync(memStream);
 
             byte[] buf1 = new byte[1], buf2 = new byte[1];
-            using (Stream s = await mc.ReadAsStreamAsync())
+            using (Stream s = await mc.ReadAsStreamAsync(readStreamAsync))
             {
                 var targets = new[]
                 {
@@ -301,11 +316,13 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
-        public async Task ReadAsStreamAsync_InvalidArgs_Throw()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsStreamAsync_InvalidArgs_Throw(bool readStreamAsync)
         {
             var mc = new MultipartContent();
-            using (Stream s = await mc.ReadAsStreamAsync())
+            using (Stream s = await mc.ReadAsStreamAsync(readStreamAsync))
             {
                 Assert.True(s.CanRead);
                 Assert.False(s.CanWrite);
@@ -331,11 +348,13 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
-        public async Task ReadAsStreamAsync_OperationsThatDontChangePosition()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsStreamAsync_OperationsThatDontChangePosition(bool readStreamAsync)
         {
             var mc = new MultipartContent();
-            using (Stream s = await mc.ReadAsStreamAsync())
+            using (Stream s = await mc.ReadAsStreamAsync(readStreamAsync))
             {
                 Assert.Equal(0, s.Read(new byte[1], 0, 0));
                 Assert.Equal(0, s.Read(new Span<byte>(new byte[1], 0, 0)));
@@ -361,21 +380,36 @@ namespace System.Net.Http.Functional.Tests
             await Assert.ThrowsAsync<NotImplementedException>(() => t);
         }
 
+        [Fact]
+        public void ReadAsStream_CreateContentReadStreamThrows()
+        {
+            var mc = new MultipartContent();
+            mc.Add(new MockContent());
+            Assert.Throws<NotImplementedException>(() => mc.ReadAsStream());
+        }
+
         #region Helpers
 
-        private static async Task<string> MultipartContentToStringAsync(MultipartContent content, MultipartContentToStringMode mode)
+        private static async Task<string> MultipartContentToStringAsync(MultipartContent content, MultipartContentToStringMode mode, bool async)
         {
             Stream stream;
 
             switch (mode)
             {
                 case MultipartContentToStringMode.ReadAsStreamAsync:
-                    stream = await content.ReadAsStreamAsync();
+                    stream = await content.ReadAsStreamAsync(async);
                     break;
 
                 default:
                     stream = new MemoryStream();
-                    await content.CopyToAsync(stream);
+                    if (async)
+                    {
+                        await content.CopyToAsync(stream);
+                    }
+                    else
+                    {
+                        content.CopyTo(stream, null, default);
+                    }
                     stream.Position = 0;
                     break;
             }
@@ -402,6 +436,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 DisposeCount++;
                 base.Dispose(disposing);
+            }
+
+            protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
             }
 
             protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)

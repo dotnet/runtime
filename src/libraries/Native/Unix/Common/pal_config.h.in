@@ -111,6 +111,7 @@
 #cmakedefine01 HAVE_CFSETSPEED
 #cmakedefine01 HAVE_CFMAKERAW
 #cmakedefine01 HAVE_GETGROUPLIST
+#cmakedefine01 HAVE_SYS_PROCINFO_H
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

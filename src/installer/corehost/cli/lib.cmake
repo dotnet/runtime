@@ -5,13 +5,13 @@
 project(${DOTNET_PROJECT_NAME})
 
 include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/hostmisc/hostmisc.cmake)
 
 add_definitions(-D_NO_ASYNCRTIMP)
 add_definitions(-D_NO_PPLXIMP)
 add_definitions(-DEXPORT_SHARED_API=1)
 
 add_library(${DOTNET_PROJECT_NAME} SHARED ${SOURCES} ${RESOURCES})
-target_link_libraries(${DOTNET_PROJECT_NAME} libhostmisc)
 
 set_target_properties(${DOTNET_PROJECT_NAME} PROPERTIES MACOSX_RPATH TRUE)
 

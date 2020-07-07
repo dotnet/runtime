@@ -15,8 +15,8 @@ namespace System.Threading
         private Delegate _start;
         internal CultureInfo? _startCulture;
         internal CultureInfo? _startUICulture;
-        private object? _startArg = null;
-        private ExecutionContext? _executionContext = null;
+        private object? _startArg;
+        private ExecutionContext? _executionContext;
 
         internal ThreadHelper(Delegate start)
         {
@@ -318,6 +318,8 @@ namespace System.Threading
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern DeserializationTracker GetThreadDeserializationTracker(ref StackCrawlMark stackMark);
+
+        internal const bool IsThreadStartSupported = true;
 
         /// <summary>Returns true if the thread has been started and is not dead.</summary>
         public extern bool IsAlive

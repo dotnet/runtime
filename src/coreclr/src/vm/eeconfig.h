@@ -133,14 +133,6 @@ public:
         }
     }
 
-    bool LegacyNullReferenceExceptionPolicy(void)   const {LIMITED_METHOD_CONTRACT;  return fLegacyNullReferenceExceptionPolicy; }
-    bool LegacyUnhandledExceptionPolicy(void)       const {LIMITED_METHOD_CONTRACT;  return fLegacyUnhandledExceptionPolicy; }
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // Returns a bool to indicate if the legacy CSE (pre-v4) behaviour is enabled or not
-    bool LegacyCorruptedStateExceptionsPolicy(void) const {LIMITED_METHOD_CONTRACT;  return fLegacyCorruptedStateExceptionsPolicy; }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
     bool InteropValidatePinnedObjects()             const { LIMITED_METHOD_CONTRACT;  return m_fInteropValidatePinnedObjects; }
     bool InteropLogArguments()                      const { LIMITED_METHOD_CONTRACT;  return m_fInteropLogArguments; }
 
@@ -401,28 +393,10 @@ public:
 
     bool    IsGCBreakOnOOMEnabled()         const {LIMITED_METHOD_CONTRACT; return fGCBreakOnOOM; }
 
-    size_t  GetGCgen0size  ()               const {LIMITED_METHOD_CONTRACT; return iGCgen0size;   }
-    void    SetGCgen0size  (size_t iSize)         {LIMITED_METHOD_CONTRACT; iGCgen0size = iSize;   }
-    size_t  GetSegmentSize ()               const {LIMITED_METHOD_CONTRACT; return iGCSegmentSize; }
-    void    SetSegmentSize (size_t iSize)         {LIMITED_METHOD_CONTRACT; iGCSegmentSize = iSize; }
-
     int     GetGCconcurrent()               const {LIMITED_METHOD_CONTRACT; return iGCconcurrent; }
     void    SetGCconcurrent(int val)              {LIMITED_METHOD_CONTRACT; iGCconcurrent = val;  }
-#ifdef _DEBUG
-    int     GetGCLatencyMode()              const {LIMITED_METHOD_CONTRACT; return iGCLatencyMode; }
-#endif //_DEBUG
-    int     GetGCForceCompact()             const {LIMITED_METHOD_CONTRACT; return iGCForceCompact; }
     int     GetGCRetainVM ()                const {LIMITED_METHOD_CONTRACT; return iGCHoardVM;}
     DWORD   GetGCLOHThreshold()             const {LIMITED_METHOD_CONTRACT; return iGCLOHThreshold;}
-    int     GetGCLOHCompactionMode()        const {LIMITED_METHOD_CONTRACT; return iGCLOHCompactionMode;}
-    size_t  GetGCAffinityMask()             const {LIMITED_METHOD_CONTRACT; return iGCAffinityMask;}
-    size_t  GetGCHeapHardLimit()            const {LIMITED_METHOD_CONTRACT; return iGCHeapHardLimit;}
-
-#ifdef GCTRIMCOMMIT
-
-    int     GetGCTrimCommit()               const {LIMITED_METHOD_CONTRACT; return iGCTrimCommit;}
-
-#endif
 
 #ifdef FEATURE_CONSERVATIVE_GC
     bool    GetGCConservative()             const {LIMITED_METHOD_CONTRACT; return iGCConservative;}
@@ -580,13 +554,6 @@ private: //----------------------------------------------------------------
 
     unsigned fPInvokeRestoreEsp;  // -1=Default, 0=Never, Else=Always
 
-    bool fLegacyNullReferenceExceptionPolicy; // Old AV's as NullRef behavior
-    bool fLegacyUnhandledExceptionPolicy;     // Old unhandled exception policy (many are swallowed)
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    bool fLegacyCorruptedStateExceptionsPolicy;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
     LPUTF8 pszBreakOnClassLoad;         // Halt just before loading this class
 
 #ifdef TEST_DATA_CONSISTENCY
@@ -684,25 +651,9 @@ private: //----------------------------------------------------------------
     int  iGCStress;
 #endif
 
-#define DEFAULT_GC_PRN_LVL 3
-    size_t iGCgen0size;
-    size_t iGCSegmentSize;
     int  iGCconcurrent;
-#ifdef _DEBUG
-    int  iGCLatencyMode;
-#endif //_DEBUG
-    int  iGCForceCompact;
     int  iGCHoardVM;
-    int  iGCLOHCompactionMode;
     DWORD iGCLOHThreshold;
-    size_t  iGCAffinityMask;
-    size_t iGCHeapHardLimit;
-
-#ifdef GCTRIMCOMMIT
-
-    int  iGCTrimCommit;
-
-#endif
 
 #ifdef FEATURE_CONSERVATIVE_GC
     bool iGCConservative;

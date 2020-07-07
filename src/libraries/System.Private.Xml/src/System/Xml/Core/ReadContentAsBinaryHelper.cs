@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 
 namespace System.Xml
@@ -23,12 +24,12 @@ namespace System.Xml
         private bool _isEnd;
 
         private readonly bool _canReadValueChunk;
-        private readonly char[] _valueChunk;
+        private readonly char[]? _valueChunk;
         private int _valueChunkLength;
 
-        private IncrementalReadDecoder _decoder;
-        private Base64Decoder _base64Decoder;
-        private BinHexDecoder _binHexDecoder;
+        private IncrementalReadDecoder? _decoder;
+        private Base64Decoder? _base64Decoder;
+        private BinHexDecoder? _binHexDecoder;
 
         // Constants
         private const int ChunkSize = 256;
@@ -46,7 +47,7 @@ namespace System.Xml
         }
 
         // Static methods
-        internal static ReadContentAsBinaryHelper CreateOrReset(ReadContentAsBinaryHelper helper, XmlReader reader)
+        internal static ReadContentAsBinaryHelper CreateOrReset(ReadContentAsBinaryHelper? helper, XmlReader reader)
         {
             if (helper == null)
             {
@@ -398,7 +399,7 @@ namespace System.Xml
                     {
                         if (_valueOffset < _valueChunkLength)
                         {
-                            int decodedCharsCount = _decoder.Decode(_valueChunk, _valueOffset, _valueChunkLength - _valueOffset);
+                            int decodedCharsCount = _decoder.Decode(_valueChunk!, _valueOffset, _valueChunkLength - _valueOffset);
                             _valueOffset += decodedCharsCount;
                         }
                         if (_decoder.IsFull)
@@ -406,7 +407,7 @@ namespace System.Xml
                             return _decoder.DecodedCount;
                         }
                         Debug.Assert(_valueOffset == _valueChunkLength);
-                        if ((_valueChunkLength = _reader.ReadValueChunk(_valueChunk, 0, ChunkSize)) == 0)
+                        if ((_valueChunkLength = _reader.ReadValueChunk(_valueChunk!, 0, ChunkSize)) == 0)
                         {
                             break;
                         }

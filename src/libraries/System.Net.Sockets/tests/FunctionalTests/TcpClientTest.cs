@@ -429,12 +429,12 @@ namespace System.Net.Sockets.Tests
 
                 // There is a race condition here.  If the connection succeeds before the
                 // disposal, then the task will complete successfully.  Otherwise, it should
-                // fail with an ObjectDisposedException.
+                // fail with an exception.
                 try
                 {
                     await connectTask;
                 }
-                catch (ObjectDisposedException) { }
+                catch (SocketException e) when (e.SocketErrorCode == SocketError.OperationAborted) { }
                 sw.Stop();
 
                 Assert.Null(client.Client); // should be nulled out after Dispose

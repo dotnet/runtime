@@ -36,6 +36,6 @@ namespace System.Configuration
             }
         }
 
-        public bool ExcludeRange { get; set; } = false;
+        public bool ExcludeRange { get; set; }
     }
 }

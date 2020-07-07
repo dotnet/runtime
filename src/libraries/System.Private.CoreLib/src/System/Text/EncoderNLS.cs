@@ -366,27 +366,33 @@ namespace System.Text
                     secondChar = chars[0];
                 }
 
+                // We're about to consume the leftover char. Make a local copy of it and clear
+                // the backing field. We don't bother restoring its value if an exception occurs
+                // because exceptional code paths corrupt instance state anyway (e.g., by
+                // mutating the fallback buffer contents).
+
+                char charLeftOver = _charLeftOver;
+                _charLeftOver = default;
+
                 // If we have to fallback the chars we're reading immediately below, populate the
                 // fallback buffer with the invalid data. We'll just fall through to the "consume
                 // fallback buffer" logic at the end of the method.
 
-                if (Rune.TryCreate(_charLeftOver, secondChar, out Rune rune))
+                if (Rune.TryCreate(charLeftOver, secondChar, out Rune rune))
                 {
                     charsConsumed = 1; // at the very least, we consumed 1 char from the input
                     Debug.Assert(_encoding != null);
                     switch (_encoding.EncodeRune(rune, bytes, out bytesWritten))
                     {
                         case OperationStatus.Done:
-                            _charLeftOver = default; // we just consumed this char
                             return true; // that's all - we've handled the leftover data
 
                         case OperationStatus.DestinationTooSmall:
-                            _charLeftOver = default; // we just consumed this char
                             _encoding.ThrowBytesOverflow(this, nothingEncoded: true); // will throw
                             break;
 
                         case OperationStatus.InvalidData:
-                            FallbackBuffer.Fallback(_charLeftOver, secondChar, index: -1); // see comment in DrainLeftoverDataForGetByteCount
+                            FallbackBuffer.Fallback(charLeftOver, secondChar, index: -1); // see comment in DrainLeftoverDataForGetByteCount
                             break;
 
                         default:
@@ -396,7 +402,7 @@ namespace System.Text
                 }
                 else
                 {
-                    FallbackBuffer.Fallback(_charLeftOver, index: -1); // see comment in DrainLeftoverDataForGetByteCount
+                    FallbackBuffer.Fallback(charLeftOver, index: -1); // see comment in DrainLeftoverDataForGetByteCount
                 }
             }
 

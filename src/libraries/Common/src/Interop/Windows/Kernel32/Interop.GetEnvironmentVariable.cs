@@ -17,7 +17,7 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.Kernel32, EntryPoint = "GetEnvironmentVariableW", SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport(Libraries.Kernel32, EntryPoint = "GetEnvironmentVariableW", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
         private static extern unsafe int GetEnvironmentVariable(string lpName, char* lpBuffer, int nSize);
     }
 }
