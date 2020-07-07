@@ -3510,12 +3510,21 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
     NYI("emitIns_S");
 }
 
-/*****************************************************************************
- *
- *  Add an instruction referencing a register and a stack-based local variable.
- *
- *  Stores the base register used for accessing the offset of stack in "pBaseReg".
- */
+//-------------------------------------------------------------------------------------
+// emitIns_R_S: Add an instruction referencing a register and a stack-based local variable.
+//
+// Arguments:
+//    ins      - The instruction to add.
+//    attr     - Oeration size.
+//    varx     - The variable to generate offset for.
+//    offs     - The offset of variable or field in stack.
+//    pBaseReg - The base register that is used while calculating the offset. For example, if the offset
+//               with "stack pointer" can't be encoded in instruction, "frame pointer" can be used to get
+//               the offset of the field. In such case, pBaseReg will store the "fp".
+//
+// Return Value:
+//    The pBaseReg that holds the base register that was used to calculate the offset.
+//
 void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, regNumber* pBaseReg)
 {
     if (ins == INS_mov)
@@ -3675,13 +3684,24 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     appendToCurIG(id);
 }
 
-/*****************************************************************************
-*
-*  Generate the offset of &varx + offs into a register
-*
-*  Stores the base register used for accessing the offset of stack in "pBaseReg".
-*/
-    void emitter::emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFloatUsage, regNumber* pBaseReg)
+//-------------------------------------------------------------------------------------
+// emitIns_genStackOffset: Generate the offset of &varx + offs into a register
+//
+// Arguments:
+//    r            - Register in which offset calculation result is stored.
+//    varx         - The variable to generate offset for.
+//    offs         - The offset of variable or field in stack.
+//    isFloatUsage - True if the instruction being generated is a floating point instruction. This requires using
+//                   floating-point offset restrictions. Note that a variable can be non-float, e.g., struct, but
+//                   accessed as a float local field.
+//    pBaseReg     - The base register that is used while calculating the offset. For example, if the offset with
+//                   "stack pointer" can't be encoded in instruction, "frame pointer" can be used to get the offset
+//                   of the field. In such case, pBaseReg will store the "fp".
+//
+// Return Value:
+//    The pBaseReg that holds the base register that was used to calculate the offset.
+//
+void emitter::emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFloatUsage, regNumber* pBaseReg)
 {
     regNumber regBase;
     int       base;
