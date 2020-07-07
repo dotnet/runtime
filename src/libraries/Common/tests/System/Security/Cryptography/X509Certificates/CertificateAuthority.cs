@@ -860,7 +860,7 @@ SingleResponse ::= SEQUENCE {
             bool registerAuthorities = true,
             bool pkiOptionsInSubject = false,
             string subjectName = null,
-            int KeySize = DefaultKeySize)
+            int keySize = DefaultKeySize)
         {
             bool rootDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoRootCertDistributionUri);
             bool issuerRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl);
@@ -875,9 +875,9 @@ SingleResponse ::= SEQUENCE {
                     endEntityRevocationViaCrl || endEntityRevocationViaOcsp,
                 "At least one revocation mode is enabled");
 
-            using (RSA rootKey = RSA.Create(KeySize))
-            using (RSA intermedKey = RSA.Create(KeySize))
-            using (RSA eeKey = RSA.Create(KeySize))
+            using (RSA rootKey = RSA.Create(keySize))
+            using (RSA intermedKey = RSA.Create(keySize))
+            using (RSA eeKey = RSA.Create(keySize))
             {
                 var rootReq = new CertificateRequest(
                     BuildSubject("A Revocation Test Root", testName, pkiOptions, pkiOptionsInSubject),

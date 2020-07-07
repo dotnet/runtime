@@ -62,7 +62,7 @@ namespace System.Net.Security.Tests
                 out X509Certificate2 endEntity,
                 subjectName: name,
                 testName: testName,
-                KeySize: 2048);
+                keySize: 2048);
 
             chain.Add(intermediate.CloneIssuerCert());
             chain.Add(root.CloneIssuerCert());
