@@ -23,8 +23,6 @@ namespace System.Net.Http
         private long _stoppedRequests;
         private long _abortedRequests;
 
-        public static new bool IsEnabled => Log.IsEnabled();
-
         // NOTE
         // - The 'Start' and 'Stop' suffixes on the following event names have special meaning in EventSource. They
         //   enable creating 'activities'.
