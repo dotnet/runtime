@@ -33,7 +33,6 @@ namespace System.IO
 
         protected UnmanagedMemoryAccessor()
         {
-            _isOpen = false;
         }
 
         public UnmanagedMemoryAccessor(SafeBuffer buffer, long offset, long capacity)

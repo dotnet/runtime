@@ -245,7 +245,6 @@ namespace System.Text
             m_ChunkChars = GC.AllocateUninitializedArray<char>(persistedCapacity);
             persistedString.CopyTo(0, m_ChunkChars, 0, persistedString.Length);
             m_ChunkLength = persistedString.Length;
-            m_ChunkPrevious = null;
             AssertInvariants();
         }
 

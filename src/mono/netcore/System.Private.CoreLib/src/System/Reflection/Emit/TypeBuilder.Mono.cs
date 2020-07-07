@@ -43,8 +43,7 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     public sealed partial class TypeBuilder : TypeInfo
     {
-#pragma warning disable 169
-        #region Sync with reflection.h
+#region Sync with MonoReflectionTypeBuilder in object-internals.h
         private string tname; // name in internal form
         private string nspace; // namespace in internal form
 
@@ -75,8 +74,7 @@ namespace System.Reflection.Emit
         private TypeInfo? created;
 
         private int state;
-        #endregion
-#pragma warning restore 169
+#endregion
 
         private ITypeName fullname;
         private bool createTypeCalled;
@@ -89,6 +87,8 @@ namespace System.Reflection.Emit
             return attrs;
         }
 
+        [DynamicDependency(nameof(state))]  // Automatically keeps all previous fields too due to StructLayout
+        [DynamicDependency(nameof(IsAssignableTo))] // Used from reflection.c: mono_reflection_call_is_assignable_to
         internal TypeBuilder(ModuleBuilder mb, TypeAttributes attr, int table_idx)
         {
             this.parent = null;
@@ -103,6 +103,9 @@ namespace System.Reflection.Emit
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
             Justification = "Linker doesn't analyze ResolveUserType but it's an identity function")]
+
+        [DynamicDependency(nameof(state))]  // Automatically keeps all previous fields too due to StructLayout
+        [DynamicDependency(nameof(IsAssignableTo))] // Used from reflection.c: mono_reflection_call_is_assignable_to
         internal TypeBuilder(ModuleBuilder mb, string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
         {
             int sep_index;

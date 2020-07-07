@@ -3019,7 +3019,11 @@ HRESULT NDirect::HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken t
 
 // Either MD or signature & module must be given.
 /*static*/
-BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*/, Module *pModule /*= NULL*/)
+BOOL NDirect::MarshalingRequired(
+    _In_opt_ MethodDesc* pMD,
+    _In_opt_ PCCOR_SIGNATURE pSig,
+    _In_opt_ Module* pModule,
+    _In_ bool unmanagedCallersOnlyRequiresMarshalling)
 {
     CONTRACTL
     {
@@ -3060,7 +3064,9 @@ BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*
             // don't support a DllImport with this attribute and we
             // error out during IL Stub generation so we indicate that
             // when checking if an IL Stub is needed.
-            if (pMD->HasUnmanagedCallersOnlyAttribute())
+            //
+            // Callers can indicate the check doesn't need to be performed.
+            if (unmanagedCallersOnlyRequiresMarshalling && pMD->HasUnmanagedCallersOnlyAttribute())
                 return TRUE;
 
             NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;

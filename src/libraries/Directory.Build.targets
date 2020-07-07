@@ -100,12 +100,6 @@
       <NativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</NativePath>
       <RuntimePath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</RuntimePath>
     </BinPlaceTargetFrameworks>
-    <!-- Corresponding libMono and system.native libraries are added to testhost shared framework -->
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
-                              Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
-      <NativePath>$(NETCoreAppTestSharedFrameworkPath)</NativePath>
-      <ItemName>TestHostBinPlaceItem</ItemName>
-    </BinPlaceTargetFrameworks>
 
     <!-- binplace targeting packs which may be different from Build TargetFramework -->
     <BinPlaceTargetFrameworks Include="netstandard2.0">

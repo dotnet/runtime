@@ -38,21 +38,27 @@ namespace System.Reflection.Emit
 {
     [ComVisible(true)]
     [StructLayout(LayoutKind.Sequential)]
-    public sealed class GenericTypeParameterBuilder :
-        TypeInfo
+    public sealed class GenericTypeParameterBuilder : TypeInfo
     {
-        #region Sync with reflection.h
+#region Sync with MonoReflectionGenericParam in object-internals.h
         private TypeBuilder tbuilder;
         private MethodBuilder? mbuilder;
         private string name;
         private int index;
         private Type? base_type;
-#pragma warning disable 414
         private Type[]? iface_constraints;
         private CustomAttributeBuilder[]? cattrs;
         private GenericParameterAttributes attrs;
-#pragma warning restore
-        #endregion
+#endregion
+
+        [DynamicDependency(nameof(attrs))]  // Automatically keeps all previous fields too due to StructLayout
+        internal GenericTypeParameterBuilder(TypeBuilder tbuilder, MethodBuilder? mbuilder, string name, int index)
+        {
+            this.tbuilder = tbuilder;
+            this.mbuilder = mbuilder;
+            this.name = name;
+            this.index = index;
+        }
 
         public void SetBaseTypeConstraint([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
         {
@@ -68,16 +74,6 @@ namespace System.Reflection.Emit
         public void SetGenericParameterAttributes(GenericParameterAttributes genericParameterAttributes)
         {
             this.attrs = genericParameterAttributes;
-        }
-
-        internal GenericTypeParameterBuilder(TypeBuilder tbuilder,
-                              MethodBuilder? mbuilder,
-                              string name, int index)
-        {
-            this.tbuilder = tbuilder;
-            this.mbuilder = mbuilder;
-            this.name = name;
-            this.index = index;
         }
 
         internal override Type InternalResolve()
