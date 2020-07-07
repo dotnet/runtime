@@ -5509,5 +5509,208 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double ConvertToDouble(ulong op1) => op1;
 
+        public static short ReverseElement8(short val)
+        {
+            ulong result = 0UL;
+
+            int numberOfElements = (8 * sizeof(short)) / 8;
+            ulong elementMask = ((1UL << 8) - 1);
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                ulong element = ((ulong)val >> (8 * i)) & elementMask;
+                ulong reversedElement = element << (8 * (numberOfElements - 1 - i));
+                result |= reversedElement;
+            }
+
+            return (short)result;
+        }
+
+        public static ushort ReverseElement8(ushort val)
+        {
+            ulong result = 0UL;
+
+            int numberOfElements = (8 * sizeof(ushort)) / 8;
+            ulong elementMask = ((1UL << 8) - 1);
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                ulong element = ((ulong)val >> (8 * i)) & elementMask;
+                ulong reversedElement = element << (8 * (numberOfElements - 1 - i));
+                result |= reversedElement;
+            }
+
+            return (ushort)result;
+        }
+
+        public static int ReverseElement8(int val)
+        {
+            ulong result = 0UL;
+
+            int numberOfElements = (8 * sizeof(int)) / 8;
+            ulong elementMask = ((1UL << 8) - 1);
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                ulong element = ((ulong)val >> (8 * i)) & elementMask;
+                ulong reversedElement = element << (8 * (numberOfElements - 1 - i));
+                result |= reversedElement;
+            }
+
+            return (int)result;
+        }
+
+        public static uint ReverseElement8(uint val)
+        {
+            ulong result = 0UL;
+
+            int numberOfElements = (8 * sizeof(uint)) / 8;
+            ulong elementMask = ((1UL << 8) - 1);
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                ulong element = ((ulong)val >> (8 * i)) & elementMask;
+                ulong reversedElement = element << (8 * (numberOfElements - 1 - i));
+                result |= reversedElement;
+            }
+
+            return (uint)result;
+        }
+
+        public static long ReverseElement8(long val)
+        {
+            ulong result = 0UL;
+
+            int numberOfElements = (8 * sizeof(long)) / 8;
+            ulong elementMask = ((1UL << 8) - 1);
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                ulong element = ((ulong)val >> (8 * i)) & elementMask;
+                ulong reversedElement = element << (8 * (numberOfElements - 1 - i));
+                result |= reversedElement;
+            }
+
+            return (long)result;
+        }
+
+        public static ulong ReverseElement8(ulong val)
+        {
+            ulong result = 0UL;
+
+            int numberOfElements = (8 * sizeof(ulong)) / 8;
+            ulong elementMask = ((1UL << 8) - 1);
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                ulong element = ((ulong)val >> (8 * i)) & elementMask;
+                ulong reversedElement = element << (8 * (numberOfElements - 1 - i));
+                result |= reversedElement;
+            }
+
+            return (ulong)result;
+        }
+
+        public static int ReverseElement16(int val)
+        {
+            ulong result = 0UL;
+
+            int numberOfElements = (8 * sizeof(int)) / 16;
+            ulong elementMask = ((1UL << 16) - 1);
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                ulong element = ((ulong)val >> (16 * i)) & elementMask;
+                ulong reversedElement = element << (16 * (numberOfElements - 1 - i));
+                result |= reversedElement;
+            }
+
+            return (int)result;
+        }
+
+        public static uint ReverseElement16(uint val)
+        {
+            ulong result = 0UL;
+
+            int numberOfElements = (8 * sizeof(uint)) / 16;
+            ulong elementMask = ((1UL << 16) - 1);
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                ulong element = ((ulong)val >> (16 * i)) & elementMask;
+                ulong reversedElement = element << (16 * (numberOfElements - 1 - i));
+                result |= reversedElement;
+            }
+
+            return (uint)result;
+        }
+
+        public static long ReverseElement16(long val)
+        {
+            ulong result = 0UL;
+
+            int numberOfElements = (8 * sizeof(long)) / 16;
+            ulong elementMask = ((1UL << 16) - 1);
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                ulong element = ((ulong)val >> (16 * i)) & elementMask;
+                ulong reversedElement = element << (16 * (numberOfElements - 1 - i));
+                result |= reversedElement;
+            }
+
+            return (long)result;
+        }
+
+        public static ulong ReverseElement16(ulong val)
+        {
+            ulong result = 0UL;
+
+            int numberOfElements = (8 * sizeof(ulong)) / 16;
+            ulong elementMask = ((1UL << 16) - 1);
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                ulong element = ((ulong)val >> (16 * i)) & elementMask;
+                ulong reversedElement = element << (16 * (numberOfElements - 1 - i));
+                result |= reversedElement;
+            }
+
+            return (ulong)result;
+        }
+
+        public static long ReverseElement32(long val)
+        {
+            ulong result = 0UL;
+
+            int numberOfElements = (8 * sizeof(long)) / 32;
+            ulong elementMask = ((1UL << 32) - 1);
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                ulong element = ((ulong)val >> (32 * i)) & elementMask;
+                ulong reversedElement = element << (32 * (numberOfElements - 1 - i));
+                result |= reversedElement;
+            }
+
+            return (long)result;
+        }
+
+        public static ulong ReverseElement32(ulong val)
+        {
+            ulong result = 0UL;
+
+            int numberOfElements = (8 * sizeof(ulong)) / 32;
+            ulong elementMask = ((1UL << 32) - 1);
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                ulong element = ((ulong)val >> (32 * i)) & elementMask;
+                ulong reversedElement = element << (32 * (numberOfElements - 1 - i));
+                result |= reversedElement;
+            }
+
+            return (ulong)result;
+        }
     }
 }

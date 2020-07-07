@@ -1510,6 +1510,31 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double ConvertToDouble(long op1) => op1;
 
         public static double ConvertToDouble(ulong op1) => op1;
+<#
+        foreach ((string typeName, int elementSizeInBits) in new (string, int)[] {
+            ("short", 8), ("ushort", 8), ("int", 8), ("uint", 8), ("long", 8), ("ulong", 8),
+            ("int", 16), ("uint", 16), ("long", 16), ("ulong", 16), ("long", 32), ("ulong", 32) })
+        {
+#>
 
+        public static <#= typeName #> ReverseElement<#= elementSizeInBits #>(<#= typeName #> val)
+        {
+            ulong result = 0UL;
+
+            int numberOfElements = (8 * sizeof(<#= typeName #>)) / <#= elementSizeInBits #>;
+            ulong elementMask = ((1UL << <#= elementSizeInBits #>) - 1);
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                ulong element = ((ulong)val >> (<#= elementSizeInBits #> * i)) & elementMask;
+                ulong reversedElement = element << (<#= elementSizeInBits #> * (numberOfElements - 1 - i));
+                result |= reversedElement;
+            }
+
+            return (<#= typeName #>)result;
+        }
+<#
+        }
+#>
     }
 }
