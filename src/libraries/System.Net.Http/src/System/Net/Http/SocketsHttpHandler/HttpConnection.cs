@@ -15,8 +15,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System;
-using System.Runtime.ExceptionServices;
 
 namespace System.Net.Http
 {
@@ -695,12 +693,19 @@ namespace System.Net.Http
                 // hook up a continuation that will log it.
                 if (sendRequestContentTask != null && !sendRequestContentTask.IsCompletedSuccessfully)
                 {
-                    if (sendRequestContentTask.IsFaulted && Volatile.Read(ref _disposed) == 1)
+                    // In case the connection is disposed, it's most probable that
+                    // expect100Continue timer expired and request content sending failed.
+                    // We're awaiting the task to propagate the exception in this case.
+                    if (Volatile.Read(ref _disposed) == 1)
                     {
-                        Exception? sendRequestContentException = sendRequestContentTask.Exception?.InnerException;
-                        if (sendRequestContentException != null)
+                        if (async)
                         {
-                            ExceptionDispatchInfo.Throw(sendRequestContentException);
+                            await sendRequestContentTask.ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            // No way around it here if we want to get the exception from the task.
+                            sendRequestContentTask.GetAwaiter().GetResult();
                         }
                     }
                     LogExceptions(sendRequestContentTask);
