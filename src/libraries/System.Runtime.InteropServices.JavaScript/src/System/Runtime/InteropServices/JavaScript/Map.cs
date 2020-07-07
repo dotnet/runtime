@@ -12,12 +12,10 @@ namespace System.Runtime.InteropServices.JavaScript
     /// </summary>
     public class Map : CoreObject, IDictionary
     {
-
         /// <summary>
         /// Initializes a new instance of the Map class.
         /// </summary>
-        /// <param name="_params">Parameters.</param>
-        public Map(params object[] _params) : base(Runtime.New<Map>(_params))
+        public Map() : base(Runtime.New<Map>())
         { }
 
         /// <summary>
@@ -184,10 +182,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public object SyncRoot => this;
 
-            public void CopyTo(System.Array array, int index)
-            {
-                throw new NotImplementedException();
-            }
+            public void CopyTo(System.Array array, int index) => throw new NotImplementedException();
 
             // Construct and return an enumerator.
             public IEnumerator GetEnumerator() => new MapItemEnumerator(this);
