@@ -8,6 +8,30 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="SubtractRoundedHighNarrowingLower.Vector64.Int32.cs" />
+    <Compile Include="SubtractRoundedHighNarrowingLower.Vector64.SByte.cs" />
+    <Compile Include="SubtractRoundedHighNarrowingLower.Vector64.UInt16.cs" />
+    <Compile Include="SubtractRoundedHighNarrowingLower.Vector64.UInt32.cs" />
+    <Compile Include="SubtractRoundedHighNarrowingUpper.Vector128.Byte.cs" />
+    <Compile Include="SubtractRoundedHighNarrowingUpper.Vector128.Int16.cs" />
+    <Compile Include="SubtractRoundedHighNarrowingUpper.Vector128.Int32.cs" />
+    <Compile Include="SubtractRoundedHighNarrowingUpper.Vector128.SByte.cs" />
+    <Compile Include="SubtractRoundedHighNarrowingUpper.Vector128.UInt16.cs" />
+    <Compile Include="SubtractRoundedHighNarrowingUpper.Vector128.UInt32.cs" />
+    <Compile Include="SubtractSaturate.Vector64.Byte.cs" />
+    <Compile Include="SubtractSaturate.Vector64.Int16.cs" />
+    <Compile Include="SubtractSaturate.Vector64.Int32.cs" />
+    <Compile Include="SubtractSaturate.Vector64.SByte.cs" />
+    <Compile Include="SubtractSaturate.Vector64.UInt16.cs" />
+    <Compile Include="SubtractSaturate.Vector64.UInt32.cs" />
+    <Compile Include="SubtractSaturate.Vector128.Byte.cs" />
+    <Compile Include="SubtractSaturate.Vector128.Int16.cs" />
+    <Compile Include="SubtractSaturate.Vector128.Int32.cs" />
+    <Compile Include="SubtractSaturate.Vector128.Int64.cs" />
+    <Compile Include="SubtractSaturate.Vector128.SByte.cs" />
+    <Compile Include="SubtractSaturate.Vector128.UInt16.cs" />
+    <Compile Include="SubtractSaturate.Vector128.UInt32.cs" />
+    <Compile Include="SubtractSaturate.Vector128.UInt64.cs" />
     <Compile Include="SubtractSaturateScalar.Vector64.Int64.cs" />
     <Compile Include="SubtractSaturateScalar.Vector64.UInt64.cs" />
     <Compile Include="SubtractScalar.Vector64.Double.cs" />

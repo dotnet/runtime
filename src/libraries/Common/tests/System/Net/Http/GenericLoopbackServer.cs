@@ -126,6 +126,36 @@ namespace System.Net.Test.Common
             Headers = new List<HttpHeaderData>();
         }
 
+        public static async Task<HttpRequestData> FromHttpRequestMessageAsync(System.Net.Http.HttpRequestMessage request)
+        {
+            var result = new HttpRequestData();
+            result.Method = request.Method.ToString();
+            result.Path = request.RequestUri?.AbsolutePath;
+
+            foreach (var header in request.Headers)
+            {
+                foreach (var value in header.Value)
+                {
+                    result.Headers.Add(new HttpHeaderData(header.Key, value));
+                }
+            }
+
+            if (request.Content != null)
+            {
+                result.Body = await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+
+                foreach (var header in request.Content.Headers)
+                {
+                    foreach (var value in header.Value)
+                    {
+                        result.Headers.Add(new HttpHeaderData(header.Key, value));
+                    }
+                }
+            }
+
+            return result;
+        }
+
         public string[] GetHeaderValues(string headerName)
         {
             return Headers.Where(h => h.Name.Equals(headerName, StringComparison.OrdinalIgnoreCase))

@@ -106,12 +106,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             dataBuilder.EmitByte((byte)_fixupKind);
             if (_methodArgument != null)
             {
+                Debug.Assert(_methodArgument.Unboxing == false);
+
                 dataBuilder.EmitMethodSignature(
                     _methodArgument,
                     enforceDefEncoding: false,
                     enforceOwningType: false,
                     context: innerContext,
-                    isUnboxingStub: false,
                     isInstantiatingStub: true);
             }
             else if (_typeArgument != null)

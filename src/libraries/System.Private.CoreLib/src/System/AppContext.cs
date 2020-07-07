@@ -142,15 +142,6 @@ namespace System
                 s_dataStore.Add(new string(pNames[i]), new string(pValues[i]));
             }
         }
-
-        private static string GetBaseDirectoryCore()
-        {
-            // Fallback path for hosts that do not set APP_CONTEXT_BASE_DIRECTORY explicitly
-            string? directory = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-            if (directory != null && !Path.EndsInDirectorySeparator(directory))
-                directory += PathInternal.DirectorySeparatorCharAsString;
-            return directory ?? string.Empty;
-        }
 #endif
     }
 }
