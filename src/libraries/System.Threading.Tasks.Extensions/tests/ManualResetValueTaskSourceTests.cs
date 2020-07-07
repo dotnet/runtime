@@ -63,7 +63,7 @@ namespace System.Threading.Tasks.Sources.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void SetResult_BeforeOnCompleted_ResultAvailableSynchronously()
+        public async Task SetResult_BeforeOnCompleted_ResultAvailableSynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
             mrvts.Reset();
@@ -75,9 +75,9 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Equal(ValueTaskSourceStatus.Succeeded, mrvts.GetStatus(2));
             Assert.Equal(42, mrvts.GetResult(2));
 
-            var mres = new ManualResetEventSlim();
-            mrvts.OnCompleted(s => ((ManualResetEventSlim)s).Set(), mres, 2, ValueTaskSourceOnCompletedFlags.None);
-            mres.Wait();
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            mrvts.OnCompleted(s => ((TaskCompletionSource)s).SetResult(), tcs, 2, ValueTaskSourceOnCompletedFlags.None);
+            await tcs.Task;
 
             Assert.Equal(2, mrvts.Version);
         }
@@ -110,7 +110,7 @@ namespace System.Threading.Tasks.Sources.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void SetException_BeforeOnCompleted_ResultAvailableSynchronously()
+        public async Task SetException_BeforeOnCompleted_ResultAvailableSynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
             mrvts.Reset();
@@ -123,9 +123,9 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Equal(ValueTaskSourceStatus.Faulted, mrvts.GetStatus(2));
             Assert.Same(e, Assert.Throws<FormatException>(() => mrvts.GetResult(2)));
 
-            var mres = new ManualResetEventSlim();
-            mrvts.OnCompleted(s => ((ManualResetEventSlim)s).Set(), mres, 2, ValueTaskSourceOnCompletedFlags.None);
-            mres.Wait();
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            mrvts.OnCompleted(s => ((TaskCompletionSource)s).SetResult(), tcs, 2, ValueTaskSourceOnCompletedFlags.None);
+            await tcs.Task;
 
             Assert.Equal(2, mrvts.Version);
         }
@@ -170,12 +170,12 @@ namespace System.Threading.Tasks.Sources.Tests
         }
 
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void FlowContext_SetBeforeOnCompleted_FlowsIfExpected(bool flowContext)
+        public async Task FlowContext_SetBeforeOnCompleted_FlowsIfExpected(bool flowContext)
         {
-            var mres = new ManualResetEventSlim();
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var mrvts = new ManualResetValueTaskSource<int>();
 
             mrvts.RunContinuationsAsynchronously = true;
@@ -185,21 +185,21 @@ namespace System.Threading.Tasks.Sources.Tests
             var al = new AsyncLocal<int>();
             al.Value = 42;
             mrvts.OnCompleted(
-                _ => { Assert.Equal(flowContext ? 42 : 0, al.Value); mres.Set(); },
+                _ => { Assert.Equal(flowContext ? 42 : 0, al.Value); tcs.SetResult(); },
                 null,
                 0,
                 flowContext ? ValueTaskSourceOnCompletedFlags.FlowExecutionContext : ValueTaskSourceOnCompletedFlags.None);
 
-            mres.Wait();
+            await tcs.Task;
         }
 
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void FlowContext_SetAfterOnCompleted_FlowsIfExpected(bool flowContext)
+        public async Task FlowContext_SetAfterOnCompleted_FlowsIfExpected(bool flowContext)
         {
-            var mres = new ManualResetEventSlim();
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var mrvts = new ManualResetValueTaskSource<int>();
 
             mrvts.RunContinuationsAsynchronously = true;
@@ -207,14 +207,14 @@ namespace System.Threading.Tasks.Sources.Tests
             var al = new AsyncLocal<int>();
             al.Value = 42;
             mrvts.OnCompleted(
-                _ => { Assert.Equal(flowContext ? 42 : 0, al.Value); mres.Set(); },
+                _ => { Assert.Equal(flowContext ? 42 : 0, al.Value); tcs.SetResult(); },
                 null,
                 0,
                 flowContext ? ValueTaskSourceOnCompletedFlags.FlowExecutionContext : ValueTaskSourceOnCompletedFlags.None);
 
             mrvts.SetResult(1);
 
-            mres.Wait();
+            await tcs.Task;
         }
 
         [Fact]
@@ -239,60 +239,57 @@ namespace System.Threading.Tasks.Sources.Tests
             mrvts.OnCompleted(_ => { }, new object(), 0, (ValueTaskSourceOnCompletedFlags)int.MaxValue);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void OnCompleted_ContinuationAlwaysInvokedAsynchronously(bool runContinuationsAsynchronously)
+        public async Task OnCompleted_ContinuationAlwaysInvokedAsynchronously(bool runContinuationsAsynchronously)
         {
-            var mres = new ManualResetEventSlim();
             var mrvts = new ManualResetValueTaskSource<int>() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
             for (short i = 0; i < 10; i++)
             {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 int threadId = Environment.CurrentManagedThreadId;
                 mrvts.SetResult(42);
                 mrvts.OnCompleted(
                     _ =>
                     {
                         Assert.NotEqual(threadId, Environment.CurrentManagedThreadId);
-                        mres.Set();
+                        tcs.SetResult();
                     },
                     null,
                     i,
                     ValueTaskSourceOnCompletedFlags.None);
                 mrvts.Reset();
-                mres.Wait();
-                mres.Reset();
+
+                await tcs.Task;
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void SetResult_RunContinuationsAsynchronously_ContinuationInvokedAccordingly(bool runContinuationsAsynchronously)
+        public async Task SetResult_RunContinuationsAsynchronously_ContinuationInvokedAccordingly(bool runContinuationsAsynchronously)
         {
-            if (runContinuationsAsynchronously && !PlatformDetection.IsThreadingSupported)
-            {
-                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
-            }
-
-            var mres = new ManualResetEventSlim();
             var mrvts = new ManualResetValueTaskSource<int>() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
             for (short i = 0; i < 10; i++)
             {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 int threadId = Environment.CurrentManagedThreadId;
                 mrvts.OnCompleted(
                     _ =>
                     {
                         Assert.Equal(!runContinuationsAsynchronously, threadId == Environment.CurrentManagedThreadId);
-                        mres.Set();
+                        tcs.SetResult();
                     },
                     null,
                     i,
                     ValueTaskSourceOnCompletedFlags.None);
                 mrvts.SetResult(42);
-                mres.Wait();
                 mrvts.Reset();
-                mres.Reset();
+
+                await tcs.Task;
             }
         }
 
