@@ -824,13 +824,15 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var sendTask = Task.Run(() => {
                         using HttpClient httpClient = CreateHttpClient();
+                        httpClient.Timeout = TimeSpan.FromMinutes(2);
 
                         HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
                             Content = new CustomContent(new Action<Stream>(stream =>
                             {
-                                while (true)
+                                for (int i = 0; i < 100; ++i)
                                 {
                                     stream.Write(new byte[] { 0xff });
+                                    stream.Flush();
                                     Thread.Sleep(TimeSpan.FromSeconds(0.1));
                                 }
                             }))
@@ -859,8 +861,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         public async Task Send_TimeoutRequestContent_Throws()
         {
-            ManualResetEventSlim mres = new ManualResetEventSlim();
-
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -868,23 +868,18 @@ namespace System.Net.Http.Functional.Tests
                         using HttpClient httpClient = CreateHttpClient();
                         httpClient.Timeout = TimeSpan.FromSeconds(0.5);
 
-                        try 
-                        {
-                            HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
-                                Content = new CustomContent(new Action<Stream>(stream =>
+                        HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
+                            Content = new CustomContent(new Action<Stream>(stream =>
+                            {
+                                Thread.Sleep(TimeSpan.FromSeconds(0.5));
+                                for (int i = 0; i < 100; ++i)
                                 {
-                                    while (true)
-                                    {
-                                        stream.Write(new byte[] { 0xff });
-                                        Thread.Sleep(TimeSpan.FromSeconds(0.1));
-                                    }
-                                }))
-                            });
-                        }
-                        finally
-                        {
-                            mres.Set();
-                        }
+                                    stream.Write(new byte[] { 0xff });
+                                    stream.Flush();
+                                    Thread.Sleep(TimeSpan.FromSeconds(0.1));
+                                }
+                            }))
+                        });
                     });
 
                     TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
@@ -897,7 +892,7 @@ namespace System.Net.Http.Functional.Tests
                         try
                         {
                             await connection.ReadRequestHeaderAsync();
-                            mres.Wait();
+                            await connection.ReadRequestBodyAsync();
                         }
                         catch { }
                     });
@@ -917,6 +912,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var sendTask = Task.Run(() => {
                         using HttpClient httpClient = CreateHttpClient();
+                        httpClient.Timeout = TimeSpan.FromMinutes(2);
 
                         HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
                             Content = new CustomContent(stream =>
@@ -937,11 +933,14 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await connection.ReadRequestDataAsync();
                             await connection.SendResponseAsync(headers: new List<HttpHeaderData>() {
-                                new HttpHeaderData("Content-Length", (content.Length * 2).ToString())
+                                new HttpHeaderData("Content-Length", (content.Length * 100).ToString())
                             });
-                            await Task.Delay(TimeSpan.FromSeconds(0.5));
                             cts.Cancel();
-                            await connection.Writer.WriteLineAsync(content);
+                            for (int i = 0; i < 100; ++i)
+                            {
+                                await connection.Writer.WriteLineAsync(content);
+                                await Task.Delay(TimeSpan.FromSeconds(0.1));
+                            }
                         }
                         catch { }
                     });
@@ -954,22 +953,13 @@ namespace System.Net.Http.Functional.Tests
         {
             string content = "Test content";
 
-            ManualResetEventSlim mres = new ManualResetEventSlim();
-
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
                     var sendTask = Task.Run(() => {
                         using HttpClient httpClient = CreateHttpClient();
                         httpClient.Timeout = TimeSpan.FromSeconds(0.5);
-                        try
-                        {
-                            HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri));
-                        }
-                        finally
-                        {
-                            mres.Set();
-                        }
+                        HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri));
                     });
 
                     TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
@@ -983,10 +973,14 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await connection.ReadRequestDataAsync();
                             await connection.SendResponseAsync(headers: new List<HttpHeaderData>() {
-                                new HttpHeaderData("Content-Length", (content.Length * 2).ToString())
+                                new HttpHeaderData("Content-Length", (content.Length * 100).ToString())
                             });
-                            mres.Wait();
-                            await connection.Writer.WriteLineAsync(content);
+                            for (int i = 0; i < 100; ++i)
+                            {
+                                await connection.Writer.WriteLineAsync(content);
+                                await connection.Writer.FlushAsync();
+                                await Task.Delay(TimeSpan.FromSeconds(0.1));
+                            }
                         }
                         catch { }
                     });

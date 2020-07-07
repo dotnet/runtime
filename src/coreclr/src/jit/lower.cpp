@@ -3577,8 +3577,11 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
                 // Non-virtual direct calls to addresses accessed by
                 // a single indirection.
                 GenTree* cellAddr = AddrGen(addr);
-                GenTree* indir    = Ind(cellAddr);
-                result            = indir;
+#ifdef DEBUG
+                cellAddr->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
+#endif
+                GenTree* indir = Ind(cellAddr);
+                result         = indir;
             }
             break;
         }
@@ -4354,7 +4357,8 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
         CORINFO_CONST_LOOKUP lookup;
         comp->info.compCompHnd->getAddressOfPInvokeTarget(methHnd, &lookup);
 
-        void* addr = lookup.addr;
+        void*    addr = lookup.addr;
+        GenTree* addrTree;
         switch (lookup.accessType)
         {
             case IAT_VALUE:
@@ -4375,11 +4379,19 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
                 break;
 
             case IAT_PVALUE:
-                result = Ind(AddrGen(addr));
+                addrTree = AddrGen(addr);
+#ifdef DEBUG
+                addrTree->AsIntCon()->gtTargetHandle = (size_t)methHnd;
+#endif
+                result = Ind(addrTree);
                 break;
 
             case IAT_PPVALUE:
-                result = Ind(Ind(AddrGen(addr)));
+                addrTree = AddrGen(addr);
+#ifdef DEBUG
+                addrTree->AsIntCon()->gtTargetHandle = (size_t)methHnd;
+#endif
+                result = Ind(Ind(addrTree));
                 break;
 
             case IAT_RELPVALUE:
