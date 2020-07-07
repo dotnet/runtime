@@ -445,6 +445,30 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void CopyResult_IssuerName()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                X500DistinguishedName first = cert.IssuerName;
+                X500DistinguishedName second = cert.IssuerName;
+                Assert.NotSame(first, second);
+                Assert.NotSame(first.RawData, second.RawData);
+            }
+        }
+
+        [Fact]
+        public static void CopyResult_SubjectName()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                X500DistinguishedName first = cert.SubjectName;
+                X500DistinguishedName second = cert.SubjectName;
+                Assert.NotSame(first, second);
+                Assert.NotSame(first.RawData, second.RawData);
+            }
+        }
+
         public static IEnumerable<object[]> StorageFlags => CollectionImportTests.StorageFlags;
     }
 }
