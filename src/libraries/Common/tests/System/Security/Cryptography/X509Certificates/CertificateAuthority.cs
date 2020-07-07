@@ -25,7 +25,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         IssuerRevocationViaOcsp = 1 << 1,
         EndEntityRevocationViaCrl = 1 << 2,
         EndEntityRevocationViaOcsp = 1 << 3,
-        EndEntityIsServer = 1 << 4,
 
         CrlEverywhere = IssuerRevocationViaCrl | EndEntityRevocationViaCrl,
         OcspEverywhere = IssuerRevocationViaOcsp | EndEntityRevocationViaOcsp,
@@ -833,7 +832,6 @@ SingleResponse ::= SEQUENCE {
             bool issuerDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoIssuerCertDistributionUri);
             bool endEntityRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
             bool endEntityRevocationViaOcsp = pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaOcsp);
-            bool endEntityIsServer = pkiOptions.HasFlag(PkiOptions.EndEntityIsServer);
 
             Assert.True(
                 issuerRevocationViaCrl || issuerRevocationViaOcsp ||

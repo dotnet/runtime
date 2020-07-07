@@ -80,7 +80,7 @@ namespace System.Net.Security.Tests
             extensions.Add(s_tlsServerEku);
 
             CertificateAuthority.BuildPrivatePki(
-                PkiOptions.IssuerRevocationViaCrl | PkiOptions.EndEntityIsServer,
+                PkiOptions.IssuerRevocationViaCrl,
                 out RevocationResponder responder,
                 out CertificateAuthority root,
                 out CertificateAuthority intermediate,
