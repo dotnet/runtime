@@ -19,5 +19,6 @@ namespace System.Data.Common
         protected DbException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context)
         {
         }
+        public virtual string? SqlState { get; }
     }
 }

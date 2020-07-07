@@ -18,6 +18,13 @@ namespace System.Data.Common.Tests
         }
 
         [Fact]
+        public void Ctor_SqlState_Null ()
+        {
+            var defaultException = new CustomDbException();
+            Assert.Null(defaultException.SqlState);
+        }
+
+        [Fact]
         public void Ctor_ArgumentsRoundtrip()
         {
             var e = new CustomDbException("test");
