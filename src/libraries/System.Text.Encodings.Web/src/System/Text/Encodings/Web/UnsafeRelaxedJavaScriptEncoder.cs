@@ -162,7 +162,7 @@ namespace System.Text.Encodings.Web
                 int idx = 0;
 
 #if NETCOREAPP
-                if (Sse2.IsSupported)
+                if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
                 {
                     sbyte* startingAddress = (sbyte*)ptr;
                     while (utf8Text.Length - 16 >= idx)
@@ -170,13 +170,23 @@ namespace System.Text.Encodings.Web
                         Debug.Assert(startingAddress >= ptr && startingAddress <= (ptr + utf8Text.Length - 16));
 
                         // Load the next 16 bytes.
-                        Vector128<sbyte> sourceValue = Sse2.LoadVector128(startingAddress);
+                        Vector128<sbyte> sourceValue;
+                        bool allBytesAreAscii;
 
                         // Check for ASCII text. Any byte that's not in the ASCII range will already be negative when
                         // casted to signed byte.
-                        int index = Sse2.MoveMask(sourceValue);
+                        if (Sse2.IsSupported)
+                        {
+                            sourceValue = Sse2.LoadVector128(startingAddress);
+                            allBytesAreAscii = Sse2.MoveMask(sourceValue) != 0;
+                        }
+                        else
+                        {
+                            sourceValue = AdvSimd.LoadVector128(startingAddress);
+                            allBytesAreAscii = AdvSimd.Arm64.MinAcross(sourceValue).ToScalar() >= 0;
+                        }
 
-                        if (index != 0)
+                        if (allBytesAreAscii)
                         {
                             // At least one of the following 16 bytes is non-ASCII.
 
@@ -214,9 +224,19 @@ namespace System.Text.Encodings.Web
                         else
                         {
                             // Check if any of the 16 bytes need to be escaped.
-                             Vector128<sbyte> mask = Sse2Helper.CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
+                            int index;
 
-                            index = Sse2.MoveMask(mask);
+                            if (Sse2.IsSupported)
+                            {
+                                Vector128<sbyte> mask = Sse2Helper.CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
+                                index = Sse2.MoveMask(mask);
+                            }
+                            else
+                            {
+                                Vector128<sbyte> mask = AdvSimdHelper.CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
+                                index = AdvSimdHelper.MoveMask(mask.AsByte());
+                            }
+
                             // If index == 0, that means none of the 16 bytes needed to be escaped.
                             // TrailingZeroCount is relatively expensive, avoid it if possible.
                             if (index != 0)
