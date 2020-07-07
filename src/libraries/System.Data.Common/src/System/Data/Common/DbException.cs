@@ -8,10 +8,7 @@ namespace System.Data.Common
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class DbException : System.Runtime.InteropServices.ExternalException
     {
-        /// <summary>
-        /// When overriden in a derived class return true in all cases where a simple retry of the operation without any other change may be successful.
-        /// </summary>
-        public virtual bool IsTransient { get; protected set; }
+        public virtual bool IsTransient => false;
 
         protected DbException() : base() { }
 

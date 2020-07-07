@@ -2170,10 +2170,7 @@ namespace System.Data.Common
     }
     public abstract partial class DbException : System.Runtime.InteropServices.ExternalException
     {
-        /// <summary>
-        /// When overriden in a derived class return true in all cases where a simple retry of the operation without any other change may be successful.
-        /// </summary>
-        public virtual bool IsTransient { get; protected set; }
+        public virtual bool IsTransient { get { throw null; } }
         protected DbException() { }
         protected DbException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected DbException(string message) { }
