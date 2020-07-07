@@ -715,6 +715,10 @@ public:
 
     virtual size_t GetLastGCGenerationSize(int gen) = 0;
 
+    virtual size_t GetLastGCTimeBetweenGC(int gen) = 0;
+
+    virtual int GetGenerationLastGCDuration(int gen) = 0;
+
     /*
     ===========================================================================
     Miscellaneous routines used by the VM.

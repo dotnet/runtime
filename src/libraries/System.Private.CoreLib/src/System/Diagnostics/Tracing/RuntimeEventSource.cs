@@ -27,6 +27,7 @@ namespace System.Diagnostics.Tracing
         private IncrementingPollingCounter? _completedItemsCounter;
         private IncrementingPollingCounter? _allocRateCounter;
         private PollingCounter? _timerCounter;
+        private PollingCounter? _fragmentationCounter;
 
 #if !MONO
         private IncrementingPollingCounter? _exceptionCounter;
@@ -39,6 +40,13 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _assemblyCounter;
         private PollingCounter? _ilBytesJittedCounter;
         private PollingCounter? _methodsJittedCounter;
+        private PollingCounter? _lastGen0GCTimeCounter;
+        private PollingCounter? _lastGen1GCTimeCounter;
+        private PollingCounter? _lastGen2GCTimeCounter;
+        private PollingCounter? _timeBetweenGCCounter;
+        private PollingCounter? _gen0TimeBetweenGCCounter;
+        private PollingCounter? _gen1TimeBetweenGCCounter;
+        private PollingCounter? _gen2TimeBetweenGCCounter;
 #endif
 
         public static void Initialize()
@@ -71,6 +79,10 @@ namespace System.Diagnostics.Tracing
                 _completedItemsCounter ??= new IncrementingPollingCounter("threadpool-completed-items-count", this, () => ThreadPool.CompletedWorkItemCount) { DisplayName = "ThreadPool Completed Work Item Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _allocRateCounter ??= new IncrementingPollingCounter("alloc-rate", this, () => GC.GetTotalAllocatedBytes()) { DisplayName = "Allocation Rate", DisplayUnits = "B", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _timerCounter ??= new PollingCounter("active-timer-count", this, () => Timer.ActiveCount) { DisplayName = "Number of Active Timers" };
+                _fragmentationCounter ??= new PollingCounter("gc-fragmentation", this, () => {
+                    var gcInfo = GC.GetGCMemoryInfo();
+                    return (double)(gcInfo.FragmentedBytes * 100 / gcInfo.HeapSizeBytes);
+                 }) { DisplayName = "GC Fragmentation", DisplayUnits = "%" };
 #if !MONO
                 _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _gcTimeCounter ??= new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "% Time in GC since last GC", DisplayUnits = "%" };
@@ -82,6 +94,13 @@ namespace System.Diagnostics.Tracing
                 _assemblyCounter ??= new PollingCounter("assembly-count", this, () => System.Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
                 _ilBytesJittedCounter ??= new PollingCounter("il-bytes-jitted", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetILBytesJitted()) { DisplayName = "IL Bytes Jitted", DisplayUnits = "B" };
                 _methodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetMethodsJittedCount()) { DisplayName = "Number of Methods Jitted" };
+                _lastGen0GCTimeCounter ??= new PollingCounter("mean-gen-0-duration", this, () => GC.GetGenerationLastGCDuration(0)) { DisplayName = "Last Gen 0 GC Pause Duration", DisplayUnits = "ms" };
+                _lastGen1GCTimeCounter ??= new PollingCounter("mean-gen-1-duration", this, () => GC.GetGenerationLastGCDuration(1)) { DisplayName = "Last Gen 1 GC Pause Duration", DisplayUnits = "ms" };
+                _lastGen2GCTimeCounter ??= new PollingCounter("mean-gen-2-duration", this, () => GC.GetGenerationLastGCDuration(2)) { DisplayName = "Last Gen 2 GC Pause Duration", DisplayUnits = "ms" };
+                _timeBetweenGCCounter ??= new PollingCounter("time-between-gc", this, () => GC.GetGenerationTimeBetweenGC(-1)) { DisplayName = "Time Between Last Two GCs", DisplayUnits = "ms" };
+                _gen0TimeBetweenGCCounter ??= new PollingCounter("time-between-gen-0-gc", this, () => GC.GetGenerationTimeBetweenGC(0)) { DisplayName = "Time Between Last Two Gen 0 GCs", DisplayUnits = "ms" };
+                _gen1TimeBetweenGCCounter ??= new PollingCounter("time-between-gen-1-gc", this, () => GC.GetGenerationTimeBetweenGC(1)) { DisplayName = "Time Between Last Two Gen 1 GCs", DisplayUnits = "ms" };
+                _gen2TimeBetweenGCCounter ??= new PollingCounter("time-between-gen-2-gc", this, () => GC.GetGenerationTimeBetweenGC(2)) { DisplayName = "Time Between Last Two Gen 2 GCs", DisplayUnits = "ms" };
 #endif
             }
 

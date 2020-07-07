@@ -969,6 +969,22 @@ FCIMPL1(UINT64, GCInterface::GetGenerationSize, int gen)
 }
 FCIMPLEND
 
+FCIMPL1(UINT64, GCInterface::GetGenerationTimeBetweenGC, int gen)
+{
+    FCALL_CONTRACT;
+
+    return (UINT64)(GCHeapUtilities::GetGCHeap()->GetLastGCTimeBetweenGC(gen));
+}
+FCIMPLEND
+
+FCIMPL1(int, GCInterface::GetGenerationLastGCDuration, int gen)
+{
+    FCALL_CONTRACT;
+
+    return (UINT64)(GCHeapUtilities::GetGCHeap()->GetGenerationLastGCDuration(gen));
+}
+FCIMPLEND
+
 /*================================GetTotalMemory================================
 **Action: Returns the total number of bytes in use
 **Returns: The total number of bytes in use
