@@ -26,11 +26,6 @@
       <BinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.wasm" />
       <FileWrites Include="@(BinPlaceItem)" />
     </ItemGroup>
-
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
-      <TestHostBinPlaceItem Include="@(BinPlaceItem)" />
-      <FileWrites Include="@(TestHostBinPlaceItem)" />
-    </ItemGroup>
   </Target>
 
   <Target Name="Build" DependsOnTargets="BinPlace" />
