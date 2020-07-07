@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Logging.Console
 
             if (logLevelString != null)
             {
-                textWriter.WriteColoredMessage(logLevelString, logLevelColors, FormatterOptions.DisableColors);
+                textWriter.WriteColoredMessage(logLevelString, logLevelColors.Background, logLevelColors.Foreground, FormatterOptions.DisableColors);
             }
 
             StringBuilder logBuilder = _logBuilder;

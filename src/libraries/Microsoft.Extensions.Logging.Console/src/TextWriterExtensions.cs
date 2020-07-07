@@ -11,55 +11,31 @@ namespace Microsoft.Extensions.Logging.Console
 {
     internal static class TextWriterExtensions
     {
-        public static void WriteColoredMessage(this TextWriter textWriter, string message, ConsoleColors colors, bool disableColors)
-        {
-            bool colorChanged = textWriter.SetBackgroundColor(colors.Background, disableColors);
-            colorChanged = textWriter.SetForegroundColor(colors.Foreground, disableColors) || colorChanged;
-            textWriter.Write(message);
-            if (colorChanged)
-            {
-                textWriter.ResetColor();
-            }
-        }
-
-        private static bool SetBackgroundColor(this TextWriter textWriter, ConsoleColor? background, bool disableColors = false)
+        public static bool WriteColoredMessage(this TextWriter textWriter, string message, ConsoleColor? background, ConsoleColor? foreground, bool disableColors)
         {
             if (disableColors)
             {
                 return false;
             }
+            // Order: backgroundcolor, foregroundcolor, Message, reset foregroundcolor, reset backgroundcolor
             if (background.HasValue)
             {
                 textWriter.Write(GetBackgroundColorEscapeCode(background.Value));
-            }
-            else
-            {
-                textWriter.Write(DefaultBackgroundColor);
-            }
-            return true;
-        }
-
-        private static bool SetForegroundColor(this TextWriter textWriter, ConsoleColor? foreground, bool disableColors = false)
-        {
-            if (disableColors)
-            {
-                return false;
             }
             if (foreground.HasValue)
             {
                 textWriter.Write(GetForegroundColorEscapeCode(foreground.Value));
             }
-            else
+            textWriter.Write(message);
+            if (foreground.HasValue)
             {
-                textWriter.Write(DefaultForegroundColor);
+                textWriter.Write(DefaultForegroundColor); // reset to default foreground color
             }
-            return true;
-        }
-
-        private static void ResetColor(this TextWriter textWriter)
-        {
-            textWriter.SetBackgroundColor(null);
-            textWriter.SetForegroundColor(null);
+            if (background.HasValue)
+            {
+                textWriter.Write(DefaultBackgroundColor); // reset to the background color
+            }
+            return background.HasValue || foreground.HasValue;
         }
 
         private const string DefaultForegroundColor = "\x1B[39m\x1B[22m"; // reset to default foreground color

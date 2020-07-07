@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Logging
             var expectedMessage = message;
 
             // Act
-            console.Write(message, background: null, foreground: null);
+            console.Write(message);
             console.Flush();
 
             // Assert
@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Logging
             var expectedMessage = message + Environment.NewLine;
 
             // Act
-            console.WriteLine(message, background: null, foreground: null);
+            console.Write(message);
 
             // Assert
             Assert.Null(systemConsole.Message);
@@ -49,12 +49,12 @@ namespace Microsoft.Extensions.Logging
             var systemConsole = new TestAnsiSystemConsole();
             var console = new AnsiLogConsole(systemConsole);
             var message = "Request received";
-            var expectedMessage = message + Environment.NewLine;
+            var expectedMessage = message;
 
             // Act
-            console.WriteLine(message, background: null, foreground: null);
+            console.Write(message);
             console.Flush();
-            console.WriteLine(message, background: null, foreground: null);
+            console.Write(message);
             console.Flush();
 
             // Assert
@@ -68,70 +68,10 @@ namespace Microsoft.Extensions.Logging
             var systemConsole = new TestAnsiSystemConsole();
             var console = new AnsiLogConsole(systemConsole);
             var message = "Request received";
-            var expectedMessage = message + Environment.NewLine;
+            var expectedMessage = message;
 
             // Act
-            console.WriteLine(message, background: null, foreground: null);
-            console.Flush();
-
-            // Assert
-            Assert.Equal(expectedMessage, systemConsole.Message);
-        }
-
-        [Fact]
-        public void WritesMessage_WithForegroundEscapeCode_AndNoBackgroundColorSpecified()
-        {
-            // Arrange
-            var systemConsole = new TestAnsiSystemConsole();
-            var console = new AnsiLogConsole(systemConsole);
-            var message = "Request received";
-            var expectedMessage = GetForegroundColorEscapeCode(ConsoleColor.DarkGreen)
-                + message
-                + "\x1B[39m\x1B[22m"; //resets foreground color
-
-            // Act
-            console.WriteLine(message, background: null, foreground: ConsoleColor.DarkGreen);
-            console.Flush();
-
-            // Assert
-            Assert.Equal(expectedMessage + Environment.NewLine, systemConsole.Message);
-        }
-
-        [Fact]
-        public void WritesMessage_WithBackgroundEscapeCode_AndNoForegroundColorSpecified()
-        {
-            // Arrange
-            var systemConsole = new TestAnsiSystemConsole();
-            var console = new AnsiLogConsole(systemConsole);
-            var message = "Request received";
-            var expectedMessage = GetBackgroundColorEscapeCode(ConsoleColor.Red)
-                + message
-                + "\x1B[49m"; //resets background color
-
-            // Act
-            console.WriteLine(message, background: ConsoleColor.Red, foreground: null);
-            console.Flush();
-
-            // Assert
-            Assert.Equal(expectedMessage + Environment.NewLine, systemConsole.Message);
-        }
-
-        [Fact]
-        public void WriteMessage_InOrder_WhenBothForegroundOrBackgroundColorsSpecified()
-        {
-            // Arrange
-            var systemConsole = new TestAnsiSystemConsole();
-            var console = new AnsiLogConsole(systemConsole);
-            var message = "Request received";
-            var expectedMessage = GetBackgroundColorEscapeCode(ConsoleColor.Red)
-                + GetForegroundColorEscapeCode(ConsoleColor.DarkGreen)
-                + "Request received"
-                + "\x1B[39m\x1B[22m" //resets foreground color
-                + "\x1B[49m" //resets background color
-                + Environment.NewLine;
-
-            // Act
-            console.WriteLine(message, background: ConsoleColor.Red, foreground: ConsoleColor.DarkGreen);
+            console.Write(message);
             console.Flush();
 
             // Assert
