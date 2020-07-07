@@ -3513,8 +3513,10 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
 /*****************************************************************************
  *
  *  Add an instruction referencing a register and a stack-based local variable.
+ *
+ *  Stores the base register used for accessing the offset of stack in "pBaseReg".
  */
-void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, regNumber* baseReg)
+void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, regNumber* pBaseReg)
 {
     if (ins == INS_mov)
     {
@@ -3556,9 +3558,9 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     base = emitComp->lvaFrameAddress(varx, emitComp->funCurrentFunc()->funKind != FUNC_ROOT, &reg2, offs,
                                      CodeGen::instIsFP(ins));
-    if (baseReg != nullptr)
+    if (pBaseReg != nullptr)
     {
-        *baseReg = reg2;
+        *pBaseReg = reg2;
     }
 
     disp   = base + offs;
@@ -3673,9 +3675,13 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     appendToCurIG(id);
 }
 
-// generate the offset of &varx + offs into a register
-// also capture the 'baseReg' used for generating movw/movt
-void emitter::emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFloatUsage, regNumber* baseReg)
+/*****************************************************************************
+*
+*  Generate the offset of &varx + offs into a register
+*
+*  Stores the base register used for accessing the offset of stack in "pBaseReg".
+*/
+    void emitter::emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFloatUsage, regNumber* pBaseReg)
 {
     regNumber regBase;
     int       base;
@@ -3685,13 +3691,13 @@ void emitter::emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFlo
         emitComp->lvaFrameAddress(varx, emitComp->funCurrentFunc()->funKind != FUNC_ROOT, &regBase, offs, isFloatUsage);
     disp = base + offs;
 
-    emitIns_R_S(INS_movw, EA_4BYTE, r, varx, offs, baseReg);
+    emitIns_R_S(INS_movw, EA_4BYTE, r, varx, offs, pBaseReg);
 
     if ((disp & 0xffff) != disp)
     {
         regNumber regBaseUsedInMovT;
         emitIns_R_S(INS_movt, EA_4BYTE, r, varx, offs, &regBaseUsedInMovT);
-        assert(*baseReg == regBaseUsedInMovT);
+        assert(*pBaseReg == regBaseUsedInMovT);
     }
 }
 
