@@ -841,6 +841,24 @@ interp_generate_bie_throw (TransformData *td)
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
 }
 
+static void
+interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
+{
+	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_invalid_program;
+
+	/* FIXME: is this the right mempool? */
+	char *msg = mono_mempool_strdup (m_class_get_image (td->method->klass)->mempool, mono_error_get_message (error_msg));
+
+	interp_add_ins (td, MINT_MONO_LDPTR);
+	td->last_ins->data [0] = get_data_item_index (td, msg);
+	PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
+
+	interp_add_ins (td, MINT_ICALL_P_V);
+	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+
+	td->sp -= 1;
+}
+
 /*
  * These are additional locals that can be allocated as we transform the code.
  * They are allocated past the method locals so they are accessed in the same
@@ -6214,19 +6232,27 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						mono_method_has_unmanaged_callers_only_attribute (m))) {
 					MonoClass *delegate_klass = NULL;
 					MonoGCHandle target_handle = 0;
-					m = mono_marshal_get_managed_wrapper (m, delegate_klass, target_handle, error);
-					goto_if_nok (error, exit);
-					/* push a pointer to a trampoline that calls m */
-					gpointer entry = mini_get_interp_callbacks ()->create_method_pointer (m, TRUE, error);
+					ERROR_DECL (wrapper_error);
+					m = mono_marshal_get_managed_wrapper (m, delegate_klass, target_handle, wrapper_error);
+					if (!is_ok (wrapper_error)) {
+						/* Generate a call that will throw an exception if the
+						 * UnmanagedCallersOnly attribute is used incorrectly */
+						interp_generate_ipe_throw_with_msg (td, wrapper_error);
+						mono_error_cleanup (wrapper_error);
+						interp_add_ins (td, MINT_LDNULL);
+					} else {
+						/* push a pointer to a trampoline that calls m */
+						gpointer entry = mini_get_interp_callbacks ()->create_method_pointer (m, TRUE, error);
 #if SIZEOF_VOID_P == 8
-					interp_add_ins (td, MINT_LDC_I8);
-					WRITE64_INS (td->last_ins, 0, &entry);
+						interp_add_ins (td, MINT_LDC_I8);
+						WRITE64_INS (td->last_ins, 0, &entry);
 #else
-					interp_add_ins (td, MINT_LDC_I4);
-					WRITE32_INS (td->last_ins, 0, &entry);
+						interp_add_ins (td, MINT_LDC_I4);
+						WRITE32_INS (td->last_ins, 0, &entry);
 #endif
+					}
 					td->ip += 5;
-					PUSH_SIMPLE_TYPE (td, STACK_TYPE_I8);
+					PUSH_SIMPLE_TYPE (td, STACK_TYPE_MP);
 					break;
 				}
 

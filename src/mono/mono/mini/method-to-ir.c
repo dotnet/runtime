@@ -2307,6 +2307,20 @@ emit_bad_image_failure (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee
 	mono_emit_jit_icall (cfg, mono_throw_bad_image, NULL);
 }
 
+static void
+emit_invalid_program_with_msg (MonoCompile *cfg, MonoError *error_msg, MonoMethod *caller, MonoMethod *callee)
+{
+	g_assert (!is_ok (error_msg));
+	/* FIXME: is this the right mempool? */
+	char *str = mono_mempool_strdup (m_class_get_image (cfg->method->klass)->mempool, mono_error_get_message (error_msg));
+	MonoInst *iargs[1];
+	if (cfg->compile_aot)
+		EMIT_NEW_LDSTRLITCONST (cfg, iargs [0], str);
+	else
+		EMIT_NEW_PCONST (cfg, iargs [0], str);
+	mono_emit_jit_icall (cfg, mono_throw_invalid_program, iargs);
+}
+
 // FIXME Consolidate the multiple functions named get_method_nofail.
 static MonoMethod*
 get_method_nofail (MonoClass *klass, const char *method_name, int num_params, int flags)
@@ -11112,10 +11126,24 @@ mono_ldptr:
 					mono_method_has_unmanaged_callers_only_attribute (cmethod))) {
 				MonoClass *delegate_klass = NULL;
 				MonoGCHandle target_handle = 0;
-				cmethod = mono_marshal_get_managed_wrapper (cmethod, delegate_klass, target_handle, cfg->error);
-				CHECK_CFG_ERROR;
-			}
+				ERROR_DECL (wrapper_error);
+				MonoMethod *wrapped_cmethod;
+				wrapped_cmethod = mono_marshal_get_managed_wrapper (cmethod, delegate_klass, target_handle, wrapper_error);
+				if (!is_ok (wrapper_error)) {
+					/* if we couldn't create a wrapper because cmethod isn't supposed to have an
+					UnmanagedCallersOnly attribute, follow CoreCLR behavior and throw when the
+					method with the ldftn is executing, not when it is being compiled. */
+					emit_invalid_program_with_msg (cfg, wrapper_error, method, cmethod);
+					mono_error_cleanup (wrapper_error);
+					EMIT_NEW_PCONST (cfg, ins, NULL);
+					*sp++ = ins;
 
+					inline_costs += CALL_COST * MIN(10, num_calls++);
+					break;
+				} else {
+					cmethod = wrapped_cmethod;
+				}
+			}
 
 			argconst = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD);
 			ins = mono_emit_jit_icall (cfg, mono_ldftn, &argconst);
