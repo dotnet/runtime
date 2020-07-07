@@ -61,6 +61,8 @@
 
             public static Vector64<byte> ZipLow(Vector64<byte> left, Vector64<byte> right) => throw new PlatformNotSupportedException();
 
+            internal static Vector128<byte> MinAcross(Vector128<byte> value) => throw new PlatformNotSupportedException();
+
             public static Vector64<short> ZipLow(Vector64<short> left, Vector64<short> right) => throw new PlatformNotSupportedException();
 
             public static Vector64<int> ZipLow(Vector64<int> left, Vector64<int> right) => throw new PlatformNotSupportedException();
@@ -98,7 +100,28 @@
             public static Vector64<byte> MaxAcross(Vector128<byte> value) => throw new PlatformNotSupportedException();
         }
 
+        internal static Vector128<byte> CompareGreaterThan(Vector128<byte> left, Vector128<byte> right) => throw new PlatformNotSupportedException();
+
+        internal static Vector128<sbyte> CompareGreaterThan(Vector128<sbyte> left, Vector128<sbyte> right) => throw new PlatformNotSupportedException();
+
+        internal static Vector128<short> CompareGreaterThan(Vector128<short> left, Vector128<short> right) => throw new PlatformNotSupportedException();
+
+        internal static Vector128<sbyte> Or(Vector128<sbyte> left, Vector128<sbyte> right) => throw new PlatformNotSupportedException();
+
+        internal static Vector128<byte> Or(Vector128<byte> left, Vector128<byte> right) => throw new PlatformNotSupportedException();
+
+        internal static Vector128<short> Or(Vector128<short> left, Vector128<short> right) => throw new PlatformNotSupportedException();
+
+        internal static Vector128<sbyte> CompareLessThan(Vector128<sbyte> left, Vector128<sbyte> right) => throw new PlatformNotSupportedException();
+
+        internal static Vector128<short> CompareLessThan(Vector128<short> left, Vector128<short> right) => throw new PlatformNotSupportedException();
+
         public static Vector128<byte> CompareEqual(Vector128<byte> left, Vector128<byte> right) => throw new PlatformNotSupportedException();
+
+        public static Vector128<sbyte> CompareEqual(Vector128<sbyte> left, Vector128<sbyte> right) => throw new PlatformNotSupportedException();
+
+        public static Vector128<short> CompareEqual(Vector128<short> left, Vector128<short> right) => throw new PlatformNotSupportedException();
+
         public static Vector128<byte> And(Vector128<byte> left, Vector128<byte> right) => throw new PlatformNotSupportedException();
 
         public static Vector64<byte> PopCount(Vector64<byte> value) => throw new PlatformNotSupportedException();
