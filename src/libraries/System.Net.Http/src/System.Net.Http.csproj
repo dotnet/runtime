@@ -83,6 +83,7 @@
     <Compile Include="System\Net\Http\Headers\ProductHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\ProductInfoHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ProductInfoHeaderValue.cs" />
+    <Compile Include="System\Net\Http\Headers\QPackStaticTable.cs" />
     <Compile Include="System\Net\Http\Headers\RangeConditionHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\RangeHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\RangeItemHeaderValue.cs" />
