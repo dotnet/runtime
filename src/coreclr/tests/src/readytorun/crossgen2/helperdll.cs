@@ -44,3 +44,29 @@ public interface IGenericWithSealedDefaultMethodAcrossModule<T>
     }
 
 }
+
+public struct GenericStructForLdtoken<T>
+{
+    T _value;
+    int _intVal;
+
+    public int NonGenericFunction(T genericValue, int inputIntValue)
+    {
+        if (!((object)genericValue).Equals(_value))
+            return 0;
+        if (inputIntValue != _intVal)
+            return 0;
+        return inputIntValue;
+    }
+
+    public int GenericFunction<V>(T genericValue, V genericMethodValue, string toStringResult, int inputIntValue)
+    {
+        if (!((object)genericValue).Equals(_value))
+            return 0;
+        if (genericMethodValue.ToString() != toStringResult)
+            return 0;
+        if (inputIntValue != _intVal)
+            return 0;
+        return inputIntValue;
+    }
+}

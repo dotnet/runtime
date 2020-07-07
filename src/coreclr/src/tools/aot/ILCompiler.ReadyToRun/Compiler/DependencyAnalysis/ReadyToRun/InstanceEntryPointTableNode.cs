@@ -62,11 +62,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
                 signatureBuilder.EmitMethodSignature(
-                    new MethodWithToken(method.Method, moduleToken, constrainedType: null),
+                    new MethodWithToken(method.Method, moduleToken, constrainedType: null, unboxing: false),
                     enforceDefEncoding: true,
                     enforceOwningType: _factory.CompilationModuleGroup.EnforceOwningType(moduleToken.Module),
                     factory.SignatureContext,
-                    isUnboxingStub: false,
                     isInstantiatingStub: false);
                 byte[] signature = signatureBuilder.ToArray();
                 BlobVertex signatureBlob;
