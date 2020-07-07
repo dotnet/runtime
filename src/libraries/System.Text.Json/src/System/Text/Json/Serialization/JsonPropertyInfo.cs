@@ -151,7 +151,6 @@ namespace System.Text.Json
                 Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
                 IgnoreDefaultValuesOnRead = true;
                 IgnoreDefaultValuesForReferenceTypesOnWrite = true;
-                IgnoreDefaultValuesForValueTypesOnWrite = true;
             }
 #pragma warning restore CS0618 // IgnoreNullValues is obsolete
             else

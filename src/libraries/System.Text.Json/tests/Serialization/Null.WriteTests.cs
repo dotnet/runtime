@@ -125,6 +125,21 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void IgnoreNullValuesOnWrite_should_not_ignore_default_for_value_types()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.IgnoreNullValues = true;
+            var obj = new
+            {
+                RefType = (string)null,
+                ValueType = 0
+            };
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal(@"{""ValueType"":0}", json);
+        }
+
+        [Fact]
         public static void NullReferences()
         {
             var obj = new ObjectWithObjectProperties();
