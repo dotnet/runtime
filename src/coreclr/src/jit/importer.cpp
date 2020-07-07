@@ -6758,6 +6758,7 @@ void Compiler::impCheckForPInvokeCall(
     if (unmanagedCallConv == CORINFO_UNMANAGED_CALLCONV_THISCALL)
     {
         call->gtCallMoreFlags |= GTF_CALL_M_UNMGD_THISCALL;
+        call->gtCallMoreFlags |= GTF_CALL_M_UNMGD_INST_CALL;
     }
 }
 
@@ -9022,7 +9023,19 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     // and we change the return type on those calls here.
     //
     structPassingKind howToReturnStruct;
-    var_types         returnType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+    var_types         returnType;
+
+#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+    if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_INST_CALL)
+    {
+        howToReturnStruct = SPK_ByReference;
+        returnType = TYP_UNKNOWN;
+    }
+    else
+#endif
+    {
+        returnType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+    }
 
     if (howToReturnStruct == SPK_ByReference)
     {
