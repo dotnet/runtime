@@ -7999,7 +7999,10 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 // This computes address from the immediate which is relocatable.
-void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize_t addr)
+void emitter::emitIns_R_AI(instruction ins,
+                           emitAttr    attr,
+                           regNumber   ireg,
+                           ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(unsigned gtFlags))
 {
     assert(EA_IS_RELOC(attr));
     emitAttr      size    = EA_SIZE(attr);
@@ -8027,6 +8030,10 @@ void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize
     id->idAddr()->iiaAddr = (BYTE*)addr;
     id->idReg1(ireg);
     id->idSetIsDspReloc();
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = targetHandle;
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+#endif
 
     dispIns(id);
     appendToCurIG(id);
@@ -12125,6 +12132,8 @@ void emitter::emitDispIns(
         ssize_t      index;
         ssize_t      index2;
         unsigned     registerListSize;
+        const char*  targetName;
+        const WCHAR* stringLiteral;
 
         case IF_BI_0A: // BI_0A   ......iiiiiiiiii iiiiiiiiiiiiiiii               simm26:00
         case IF_BI_0B: // BI_0B   ......iiiiiiiiii iiiiiiiiiii.....               simm19:00
@@ -12230,7 +12239,9 @@ void emitter::emitDispIns(
         case IF_LARGEADR:
             assert(insOptsNone(id->idInsOpt()));
             emitDispReg(id->idReg1(), size, true);
-            imm = emitGetInsSC(id);
+            imm           = emitGetInsSC(id);
+            targetName    = nullptr;
+            stringLiteral = nullptr;
 
             /* Is this actually a reference to a data section? */
             if (fmt == IF_LARGEADR)
@@ -12261,8 +12272,54 @@ void emitter::emitDispIns(
                 assert(imm == 0);
                 if (id->idIsReloc())
                 {
-                    printf("RELOC ");
+                    printf("HIGH RELOC ");
                     emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
+                    size_t   targetHandle = id->idDebugOnlyInfo()->idMemCookie;
+                    unsigned idFlags      = id->idDebugOnlyInfo()->idFlags & GTF_ICON_HDL_MASK;
+
+                    if (targetHandle == THT_IntializeArrayIntrinsics)
+                    {
+                        targetName = "IntializeArrayIntrinsics";
+                    }
+                    else if (targetHandle == THT_GSCookieCheck)
+                    {
+                        targetName = "GlobalSecurityCookieCheck";
+                    }
+                    else if (targetHandle == THT_SetGSCookie)
+                    {
+                        targetName = "SetGlobalSecurityCookie";
+                    }
+                    else if ((idFlags == GTF_ICON_STR_HDL) || (idFlags == GTF_ICON_PSTR_HDL))
+                    {
+                        stringLiteral = emitComp->eeGetCPString(targetHandle);
+                        // Note that eGetCPString isn't currently implemented on Linux/ARM
+                        // and instead always returns nullptr. However, use it here, so in
+                        // future, once it is is implemented, no changes will be needed here.
+                        if (stringLiteral == nullptr)
+                        {
+                            targetName = "String handle";
+                        }
+                    }
+                    else if ((idFlags == GTF_ICON_FIELD_HDL) || (idFlags == GTF_ICON_STATIC_HDL))
+                    {
+                        targetName = emitComp->eeGetFieldName((CORINFO_FIELD_HANDLE)targetHandle);
+                    }
+                    else if ((idFlags == GTF_ICON_METHOD_HDL) || (idFlags == GTF_ICON_FTN_ADDR))
+                    {
+                        targetName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)targetHandle);
+                    }
+                    else if (idFlags == GTF_ICON_CLASS_HDL)
+                    {
+                        targetName = emitComp->eeGetClassName((CORINFO_CLASS_HANDLE)targetHandle);
+                    }
+                    else if (idFlags == GTF_ICON_TOKEN_HDL)
+                    {
+                        targetName = "Token handle";
+                    }
+                    else
+                    {
+                        targetName = "Unknown";
+                    }
                 }
                 else if (id->idIsBound())
                 {
@@ -12274,6 +12331,14 @@ void emitter::emitDispIns(
                 }
             }
             printf("]");
+            if (targetName != nullptr)
+            {
+                printf("      // [%s]", targetName);
+            }
+            else if (stringLiteral != nullptr)
+            {
+                printf("      // [%S]", stringLiteral);
+            }
             break;
 
         case IF_LS_2A: // LS_2A   .X.......X...... ......nnnnnttttt      Rt Rn
@@ -12451,7 +12516,17 @@ void emitter::emitDispIns(
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, true);
             }
-            emitDispImmOptsLSL12(emitGetInsSC(id), id->idInsOpt());
+            if (id->idIsReloc())
+            {
+                assert(ins == INS_add);
+                printf("[LOW RELOC ");
+                emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
+                printf("]");
+            }
+            else
+            {
+                emitDispImmOptsLSL12(emitGetInsSC(id), id->idInsOpt());
+            }
             break;
 
         case IF_DI_2B: // DI_2B   X........X.nnnnn ssssssnnnnnddddd      Rd Rn    imm(0-63)
