@@ -6080,6 +6080,25 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<Task> WhenAny(IEnumerable<Task> tasks)
         {
+            // Take a more efficient path if tasks is actually an array
+            if (tasks is Task[] taskArray)
+            {
+                return WhenAny(taskArray);
+            }
+
+            // Skip a List allocation/copy if tasks is a collection
+            if (tasks is ICollection<Task> taskCollection)
+            {
+                int index = 0;
+                taskArray = new Task[taskCollection.Count];
+                foreach (Task task in tasks)
+                {
+                    if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                    taskArray[index++] = task;
+                }
+                return TaskFactory.CommonCWAnyLogic(taskArray);
+            }
+
             if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
 
             // Make a defensive copy, as the user may manipulate the tasks collection
