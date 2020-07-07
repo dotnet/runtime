@@ -3262,7 +3262,7 @@ g_warning_d (const char *format, int d)
 
 #if !USE_COMPUTED_GOTO
 static void
-g_error_xsx (const char *format, int x1, const char *s, int x2)
+interp_error_xsx (const char *format, int x1, const char *s, int x2)
 {
 	g_error (format, x1, s, x2);
 }
@@ -7226,7 +7226,7 @@ call_newobj:
 
 #if !USE_COMPUTED_GOTO
 		default:
-			g_error_xsx ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname (*ip), ip - frame->imethod->code);
+			interp_error_xsx ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname (*ip), ip - frame->imethod->code);
 #endif
 		}
 	}
