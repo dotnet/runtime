@@ -13,10 +13,10 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\interp.c">
       <Filter>Source Files$(MonoMiniFilterSubFolder)\interp</Filter>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\intrinsics.h">
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\interp-intrins.h">
       <Filter>Header Files$(MonoMiniFilterSubFolder)\interp</Filter>
     </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\intrinsics.c">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\interp-intrins.c">
       <Filter>Source Files$(MonoMiniFilterSubFolder)\interp</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\mintops.h">

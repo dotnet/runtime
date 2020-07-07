@@ -63,7 +63,7 @@
 #include "interp.h"
 #include "interp-internals.h"
 #include "mintops.h"
-#include "intrinsics.h"
+#include "interp-intrins.h"
 
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
