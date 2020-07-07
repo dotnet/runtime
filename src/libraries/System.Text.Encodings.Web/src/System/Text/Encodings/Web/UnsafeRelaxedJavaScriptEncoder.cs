@@ -85,7 +85,7 @@ namespace System.Text.Encodings.Web
                             Debug.Assert((text + idx) <= (text + textLength));
                             if (!_allowedCharacters.IsCharacterAllowed(*(text + idx)))
                             {
-                                goto Return;
+                                return idx;
                             }
                         }
                         startingAddress += 8;
@@ -106,7 +106,7 @@ namespace System.Text.Encodings.Web
                             int tzc = BitOperations.TrailingZeroCount(index);
                             Debug.Assert(tzc % 2 == 0 && tzc >= 0 && tzc <= 16);
                             idx += tzc >> 1;
-                            goto Return;
+                            return idx;
                         }
                         idx += 8;
                         startingAddress += 8;
@@ -123,14 +123,11 @@ namespace System.Text.Encodings.Web
                 Debug.Assert((text + idx) <= (text + textLength));
                 if (!_allowedCharacters.IsCharacterAllowed(*(text + idx)))
                 {
-                    goto Return;
+                    return idx;
                 }
             }
 
-            idx = -1; // All characters are allowed.
-
-        Return:
-            return idx;
+            return -1; // All characters are allowed.
         }
 
         public override unsafe int FindFirstCharacterToEncodeUtf8(ReadOnlySpan<byte> utf8Text)
@@ -169,7 +166,7 @@ namespace System.Text.Encodings.Web
                                 {
                                     if (!_allowedCharacters.IsUnicodeScalarAllowed(ptr[idx]))
                                     {
-                                        goto Return;
+                                        return idx;
                                     }
                                     idx++;
                                 }
@@ -180,7 +177,7 @@ namespace System.Text.Encodings.Web
                                     Debug.Assert(nextScalarValue <= int.MaxValue);
                                     if (opStatus != OperationStatus.Done || WillEncode((int)nextScalarValue))
                                     {
-                                        goto Return;
+                                        return idx;
                                     }
 
                                     Debug.Assert(opStatus == OperationStatus.Done);
@@ -205,7 +202,7 @@ namespace System.Text.Encodings.Web
                                 int tzc = BitOperations.TrailingZeroCount(index);
                                 Debug.Assert(tzc >= 0 && tzc <= 16);
                                 idx += tzc;
-                                goto Return;
+                                return idx;
                             }
                             idx += 16;
                             startingAddress += 16;
@@ -225,7 +222,7 @@ namespace System.Text.Encodings.Web
                     {
                         if (!_allowedCharacters.IsUnicodeScalarAllowed(ptr[idx]))
                         {
-                            goto Return;
+                            return idx;
                         }
                         idx++;
                     }
@@ -236,7 +233,7 @@ namespace System.Text.Encodings.Web
                         Debug.Assert(nextScalarValue <= int.MaxValue);
                         if (opStatus != OperationStatus.Done || WillEncode((int)nextScalarValue))
                         {
-                            goto Return;
+                            return idx;
                         }
 
                         Debug.Assert(opStatus == OperationStatus.Done);
@@ -245,10 +242,7 @@ namespace System.Text.Encodings.Web
                 }
                 Debug.Assert(idx == utf8Text.Length);
 
-                idx = -1; // All bytes are allowed.
-
-            Return:
-                return idx;
+                return -1; // All bytes are allowed.
             }
         }
 
