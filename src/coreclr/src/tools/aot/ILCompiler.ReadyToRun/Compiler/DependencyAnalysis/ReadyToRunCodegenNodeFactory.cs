@@ -224,7 +224,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new MethodFixupSignature(
                     key.FixupKind,
                     key.TypeAndMethod.Method,
-                    key.TypeAndMethod.IsUnboxingStub,
                     key.TypeAndMethod.IsInstantiatingStub
                 );
             });
@@ -246,7 +245,6 @@ namespace ILCompiler.DependencyAnalysis
                     MethodSignature(
                         ReadyToRunFixupKind.VirtualEntry,
                         key.Method,
-                        isUnboxingStub: key.IsUnboxingStub,
                         isInstantiatingStub: key.IsInstantiatingStub));
             });
 
@@ -347,7 +345,6 @@ namespace ILCompiler.DependencyAnalysis
         private IMethodNode CreateMethodEntrypoint(TypeAndMethod key)
         {
             MethodWithToken method = key.Method;
-            bool isUnboxingStub = key.IsUnboxingStub;
             bool isInstantiatingStub = key.IsInstantiatingStub;
             bool isPrecodeImportRequired = key.IsPrecodeImportRequired;
             MethodDesc compilableMethod = method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
@@ -365,7 +362,6 @@ namespace ILCompiler.DependencyAnalysis
                     ReadyToRunFixupKind.MethodEntry,
                     method,
                     methodWithGCInfo,
-                    isUnboxingStub,
                     isInstantiatingStub);
             }
             else
@@ -375,14 +371,13 @@ namespace ILCompiler.DependencyAnalysis
                     ReadyToRunFixupKind.MethodEntry,
                     method,
                     methodWithGCInfo,
-                    isUnboxingStub,
                     isInstantiatingStub);
             }
         }
 
-        public IMethodNode MethodEntrypoint(MethodWithToken method, bool isUnboxingStub, bool isInstantiatingStub, bool isPrecodeImportRequired)
+        public IMethodNode MethodEntrypoint(MethodWithToken method, bool isInstantiatingStub, bool isPrecodeImportRequired)
         {
-            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub, isPrecodeImportRequired);
+            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isInstantiatingStub, isPrecodeImportRequired);
             return _importMethods.GetOrAdd(key);
         }
 
@@ -401,7 +396,7 @@ namespace ILCompiler.DependencyAnalysis
                 EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
                 ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
 
-                IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null), false, false, false);
+                IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false), false, false);
                 MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
                 if (methodCodeNodeDebug == null && methodNodeDebug is DelayLoadMethodImport DelayLoadMethodImport)
                 {
@@ -453,10 +448,9 @@ namespace ILCompiler.DependencyAnalysis
         public MethodFixupSignature MethodSignature(
             ReadyToRunFixupKind fixupKind,
             MethodWithToken method,
-            bool isUnboxingStub,
             bool isInstantiatingStub)
         {
-            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub, false);
+            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isInstantiatingStub, false);
             return _methodSignatures.GetOrAdd(new MethodFixupKey(fixupKind, key));
         }
 

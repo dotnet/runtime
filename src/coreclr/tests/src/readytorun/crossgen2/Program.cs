@@ -1581,6 +1581,52 @@ internal class Program
         return true;
     }
 
+    private static bool CheckMethodHandle(RuntimeMethodHandle rmh, Type exactType, Type methodInstantiation)
+    {
+        var method = MethodBase.GetMethodFromHandle(rmh, exactType.TypeHandle);
+        if (method.DeclaringType != exactType)
+        {
+            Console.WriteLine($"{method}.DeclaringType != {exactType}");
+            return false;
+        }
+        if (methodInstantiation != null)
+        {
+            if (method.GetGenericArguments()[0] != methodInstantiation)
+            {
+                Console.WriteLine($"{method}.GetGenericArguments()[0] != {methodInstantiation}");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool GenericLdtokenTest()
+    {
+        Type typeGenericStructString = typeof(GenericStructForLdtoken<string>);
+        Type typeGenericStructObject = typeof(GenericStructForLdtoken<object>);
+        
+        RuntimeMethodHandle rmh;
+        rmh = HelperILCode.GetNonGenericFunctionMethodHandle();
+        if (!CheckMethodHandle(rmh, typeGenericStructString, null))
+            return false;
+        rmh = HelperILCode.GetGenericFunctionMethodHandle();
+        if (!CheckMethodHandle(rmh, typeGenericStructString, typeGenericStructObject))
+            return false;
+        rmh = HelperILCode.GetGenericFunctionMethodHandle<string>();
+        if (!CheckMethodHandle(rmh, typeGenericStructString, typeof(string)))
+            return false;
+
+        rmh = HelperGenericILCode<string>.GetNonGenericFunctionMethodHandle();
+        if (!CheckMethodHandle(rmh, typeGenericStructString, null))
+            return false;
+        rmh = HelperGenericILCode<string>.GetGenericFunctionMethodHandle<GenericStructForLdtoken<object>>();
+        if (!CheckMethodHandle(rmh, typeGenericStructString, typeGenericStructObject))
+            return false;
+
+        return true;
+    }
+
     public static int Main(string[] args)
     {
         _passedTests = new List<string>();
@@ -1645,6 +1691,7 @@ internal class Program
         RunTest("FunctionPointerFromAnotherModuleTest", FunctionPointerFromAnotherModuleTest());
         RunTest("ExplicitlySizedStructTest", ExplicitlySizedStructTest());
         RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
+        RunTest("GenericLdtokenTest", GenericLdtokenTest());
 
         File.Delete(TextFileName);
 

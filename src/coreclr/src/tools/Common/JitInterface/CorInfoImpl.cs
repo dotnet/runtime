@@ -1010,7 +1010,14 @@ namespace Internal.JitInterface
                 else
                 {
                     var methodContext = (MethodDesc)typeOrMethodContext;
-                    Debug.Assert((!methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
+                    // Allow cases where the method's do not have instantiations themselves, if
+                    // 1. The method defining the context is generic, but the target method is not
+                    // 2. Both methods are not generic
+                    // 3. The methods are the same generic
+                    // AND
+                    // The methods are on the same type
+                    Debug.Assert((methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
+                        (!methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
                         methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition() ||
                         (owningMethod.Name == "CreateDefaultInstance" && methodContext.Name == "CreateInstance"));
                     Debug.Assert(methodContext.OwningType.HasSameTypeDefinition(owningMethod.OwningType));
