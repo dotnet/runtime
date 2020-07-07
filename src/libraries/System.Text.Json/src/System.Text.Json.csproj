@@ -66,10 +66,10 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ConcurrentQueueOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ConcurrentStackOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\DictionaryDefaultConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Collection\DictionaryOfStringTValueConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\DictionaryOfTKeyTValueConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ICollectionOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IDictionaryConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IDictionaryOfStringTValueConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IDictionaryOfTKeyTValueConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableConverterFactoryHelpers.cs" />
@@ -78,9 +78,9 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableWithAddMethodConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IListConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IListOfTConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableDictionaryOfStringTValueConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableDictionaryOfTKeyTValueConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableEnumerableOfTConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IReadOnlyDictionaryOfStringTValueConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IReadOnlyDictionaryOfTKeyTValueConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ISetOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\JsonCollectionConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\JsonDictionaryConverter.cs" />
