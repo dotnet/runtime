@@ -2947,15 +2947,31 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     //   'retval' in 'LowerRetStructLclVar()'
     bool needBitcast =
         (ret->TypeGet() != TYP_VOID) && (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(ret->gtGetOp1()));
-    if (needBitcast && ((!varTypeIsStruct(ret) && !varTypeIsStruct(retVal)) || comp->compDoOldStructRetyping()))
+    bool doPrimitiveBitcast = false;
+    if (needBitcast)
+    {
+        if (comp->compDoOldStructRetyping())
+        {
+            // `struct A { SIMD12/16 }` on `UNIX_AMD64_ABI` is an example when
+            // `varTypeUsesFloatReg` returns different values for `ret` and `ret->gtGetOp1()`,
+            // but doesn't need a primitive bitcase.
+            doPrimitiveBitcast = !ret->TypeIs(TYP_STRUCT);
+        }
+        else
+        {
+            doPrimitiveBitcast = (!varTypeIsStruct(ret) && !varTypeIsStruct(retVal));
+        }
+    }
+
+    if (doPrimitiveBitcast)
     {
 // Add a simple bitcast for an old retyping or when both types are not structs.
 // If one type is a struct it will be handled below for !compDoOldStructRetyping.
 #if defined(DEBUG)
         if (comp->compDoOldStructRetyping())
         {
-            assert(varTypeIsSIMD(ret) || !!varTypeIsStruct(ret));
-            assert(varTypeIsSIMD(retVal) || !!varTypeIsStruct(retVal));
+            assert(varTypeIsSIMD(ret) || !varTypeIsStruct(ret));
+            assert(varTypeIsSIMD(retVal) || !varTypeIsStruct(retVal));
         }
         else
         {
