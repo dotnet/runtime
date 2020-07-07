@@ -20,9 +20,9 @@ uint64_t g_TimeBetweenLastTwoGCs = 0;
 
 size_t g_GenerationSizes[total_generation_count];
 size_t g_GenerationPromotedSizes[total_generation_count];
-uint64_t g_GenerationTimeBetweenGCs[max_generation];
-uint64_t g_GenerationLastGCTimestamp[max_generation];
-uint32_t g_GenerationLastGCDuration[max_generation];
+uint64_t g_GenerationTimeBetweenGCs[max_generation+1];
+uint64_t g_GenerationLastGCTimestamp[max_generation+1];
+uint32_t g_GenerationLastGCDuration[max_generation+1];
 
 
 void GCHeap::UpdatePreGCCounters()
@@ -237,11 +237,13 @@ size_t GCHeap::GetLastGCTimeBetweenGC(int gen)
     {
         return g_TimeBetweenLastTwoGCs;
     }
+    ASSERT(gen <= max_generation);
     return g_GenerationTimeBetweenGCs[gen];
 }
 
 int GCHeap::GetGenerationLastGCDuration(int gen)
 {
+    ASSERT(gen <= max_generation);
     return (int)g_GenerationLastGCDuration[gen];
 }
 
