@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Security.Policy;
 using System.Threading.Tasks.Sources;
 using System.Threading.Tasks.Sources.Tests;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
@@ -367,11 +368,16 @@ namespace System.Threading.Tasks.Tests
             Assert.NotSame(t.AsTask(), t.AsTask());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task NonGeneric_CreateFromValueTaskSource_Success(bool sync)
         {
+            if (!sync && !PlatformDetection.IsThreadingSupported)
+            {
+                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+            }
+
             var vt = new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0) : ManualResetValueTaskSourceFactory.Delay(1, 0), 0);
             Task t = vt.AsTask();
             if (sync)
@@ -381,11 +387,16 @@ namespace System.Threading.Tasks.Tests
             await t;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task Generic_CreateFromValueTaskSource_Success(bool sync)
         {
+            if (!sync && !PlatformDetection.IsThreadingSupported)
+            {
+                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+            }
+
             var vt = new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(42) : ManualResetValueTaskSourceFactory.Delay(1, 42), 0);
             Task<int> t = vt.AsTask();
             if (sync)
@@ -395,11 +406,16 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(42, await t);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task NonGeneric_CreateFromValueTaskSource_Faulted(bool sync)
         {
+            if (!sync && !PlatformDetection.IsThreadingSupported)
+            {
+                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+            }
+
             var vt = new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0, new FormatException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new FormatException()), 0);
             Task t = vt.AsTask();
             if (sync)
@@ -413,11 +429,16 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task Generic_CreateFromValueTaskSource_Faulted(bool sync)
         {
+            if (!sync && !PlatformDetection.IsThreadingSupported)
+            {
+                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+            }
+
             var vt = new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(0, new FormatException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new FormatException()), 0);
             Task<int> t = vt.AsTask();
             if (sync)
@@ -431,11 +452,16 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task NonGeneric_CreateFromValueTaskSource_Canceled(bool sync)
         {
+            if (!sync && !PlatformDetection.IsThreadingSupported)
+            {
+                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+            }
+
             var vt = new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0, new OperationCanceledException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new OperationCanceledException()), 0);
             Task t = vt.AsTask();
             if (sync)
@@ -449,11 +475,16 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task Generic_CreateFromValueTaskSource_Canceled(bool sync)
         {
+            if (!sync && !PlatformDetection.IsThreadingSupported)
+            {
+                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+            }
+
             var vt = new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(0, new OperationCanceledException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new OperationCanceledException()), 0);
             Task<int> t = vt.AsTask();
             if (sync)
@@ -767,7 +798,7 @@ namespace System.Threading.Tasks.Tests
             await tcs.Task;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(CtorMode.Result)]
         [InlineData(CtorMode.Task)]
         [InlineData(CtorMode.ValueTaskSource)]
@@ -1237,7 +1268,7 @@ namespace System.Threading.Tasks.Tests
             Validate(new DelegateValueTaskSource<int> { OnCompletedFunc = (continuation, state, token, flags) => continuation(new object()) });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Generic_OnCompleted_ValueTaskSourcePassesInvalidStateToOnCompleted_Throws()
         {
             void Validate(IValueTaskSource<int> vts)
