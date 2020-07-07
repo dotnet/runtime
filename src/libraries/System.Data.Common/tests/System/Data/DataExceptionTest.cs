@@ -19,6 +19,14 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        public void Ctor_IsTransient_IsFalse()
+        {
+            var e = new CustomDataException();
+
+            Assert.False(e.IsTransient);
+        }
+
+        [Fact]
         public void Ctor_ArgumentsRoundtrip()
         {
             const int COR_E_SYSTEM = unchecked((int)0x80131501);

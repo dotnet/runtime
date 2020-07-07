@@ -2170,6 +2170,7 @@ namespace System.Data.Common
     }
     public abstract partial class DbException : System.Runtime.InteropServices.ExternalException
     {
+        public virtual bool IsTransient { get { throw null; } }
         protected DbException() { }
         protected DbException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected DbException(string message) { }
