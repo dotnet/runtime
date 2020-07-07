@@ -75,13 +75,6 @@ public:
     static FCDECL3(Object*, AllocateValueType, ReflectClassBaseObject *targetType, Object *valueUNSAFE, CLR_BOOL fForceTypeChange);
 };
 
-class ReflectionSerialization {
-public:
-    static FCDECL1(Object*, GetUninitializedObject, ReflectClassBaseObject* objTypeUNSAFE);
-    static FCDECL1(void*, GetNewobjHelper, ReflectClassBaseObject* objTypeUNSAFE);
-    static FCDECL1(FC_BOOL_RET, IsFastInstantiable, ReflectClassBaseObject* objTypeUNSAFE);
-};
-
 class ReflectionEnum {
 public:
     static FCDECL1(Object *, InternalGetEnumUnderlyingType, ReflectClassBaseObject *target);

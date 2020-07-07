@@ -137,53 +137,24 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool TryEnsureSufficientExecutionStack();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object GetUninitializedObjectInternal(
-            // This API doesn't call any constructors, but the type needs to be seen as constructed.
-            // A type is seen as constructed if a constructor is kept.
-            // This obviously won't cover a type with no constructor. Reference types with no
-            // constructor are an academic problem. Valuetypes with no constructors are a problem,
-            // but IL Linker currently treats them as always implicitly boxed.
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            Type type);
+        private static unsafe object GetUninitializedObjectInternal(Type type)
+        {
+            RuntimeType rt = (RuntimeType)type;
+            Debug.Assert(rt != null);
+
+            // If somebody asks us to create a Nullable<T>, create a T instead.
+            delegate*<MethodTable*, object> newobjHelper = RuntimeTypeHandle.GetNewobjHelperFnPtr(rt, out MethodTable* pMT, unwrapNullable: true, allowCom: false);
+            Debug.Assert(newobjHelper != null);
+            Debug.Assert(pMT != null);
+
+            object retVal = newobjHelper(pMT);
+            GC.KeepAlive(rt); // don't allow the type to be collected before the object is instantiated
+
+            return retVal;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object AllocateUninitializedClone(object obj);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe delegate*<MethodTable*, object> GetNewobjHelper(RuntimeType type);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsFastInstantiable(RuntimeType type);
-
-        public static unsafe Func<object> GetUninitializedObjectFactory(Type type)
-        {
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (!(type.UnderlyingSystemType is RuntimeType rt))
-            {
-                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
-            }
-
-            type = null!; // just to make sure we don't use Type for the rest of the method
-
-            if (rt.IsPointer || rt.IsByRef || rt.IsByRefLike || !RuntimeHelpers.IsFastInstantiable(rt))
-            {
-                throw new ArgumentException(
-                    paramName: nameof(type),
-                    message: SR.NotSupported_Type);
-            }
-
-            // Compat with GetUninitializedObject: if incoming type T is really
-            // Nullable<U>, then this factory should return a boxed default(U)
-            // instead of a boxed default(Nullable<U>).
-
-            rt = (RuntimeType?)Nullable.GetUnderlyingType(rt) ?? rt;
-            return (Func<object>)new UninitializedObjectFactory(rt).CreateUninitializedInstance;
-        }
 
         /// <returns>true if given type is reference type or value type that contains references</returns>
         [Intrinsic]
@@ -384,6 +355,7 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_Category_ValueType = 0x00040000;
         private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
         private const uint enum_flag_ContainsPointers = 0x01000000;
+        private const uint enum_flag_ComObject = 0x40000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasDefaultCtor = 0x00000200;
         private const uint enum_flag_HasTypeEquivalence = 0x00004000; // TODO: shouldn't this be 0x02000000?
@@ -448,6 +420,14 @@ namespace System.Runtime.CompilerServices
             get
             {
                 return (Flags & enum_flag_HasDefaultCtor) != 0;
+            }
+        }
+
+        public bool IsComObject
+        {
+            get
+            {
+                return (Flags & enum_flag_ComObject) != 0;
             }
         }
 

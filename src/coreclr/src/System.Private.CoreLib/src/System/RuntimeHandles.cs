@@ -209,6 +209,32 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter);
 
+        /// <summary>
+        /// Given a RuntimeType, returns both the address of the JIT's newobj helper for that type and the
+        /// MethodTable* corresponding to that type. If the type is <see cref="Nullable{T}"/> closed over
+        /// some T and <paramref name="unwrapNullable"/> is true, then returns the values for the 'T'.
+        /// </summary>
+        internal static delegate*<MethodTable*, object> GetNewobjHelperFnPtr(RuntimeType type, out MethodTable* pMT, bool unwrapNullable, bool allowCom)
+        {
+            Debug.Assert(type != null);
+
+            delegate*<MethodTable*, object> pNewobjHelperTemp = null;
+            MethodTable* pMTTemp = null;
+
+            GetNewobjHelperFnPtr(
+                new QCallTypeHandle(ref type),
+                &pNewobjHelperTemp,
+                &pMTTemp,
+                (unwrapNullable) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                (allowCom) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+
+            pMT = pMTTemp;
+            return pNewobjHelperTemp;
+        }
+
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void GetNewobjHelperFnPtr(QCallTypeHandle typeHandle, delegate*<MethodTable*, object>* ppNewobjHelper, MethodTable** ppMT, Interop.BOOL fUnwrapNullable, Interop.BOOL fAllowCom);
+
         internal RuntimeType GetRuntimeType()
         {
             return m_type;
@@ -248,12 +274,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeMethodHandleInternal GetMethodAt(RuntimeType type, int slot);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static unsafe extern MethodTable* GetMethodTable(RuntimeType type);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeMethodHandleInternal GetDefaultConstructor(RuntimeType type);
 
         // This is managed wrapper for MethodTable::IntroducedMethodIterator
         internal struct IntroducedMethodEnumerator

@@ -132,6 +132,9 @@ public:
                                             CLR_BOOL *pbHasNoDefaultCtor);
 
     static
+    void QCALLTYPE GetNewobjHelperFnPtr(QCall::TypeHandle pTypeHandle, PCODE* ppNewobjHelper, MethodTable** ppMT, BOOL fUnwrapNullable, BOOL fAllowCom);
+
+    static
     void QCALLTYPE MakeByRef(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 
     static
@@ -235,8 +238,6 @@ public:
     static FCDECL1(ReflectClassBaseObject*, GetElementType, ReflectClassBaseObject* pType);
 
     static FCDECL2(MethodDesc*, GetMethodAt, PTR_ReflectClassBaseObject pType, INT32 slot);
-    static FCDECL1(MethodTable*, GetMethodTable, PTR_ReflectClassBaseObject pType);
-    static FCDECL1(MethodDesc*, GetDefaultConstructor, PTR_ReflectClassBaseObject pType);
     static FCDECL1(INT32, GetNumVirtuals, ReflectClassBaseObject *pType);
 
     static

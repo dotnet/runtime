@@ -202,7 +202,6 @@
     <Compile Include="System\Reflection\ModuleTests.cs" />
     <Compile Include="System\Reflection\ObfuscateAssemblyAttributeTests.cs" />
     <Compile Include="System\Reflection\ObfuscationAttributeTests.cs" />
-    <Compile Include="System\Reflection\ObjectFactoryTests.cs" />
     <Compile Include="System\Reflection\PointerTests.cs" />
     <Compile Include="System\Reflection\ReflectionContextTests.cs" />
     <Compile Include="System\Reflection\ReflectionTypeLoadExceptionTests.cs" />

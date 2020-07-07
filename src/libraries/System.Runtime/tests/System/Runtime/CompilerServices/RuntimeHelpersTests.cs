@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -193,16 +192,57 @@ namespace System.Runtime.CompilerServices.Tests
             }
         }
 
-        [Fact]
-        public static void GetUninitializedObject_InvalidArguments_ThrowsException()
+        public static IEnumerable<object[]> GetUninitializedObject_NegativeTestCases()
         {
-            AssertExtensions.Throws<ArgumentNullException>("type", () => RuntimeHelpers.GetUninitializedObject(null));
+            // TODO: Test actual function pointer types when typeof(delegate*<...>) support is available
 
-            AssertExtensions.Throws<ArgumentException>(null, () => RuntimeHelpers.GetUninitializedObject(typeof(string))); // special type
-            Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.IO.Stream))); // abstract type
-            Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.Collections.IEnumerable))); // interface
-            Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.Collections.Generic.List<>))); // generic definition
-            Assert.Throws<NotSupportedException>(() => RuntimeHelpers.GetUninitializedObject(typeof(TypedReference))); // byref-like type
+            Type comObjType = typeof(object).Assembly.GetType("System.__ComObject", throwOnError: true);
+            Type canonType = typeof(object).Assembly.GetType("System.__Canon", throwOnError: true);
+
+            yield return new[] { typeof(string), typeof(ArgumentException) }; // variable-length type
+            yield return new[] { typeof(int[]), typeof(ArgumentException) }; // variable-length type
+            yield return new[] { typeof(int[,]), typeof(ArgumentException) }; // variable-length type
+            yield return new[] { Array.CreateInstance(typeof(int), new[] { 1 }, new [] { 1 }).GetType(), typeof(ArgumentException) }; // variable-length type (non-szarray)
+            yield return new[] { typeof(Array), typeof(MemberAccessException) }; // abstract type
+            yield return new[] { typeof(Enum), typeof(MemberAccessException) }; // abstract type
+
+            yield return new[] { typeof(Stream), typeof(MemberAccessException) }; // abstract type
+            yield return new[] { typeof(IDisposable), typeof(MemberAccessException) }; // interface type
+
+            yield return new[] { typeof(List<>), typeof(MemberAccessException) }; // open generic type
+            yield return new[] { typeof(List<>).GetGenericArguments()[0], typeof(ArgumentException) }; // 'T' placeholder typedesc
+
+            yield return new[] { typeof(Delegate), typeof(MemberAccessException) }; // abstract type
+            yield return new[] { typeof(Action), typeof(ArgumentException) }; // delegate type
+
+            yield return new[] { typeof(void), typeof(ArgumentException) }; // explicit block in place
+            yield return new[] { typeof(int).MakePointerType(), typeof(ArgumentException) }; // pointer typedesc
+            yield return new[] { typeof(int).MakeByRefType(), typeof(ArgumentException) }; // byref typedesc
+
+            yield return new[] { typeof(ReadOnlySpan<int>), typeof(NotSupportedException) }; // byref type
+            yield return new[] { typeof(ArgIterator), typeof(NotSupportedException) }; // byref type
+            yield return new[] { typeof(List<>).MakeGenericType(canonType), typeof(NotSupportedException) }; // shared by generic instantiations
+
+            yield return new[] { comObjType, typeof(NotSupportedException) }; // COM type
+            if (PlatformDetection.IsWindows)
+            {
+                yield return new[] { typeof(WbemContext), typeof(NotSupportedException) }; // COM type
+            }
+        }
+
+        // This type definition is lifted from System.Management, just for testing purposes
+        [ClassInterface((short)0x0000)]
+        [Guid("674B6698-EE92-11D0-AD71-00C04FD8FDFF")]
+        [ComImport]
+        internal class WbemContext
+        {
+        }
+
+        [Theory]
+        [MemberData(nameof(GetUninitializedObject_NegativeTestCases))]
+        public static void GetUninitializedObject_InvalidArguments_ThrowsException(Type typeToInstantiate, Type expectedExceptionType)
+        {
+            Assert.Throws(expectedExceptionType, () => RuntimeHelpers.GetUninitializedObject(typeToInstantiate));
         }
 
         [Fact]
@@ -213,10 +253,18 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public static void GetUninitializedObject_Struct()
+        {
+            object o = RuntimeHelpers.GetUninitializedObject(typeof(Guid));
+            Assert.Equal(Guid.Empty, Assert.IsType<Guid>(o));
+        }
+
+        [Fact]
         public static void GetUninitializedObject_Nullable()
         {
             // Nullable returns the underlying type instead
-            Assert.Equal(typeof(int), RuntimeHelpers.GetUninitializedObject(typeof(Nullable<int>)).GetType());
+            object o = RuntimeHelpers.GetUninitializedObject(typeof(int?));
+            Assert.Equal(0, Assert.IsType<int>(o));
         }
 
         private class ObjectWithDefaultCtor

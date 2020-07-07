@@ -18,12 +18,6 @@ using MdToken = System.Reflection.MetadataToken;
 
 namespace System
 {
-    // this is a work around to get the concept of a calli. It's not as fast but it would be interesting to
-    // see how it compares to the current implementation.
-    // This delegate will disappear at some point in favor of calli
-
-    internal delegate void CtorDelegate(object instance);
-
     // Keep this in sync with FormatFlags defined in typestring.h
     internal enum TypeNameFormatFlags
     {
@@ -3872,6 +3866,74 @@ namespace System
             return instance;
         }
 
+        // the cache entry
+        private sealed unsafe class ActivatorCache
+        {
+            internal volatile delegate*<MethodTable*, object?> _pfnNewobj;
+            internal readonly delegate*<object?, void> _pfnCtor;
+            internal MethodTable* _pMT;
+            internal readonly bool _ctorIsPublic;
+
+            internal ActivatorCache(RuntimeMethodHandleInternal rmh)
+            {
+                if (rmh.IsNullHandle())
+                {
+                    // Value type with no explicit constructor, which means the "default" ctor
+                    // is implicitly public and no-ops.
+
+                    _ctorIsPublic = true;
+                    _pfnCtor = &GC.KeepAlive; // no-op fn                    
+                }
+                else
+                {
+                    // Reference type with a parameterless ctor.
+
+                    _ctorIsPublic = (RuntimeMethodHandle.GetAttributes(rmh) & MethodAttributes.Public) != 0;
+                    _pfnCtor = (delegate*<object?, void>)RuntimeMethodHandle.GetFunctionPointer(rmh);
+                }
+
+                Debug.Assert(_pfnCtor != null);
+            }
+
+            private void Initialize(RuntimeType type)
+            {
+                Debug.Assert(type != null);
+
+                // If we reached this point, we already know that the construction information
+                // can be cached, so all of the runtime reflection checks succeeded. We just
+                // need to special-case Nullable<T> (to return null).
+                //
+                // No synchronization is needed in this method since we have marked the _pfnNewobj
+                // field as volatile, and if there's multi-threaded access all threads will agree
+                // on the values to write anyway.
+                //
+                // !! IMPORTANT !!
+                // Don't assign the function pointer return value of GetNewobjHelperFnPtr directly
+                // to the backing field, as setting the field marks initialization as complete.
+                // Be sure to perform any last-minute checks *before* setting the backing field.
+
+                delegate*<MethodTable*, object?> pfnNewobj = RuntimeTypeHandle.GetNewobjHelperFnPtr(type, out _pMT, unwrapNullable: false, allowCom: true);
+                if (_pMT->IsNullable)
+                {
+                    pfnNewobj = &GetNull; // Activator.CreateInstance(typeof(Nullable<T>)) => null
+                }
+
+                Debug.Assert(pfnNewobj != null);
+                _pfnNewobj = pfnNewobj; // setting this field marks the instance as fully initialized
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void EnsureInitialized(RuntimeType type)
+            {
+                if (_pfnNewobj == null) // use this field's value as the indicator of whether initialization is finished
+                {
+                    Initialize(type);
+                }
+            }
+
+            private static object? GetNull(MethodTable* pMT) => null;
+        }
+
         /// <summary>
         /// The slow path of CreateInstanceDefaultCtor
         /// </summary>
@@ -3889,17 +3951,7 @@ namespace System
 
             if (canBeCached && fillCache)
             {
-                if (runtimeCtor.IsNullHandle())
-                {
-                    // value types with no parameterless ctor
-                    Debug.Assert(this.IsValueType);
-                    GenericCache = ObjectFactory.CreateFactoryForValueTypeDefaultOfT(this);
-                }
-                else
-                {
-                    // reference types or value types with a parameterless ctor
-                    GenericCache = new ObjectFactory(runtimeCtor);
-                }
+                GenericCache = new ActivatorCache(runtimeCtor);
             }
 
             return instance;
@@ -3910,19 +3962,28 @@ namespace System
         /// </summary>
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
+        internal unsafe object? CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
         {
             // Call the cached factory if it exists
-            if (GenericCache is ObjectFactory cachedFactory)
+            if (GenericCache is ActivatorCache cache)
             {
-                if (cachedFactory.IsNonPublicCtor && publicOnly)
+                cache.EnsureInitialized(this);
+
+                Debug.Assert(cache._pfnNewobj != null);
+                Debug.Assert(cache._pfnCtor != null);
+
+                if (!cache._ctorIsPublic && publicOnly)
                 {
                     throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
                 }
 
                 try
                 {
-                    return cachedFactory.CreateInstance();
+                    object? obj = cache._pfnNewobj(cache._pMT);
+                    GC.KeepAlive(this); // can't allow the type to be collected before the object is created
+
+                    cache._pfnCtor(obj);
+                    return obj;
                 }
                 catch (Exception e) when (wrapExceptions)
                 {
