@@ -6229,6 +6229,24 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						(m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
 						m->wrapper_type == MONO_WRAPPER_NONE &&
 						mono_method_has_unmanaged_callers_only_attribute (m))) {
+
+					MonoMethod *ctor_method;
+
+					const unsigned char *next_ip = td->ip + 5;
+					/* check for
+					 *    ldftn method_sig
+					 *    newobj Delegate::.ctor
+					 */
+					if (next_ip < end &&
+					    *next_ip == CEE_NEWOBJ &&
+					    ((ctor_method = interp_get_method (method, read32 (next_ip + 1), image, generic_context, error))) &&
+					    is_ok (error) &&
+					    m_class_get_parent (ctor_method->klass) == mono_defaults.multicastdelegate_class &&
+					    !strcmp (ctor_method->name, ".ctor")) {
+						mono_error_set_not_supported (error, "Cannot create delegate from method with UnmanagedCallersOnlyAttribute");
+						goto exit;
+					}
+
 					MonoClass *delegate_klass = NULL;
 					MonoGCHandle target_handle = 0;
 					ERROR_DECL (wrapper_error);

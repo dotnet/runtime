@@ -11072,6 +11072,10 @@ mono_ldptr:
 			if (mono_security_core_clr_enabled ())
 				ensure_method_is_allowed_to_call_method (cfg, method, cmethod);
 
+			const gboolean has_unmanaged_callers_only =
+				cmethod->wrapper_type == MONO_WRAPPER_NONE &&
+				mono_method_has_unmanaged_callers_only_attribute (cmethod);
+
 			/*
 			 * Optimize the common case of ldftn+delegate creation
 			 */
@@ -11081,6 +11085,11 @@ mono_ldptr:
 					MonoInst *target_ins, *handle_ins;
 					MonoMethod *invoke;
 					int invoke_context_used;
+
+					if (G_UNLIKELY (has_unmanaged_callers_only)) {
+						mono_error_set_not_supported (cfg->error, "Cannot create delegate from method with UnmanagedCallersOnlyAttribute");
+						CHECK_CFG_ERROR;
+					}
 
 					invoke = mono_get_delegate_invoke_internal (ctor_method->klass);
 					if (!invoke || !mono_method_signature_internal (invoke))
@@ -11120,9 +11129,7 @@ mono_ldptr:
 			}
 
 			/* UnmanagedCallersOnlyAttribute means ldftn should return a method callable from native */
-			if (G_UNLIKELY ((cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
-					cmethod->wrapper_type == MONO_WRAPPER_NONE &&
-					mono_method_has_unmanaged_callers_only_attribute (cmethod))) {
+			if (G_UNLIKELY (has_unmanaged_callers_only)) {
 				MonoClass *delegate_klass = NULL;
 				MonoGCHandle target_handle = 0;
 				ERROR_DECL (wrapper_error);
