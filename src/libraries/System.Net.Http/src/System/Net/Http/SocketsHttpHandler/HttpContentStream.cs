@@ -2,16 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Threading;
-
 namespace System.Net.Http
 {
     internal abstract class HttpContentStream : HttpBaseStream
     {
         protected HttpConnection? _connection;
-
-        // Makes sure we don't call HttpTelemetry events more than once.
-        private int _requestStopCalled; // 0==no, 1==yes
 
         public HttpContentStream(HttpConnection connection)
         {
@@ -48,10 +43,7 @@ namespace System.Net.Http
 
         protected void LogRequestStop()
         {
-            if (Interlocked.Exchange(ref _requestStopCalled, 1) == 0)
-            {
-                HttpTelemetry.Log.RequestStop();
-            }
+            _connection?._currentRequest?.OnStopped();
         }
 
         private HttpConnection ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().Name);

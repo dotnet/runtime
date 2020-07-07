@@ -49,7 +49,7 @@ namespace System.Net.Http
         private readonly TransportContext? _transportContext;
         private readonly WeakReference<HttpConnection> _weakThisRef;
 
-        private HttpRequestMessage? _currentRequest;
+        internal HttpRequestMessage? _currentRequest;
         private readonly byte[] _writeBuffer;
         private int _writeOffset;
         private int _allowedReadLineBytes;
@@ -622,7 +622,7 @@ namespace System.Net.Http
                 Stream responseStream;
                 if (ReferenceEquals(normalizedMethod, HttpMethod.Head) || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
                 {
-                    if (HttpTelemetry.IsEnabled) HttpTelemetry.Log.RequestStop();
+                    _currentRequest.OnStopped();
                     responseStream = EmptyReadStream.Instance;
                     CompleteResponse();
                 }
@@ -645,7 +645,7 @@ namespace System.Net.Http
                     long contentLength = response.Content.Headers.ContentLength.GetValueOrDefault();
                     if (contentLength <= 0)
                     {
-                        if (HttpTelemetry.IsEnabled) HttpTelemetry.Log.RequestStop();
+                        _currentRequest.OnStopped();
                         responseStream = EmptyReadStream.Instance;
                         CompleteResponse();
                     }

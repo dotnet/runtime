@@ -57,7 +57,7 @@ namespace System.Net.Http
                     if (_connection == null)
                     {
                         // Fully consumed the response in ReadChunksFromConnectionBuffer.
-                        if (HttpTelemetry.IsEnabled) LogRequestStop();
+                        LogRequestStop();
                         return 0;
                     }
 
@@ -363,7 +363,7 @@ namespace System.Net.Http
                                     cancellationRegistration.Dispose();
                                     CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
 
-                                    if (HttpTelemetry.IsEnabled) LogRequestStop();
+                                    LogRequestStop();
                                     _state = ParsingState.Done;
                                     _connection.CompleteResponse();
                                     _connection = null;

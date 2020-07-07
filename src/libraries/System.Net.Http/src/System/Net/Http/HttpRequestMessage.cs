@@ -7,6 +7,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Net.Http
 {
@@ -14,9 +15,10 @@ namespace System.Net.Http
     {
         private const int MessageNotYetSent = 0;
         private const int MessageAlreadySent = 1;
+        private const int MessageShouldEmitTelemetry = 2;
 
         // Track whether the message has been sent.
-        // The message shouldn't be sent again if this field is equal to MessageAlreadySent.
+        // The message should only be sent if this field is equal to MessageNotYetSent.
         private int _sendStatus = MessageNotYetSent;
 
         private HttpMethod _method;
@@ -26,6 +28,7 @@ namespace System.Net.Http
         private HttpContent? _content;
         private bool _disposed;
         private IDictionary<string, object?>? _properties;
+        private HttpRequestMessageFinalizer? _finalizer;
 
         public Version Version
         {
@@ -197,7 +200,40 @@ namespace System.Net.Http
 
         internal bool MarkAsSent()
         {
-            return Interlocked.Exchange(ref _sendStatus, MessageAlreadySent) == MessageNotYetSent;
+            return Interlocked.CompareExchange(ref _sendStatus, MessageAlreadySent, MessageNotYetSent) == MessageNotYetSent;
+        }
+
+        internal void MarkAsTrackedByTelemetry()
+        {
+            if (_finalizer is null)
+            {
+                _finalizer = new HttpRequestMessageFinalizer();
+            }
+            else
+            {
+                GC.ReRegisterForFinalize(_finalizer);
+            }
+
+            Debug.Assert(_sendStatus != MessageShouldEmitTelemetry);
+            _sendStatus = MessageShouldEmitTelemetry;
+        }
+
+        internal void OnAborted() => OnStopped(aborted: true);
+
+        internal void OnStopped(bool aborted = false)
+        {
+            if (_sendStatus == MessageShouldEmitTelemetry && Interlocked.Exchange(ref _sendStatus, MessageAlreadySent) == MessageShouldEmitTelemetry)
+            {
+                if (aborted)
+                {
+                    HttpTelemetry.Log.RequestAborted();
+                }
+
+                HttpTelemetry.Log.RequestStop();
+
+                Debug.Assert(_finalizer != null);
+                GC.SuppressFinalize(_finalizer);
+            }
         }
 
         #region IDisposable Members
@@ -214,6 +250,8 @@ namespace System.Net.Http
                     _content.Dispose();
                 }
             }
+
+            OnStopped();
         }
 
         public void Dispose()
@@ -230,6 +268,17 @@ namespace System.Net.Http
             {
                 throw new ObjectDisposedException(this.GetType().ToString());
             }
+        }
+
+        /// <summary>
+        /// This class will only be allocated if Telemetry is enabled.
+        /// We can't use HttpRequestMessage's own finalizer because it is not sealed.
+        /// The finalizer will run iff OnStopped/OnAborted/Dispose were never called.
+        /// This way we ensure that RequestStop is always called if we call RequestStart.
+        /// </summary>
+        private sealed class HttpRequestMessageFinalizer
+        {
+            ~HttpRequestMessageFinalizer() => HttpTelemetry.Log.RequestStop();
         }
     }
 }
