@@ -86,7 +86,7 @@ namespace System.Text.Encodings.Web
                         Debug.Assert(AdvSimd.Arm64.IsSupported);
                         sourceValue = AdvSimd.LoadVector128(startingAddress);
                         mask = AdvSimdHelper.CreateAsciiMask(sourceValue);
-                        containsNonAsciiChars = AdvSimd.Arm64.MinAcross(mask.AsByte()).ToScalar() < 0;
+                        containsNonAsciiChars = AdvSimd.Arm64.MinAcross(mask.AsSByte()).ToScalar() < 0;
                     }
 
                     if (containsNonAsciiChars)
