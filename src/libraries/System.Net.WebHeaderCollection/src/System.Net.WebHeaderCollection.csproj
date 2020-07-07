@@ -11,7 +11,6 @@
     <Compile Include="System\Net\HttpRequestHeader.cs" />
     <Compile Include="System\Net\HeaderInfo.cs" />
     <Compile Include="System\Net\HeaderInfoTable.cs" />
-    <Compile Include="System\Net\NetEventSource.WebHeaderCollection.cs" />
     <Compile Include="$(CommonPath)System\Net\CaseInsensitiveAscii.cs"
              Link="Common\System\Net\CaseInsensitiveAscii.cs" />
     <Compile Include="$(CommonPath)System\StringExtensions.cs"
@@ -20,8 +19,6 @@
              Link="Common\System\Net\HttpKnownHeaderNames.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpValidationHelpers.cs"
              Link="Common\System\Net\HttpValidationHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
-             Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
