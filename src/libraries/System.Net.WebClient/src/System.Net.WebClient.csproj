@@ -4,6 +4,9 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.net_webclient_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\WebClient.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
