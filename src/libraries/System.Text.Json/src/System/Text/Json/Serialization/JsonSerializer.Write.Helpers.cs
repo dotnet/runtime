@@ -3,12 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
+        // Members accessed by the serializer when serializing.
+        private const DynamicallyAccessedMemberTypes MembersAccessedOnWrite = DynamicallyAccessedMemberTypes.PublicProperties;
+
         private static void WriteCore<TValue>(
             Utf8JsonWriter writer,
             in TValue value,

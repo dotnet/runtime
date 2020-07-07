@@ -2954,9 +2954,7 @@ public:
     // achieved is returned and may differ from the input state if someone managed to
     // call CoInitializeEx on this thread first (note that calls to SetApartment made
     // before the thread has started are guaranteed to succeed).
-    // The fFireMDAOnMismatch indicates if we should fire the apartment state probe
-    // on an apartment state mismatch.
-    ApartmentState SetApartment(ApartmentState state, BOOL fFireMDAOnMismatch);
+    ApartmentState SetApartment(ApartmentState state);
 
     // when we get apartment tear-down notification,
     // we want reset the apartment state we cache on the thread
