@@ -3547,16 +3547,12 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     insFormat fmt = IF_NONE;
     insFlags  sf  = INS_FLAGS_NOT_SET;
     regNumber reg2;
+    regNumber baseRegUsed;
 
     /* Figure out the variable's frame position */
     int      base;
     int      disp;
     unsigned undisp;
-
-    // if (offs == 1208)
-    //{
-    //    printf("----debug break - this is it 2B!----");
-    //}
 
     base = emitComp->lvaFrameAddress(varx, emitComp->funCurrentFunc()->funKind != FUNC_ROOT, &reg2, offs,
                                      CodeGen::instIsFP(ins));
@@ -3567,10 +3563,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     disp   = base + offs;
     undisp = unsigned_abs(disp);
-    // if (undisp == 0x1000)
-    //{
-    //    printf("----debug break - this is it!----");
-    //}
+
     if (CodeGen::instIsFP(ins))
     {
         // all fp mem ops take 8 bit immediate, multiplied by 4, plus sign
@@ -3587,10 +3580,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         else
         {
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            regNumber baseRegUsed;
             emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ true, &baseRegUsed);
-
-            // Make sure to use updated baseReg
             emitIns_R_R(INS_add, EA_4BYTE, rsvdReg, baseRegUsed);
             emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
             return;
@@ -3612,14 +3602,13 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         }
         else
         {
-            regNumber baseReg;
             // Load disp into a register
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false, &baseReg);
+            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false, &baseRegUsed);
             fmt = IF_T2_E0;
 
             // Ensure the baseReg calculated is correct.
-            assert(baseReg == reg2);
+            assert(baseRegUsed == reg2);
         }
     }
     else if (ins == INS_add)
@@ -3642,13 +3631,12 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         }
         else
         {
-            regNumber baseReg;
             // Load disp into a register
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false, &baseReg);
+            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false, &baseRegUsed);
 
             // Ensure the baseReg calculated is correct.
-            assert(baseReg == reg2);
+            assert(baseRegUsed == reg2);
             emitIns_R_R_R(ins, attr, reg1, reg2, rsvdReg);
             return;
         }
@@ -3686,6 +3674,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 }
 
 // generate the offset of &varx + offs into a register
+// also capture the 'baseReg' used for generating movw/movt
 void emitter::emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFloatUsage, regNumber* baseReg)
 {
     regNumber regBase;
@@ -3696,18 +3685,13 @@ void emitter::emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFlo
         emitComp->lvaFrameAddress(varx, emitComp->funCurrentFunc()->funKind != FUNC_ROOT, &regBase, offs, isFloatUsage);
     disp = base + offs;
 
-    emitIns_R_S(INS_movw, EA_4BYTE, r, varx, offs, &regBase);
+    emitIns_R_S(INS_movw, EA_4BYTE, r, varx, offs, baseReg);
 
     if ((disp & 0xffff) != disp)
     {
         regNumber regBaseUsedInMovT;
         emitIns_R_S(INS_movt, EA_4BYTE, r, varx, offs, &regBaseUsedInMovT);
-        assert(regBase == regBaseUsedInMovT);
-    }
-
-    if (baseReg != nullptr)
-    {
-        *baseReg = regBase;
+        assert(*baseReg == regBaseUsedInMovT);
     }
 }
 
@@ -3738,6 +3722,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     insFormat fmt = IF_NONE;
     insFlags  sf  = INS_FLAGS_NOT_SET;
     regNumber reg2;
+    regNumber baseRegUsed;
 
     /* Figure out the variable's frame position */
     int      base;
@@ -3765,7 +3750,6 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         }
         else
         {
-            regNumber baseRegUsed;
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
             emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ true, &baseRegUsed);
 
@@ -3790,7 +3774,6 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     }
     else
     {
-        regNumber baseRegUsed;
         // Load disp into a register
         regNumber rsvdReg = codeGen->rsGetRsvdReg();
         emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false, &baseRegUsed);
