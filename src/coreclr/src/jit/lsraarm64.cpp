@@ -841,10 +841,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         }
         break;
 
-        case SIMDIntrinsicAdd:
         case SIMDIntrinsicSub:
-        case SIMDIntrinsicMul:
-        case SIMDIntrinsicDiv:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicEqual:
@@ -896,19 +893,11 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // We have an array and an index, which may be contained.
             break;
 
-        case SIMDIntrinsicDotProduct:
-            buildInternalFloatRegisterDefForNode(simdTree);
-            break;
-
         case SIMDIntrinsicInitArrayX:
         case SIMDIntrinsicInitFixed:
         case SIMDIntrinsicCopyToArray:
         case SIMDIntrinsicCopyToArrayX:
         case SIMDIntrinsicNone:
-        case SIMDIntrinsicGetCount:
-        case SIMDIntrinsicGetOne:
-        case SIMDIntrinsicGetZero:
-        case SIMDIntrinsicGetAllOnes:
         case SIMDIntrinsicGetX:
         case SIMDIntrinsicGetY:
         case SIMDIntrinsicGetZ:

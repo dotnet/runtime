@@ -1187,6 +1187,11 @@ namespace Internal.JitInterface
             var methodSig = (MethodSignature)methodIL.GetObject((int)sigTOK);
             Get_CORINFO_SIG_INFO(methodSig, sig);
 
+            if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED)
+            {
+                throw new NotImplementedException();
+            }
+
 #if !READYTORUN
             // Check whether we need to report this as a fat pointer call
             if (_compilation.IsFatPointerCandidate(methodIL.OwningMethod, methodSig))

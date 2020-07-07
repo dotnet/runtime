@@ -2507,6 +2507,7 @@ typedef enum CorDebugGenerationTypes
     CorDebug_Gen1 = 1,
     CorDebug_Gen2 = 2,
     CorDebug_LOH  = 3,
+    CorDebug_POH  = 4,
 } CorDebugGenerationTypes;
 
 typedef struct _COR_SEGMENT

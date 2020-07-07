@@ -76,7 +76,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 DictionaryWrapper = new UnsupportedDictionaryWrapper()
             };
-            wrapper.DictionaryWrapper[1] = 1;
+            wrapper.DictionaryWrapper[new int[,] { }] = 1;
 
             // Without converter, we throw.
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<UnsupportedDerivedTypesWrapper_Dictionary>(json));
@@ -128,7 +128,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public class DictionaryWrapper : Dictionary<string, int> { }
 
-    public class UnsupportedDictionaryWrapper : Dictionary<int, int> { }
+    public class UnsupportedDictionaryWrapper : Dictionary<int[,], int> { }
 
     public class DerivedTypesWrapper
     {

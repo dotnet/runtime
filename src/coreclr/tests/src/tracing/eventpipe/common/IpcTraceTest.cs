@@ -186,7 +186,7 @@ namespace Tracing.Tests.Common
             emptyConcurrentDictionary["foo"] = "bar";
             var __count = emptyConcurrentDictionary.Count;
 
-            var isClean = EnsureCleanEnvironment();
+            var isClean = IpcTraceTest.EnsureCleanEnvironment();
             if (!isClean)
                 return -1;
             // CollectTracing returns before EventPipe::Enable has returned, so the
@@ -339,53 +339,62 @@ namespace Tracing.Tests.Common
         // run into these zombie pipes if there are failures over time.
         // Note: Windows has some guarantees about named pipes not living longer
         // the process that created them, so we don't need to check on that platform.
-        private bool EnsureCleanEnvironment()
+        static public bool EnsureCleanEnvironment()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Logger.logger.Log("Validating clean environment...");
-                // mimic the RuntimeClient's code for finding OS Transports
-                IEnumerable<FileInfo> ipcPorts = Directory.GetFiles(Path.GetTempPath())
-                    .Select(namedPipe => new FileInfo(namedPipe))
-                    .Where(input => Regex.IsMatch(input.Name, $"^dotnet-diagnostic-{System.Diagnostics.Process.GetCurrentProcess().Id}-(\\d+)-socket$"));
-                
-                if (ipcPorts.Count() > 1)
+                Func<(IEnumerable<IGrouping<int,FileInfo>>, List<int>)> getPidsAndSockets = () =>
                 {
-                    Logger.logger.Log($"Found {ipcPorts.Count()} OS transports for pid {System.Diagnostics.Process.GetCurrentProcess().Id}:");
-                    foreach (var match in ipcPorts)
-                    {
-                        Logger.logger.Log($"\t{match.Name}");
-                    }
+                    IEnumerable<IGrouping<int,FileInfo>> currentIpcs = Directory.GetFiles(Path.GetTempPath(), "dotnet-diagnostic*")
+                        .Select(filename => new { pid = int.Parse(Regex.Match(filename, @"dotnet-diagnostic-(?<pid>\d+)").Groups["pid"].Value), fileInfo = new FileInfo(filename) })
+                        .GroupBy(fileInfos => fileInfos.pid, fileInfos => fileInfos.fileInfo);
+                    List<int> currentPids = System.Diagnostics.Process.GetProcesses().Select(pid => pid.Id).ToList();
+                    return (currentIpcs, currentPids);
+                };
 
-                    // Get everything _except_ the newest pipe
-                    var duplicates = ipcPorts.OrderBy(fileInfo => fileInfo.CreationTime.Ticks).SkipLast(1);
-                    foreach (var duplicate in duplicates)
-                    {
-                        Logger.logger.Log($"Attempting to delete the oldest pipe: {duplicate.FullName}");
-                        duplicate.Delete(); // should throw if we can't delete and be caught in Validate
-                        Logger.logger.Log($"Deleted");
-                    }
+                var (currentIpcs, currentPids) = getPidsAndSockets();
 
-                    var afterIpcPorts = Directory.GetFiles(Path.GetTempPath())
-                        .Select(namedPipe => new FileInfo(namedPipe))
-                        .Where(input => Regex.IsMatch(input.Name, $"^dotnet-diagnostic-{System.Diagnostics.Process.GetCurrentProcess().Id}-(\\d+)-socket$"));
-
-                    if (afterIpcPorts.Count() == 1)
+                foreach (var ipc in currentIpcs)
+                {
+                    if (!currentPids.Contains(ipc.Key))
                     {
-                        return true;
+                        foreach (FileInfo fi in ipc)
+                        {
+                            Logger.logger.Log($"Attempting to delete the zombied pipe: {fi.FullName}");
+                            fi.Delete();
+                            Logger.logger.Log($"Deleted");
+                        }
                     }
                     else
                     {
-                        Logger.logger.Log($"Unable to clean the environment.  The following transports are on the system:");
-                        foreach(var transport in afterIpcPorts)
+                        if (ipc.Count() > 1)
                         {
-                            Logger.logger.Log($"\t{transport.FullName}");
+                            // delete zombied pipes except newest which is owned
+                            var duplicates = ipc.OrderBy(fileInfo => fileInfo.CreationTime.Ticks).SkipLast(1);
+                            foreach (FileInfo fi in duplicates)
+                            {
+                                Logger.logger.Log($"Attempting to delete the zombied pipe: {fi.FullName}");
+                                fi.Delete();
+                            }
                         }
+                    }
+                }
+
+                // validate we cleaned everything up
+                (currentIpcs, currentPids) = getPidsAndSockets();
+
+                // if there are pipes for processses that don't exist anymore,
+                // or a process has multiple pipes, we failed.
+                foreach (IGrouping<int,FileInfo> group in currentIpcs)
+                {
+                    if (!currentPids.Contains(group.Key) || group.Count() > 1)
+                    {
+                        Logger.logger.Log("Environment is dirty.");
                         return false;
                     }
                 }
-                Logger.logger.Log("Environment was clean.");
-                return true;
+                Logger.logger.Log("Environment is clean.");
+
             }
 
             return true;

@@ -111,5 +111,15 @@ namespace System.Text.Json.Serialization
 
             throw new InvalidOperationException();
         }
+
+        internal sealed override void WriteWithQuotesAsObject(
+            Utf8JsonWriter writer, object value,
+            JsonSerializerOptions options,
+            ref WriteStack state)
+        {
+            Debug.Fail("We should never get here.");
+
+            throw new InvalidOperationException();
+        }
     }
 }

@@ -40,4 +40,3 @@ class Program
 
     private static Type GetTypeIfExists(string name) => Type.GetType(name, false);
 }
-
