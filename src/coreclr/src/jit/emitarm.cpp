@@ -3523,6 +3523,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     switch (ins)
     {
+        case INS_add:
         case INS_ldr:
         case INS_ldrh:
         case INS_ldrb:
@@ -3611,45 +3612,50 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         }
         else
         {
+            regNumber baseReg;
             // Load disp into a register
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false);
-            fmt = IF_T2_E0; // not sure if here too there could be case where we set the regBase inside
-                            // emitIns_genStackOffset() but then don't use it further while generating the offset.
+            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false, &baseReg);
+            fmt = IF_T2_E0;
+
+            // Ensure the baseReg calculated is correct.
+            assert(baseReg == reg2);
         }
     }
-    else if (ins == INS_add) // no one calls this case.
+    else if (ins == INS_add)
     {
-        assert(!"someone is calling emitIns_R_S(INS_add)");
-        // if (isLowRegister(reg1) && (reg2 == REG_SP) && ((disp & 0x03fc) == disp))
-        //{
-        //    fmt = IF_T1_J2;
-        //}
-        // else if (undisp <= 0x0fff)
-        //{
-        //    if (disp < 0)
-        //    {
-        //        ins  = INS_sub;
-        //        disp = -disp;
-        //    }
-        //    // add/sub => addw/subw instruction
-        //    // Note that even when using the w prefix the immediate is still only 12 bits?
-        //    ins = (ins == INS_add) ? INS_addw : INS_subw;
-        //    fmt = IF_T2_M0;
-        //}
-        // else
-        //{
-        //    // Load disp into a register
-        //    regNumber rsvdReg = codeGen->rsGetRsvdReg();
-        //    emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false);
-        //    emitIns_R_R_R(ins, attr, reg1, reg2, rsvdReg);  // not sure if here too there could be case where we set
-        //    the regBase inside emitIns_genStackOffset() but then don't use it further while generating the offset.
-        //    return;
-        //}
+        if (isLowRegister(reg1) && (reg2 == REG_SP) && ((disp & 0x03fc) == disp))
+        {
+            fmt = IF_T1_J2;
+        }
+        else if (undisp <= 0x0fff)
+        {
+            if (disp < 0)
+            {
+                ins  = INS_sub;
+                disp = -disp;
+            }
+            // add/sub => addw/subw instruction
+            // Note that even when using the w prefix the immediate is still only 12 bits?
+            ins = (ins == INS_add) ? INS_addw : INS_subw;
+            fmt = IF_T2_M0;
+        }
+        else
+        {
+            regNumber baseReg;
+            // Load disp into a register
+            regNumber rsvdReg = codeGen->rsGetRsvdReg();
+            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false, &baseReg);
+
+            // Ensure the baseReg calculated is correct.
+            assert(baseReg == reg2);
+            emitIns_R_R_R(ins, attr, reg1, reg2, rsvdReg);
+            return;
+        }
     }
     else if (ins == INS_movw || ins == INS_movt)
     {
-        fmt = IF_T2_N; // assert (reg2 is not used in next instruction which can be add)
+        fmt = IF_T2_N;
     }
 
     assert((fmt == IF_T1_J2) || (fmt == IF_T2_E0) || (fmt == IF_T2_H0) || (fmt == IF_T2_K1) || (fmt == IF_T2_L0) ||
@@ -3759,11 +3765,11 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         }
         else
         {
-            regNumber rsvdReg = codeGen->rsGetRsvdReg();
             regNumber baseRegUsed;
+            regNumber rsvdReg = codeGen->rsGetRsvdReg();
             emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ true, &baseRegUsed);
 
-            // Make sure to use updated baseReg
+            // Ensure the baseReg calculated is correct.
             assert(baseRegUsed == reg2);
             emitIns_R_R(INS_add, EA_4BYTE, rsvdReg, reg2);
             emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
@@ -3784,10 +3790,14 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     }
     else
     {
+        regNumber baseRegUsed;
         // Load disp into a register
         regNumber rsvdReg = codeGen->rsGetRsvdReg();
-        emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false);
+        emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false, &baseRegUsed);
         fmt = IF_T2_E0;
+
+        // Ensure the baseReg calculated is correct.
+        assert(baseRegUsed == reg2);
     }
     assert((fmt == IF_T1_J2) || (fmt == IF_T2_E0) || (fmt == IF_T2_H0) || (fmt == IF_T2_VLDST) || (fmt == IF_T2_K1));
     assert(sf != INS_FLAGS_DONT_CARE);
