@@ -88,6 +88,7 @@ struct _MonoMethod {
 	unsigned int is_generic:1; /* whenever this is a generic method definition */
 	unsigned int is_inflated:1; /* whether we're a MonoMethodInflated */
 	unsigned int skip_visibility:1; /* whenever to skip JIT visibility checks */
+	unsigned int _unused : 2 /* unused */
 	signed int slot : 16;
 
 	/*
