@@ -981,7 +981,7 @@ FCIMPL1(int, GCInterface::GetGenerationLastGCDuration, int gen)
 {
     FCALL_CONTRACT;
 
-    return (UINT64)(GCHeapUtilities::GetGCHeap()->GetGenerationLastGCDuration(gen));
+    return GCHeapUtilities::GetGCHeap()->GetGenerationLastGCDuration(gen);
 }
 FCIMPLEND
 
