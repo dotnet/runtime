@@ -26,7 +26,12 @@ namespace System.Diagnostics.CodeAnalysis
         AttributeTargets.Field | AttributeTargets.ReturnValue | AttributeTargets.GenericParameter |
         AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.Method,
         Inherited = false)]
-    public sealed class DynamicallyAccessedMembersAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    sealed class DynamicallyAccessedMembersAttribute : Attribute
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicallyAccessedMembersAttribute"/> class
