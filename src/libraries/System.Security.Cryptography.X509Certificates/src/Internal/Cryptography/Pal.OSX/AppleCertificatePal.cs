@@ -323,7 +323,7 @@ namespace Internal.Cryptography.Pal
             get
             {
                 EnsureCertData();
-                return _certData.RawData;
+                return _certData.RawData.CloneByteArray();
             }
         }
 

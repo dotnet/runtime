@@ -434,6 +434,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void CopyResult_RawData()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                byte[] first = cert.RawData;
+                byte[] second = cert.RawData;
+                Assert.NotSame(first, second);
+            }
+        }
+
         public static IEnumerable<object[]> StorageFlags => CollectionImportTests.StorageFlags;
     }
 }
