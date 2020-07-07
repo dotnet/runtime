@@ -118,18 +118,11 @@ namespace System.Net
 
         public static SafeFreeCredentials AcquireCredentialsHandle(ISSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent, Interop.SspiCli.SCHANNEL_CRED scc)
         {
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(null, package);
-                NetEventSource.Log.AcquireCredentialsHandle(package, intent, scc);
-            }
-
-            SafeFreeCredentials? outCredential = null;
             int errorCode = secModule.AcquireCredentialsHandle(
                                             package,
                                             intent,
                                             ref scc,
-                                            out outCredential);
+                                            out SafeFreeCredentials outCredential);
 
             if (errorCode != 0)
             {
@@ -137,24 +130,16 @@ namespace System.Net
                 throw new Win32Exception(errorCode);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, outCredential);
             return outCredential;
         }
 
         public static unsafe SafeFreeCredentials AcquireCredentialsHandle(ISSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent, Interop.SspiCli.SCH_CREDENTIALS* scc)
         {
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(null, package);
-                NetEventSource.Log.AcquireCredentialsHandle(package, intent, (IntPtr)scc);
-            }
-
-            SafeFreeCredentials? outCredential = null;
             int errorCode = secModule.AcquireCredentialsHandle(
                                             package,
                                             intent,
                                             scc,
-                                            out outCredential);
+                                            out SafeFreeCredentials outCredential);
 
             if (errorCode != 0)
             {
@@ -162,7 +147,6 @@ namespace System.Net
                 throw new Win32Exception(errorCode);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, outCredential);
             return outCredential;
         }
 
