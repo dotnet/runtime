@@ -120,6 +120,7 @@ namespace System.Net.Sockets
             }
 
             private int _state; // Actually AsyncOperation.State.
+            protected int _observedSequenceNumber;
 
 #if DEBUG
             private int _callbackQueued; // When non-zero, the callback has been queued.
@@ -312,13 +313,15 @@ namespace System.Net.Sockets
             }
 
             // returns true when read()|write() returned lower number of bytes than the size of buffer
-            internal virtual bool HasExhaustedIoSpace  => false;
+            internal virtual bool HasExhaustedIoSpace(int currentSequenceNumber) => false;
 
             protected abstract void Abort();
 
             protected abstract bool DoTryComplete(SocketAsyncContext context);
 
             public abstract void InvokeCallback(bool allowPooling);
+
+            public void SetSequenceNumber(int sequenceNumber) => _observedSequenceNumber = sequenceNumber;
 
             [Conditional("SOCKETASYNCCONTEXT_TRACE")]
             public void Trace(string message, [CallerMemberName] string? memberName = null)
@@ -372,7 +375,8 @@ namespace System.Net.Sockets
 
             public BufferMemorySendOperation(SocketAsyncContext context) : base(context) { }
 
-            internal override bool HasExhaustedIoSpace => ErrorCode == SocketError.Success && BytesTransferred > 0 && BytesTransferred < Buffer.Length;
+            internal override bool HasExhaustedIoSpace(int currentSequenceNumber) => _observedSequenceNumber == currentSequenceNumber
+                && ErrorCode == SocketError.Success && BytesTransferred > 0 && BytesTransferred < Buffer.Length;
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
@@ -432,7 +436,8 @@ namespace System.Net.Sockets
 
             public BufferPtrSendOperation(SocketAsyncContext context) : base(context) { }
 
-            internal override bool HasExhaustedIoSpace => ErrorCode == SocketError.Success && BytesTransferred > 0 && Count > 0; // TryCompleteSendTo modifies Count
+            internal override bool HasExhaustedIoSpace(int currentSequenceNumber) => _observedSequenceNumber == currentSequenceNumber
+                && ErrorCode == SocketError.Success && BytesTransferred > 0 && Count > 0; // TryCompleteSendTo modifies Count
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
@@ -464,7 +469,8 @@ namespace System.Net.Sockets
 
             public BufferMemoryReceiveOperation(SocketAsyncContext context) : base(context) { }
 
-            internal override bool HasExhaustedIoSpace  => ErrorCode == SocketError.Success && BytesTransferred > 0 && BytesTransferred < Buffer.Length;
+            internal override bool HasExhaustedIoSpace(int currentSequenceNumber) => _observedSequenceNumber == currentSequenceNumber
+                && ErrorCode == SocketError.Success && BytesTransferred >= 0 && BytesTransferred < Buffer.Length;
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
@@ -545,7 +551,8 @@ namespace System.Net.Sockets
 
             public BufferPtrReceiveOperation(SocketAsyncContext context) : base(context) { }
 
-            internal override bool HasExhaustedIoSpace  => ErrorCode == SocketError.Success && BytesTransferred > 0 && BytesTransferred < Length;
+            internal override bool HasExhaustedIoSpace(int currentSequenceNumber) => _observedSequenceNumber == currentSequenceNumber
+                && ErrorCode == SocketError.Success && BytesTransferred >= 0 && BytesTransferred < Length;
 
             protected override bool DoTryComplete(SocketAsyncContext context) =>
                 SocketPal.TryCompleteReceiveFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
@@ -745,27 +752,11 @@ namespace System.Net.Sockets
             // observedSequenceNumber must be passed to StartAsyncOperation.
             public bool IsReady(SocketAsyncContext context, out int observedSequenceNumber)
             {
-                // It is safe to read _state and _sequence without using Lock.
-                // - The return value is soley based on Volatile.Read of _state.
-                // - The Volatile.Read of _sequenceNumber ensures we read a value before executing the operation.
-                //   This is needed to retry the operation in StartAsyncOperation in case the _sequenceNumber incremented.
-                // - Because no Lock is taken, it is possible we observe a sequence number increment before the state
-                //   becomes Ready. When that happens, observedSequenceNumber is decremented, and StartAsyncOperation will
-                //   execute the operation because the sequence number won't match.
-
-                Debug.Assert(sizeof(QueueState) == sizeof(int));
-                QueueState state = (QueueState)Volatile.Read(ref Unsafe.As<QueueState, int>(ref _state));
-                observedSequenceNumber = Volatile.Read(ref _sequenceNumber);
-
-                bool isReady = state == QueueState.Ready || state == QueueState.Stopped;
-                if (!isReady)
+                using (Lock())
                 {
-                    observedSequenceNumber--;
+                    observedSequenceNumber = _sequenceNumber;
+                    return _state == QueueState.Ready || _state == QueueState.Stopped;
                 }
-
-                Trace(context, $"{isReady}");
-
-                return isReady;
             }
 
             // Return true for pending, false for completed synchronously (including failure and abort)
@@ -879,6 +870,7 @@ namespace System.Net.Sockets
                             }
 
                             op = _tail.Next;
+                            op.SetSequenceNumber(_sequenceNumber);
                             Debug.Assert(_isNextOperationSynchronous == (op.Event != null));
                             if (skipAsyncEvents && !_isNextOperationSynchronous)
                             {
@@ -1053,7 +1045,7 @@ namespace System.Net.Sockets
                             _tail = null;
                             _isNextOperationSynchronous = false;
 
-                            if (op.HasExhaustedIoSpace)
+                            if (op.HasExhaustedIoSpace(currentSequenceNumber: _sequenceNumber))
                             {
                                 // the buffer that given operation was using was bigger than
                                 // the number of bytes returned from read()|write()
@@ -1066,7 +1058,6 @@ namespace System.Net.Sockets
                             else
                             {
                                 _state = QueueState.Ready;
-                                _sequenceNumber++;
                             }
                             Trace(context, $"Exit (finished queue)");
                         }
@@ -1076,7 +1067,7 @@ namespace System.Net.Sockets
                             _tail.Next = op.Next;
                             _isNextOperationSynchronous = op.Next.Event != null;
 
-                            if (op.HasExhaustedIoSpace)
+                            if (op.HasExhaustedIoSpace(currentSequenceNumber: _sequenceNumber))
                             {
                                 _state = QueueState.Waiting;
                             }
