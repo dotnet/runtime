@@ -1958,25 +1958,24 @@ namespace System
         private static int? MatchChars(ReadOnlySpan<char> p, string value)
         {
             Debug.Assert(p != null && value != null);
-            ReadOnlySpan<char> str = value;
 
-            if (str.Length > 0)
+            if (value.Length > 0)
             {
                 // We only hurt the failure case
                 // This fix is for French or Kazakh cultures. Since a user cannot type 0xA0 or 0x202F as a
                 // space character we use 0x20 space character instead to mean the same.
 
                 int pIndex = 0;
-                while (true)//TODO rethink this algorithm. Maybe change to for loop
+                while (true)
                 {
-                    char cp = pIndex < p.Length ? p[pIndex] : '\0';
-                    char cstr = pIndex < str.Length ? str[pIndex] : '\0';
+                    char cp = pIndex < p.Length ? p[pIndex] : '\0';//TODO it can lead to incorrect results, for example: MatchChars("123", "123\0\0\0\0") returns 7 instead of 3
+                    char cstr = value[pIndex];
                     if (cp != cstr && !(IsSpaceReplacingChar(cstr) && cp == '\u0020'))
                     {
                         break;
                     }
                     pIndex++;
-                    if (pIndex >= str.Length)
+                    if (pIndex >= value.Length)
                         return pIndex;
                 }
             }
