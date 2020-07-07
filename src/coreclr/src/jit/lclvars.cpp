@@ -292,9 +292,9 @@ void Compiler::lvaInitTypeRef()
     }
 
     if ( // If there already exist unsafe buffers, don't mark more structs as unsafe
-         // as that will cause them to be placed along with the real unsafe buffers,
-         // unnecessarily exposing them to overruns. This can affect GS tests which
-         // intentionally do buffer-overruns.
+        // as that will cause them to be placed along with the real unsafe buffers,
+        // unnecessarily exposing them to overruns. This can affect GS tests which
+        // intentionally do buffer-overruns.
         !getNeedsGSSecurityCookie() &&
         // GS checks require the stack to be re-ordered, which can't be done with EnC
         !opts.compDbgEnC && compStressCompile(STRESS_UNSAFE_BUFFER_CHECKS, 25))
@@ -3394,8 +3394,8 @@ void Compiler::lvaSortByRefCount()
         if (varDsc->lvAddrExposed)
         {
             varDsc->lvTracked = 0;
-            assert(varDsc->lvType != TYP_STRUCT || varDsc->lvDoNotEnregister); // For structs, should have set this when
-                                                                               // we set lvAddrExposed.
+            assert(varDsc->lvType != TYP_STRUCT ||
+                   varDsc->lvDoNotEnregister); // For structs, should have set this when we set lvAddrExposed.
         }
         else if (varTypeIsStruct(varDsc))
         {
@@ -3549,8 +3549,8 @@ void LclVarDsc::lvaDisqualifyVar()
 #endif // ASSERTION_PROP
 
 /**********************************************************************************
- * Get stack size of the varDsc.
- */
+* Get stack size of the varDsc.
+*/
 size_t LclVarDsc::lvArgStackSize() const
 {
     // Make sure this will have a stack size
@@ -3591,8 +3591,8 @@ size_t LclVarDsc::lvArgStackSize() const
 }
 
 /**********************************************************************************
- * Get type of a variable when passed as an argument.
- */
+* Get type of a variable when passed as an argument.
+*/
 var_types LclVarDsc::lvaArgType()
 {
     var_types type = TypeGet();
@@ -4368,11 +4368,11 @@ inline void Compiler::lvaIncrementFrameSize(unsigned size)
 }
 
 /****************************************************************************
- *
- *  Return true if absolute offsets of temps are larger than vars, or in other
- *  words, did we allocate temps before of after vars.  The /GS buffer overrun
- *  checks want temps to be at low stack addresses than buffers
- */
+*
+*  Return true if absolute offsets of temps are larger than vars, or in other
+*  words, did we allocate temps before of after vars.  The /GS buffer overrun
+*  checks want temps to be at low stack addresses than buffers
+*/
 bool Compiler::lvaTempsHaveLargerOffsetThanVars()
 {
 #ifdef TARGET_ARM
@@ -4391,10 +4391,10 @@ bool Compiler::lvaTempsHaveLargerOffsetThanVars()
 }
 
 /****************************************************************************
- *
- *  Return an upper bound estimate for the size of the compiler spill temps
- *
- */
+*
+*  Return an upper bound estimate for the size of the compiler spill temps
+*
+*/
 unsigned Compiler::lvaGetMaxSpillTempSize()
 {
     unsigned result = 0;
@@ -5665,8 +5665,8 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                             (codeGen->regSet.rsMaskPreSpillAlign & genRegMask(REG_ARG_LAST));
 
                 noway_assert(cond);
-                noway_assert(sizeofPreSpillRegArgs <= argOffs + TARGET_POINTER_SIZE); // at most one register of
-                                                                                      // alignment
+                noway_assert(sizeofPreSpillRegArgs <=
+                             argOffs + TARGET_POINTER_SIZE); // at most one register of alignment
             }
             argOffs = sizeofPreSpillRegArgs;
         }
@@ -5836,8 +5836,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= initialStkOffs;
     }
 
-    if (codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() || !isFramePointerUsed()) // Note that currently we always have
-                                                                                   // a frame pointer
+    if (codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() ||
+        !isFramePointerUsed()) // Note that currently we always have a frame pointer
     {
         stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
     }
@@ -6488,8 +6488,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif // FEATURE_EH_FUNCLETS && defined(TARGET_AMD64)
 
 #ifdef TARGET_ARM64
-    if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() && isFramePointerUsed()) // Note that currently we always have
-                                                                                   // a frame pointer
+    if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() &&
+        isFramePointerUsed()) // Note that currently we always have a frame pointer
     {
         // Create space for saving FP and LR.
         stkOffs -= 2 * REGSIZE_BYTES;
@@ -7227,9 +7227,9 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
 }
 
 /*****************************************************************************
- *
- *  dump the lvaTable
- */
+*
+*  dump the lvaTable
+*/
 
 void Compiler::lvaTableDump(FrameLayoutState curState)
 {
