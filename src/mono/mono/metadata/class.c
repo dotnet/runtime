@@ -1409,9 +1409,7 @@ mono_method_get_verification_success (MonoMethod *method)
 
 	gpointer value = mono_image_property_lookup (mono_method_get_image (method), method, MONO_METHOD_PROP_VERIFICATION_SUCCESS);
 
-	if (!value)
-		return FALSE;
-	return TRUE;
+	return value != NULL;
 }
 
 /**
