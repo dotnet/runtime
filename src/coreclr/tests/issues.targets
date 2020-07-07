@@ -683,6 +683,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
             <Issue>https://github.com/dotnet/runtime/issues/10001</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/MinMax_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/38799</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Unix arm32 specific -->
