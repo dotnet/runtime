@@ -179,11 +179,15 @@ endif(CLR_CMAKE_HOST_UNIX)
 if(CLR_CMAKE_HOST_LINUX)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
-endif(CLR_CMAKE_HOST_LINUX)
-if(CLR_CMAKE_HOST_FREEBSD)
+elseif(CLR_CMAKE_HOST_FREEBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options(-fuse-ld=lld LINKER:--build-id=sha1)
-endif(CLR_CMAKE_HOST_FREEBSD)
+  add_link_options(LINKER:--build-id=sha1)
+elseif(CLR_CMAKE_HOST_SUNOS)
+  add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
+  add_definitions(-D__EXTENSIONS__)
+endif()
 
 #------------------------------------
 # Definitions (for platform)
@@ -223,15 +227,13 @@ if (CLR_CMAKE_HOST_UNIX)
 
   if(CLR_CMAKE_HOST_OSX)
     message("Detected OSX x86_64")
-  endif(CLR_CMAKE_HOST_OSX)
-
-  if(CLR_CMAKE_HOST_FREEBSD)
+  elseif(CLR_CMAKE_HOST_FREEBSD)
     message("Detected FreeBSD amd64")
-  endif(CLR_CMAKE_HOST_FREEBSD)
-
-  if(CLR_CMAKE_HOST_NETBSD)
+  elseif(CLR_CMAKE_HOST_NETBSD)
     message("Detected NetBSD amd64")
-  endif(CLR_CMAKE_HOST_NETBSD)
+  elseif(CLR_CMAKE_HOST_SUNOS)
+    message("Detected SunOS amd64")
+  endif(CLR_CMAKE_HOST_OSX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 if (CLR_CMAKE_HOST_WIN32)
@@ -363,17 +365,15 @@ if(CLR_CMAKE_TARGET_UNIX)
   add_definitions(-DDISABLE_CONTRACTS)
   if(CLR_CMAKE_TARGET_OSX)
     add_definitions(-DTARGET_OSX)
-  endif(CLR_CMAKE_TARGET_OSX)
-  if(CLR_CMAKE_TARGET_FREEBSD)
+  elseif(CLR_CMAKE_TARGET_FREEBSD)
     add_definitions(-DTARGET_FREEBSD)
-  endif(CLR_CMAKE_TARGET_FREEBSD)
-  if(CLR_CMAKE_TARGET_LINUX)
+  elseif(CLR_CMAKE_TARGET_LINUX)
     add_definitions(-DTARGET_LINUX)
-  endif(CLR_CMAKE_TARGET_LINUX)
-  if(CLR_CMAKE_TARGET_NETBSD)
+  elseif(CLR_CMAKE_TARGET_NETBSD)
     add_definitions(-DTARGET_NETBSD)
-  endif(CLR_CMAKE_TARGET_NETBSD)
-  if(CLR_CMAKE_TARGET_ANDROID)
+  elseif(CLR_CMAKE_TARGET_SUNOS)
+    add_definitions(-DTARGET_SUNOS)
+  elseif(CLR_CMAKE_TARGET_ANDROID)
     add_definitions(-DTARGET_ANDROID)
   endif()
 else(CLR_CMAKE_TARGET_UNIX)
@@ -413,7 +413,6 @@ if (MSVC)
 
   # The following options are set by the razzle build
   add_compile_options(/TP) # compile all files as C++
-  add_compile_options(/d2Zi+) # make optimized builds debugging easier
   add_compile_options(/nologo) # Suppress Startup Banner
   add_compile_options(/W3) # set warning level to 3
   add_compile_options(/WX) # treat warnings as errors
@@ -422,7 +421,6 @@ if (MSVC)
   add_compile_options(/U_MT) # undefine the predefined _MT macro
   add_compile_options(/GF) # enable read-only string pooling
   add_compile_options(/Gm-) # disable minimal rebuild
-  add_compile_options(/EHa) # enable C++ EH (w/ SEH exceptions)
   add_compile_options(/Zp8) # pack structs on 8-byte boundary
   add_compile_options(/Gy) # separate functions for linker
   add_compile_options(/Zc:wchar_t-) # C++ language conformance: wchar_t is NOT the native type, but a typedef
@@ -437,11 +435,7 @@ if (MSVC)
 
   # Disable Warnings:
   # 4291: Delete not defined for new, c++ exception may cause leak.
-  # 4302: Truncation from '%$S' to '%$S'.
-  # 4311: Pointer truncation from '%$S' to '%$S'.
-  # 4312: '<function-style-cast>' : conversion from '%$S' to '%$S' of greater size.
-  # 4477: Format string '%$S' requires an argument of type '%$S', but variadic argument %d has type '%$S'.
-  add_compile_options(/wd4291 /wd4302 /wd4311 /wd4312 /wd4477)
+  add_compile_options(/wd4291)
 
   # Treat Warnings as Errors:
   # 4007: 'main' : must be __cdecl.
@@ -460,7 +454,8 @@ if (MSVC)
   # 4132: Const object should be initialized.
   # 4212: Function declaration used ellipsis.
   # 4530: C++ exception handler used, but unwind semantics are not enabled. Specify -GX.
-  add_compile_options(/w34092 /w34121 /w34125 /w34130 /w34132 /w34212 /w34530)
+  # 35038: data member 'member1' will be initialized after data member 'member2'.
+  add_compile_options(/w34092 /w34121 /w34125 /w34130 /w34132 /w34212 /w34530 /w35038)
 
   # Set Warning Level 4:
   # 4177: Pragma data_seg s/b at global scope.
@@ -582,5 +577,19 @@ else (CLR_CMAKE_HOST_WIN32)
     find_program(AWK awk)
     if (AWK STREQUAL "AWK-NOTFOUND")
         message(FATAL_ERROR "AWK not found")
+    endif()
+
+    # detect linker
+    set(ldVersion ${CMAKE_C_COMPILER};-Wl,--version)
+    execute_process(COMMAND ${ldVersion}
+        ERROR_QUIET
+        OUTPUT_VARIABLE ldVersionOutput)
+
+    if("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold")
+        set(LD_GNU 1)
+    elseif("${ldVersionOutput}" MATCHES "Solaris Link")
+        set(LD_SOLARIS 1)
+    else(CLR_CMAKE_HOST_OSX)
+        set(LD_OSX 1)
     endif()
 endif(CLR_CMAKE_HOST_WIN32)

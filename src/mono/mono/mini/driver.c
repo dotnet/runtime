@@ -528,7 +528,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 			func = (TestMethod)mono_aot_get_method (mono_get_root_domain (), method, error);
 			mono_error_cleanup (error);
 #else
-			g_error ("No JIT or AOT available, regression testing not possible!")
+			g_error ("No JIT or AOT available, regression testing not possible!");
 #endif
 
 #else
@@ -1622,7 +1622,12 @@ mini_usage (void)
  		"    --debugger-agent=options Enable the debugger agent\n"
 		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
 		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
+#ifdef __linux__		
 		"    --jitmap               Output a jit method map to /tmp/perf-PID.map\n"
+#endif
+#ifdef ENABLE_JIT_DUMP
+		"    --jitdump              Output a jitdump file to /tmp/jit-PID.dump\n"
+#endif
 		"    --help-devel           Shows more options available to developers\n"
 		"\n"
 		"Runtime:\n"
@@ -2342,6 +2347,10 @@ mono_main (int argc, char* argv[])
 			forced_version = &argv [i][10];
 		} else if (strcmp (argv [i], "--jitmap") == 0) {
 			mono_enable_jit_map ();
+#ifdef ENABLE_JIT_DUMP
+		} else if (strcmp (argv [i], "--jitdump") == 0) {
+			mono_enable_jit_dump ();
+#endif
 		} else if (strcmp (argv [i], "--profile") == 0) {
 			mini_add_profiler_argument (NULL);
 		} else if (strncmp (argv [i], "--profile=", 10) == 0) {

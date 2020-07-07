@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Globalization
@@ -57,29 +58,29 @@ namespace System.Globalization
         private readonly CultureData _cultureData;
 
         // The culture name used to create this DTFI.
-        private string? _name = null;
+        private string? _name;
 
         // The language name of the culture used to create this DTFI.
-        private string? _langName = null;
+        private string? _langName;
 
         // CompareInfo usually used by the parser.
-        private CompareInfo? _compareInfo = null;
+        private CompareInfo? _compareInfo;
 
         // Culture matches current DTFI. mainly used for string comparisons during parsing.
-        private CultureInfo? _cultureInfo = null;
+        private CultureInfo? _cultureInfo;
 
-        private string? amDesignator = null;
-        private string? pmDesignator = null;
+        private string? amDesignator;
+        private string? pmDesignator;
 
-        private string? dateSeparator = null;            // derived from short date (whidbey expects, arrowhead doesn't)
+        private string? dateSeparator;            // derived from short date (whidbey expects, arrowhead doesn't)
 
-        private string? generalShortTimePattern = null;     // short date + short time (whidbey expects, arrowhead doesn't)
+        private string? generalShortTimePattern;     // short date + short time (whidbey expects, arrowhead doesn't)
 
-        private string? generalLongTimePattern = null;     // short date + long time (whidbey expects, arrowhead doesn't)
+        private string? generalLongTimePattern;     // short date + long time (whidbey expects, arrowhead doesn't)
 
-        private string? timeSeparator = null;            // derived from long time (whidbey expects, arrowhead doesn't)
-        private string? monthDayPattern = null;
-        private string? dateTimeOffsetPattern = null;
+        private string? timeSeparator;            // derived from long time (whidbey expects, arrowhead doesn't)
+        private string? monthDayPattern;
+        private string? dateTimeOffsetPattern;
 
         private const string rfc1123Pattern = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
 
@@ -87,31 +88,31 @@ namespace System.Globalization
         private const string sortableDateTimePattern = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
         private const string universalSortableDateTimePattern = "yyyy'-'MM'-'dd HH':'mm':'ss'Z'";
 
-        private Calendar calendar = null!; // initialized in helper called by ctors
+        private Calendar calendar;
 
         private int firstDayOfWeek = -1;
         private int calendarWeekRule = -1;
 
-        private string? fullDateTimePattern = null;        // long date + long time (whidbey expects, arrowhead doesn't)
+        private string? fullDateTimePattern;        // long date + long time (whidbey expects, arrowhead doesn't)
 
-        private string[]? abbreviatedDayNames = null;
+        private string[]? abbreviatedDayNames;
 
-        private string[]? m_superShortDayNames = null;
+        private string[]? m_superShortDayNames;
 
-        private string[]? dayNames = null;
-        private string[]? abbreviatedMonthNames = null;
-        private string[]? monthNames = null;
+        private string[]? dayNames;
+        private string[]? abbreviatedMonthNames;
+        private string[]? monthNames;
 
         // Cache the genitive month names that we retrieve from the data table.
 
-        private string[]? genitiveMonthNames = null;
+        private string[]? genitiveMonthNames;
 
         // Cache the abbreviated genitive month names that we retrieve from the data table.
 
-        private string[]? m_genitiveAbbreviatedMonthNames = null;
+        private string[]? m_genitiveAbbreviatedMonthNames;
 
         // Cache the month names of a leap year that we retrieve from the data table.
-        private string[]? leapYearMonthNames = null;
+        private string[]? leapYearMonthNames;
 
         // For our "patterns" arrays we have 2 variables, a string and a string[]
         //
@@ -120,30 +121,30 @@ namespace System.Globalization
         // When we initially construct our string[], we set the string to string[0]
 
         // The "default" Date/time patterns
-        private string? longDatePattern = null;
-        private string? shortDatePattern = null;
-        private string? yearMonthPattern = null;
-        private string? longTimePattern = null;
-        private string? shortTimePattern = null;
+        private string? longDatePattern;
+        private string? shortDatePattern;
+        private string? yearMonthPattern;
+        private string? longTimePattern;
+        private string? shortTimePattern;
 
-        private string[]? allYearMonthPatterns = null;
+        private string[]? allYearMonthPatterns;
 
-        private string[]? allShortDatePatterns = null;
-        private string[]? allLongDatePatterns = null;
-        private string[]? allShortTimePatterns = null;
-        private string[]? allLongTimePatterns = null;
+        private string[]? allShortDatePatterns;
+        private string[]? allLongDatePatterns;
+        private string[]? allShortTimePatterns;
+        private string[]? allLongTimePatterns;
 
         // Cache the era names for this DateTimeFormatInfo instance.
-        private string[]? m_eraNames = null;
-        private string[]? m_abbrevEraNames = null;
-        private string[]? m_abbrevEnglishEraNames = null;
+        private string[]? m_eraNames;
+        private string[]? m_abbrevEraNames;
+        private string[]? m_abbrevEnglishEraNames;
 
-        private CalendarId[]? optionalCalendars = null;
+        private CalendarId[]? optionalCalendars;
 
         private const int DEFAULT_ALL_DATETIMES_SIZE = 132;
 
         // CultureInfo updates this
-        internal bool _isReadOnly = false;
+        internal bool _isReadOnly;
 
         // This flag gives hints about if formatting/parsing should perform special code path for things like
         // genitive form or leap year month names.
@@ -242,8 +243,8 @@ namespace System.Globalization
 
             // Remember our culture
             _cultureData = cultureData;
-
-            Calendar = cal;
+            calendar = cal;
+            InitializeOverridableProperties(cultureData, calendar.ID);
         }
 
         private void InitializeOverridableProperties(CultureData cultureData, CalendarId calendarId)
@@ -389,6 +390,7 @@ namespace System.Globalization
                 Debug.Assert(calendar != null, "DateTimeFormatInfo.Calendar: calendar != null");
                 return calendar;
             }
+            [MemberNotNull(nameof(calendar))]
             set
             {
                 if (IsReadOnly)
@@ -732,12 +734,17 @@ namespace System.Globalization
                 // Remember the new string
                 longDatePattern = value;
 
-                // Clear the token hash table
-                ClearTokenHashTable();
-
-                // Clean up cached values that will be affected by this property.
-                fullDateTimePattern = null;
+                OnLongDatePatternChanged();
             }
+        }
+
+        private void OnLongDatePatternChanged()
+        {
+            // Clear the token hash table
+            ClearTokenHashTable();
+
+            // Clean up cached values that will be affected by this property.
+            fullDateTimePattern = null;
         }
 
         /// <summary>
@@ -764,14 +771,19 @@ namespace System.Globalization
                 // Remember the new string
                 longTimePattern = value;
 
-                // Clear the token hash table
-                ClearTokenHashTable();
-
-                // Clean up cached values that will be affected by this property.
-                fullDateTimePattern = null;     // Full date = long date + long Time
-                generalLongTimePattern = null;  // General long date = short date + long Time
-                dateTimeOffsetPattern = null;
+                OnLongTimePatternChanged();
             }
+        }
+
+        private void OnLongTimePatternChanged()
+        {
+            // Clear the token hash table
+            ClearTokenHashTable();
+
+            // Clean up cached values that will be affected by this property.
+            fullDateTimePattern = null;     // Full date = long date + long Time
+            generalLongTimePattern = null;  // General long date = short date + long Time
+            dateTimeOffsetPattern = null;
         }
 
         /// <remarks>
@@ -862,14 +874,19 @@ namespace System.Globalization
                 // Remember the new string
                 shortDatePattern = value;
 
-                // Clear the token hash table, note that even short dates could require this
-                ClearTokenHashTable();
-
-                // Clean up cached values that will be affected by this property.
-                generalLongTimePattern = null;   // General long time = short date + long time
-                generalShortTimePattern = null;  // General short time = short date + short Time
-                dateTimeOffsetPattern = null;
+                OnShortDatePatternChanged();
             }
+        }
+
+        private void OnShortDatePatternChanged()
+        {
+            // Clear the token hash table, note that even short dates could require this
+            ClearTokenHashTable();
+
+            // Clean up cached values that will be affected by this property.
+            generalLongTimePattern = null;   // General long time = short date + long time
+            generalShortTimePattern = null;  // General short time = short date + short Time
+            dateTimeOffsetPattern = null;
         }
 
         /// <summary>
@@ -896,12 +913,17 @@ namespace System.Globalization
                 // Remember the new string
                 shortTimePattern = value;
 
-                // Clear the token hash table, note that even short times could require this
-                ClearTokenHashTable();
-
-                // Clean up cached values that will be affected by this property.
-                generalShortTimePattern = null; // General short date = short date + short time.
+                OnShortTimePatternChanged();
             }
+        }
+
+        private void OnShortTimePatternChanged()
+        {
+            // Clear the token hash table, note that even short times could require this
+            ClearTokenHashTable();
+
+            // Clean up cached values that will be affected by this property.
+            generalShortTimePattern = null; // General short date = short date + short time.
         }
 
         public string SortableDateTimePattern => sortableDateTimePattern;
@@ -1036,9 +1058,14 @@ namespace System.Globalization
                 // Remember the new string
                 yearMonthPattern = value;
 
-                // Clear the token hash table, note that even short times could require this
-                ClearTokenHashTable();
+                OnYearMonthPatternChanged();
             }
+        }
+
+        private void OnYearMonthPatternChanged()
+        {
+            // Clear the token hash table, note that even short times could require this
+            ClearTokenHashTable();
         }
 
         /// <summary>
@@ -1682,7 +1709,7 @@ namespace System.Globalization
             {
                 if (patterns[i] == null)
                 {
-                    throw new ArgumentNullException("patterns[" + i + "]", SR.ArgumentNull_ArrayValue);
+                    throw new ArgumentNullException(nameof(patterns) + "[" + i + "]", SR.ArgumentNull_ArrayValue);
                 }
             }
 
@@ -1692,35 +1719,37 @@ namespace System.Globalization
                 case 'd':
                     allShortDatePatterns = patterns;
                     shortDatePattern = allShortDatePatterns[0];
+                    OnShortDatePatternChanged();
                     break;
 
                 case 'D':
                     allLongDatePatterns = patterns;
                     longDatePattern = allLongDatePatterns[0];
+                    OnLongDatePatternChanged();
                     break;
 
                 case 't':
                     allShortTimePatterns = patterns;
                     shortTimePattern = allShortTimePatterns[0];
+                    OnShortTimePatternChanged();
                     break;
 
                 case 'T':
                     allLongTimePatterns = patterns;
                     longTimePattern = allLongTimePatterns[0];
+                    OnLongTimePatternChanged();
                     break;
 
                 case 'y':
                 case 'Y':
                     allYearMonthPatterns = patterns;
                     yearMonthPattern = allYearMonthPatterns[0];
+                    OnYearMonthPatternChanged();
                     break;
 
                 default:
                     throw new ArgumentException(SR.Format(SR.Format_BadFormatSpecifier, format), nameof(format));
             }
-
-            // Clear the token hash table, note that even short dates could require this
-            ClearTokenHashTable();
         }
 
         public string[] AbbreviatedMonthGenitiveNames
@@ -2008,8 +2037,6 @@ namespace System.Globalization
             {
                 temp = new TokenHashValue[TOKEN_HASH_SIZE];
 
-                bool koreanLanguage = LanguageName.Equals(KoreanLangName);
-
                 string sep = TimeSeparator.Trim();
                 if (IgnorableComma != sep) InsertHash(temp, IgnorableComma, TokenType.IgnorableSymbol, 0);
                 if (IgnorablePeriod != sep) InsertHash(temp, IgnorablePeriod, TokenType.IgnorableSymbol, 0);
@@ -2058,7 +2085,7 @@ namespace System.Globalization
                 }
 
                 // TODO: This ignores other custom cultures that might want to do something similar
-                if (koreanLanguage)
+                if (LanguageName.Equals(KoreanLangName))
                 {
                     // Korean suffix
                     InsertHash(temp, KoreanHourSuff, TokenType.SEP_HourSuff, 0);
@@ -2177,37 +2204,40 @@ namespace System.Globalization
                     InsertHash(temp, GetAbbreviatedEraName(i), TokenType.EraToken, i);
                 }
 
-                if (LanguageName.Equals(JapaneseLangName))
+                if (!GlobalizationMode.Invariant)
                 {
-                    // Japanese allows day of week forms like: "(Tue)"
-                    for (int i = 0; i < 7; i++)
+                    if (LanguageName.Equals(JapaneseLangName))
                     {
-                        string specialDayOfWeek = "(" + GetAbbreviatedDayName((DayOfWeek)i) + ")";
-                        InsertHash(temp, specialDayOfWeek, TokenType.DayOfWeekToken, i);
-                    }
-                    if (Calendar.GetType() != typeof(JapaneseCalendar))
-                    {
-                        // Special case for Japanese.  If this is a Japanese DTFI, and the calendar is not Japanese calendar,
-                        // we will check Japanese Era name as well when the calendar is Gregorian.
-                        DateTimeFormatInfo jaDtfi = GetJapaneseCalendarDTFI();
-                        for (int i = 1; i <= jaDtfi.Calendar.Eras.Length; i++)
+                        // Japanese allows day of week forms like: "(Tue)"
+                        for (int i = 0; i < 7; i++)
                         {
-                            InsertHash(temp, jaDtfi.GetEraName(i), TokenType.JapaneseEraToken, i);
-                            InsertHash(temp, jaDtfi.GetAbbreviatedEraName(i), TokenType.JapaneseEraToken, i);
-                            // m_abbrevEnglishEraNames[0] contains the name for era 1, so the token value is i+1.
-                            InsertHash(temp, jaDtfi.AbbreviatedEnglishEraNames[i - 1], TokenType.JapaneseEraToken, i);
+                            string specialDayOfWeek = "(" + GetAbbreviatedDayName((DayOfWeek)i) + ")";
+                            InsertHash(temp, specialDayOfWeek, TokenType.DayOfWeekToken, i);
+                        }
+                        if (Calendar.GetType() != typeof(JapaneseCalendar))
+                        {
+                            // Special case for Japanese.  If this is a Japanese DTFI, and the calendar is not Japanese calendar,
+                            // we will check Japanese Era name as well when the calendar is Gregorian.
+                            DateTimeFormatInfo jaDtfi = GetJapaneseCalendarDTFI();
+                            for (int i = 1; i <= jaDtfi.Calendar.Eras.Length; i++)
+                            {
+                                InsertHash(temp, jaDtfi.GetEraName(i), TokenType.JapaneseEraToken, i);
+                                InsertHash(temp, jaDtfi.GetAbbreviatedEraName(i), TokenType.JapaneseEraToken, i);
+                                // m_abbrevEnglishEraNames[0] contains the name for era 1, so the token value is i+1.
+                                InsertHash(temp, jaDtfi.AbbreviatedEnglishEraNames[i - 1], TokenType.JapaneseEraToken, i);
+                            }
                         }
                     }
-                }
-                // TODO: This prohibits similar custom cultures, but we hard coded the name
-                else if (CultureName.Equals("zh-TW"))
-                {
-                    DateTimeFormatInfo twDtfi = GetTaiwanCalendarDTFI();
-                    for (int i = 1; i <= twDtfi.Calendar.Eras.Length; i++)
+                    // TODO: This prohibits similar custom cultures, but we hard coded the name
+                    else if (CultureName.Equals("zh-TW"))
                     {
-                        if (twDtfi.GetEraName(i).Length > 0)
+                        DateTimeFormatInfo twDtfi = GetTaiwanCalendarDTFI();
+                        for (int i = 1; i <= twDtfi.Calendar.Eras.Length; i++)
                         {
-                            InsertHash(temp, twDtfi.GetEraName(i), TokenType.TEraToken, i);
+                            if (twDtfi.GetEraName(i).Length > 0)
+                            {
+                                InsertHash(temp, twDtfi.GetEraName(i), TokenType.TEraToken, i);
+                            }
                         }
                     }
                 }

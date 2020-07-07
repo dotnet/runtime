@@ -13,8 +13,11 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PemReadBioPkcs7")]
         internal static extern SafePkcs7Handle PemReadBioPkcs7(SafeBioHandle bp);
 
+        internal static SafePkcs7Handle DecodePkcs7(ReadOnlySpan<byte> buf) =>
+            DecodePkcs7(ref MemoryMarshal.GetReference(buf), buf.Length);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodePkcs7")]
-        internal static extern SafePkcs7Handle DecodePkcs7(byte[] buf, int len);
+        private static extern SafePkcs7Handle DecodePkcs7(ref byte buf, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_D2IPkcs7Bio")]
         internal static extern SafePkcs7Handle D2IPkcs7Bio(SafeBioHandle bp);

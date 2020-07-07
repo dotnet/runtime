@@ -15,6 +15,7 @@
   -->
   <ItemGroup>
     <HeatOutputFileElementToStabilize Include="native\apphost.exe" ReplacementId="apphosttemplateapphostexe" />
+    <HeatOutputFileElementToStabilize Include="native\singlefilehost.exe" ReplacementId="staticapphosttemplateapphostexe" />
     <HeatOutputFileElementToStabilize Include="native\comhost.dll" ReplacementId="comhosttemplatecomhostdll" />
   </ItemGroup>
 
@@ -26,4 +27,7 @@
     <CrossArchSdkMsiInstallerArch Include="x64;x86" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
+  </PropertyGroup>
 </Project>

@@ -14,7 +14,7 @@ namespace TaskCoverage
     public class Coverage
     {
         // Regression test: Validates that tasks can wait on int.MaxValue without assertion.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWait_MaxInt32()
         {
             Task t = Task.Delay(1);
@@ -90,7 +90,7 @@ namespace TaskCoverage
         /// <summary>
         /// Test various Task.WhenAll and Wait overloads - EH
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitWithCTS()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -139,7 +139,7 @@ namespace TaskCoverage
         /// <summary>
         /// test WaitAny and when Any overloads
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAny_WhenAny()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -180,6 +180,92 @@ namespace TaskCoverage
         }
 
         [Fact]
+        public static void Task_WhenAny_TwoTasks_InvalidArgs_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("task1", () => Task.WhenAny(null, Task.CompletedTask));
+            AssertExtensions.Throws<ArgumentNullException>("task2", () => Task.WhenAny(Task.CompletedTask, null));
+
+            AssertExtensions.Throws<ArgumentNullException>("task1", () => Task.WhenAny(null, Task.FromResult(1)));
+            AssertExtensions.Throws<ArgumentNullException>("task2", () => Task.WhenAny(Task.FromResult(2), null));
+        }
+
+        [Fact]
+        public static async Task Task_WhenAny_TwoTasks_OnePreCompleted()
+        {
+            Task<int> t1 = Task.FromResult(1);
+            Task<int> t2 = new TaskCompletionSource<int>().Task;
+
+            Assert.Same(t1, await Task.WhenAny((Task)t1, (Task)t2));
+            Assert.Same(t1, await Task.WhenAny((Task)t2, (Task)t1));
+
+            Assert.Same(t1, await Task.WhenAny(t1, t2));
+            Assert.Same(t1, await Task.WhenAny(t2, t1));
+        }
+
+        [Fact]
+        public static async Task Task_WhenAny_TwoTasks_BothPreCompleted()
+        {
+            Task<int> t1 = Task.FromResult(1);
+            Task<int> t2 = Task.FromResult(2);
+
+            Assert.Same(t1, await Task.WhenAny((Task)t1, (Task)t2));
+            Assert.Same(t1, await Task.WhenAny((Task)t1, (Task)t1));
+            Assert.Same(t2, await Task.WhenAny((Task)t2, (Task)t1));
+
+            Assert.Same(t1, await Task.WhenAny(t1, t2));
+            Assert.Same(t1, await Task.WhenAny(t1, t1));
+            Assert.Same(t2, await Task.WhenAny(t2, t1));
+        }
+
+        [Fact]
+        public static async Task Task_WhenAny_TwoTasks_WakesOnFirstCompletion()
+        {
+            // Non-generic, first completes
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<Task> twa = Task.WhenAny((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                t1.SetResult(42);
+                Assert.Same(t1.Task, await twa);
+            }
+
+            // Generic, first completes
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<Task<int>> twa = Task.WhenAny(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                t1.SetResult(42);
+                Assert.Same(t1.Task, await twa);
+            }
+
+            // Non-generic, second completes
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<Task> twa = Task.WhenAny((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                t2.SetResult(42);
+                Assert.Same(t2.Task, await twa);
+            }
+
+            // Generic, second completes
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<Task<int>> twa = Task.WhenAny(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                t2.SetResult(42);
+                Assert.Same(t2.Task, await twa);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancellationTokenRegitration()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -196,7 +282,7 @@ namespace TaskCoverage
         /// <summary>
         /// verify that the taskawaiter.UnsafeOnCompleted is invoked
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskAwaiter()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -216,7 +302,7 @@ namespace TaskCoverage
         /// <summary>
         /// verify that the taskawaiter.UnsafeOnCompleted is invoked
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskConfigurableAwaiter()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -236,7 +322,7 @@ namespace TaskCoverage
         /// <summary>
         /// FromAsync testing: Not supported in .NET Native
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void FromAsync()
         {
             Task emptyTask = new Task(() => { });

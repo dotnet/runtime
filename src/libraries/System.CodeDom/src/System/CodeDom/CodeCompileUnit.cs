@@ -8,11 +8,11 @@ namespace System.CodeDom
 {
     public class CodeCompileUnit : CodeObject
     {
-        private StringCollection _assemblies = null;
-        private CodeAttributeDeclarationCollection _attributes = null;
+        private StringCollection _assemblies;
+        private CodeAttributeDeclarationCollection _attributes;
 
-        private CodeDirectiveCollection _startDirectives = null;
-        private CodeDirectiveCollection _endDirectives = null;
+        private CodeDirectiveCollection _startDirectives;
+        private CodeDirectiveCollection _endDirectives;
 
         public CodeCompileUnit() { }
 

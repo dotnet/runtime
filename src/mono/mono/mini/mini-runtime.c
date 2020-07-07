@@ -70,8 +70,13 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-state.h>
+#include <mono/utils/mono-time.h>
 #include <mono/metadata/w32handle.h>
 #include <mono/metadata/threadpool.h>
+
+#ifdef ENABLE_PERFTRACING
+#include <mono/eventpipe/ep.h>
+#endif
 
 #include "mini.h"
 #include "seq-points.h"
@@ -515,6 +520,7 @@ mono_tramp_info_register_internal (MonoTrampInfo *info, MonoDomain *domain, gboo
 	copy->code = info->code;
 	copy->code_size = info->code_size;
 	copy->name = g_strdup (info->name);
+	copy->method = info->method;
 
 	if (info->unwind_ops) {
 		copy->uw_info = mono_unwind_ops_encode (info->unwind_ops, &copy->uw_info_len);
@@ -545,8 +551,8 @@ mono_tramp_info_register_internal (MonoTrampInfo *info, MonoDomain *domain, gboo
 		mono_jit_lock ();
 		tramp_infos = g_slist_prepend (tramp_infos, copy);
 		mono_jit_unlock ();
-	} else if (copy->uw_info) {
-		/* Only register trampolines that have unwind infos */
+	} else if (copy->uw_info || info->method) {
+		/* Only register trampolines that have unwind info */
 		register_trampoline_jit_info (domain, copy);
 	}
 
@@ -1925,6 +1931,179 @@ mono_jit_map_is_enabled (void)
 
 #endif
 
+#ifdef ENABLE_JIT_DUMP
+#include <sys/mman.h>
+#include <sys/syscall.h>
+#include <elf.h>
+
+static FILE *perf_dump_file;
+static mono_mutex_t perf_dump_mutex;
+static void *perf_dump_mmap_addr = MAP_FAILED;
+static guint32 perf_dump_pid;
+static clockid_t clock_id = CLOCK_MONOTONIC;
+
+enum {
+	JIT_DUMP_MAGIC = 0x4A695444,
+	JIT_DUMP_VERSION = 2,
+#if HOST_X86
+	ELF_MACHINE = EM_386,
+#elif HOST_AMD64
+	ELF_MACHINE = EM_X86_64,
+#elif HOST_ARM
+	ELF_MACHINE = EM_ARM,
+#elif HOST_ARM64
+	ELF_MACHINE = EM_AARCH64,
+#elif HOST_POWERPC64
+	ELF_MACHINE = EM_PPC64,
+#elif HOST_S390X
+	ELF_MACHINE = EM_S390,
+#endif
+	JIT_CODE_LOAD = 0
+};
+typedef struct
+{
+	guint32 magic;
+	guint32 version;
+	guint32 total_size;
+	guint32 elf_mach;
+	guint32 pad1;
+	guint32 pid;
+	guint64 timestamp;
+	guint64 flags;
+} FileHeader;
+typedef struct
+{
+	guint32 id;
+	guint32 total_size;
+	guint64 timestamp;
+} RecordHeader;
+typedef struct
+{
+	RecordHeader header;
+	guint32 pid;
+	guint32 tid;
+	guint64 vma;
+	guint64 code_addr;
+	guint64 code_size;
+	guint64 code_index;
+	// Null terminated function name
+	// Native code
+} JitCodeLoadRecord;
+
+static void add_file_header_info (FileHeader *header);
+static void add_basic_JitCodeLoadRecord_info (JitCodeLoadRecord *record);
+
+void
+mono_enable_jit_dump (void)
+{
+	if (perf_dump_pid == 0)
+		perf_dump_pid = getpid();
+	
+	if (!perf_dump_file) {
+		char name [64];
+		FileHeader header;
+		memset (&header, 0, sizeof (header));
+
+		mono_os_mutex_init (&perf_dump_mutex);
+		mono_os_mutex_lock (&perf_dump_mutex);
+		
+		g_snprintf (name, sizeof (name), "/tmp/jit-%d.dump", perf_dump_pid);
+		unlink (name);
+		perf_dump_file = fopen (name, "w");
+		
+		add_file_header_info (&header);
+		if (perf_dump_file) {
+			fwrite (&header, sizeof (header), 1, perf_dump_file);
+			//This informs perf of the presence of the jitdump file and support for the feature.​
+			perf_dump_mmap_addr = mmap (NULL, sizeof (header), PROT_READ | PROT_EXEC, MAP_PRIVATE, fileno (perf_dump_file), 0);
+		}
+		
+		mono_os_mutex_unlock (&perf_dump_mutex);
+	}
+}
+
+static void
+add_file_header_info (FileHeader *header)
+{
+	header->magic = JIT_DUMP_MAGIC;
+	header->version = JIT_DUMP_VERSION;
+	header->total_size = sizeof (header);
+	header->elf_mach = ELF_MACHINE;
+	header->pad1 = 0;
+	header->pid = perf_dump_pid;
+	header->timestamp = mono_clock_get_time_ns (clock_id);
+	header->flags = 0;
+}
+
+void
+mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
+{
+	static uint64_t code_index;
+	
+	if (perf_dump_file) {
+		JitCodeLoadRecord record;
+		size_t nameLen = strlen (jinfo->d.method->name);
+		memset (&record, 0, sizeof (record));
+		
+		add_basic_JitCodeLoadRecord_info (&record);
+		record.header.total_size = sizeof (record) + nameLen + 1 + jinfo->code_size;
+		record.vma = (guint64)jinfo->code_start;
+		record.code_addr = (guint64)jinfo->code_start;
+		record.code_size = (guint64)jinfo->code_size;
+
+		mono_os_mutex_lock (&perf_dump_mutex);
+		
+		record.code_index = ++code_index;
+		
+		// TODO: write debugInfo and unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
+		
+		record.header.timestamp = mono_clock_get_time_ns (clock_id);
+		
+		fwrite (&record, sizeof (record), 1, perf_dump_file);
+		fwrite (jinfo->d.method->name, nameLen + 1, 1, perf_dump_file);
+		fwrite (code, jinfo->code_size, 1, perf_dump_file);
+
+		mono_os_mutex_unlock (&perf_dump_mutex);
+	}
+}
+
+static void
+add_basic_JitCodeLoadRecord_info (JitCodeLoadRecord *record)
+{
+	record->header.id = JIT_CODE_LOAD;
+	record->header.timestamp = mono_clock_get_time_ns (clock_id);
+	record->pid = perf_dump_pid;
+	record->tid = syscall (SYS_gettid);
+}
+
+void
+mono_jit_dump_cleanup (void)
+{
+	if (perf_dump_mmap_addr != MAP_FAILED)
+		munmap (perf_dump_mmap_addr, sizeof(FileHeader));
+	if (perf_dump_file)
+		fclose (perf_dump_file);
+}
+
+#else
+
+void
+mono_enable_jit_dump (void)
+{
+}
+
+void
+mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
+{
+}
+
+void
+mono_jit_dump_cleanup (void)
+{
+}
+
+#endif
+
 static void
 no_gsharedvt_in_wrapper (void)
 {
@@ -3247,11 +3426,8 @@ MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 
 		mono_sigctx_to_monoctx (ctx, &mctx);
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGFPE), &mctx, info);
-		if (mono_do_crash_chaining) {
-			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
-			goto exit;
-		}
+			mono_handle_native_crash (mono_get_signame (SIGFPE), &mctx, info, ctx);
+		goto exit;
 	}
 
 	mono_arch_handle_exception (ctx, exc);
@@ -3272,14 +3448,10 @@ MONO_SIG_HANDLER_FUNC (, mono_crashing_signal_handler)
 	mono_sigctx_to_monoctx (ctx, &mctx);
 	if (mono_dump_start ())
 #if defined(HAVE_SIG_INFO) && !defined(HOST_WIN32) // info is a siginfo_t
-		mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, info);
+		mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, info, ctx);
 #else
-		mono_handle_native_crash (mono_get_signame (SIGTERM), &mctx, info);
+		mono_handle_native_crash (mono_get_signame (SIGTERM), &mctx, info, ctx);
 #endif
-	if (mono_do_crash_chaining) {
-		mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
-		return;
-	}
 }
 
 #if defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32)
@@ -3359,11 +3531,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 		if (mono_dump_start())
-			mono_handle_native_crash (mono_get_signame (signo), &mctx, info);
-		if (mono_do_crash_chaining) {
-			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
-			return;
-		}
+			mono_handle_native_crash (mono_get_signame (signo), &mctx, info, ctx);
 	}
 #endif
 
@@ -3402,7 +3570,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		} else {
 			// FIXME: This shouldn't run on the altstack
 			if (mono_dump_start ())
-				mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, info);
+				mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, info, ctx);
 		}
 #endif
 	}
@@ -3413,19 +3581,14 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 			return;
 
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
-
-		if (mono_do_crash_chaining) {
-			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
-			return;
-		}
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info, ctx);
 	}
 
 	if (mono_is_addr_implicit_null_check (fault_addr)) {
 		mono_arch_handle_exception (ctx, NULL);
 	} else {
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info, ctx);
 	}
 #endif
 }
@@ -3574,7 +3737,7 @@ create_delegate_method_ptr (MonoMethod *method, MonoError *error)
 		func = mono_compile_method_checked (method, error);
 		return_val_if_nok (error, NULL);
 	} else {
-		gpointer trampoline = mono_runtime_create_jump_trampoline (mono_domain_get (), method, TRUE, error);
+		gpointer trampoline = mono_create_jump_trampoline (mono_domain_get (), method, TRUE, error);
 		return_val_if_nok (error, NULL);
 		func = mono_create_ftnptr (mono_domain_get (), trampoline);
 	}
@@ -3582,9 +3745,52 @@ create_delegate_method_ptr (MonoMethod *method, MonoError *error)
 }
 
 static void
-mini_init_delegate (MonoDelegateHandle delegate, MonoError *error)
+mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error)
 {
 	MonoDelegate *del = MONO_HANDLE_RAW (delegate);
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (delegate);
+
+	if (!method) {
+		MonoJitInfo *ji;
+
+		g_assert (addr);
+		ji = mono_jit_info_table_find_internal (domain, mono_get_addr_from_ftnptr (addr), TRUE, TRUE);
+		/* Shared code */
+		if (!ji && domain != mono_get_root_domain ())
+			ji = mono_jit_info_table_find_internal (mono_get_root_domain (), mono_get_addr_from_ftnptr (addr), TRUE, TRUE);
+		if (ji) {
+			if (ji->is_trampoline) {
+				/* Could be an unbox trampoline etc. */
+				method = ji->d.tramp_info->method;
+			} else {
+				method = mono_jit_info_get_method (ji);
+				g_assert (!mono_class_is_gtd (method->klass));
+			}
+		}
+	}
+
+	if (method)
+		MONO_HANDLE_SETVAL (delegate, method, MonoMethod*, method);
+
+	if (addr)
+		MONO_HANDLE_SETVAL (delegate, method_ptr, gpointer, addr);
+
+#ifndef DISABLE_REMOTING
+	if (!MONO_HANDLE_IS_NULL (target) && mono_class_is_transparent_proxy (mono_handle_class (target))) {
+		if (mono_use_interpreter) {
+			MONO_HANDLE_SETVAL (delegate, interp_method, gpointer, mini_get_interp_callbacks ()->get_remoting_invoke (method, addr, error));
+		} else {
+			g_assert (method);
+			method = mono_marshal_get_remoting_invoke (method, error);
+			return_if_nok (error);
+			MONO_HANDLE_SETVAL (delegate, method_ptr, gpointer, mono_compile_method_checked (method, error));
+		}
+		return_if_nok (error);
+	}
+#endif
+
+	MONO_HANDLE_SET (delegate, target, target);
+	MONO_HANDLE_SETVAL (delegate, invoke_impl, gpointer, mono_create_delegate_trampoline (domain, mono_handle_class (delegate)));
 
 	if (mono_use_interpreter) {
 		mini_get_interp_callbacks ()->init_delegate (del, error);
@@ -4203,7 +4409,6 @@ mini_init (const char *filename, const char *runtime_version)
 #define JIT_TRAMPOLINES_WORK
 #ifdef JIT_TRAMPOLINES_WORK
 	callbacks.compile_method = mono_jit_compile_method;
-	callbacks.create_jump_trampoline = mono_create_jump_trampoline;
 	callbacks.create_jit_trampoline = mono_create_jit_trampoline;
 	callbacks.create_delegate_trampoline = mono_create_delegate_trampoline;
 	callbacks.free_method = mono_jit_free_method;
@@ -4335,6 +4540,10 @@ mini_init (const char *filename, const char *runtime_version)
 	else
 		domain = mono_init_from_assembly (filename, filename);
 
+#ifdef ENABLE_PERFTRACING
+	ep_init ();
+#endif
+
 	if (mono_aot_only) {
 		/* This helps catch code allocation requests */
 		mono_code_manager_set_read_only (domain->code_mp);
@@ -4450,6 +4659,7 @@ register_icalls (void)
 
 	register_icall (mono_trace_enter_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	register_icall (mono_trace_leave_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
+	register_icall (mono_trace_tail_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	g_assert (mono_get_lmf_addr == mono_tls_get_lmf_addr);
 	register_icall (mono_jit_set_domain, mono_icall_sig_void_ptr, TRUE);
 	register_icall (mono_domain_get, mono_icall_sig_ptr, TRUE);
@@ -4530,10 +4740,8 @@ register_icalls (void)
 #endif
 	register_opcode_emulation (OP_FCONV_TO_OVF_I8, __emul_fconv_to_ovf_i8, mono_icall_sig_long_double, mono_fconv_ovf_i8, FALSE);
 	register_opcode_emulation (OP_FCONV_TO_OVF_U8, __emul_fconv_to_ovf_u8, mono_icall_sig_ulong_double, mono_fconv_ovf_u8, FALSE);
-	register_opcode_emulation (OP_FCONV_TO_OVF_U8_UN, __emul_fconv_to_ovf_u8_un, mono_icall_sig_ulong_double, mono_fconv_ovf_u8_un, FALSE);
 	register_opcode_emulation (OP_RCONV_TO_OVF_I8, __emul_rconv_to_ovf_i8, mono_icall_sig_long_float, mono_rconv_ovf_i8, FALSE);
 	register_opcode_emulation (OP_RCONV_TO_OVF_U8, __emul_rconv_to_ovf_u8, mono_icall_sig_ulong_float, mono_rconv_ovf_u8, FALSE);
-	register_opcode_emulation (OP_RCONV_TO_OVF_U8_UN, __emul_rconv_to_ovf_u8_un, mono_icall_sig_ulong_float, mono_rconv_ovf_u8_un, FALSE);
 
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_I8
 	register_opcode_emulation (OP_FCONV_TO_I8, __emul_fconv_to_i8, mono_icall_sig_long_double, mono_fconv_i8, FALSE);
@@ -4663,7 +4871,7 @@ register_icalls (void)
 
 	register_dyn_icall (mini_get_dbg_callbacks ()->user_break, mono_debugger_agent_user_break, mono_icall_sig_void, FALSE);
 
-	register_icall (mini_llvm_init_method, mono_icall_sig_void_ptr_ptr_int_ptr, TRUE);
+	register_icall (mini_llvm_init_method, mono_icall_sig_void_ptr_ptr_ptr_ptr, TRUE);
 	register_icall_no_wrapper (mini_llvmonly_resolve_iface_call_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_vcall_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_generic_virtual_call, mono_icall_sig_ptr_ptr_int_ptr);
@@ -4775,6 +4983,10 @@ mini_cleanup (MonoDomain *domain)
 		g_printf ("Printing runtime stats at shutdown\n");
 	mono_runtime_print_stats ();
 	jit_stats_cleanup ();
+	mono_jit_dump_cleanup ();
+#ifdef ENABLE_PERFTRACING
+	ep_shutdown ();
+#endif
 }
 #else
 void

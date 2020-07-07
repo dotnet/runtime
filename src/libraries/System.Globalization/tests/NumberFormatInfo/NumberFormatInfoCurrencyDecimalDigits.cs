@@ -18,9 +18,9 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(CurrencyDecimalDigits_TestData))]
-        public void CurrencyDecimalDigits_Get_ReturnsExpected(NumberFormatInfo format, int expectedWindows, int expectedIcu)
+        public void CurrencyDecimalDigits_Get_ReturnsExpected(NumberFormatInfo format, int expectedNls, int expectedIcu)
         {
-            int expected = PlatformDetection.IsWindows ? expectedWindows : expectedIcu;
+            int expected = PlatformDetection.IsNlsGlobalization ? expectedNls : expectedIcu;
             Assert.Equal(expected, format.CurrencyDecimalDigits);
         }
 

@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
@@ -18,7 +17,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <returns>The immutable collection.</returns>
-        [Pure]
         public static ImmutableStack<T> Create<T>()
         {
             return ImmutableStack<T>.Empty;
@@ -30,7 +28,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <param name="item">The item to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
-        [Pure]
         public static ImmutableStack<T> Create<T>(T item)
         {
             return ImmutableStack<T>.Empty.Push(item);
@@ -42,7 +39,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
-        [Pure]
         public static ImmutableStack<T> CreateRange<T>(IEnumerable<T> items)
         {
             Requires.NotNull(items, nameof(items));
@@ -62,7 +58,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
-        [Pure]
         public static ImmutableStack<T> Create<T>(params T[] items)
         {
             Requires.NotNull(items, nameof(items));
@@ -86,7 +81,6 @@ namespace System.Collections.Immutable
         /// A stack; never <c>null</c>
         /// </returns>
         /// <exception cref="InvalidOperationException">Thrown when the stack is empty.</exception>
-        [Pure]
         public static IImmutableStack<T> Pop<T>(this IImmutableStack<T> stack, out T value)
         {
             Requires.NotNull(stack, nameof(stack));

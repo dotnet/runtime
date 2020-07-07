@@ -13,10 +13,6 @@
 #include "eexcp.h"
 #include "exstatecommon.h"
 
-#if defined(TARGET_ARM) || defined(TARGET_X86)
-#define USE_PER_FRAME_PINVOKE_INIT
-#endif // TARGET_ARM || TARGET_X86
-
 // This address lies in the NULL pointer partition of the process memory.
 // Accessing it will result in AV.
 #define INVALID_RESUME_ADDRESS 0x000000000000bad0
@@ -74,11 +70,6 @@ public:
         m_WatsonBucketTracker.Init();
 #endif // !TARGET_UNIX
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        // Initialize the default exception severity to NotCorrupting
-        m_CorruptionSeverity = NotSet;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
         // By default, mark the tracker as not having delivered the first
         // chance exception notification
         m_fDeliveredFirstChanceNotification = FALSE;
@@ -133,11 +124,6 @@ public:
         // Init the WatsonBucketTracker
         m_WatsonBucketTracker.Init();
 #endif // !TARGET_UNIX
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        // Initialize the default exception severity to NotCorrupting
-        m_CorruptionSeverity = NotSet;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
         // By default, mark the tracker as not having delivered the first
         // chance exception notification
@@ -195,10 +181,8 @@ public:
         DWORD dwExceptionFlags,
         StackFrame sf,
         Thread* pThread,
-        StackTraceState STState
-#ifdef USE_PER_FRAME_PINVOKE_INIT
-        , PVOID pICFSetAsLimitFrame
-#endif // USE_PER_FRAME_PINVOKE_INIT
+        StackTraceState STState,
+        PVOID pICFSetAsLimitFrame
         );
 
     CLRUnwindStatus ProcessExplicitFrame(
@@ -591,25 +575,6 @@ public:
         return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ExceptionTracker, this, m_WatsonBucketTracker));
     }
 #endif // !TARGET_UNIX
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-private:
-    CorruptionSeverity      m_CorruptionSeverity;
-public:
-    inline CorruptionSeverity GetCorruptionSeverity()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (CorruptionSeverity)GET_CORRUPTION_SEVERITY(m_CorruptionSeverity);
-    }
-
-    inline void SetCorruptionSeverity(CorruptionSeverity severityToSet)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_CorruptionSeverity = severityToSet;
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 private:
     BOOL                    m_fDeliveredFirstChanceNotification;

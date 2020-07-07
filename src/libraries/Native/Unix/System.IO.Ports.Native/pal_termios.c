@@ -9,6 +9,9 @@
 #include <unistd.h>
 #include <errno.h>
 #include <pal_termios.h>
+#if HAVE_SYS_FILIO_H
+#include <sys/filio.h>
+#endif
 
 /* This is dup of System/IO/Ports/NativeMethods.cs */
 enum
@@ -359,7 +362,12 @@ int32_t SystemIoPortsNative_TermiosSetSpeed(intptr_t handle, int32_t speed)
         return  -1;
     }
 
+#if HAVE_CFSETSPEED
     cfsetspeed(&term, brate);
+#else // on SunOS, set input and output speeds individually
+    cfsetispeed(&term, brate);
+    cfsetospeed(&term, brate);
+#endif
 
     if (tcsetattr(fd, TCSANOW, &term) < 0)
     {
@@ -418,7 +426,15 @@ int32_t SystemIoPortsNative_TermiosReset(intptr_t handle, int32_t speed, int32_t
         return  -1;
     }
 
+#if HAVE_CFMAKERAW
     cfmakeraw(&term);
+#else
+    term.c_iflag &= ~(IMAXBEL|IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+    term.c_oflag &= ~OPOST;
+    term.c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN);
+    term.c_cflag &= ~(CSIZE|PARENB);
+    term.c_cflag |= CS8;
+#endif
     term.c_cflag |=  (CLOCAL | CREAD);
     term.c_lflag &= ~((tcflag_t)(ICANON | ECHO | ECHOE | ECHOK | ECHONL | ISIG | IEXTEN ));
     term.c_oflag &= ~((tcflag_t)(OPOST));
@@ -495,7 +511,11 @@ int32_t SystemIoPortsNative_TermiosReset(intptr_t handle, int32_t speed, int32_t
             return -1;
         }
 
+#if HAVE_CFSETSPEED
         ret = cfsetspeed(&term, brate);
+#else
+        ret = cfsetispeed(&term, brate) & cfsetospeed(&term, brate);
+#endif
     }
 
     if ((ret != 0) || (tcsetattr(fd, TCSANOW, &term) < 0))

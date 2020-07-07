@@ -23,6 +23,7 @@ public partial class ConsoleEncoding
 
     [Theory]
     [MemberData(nameof(InputData))]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public void TestEncoding(string inputString)
     {
         TextWriter outConsoleStream = Console.Out;
@@ -79,6 +80,7 @@ public partial class ConsoleEncoding
     }
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public void TestValidEncodings()
     {
         Action<Encoding> check = encoding =>
@@ -98,7 +100,6 @@ public partial class ConsoleEncoding
         {
             check(Encoding.ASCII);
         }
-
     }
 
     public class NonexistentCodePageEncoding : Encoding
@@ -115,7 +116,7 @@ public partial class ConsoleEncoding
         public override int GetMaxCharCount(int byteCount) => 0;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     public void InputEncoding_SetWithInInitialized_ResetsIn()
     {
         RemoteExecutor.Invoke(() =>
@@ -155,7 +156,7 @@ public partial class ConsoleEncoding
         Assert.NotSame(invalidEncoding, Console.InputEncoding);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     public void OutputEncoding_SetWithErrorAndOutputInitialized_ResetsErrorAndOutput()
     {
         RemoteExecutor.Invoke(() =>

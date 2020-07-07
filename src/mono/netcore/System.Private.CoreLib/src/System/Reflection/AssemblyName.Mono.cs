@@ -41,7 +41,7 @@ namespace System.Reflection
             }
         }
 
-        private unsafe byte[] ComputePublicKeyToken()
+        private unsafe byte[]? ComputePublicKeyToken()
         {
             if (_publicKey == null)
                 return null;
@@ -55,7 +55,7 @@ namespace System.Reflection
             return token;
         }
 
-        internal static AssemblyName Create(IntPtr monoAssembly, string codeBase)
+        internal static AssemblyName Create(IntPtr monoAssembly, string? codeBase)
         {
             AssemblyName aname = new AssemblyName();
             unsafe
@@ -66,7 +66,7 @@ namespace System.Reflection
             return aname;
         }
 
-        internal unsafe void FillName(MonoAssemblyName* native, string codeBase, bool addVersion, bool addPublickey, bool defaultToken)
+        internal unsafe void FillName(MonoAssemblyName* native, string? codeBase, bool addVersion, bool addPublickey, bool defaultToken)
         {
             _name = RuntimeMarshal.PtrToUtf8String(native->name);
 

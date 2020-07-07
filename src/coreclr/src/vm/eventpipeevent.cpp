@@ -23,7 +23,8 @@ EventPipeEvent::EventPipeEvent(
                                    m_level(level),
                                    m_needStack(needStack),
                                    m_enabledMask(0),
-                                   m_pMetadata(nullptr)
+                                   m_pMetadata(nullptr),
+                                   m_metadataLength(0)
 {
     CONTRACTL
     {

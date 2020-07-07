@@ -33,7 +33,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                     message.Headers.TryAddWithoutValidation("User-Agent", userAgent);
-                    (await client.SendAsync(message).ConfigureAwait(false)).Dispose();
+                    (await client.SendAsync(TestAsync, message).ConfigureAwait(false)).Dispose();
                 }
             },
             async server =>
@@ -42,6 +42,33 @@ namespace System.Net.Http.Functional.Tests
 
                 string agent = requestData.GetSingleHeaderValue("User-Agent");
                 Assert.Equal(userAgent, agent);
+            });
+        }
+
+        [Fact]
+        public async Task SendAsync_DefaultHeaders_CorrectlyWritten()
+        {
+            const string Version = "2017-04-17";
+            const string Blob = "BlockBlob";
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("x-ms-version", Version);
+                    client.DefaultRequestHeaders.Add("x-ms-blob-type", Blob);
+                    var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
+                    (await client.SendAsync(TestAsync, message).ConfigureAwait(false)).Dispose();
+                }
+            },
+            async server =>
+            {
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
+
+                string headerValue = requestData.GetSingleHeaderValue("x-ms-blob-type");
+                Assert.Equal(Blob, headerValue);
+                headerValue = requestData.GetSingleHeaderValue("x-ms-version");
+                Assert.Equal(Version, Version);
             });
         }
 
@@ -58,7 +85,7 @@ namespace System.Net.Http.Functional.Tests
                     var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                     Assert.True(request.Headers.TryAddWithoutValidation("bad", value));
 
-                    await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(TestAsync, request));
                 }
 
             },
@@ -92,7 +119,7 @@ namespace System.Net.Http.Functional.Tests
                         message.Content = new StringContent("");
                         contentHeader = message.Content.Headers.TryAddWithoutValidation(key, value);
                     }
-                    (await client.SendAsync(message).ConfigureAwait(false)).Dispose();
+                    (await client.SendAsync(TestAsync, message).ConfigureAwait(false)).Dispose();
                 }
 
                 // Validate our test by validating our understanding of a header's parsability.
@@ -196,7 +223,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
-                    HttpResponseMessage response = await client.SendAsync(message);
+                    HttpResponseMessage response = await client.SendAsync(TestAsync, message);
                     Assert.NotNull(response.Content.Headers.Expires);
                     // Invalid date should be converted to MinValue so everything is expired.
                     Assert.Equal(isValid ? DateTime.Parse(value) : DateTimeOffset.MinValue, response.Content.Headers.Expires);
@@ -234,7 +261,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
-                    HttpResponseMessage response = await client.SendAsync(message);
+                    HttpResponseMessage response = await client.SendAsync(TestAsync, message);
 
                     Assert.Equal(value, response.Headers.GetValues(name).First());
                 }
@@ -257,7 +284,7 @@ namespace System.Net.Http.Functional.Tests
             m.Headers.Host = withPort ? Configuration.Http.SecureHost + ":443" : Configuration.Http.SecureHost;
 
             using (HttpClient client = CreateHttpClient())
-            using (HttpResponseMessage response = await client.SendAsync(m))
+            using (HttpResponseMessage response = await client.SendAsync(TestAsync, m))
             {
                 string responseContent = await response.Content.ReadAsStringAsync();
                 _output.WriteLine(responseContent);
@@ -285,7 +312,7 @@ namespace System.Net.Http.Functional.Tests
 
             using (HttpClient client = CreateHttpClient())
             {
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(m));
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(TestAsync, m));
             }
         }
 

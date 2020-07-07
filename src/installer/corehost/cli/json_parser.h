@@ -5,10 +5,19 @@
 #ifndef __JSON_PARSER_H__
 #define __JSON_PARSER_H__
 
+#ifdef __sun
+// This optimization relies on zeros in higher 16-bits, whereas SunOS has 1s. More details at
+// https://github.com/Tencent/rapidjson/issues/1596.
+// The impact here was that runtimeOptions key available in hwapp.runtimeconfig.json was not
+// located by RapidJson's FindMember() API from runtime_config_t::ensure_parsed().
+#define RAPIDJSON_48BITPOINTER_OPTIMIZATION 0
+#endif
+
 #include "pal.h"
 #include "rapidjson/document.h"
 #include "rapidjson/fwd.h"
 #include <vector>
+#include "bundle/info.h"
 
 class json_parser_t {
     public:
@@ -21,12 +30,15 @@ class json_parser_t {
         using document_t = rapidjson::GenericDocument<internal_encoding_type_t>;
 
         const document_t& document() const { return m_document; }
+
         bool parse_stream(pal::istream_t& stream, const pal::string_t& context);
-        bool parse_file(const pal::string_t& path)
-        {
-            pal::ifstream_t file{path};
-            return parse_stream(file, path);
-        }
+        bool parse_file(const pal::string_t& path);
+
+        json_parser_t()
+            : m_bundle_data(nullptr)
+            , m_bundle_location(nullptr) {}
+
+        ~json_parser_t();
 
     private:
         // This is a vector of char and not pal::char_t because JSON data
@@ -36,8 +48,12 @@ class json_parser_t {
         std::vector<char> m_json;
         document_t m_document;
 
+        // If a json file is parsed from a single-file bundle, the following two fields represent:
+        char* m_bundle_data; // The memory mapped bytes of the application bundle.
+        const bundle::location_t* m_bundle_location; // Location of this json file within the bundle.
+
         void realloc_buffer(size_t size);
-        bool parse_json(const pal::string_t& context);
+        bool parse_json(char* data, int64_t size, const pal::string_t& context);
 };
 
 #endif // __JSON_PARSER_H__

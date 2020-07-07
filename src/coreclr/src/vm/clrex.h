@@ -247,7 +247,7 @@ class EEException : public CLRException
     //
     //   each reKind is associated with one or more hresults.
     //   every hresult is associated with exactly one reKind (with kCOMException being the catch-all.)
-    static RuntimeExceptionKind GetKindFromHR(HRESULT hr, bool fIsWinRtMode = false);
+    static RuntimeExceptionKind GetKindFromHR(HRESULT hr);
   protected:
     static HRESULT GetHRFromKind(RuntimeExceptionKind reKind);
 
@@ -291,8 +291,6 @@ class EEMessageException : public EEException
                        LPCWSTR szArg3 = NULL, LPCWSTR szArg4 = NULL, LPCWSTR szArg5 = NULL, LPCWSTR szArg6 = NULL);
 
     EEMessageException(HRESULT hr);
-
-    EEMessageException(HRESULT hr, bool fUseCOMException);
 
     EEMessageException(HRESULT hr, UINT resID, LPCWSTR szArg1 = NULL, LPCWSTR szArg2 = NULL, LPCWSTR szArg3 = NULL,
                        LPCWSTR szArg4 = NULL, LPCWSTR szArg5 = NULL, LPCWSTR szArg6 = NULL);
@@ -404,14 +402,6 @@ struct ExceptionData
     BSTR    bstrHelpFile;
     DWORD   dwHelpContext;
     GUID    guid;
-#ifdef FEATURE_COMINTEROP
-    BSTR      bstrRestrictedError;              // Returned from IRestrictedErrorInfo::GetErrorDetails
-    BSTR      bstrReference;                    // Returned from IRestrictedErrorInfo::GetReference
-    BSTR      bstrCapabilitySid;                // Returned from IRestrictedErrorInfo::GetErrorDetails
-    IUnknown *pRestrictedErrorInfo;             // AddRef-ed RestrictedErrorInfo pointer
-                                                // We need to keep this alive as long as user need the reference
-    BOOL      bHasLanguageRestrictedErrorInfo;
-#endif // FEATURE_COMINTEROP
 };
 
 class EECOMException : public EEException
@@ -427,10 +417,7 @@ class EECOMException : public EEException
     EECOMException(ExceptionData *pED);
     EECOMException(
         HRESULT hr,
-        IErrorInfo *pErrInfo,
-        bool fUseCOMException,
-        IRestrictedErrorInfo *pRestrictedErrInfo,
-        BOOL bHasLanguageRestrictedErrorInfo
+        IErrorInfo *pErrInfo
         COMMA_INDEBUG(BOOL bCheckInProcCCWTearOff = TRUE));
     ~EECOMException();
 
@@ -735,7 +722,7 @@ class EEFileLoadException : public EEException
 // {
 //      EX_RETHROW()
 // }
-// EX_END_CATCH(RethrowTerminalExceptions or RethrowCorruptingExceptions)
+// EX_END_CATCH(RethrowTerminalExceptions)
 // --------------------------------------------------------------------------------------------------------
 
 // In DAC builds, we don't want to override the normal utilcode exception handling.
@@ -745,62 +732,6 @@ class EEFileLoadException : public EEException
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 #define GET_THROWABLE() CLRException::GetThrowableFromException(GET_EXCEPTION())
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-
-// For the VM folder, we redefine SET_CE_RETHROW_FLAG_FOR_EX_CATCH to also check the
-// corruption severity when deciding whether to rethrow them or not.
-//
-// We also check the global override flag incase it has been set to force pre-V4 behaviour.
-//
-// Doing the checks for "__fCaughtSO" and "__fCaughtNonCxx" will ensure that we check for
-// corruption severity only if the last exception was a managed exception that could have been rethrown in the VM.
-// When "(__fCaughtSO == FALSE) && (__fCaughtNonCxx == true)" is true, it implies we are dealing with a managed exception
-// inside the VM that is represented by the CLRLastThrownObjectException instance (see EX_TRY/EX_CATCH implementation in VM
-// folder to see how CLRLastThrownObjectException is used).
-//
-// This macro also supports the following scenarios:
-//
-// Scenario 1
-// ----------
-//
-// [VM1] -> [VM2] -> <managed code>
-//
-// If a managed exception is swallowed by an EX_CATCH in native function VM2, which then returns back
-// to native function VM1 that throws, for example, a VM C++ exception, an EX_CATCH(RethrowCorruptingExceptions)
-// in VM1 that catches the C++ exception will not rethrow since the last exception was not a managed CSE but
-// a C++ exception.
-//
-// A variation of this is for VM2 to return back in VM1, which calls VM3 that throws a VM C++ exception that
-// reaches VM1's EX_CATCH(RethrowCorruptingExceptions). VM1 shouldn't be rethrowing the exception in such a case.
-//
-// Scenario 2
-// ----------
-//
-// [VM1 - RethrowCSE] -> [VM2 - RethrowCSE] -> [VM3 - RethrowCSE] -> <managed code>
-//
-// When managed code throws a CSE (e.g. TargetInvocationException flagged as CSE), [VM3] will rethrow it and we will
-// enter EX_CATCH in VM2 which is supposed to rethrow it as well. But if the implementation of EX_CATCH in VM2 throws
-// another VM C++ exception (e.g. EEFileLoadException) *before* rethrow policy is applied, control will reach EX_CATCH
-// in VM1 that *shouldn't* rethrow (even though it has RethrowCSE as the policy) since the last exception was a VM C++
-// exception.
-//
-// Scenario 3
-// ----------
-//
-// This is about VM throwing a managed exception that gets handled either within the VM, with or without CLR's managed code
-// exception handler coming into the picture.
-//
-// This is explained in detail (alongwith relevant changes) in the implementation of RaiseTheException (in excep.cpp).
-
-#undef SET_CE_RETHROW_FLAG_FOR_EX_CATCH
-#define SET_CE_RETHROW_FLAG_FOR_EX_CATCH(expr)      (((expr) == TRUE) && \
-                                                     (g_pConfig->LegacyCorruptedStateExceptionsPolicy() == false) && \
-                                                     (CEHelper::IsProcessCorruptedStateException(GetCurrentExceptionCode(), FALSE) ||     \
-                                                     (!__state.DidCatchCxx() && \
-                                                      CEHelper::IsLastActiveExceptionCorrupting(TRUE))))
-
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #undef EX_TRY
 #define EX_TRY                                                                                     \
@@ -1002,25 +933,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
         }                                                           \
     }                                                               \
 
-// This macro should be used at the entry points (e.g. COM interop boundaries)
-// where CE's are not expected to get swallowed.
-#define END_EXTERNAL_ENTRYPOINT_RETHROW_CORRUPTING_EXCEPTIONS_EX(fCond) \
-            }                                                       \
-            EX_CATCH                                                \
-            {                                                       \
-                *__phr = GET_EXCEPTION()->GetHR();                  \
-            }                                                       \
-            EX_END_CATCH(RethrowCorruptingExceptionsEx(fCond));     \
-        }                                                           \
-    }                                                               \
-
-// This macro should be used at the entry points (e.g. COM interop boundaries)
-// where CE's are not expected to get swallowed.
-#define END_EXTERNAL_ENTRYPOINT_RETHROW_CORRUPTING_EXCEPTIONS           \
-    END_EXTERNAL_ENTRYPOINT_RETHROW_CORRUPTING_EXCEPTIONS_EX(TRUE)
-
-
-
 //==============================================================================
 
 // ---------------------------------------------------------------------------
@@ -1053,16 +965,6 @@ inline EEException::EEException(HRESULT hr)
 
 inline EEMessageException::EEMessageException(HRESULT hr)
   : EEException(GetKindFromHR(hr)),
-    m_hr(hr),
-    m_resID(0)
-{
-    WRAPPER_NO_CONTRACT;
-
-    m_arg1.Printf("%.8x", hr);
-}
-
-inline EEMessageException::EEMessageException(HRESULT hr, bool fUseCOMException)
-  : EEException(GetKindFromHR(hr, !fUseCOMException)),
     m_hr(hr),
     m_resID(0)
 {

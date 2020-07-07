@@ -23,9 +23,9 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 using System.Collections.Generic;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -66,7 +66,7 @@ namespace System.Reflection
         internal IntPtr prop;
         private MonoPropertyInfo info;
         private PInfo cached;
-        private GetterAdapter cached_getter;
+        private GetterAdapter? cached_getter;
 #pragma warning restore 649
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -151,7 +151,7 @@ namespace System.Reflection
         {
             StringBuilder sbName = new StringBuilder(PropertyType.FormatTypeName());
 
-            sbName.Append(" ");
+            sbName.Append(' ');
             sbName.Append(Name);
 
             ParameterInfo[] pi = GetIndexParameters();
@@ -159,7 +159,7 @@ namespace System.Reflection
             {
                 sbName.Append(" [");
                 RuntimeParameterInfo.FormatParameters(sbName, pi, 0);
-                sbName.Append("]");
+                sbName.Append(']');
             }
 
             return sbName.ToString();
@@ -265,13 +265,13 @@ namespace System.Reflection
             MethodInfo[] res = new MethodInfo[nget + nset];
             int n = 0;
             if (nset != 0)
-                res[n++] = info.set_method;
+                res[n++] = info.set_method!;
             if (nget != 0)
-                res[n++] = info.get_method;
+                res[n++] = info.get_method!;
             return res;
         }
 
-        public override MethodInfo GetGetMethod(bool nonPublic)
+        public override MethodInfo? GetGetMethod(bool nonPublic)
         {
             CachePropertyInfo(PInfo.GetMethod);
             if (info.get_method != null && (nonPublic || info.get_method.IsPublic))
@@ -306,7 +306,7 @@ namespace System.Reflection
             return dest;
         }
 
-        public override MethodInfo GetSetMethod(bool nonPublic)
+        public override MethodInfo? GetSetMethod(bool nonPublic)
         {
             CachePropertyInfo(PInfo.SetMethod);
             if (info.set_method != null && (nonPublic || info.set_method.IsPublic))
@@ -346,18 +346,18 @@ namespace System.Reflection
         }
 
 
-        private delegate object GetterAdapter(object _this);
+        private delegate object? GetterAdapter(object? _this);
         private delegate R Getter<T, R>(T _this);
         private delegate R StaticGetter<R>();
 
 #pragma warning disable 169
         // Used via reflection
-        private static object GetterAdapterFrame<T, R>(Getter<T, R> getter, object obj)
+        private static object? GetterAdapterFrame<T, R>(Getter<T, R> getter, object? obj)
         {
-            return getter((T)obj);
+            return getter((T)obj!);
         }
 
-        private static object StaticGetterAdapterFrame<R>(StaticGetter<R> getter, object obj)
+        private static object? StaticGetterAdapterFrame<R>(StaticGetter<R> getter, object? obj)
         {
             return getter();
         }
@@ -367,6 +367,8 @@ namespace System.Reflection
          * The idea behing this optimization is to use a pair of delegates to simulate the same effect of doing a reflection call.
          * The first delegate cast the this argument to the right type and the second does points to the target method.
          */
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "MethodInfo used with MakeGenericMethod doesn't have DynamicallyAccessedMembers generic parameters")]
         private static GetterAdapter CreateGetterDelegate(MethodInfo method)
         {
             Type[] typeVector;
@@ -384,30 +386,31 @@ namespace System.Reflection
             }
             else
             {
-                typeVector = new Type[] { method.DeclaringType, method.ReturnType };
+                typeVector = new Type[] { method.DeclaringType!, method.ReturnType };
                 getterDelegateType = typeof(Getter<,>);
                 frameName = "GetterAdapterFrame";
             }
 
             getterType = getterDelegateType.MakeGenericType(typeVector);
             getterDelegate = Delegate.CreateDelegate(getterType, method);
-            adapterFrame = typeof(RuntimePropertyInfo).GetMethod(frameName, BindingFlags.Static | BindingFlags.NonPublic);
+            adapterFrame = typeof(RuntimePropertyInfo).GetMethod(frameName, BindingFlags.Static | BindingFlags.NonPublic)!;
             adapterFrame = adapterFrame.MakeGenericMethod(typeVector);
             return (GetterAdapter)Delegate.CreateDelegate(typeof(GetterAdapter), getterDelegate, adapterFrame, true);
         }
 
-        public override object GetValue(object obj, object[] index)
+        public override object? GetValue(object? obj, object?[]? index)
         {
             if ((index == null || index.Length == 0) && RuntimeFeature.IsDynamicCodeSupported)
             {
                 /*FIXME we should check if the number of arguments matches the expected one, otherwise the error message will be pretty criptic.*/
                 if (cached_getter == null)
                 {
-                    MethodInfo method = GetGetMethod(true);
+                    MethodInfo? method = GetGetMethod(true);
                     if (method == null)
                         throw new ArgumentException($"Get Method not found for '{Name}'");
                     if (!DeclaringType.IsValueType && !PropertyType.IsByRef && !method.ContainsGenericParameters)
-                    { //FIXME find a way to build an invoke delegate for value types.
+                    {
+                        //FIXME find a way to build an invoke delegate for value types.
                         cached_getter = CreateGetterDelegate(method);
                         // The try-catch preserves the .Invoke () behaviour
                         try
@@ -436,11 +439,11 @@ namespace System.Reflection
             return GetValue(obj, BindingFlags.Default, null, index, null);
         }
 
-        public override object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
+        public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
-            object ret = null;
+            object? ret = null;
 
-            MethodInfo method = GetGetMethod(true);
+            MethodInfo? method = GetGetMethod(true);
             if (method == null)
                 throw new ArgumentException($"Get Method not found for '{Name}'");
 
@@ -452,15 +455,15 @@ namespace System.Reflection
             return ret;
         }
 
-        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
-            MethodInfo method = GetSetMethod(true);
+            MethodInfo? method = GetSetMethod(true);
             if (method == null)
                 throw new ArgumentException("Set Method not found for '" + Name + "'");
 
-            object[] parms;
+            object?[] parms;
             if (index == null || index.Length == 0)
-                parms = new object[] { value };
+                parms = new object?[] { value };
             else
             {
                 int ilen = index.Length;

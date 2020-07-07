@@ -508,18 +508,24 @@ public:
                 using (TextWriter tw = new StreamWriter(args[3]))
                 {
                     Console.WriteLine("Generating {0}", args[3]);
-                    generator.WriteManagedJitInstructionSet(tw);
+                    generator.WriteManagedReadyToRunInstructionSetHelper(tw);
                 }
 
                 using (TextWriter tw = new StreamWriter(args[4]))
                 {
                     Console.WriteLine("Generating {0}", args[4]);
-                    generator.WriteNativeCorInfoInstructionSet(tw);
+                    generator.WriteManagedJitInstructionSet(tw);
                 }
 
                 using (TextWriter tw = new StreamWriter(args[5]))
                 {
                     Console.WriteLine("Generating {0}", args[5]);
+                    generator.WriteNativeCorInfoInstructionSet(tw);
+                }
+
+                using (TextWriter tw = new StreamWriter(args[6]))
+                {
+                    Console.WriteLine("Generating {0}", args[6]);
                     generator.WriteNativeReadyToRunInstructionSet(tw);
                 }
             }

@@ -65,7 +65,8 @@ public class Managed
         RunMarshalSeqStructAsParamByValInOut();
         RunMarshalSeqStructAsParamByRefInOut();
         RunMarshalSeqStructAsReturn();
-        
+        RunMarshalSeqStructDelegateField();
+
         if (failures > 0)
         {
             Console.WriteLine("\nTEST FAILED!");
@@ -346,6 +347,12 @@ public class Managed
 
     [DllImport("MarshalStructAsParam")]
     static extern MultipleBool GetBools(bool b1, bool b2);
+
+    [DllImport("MarshalStructAsParam")]
+    static extern IntPtr GetNativeIntIntFunction();
+
+    [DllImport("MarshalStructAsParam")]
+    static extern void MarshalStructAsParam_DelegateFieldMarshaling(ref DelegateFieldMarshaling dfm);
 
     #region Marshal struct method in PInvoke
     [SecuritySafeCritical]
@@ -2555,7 +2562,53 @@ public class Managed
             Console.WriteLine("Structure of two bools marshalled to BOOLs returned from native to managed failed");
         }
     }
+
+    private static void RunMarshalSeqStructDelegateField()
+    {
+        Console.WriteLine($"\nRunning {nameof(Managed.RunMarshalSeqStructDelegateField)}...");
+
+        var dfm = new DelegateFieldMarshaling();
+        try
+        {
+            MarshalStructAsParam_DelegateFieldMarshaling(ref dfm);
+        }
+        catch
+        {
+            Console.WriteLine($"Marshaling null function pointer as ${nameof(Delegate)} field should succeed");
+            failures++;
+        }
+
+        dfm.IntIntFunction = new IntIntDelegate(IntIntImpl);
+        try
+        {
+            MarshalStructAsParam_DelegateFieldMarshaling(ref dfm);
+        }
+        catch
+        {
+            Console.WriteLine($"Marshaling function pointer as ${nameof(Delegate)} field should succeed");
+            failures++;
+        }
+
+        dfm.IntIntFunction = Marshal.GetDelegateForFunctionPointer<IntIntDelegate>(GetNativeIntIntFunction());
+        try
+        {
+            MarshalStructAsParam_DelegateFieldMarshaling(ref dfm);
+            Console.WriteLine("Marshaling native function pointer should fail");
+            failures++;
+        }
+        catch (ArgumentException)
+        {
+            // Should be ArgumentException for native function pointer round trip.
+        }
+        catch
+        {
+            Console.WriteLine($"Marshaling native function pointer should throw {nameof(ArgumentException)}");
+            failures++;
+        }
+
+        int IntIntImpl(int a)
+        {
+            return a;
+        }
+    }
 }
-
-
-   

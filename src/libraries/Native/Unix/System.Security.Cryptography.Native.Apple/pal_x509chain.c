@@ -4,16 +4,8 @@
 
 #include "pal_x509chain.h"
 
-#ifndef kCFCoreFoundationVersionNumber10_12
-#define kCFCoreFoundationVersionNumber10_12 1348.00
-#endif
-
 SecPolicyRef AppleCryptoNative_X509ChainCreateDefaultPolicy()
 {
-    // Disable on macOS 10.11 and lower due to segfaults within Security.framework.
-    if (kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber10_12)
-        return NULL;
-
     return SecPolicyCreateBasicX509();
 }
 
@@ -166,20 +158,25 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
         *pStatus |= PAL_X509ChainNotValidForUsage;
     else if (CFEqual(keyString, CFSTR("AnchorTrusted")))
         *pStatus |= PAL_X509ChainUntrustedRoot;
-    else if (CFEqual(keyString, CFSTR("BasicConstraints")))
+    else if (CFEqual(keyString, CFSTR("BasicConstraints")) || CFEqual(keyString, CFSTR("BasicConstraintsCA")) ||
+             CFEqual(keyString, CFSTR("BasicConstraintsPathLen")))
         *pStatus |= PAL_X509ChainInvalidBasicConstraints;
-    else if (CFEqual(keyString, CFSTR("UsageConstraints")))
+    else if (CFEqual(keyString, CFSTR("UsageConstraints")) || CFEqual(keyString, CFSTR("BlackListedLeaf")) ||
+             CFEqual(keyString, CFSTR("BlackListedKey")))
         *pStatus |= PAL_X509ChainExplicitDistrust;
     else if (CFEqual(keyString, CFSTR("RevocationResponseRequired")))
         *pStatus |= PAL_X509ChainRevocationStatusUnknown;
     else if (CFEqual(keyString, CFSTR("MissingIntermediate")))
         *pStatus |= PAL_X509ChainPartialChain;
+    else if (CFEqual(keyString, CFSTR("CriticalExtensions")))
+        *pStatus |= PAL_X509ChainHasNotSupportedCriticalExtension;
     else if (CFEqual(keyString, CFSTR("UnparseableExtension")))
     {
         // 10.15 introduced new status code value which is not reported by Windows. Ignoring for now.
     }
     else if (CFEqual(keyString, CFSTR("WeakLeaf")) || CFEqual(keyString, CFSTR("WeakIntermediates")) ||
-             CFEqual(keyString, CFSTR("WeakRoot")) || CFEqual(keyString, CFSTR("WeakKeySize")))
+             CFEqual(keyString, CFSTR("WeakRoot")) || CFEqual(keyString, CFSTR("WeakKeySize")) ||
+             CFEqual(keyString, CFSTR("WeakSignature")))
     {
         // Because we won't report this out of a chain built by .NET on Windows,
         // don't report it here.

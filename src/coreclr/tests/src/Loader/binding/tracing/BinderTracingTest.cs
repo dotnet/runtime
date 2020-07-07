@@ -20,10 +20,12 @@ namespace BinderTracingTests
     {
         public bool Isolate { get; private set; }
         public string TestSetup { get; private set; }
-        public BinderTestAttribute(bool isolate = false, string testSetup = null)
+        public string[] AdditionalLoadsToTrack { get; private set; }
+        public BinderTestAttribute(bool isolate = false, string testSetup = null, string[] additionalLoadsToTrack = null)
         {
             Isolate = isolate;
             TestSetup = testSetup;
+            AdditionalLoadsToTrack = additionalLoadsToTrack;
         }
     }
 
@@ -141,7 +143,7 @@ namespace BinderTracingTests
 
         private static bool RunSingleTest(MethodInfo method)
         {
-            Console.WriteLine($"Running {method.Name}...");
+            Console.WriteLine($"[{DateTime.Now:T}] Running {method.Name}...");
             try
             {
                 BinderTestAttribute attribute = method.GetCustomAttribute<BinderTestAttribute>();
@@ -153,8 +155,19 @@ namespace BinderTracingTests
                     setupMethod.Invoke(null, new object[0]);
                 }
 
+                var loadsToTrack = new string[]
+                {
+                    Assembly.GetExecutingAssembly().GetName().Name,
+                    DependentAssemblyName,
+                    $"{DependentAssemblyName}.resources",
+                    SubdirectoryAssemblyName,
+                    $"{SubdirectoryAssemblyName}.resources",
+                };
+                if (attribute.AdditionalLoadsToTrack != null)
+                    loadsToTrack = loadsToTrack.Union(attribute.AdditionalLoadsToTrack).ToArray();
+
                 Func<BindOperation> func = (Func<BindOperation>)method.CreateDelegate(typeof(Func<BindOperation>));
-                using (var listener = new BinderEventListener())
+                using (var listener = new BinderEventListener(loadsToTrack))
                 {
                     BindOperation expected = func();
                     ValidateSingleBind(listener, expected.AssemblyName, expected);
@@ -180,7 +193,7 @@ namespace BinderTracingTests
                 RedirectStandardError = true
             };
 
-            Console.WriteLine($"Launching process for {method.Name}...");
+            Console.WriteLine($"[{DateTime.Now:T}] Launching process for {method.Name}...");
             using (Process p = Process.Start(startInfo))
             {
                 p.OutputDataReceived += (_, args) => Console.WriteLine(args.Data);

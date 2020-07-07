@@ -65,6 +65,10 @@ typedef struct miniFILE_struct
     int _flag;
 } miniFILE;
 
+#undef _IOWRT
+#undef _IOREAD
+#undef _IOMYBUF
+
 #define _IOSTRG 1
 #define _IOWRT 2
 #define _IOREAD 4

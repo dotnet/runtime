@@ -57,15 +57,24 @@
 
   <Target Name="GetDependencyVersionFiles" />
 
-  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
+  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
     <ItemGroup>
-      <CoreCLRFiles>
+      <RuntimeFiles>
         <TargetPath>runtimes/$(PackageRID)/native</TargetPath>
-      </CoreCLRFiles>
+      </RuntimeFiles>
 
-      <CoreCLRFiles Condition="'%(FileName)' == 'crossgen'">
+      <RuntimeFiles Condition="'%(FileName)' == 'crossgen'">
         <TargetPath>tools</TargetPath>
-      </CoreCLRFiles>
+      </RuntimeFiles>
+
+      <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
+        Include="@(MonoCrossFiles)">
+        <TargetPath>runtimes/$(PackageRID)/native/cross</TargetPath>
+      </RuntimeFiles>
+      <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
+        Include="@(MonoIncludeFiles)">
+        <TargetPath>runtimes/$(PackageRID)/native/include/%(RecursiveDir)</TargetPath>
+      </RuntimeFiles>
 
       <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'clrjit' or '%(FileName)' == 'libclrjit'">
         <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
@@ -79,19 +88,19 @@
       <CoreCLRCrossTargetFiles Condition="'%(FileName)%(Extension)' == 'mscordbi.dll' and '$(TargetsWindows)' == 'true'">
         <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
       </CoreCLRCrossTargetFiles>
-      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles);@(CoreCLRCrossTargetFiles)" />
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles);@(CoreCLRCrossTargetFiles);" />
     </ItemGroup>
   </Target>
 
   <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
     <ItemGroup>
-      <LibrariesRefAssemblies TargetPath="ref/$(NETCoreAppFramework)" />
+      <LibrariesRefAssemblies TargetPath="ref/$(NetCoreAppCurrent)" />
       <Reference Include="@(LibrariesRefAssemblies)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(PackageRID)' != ''">
-      <LibrariesRuntimeFiles Condition="'%(IsNative)' != 'true'" TargetPath="runtimes/$(PackageRID)/lib/$(NETCoreAppFramework)" />
-      <LibrariesRuntimeFiles Condition="'%(IsNative)' == 'true'" TargetPath="runtimes/$(PackageRID)/native" />
+      <LibrariesRuntimeFiles Condition="'%(IsNative)' != 'true'" TargetPath="runtimes/$(PackageRID)/lib/$(NetCoreAppCurrent)" />
+      <LibrariesRuntimeFiles Condition="'%(IsNative)' == 'true'" TargetPath="$([System.String]::new('runtimes/$(PackageRID)/native/%(LibrariesRuntimeFiles.NativeSubDirectory)%(RecursiveDir)').TrimEnd('/'))" />
       <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)" />
     </ItemGroup>
 

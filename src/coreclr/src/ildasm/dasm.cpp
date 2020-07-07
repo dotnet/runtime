@@ -23,7 +23,7 @@
 //#define MAX_FILENAME_LENGTH         2048     //moved to dis.h
 
 #include <corsym.h>
-#include <ndpversion.h>
+#include <clrversion.h>
 
 // Disable the "initialization of static local vars is no thread safe" error
 #ifdef _MSC_VER
@@ -39,6 +39,9 @@
 #define NATIVE_STRING_RESOURCE_NAME dasm_rc
 DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME);
 #endif
+
+#include "mdfileformat.h"
+
 
 struct MIDescriptor
 {
@@ -3472,19 +3475,10 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
     bool bRet = FALSE;
 
     PAL_CPP_TRY {
-        if((*pComSig & IMAGE_CEE_CS_CALLCONV_MASK) > IMAGE_CEE_CS_CALLCONV_VARARG)
-        {
-            sprintf_s(szString,SZSTRING_SIZE,"%sERROR: signature of method '%s' has invalid calling convention 0x%2.2X",g_szAsmCodeIndent,pszMemberName,*pComSig);
-            printError(GUICookie,ERRORMSG(szString));
-            bRet = TRUE;
-            goto lDone;
-        }
-
         g_tkMVarOwner = FuncToken;
         szString[0] = 0;
         DumpGenericPars(szString,FuncToken); //,NULL,FALSE);
         pszMemberSig = PrettyPrintSig(pComSig, cComSig, szString, &qbMemberSig, g_pImport,NULL);
-lDone: ;
     } PAL_CPP_CATCH_ALL {
         printError(GUICookie,"INVALID DATA ADDRESS");
         bRet = TRUE;
@@ -3824,7 +3818,7 @@ lDone: ;
                 }
                 else
                 {
-                    sprintf_s(szString,SZSTRING_SIZE, "INVALID METHOD ADDRESS: 0x%8.8X (RVA: 0x%8.8X)",(size_t)newTarget,dwTargetRVA);
+                    sprintf_s(szString,SZSTRING_SIZE, "INVALID METHOD ADDRESS: 0x%8.8zX (RVA: 0x%8.8X)",(size_t)newTarget,dwTargetRVA);
                     printError(GUICookie,szString);
                 }
             }
@@ -4987,7 +4981,7 @@ void DumpVTables(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
             }
             else
             {
-                sprintf_s(szString,SZSTRING_SIZE,"//         [0x%04x]            (0x%16x)", iSlot, VAL64(*(unsigned __int64 *) pSlot));
+                sprintf_s(szString,SZSTRING_SIZE,"//         [0x%04x]            (0x%16llx)", iSlot, VAL64(*(unsigned __int64 *) pSlot));
                 pSlot += sizeof(unsigned __int64);
             }
             printLine(GUICookie,szStr);
@@ -6955,7 +6949,7 @@ void DumpPreamble()
     else if(g_fDumpRTF)
     {
     }
-    sprintf_s(szString,SZSTRING_SIZE,"//  Microsoft (R) .NET Framework IL Disassembler.  Version " VER_FILEVERSION_STR);
+    sprintf_s(szString,SZSTRING_SIZE,"//  Microsoft (R) .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
     printLine(g_pFile,COMMENT(szString));
     if(g_fDumpHTML)
     {

@@ -53,12 +53,12 @@ namespace Microsoft.Extensions.Http.Logging
 
             var stopwatch = ValueStopwatch.StartNew();
 
-            var shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
+            Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
 
             using (Log.BeginRequestPipelineScope(_logger, request))
             {
                 Log.RequestPipelineStart(_logger, request, shouldRedactHeaderValue);
-                var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                HttpResponseMessage response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
                 Log.RequestPipelineEnd(_logger, response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
 
                 return response;

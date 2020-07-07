@@ -6,6 +6,7 @@ set(VM_CROSSGEN_SOURCES
   ../assemblyspec.cpp
   ../baseassemblyspec.cpp
   ../binder.cpp
+  ../bundle.cpp
   ../castcache.cpp
   ../ceeload.cpp
   ../ceemain.cpp
@@ -13,7 +14,6 @@ set(VM_CROSSGEN_SOURCES
   ../classhash.cpp
   ../classlayoutinfo.cpp
   ../clrex.cpp
-  ../clrprivbinderutil.cpp
   ../clsload.cpp
   ../codeman.cpp
   ../codeversion.cpp
@@ -76,6 +76,7 @@ set(VM_CROSSGEN_SOURCES
   ../stubcache.cpp
   ../stubgen.cpp
   ../stublink.cpp
+  ../tailcallhelp.cpp
   ../typectxt.cpp
   ../typedesc.cpp
   ../typeequivalencehash.cpp
@@ -131,7 +132,6 @@ set(VM_CROSSGEN_HEADERS
   ../fieldmarshaler.h
   ../genericdict.h
   ../generics.h
-  ../generics.inl
   ../hash.h
   ../ilinstrumentation.h
   ../ilmarshalers.h
@@ -173,6 +173,7 @@ set(VM_CROSSGEN_HEADERS
   ../stubgen.h
   ../stublink.h
   ../stublink.inl
+  ../tailcallhelp.h
   ../typectxt.h
   ../typedesc.h
   ../typedesc.inl
@@ -231,27 +232,16 @@ endif()
 if (CLR_CMAKE_TARGET_WIN32)
   list(APPEND VM_CROSSGEN_SOURCES
     ../classcompat.cpp
-    ../clrprivbinderwinrt.cpp
-    ../clrprivtypecachewinrt.cpp
     ../comtoclrcall.cpp
     ../clrtocomcall.cpp
-    ../crossgenroparsetypename.cpp
-    ../crossgenroresolvenamespace.cpp
     ../runtimecallablewrapper.cpp
-    ../winrthelpers.cpp
-    ../winrttypenameconverter.cpp
   )
 
   list(APPEND VM_CROSSGEN_HEADERS
     ../classcompat.h
-    ../clrprivbinderwinrt.h
-    ../clrprivtypecachewinrt.h
     ../clrtocomcall.h
     ../comtoclrcall.h
-    ../crossgenroresolvenamespace.h
     ../runtimecallablewrapper.h
-    ../winrthelpers.h
-    ../winrttypenameconverter.h
   )
 
   list(APPEND VM_CROSSGEN_SOURCES ${VM_CROSSGEN_HEADERS})

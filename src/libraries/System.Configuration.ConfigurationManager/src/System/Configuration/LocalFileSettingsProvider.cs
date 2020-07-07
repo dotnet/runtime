@@ -17,10 +17,10 @@ namespace System.Configuration
     public class LocalFileSettingsProvider : SettingsProvider, IApplicationSettingsProvider
     {
         private string _appName = string.Empty;
-        private ClientSettingsStore _store = null;
-        private string _prevLocalConfigFileName = null;
-        private string _prevRoamingConfigFileName = null;
-        private XmlEscaper _escaper = null;
+        private ClientSettingsStore _store;
+        private string _prevLocalConfigFileName;
+        private string _prevRoamingConfigFileName;
+        private XmlEscaper _escaper;
 
         /// <summary>
         /// Abstract SettingsProvider property.

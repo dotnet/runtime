@@ -73,7 +73,7 @@ namespace System.Text.Tests
 
     public class EncoderFallbackBufferHelperTest
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Test_EncoderFallbackBufferHelper_ValidateFallbackForDataRoundTrips()
         {
             RemoteExecutor.Invoke(() =>

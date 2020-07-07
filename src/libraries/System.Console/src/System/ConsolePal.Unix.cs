@@ -73,14 +73,24 @@ namespace System
         {
             get
             {
-                EnsureInitialized();
+                return Volatile.Read(ref s_stdInReader) ?? EnsureInitialized();
 
-                return Console.EnsureInitialized(
-                        ref s_stdInReader,
-                        () => SyncTextReader.GetSynchronizedTextReader(
-                            new StdInReader(
-                                encoding: Console.InputEncoding,
-                                bufferSize: InteractiveBufferSize)));
+                static SyncTextReader EnsureInitialized()
+                {
+                    EnsureConsoleInitialized();
+
+                    SyncTextReader reader = SyncTextReader.GetSynchronizedTextReader(
+                                                new StdInReader(
+                                                    encoding: Console.InputEncoding,
+                                                    bufferSize: InteractiveBufferSize));
+
+                    // Don't overwrite a set reader.
+                    // The reader doesn't own resources, so we don't need to dispose
+                    // when it was already set.
+                    Interlocked.CompareExchange(ref s_stdInReader, reader, null);
+
+                    return s_stdInReader;
+                }
             }
         }
 
@@ -97,8 +107,7 @@ namespace System
                         encoding: Console.InputEncoding,
                         detectEncodingFromByteOrderMarks: false,
                         bufferSize: Console.ReadBufferSize,
-                        leaveOpen: true)
-                        );
+                        leaveOpen: true));
             }
             else
             {
@@ -120,15 +129,6 @@ namespace System
             bool previouslyProcessed;
             ConsoleKeyInfo keyInfo = StdInReader.ReadKey(out previouslyProcessed);
 
-            // Replace the '\n' char for Enter by '\r' to match Windows behavior.
-            if (keyInfo.Key == ConsoleKey.Enter && keyInfo.KeyChar == '\n')
-            {
-                bool shift   = (keyInfo.Modifiers & ConsoleModifiers.Shift)   != 0;
-                bool alt     = (keyInfo.Modifiers & ConsoleModifiers.Alt)     != 0;
-                bool control = (keyInfo.Modifiers & ConsoleModifiers.Control) != 0;
-                keyInfo = new ConsoleKeyInfo('\r', keyInfo.Key, shift, alt, control);
-            }
-
             if (!intercept && !previouslyProcessed && keyInfo.KeyChar != '\0')
             {
                 Console.Write(keyInfo.KeyChar);
@@ -143,14 +143,14 @@ namespace System
                 if (Console.IsInputRedirected)
                     return false;
 
-                EnsureInitialized();
+                EnsureConsoleInitialized();
                 return !Interop.Sys.GetSignalForBreak();
             }
             set
             {
                 if (!Console.IsInputRedirected)
                 {
-                    EnsureInitialized();
+                    EnsureConsoleInitialized();
                     if (!Interop.Sys.SetSignalForBreak(signalForBreak: !value))
                         throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
@@ -407,24 +407,10 @@ namespace System
             }
         }
 
-        public static int CursorLeft
+        public static (int Left, int Top) GetCursorPosition()
         {
-            get
-            {
-                int left, top;
-                TryGetCursorPosition(out left, out top);
-                return left;
-            }
-        }
-
-        public static int CursorTop
-        {
-            get
-            {
-                int left, top;
-                TryGetCursorPosition(out left, out top);
-                return top;
-            }
+            TryGetCursorPosition(out int left, out int top);
+            return (left, top);
         }
 
         /// <summary>
@@ -917,7 +903,7 @@ namespace System
         internal static byte s_veofCharacter;
 
         /// <summary>Ensures that the console has been initialized for use.</summary>
-        private static void EnsureInitialized()
+        internal static void EnsureConsoleInitialized()
         {
             if (!s_initialized)
             {
@@ -928,6 +914,13 @@ namespace System
         /// <summary>Ensures that the console has been initialized for use.</summary>
         private static void EnsureInitializedCore()
         {
+            // Initialization is only needed when input isn't redirected.
+            if (Console.IsInputRedirected)
+            {
+                s_initialized = true;
+                return;
+            }
+
             lock (Console.Out) // ensure that writing the ANSI string and setting initialized to true are done atomically
             {
                 if (!s_initialized)
@@ -1217,11 +1210,19 @@ namespace System
         /// <returns>The number of bytes read, or a negative value if there's an error.</returns>
         internal static unsafe int Read(SafeFileHandle fd, byte[] buffer, int offset, int count)
         {
-            fixed (byte* bufPtr = buffer)
+            Interop.Sys.InitializeConsoleBeforeRead(convertCrToNl: true);
+            try
             {
-                int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
-                Debug.Assert(result <= count);
-                return result;
+                fixed (byte* bufPtr = buffer)
+                {
+                    int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
+                    Debug.Assert(result <= count);
+                    return result;
+                }
+            }
+            finally
+            {
+                Interop.Sys.UninitializeConsoleAfterRead();
             }
         }
 
@@ -1263,7 +1264,7 @@ namespace System
                         // only the blocking behavior, and thus ignore any poll errors
                         // and loop around to do another write (which may correctly fail
                         // if something else has gone wrong).
-                        Interop.Sys.Poll(fd, Interop.Sys.PollEvents.POLLOUT, Timeout.Infinite, out Interop.Sys.PollEvents triggered);
+                        Interop.Sys.Poll(fd, Interop.PollEvents.POLLOUT, Timeout.Infinite, out Interop.PollEvents triggered);
                         continue;
                     }
                     else
@@ -1460,7 +1461,7 @@ namespace System
 
             internal void Register()
             {
-                EnsureInitialized();
+                EnsureConsoleInitialized();
 
                 Debug.Assert(!_handlerRegistered);
                 Interop.Sys.RegisterForCtrl(c => OnBreakEvent(c));

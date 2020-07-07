@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 using Xunit;
@@ -339,7 +338,7 @@ namespace System.PrivateUri.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(UriBuilder uriBuilder1, UriBuilder uriBuilder2, bool expected)
+        public void EqualsTest(UriBuilder uriBuilder1, UriBuilder uriBuilder2, bool expected)
         {
             Assert.Equal(expected, uriBuilder1.Equals(uriBuilder2));
             if (uriBuilder2 != null)
@@ -374,7 +373,7 @@ namespace System.PrivateUri.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public void ToString(UriBuilder uriBuilder, string expected)
+        public void ToStringTest(UriBuilder uriBuilder, string expected)
         {
             Assert.Equal(expected, uriBuilder.ToString());
         }

@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for more information.
 
 //
-// ExtensionsTest.cs - NUnit Test Cases for Extensions.cs class under
+// ExtensionsTest.cs - Unit Test Cases for Extensions.cs class under
 // System.Xml.Schema namespace found in System.Xml.Linq assembly
 // (System.Xml.Linq.dll)
 //

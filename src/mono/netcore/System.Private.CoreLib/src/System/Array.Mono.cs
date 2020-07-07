@@ -4,16 +4,10 @@
 
 using Internal.Runtime.CompilerServices;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
 
 namespace System
 {
@@ -60,7 +54,7 @@ namespace System
 
             int lowerBound = array.GetLowerBound(0);
             int elementSize = array.GetElementSize();
-            nuint numComponents = (nuint)Unsafe.As<RawData>(array).Count;
+            nuint numComponents = (nuint)(nint)Unsafe.As<RawData>(array).Count;
 
             int offset = index - lowerBound;
 
@@ -270,7 +264,7 @@ namespace System
             if (runtimeType == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
-            Array array = null;
+            Array? array = null;
             InternalCreate(ref array, runtimeType._impl.Value, 1, &length, null);
             GC.KeepAlive(runtimeType);
             return array;
@@ -290,7 +284,7 @@ namespace System
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
             int* lengths = stackalloc int[] { length1, length2 };
-            Array array = null;
+            Array? array = null;
             InternalCreate(ref array, runtimeType._impl.Value, 2, lengths, null);
             GC.KeepAlive(runtimeType);
             return array;
@@ -312,7 +306,7 @@ namespace System
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
             int* lengths = stackalloc int[] { length1, length2, length3 };
-            Array array = null;
+            Array? array = null;
             InternalCreate(ref array, runtimeType._impl.Value, 3, lengths, null);
             GC.KeepAlive(runtimeType);
             return array;
@@ -335,7 +329,7 @@ namespace System
                 if (lengths[i] < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-            Array array = null;
+            Array? array = null;
             fixed (int* pLengths = &lengths[0])
                 InternalCreate(ref array, runtimeType._impl.Value, lengths.Length, pLengths, null);
             GC.KeepAlive(runtimeType);
@@ -363,7 +357,7 @@ namespace System
             if (runtimeType == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
-            Array array = null;
+            Array? array = null;
             fixed (int* pLengths = &lengths[0])
             fixed (int* pLowerBounds = &lowerBounds[0])
                 InternalCreate(ref array, runtimeType._impl.Value, lengths.Length, pLengths, pLowerBounds);
@@ -372,7 +366,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void InternalCreate(ref Array result, IntPtr elementType, int rank, int* lengths, int* lowerBounds);
+        private static extern unsafe void InternalCreate([NotNull] ref Array? result, IntPtr elementType, int rank, int* lengths, int* lowerBounds);
 
         public object GetValue(int index)
         {
@@ -635,9 +629,9 @@ namespace System
             if ((uint)index >= (uint)Length)
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();
 
-            if (this is object[] oarray)
+            if (this is object?[] oarray)
             {
-                oarray![index] = (object)item;
+                oarray[index] = item;
                 return;
             }
 

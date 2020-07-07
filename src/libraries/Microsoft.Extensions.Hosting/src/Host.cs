@@ -70,10 +70,12 @@ namespace Microsoft.Extensions.Hosting
 
             builder.ConfigureAppConfiguration((hostingContext, config) =>
             {
-                var env = hostingContext.HostingEnvironment;
+                IHostEnvironment env = hostingContext.HostingEnvironment;
 
-                config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                      .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
+                bool reloadOnChange = hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
+
+                config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: reloadOnChange)
+                      .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
 
                 if (env.IsDevelopment() && !string.IsNullOrEmpty(env.ApplicationName))
                 {
@@ -93,7 +95,7 @@ namespace Microsoft.Extensions.Hosting
             })
             .ConfigureLogging((hostingContext, logging) =>
             {
-                var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+                bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
                 // IMPORTANT: This needs to be added *before* configuration is loaded, this lets
                 // the defaults be overridden by the configuration.
@@ -113,10 +115,18 @@ namespace Microsoft.Extensions.Hosting
                     // Add the EventLogLoggerProvider on windows machines
                     logging.AddEventLog();
                 }
+
+                logging.Configure(options =>
+                {
+                    options.ActivityTrackingOptions = ActivityTrackingOptions.SpanId
+                                                        | ActivityTrackingOptions.TraceId
+                                                        | ActivityTrackingOptions.ParentId;
+                });
+
             })
             .UseDefaultServiceProvider((context, options) =>
             {
-                var isDevelopment = context.HostingEnvironment.IsDevelopment();
+                bool isDevelopment = context.HostingEnvironment.IsDevelopment();
                 options.ValidateScopes = isDevelopment;
                 options.ValidateOnBuild = isDevelopment;
             });

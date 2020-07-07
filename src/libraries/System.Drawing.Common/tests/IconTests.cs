@@ -266,27 +266,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentNullException, ArgumentException>("original", null, () => new Icon((Icon)null, new Size(32, 32)));
         }
 
-        // libgdiplus causes a segfault when given an invalid Icon handle.
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Ctor_InvalidHandle_Success()
-        {
-            using (Icon icon = Icon.FromHandle((IntPtr)1))
-            using (var stream = new MemoryStream())
-            {
-                Exception ex = Assert.ThrowsAny<Exception>(() => icon.Save(stream));
-                Assert.True(ex is COMException || ex is ObjectDisposedException || ex is FileNotFoundException, $"{ex.GetType().ToString()} was thrown.");
-
-                AssertExtensions.Throws<ArgumentException>(null, () => icon.ToBitmap());
-                Assert.Equal(Size.Empty, icon.Size);
-
-                using (var newIcon = new Icon(icon, 10, 10))
-                {
-                    Assert.Throws<ObjectDisposedException>(() => newIcon.Handle);
-                }
-            }
-        }
-
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_Type_Resource()
         {
@@ -304,13 +283,18 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
-        [InlineData(typeof(Icon), null)]
         [InlineData(typeof(Icon), "")]
         [InlineData(typeof(Icon), "48x48_multiple_entries_4bit.ico")]
         [InlineData(typeof(IconTests), "48x48_MULTIPLE_entries_4bit.ico")]
         public void Ctor_InvalidResource_ThrowsArgumentException(Type type, string resource)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => new Icon(type, resource));
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void Ctor_InvalidResource_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("resource", null, () => new Icon(typeof(Icon), null));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -397,7 +381,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ExtractAssociatedIcon_FilePath_Success()
         {
-            ExtractAssociatedIcon_FilePath_Success(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
+            ExtractAssociatedIcon_FilePath_Success_Helper(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // UNC
@@ -422,10 +406,10 @@ namespace System.Drawing.Tests
 
             Assert.True(new Uri(bitmapUncPath).IsUnc);
 
-            ExtractAssociatedIcon_FilePath_Success(bitmapUncPath);
+            ExtractAssociatedIcon_FilePath_Success_Helper(bitmapUncPath);
         }
 
-        private void ExtractAssociatedIcon_FilePath_Success(string filePath)
+        private void ExtractAssociatedIcon_FilePath_Success_Helper(string filePath)
         {
             using (Icon icon = Icon.ExtractAssociatedIcon(filePath))
             {
@@ -458,7 +442,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ExtractAssociatedIcon_InvalidFilePath_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>("path", null, () => Icon.ExtractAssociatedIcon(""));
+            AssertExtensions.Throws<ArgumentException>("filePath", null, () => Icon.ExtractAssociatedIcon(""));
         }
 
 
@@ -516,6 +500,7 @@ namespace System.Drawing.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Save_NullOutputStreamNoIconData_ThrowsArgumentNullException()
         {
             using (var source = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
@@ -523,7 +508,7 @@ namespace System.Drawing.Tests
                 var icon = Icon.FromHandle(source.Handle);
                 icon.Dispose();
 
-                AssertExtensions.Throws<ArgumentNullException>("dataStream", () => icon.Save(null));
+                AssertExtensions.Throws<ArgumentNullException>("outputStream", "dataStream", () => icon.Save(null));
             }
         }
 
@@ -637,7 +622,7 @@ namespace System.Drawing.Tests
                 }
             }
 
-            if (!AppContext.TryGetSwitch(DontSupportPngFramesInIcons, out bool isEnabled) || isEnabled)
+            if (RemoteExecutor.IsSupported && (!AppContext.TryGetSwitch(DontSupportPngFramesInIcons, out bool isEnabled) || isEnabled))
             {
                 RemoteExecutor.Invoke(() =>
                 {
@@ -663,7 +648,7 @@ namespace System.Drawing.Tests
                 }
             }
 
-            if (!AppContext.TryGetSwitch(DontSupportPngFramesInIcons, out bool isEnabled) || !isEnabled)
+            if (RemoteExecutor.IsSupported && (!AppContext.TryGetSwitch(DontSupportPngFramesInIcons, out bool isEnabled) || !isEnabled))
             {
                 RemoteExecutor.Invoke(() =>
                 {
@@ -703,6 +688,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FromHandle_IconHandleOneTime_Success()
         {
             using (var icon1 = new Icon(Helpers.GetTestBitmapPath("16x16_one_entry_4bit.ico")))
@@ -715,6 +701,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FromHandle_IconHandleMultipleTime_Success()
         {
             using (var icon1 = new Icon(Helpers.GetTestBitmapPath("16x16_one_entry_4bit.ico")))
@@ -735,6 +722,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FromHandle_BitmapHandleOneTime_Success()
         {
             IntPtr handle;
@@ -751,6 +739,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FromHandle_BitmapHandleMultipleTime_Success()
         {
             IntPtr handle;
@@ -775,7 +764,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromHandle_Zero_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => Icon.FromHandle(IntPtr.Zero));
+            AssertExtensions.Throws<ArgumentException>("handle", null, () => Icon.FromHandle(IntPtr.Zero));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]

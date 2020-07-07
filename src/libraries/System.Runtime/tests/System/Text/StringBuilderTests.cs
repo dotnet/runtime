@@ -1105,7 +1105,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(StringBuilder sb1, StringBuilder sb2, bool expected)
+        public static void EqualsTest(StringBuilder sb1, StringBuilder sb2, bool expected)
         {
             Assert.Equal(expected, sb1.Equals(sb2));
         }
@@ -1746,7 +1746,7 @@ namespace System.Text.Tests
         [InlineData("Hello", 4, 0, "")]
         [InlineData("Hello", 0, 0, "")]
         [InlineData("", 0, 0, "")]
-        public static void ToString(string value, int startIndex, int length, string expected)
+        public static void ToStringTest(string value, int startIndex, int length, string expected)
         {
             var builder = new StringBuilder(value);
             if (startIndex == 0 && length == value.Length)
@@ -2170,7 +2170,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Equals_String_TestData))]
-        public static void Equals(StringBuilder sb1, string value, bool expected)
+        public static void Equals_String(StringBuilder sb1, string value, bool expected)
         {
             Assert.Equal(expected, sb1.Equals(value.AsSpan()));
         }

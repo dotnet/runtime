@@ -84,19 +84,16 @@ public:
     // Marshals a delegate to a unmanaged callback.
     static LPVOID ConvertToCallback(OBJECTREF pDelegate);
 
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#if defined(TARGET_X86)
     // Marshals a managed method to an unmanaged callback.
-    // This is only used on x86 Windows. See usage for further details.
-    static PCODE ConvertToCallback(MethodDesc* pMD);
-#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    // This is only used on x86. See usage for further details.
+    static PCODE ConvertToUnmanagedCallback(MethodDesc* pMD);
+#endif // defined(TARGET_X86)
 
     // Marshals an unmanaged callback to Delegate
     static OBJECTREF ConvertToDelegate(LPVOID pCallback, MethodTable* pMT);
 
 #ifdef FEATURE_COMINTEROP
-    // Marshals a WinRT delegate interface pointer to a managed Delegate
-    static OBJECTREF ConvertWinRTInterfaceToDelegate(IUnknown *pUnk, MethodTable* pMT);
-
     static ComPlusCallInfo * PopulateComPlusCallInfo(MethodTable * pDelMT);
 #endif // FEATURE_COMINTEROP
 
@@ -126,6 +123,10 @@ public:
     static OBJECTREF GetTargetObject(OBJECTREF obj);
 
     static BOOL IsTrueMulticastDelegate(OBJECTREF delegate);
+
+    // Throw if the method violates any usage restrictions
+    // for UnmanagedCallersOnlyAttribute.
+    static void ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD);
 
 private:
     static Stub* SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth);

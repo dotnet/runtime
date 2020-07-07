@@ -239,7 +239,9 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
 
     if (pwzILPath != NULL)
     {
-        pILImage = PEImage::OpenImage(pwzILPath);
+        pILImage = PEImage::OpenImage(pwzILPath,
+                                      MDInternalImport_Default,
+                                      Bundle::ProbeAppBundle(pwzILPath));
 
         // Need to verify that this is a valid CLR assembly.
         if (!pILImage->CheckILFormat())
@@ -257,7 +259,9 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
     // Form the PEImage for the NI assembly, if specified
     if (pwzNIPath != NULL)
     {
-        pNIImage = PEImage::OpenImage(pwzNIPath, MDInternalImport_TrustedNativeImage);
+        pNIImage = PEImage::OpenImage(pwzNIPath,
+                                      MDInternalImport_TrustedNativeImage,
+                                      Bundle::ProbeAppBundle(pwzNIPath));
 
         if (pNIImage->HasReadyToRunHeader())
         {
@@ -408,26 +412,6 @@ void QCALLTYPE AssemblyNative::GetLocation(QCall::AssemblyHandle pAssembly, QCal
     END_QCALL;
 }
 
-
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-void QCALLTYPE AssemblyNative::LoadTypeForWinRTTypeNameInContext(INT_PTR ptrAssemblyLoadContext, LPCWSTR pwzTypeName, QCall::ObjectHandleOnStack retType)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    TypeHandle loadedType = WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeName(pwzTypeName, (ICLRPrivBinder*)ptrAssemblyLoadContext, /* pbIsPrimitive */ nullptr);
-
-    if (!loadedType.IsNull())
-    {
-         GCX_COOP();
-         retType.Set(loadedType.GetManagedClassObject());
-    }
-
-    END_QCALL;
-}
-#endif
-
 void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly,
                                        LPCWSTR wszName,
                                        BOOL bThrowOnError,
@@ -465,7 +449,7 @@ void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly,
     }
 
     // Load the class from this assembly (fail if it is in a different one).
-    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, pAssembly->GetAssembly(), FALSE, (OBJECTREF*)keepAlive.m_ppObject, pPrivHostBinder);
+    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, pAssembly->GetAssembly(), (OBJECTREF*)keepAlive.m_ppObject, pPrivHostBinder);
 
     if (!retTypeHandle.IsNull())
     {

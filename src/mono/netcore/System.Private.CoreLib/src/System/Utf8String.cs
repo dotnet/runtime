@@ -14,7 +14,10 @@ namespace System
     /// </summary>
     public sealed partial class Utf8String : IComparable<Utf8String?>, IEquatable<Utf8String?>
     {
+#pragma warning disable CS8618
         public static readonly Utf8String Empty;
+#pragma warning restore CS8618
+
         public static bool operator ==(Utf8String? left, Utf8String? right) => throw new PlatformNotSupportedException();
         public static bool operator !=(Utf8String? left, Utf8String? right) => throw new PlatformNotSupportedException();
         public static implicit operator Utf8Span(Utf8String? value) => throw new PlatformNotSupportedException();

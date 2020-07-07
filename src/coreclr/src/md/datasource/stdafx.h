@@ -19,5 +19,8 @@
 #include <cor.h>
 #include <corpriv.h>
 
+#include <metamodelro.h>
+#include <liteweightstgdb.h>
+
 
 #endif  // __STDAFX_H_

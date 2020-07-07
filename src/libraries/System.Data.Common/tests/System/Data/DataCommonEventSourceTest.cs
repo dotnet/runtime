@@ -11,7 +11,7 @@ namespace System.Data.Tests
 {
     public class DataCommonEventSourceTest
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void InvokeCodeThatShouldFirEvents_EnsureEventsFired()
         {

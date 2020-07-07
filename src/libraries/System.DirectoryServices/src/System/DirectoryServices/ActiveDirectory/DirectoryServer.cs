@@ -11,30 +11,26 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public abstract class DirectoryServer : IDisposable
     {
-        private bool _disposed = false;
-        internal DirectoryContext context = null;
-        internal string replicaName = null;
-        internal DirectoryEntryManager directoryEntryMgr = null;
+        private bool _disposed;
+        internal DirectoryContext context;
+        internal string replicaName;
+        internal DirectoryEntryManager directoryEntryMgr;
 
         // internal variables for the public properties
-        internal bool siteInfoModified = false;
-        internal string cachedSiteName = null;
-        internal string cachedSiteObjectName = null;
-        internal string cachedServerObjectName = null;
-        internal string cachedNtdsaObjectName = null;
+        internal bool siteInfoModified;
+        internal string cachedSiteName;
+        internal string cachedSiteObjectName;
+        internal string cachedServerObjectName;
+        internal string cachedNtdsaObjectName;
         internal Guid cachedNtdsaObjectGuid = Guid.Empty;
-        // disable csharp compiler warning #0414: field assigned unused value
-#pragma warning disable 0414
-        internal string cachedIPAddress = null;
-#pragma warning restore 0414
-        internal ReadOnlyStringCollection cachedPartitions = null;
+        internal ReadOnlyStringCollection cachedPartitions;
 
         internal const int DS_REPSYNC_ASYNCHRONOUS_OPERATION = 0x00000001;
         internal const int DS_REPSYNC_ALL_SOURCES = 0x00000010;
         internal const int DS_REPSYNCALL_ID_SERVERS_BY_DN = 0x00000004;
         internal const int DS_REPL_NOTSUPPORTED = 50;
-        private ReplicationConnectionCollection _inbound = null;
-        private ReplicationConnectionCollection _outbound = null;
+        private ReplicationConnectionCollection _inbound;
+        private ReplicationConnectionCollection _outbound;
 
         #region constructors
         protected DirectoryServer()
@@ -109,7 +105,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     DirectoryEntry serverEntry = directoryEntryMgr.GetCachedDirectoryEntry(serverName);
 
                     // force binding (needed otherwise S.DS throw an exception while releasing the COM interface pointer)
-                    string dn = (string)PropertyManager.GetPropertyValue(context, serverEntry, PropertyManager.DistinguishedName);
+                    _ = (string)PropertyManager.GetPropertyValue(context, serverEntry, PropertyManager.DistinguishedName);
 
                     // move the object to the servers container of the target site
                     serverEntry.MoveTo(newParentEntry);

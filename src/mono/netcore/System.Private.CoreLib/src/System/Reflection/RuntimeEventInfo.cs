@@ -22,7 +22,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -114,7 +113,7 @@ namespace System.Reflection
             }
         }
 
-        public override MethodInfo GetAddMethod(bool nonPublic)
+        public override MethodInfo? GetAddMethod(bool nonPublic)
         {
             MonoEventInfo info = GetEventInfo(this);
             if (nonPublic || (info.add_method != null && info.add_method.IsPublic))
@@ -122,7 +121,7 @@ namespace System.Reflection
             return null;
         }
 
-        public override MethodInfo GetRaiseMethod(bool nonPublic)
+        public override MethodInfo? GetRaiseMethod(bool nonPublic)
         {
             MonoEventInfo info = GetEventInfo(this);
             if (nonPublic || (info.raise_method != null && info.raise_method.IsPublic))
@@ -130,7 +129,7 @@ namespace System.Reflection
             return null;
         }
 
-        public override MethodInfo GetRemoveMethod(bool nonPublic)
+        public override MethodInfo? GetRemoveMethod(bool nonPublic)
         {
             MonoEventInfo info = GetEventInfo(this);
             if (nonPublic || (info.remove_method != null && info.remove_method.IsPublic))

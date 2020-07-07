@@ -30,33 +30,33 @@
 // (C) 2001-2002 Ximian, Inc.  http://www.ximian.com
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
     public sealed partial class FieldBuilder : FieldInfo
     {
-
-#pragma warning disable 169, 414
+#region Sync with MonoReflectionFieldBuilder in object-internals.h
         private FieldAttributes attrs;
         private Type type;
         private string name;
-        private object def_value;
+        private object? def_value;
         private int offset;
         internal TypeBuilder typeb;
-        private byte[] rva_data;
-        private CustomAttributeBuilder[] cattrs;
-        private UnmanagedMarshal marshal_info;
+        private byte[]? rva_data;
+        private CustomAttributeBuilder[]? cattrs;
+        private UnmanagedMarshal? marshal_info;
         private RuntimeFieldHandle handle;
-        private Type[] modReq;
-        private Type[] modOpt;
-#pragma warning restore 169, 414
+        private Type[]? modReq;
+        private Type[]? modOpt;
+#endregion
 
-        internal FieldBuilder(TypeBuilder tb, string fieldName, Type type, FieldAttributes attributes, Type[] modReq, Type[] modOpt)
+        [DynamicDependency(nameof(modOpt))]  // Automatically keeps all previous fields too due to StructLayout
+        internal FieldBuilder(TypeBuilder tb, string fieldName, Type type, FieldAttributes attributes, Type[]? modReq, Type[]? modOpt)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
@@ -77,7 +77,7 @@ namespace System.Reflection.Emit
             get { return attrs; }
         }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return typeb; }
         }
@@ -100,7 +100,7 @@ namespace System.Reflection.Emit
             get { return name; }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return typeb; }
         }
@@ -133,7 +133,7 @@ namespace System.Reflection.Emit
             return new FieldToken(MetadataToken, type);
         }
 
-        public override object GetValue(object obj)
+        public override object? GetValue(object? obj)
         {
             throw CreateNotSupportedException();
         }
@@ -154,7 +154,7 @@ namespace System.Reflection.Emit
             rva_data = (byte[])data.Clone();
         }
 
-        public void SetConstant(object defaultValue)
+        public void SetConstant(object? defaultValue)
         {
             RejectIfCreated();
 
@@ -170,7 +170,7 @@ namespace System.Reflection.Emit
             if (customBuilder == null)
                 throw new ArgumentNullException(nameof(customBuilder));
 
-            string attrname = customBuilder.Ctor.ReflectedType.FullName;
+            string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.FieldOffsetAttribute")
             {
                 byte[] data = customBuilder.Data;
@@ -226,7 +226,7 @@ namespace System.Reflection.Emit
             offset = iOffset;
         }
 
-        public override void SetValue(object obj, object val, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
+        public override void SetValue(object? obj, object? val, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
             throw CreateNotSupportedException();
         }
@@ -254,7 +254,7 @@ namespace System.Reflection.Emit
         internal FieldInfo RuntimeResolve()
         {
             // typeb.CreateType() populates this.handle
-            var type_handle = new RuntimeTypeHandle(typeb.CreateType() as RuntimeType);
+            var type_handle = new RuntimeTypeHandle((typeb.CreateType() as RuntimeType)!);
             return GetFieldFromHandle(handle, type_handle);
         }
 

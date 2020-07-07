@@ -202,7 +202,7 @@ namespace System.ComponentModel.Tests
         {
             yield return new object[] { new object() };
             yield return new object[] { new Component() };
-            
+
             var mockSite = new Mock<ISite>(MockBehavior.Strict);
             mockSite
                 .Setup(s => s.Container)
@@ -230,7 +230,7 @@ namespace System.ComponentModel.Tests
             {
                 yield return new object[] { new object(), result };
                 yield return new object[] { new Component(), result };
-                
+
                 var mockSite = new Mock<ISite>(MockBehavior.Strict);
                 mockSite
                     .Setup(s => s.Container)
@@ -341,7 +341,7 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void GetReflectionType_InvokeTypeWithoutParent_CallsTypeObjectOverload(Type objectType)
+        public void GetReflectionType_InvokeTypeWithoutParent_CallsTypeObjectOverload_ByType(Type objectType)
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockProvider
@@ -396,7 +396,7 @@ namespace System.ComponentModel.Tests
 
         [Theory]
         [InlineData(1, typeof(int))]
-        public void GetReflectionType_InvokeTypeWithoutParent_CallsTypeObjectOverload(object instance, Type expected)
+        public void GetReflectionType_InvokeTypeWithoutParent_CallsTypeObjectOverload_ByObjectAndType(object instance, Type expected)
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockProvider
@@ -499,7 +499,7 @@ namespace System.ComponentModel.Tests
             // Call again.
             Assert.Same(reflectionType, provider.GetRuntimeType(reflectionType));
         }
-        
+
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
@@ -571,7 +571,7 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void GetTypeDescriptor_InvokeTypeWithoutParent_CallsTypeObjectOverload(Type objectType)
+        public void GetTypeDescriptor_InvokeTypeWithoutParent_CallsTypeObjectOverload_Type(Type objectType)
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockProvider
@@ -630,7 +630,7 @@ namespace System.ComponentModel.Tests
 
         [Theory]
         [InlineData(1)]
-        public void GetTypeDescriptor_InvokeTypeWithoutParent_CallsTypeObjectOverload(object instance)
+        public void GetTypeDescriptor_InvokeTypeWithoutParent_CallsTypeObjectOverload_Object(object instance)
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockProvider
@@ -783,7 +783,7 @@ namespace System.ComponentModel.Tests
             public SubTypeDescriptionProvider() : base()
             {
             }
-            
+
             public SubTypeDescriptionProvider(TypeDescriptionProvider parent) : base(parent)
             {
             }

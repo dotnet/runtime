@@ -183,7 +183,7 @@ ICALL_EXPORT void ves_icall_System_IO_LogcatTextWriter_Log (const char*, gint32,
 ICALL_EXPORT void ves_icall_System_NumberFormatter_GetFormatterTables (guint64 const**, gint32 const**, gunichar2 const**, gunichar2 const**, gint64 const**, gint32 const**);
 #if ENABLE_NETCORE
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_Memmove (guint8*, guint8*, size_t);
-ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_RhBulkMoveWithWriteBarrier (guint8*, guint8*, size_t);
+ICALL_EXPORT void ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *, guint8 *, size_t, MonoType *);
 #else
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_Memmove (guint8*, guint8*, guint);
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_Memmove_wbarrier (guint8*, guint8*, guint, MonoType*);
@@ -202,6 +202,10 @@ ICALL_EXPORT gint32 ves_icall_System_IO_Compression_DeflateStreamNative_CloseZSt
 ICALL_EXPORT gint32 ves_icall_System_IO_Compression_DeflateStreamNative_Flush (gpointer stream);
 ICALL_EXPORT gint32 ves_icall_System_IO_Compression_DeflateStreamNative_ReadZStream (gpointer stream, gpointer buffer, gint32 length);
 ICALL_EXPORT gint32 ves_icall_System_IO_Compression_DeflateStreamNative_WriteZStream (gpointer stream, gpointer buffer, gint32 length);
+#endif
+
+#if defined(TARGET_WASM)
+ICALL_EXPORT void ves_icall_System_TimeZoneInfo_mono_timezone_get_local_name (MonoString **result);
 #endif
 
 #if defined(ENABLE_MONODROID)

@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RootNamespace>System.IO.FileSystem.DriveInfo</RootNamespace>
-    <AssemblyName>System.IO.FileSystem.DriveInfo</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <Nullable>enable</Nullable>
@@ -10,88 +8,63 @@
     <Compile Include="System\IO\DriveInfo.cs" />
     <Compile Include="System\IO\DriveNotFoundException.cs" />
     <Compile Include="System\IO\DriveType.cs" />
-    <Compile Include="$(CommonPath)System\HResults.cs">
-      <Link>Common\System\HResults.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs">
-      <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\HResults.cs"
+             Link="Common\System\HResults.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
+             Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\DriveInfo.Windows.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetDriveType.cs">
-      <Link>Common\Interop\Windows\Interop.GetDriveType.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs">
-      <Link>Common\Interop\Windows\Interop.GetVolumeInformation.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs">
-      <Link>Common\Interop\Windows\Interop.GetLogicalDrives.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetDiskFreeSpaceEx.cs">
-      <Link>Common\Interop\Windows\Interop.GetDiskFreeSpaceEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
-      <Link>Common\Interop\Windows\Interop.MAX_PATH.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetVolumeLabel.cs">
-      <Link>Common\Interop\Windows\Interop.SetVolumeLabel.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
-      <Link>Common\Interop\Windows\Interop.SetThreadErrorMode.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SecurityOptions.cs">
-      <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs">
-      <Link>Common\Interop\Windows\Interop.FileOperations.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
-      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
-      <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\IO\DisableMediaInsertionPrompt.cs">
-      <Link>Common\System\IO\DisableMediaInsertionPrompt.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
-      <Link>Common\System\IO\Win32Marshal.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Windows.cs">
-      <Link>Common\System\IO\DriveInfoInternal.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs">
-      <Link>Common\System\IO\PathInternal.Windows.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetDriveType.cs"
+             Link="Common\Interop\Windows\Interop.GetDriveType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs"
+             Link="Common\Interop\Windows\Interop.GetVolumeInformation.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs"
+             Link="Common\Interop\Windows\Interop.GetLogicalDrives.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetDiskFreeSpaceEx.cs"
+             Link="Common\Interop\Windows\Interop.GetDiskFreeSpaceEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs"
+             Link="Common\Interop\Windows\Interop.MAX_PATH.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetVolumeLabel.cs"
+             Link="Common\Interop\Windows\Interop.SetVolumeLabel.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs"
+             Link="Common\Interop\Windows\Interop.SetThreadErrorMode.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SecurityOptions.cs"
+             Link="Common\Interop\Windows\Interop.SecurityOptions.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs"
+             Link="Common\Interop\Windows\Interop.FileOperations.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
+             Link="Common\Interop\Windows\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
+             Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\DisableMediaInsertionPrompt.cs"
+             Link="Common\System\IO\DisableMediaInsertionPrompt.cs" />
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs"
+             Link="Common\System\IO\Win32Marshal.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Windows.cs"
+             Link="Common\System\IO\DriveInfoInternal.Windows.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
+             Link="Common\System\IO\PathInternal.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetFramework)' == '$(NetCoreAppCurrent)' ">
     <Compile Include="System\IO\DriveInfo.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
-      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs">
-      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs">
-      <Link>Common\System\IO\PathInternal.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs">
-      <Link>Common\Interop\Unix\Interop.PathConf.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.cs">
-      <Link>Common\Interop\Unix\Interop.MountPoints.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs">
-      <Link>Common\Interop\Unix\Interop.MountPoints.FormatInfo.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
+             Link="Common\Interop\Unix\Interop.IOErrors.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"
+             Link="Common\System\IO\PathInternal.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"
+             Link="Common\Interop\Unix\Interop.PathConf.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.cs"
+             Link="Common\Interop\Unix\Interop.MountPoints.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs"
+             Link="Common\Interop\Unix\Interop.MountPoints.FormatInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.IO.FileSystem" />

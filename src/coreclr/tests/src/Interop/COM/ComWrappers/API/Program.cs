@@ -109,6 +109,36 @@ namespace ComWrappersTests
             Assert.AreEqual(count, 0);
         }
 
+        static void ValidateFallbackQueryInterface()
+        {
+            Console.WriteLine($"Running {nameof(ValidateFallbackQueryInterface)}...");
+
+            var testObj = new Test()
+                {
+                    EnableICustomQueryInterface = true
+                };
+
+            var wrappers = new TestComWrappers();
+
+            // Allocate a wrapper for the object
+            IntPtr comWrapper = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.None);
+
+            testObj.ICustomQueryInterface_GetInterfaceResult = new IntPtr(0x2000000);
+
+            IntPtr result;
+            var anyGuid = new Guid("1E42439C-DCB5-4701-ACBD-87FE92E785DE");
+            testObj.ICustomQueryInterface_GetInterfaceIID = anyGuid;
+            int hr = Marshal.QueryInterface(comWrapper, ref anyGuid, out result);
+            Assert.AreEqual(hr, 0);
+            Assert.AreEqual(result, testObj.ICustomQueryInterface_GetInterfaceResult);
+
+            var anyGuid2 = new Guid("7996D0F9-C8DD-4544-B708-0F75C6FF076F");
+            hr = Marshal.QueryInterface(comWrapper, ref anyGuid2, out result);
+            const int E_NOINTERFACE = unchecked((int)0x80004002);
+            Assert.AreEqual(hr, E_NOINTERFACE);
+            Assert.AreEqual(result, IntPtr.Zero);
+        }
+
         static void ValidateCreateObjectCachingScenario()
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectCachingScenario)}...");
@@ -127,6 +157,50 @@ namespace ComWrappersTests
 
             var trackerObj3 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject | CreateObjectFlags.UniqueInstance);
             Assert.AreNotEqual(trackerObj1, trackerObj3);
+        }
+
+        static void ValidateWrappersInstanceIsolation()
+        {
+            Console.WriteLine($"Running {nameof(ValidateWrappersInstanceIsolation)}...");   
+
+            var cw1 = new TestComWrappers();
+            var cw2 = new TestComWrappers();
+
+            var testObj = new Test();
+
+            // Allocate a wrapper for the object
+            IntPtr comWrapper1 = cw1.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
+            IntPtr comWrapper2 = cw2.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
+            Assert.AreNotEqual(comWrapper1, IntPtr.Zero);
+            Assert.AreNotEqual(comWrapper2, IntPtr.Zero);
+            Assert.AreNotEqual(comWrapper1, comWrapper2);
+
+            IntPtr comWrapper3 = cw1.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
+            IntPtr comWrapper4 = cw2.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
+            Assert.AreNotEqual(comWrapper3, comWrapper4);
+            Assert.AreEqual(comWrapper1, comWrapper3);
+            Assert.AreEqual(comWrapper2, comWrapper4);
+
+            Marshal.Release(comWrapper1);
+            Marshal.Release(comWrapper2);
+            Marshal.Release(comWrapper3);
+            Marshal.Release(comWrapper4);
+
+            // Get an object from a tracker runtime.
+            IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+            // Create objects for the COM instance
+            var trackerObj1 = (ITrackerObjectWrapper)cw1.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+            var trackerObj2 = (ITrackerObjectWrapper)cw2.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+            Assert.AreNotEqual(trackerObj1, trackerObj2);
+
+            var trackerObj3 = (ITrackerObjectWrapper)cw1.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+            var trackerObj4 = (ITrackerObjectWrapper)cw2.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+            Assert.AreNotEqual(trackerObj3, trackerObj4);
+            Assert.AreEqual(trackerObj1, trackerObj3);
+            Assert.AreEqual(trackerObj2, trackerObj4);
+
+            Marshal.Release(trackerObjRaw);
         }
 
         static void ValidatePrecreatedExternalWrapper()
@@ -325,7 +399,9 @@ namespace ComWrappersTests
             try
             {
                 ValidateComInterfaceCreation();
+                ValidateFallbackQueryInterface();
                 ValidateCreateObjectCachingScenario();
+                ValidateWrappersInstanceIsolation();
                 ValidatePrecreatedExternalWrapper();
                 ValidateIUnknownImpls();
                 ValidateBadComWrapperImpl();

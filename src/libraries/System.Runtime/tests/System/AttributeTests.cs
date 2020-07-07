@@ -187,7 +187,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(Attribute attr1, object obj, bool expected, bool hashEqualityExpected)
+        public static void EqualsTest(Attribute attr1, object obj, bool expected, bool hashEqualityExpected)
         {
             Assert.Equal(expected, attr1.Equals(obj));
 

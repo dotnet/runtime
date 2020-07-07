@@ -22,7 +22,7 @@ namespace System.Threading
             return previousCount;
         }
 
-        private static OpenExistingResult OpenExistingWorker(string name, out Semaphore result)
+        private static OpenExistingResult OpenExistingWorker(string name, out Semaphore? result)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -59,7 +59,7 @@ namespace System.Threading
             return OpenExistingResult.Success;
         }
 
-        private void CreateSemaphoreCore(int initialCount, int maximumCount, string name, out bool createdNew)
+        private void CreateSemaphoreCore(int initialCount, int maximumCount, string? name, out bool createdNew)
         {
             if (name?.Length > MAX_PATH)
                 throw new ArgumentException(SR.Argument_WaitHandleNameTooLong);
@@ -78,7 +78,7 @@ namespace System.Threading
             createdNew = errorCode != MonoIOError.ERROR_ALREADY_EXISTS;
         }
 
-        private static unsafe IntPtr CreateSemaphore_internal(int initialCount, int maximumCount, string name, out MonoIOError errorCode)
+        private static unsafe IntPtr CreateSemaphore_internal(int initialCount, int maximumCount, string? name, out MonoIOError errorCode)
         {
             // FIXME Check for embedded nuls in name.
             fixed (char* fixed_name = name)

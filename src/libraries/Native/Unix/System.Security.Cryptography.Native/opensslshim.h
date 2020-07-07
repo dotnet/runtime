@@ -291,11 +291,13 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EC_KEY_new_by_curve_name) \
     REQUIRED_FUNCTION(EC_KEY_set_group) \
     REQUIRED_FUNCTION(EC_KEY_set_private_key) \
+    REQUIRED_FUNCTION(EC_KEY_set_public_key) \
     REQUIRED_FUNCTION(EC_KEY_set_public_key_affine_coordinates) \
     REQUIRED_FUNCTION(EC_KEY_up_ref) \
     REQUIRED_FUNCTION(EC_METHOD_get_field_type) \
     REQUIRED_FUNCTION(EC_POINT_free) \
     REQUIRED_FUNCTION(EC_POINT_get_affine_coordinates_GFp) \
+    REQUIRED_FUNCTION(EC_POINT_mul) \
     REQUIRED_FUNCTION(EC_POINT_new) \
     REQUIRED_FUNCTION(EC_POINT_set_affine_coordinates_GFp) \
     REQUIRED_FUNCTION(ERR_clear_error) \
@@ -338,6 +340,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
     REQUIRED_FUNCTION(EVP_md5) \
+    REQUIRED_FUNCTION(EVP_MD_CTX_copy_ex) \
     RENAMED_FUNCTION(EVP_MD_CTX_free, EVP_MD_CTX_destroy) \
     RENAMED_FUNCTION(EVP_MD_CTX_new, EVP_MD_CTX_create) \
     REQUIRED_FUNCTION(EVP_MD_size) \
@@ -364,6 +367,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EXTENDED_KEY_USAGE_free) \
     REQUIRED_FUNCTION(GENERAL_NAMES_free) \
     LEGACY_FUNCTION(HMAC_CTX_cleanup) \
+    REQUIRED_FUNCTION(HMAC_CTX_copy) \
     FALLBACK_FUNCTION(HMAC_CTX_free) \
     LEGACY_FUNCTION(HMAC_CTX_init) \
     FALLBACK_FUNCTION(HMAC_CTX_new) \
@@ -679,11 +683,13 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EC_KEY_new_by_curve_name EC_KEY_new_by_curve_name_ptr
 #define EC_KEY_set_group EC_KEY_set_group_ptr
 #define EC_KEY_set_private_key EC_KEY_set_private_key_ptr
+#define EC_KEY_set_public_key EC_KEY_set_public_key_ptr
 #define EC_KEY_set_public_key_affine_coordinates EC_KEY_set_public_key_affine_coordinates_ptr
 #define EC_KEY_up_ref EC_KEY_up_ref_ptr
 #define EC_METHOD_get_field_type EC_METHOD_get_field_type_ptr
 #define EC_POINT_free EC_POINT_free_ptr
 #define EC_POINT_get_affine_coordinates_GFp EC_POINT_get_affine_coordinates_GFp_ptr
+#define EC_POINT_mul EC_POINT_mul_ptr
 #define EC_POINT_new EC_POINT_new_ptr
 #define EC_POINT_set_affine_coordinates_GFp EC_POINT_set_affine_coordinates_GFp_ptr
 #define ERR_clear_error ERR_clear_error_ptr
@@ -726,6 +732,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
 #define EVP_md5 EVP_md5_ptr
+#define EVP_MD_CTX_copy_ex EVP_MD_CTX_copy_ex_ptr
 #define EVP_MD_CTX_free EVP_MD_CTX_free_ptr
 #define EVP_MD_CTX_new EVP_MD_CTX_new_ptr
 #define EVP_MD_size EVP_MD_size_ptr
@@ -752,6 +759,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EXTENDED_KEY_USAGE_free EXTENDED_KEY_USAGE_free_ptr
 #define GENERAL_NAMES_free GENERAL_NAMES_free_ptr
 #define HMAC_CTX_cleanup HMAC_CTX_cleanup_ptr
+#define HMAC_CTX_copy HMAC_CTX_copy_ptr
 #define HMAC_CTX_free HMAC_CTX_free_ptr
 #define HMAC_CTX_init HMAC_CTX_init_ptr
 #define HMAC_CTX_new HMAC_CTX_new_ptr

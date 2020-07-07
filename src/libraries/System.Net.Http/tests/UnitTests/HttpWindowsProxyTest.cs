@@ -31,7 +31,7 @@ namespace System.Net.Http.Tests
             _output = output;
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(ProxyParsingData))]
         public void HttpProxy_WindowsProxy_Manual_Loaded(string rawProxyString, string rawInsecureUri, string rawSecureUri)
         {
@@ -58,7 +58,7 @@ namespace System.Net.Http.Tests
             }, rawProxyString, rawInsecureUri ?? string.Empty, rawSecureUri ?? string.Empty).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(ProxyParsingData))]
         public void HttpProxy_WindowsProxy_PAC_Loaded(string rawProxyString, string rawInsecureUri, string rawSecureUri)
         {
@@ -115,7 +115,7 @@ namespace System.Net.Http.Tests
                 { "proxy.secure-and-insecure.com", secureAndInsecureProxyUri, secureAndInsecureProxyUri },
             };
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("localhost:1234", "http://localhost:1234/")]
         [InlineData("123.123.123.123", "http://123.123.123.123/")]
         public void HttpProxy_WindowsProxy_Loaded(string rawProxyString, string expectedUri)
@@ -136,7 +136,7 @@ namespace System.Net.Http.Tests
             }, rawProxyString, expectedUri).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("http://localhost/", true)]
         [InlineData("http://127.0.0.1/", true)]
         [InlineData("http://128.0.0.1/", false)]
@@ -173,7 +173,7 @@ namespace System.Net.Http.Tests
            }, name, shouldBypass.ToString()).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("", 0)]
         [InlineData(" ", 0)]
         [InlineData(" ; ;  ", 0)]
@@ -207,7 +207,7 @@ namespace System.Net.Http.Tests
            }, bypass, count.ToString()).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("http://")]
         [InlineData("http=")]
         [InlineData("http://;")]
@@ -235,7 +235,7 @@ namespace System.Net.Http.Tests
             }, rawProxyString).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(HttpProxy_Multi_Data))]
         public void HttpProxy_Multi_Success(bool manualConfig, string proxyConfig, string url, string expected)
         {
@@ -292,7 +292,7 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void HttpProxy_Multi_ConcurrentUse_Success(bool manualConfig)

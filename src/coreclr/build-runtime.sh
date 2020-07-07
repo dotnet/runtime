@@ -21,7 +21,6 @@ export PYTHON
 usage_list+=("-nopgooptimize: do not use profile guided optimizations.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
-usage_list+=("-skiprestoreoptdata: skip restoring optimization data.")
 usage_list+=("-staticanalyzer: skip native image generation.")
 
 setup_dirs_local()

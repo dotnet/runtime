@@ -195,7 +195,7 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void InvalidArguments_Throw()
         {
             RemoteExecutor.Invoke(() =>
@@ -247,7 +247,7 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void FindServicePoint_ReturnsCachedServicePoint()
         {
             RemoteExecutor.Invoke(() =>
@@ -283,7 +283,8 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36217", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         public static void FindServicePoint_Collectible()
         {
             RemoteExecutor.Invoke(() =>
@@ -301,7 +302,7 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void FindServicePoint_ReturnedServicePointMatchesExpectedValues()
         {
             RemoteExecutor.Invoke(() =>
@@ -328,7 +329,7 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void FindServicePoint_PropertiesRoundtrip()
         {
             RemoteExecutor.Invoke(() =>
@@ -363,7 +364,7 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void FindServicePoint_NewServicePointsInheritCurrentValues()
         {
             RemoteExecutor.Invoke(() =>

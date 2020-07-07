@@ -6,18 +6,10 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 using Internal.Runtime.CompilerServices;
-
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-using nint = System.Int64;
-#else
-using nuint = System.UInt32;
-using nint = System.Int32;
-#endif
 
 namespace System
 {
@@ -54,7 +46,7 @@ namespace System
                 if (SequenceEqual(
                     ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + 1)),
                     ref Unsafe.As<char, byte>(ref valueTail),
-                    (nuint)valueTailLength * 2))
+                    (nuint)(uint)valueTailLength * 2))
                 {
                     return index;  // The tail matched. Return a successful find.
                 }
@@ -76,51 +68,51 @@ namespace System
             if (Unsafe.AreSame(ref first, ref second))
                 goto Equal;
 
-            IntPtr minLength = (IntPtr)((firstLength < secondLength) ? firstLength : secondLength);
-            IntPtr i = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            nuint minLength = (nuint)(((uint)firstLength < (uint)secondLength) ? (uint)firstLength : (uint)secondLength);
+            nuint i = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
 
-            if ((byte*)minLength >= (byte*)(sizeof(UIntPtr) / sizeof(char)))
+            if (minLength >= (nuint)(sizeof(nuint) / sizeof(char)))
             {
-                if (Vector.IsHardwareAccelerated && (byte*)minLength >= (byte*)Vector<ushort>.Count)
+                if (Vector.IsHardwareAccelerated && minLength >= (nuint)Vector<ushort>.Count)
                 {
-                    IntPtr nLength = minLength - Vector<ushort>.Count;
+                    nuint nLength = minLength - (nuint)Vector<ushort>.Count;
                     do
                     {
-                        if (Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, i))) !=
-                            Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, i))))
+                        if (Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i))) !=
+                            Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, (nint)i))))
                         {
                             break;
                         }
-                        i += Vector<ushort>.Count;
+                        i += (nuint)Vector<ushort>.Count;
                     }
-                    while ((byte*)nLength >= (byte*)i);
+                    while (nLength >= i);
                 }
 
-                while ((byte*)minLength >= (byte*)(i + sizeof(UIntPtr) / sizeof(char)))
+                while (minLength >= (i + (nuint)(sizeof(nuint) / sizeof(char))))
                 {
-                    if (Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, i))) !=
-                        Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, i))))
+                    if (Unsafe.ReadUnaligned<nuint> (ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i))) !=
+                        Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, (nint)i))))
                     {
                         break;
                     }
-                    i += sizeof(UIntPtr) / sizeof(char);
+                    i += (nuint)(sizeof(nuint) / sizeof(char));
                 }
             }
 
 #if TARGET_64BIT
-            if ((byte*)minLength >= (byte*)(i + sizeof(int) / sizeof(char)))
+            if (minLength >= (i + sizeof(int) / sizeof(char)))
             {
-                if (Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, i))) ==
-                    Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, i))))
+                if (Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i))) ==
+                    Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, (nint)i))))
                 {
                     i += sizeof(int) / sizeof(char);
                 }
             }
 #endif
 
-            while ((byte*)i < (byte*)minLength)
+            while (i < minLength)
             {
-                int result = Unsafe.Add(ref first, i).CompareTo(Unsafe.Add(ref second, i));
+                int result = Unsafe.Add(ref first, (nint)i).CompareTo(Unsafe.Add(ref second, (nint)i));
                 if (result != 0)
                     return result;
                 i += 1;
@@ -231,7 +223,7 @@ namespace System
             {
                 // Input isn't char aligned, we won't be able to align it to a Vector
             }
-            else if (Sse2.IsSupported)
+            else if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
             {
                 // Avx2 branch also operates on Sse2 sizes, so check is combined.
                 // Needs to be double length to allow us to align the data first.
@@ -287,7 +279,7 @@ namespace System
                 if (offset < length)
                 {
                     Debug.Assert(length - offset >= Vector128<ushort>.Count);
-                    if (((nint)Unsafe.AsPointer(ref Unsafe.Add(ref searchSpace, (IntPtr)offset)) & (nint)(Vector256<byte>.Count - 1)) != 0)
+                    if (((nint)Unsafe.AsPointer(ref Unsafe.Add(ref searchSpace, (nint)offset)) & (nint)(Vector256<byte>.Count - 1)) != 0)
                     {
                         // Not currently aligned to Vector256 (is aligned to Vector128); this can cause a problem for searches
                         // with no upper bound e.g. String.wcslen. Start with a check on Vector128 to align to Vector256,
@@ -407,6 +399,44 @@ namespace System
                             // Find bitflag offset of first match and add to current offset,
                             // flags are in bytes so divide for chars
                             return (int)(offset + ((uint)BitOperations.TrailingZeroCount(matches) / sizeof(char)));
+                        } while (lengthToExamine > 0);
+                    }
+
+                    if (offset < length)
+                    {
+                        lengthToExamine = length - offset;
+                        goto SequentialScan;
+                    }
+                }
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                if (offset < length)
+                {
+                    Debug.Assert(length - offset >= Vector128<ushort>.Count);
+
+                    lengthToExamine = GetCharVector128SpanLength(offset, length);
+                    if (lengthToExamine > 0)
+                    {
+                        Vector128<ushort> values = Vector128.Create((ushort)value);
+                        int matchedLane = 0;
+
+                        do
+                        {
+                            Debug.Assert(lengthToExamine >= Vector128<ushort>.Count);
+
+                            Vector128<ushort> search = LoadVector128(ref searchSpace, offset);
+                            Vector128<ushort> compareResult = AdvSimd.CompareEqual(values, search);
+
+                            if (!TryFindFirstMatchedLane(compareResult, ref matchedLane))
+                            {
+                                // Zero flags set so no matches
+                                offset += Vector128<ushort>.Count;
+                                lengthToExamine -= Vector128<ushort>.Count;
+                                continue;
+                            }
+
+                            return (int)(offset + matchedLane);
                         } while (lengthToExamine > 0);
                     }
 
@@ -984,27 +1014,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateFirstFoundChar(ulong match)
-        {
-            // TODO: Arm variants
-            if (Bmi1.X64.IsSupported)
-            {
-                return (int)(Bmi1.X64.TrailingZeroCount(match) >> 4);
-            }
-            else
-            {
-                unchecked
-                {
-                    // Flag least significant power of two bit
-                    ulong powerOfTwoFlag = match ^ (match - 1);
-                    // Shift all powers of two into the high byte and extract
-                    return (int)((powerOfTwoFlag * XorPowerOfTwoToHighChar) >> 49);
-                }
-            }
-        }
-
-        private const ulong XorPowerOfTwoToHighChar = (0x03ul |
-                                                       0x02ul << 16 |
-                                                       0x01ul << 32) + 1;
+            => BitOperations.TrailingZeroCount(match) >> 4;
 
         // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1029,28 +1039,26 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateLastFoundChar(ulong match)
-        {
-            return 3 - (BitOperations.LeadingZeroCount(match) >> 4);
-        }
+            => BitOperations.Log2(match) >> 4;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector<ushort> LoadVector(ref char start, nint offset)
-            => Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, (IntPtr)offset)));
+        private static Vector<ushort> LoadVector(ref char start, nint offset)
+            => Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, offset)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector128<ushort> LoadVector128(ref char start, nint offset)
-            => Unsafe.ReadUnaligned<Vector128<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, (IntPtr)offset)));
+        private static Vector128<ushort> LoadVector128(ref char start, nint offset)
+            => Unsafe.ReadUnaligned<Vector128<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, offset)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector256<ushort> LoadVector256(ref char start, nint offset)
-            => Unsafe.ReadUnaligned<Vector256<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, (IntPtr)offset)));
+        private static Vector256<ushort> LoadVector256(ref char start, nint offset)
+            => Unsafe.ReadUnaligned<Vector256<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, offset)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nint GetCharVectorSpanLength(nint offset, nint length)
+        private static nint GetCharVectorSpanLength(nint offset, nint length)
             => (length - offset) & ~(Vector<ushort>.Count - 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nint GetCharVector128SpanLength(nint offset, nint length)
+        private static nint GetCharVector128SpanLength(nint offset, nint length)
             => (length - offset) & ~(Vector128<ushort>.Count - 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1080,6 +1088,25 @@ namespace System
             // If a GC does occur and alignment is lost, the GC cost will outweigh any gains from alignment so it
             // isn't too important to pin to maintain the alignment.
             return (nint)(uint)(-(int)Unsafe.AsPointer(ref searchSpace) / ElementsPerByte) & (Vector128<ushort>.Count - 1);
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryFindFirstMatchedLane(Vector128<ushort> compareResult, ref int matchedLane)
+        {
+            Debug.Assert(AdvSimd.Arm64.IsSupported);
+
+            Vector128<byte> pairwiseSelectedLane = AdvSimd.Arm64.AddPairwise(compareResult.AsByte(), compareResult.AsByte());
+            ulong selectedLanes = pairwiseSelectedLane.AsUInt64().ToScalar();
+            if (selectedLanes == 0)
+            {
+                // all lanes are zero, so nothing matched.
+                return false;
+            }
+
+            // Find the first lane that is set inside compareResult.
+            matchedLane = BitOperations.TrailingZeroCount(selectedLanes) >> 3;
+            return true;
         }
     }
 }

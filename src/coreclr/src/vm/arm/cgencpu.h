@@ -784,19 +784,6 @@ public:
         Emit16((WORD)((imm3 << 12) | (dest << 8) | imm8));
     }
 
-    void ThumbEmitCmpReg(ThumbReg reg1, ThumbReg reg2)
-    {
-        if(reg1 < 8 && reg2 <8)
-        {
-            Emit16((WORD)(0x4280 | reg2 << 3 | reg1));
-        }
-        else
-        {
-            _ASSERTE(reg1 != ThumbReg(15) && reg2 != ThumbReg(15));
-            Emit16((WORD)(0x4500 | reg2 << 3 | (reg1 & 0x7) | (reg1 & 0x8 ? 0x80 : 0x0)));
-        }
-    }
-
     void ThumbEmitIncrement(ThumbReg dest, unsigned int value)
     {
         while (value)
@@ -934,25 +921,11 @@ public:
     }
 #endif // FEATURE_INTERPRETER
 
-    void ThumbEmitCondFlagJump(CodeLabel * target,UINT cond);
-
-    void ThumbEmitCondRegJump(CodeLabel *target, BOOL nonzero, ThumbReg reg);
-
-    void ThumbEmitNearJump(CodeLabel *target);
-
     // Scratches r12.
-    void ThumbEmitCallManagedMethod(MethodDesc *pMD, bool fTailcall);
+    void ThumbEmitTailCallManagedMethod(MethodDesc *pMD);
 
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
     VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
-
-    static Stub * CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
-                                              MethodDesc* pMD,
-                                              CorInfoHelperTailCallSpecialHandling flags);
-
-private:
-    void ThumbCopyOneTailCallArg(UINT * pnSrcAlign, const ArgLocDesc * pArgLoc, UINT * pcbStackSpace);
-    void ThumbEmitCallWithGenericInstantiationParameter(MethodDesc *pMD, void *pHiddenArg);
 };
 
 extern "C" void SinglecastDelegateInvokeStub();

@@ -184,7 +184,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15142", TestRuntimes.Mono)]
         [InlineData("AssemblyLoadContextCollectible", true)]
         [InlineData("AssemblyLoadContextNonCollectible", false)]
         public static void PublicConstructor_Theory(string name, bool isCollectible)

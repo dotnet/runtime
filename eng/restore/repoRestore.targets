@@ -4,8 +4,6 @@
     <RestoreProjectStyle Condition="'$(MSBuildProjectExtension)' != '.depproj'">Unknown</RestoreProjectStyle>
   </PropertyGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)codeAnalysis.targets" />
-
   <PropertyGroup>
     <!-- Nuget will normally disable all generated imports as part of a restore to avoid 
          non-determinism where first restore changes a subsequent restore,

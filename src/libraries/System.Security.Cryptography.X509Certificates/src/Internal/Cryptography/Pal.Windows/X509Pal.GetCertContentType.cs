@@ -22,7 +22,7 @@ namespace Internal.Cryptography.Pal
     /// </summary>
     internal sealed partial class X509Pal : IX509Pal
     {
-        public X509ContentType GetCertContentType(byte[] rawData)
+        public X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
         {
             ContentType contentType;
 

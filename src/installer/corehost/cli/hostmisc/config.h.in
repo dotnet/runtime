@@ -1,0 +1,6 @@
+#ifndef _PAL_CONFIG_H_INCLUDED
+#define _PAL_CONFIG_H_INCLUDED 1
+
+#cmakedefine01 HAVE_DIRENT_D_TYPE
+
+#endif

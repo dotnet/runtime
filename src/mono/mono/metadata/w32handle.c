@@ -597,7 +597,6 @@ again:
 		if (!handles_data [i])
 			continue;
 		if (!mono_w32handle_trylock (handles_data [i])) {
-			/* Bummer */
 
 			for (j = i - 1; j >= 0; j--) {
 				if (!handles_data [j])
@@ -813,6 +812,34 @@ own_if_owned (MonoW32Handle *handle_data, gboolean *abandoned)
 	*abandoned = FALSE;
 	mono_w32handle_ops_own (handle_data, abandoned);
 	return TRUE;
+}
+
+gboolean
+mono_w32handle_handle_is_signalled (gpointer handle)
+{
+	MonoW32Handle *handle_data;
+	gboolean res;
+
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data))
+		return FALSE;
+
+	res = mono_w32handle_issignalled (handle_data);
+	mono_w32handle_unref (handle_data);
+	return res;
+}
+
+gboolean
+mono_w32handle_handle_is_owned (gpointer handle)
+{
+	MonoW32Handle *handle_data;
+	gboolean res;
+
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data))
+		return FALSE;
+
+	res = mono_w32handle_ops_isowned (handle_data);
+	mono_w32handle_unref (handle_data);
+	return res;
 }
 
 #ifdef HOST_WIN32

@@ -13,6 +13,16 @@
 #include <mono/utils/mono-error.h>
 #include <mono/utils/mono-coop-mutex.h>
 
+#ifdef ENABLE_NETCORE
+#if defined(TARGET_OSX)
+#define MONO_LOADER_LIBRARY_NAME "libcoreclr.dylib"
+#elif defined(TARGET_ANDROID)
+#define MONO_LOADER_LIBRARY_NAME "libmonodroid.so"
+#else
+#define MONO_LOADER_LIBRARY_NAME "libcoreclr.so"
+#endif
+#endif
+
 typedef struct _MonoLoadedImages MonoLoadedImages;
 typedef struct _MonoAssemblyLoadContext MonoAssemblyLoadContext;
 
@@ -102,6 +112,9 @@ mono_alc_invoke_resolve_using_resolving_event_nofail (MonoAssemblyLoadContext *a
 
 MonoAssembly*
 mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
+
+MonoAssemblyLoadContext *
+mono_alc_from_gchandle (MonoGCHandle alc_gchandle);
 
 #endif /* ENABLE_NETCORE */
 

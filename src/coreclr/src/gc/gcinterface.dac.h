@@ -18,6 +18,12 @@
 #define MAX_GC_MECHANISM_BITS_COUNT     2
 #define MAX_GLOBAL_GC_MECHANISMS_COUNT  6
 
+// The number of generations is hardcoded in to the dac APIS (DacpGcHeapDetails hard codes the size of its arrays)
+// The number of generations is hardcoded into some older dac APIS (for example DacpGcHeapDetails hard codes the size of its arrays)
+// This value cannot change and should not be used in new DAC APIs. New APIs can query GcDacVars.total_generation_count
+// variable which is dynamically initialized at runtime
+
+
 #define NUMBERGENERATIONS               4
 #define INITIAL_HANDLE_TABLE_ARRAY_SIZE 10
 #define HANDLE_MAX_INTERNAL_TYPES       12
@@ -184,6 +190,7 @@ struct GcDacVars {
   uint8_t major_version_number;
   uint8_t minor_version_number;
   size_t generation_size;
+  size_t total_generation_count;
 #ifdef DACCESS_COMPILE
  #define GC_DAC_VAR(type, name)       DPTR(type) name;
  #define GC_DAC_PTR_VAR(type, name)   DPTR(type*) name;

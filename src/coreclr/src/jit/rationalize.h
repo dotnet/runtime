@@ -25,7 +25,7 @@ public:
 
 #endif // DEBUG
 
-    virtual void DoPhase() override;
+    virtual PhaseStatus DoPhase() override;
 
     static void RewriteAssignmentIntoStoreLcl(GenTreeOp* assignment);
 
@@ -34,6 +34,8 @@ private:
     {
         return LIR::AsRange(m_block);
     }
+
+    void RewriteIndir(LIR::Use& use);
 
     // SIMD related
     void RewriteSIMDIndir(LIR::Use& use);

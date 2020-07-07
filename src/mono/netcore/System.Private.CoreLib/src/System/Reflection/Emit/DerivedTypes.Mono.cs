@@ -27,26 +27,29 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
-
 
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
     internal abstract partial class SymbolType : TypeInfo
     {
-        internal Type m_baseType;
+#region Sync with MonoReflectionDerivedType in object-internals.h
+        private protected Type m_baseType;
+#endregion
 
+        [DynamicDependency(nameof(m_baseType))]  // Automatically keeps all previous fields too due to StructLayout
         internal SymbolType(Type elementType)
         {
             this.m_baseType = elementType;
         }
 
-        internal abstract string FormatName(string elementName);
+        [return: NotNullIfNotNull("elementName")]
+        internal abstract string? FormatName(string? elementName);
 
         protected override bool IsArrayImpl()
         {
@@ -90,11 +93,11 @@ namespace System.Reflection.Emit
             return FormatName(m_baseType.ToString());
         }
 
-        public override string AssemblyQualifiedName
+        public override string? AssemblyQualifiedName
         {
             get
             {
-                string fullName = FormatName(m_baseType.FullName);
+                string? fullName = FormatName(m_baseType.FullName);
                 if (fullName == null)
                     return null;
                 return fullName + ", " + m_baseType.Assembly.FullName;
@@ -102,7 +105,7 @@ namespace System.Reflection.Emit
         }
 
 
-        public override string FullName
+        public override string? FullName
         {
             get
             {
@@ -145,8 +148,8 @@ namespace System.Reflection.Emit
             get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType")); }
         }
 
-        public override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target,
-            object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
+        public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
+            object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
         }
@@ -179,7 +182,7 @@ namespace System.Reflection.Emit
             get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType")); }
         }
 
-        public override string Namespace
+        public override string? Namespace
         {
             get { return m_baseType.Namespace; }
         }
@@ -189,8 +192,8 @@ namespace System.Reflection.Emit
             get { return typeof(System.Array); }
         }
 
-        protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder,
-                CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
+                CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
         }
@@ -200,8 +203,8 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
         }
 
-        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder,
-                CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
+                CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
         }
@@ -241,8 +244,8 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
         }
 
-        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder,
-                Type returnType, Type[] types, ParameterModifier[] modifiers)
+        protected override PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder,
+                Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
         }
@@ -340,10 +343,13 @@ namespace System.Reflection.Emit
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class ArrayType : SymbolType
+    internal sealed class ArrayType : SymbolType
     {
+#region Sync with MonoReflectionArrayType in object-internals.h
         private int rank;
+#endregion
 
+        [DynamicDependency(nameof(rank))]  // Automatically keeps all previous fields too due to StructLayout
         internal ArrayType(Type elementType, int rank) : base(elementType)
         {
             this.rank = rank;
@@ -388,23 +394,24 @@ namespace System.Reflection.Emit
             return (rank == 0) ? 1 : rank;
         }
 
-        internal override string FormatName(string elementName)
+        [return: NotNullIfNotNull("elementName")]
+        internal override string? FormatName(string? elementName)
         {
             if (elementName == null)
                 return null;
             StringBuilder sb = new StringBuilder(elementName);
-            sb.Append("[");
+            sb.Append('[');
             for (int i = 1; i < rank; ++i)
-                sb.Append(",");
+                sb.Append(',');
             if (rank == 1)
-                sb.Append("*");
-            sb.Append("]");
+                sb.Append('*');
+            sb.Append(']');
             return sb.ToString();
         }
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class ByRefType : SymbolType
+    internal sealed class ByRefType : SymbolType
     {
         internal ByRefType(Type elementType) : base(elementType)
         {
@@ -420,7 +427,8 @@ namespace System.Reflection.Emit
             return true;
         }
 
-        internal override string FormatName(string elementName)
+        [return: NotNullIfNotNull("elementName")]
+        internal override string? FormatName(string? elementName)
         {
             if (elementName == null)
                 return null;
@@ -449,7 +457,7 @@ namespace System.Reflection.Emit
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class PointerType : SymbolType
+    internal sealed class PointerType : SymbolType
     {
         internal PointerType(Type elementType) : base(elementType)
         {
@@ -465,7 +473,8 @@ namespace System.Reflection.Emit
             return true;
         }
 
-        internal override string FormatName(string elementName)
+        [return: NotNullIfNotNull("elementName")]
+        internal override string? FormatName(string? elementName)
         {
             if (elementName == null)
                 return null;

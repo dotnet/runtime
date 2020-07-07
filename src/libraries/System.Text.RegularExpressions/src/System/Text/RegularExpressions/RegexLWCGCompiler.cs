@@ -28,7 +28,7 @@ namespace System.Text.RegularExpressions
         private static readonly Type[] s_paramTypes = new Type[] { typeof(RegexRunner) };
 
         /// <summary>Id number to use for the next compiled regex.</summary>
-        private static int s_regexCount = 0;
+        private static int s_regexCount;
 
         public RegexLWCGCompiler() : base(persistsAssembly: false)
         {
@@ -42,7 +42,7 @@ namespace System.Text.RegularExpressions
             _strings = code.Strings;
             _leadingCharClasses = code.LeadingCharClasses;
             _boyerMoorePrefix = code.BoyerMoorePrefix;
-            _anchors = code.Anchors;
+            _leadingAnchor = code.LeadingAnchor;
             _trackcount = code.TrackCount;
             _options = options;
             _hasTimeout = hasTimeout;

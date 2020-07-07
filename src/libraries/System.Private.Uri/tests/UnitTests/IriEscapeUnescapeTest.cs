@@ -332,8 +332,6 @@ namespace System.Net.Test.Uri.IriTest
                 chars.Length == 0,
                 "Invalid test: MatchUTF8Sequence cannot be called when no Unicode characters can be decoded.");
 
-            // dest is guaranteed to have space for the escaped version of all characters (in the form of %HH).
-            char[] dest = new char[inbytes.Length * 3];
             char[] unescapedChars = new char[inbytes.Length];
             chars.CopyTo(unescapedChars, 0);
 

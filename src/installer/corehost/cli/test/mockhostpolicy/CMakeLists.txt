@@ -12,5 +12,4 @@ set(SOURCES
 
 include(../testlib.cmake)
 
-install(TARGETS mockhostpolicy DESTINATION corehost_test)
-install_symbols(mockhostpolicy corehost_test)
+install_with_stripped_symbols(mockhostpolicy TARGETS corehost_test)

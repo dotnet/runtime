@@ -34,7 +34,7 @@ convert_to_absolute_path(SOURCES ${SOURCES})
 convert_to_absolute_path(ASM_HELPERS_SOURCES ${ASM_HELPERS_SOURCES})
 
 if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
-    preprocess_compile_asm(ASM_FILES ${ASM_HELPERS_SOURCES} OUTPUT_OBJECTS ASM_HELPERS_OBJECTS)
+    preprocess_compile_asm(TARGET ijwhost ASM_FILES ${ASM_HELPERS_SOURCES} OUTPUT_OBJECTS ASM_HELPERS_OBJECTS)
     list(APPEND ASM_HELPERS_SOURCES ${ASM_HELPERS_OBJECTS})
 endif ()
 
@@ -51,5 +51,4 @@ if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_AR
     target_link_libraries(ijwhost Advapi32.lib Ole32.lib)
 endif()
 
-install(TARGETS ijwhost DESTINATION corehost)
-install_symbols (ijwhost corehost)
+install_with_stripped_symbols(ijwhost TARGETS corehost)

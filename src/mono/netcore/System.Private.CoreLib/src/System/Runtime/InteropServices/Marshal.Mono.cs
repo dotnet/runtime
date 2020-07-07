@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Collections.Generic;
 
 namespace System.Runtime.InteropServices
 {
@@ -51,7 +54,7 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool IsPinnableType(Type type);
 
-        internal static bool IsPinnable(object obj)
+        internal static bool IsPinnable(object? obj)
         {
             if (obj == null || obj is string)
                 return true;
@@ -63,7 +66,7 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void SetLastWin32Error(int error);
 
-        private static Exception GetExceptionForHRInternal(int errorCode, IntPtr errorInfo)
+        private static Exception? GetExceptionForHRInternal(int errorCode, IntPtr errorInfo)
         {
             switch (errorCode)
             {
@@ -307,16 +310,18 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void PtrToStructureInternal(IntPtr ptr, object structure, bool allowValueClasses);
 
-        private static void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses)
+        private static void PtrToStructureHelper(IntPtr ptr, object? structure, bool allowValueClasses)
         {
             if (structure == null)
                 throw new ArgumentNullException(nameof(structure));
             PtrToStructureInternal(ptr, structure, allowValueClasses);
         }
 
-        private static object PtrToStructureHelper(IntPtr ptr, Type structureType)
+        private static object PtrToStructureHelper(IntPtr ptr,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+            Type structureType)
         {
-            object? obj = Activator.CreateInstance(structureType);
+            object obj = Activator.CreateInstance(structureType)!;
             PtrToStructureHelper(ptr, obj, true);
             return obj;
         }
@@ -346,12 +351,93 @@ namespace System.Runtime.InteropServices
             return res;
         }
 
-        public static unsafe IntPtr StringToBSTR(string s)
+        public static unsafe IntPtr StringToBSTR(string? s)
         {
             if (s == null)
                 return IntPtr.Zero;
             fixed (char* fixed_s = s)
                 return BufferToBSTR(fixed_s, s.Length);
+        }
+
+        private sealed class MarshalerInstanceKeyComparer : IEqualityComparer<(Type, string)>
+        {
+            public bool Equals((Type, string) lhs, (Type, string) rhs)
+            {
+                return lhs.CompareTo(rhs) == 0;
+            }
+
+            public int GetHashCode((Type, string) key)
+            {
+                return key.GetHashCode();
+            }
+        }
+
+        private static Dictionary<(Type, string), ICustomMarshaler>? MarshalerInstanceCache;
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of MarshalAs.CustomMarshaler")]
+        internal static ICustomMarshaler? GetCustomMarshalerInstance(Type type, string cookie)
+        {
+            var key = (type, cookie);
+
+            LazyInitializer.EnsureInitialized(
+                ref MarshalerInstanceCache,
+                () => new Dictionary<(Type, string), ICustomMarshaler>(new MarshalerInstanceKeyComparer())
+            );
+
+            ICustomMarshaler? result;
+            bool gotExistingInstance;
+            lock (MarshalerInstanceCache)
+                gotExistingInstance = MarshalerInstanceCache.TryGetValue(key, out result);
+
+            if (!gotExistingInstance)
+            {
+                RuntimeMethodInfo? getInstanceMethod;
+                try
+                {
+                    getInstanceMethod = (RuntimeMethodInfo?)type.GetMethod(
+                        "GetInstance", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod,
+                        null, new Type[] { typeof(string) }, null
+                    );
+                }
+                catch (AmbiguousMatchException)
+                {
+                    throw new ApplicationException($"Custom marshaler '{type.FullName}' implements multiple static GetInstance methods that take a single string parameter.");
+                }
+
+                if ((getInstanceMethod == null) ||
+                    (getInstanceMethod.ReturnType != typeof(ICustomMarshaler)))
+                {
+                    throw new ApplicationException($"Custom marshaler '{type.FullName}' does not implement a static GetInstance method that takes a single string parameter and returns an ICustomMarshaler.");
+                }
+
+                Exception? exc;
+                try
+                {
+                    result = (ICustomMarshaler?)getInstanceMethod.InternalInvoke(null, new object[] { cookie }, out exc);
+                }
+                catch (Exception e)
+                {
+                    // FIXME: mscorlib's legacyUnhandledExceptionPolicy is apparently 1,
+                    //  so exceptions are thrown instead of being passed through the outparam
+                    exc = e;
+                    result = null;
+                }
+
+                if (exc != null)
+                {
+                    var edi = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(exc);
+                    edi.Throw();
+                }
+
+                if (result == null)
+                    throw new ApplicationException($"A call to GetInstance() for custom marshaler '{type.FullName}' returned null, which is not allowed.");
+
+                lock (MarshalerInstanceCache)
+                    MarshalerInstanceCache[key] = result;
+            }
+
+            return result;
         }
 
         #region PlatformNotSupported

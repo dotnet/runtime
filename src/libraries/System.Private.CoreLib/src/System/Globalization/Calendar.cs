@@ -57,7 +57,7 @@ namespace System.Globalization
 
         private int _currentEraValue = -1;
 
-        private bool _isReadOnly = false;
+        private bool _isReadOnly;
 
         public virtual DateTime MinSupportedDateTime => DateTime.MinValue;
 
@@ -123,7 +123,7 @@ namespace System.Globalization
                 if (_currentEraValue == -1)
                 {
                     Debug.Assert(BaseCalendarID != CalendarId.UNINITIALIZED_VALUE, "[Calendar.CurrentEraValue] Expected a real calendar ID");
-                    _currentEraValue = CalendarData.GetCalendarData(BaseCalendarID).iCurrentEra;
+                    _currentEraValue = CalendarData.GetCalendarCurrentEra(this);
                 }
 
                 return _currentEraValue;
@@ -725,7 +725,7 @@ namespace System.Globalization
 
         internal static int GetSystemTwoDigitYearSetting(CalendarId CalID, int defaultYearValue)
         {
-            int twoDigitYearMax = CalendarData.GetTwoDigitYearMax(CalID);
+            int twoDigitYearMax = GlobalizationMode.UseNls ? CalendarData.NlsGetTwoDigitYearMax(CalID) : CalendarData.IcuGetTwoDigitYearMax(CalID);
             return twoDigitYearMax >= 0 ? twoDigitYearMax : defaultYearValue;
         }
     }

@@ -250,7 +250,7 @@ namespace System.Drawing.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(ColorNamePairs))]
-        public void GetHashCode(string name1, string name2)
+        public void GetHashCodeTest(string name1, string name2)
         {
             Assert.NotEqual(name1, name2);
             Color c1 = GetColorByProperty(name1) ?? Color.FromName(name1);

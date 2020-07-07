@@ -67,7 +67,7 @@ static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 	}
 #endif
 	if (mono_dump_start ())
-		mono_handle_native_crash (mono_get_signame (SIGSEGV), NULL, NULL);
+		mono_handle_native_crash (mono_get_signame (SIGSEGV), NULL, NULL, NULL);
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -1140,7 +1140,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 		MonoContext mctx;
 		mono_sigctx_to_monoctx (sigctx, &mctx);
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, siginfo);
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, siginfo, sigctx);
 		else
 			abort ();
 	}
@@ -1241,4 +1241,16 @@ mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 		MONO_CONTEXT_SET_SP (ctx, (gsize)MONO_CONTEXT_GET_SP (ctx) - align);
 
 	MONO_CONTEXT_SET_IP (ctx, func);
+}
+
+void
+mono_arch_undo_ip_adjustment (MonoContext *ctx)
+{
+	ctx->eip++;
+}
+
+void
+mono_arch_do_ip_adjustment (MonoContext *ctx)
+{
+	ctx->eip--;
 }

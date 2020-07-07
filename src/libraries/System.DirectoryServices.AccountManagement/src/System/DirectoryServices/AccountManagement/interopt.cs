@@ -459,15 +459,15 @@ namespace System.DirectoryServices.AccountManagement
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class DomainControllerInfo
         {
-            public string DomainControllerName = null;
-            public string DomainControllerAddress = null;
-            public int DomainControllerAddressType = 0;
+            public string DomainControllerName;
+            public string DomainControllerAddress;
+            public int DomainControllerAddressType;
             public Guid DomainGuid;
-            public string DomainName = null;
-            public string DnsForestName = null;
-            public int Flags = 0;
-            public string DcSiteName = null;
-            public string ClientSiteName = null;
+            public string DomainName;
+            public string DnsForestName;
+            public int Flags;
+            public string DcSiteName;
+            public string ClientSiteName;
         }
 
         /*
@@ -506,11 +506,11 @@ namespace System.DirectoryServices.AccountManagement
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class WKSTA_INFO_100
         {
-            public int wki100_platform_id = 0;
-            public string wki100_computername = null;
-            public string wki100_langroup = null;
-            public int wki100_ver_major = 0;
-            public int wki100_ver_minor = 0;
+            public int wki100_platform_id;
+            public string wki100_computername;
+            public string wki100_langroup;
+            public int wki100_ver_major;
+            public int wki100_ver_minor;
         };
 
         [DllImport("wkscli.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "NetWkstaGetInfo", CharSet = CharSet.Unicode)]
@@ -651,7 +651,7 @@ namespace System.DirectoryServices.AccountManagement
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class TOKEN_GROUPS
         {
-            public int groupCount = 0;
+            public int groupCount;
             public IntPtr groups = IntPtr.Zero;
         }
 
@@ -659,7 +659,7 @@ namespace System.DirectoryServices.AccountManagement
         public sealed class SID_AND_ATTR
         {
             public IntPtr pSid = IntPtr.Zero;
-            public int attrs = 0;
+            public int attrs;
         }
 
         //
@@ -675,21 +675,21 @@ namespace System.DirectoryServices.AccountManagement
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class SID_IDENTIFIER_AUTHORITY
         {
-            public byte b1 = 0;
-            public byte b2 = 0;
-            public byte b3 = 0;
-            public byte b4 = 0;
-            public byte b5 = 0;
-            public byte b6 = 0;
+            public byte b1;
+            public byte b2;
+            public byte b3;
+            public byte b4;
+            public byte b5;
+            public byte b6;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class LSA_OBJECT_ATTRIBUTES
         {
-            public int length = 0;
+            public int length;
             public IntPtr rootDirectory = IntPtr.Zero;
             public IntPtr objectName = IntPtr.Zero;
-            public int attributes = 0;
+            public int attributes;
             public IntPtr securityDescriptor = IntPtr.Zero;
             public IntPtr securityQualityOfService = IntPtr.Zero;
         }
@@ -704,25 +704,25 @@ namespace System.DirectoryServices.AccountManagement
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class LSA_UNICODE_STRING
         {
-            public ushort length = 0;
-            public ushort maximumLength = 0;
+            public ushort length;
+            public ushort maximumLength;
             public IntPtr buffer = IntPtr.Zero;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class LSA_UNICODE_STRING_Managed
         {
-            public ushort length = 0;
-            public ushort maximumLength = 0;
+            public ushort length;
+            public ushort maximumLength;
             public string buffer;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class LSA_TRANSLATED_NAME
         {
-            public int use = 0;
+            public int use;
             public LSA_UNICODE_STRING name = new LSA_UNICODE_STRING();
-            public int domainIndex = 0;
+            public int domainIndex;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -731,7 +731,7 @@ namespace System.DirectoryServices.AccountManagement
             // To stop the compiler from autogenerating a constructor for this class
             private LSA_REFERENCED_DOMAIN_LIST() { }
 
-            public int entries = 0;
+            public int entries;
             public IntPtr domains = IntPtr.Zero;
         }
 

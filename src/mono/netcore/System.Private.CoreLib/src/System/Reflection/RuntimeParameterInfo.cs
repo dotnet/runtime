@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable disable
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -13,7 +12,7 @@ namespace System.Reflection
 {
     internal class RuntimeParameterInfo : ParameterInfo
     {
-        internal MarshalAsAttribute marshalAs;
+        internal MarshalAsAttribute? marshalAs;
 
         // Called by the runtime
         internal RuntimeParameterInfo(string name, Type type, int position, int attrs, object defaultValue, MemberInfo member, MarshalAsAttribute marshalAs)
@@ -60,7 +59,7 @@ namespace System.Reflection
             }
         }
 
-        internal RuntimeParameterInfo(ParameterBuilder pb, Type type, MemberInfo member, int position)
+        internal RuntimeParameterInfo(ParameterBuilder? pb, Type? type, MemberInfo member, int position)
         {
             this.ClassImpl = type;
             this.MemberImpl = member;
@@ -78,13 +77,13 @@ namespace System.Reflection
             }
         }
 
-        internal static ParameterInfo New(ParameterBuilder pb, Type type, MemberInfo member, int position)
+        internal static ParameterInfo New(ParameterBuilder? pb, Type? type, MemberInfo member, int position)
         {
             return new RuntimeParameterInfo(pb, type, member, position);
         }
 
         /*FIXME this constructor looks very broken in the position parameter*/
-        internal RuntimeParameterInfo(ParameterInfo pinfo, Type type, MemberInfo member, int position)
+        internal RuntimeParameterInfo(ParameterInfo? pinfo, Type? type, MemberInfo member, int position)
         {
             this.ClassImpl = type;
             this.MemberImpl = member;
@@ -124,7 +123,7 @@ namespace System.Reflection
         }
 
         public override
-        object DefaultValue
+        object? DefaultValue
         {
             get
             {
@@ -147,7 +146,7 @@ namespace System.Reflection
         }
 
         public override
-        object RawDefaultValue
+        object? RawDefaultValue
         {
             get
             {
@@ -166,7 +165,7 @@ namespace System.Reflection
             {
                 if (MemberImpl is PropertyInfo prop)
                 {
-                    MethodInfo mi = prop.GetGetMethod(true) ?? prop.GetSetMethod(true);
+                    MethodInfo mi = prop.GetGetMethod(true) ?? prop.GetSetMethod(true)!;
 
                     return mi.GetParametersInternal()[PositionImpl].MetadataToken;
                 }
@@ -193,9 +192,9 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
         }
 
-        internal object GetDefaultValueImpl(ParameterInfo pinfo)
+        internal object? GetDefaultValueImpl(ParameterInfo pinfo)
         {
-            FieldInfo field = typeof(ParameterInfo).GetField("DefaultValueImpl", BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo field = typeof(ParameterInfo).GetField("DefaultValueImpl", BindingFlags.Instance | BindingFlags.NonPublic)!;
             return field.GetValue(pinfo);
         }
 
@@ -216,7 +215,7 @@ namespace System.Reflection
 
         public override Type[] GetOptionalCustomModifiers() => GetCustomModifiers(true);
 
-        internal object[] GetPseudoCustomAttributes()
+        internal object[]? GetPseudoCustomAttributes()
         {
             int count = 0;
 
@@ -249,7 +248,7 @@ namespace System.Reflection
             return attrs;
         }
 
-        internal CustomAttributeData[] GetPseudoCustomAttributesData()
+        internal CustomAttributeData[]? GetPseudoCustomAttributesData()
         {
             int count = 0;
 
@@ -268,16 +267,16 @@ namespace System.Reflection
             count = 0;
 
             if (IsIn)
-                attrsData[count++] = new CustomAttributeData((typeof(InAttribute)).GetConstructor(Type.EmptyTypes));
+                attrsData[count++] = new CustomAttributeData((typeof(InAttribute)).GetConstructor(Type.EmptyTypes)!);
             if (IsOut)
-                attrsData[count++] = new CustomAttributeData((typeof(OutAttribute)).GetConstructor(Type.EmptyTypes));
+                attrsData[count++] = new CustomAttributeData((typeof(OutAttribute)).GetConstructor(Type.EmptyTypes)!);
             if (IsOptional)
-                attrsData[count++] = new CustomAttributeData((typeof(OptionalAttribute)).GetConstructor(Type.EmptyTypes));
+                attrsData[count++] = new CustomAttributeData((typeof(OptionalAttribute)).GetConstructor(Type.EmptyTypes)!);
             if (marshalAs != null)
             {
                 var ctorArgs = new CustomAttributeTypedArgument[] { new CustomAttributeTypedArgument(typeof(UnmanagedType), marshalAs.Value) };
                 attrsData[count++] = new CustomAttributeData(
-                    (typeof(MarshalAsAttribute)).GetConstructor(new[] { typeof(UnmanagedType) }),
+                    (typeof(MarshalAsAttribute)).GetConstructor(new[] { typeof(UnmanagedType) })!,
                     ctorArgs,
                     Array.Empty<CustomAttributeNamedArgument>());//FIXME Get named params
             }
@@ -291,7 +290,7 @@ namespace System.Reflection
         {
             get
             {
-                object defaultValue = DefaultValue;
+                object? defaultValue = DefaultValue;
                 if (defaultValue == null)
                     return true;
 
@@ -305,7 +304,7 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern Type[] GetTypeModifiers(Type type, MemberInfo member, int position, bool optional);
 
-        internal static ParameterInfo New(ParameterInfo pinfo, Type type, MemberInfo member, int position)
+        internal static ParameterInfo New(ParameterInfo pinfo, Type? type, MemberInfo member, int position)
         {
             return new RuntimeParameterInfo(pinfo, type, member, position);
         }

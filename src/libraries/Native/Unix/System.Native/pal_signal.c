@@ -217,6 +217,7 @@ void SystemNative_RegisterForSigChld(SigChldCallback callback)
 static void InstallSignalHandler(int sig, bool skipWhenSigIgn)
 {
     int rv;
+    (void)rv; // only used for assert
     struct sigaction* orig = OrigActionFor(sig);
 
     if (skipWhenSigIgn)

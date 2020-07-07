@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
         /// <inheritdoc />
         public IDisposable BeginScope<TState>(TState state)
         {
-            return NullDisposable.Instance;
+            return NullScope.Instance;
         }
 
         /// <inheritdoc />
@@ -40,16 +40,6 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public bool IsEnabled(LogLevel logLevel)
         {
             return false;
-        }
-
-        private class NullDisposable : IDisposable
-        {
-            public static readonly NullDisposable Instance = new NullDisposable();
-
-            public void Dispose()
-            {
-                // intentionally does nothing
-            }
         }
     }
 }

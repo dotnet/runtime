@@ -9,9 +9,9 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ActiveDirectorySiteCollection : CollectionBase
     {
-        internal DirectoryEntry de = null;
-        internal bool initialized = false;
-        internal DirectoryContext context = null;
+        internal DirectoryEntry de;
+        internal bool initialized;
+        internal DirectoryContext context;
 
         internal ActiveDirectorySiteCollection() { }
 
@@ -232,7 +232,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (value == null) throw new ArgumentNullException(nameof(value));
 
             if (!(value is ActiveDirectorySite))
-                throw new ArgumentException(nameof(value));
+                throw new ArgumentException(null, nameof(value));
 
             if (!((ActiveDirectorySite)value).existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, ((ActiveDirectorySite)value).Name));

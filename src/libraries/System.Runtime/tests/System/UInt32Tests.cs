@@ -69,7 +69,7 @@ namespace System.Tests
         [InlineData((uint)789, null, false)]
         [InlineData((uint)789, "789", false)]
         [InlineData((uint)789, 789, false)]
-        public static void Equals(uint i1, object obj, bool expected)
+        public static void EqualsTest(uint i1, object obj, bool expected)
         {
             if (obj is uint)
             {
@@ -125,7 +125,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void ToString(uint i, string format, IFormatProvider provider, string expected)
+        public static void ToStringTest(uint i, string format, IFormatProvider provider, string expected)
         {
             // Format is case insensitive
             string upperFormat = format.ToUpperInvariant();

@@ -51,16 +51,18 @@ void
 mono_llvm_dump_value (LLVMValueRef value)
 {
 	/* Same as LLVMDumpValue (), but print to stdout */
-	outs () << (*unwrap<Value> (value)) << "\n";
 	fflush (stdout);
+	outs () << (*unwrap<Value> (value)) << "\n";
+	outs ().flush ();
 }
 
 void
 mono_llvm_dump_module (LLVMModuleRef module)
 {
 	/* Same as LLVMDumpModule (), but print to stdout */
-	outs () << (*unwrap (module));
 	fflush (stdout);
+	outs () << (*unwrap (module));
+	outs ().flush ();
 }
 
 /* Missing overload for building an alloca with an alignment */
@@ -224,6 +226,13 @@ mono_llvm_build_weighted_branch (LLVMBuilderRef builder, LLVMValueRef cond, LLVM
 	MDBuilder mdb{ctx};
 	auto weights = mdb.createBranchWeights (t_weight, f_weight);
 	auto ins = b->CreateCondBr (unwrap (cond), unwrap (t), unwrap (f), weights);
+	return wrap (ins);
+}
+
+LLVMValueRef
+mono_llvm_build_exact_ashr (LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs) {
+	auto b = unwrap (builder);
+	auto ins = b->CreateAShr (unwrap (lhs), unwrap (rhs), "", true);
 	return wrap (ins);
 }
 

@@ -1,44 +1,10 @@
-<Project InitialTargets="SetupCoverageFilter">
-  <!-- Wrap RunCommand and RunArguments inside code coverage invocation. -->
-  <PropertyGroup>
-    <RunArguments>"$(TargetFileName)" --target "$(RunCommand)" --targetargs "$(RunArguments)" --format "$(CoverageFormat)" --output "$(CoverageOutputPath)" --threshold "$(CoverageThreshold)" --threshold-type "$(CoverageThresholdType)" --verbosity "$(CoverageVerbosity)"</RunArguments>
-    <RunArguments Condition="'$(CoverageSourceLink)' == 'true'">$(RunArguments) --use-source-link</RunArguments>
-    <RunCommand>"$(DotNetTool)" tool run coverlet</RunCommand>
-  </PropertyGroup>
-
-  <!-- Coverage report -->
-  <PropertyGroup>
-    <CoverageReportDir Condition="'$(CoverageReportDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'report'))</CoverageReportDir>
-    <CoverageReportResultsPath>$([MSBuild]::NormalizePath('$(CoverageReportDir)', 'index.htm'))</CoverageReportResultsPath>
-    <CoverageReportCommandLine>"$(DotNetTool)" tool run reportgenerator "-reports:$(CoverageReportInputPath)" "-targetdir:$(CoverageReportDir.TrimEnd('\/'))" "-reporttypes:$(CoverageReportTypes)" "-verbosity:$(CoverageReportVerbosity)"</CoverageReportCommandLine>
-  </PropertyGroup>
-
-  <!-- Skip generating individual reports if a full report is generated. -->
-  <ItemGroup Condition="'$(TestAllProjects)' != 'true' and '$(SkipCoverageReport)' != 'true'">
-    <PostRunScriptCommands Include="$(CoverageReportCommandLine)" />
-  </ItemGroup>
-
+<Project>
   <Target Name="SetupCoverageFilter">
-    <PropertyGroup Condition="'@(CoverageExcludeFile)' != ''">
-      <CoverageExcludeByFileFilter>--exclude-by-file @(CoverageExcludeFile -> '"%(Identity)"', ' --exclude-by-file ')</CoverageExcludeByFileFilter>
-      <RunArguments>$(RunArguments) $(CoverageExcludeByFileFilter)</RunArguments>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'@(CoverageProbePath)' != ''">
-      <IncludeDirectoriesFilter>--include-directory @(CoverageProbePath -> '"$(RunScriptHostDir)%(Identity)"', ' --include-directory ')</IncludeDirectoriesFilter>
-      <RunArguments>$(RunArguments) $(IncludeDirectoriesFilter)</RunArguments>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'@(CoverageExclude)' != ''">
-      <CoverageExcludeFilter>--exclude @(CoverageExclude -> '"%(Identity)"', ' --exclude ')</CoverageExcludeFilter>
-      <RunArguments>$(RunArguments) $(CoverageExcludeFilter)</RunArguments>
-    </PropertyGroup>
-
     <!--
       We need to filter the data to only the assembly being tested. Otherwise we will gather tons of data about other assemblies.
       If the code being tested is part of the runtime itself, it requires special treatment.
     -->
-    <PropertyGroup Condition="'$(AssemblyBeingTested)' == ''">
+    <PropertyGroup Condition="'$(AssemblyBeingTested)' == '' and '$(CreateIntermediateRunSettingsFile)' != 'true'">
       <_ProjectDirectoryUnderSourceDir>$(MSBuildProjectDirectory.SubString($(LibrariesProjectRoot.Length)))</_ProjectDirectoryUnderSourceDir>
       <AssemblyBeingTested>$(_ProjectDirectoryUnderSourceDir.SubString(0, $(_ProjectDirectoryUnderSourceDir.IndexOfAny("\\/"))))</AssemblyBeingTested>
     </PropertyGroup>
@@ -48,15 +14,76 @@
       CoverageAssemblies can be passed in to the build to gather coverage on additional assemblies.
     -->
     <ItemGroup>
-      <_CoverageAssemblies Include="$(AssemblyBeingTested)" />
-      <_CoverageAssemblies Include="System.Private.CoreLib" Condition="'$(TestRuntime)' == 'true'" />
-      <_CoverageAssemblies Include="@(AssembliesBeingTested)" />
-      <_CoverageAssemblies Include="$(CoverageAssemblies)" Condition="'$(CoverageAssemblies)' != ''" />
+      <CoverageInclude Include="$(AssemblyBeingTested)" />
+      <CoverageInclude Include="System.Private.CoreLib" Condition="'$(TestRuntime)' == 'true'" />
+      <CoverageInclude Include="@(AssembliesBeingTested)" />
+      <CoverageInclude Include="$(CoverageAssemblies)" Condition="'$(CoverageAssemblies)' != ''" />
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(CoverageType)' != 'all'">
-      <CoverageFilter>--include @(_CoverageAssemblies -> '"[%(Identity)]*"', ' --include ')</CoverageFilter>
-      <RunArguments>$(RunArguments) $(CoverageFilter)</RunArguments>
+    <PropertyGroup>
+      <CoverageIncludeFilter>@(CoverageInclude -> '[%(Identity)]*', ',')</CoverageIncludeFilter>
     </PropertyGroup>
+
+    <PropertyGroup Condition="'@(CoverageExcludeByFile)' != ''">
+      <CoverageExcludeByFileFilter>@(CoverageExcludeByFile -> '%(Identity)', ',')</CoverageExcludeByFileFilter>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'@(CoverageIncludeDirectory)' != ''">
+      <CoverageIncludeDirectoryFilter>@(CoverageIncludeDirectory -> '$(TestHostRootPath)%(Identity)', ',')</CoverageIncludeDirectoryFilter>
+    </PropertyGroup>
+  </Target>
+
+  <!-- TODO remove when https://github.com/coverlet-coverage/coverlet/issues/834 is fixed. -->
+  <Target Name="AddCoverageCommand"
+          BeforeTargets="GenerateRunScript"
+          DependsOnTargets="SetupCoverageFilter"
+          Condition="'$(Coverage)' == 'true'">
+    <PropertyGroup>
+      <CoverageOutputPath Condition="'$(CoverageOutputPath)' == ''">coverage.opencover.xml</CoverageOutputPath>
+      <CoverageReportInputPath Condition="'$(CoverageReportInputPath)' == ''">$(CoverageOutputPath)</CoverageReportInputPath>
+      <CoverageReportDir Condition="'$(CoverageReportDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'report'))</CoverageReportDir>
+
+      <RunScriptCommand>"$(DotNetTool)" tool run coverlet "$(TargetFileName)" --target "$(RunScriptHost)" --targetargs "$(RunScriptCommand.Replace('&quot;$(RunScriptHost)&quot;', ''))" --format "opencover" --output "$(CoverageOutputPath)" --verbosity "normal" --use-source-link</RunScriptCommand>
+      <RunScriptCommand Condition="'@(CoverageExcludeByFile)' != ''">$(RunScriptCommand) --exclude-by-file @(CoverageExcludeByFile -> '"%(Identity)"', ' --exclude-by-file ')</RunScriptCommand>
+      <RunScriptCommand Condition="'@(CoverageIncludeDirectory)' != ''">$(RunScriptCommand) --include-directory @(CoverageIncludeDirectory -> '"$(RunScriptHostDir)%(Identity)"', ' --include-directory ')</RunScriptCommand>
+      <RunScriptCommand>$(RunScriptCommand) --include @(CoverageInclude -> '"[%(Identity)]*"', ' --include ')</RunScriptCommand>
+      <CoverageReportCommandLine>"$(DotNetTool)" tool run reportgenerator "-reports:$(CoverageReportInputPath)" "-targetdir:$(CoverageReportDir.TrimEnd('\/'))" "-reporttypes:Html" "-verbosity:Info"</CoverageReportCommandLine>
+    </PropertyGroup>
+
+    <!-- Skip generating individual reports if a full report is generated. -->
+    <ItemGroup Condition="'$(BuildAllProjects)' != 'true' and '$(SkipCoverageReport)' != 'true'">
+      <PostRunScriptCommands Include="$(CoverageReportCommandLine)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Build a coverage report if building an individual library with Coverage true. -->
+  <Target Name="GenerateCoverageReport"
+          Condition="'$(Coverage)' == 'true' and '$(BuildAllProjects)' != 'true' and '$(SkipCoverageReport)' != 'true'"
+          AfterTargets="VSTest">
+    <ItemGroup Condition="'$(CoverageReportInputPath)' == ''">
+      <CoverageOutputFile Include="$(OutDir)TestResults\*\coverage.opencover.xml" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <CoverageReportInputPath Condition="'$(CoverageReportInputPath)' == ''">%(CoverageOutputFile.Identity)</CoverageReportInputPath>
+      <CoverageReportTypes Condition="'$(CoverageReportTypes)' == ''">Html</CoverageReportTypes>
+      <CoverageReportVerbosity Condition="'$(CoverageReportVerbosity)' == ''">Info</CoverageReportVerbosity>
+      <CoverageReportDir Condition="'$(CoverageReportDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'TestResults', 'report'))</CoverageReportDir>
+      <CoverageReportCommand>"$(DotNetTool)" tool run reportgenerator "-reports:$(CoverageReportInputPath)" "-targetdir:$(CoverageReportDir.TrimEnd('\/'))" "-reporttypes:$(CoverageReportTypes)" "-verbosity:$(CoverageReportVerbosity)"</CoverageReportCommand>
+    </PropertyGroup>
+
+    <Exec Command="$(CoverageReportCommand)" />
+  </Target>
+
+  
+  <!--
+    Clean the test results directory to guarantee that a report is generated from the
+    newest coverage results file.
+    Tracking issue https://github.com/microsoft/vstest/issues/2378.
+  -->
+  <Target Name="ClearTestResults"
+          BeforeTargets="VSTest"
+          Condition="'$(Coverage)' == 'true'">
+    <RemoveDir Directories="$(OutDir)TestResults" />
   </Target>
 </Project>

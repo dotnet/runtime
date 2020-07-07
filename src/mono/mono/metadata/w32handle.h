@@ -154,6 +154,12 @@ mono_w32handle_trylock (MonoW32Handle *handle_data);
 void
 mono_w32handle_unlock (MonoW32Handle *handle_data);
 
+gboolean
+mono_w32handle_handle_is_signalled (gpointer handle);
+
+gboolean
+mono_w32handle_handle_is_owned (gpointer handle);
+
 MonoW32HandleWaitRet
 mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable);
 

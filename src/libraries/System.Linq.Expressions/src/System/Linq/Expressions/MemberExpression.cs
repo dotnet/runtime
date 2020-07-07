@@ -55,7 +55,7 @@ namespace System.Linq.Expressions
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
         public sealed override ExpressionType NodeType => ExpressionType.MemberAccess;
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual MemberInfo GetMember()
         {
             throw ContractUtils.Unreachable;
@@ -177,6 +177,7 @@ namespace System.Linq.Expressions
         public static MemberExpression Field(Expression? expression, Type type, string fieldName)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
+            ContractUtils.RequiresNotNull(fieldName, nameof(fieldName));
 
             // bind to public names first
             FieldInfo? fi = type.GetField(fieldName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy)

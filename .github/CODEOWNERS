@@ -15,7 +15,6 @@
 
 /src/mono/mono/arch @vargaz @lewurm
 /src/mono/mono/benchmark @SamMonoRT @lewurm
-/src/mono/mono/btls @baulig @marek-safar
 /src/mono/mono/dis @lambdageek @vargaz
 /src/mono/mono/eglib @vargaz @lambdageek @CoffeeFlux @lewurm
 

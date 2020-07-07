@@ -30,7 +30,7 @@
     <BinDir>$(BaseOutputPathWithConfig)</BinDir>
     <BaseIntermediateOutputPath>$(RepoRoot)\artifacts\tests\coreclr\obj\$(OSPlatformConfig)\Managed\</BaseIntermediateOutputPath>
     <BaseIntermediateOutputPath Condition="'$(__ManagedTestIntermediatesDir)' != ''">$(__ManagedTestIntermediatesDir)\</BaseIntermediateOutputPath>
-    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$([System.IO.Path]::GetFullPath($(BaseOutputPathWithConfig)..\..\coreclr\obj\$(TargetOS).$(BuildArch).$(Configuration)\Native\))</__NativeTestIntermediatesDir>
+    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$([System.IO.Path]::GetFullPath($(BaseOutputPathWithConfig)..\..\coreclr\obj\$(TargetOS).$(TargetArchitecture).$(Configuration)\Native\))</__NativeTestIntermediatesDir>
     <BuildProjectRelativeDir>$(MSBuildProjectName)\</BuildProjectRelativeDir>
     <BuildProjectRelativeDir Condition="'$(MSBuildProjectDirectory.Contains($(TestSourceDir)))'">$([System.String]::Copy('$(MSBuildProjectDirectory)').Replace($(TestSourceDir),''))\$(MSBuildProjectName)</BuildProjectRelativeDir>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(BuildProjectRelativeDir)\</IntermediateOutputPath>
@@ -67,31 +67,59 @@
              TargetsWindows property may already be set. Only set the property if
              it is not already defined -->
         <TargetsWindows Condition="'$(TargetsWindows)' == ''" >true</TargetsWindows>
-        <TestNugetRuntimeId>win-$(__BuildArch)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>win-$(TargetArchitecture)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetOS)'=='Linux'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsLinux>true</TargetsLinux>
-        <TestNugetRuntimeId>ubuntu.14.04-$(__BuildArch)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetOS)'=='OSX'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsOSX>true</TargetsOSX>
-        <TestNugetRuntimeId>osx.10.12-$(__BuildArch)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>osx.10.12-$(TargetArchitecture)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetOS)'=='FreeBSD'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsFreeBSD>true</TargetsFreeBSD>
-        <TestNugetRuntimeId>ubuntu.14.04-$(__BuildArch)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetOS)'=='NetBSD'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsNetBSD>true</TargetsNetBSD>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetOS)'=='illumos'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsIllumos>true</TargetsIllumos>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetOS)'=='Solaris'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsSolaris>true</TargetsSolaris>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
   </Choose>
+
+  <!-- Set arch specific properties -->
+  <PropertyGroup>
+    <TargetBits>32</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='x64'">64</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='arm64'">64</TargetBits>
+  </PropertyGroup>
 
   <PropertyGroup>
     <TargetRid>$(__RuntimeId)</TargetRid>
@@ -109,7 +137,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'FreeBSD' AND '$(TargetOS)' != 'Linux' AND '$(TargetOS)' != 'OSX'">true</TargetsUnknownUnix>
+    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'FreeBSD' AND '$(TargetOS)' != 'Linux' AND '$(TargetOS)' != 'NetBSD' AND '$(TargetOS)' != 'OSX' AND '$(TargetOS)' != 'illumos' AND '$(TargetOS)' != 'Solaris'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
   </PropertyGroup>

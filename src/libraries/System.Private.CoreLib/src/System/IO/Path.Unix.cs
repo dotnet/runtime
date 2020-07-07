@@ -122,13 +122,12 @@ namespace System.IO
         public static string? GetPathRoot(string? path)
         {
             if (PathInternal.IsEffectivelyEmpty(path)) return null;
-
             return IsPathRooted(path) ? PathInternal.DirectorySeparatorCharAsString : string.Empty;
         }
 
         public static ReadOnlySpan<char> GetPathRoot(ReadOnlySpan<char> path)
         {
-            return PathInternal.IsEffectivelyEmpty(path) && IsPathRooted(path) ? PathInternal.DirectorySeparatorCharAsString.AsSpan() : ReadOnlySpan<char>.Empty;
+            return IsPathRooted(path) ? PathInternal.DirectorySeparatorCharAsString.AsSpan() : ReadOnlySpan<char>.Empty;
         }
 
         /// <summary>Gets whether the system is case-sensitive.</summary>
@@ -136,7 +135,7 @@ namespace System.IO
         {
             get
             {
-                #if TARGET_OSX || TARGET_IOS
+                #if TARGET_OSX || TARGET_IOS || TARGET_TVOS
                     return false;
                 #else
                     return true;

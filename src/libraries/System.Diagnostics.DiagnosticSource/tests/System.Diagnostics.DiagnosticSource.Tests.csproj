@@ -3,21 +3,20 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup Condition=" '$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Compile Include="DiagnosticSourceEventSourceBridgeTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DiagnosticSourceTests.cs" />
     <Compile Include="ActivityTests.cs" />
+    <Compile Include="ActivitySourceTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Compile Include="HttpHandlerDiagnosticListenerTests.cs" />
     <Compile Include="ActivityDateTimeTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs">
-      <Link>Common\System\Net\Configuration.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs">
-      <Link>Common\System\Net\Configuration.Http.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
+             Link="Common\System\Net\Configuration.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs"
+             Link="Common\System\Net\Configuration.Http.cs" />
   </ItemGroup>
 </Project>

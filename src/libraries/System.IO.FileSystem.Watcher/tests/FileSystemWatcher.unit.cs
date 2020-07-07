@@ -15,6 +15,7 @@ using Xunit.Abstractions;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileSystemWatcherTests : FileSystemWatcherTest
     {
         private static void ValidateDefaults(FileSystemWatcher watcher, string path, string filter)
@@ -240,7 +241,7 @@ namespace System.IO.Tests
             watcher.Filter = "abc.dll";
             Assert.Equal("abc.dll", watcher.Filter);
 
-            if (!(PlatformDetection.IsOSX))
+            if (!PlatformDetection.IsOSXLike)
             {
                 watcher.Filter = "ABC.DLL";
                 Assert.Equal("ABC.DLL", watcher.Filter);
@@ -1053,7 +1054,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void FileSystemWatcher_ModifyFiltersConcurrentWithEvents()
         {
             DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());

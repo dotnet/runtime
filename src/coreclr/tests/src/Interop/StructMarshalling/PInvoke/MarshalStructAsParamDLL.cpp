@@ -1262,3 +1262,28 @@ extern "C" DLL_EXPORT MultipleBools STDMETHODCALLTYPE GetBools(BOOL b1, BOOL b2)
 {
     return {b1, b2};
 }
+
+using IntIntDelegate = int (STDMETHODCALLTYPE*)(int a);
+
+struct DelegateFieldMarshaling
+{
+    IntIntDelegate IntIntFunction;
+};
+
+namespace
+{
+    int STDMETHODCALLTYPE IntIntImpl(int a)
+    {
+        return a;
+    }
+}
+
+extern "C" DLL_EXPORT void* STDMETHODCALLTYPE GetNativeIntIntFunction()
+{
+    return (void*)&IntIntImpl;
+}
+
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE MarshalStructAsParam_DelegateFieldMarshaling(DelegateFieldMarshaling* d)
+{
+    // Nothing to do
+}

@@ -1301,6 +1301,27 @@ LOOP_HEAD:
  */
 
 MonoArray*
+mono_gc_alloc_pinned_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
+{
+	MonoArray *arr;
+
+	if (!SGEN_CAN_ALIGN_UP (size))
+		return NULL;
+
+	arr = (MonoArray*)sgen_alloc_obj_pinned (vtable, size);
+	if (G_UNLIKELY (!arr))
+		return NULL;
+
+	arr->max_length = (mono_array_size_t)max_length;
+
+	if (G_UNLIKELY (mono_profiler_allocations_enabled ()))
+		MONO_PROFILER_RAISE (gc_allocation, (&arr->obj));
+
+	SGEN_ASSERT (6, SGEN_ALIGN_UP (size) == SGEN_ALIGN_UP (sgen_client_par_object_get_size (vtable, (GCObject*)arr)), "Vector has incorrect size.");
+	return arr;
+}
+
+MonoArray*
 mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 {
 	MonoArray *arr;

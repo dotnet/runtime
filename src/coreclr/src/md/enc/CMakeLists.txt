@@ -13,6 +13,7 @@ set(MDRUNTIMERW_SOURCES
 set(MDRUNTIMERW_HEADERS
   ../../inc/corhdr.h
   ../../inc/metadata.h
+  ../../inc/mdfileformat.h
   ../../inc/pedecoder.h
   ../../inc/pedecoder.inl
   ../../inc/posterror.h
@@ -22,7 +23,6 @@ set(MDRUNTIMERW_HEADERS
   ../compiler/regmeta.h
   ../hotdata/hotdataformat.h
   ../inc/liteweightstgdb.h
-  ../inc/mdfileformat.h
   ../inc/mdinternalrw.h
   ../inc/mdlog.h
   ../inc/metadatahash.h
@@ -48,7 +48,7 @@ add_library_clr(mdruntimerw_dac ${MDRUNTIMERW_SOURCES})
 set_target_properties(mdruntimerw_dac PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_header(TARGET mdruntimerw_dac HEADER stdafx.h)
 
-add_library_clr(mdruntimerw_wks ${MDRUNTIMERW_SOURCES})
+add_library_clr(mdruntimerw_wks OBJECT ${MDRUNTIMERW_SOURCES})
 target_compile_definitions(mdruntimerw_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
 target_precompile_header(TARGET mdruntimerw_wks HEADER stdafx.h)
 

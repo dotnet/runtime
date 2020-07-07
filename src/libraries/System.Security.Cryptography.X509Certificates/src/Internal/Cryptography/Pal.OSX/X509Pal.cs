@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
-using System.Numerics;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
@@ -102,24 +103,34 @@ namespace Internal.Cryptography.Pal
             {
                 SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
                 {
-                    Algorithm = new AlgorithmIdentifierAsn { Algorithm = new Oid(Oids.Dsa, null), Parameters = encodedParameters },
+                    Algorithm = new AlgorithmIdentifierAsn { Algorithm = Oids.Dsa, Parameters = encodedParameters },
                     SubjectPublicKey = encodedKeyValue,
                 };
 
-                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                spki.Encode(writer);
+
+                byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
+
+                if (!writer.TryEncode(rented, out int written))
                 {
-                    spki.Encode(writer);
-                    DSA dsa = DSA.Create();
-                    try
-                    {
-                        dsa.ImportSubjectPublicKeyInfo(writer.EncodeAsSpan(), out _);
-                        return dsa;
-                    }
-                    catch (Exception)
-                    {
-                        dsa.Dispose();
-                        throw;
-                    }
+                    Debug.Fail("TryEncode failed with a pre-allocated buffer");
+                    throw new InvalidOperationException();
+                }
+
+                DSA dsa = DSA.Create();
+                IDisposable? toDispose = dsa;
+
+                try
+                {
+                   dsa.ImportSubjectPublicKeyInfo(rented.AsSpan(0, written), out _);
+                   toDispose = null;
+                   return dsa;
+                }
+                finally
+                {
+                    toDispose?.Dispose();
+                    CryptoPool.Return(rented, written);
                 }
             }
 
@@ -142,7 +153,7 @@ namespace Internal.Cryptography.Pal
                     multiLine);
             }
 
-            public X509ContentType GetCertContentType(byte[] rawData)
+            public X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
             {
                 const int errSecUnknownFormat = -25257;
                 if (rawData == null || rawData.Length == 0)
@@ -151,15 +162,25 @@ namespace Internal.Cryptography.Pal
                     throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecUnknownFormat);
                 }
 
-                X509ContentType contentType = Interop.AppleCrypto.X509GetContentType(rawData, rawData.Length);
+                X509ContentType contentType = Interop.AppleCrypto.X509GetContentType(rawData);
 
                 // Apple doesn't seem to recognize PFX files with no MAC, so try a quick maybe-it's-a-PFX test
                 if (contentType == X509ContentType.Unknown)
                 {
                     try
                     {
-                        PfxAsn.Decode(rawData, AsnEncodingRules.BER);
-                        contentType = X509ContentType.Pkcs12;
+                        unsafe
+                        {
+                            fixed (byte* pin = rawData)
+                            {
+                                using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
+                                {
+                                    PfxAsn.Decode(manager.Memory, AsnEncodingRules.BER);
+                                }
+
+                                contentType = X509ContentType.Pkcs12;
+                            }
+                        }
                     }
                     catch (CryptographicException)
                     {

@@ -7,6 +7,7 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -1131,6 +1132,10 @@ namespace Internal.Cryptography.Pal
                 }
             }
             catch (CryptographicException)
+            {
+                // Treat any ASN errors as if the extension was missing.
+            }
+            catch (AsnContentException)
             {
                 // Treat any ASN errors as if the extension was missing.
             }

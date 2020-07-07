@@ -92,7 +92,7 @@ namespace System.Threading.Tests
             Assert.Equal(43u, value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void InterlockedDecrement_Int32()
         {
             int value = 42;
@@ -118,7 +118,7 @@ namespace System.Threading.Tests
             Assert.Equal(41u, value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void InterlockedDecrement_Int64()
         {
             long value = 42;
@@ -302,7 +302,7 @@ namespace System.Threading.Tests
             Assert.Equal(0x17755771u, value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/11177")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.IsThreadingSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/11177")]
         public void MemoryBarrierProcessWide()
         {
             // Stress MemoryBarrierProcessWide correctness using a simple AsymmetricLock
@@ -359,7 +359,7 @@ namespace System.Threading.Tests
             // Returning LockCookie to call Exit on is the fastest implementation because of it works naturally with the RCU pattern.
             // The traditional Enter/Exit lock interface would require thread local storage or some other scheme to reclaim the cookie.
             // Returning LockCookie to call Exit on is the fastest implementation because of it works naturally with the RCU pattern.
-            // The traditional Enter/Exit lock interface would require thread local storage or some other scheme to reclaim the cookie.
+            // The traditional Enter/Exit lock interface would require thread local storage or some other scheme to reclaim the cookie
             public LockCookie Enter()
             {
                 int currentThreadId = Environment.CurrentManagedThreadId;

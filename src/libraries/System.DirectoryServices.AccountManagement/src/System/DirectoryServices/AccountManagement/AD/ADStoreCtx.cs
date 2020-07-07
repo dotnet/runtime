@@ -28,10 +28,10 @@ namespace System.DirectoryServices.AccountManagement
 
         private readonly bool _ownCtxBase;    // if true, we "own" ctxBase and must Dispose of it when we're done
 
-        private bool _disposed = false;
+        private bool _disposed;
 
         protected internal NetCred Credentials { get { return this.credentials; } }
-        protected NetCred credentials = null;
+        protected NetCred credentials;
 
         protected internal AuthenticationTypes AuthTypes { get { return this.authTypes; } }
         protected AuthenticationTypes authTypes;
@@ -1762,7 +1762,6 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             Debug.Assert(g.UnderlyingObject != null && g.UnderlyingObject is DirectoryEntry);
-            UnsafeNativeMethods.IADsGroup adsGroup = (UnsafeNativeMethods.IADsGroup)((DirectoryEntry)g.UnderlyingObject).NativeObject;
             IEnumerable cachedMembersEnum = null; //This variables stores a reference to the direct members enumerator of the group.
 
             // Only real principals can be directly a member of the group, since only real principals
@@ -2232,44 +2231,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "LoadDirectoryEntryAttributes, path={0}", de.Path);
 
-            string[] ldapAttributesUsed = new string[]
-            {
-                "accountExpires",
-                "badPasswordTime",
-                "badPwdCount",
-                "displayName",
-                "distinguishedName",
-                "description",
-                "employeeID",
-                "givenName",
-                "groupType",
-                "homeDirectory",
-                "homeDrive",
-                "lastLogon",
-                "lastLogonTimestamp",
-                "lockoutTime",
-                "logonHours",
-                "mail",
-                "member",
-                "memberOf",
-                "middleName",
-                "msDS-User-Account-Control-Computed",
-                "ntSecurityDescriptor",
-                "objectClass",
-                "objectGuid",
-                "objectSid",
-                "primaryGroupID",
-                "pwdLastSet",
-                "samAccountName",
-                "scriptPath",
-                "servicePrincipalName",
-                "sn",
-                "telephoneNumber",
-                "userAccountControl",
-                "userCertificate",
-                "userPrincipalName",
-                "userWorkstations"
-            };
             try
             {
                 //            de.RefreshCache(ldapAttributesUsed);
@@ -2460,21 +2421,19 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         protected object domainInfoLock = new object();
-        protected string domainFlatName = null;
-        protected string domainDnsName = null;
-        protected string forestDnsName = null;
-        protected string userSuppliedServerName = null;
-        protected string defaultNamingContext = null;
-        protected string contextBasePartitionDN = null; //contains the DN of the Partition to which the user supplied context base (this.ctxBase) belongs.
-        protected string dnsHostName = null;
-        protected ulong lockoutDuration = 0;
+        protected string domainFlatName;
+        protected string domainDnsName;
+        protected string forestDnsName;
+        protected string userSuppliedServerName;
+        protected string defaultNamingContext;
+        protected string contextBasePartitionDN; //contains the DN of the Partition to which the user supplied context base (this.ctxBase) belongs.
+        protected string dnsHostName;
+        protected ulong lockoutDuration;
 
         protected enum StoreCapabilityMap
         {
             ASQSearch = 1,
         }
-
-        protected StoreCapabilityMap storeCapability = 0;
 
         // Must be called inside of lock(domainInfoLock)
         protected virtual void LoadDomainInfo()

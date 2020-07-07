@@ -11,6 +11,7 @@
 #define FireEtwGCRestartEEEnd_V1(ClrInstanceID) 0
 #define FireEtwGCHeapStats(GenerationSize0, TotalPromotedSize0, GenerationSize1, TotalPromotedSize1, GenerationSize2, TotalPromotedSize2, GenerationSize3, TotalPromotedSize3, FinalizationPromotedSize, FinalizationPromotedCount, PinnedObjectCount, SinkBlockCount, GCHandleCount) 0
 #define FireEtwGCHeapStats_V1(GenerationSize0, TotalPromotedSize0, GenerationSize1, TotalPromotedSize1, GenerationSize2, TotalPromotedSize2, GenerationSize3, TotalPromotedSize3, FinalizationPromotedSize, FinalizationPromotedCount, PinnedObjectCount, SinkBlockCount, GCHandleCount, ClrInstanceID) 0
+#define FireEtwGCHeapStats_V2(GenerationSize0, TotalPromotedSize0, GenerationSize1, TotalPromotedSize1, GenerationSize2, TotalPromotedSize2, GenerationSize3, TotalPromotedSize3, FinalizationPromotedSize, FinalizationPromotedCount, PinnedObjectCount, SinkBlockCount, GCHandleCount, ClrInstanceID, GenerationSize4, TotalPromotedSize4) 0
 #define FireEtwGCCreateSegment(Address, Size, Type) 0
 #define FireEtwGCCreateSegment_V1(Address, Size, Type, ClrInstanceID) 0
 #define FireEtwGCFreeSegment(Address) 0
@@ -163,6 +164,7 @@
 #define FireEtwGCMarkWithType(HeapNum, ClrInstanceID, Type, Bytes) 0
 #define FireEtwGCJoin_V2(Heap, JoinTime, JoinType, ClrInstanceID, JoinID) 0
 #define FireEtwGCPerHeapHistory_V3(ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values) 0
+#define FireEtwGCGlobalHeapHistory_V2(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure) 0
 #define FireEtwGCGlobalHeapHistory_V3(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure, CondemnReasons0, CondemnReasons1) 0
 #define FireEtwDebugIPCEventStart() 0
 #define FireEtwDebugIPCEventEnd() 0
@@ -249,6 +251,7 @@
 #define FireEtwBGCDrainMark(Objects, ClrInstanceID) 0
 #define FireEtwBGCRevisit(Pages, Objects, IsLarge, ClrInstanceID) 0
 #define FireEtwBGCOverflow(Min, Max, Objects, IsLarge, ClrInstanceID) 0
+#define FireEtwBGCOverflow_V1(Min, Max, Objects, IsLarge, ClrInstanceID, GenNumber) 0
 #define FireEtwBGCAllocWaitBegin(Reason, ClrInstanceID) 0
 #define FireEtwBGCAllocWaitEnd(Reason, ClrInstanceID) 0
 #define FireEtwGCFullNotify(GenNumber, IsAlloc) 0

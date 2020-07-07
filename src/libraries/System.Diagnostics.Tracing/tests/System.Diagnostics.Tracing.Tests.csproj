@@ -5,8 +5,8 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
-  <!--Windows only files -->
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' and '$(TargetsWindows)' == 'true'">
+  <!-- Windows only files -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="BasicEventSourceTest\Harness\EtwListener.cs" />
     <Compile Include="BasicEventSourceTest\TestEventCounter.Etw.cs" />
     <Compile Include="BasicEventSourceTest\TestsWrite.Etw.cs" />
@@ -22,6 +22,7 @@
     <Compile Include="BasicEventSourceTest\Harness\Listeners.cs" />
     <Compile Include="BasicEventSourceTest\TestEventCounter.cs" />
     <Compile Include="BasicEventSourceTest\TestFilter.cs" />
+    <Compile Include="BasicEventSourceTest\TestNotSupported.cs" />
     <Compile Include="BasicEventSourceTest\TestShutdown.cs" />
     <Compile Include="BasicEventSourceTest\TestsEventSourceLifetime.cs" />
     <Compile Include="BasicEventSourceTest\TestsManifestGeneration.cs" />

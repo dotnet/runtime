@@ -2,16 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net472</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="ChangeTokenTest.cs" />
-    <Compile Include="CompositeChangeTokenTest.cs" />
-    <Compile Include="InplaceStringBuilderTest.cs" />
-    <Compile Include="StringSegmentTest.cs" />
-    <Compile Include="StringTokenizerTest.cs" />
-    <Compile Include="StringValuesTests.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />

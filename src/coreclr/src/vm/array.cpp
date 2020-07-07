@@ -325,9 +325,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     // We always have a non-virtual slot array, see assert at end
     cbMT += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
                                                           FALSE,                           // GenericsStaticsInfo
-                                                          FALSE,                           // GuidInfo
-                                                          FALSE,                           // CCWTemplate
-                                                          FALSE,                           // RCWPerTypeData
                                                           FALSE);                          // TokenOverflow
 
     // This is the offset of the beginning of the interface map

@@ -517,6 +517,10 @@ gboolean mono_jit_map_is_enabled (void);
 #define mono_jit_map_is_enabled() (0)
 #endif
 
+void mono_enable_jit_dump (void);
+void mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code);
+void mono_jit_dump_cleanup (void);
+
 /*
  * Per-OS implementation functions.
  */
@@ -557,7 +561,7 @@ void
 mono_dump_native_crash_info (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info);
 
 void
-mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining);
+mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining, void *context);
 
 gboolean
 mono_is_addr_implicit_null_check (void *addr);

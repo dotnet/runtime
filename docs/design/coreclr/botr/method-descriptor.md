@@ -42,7 +42,7 @@ Used for less common IL methods that have generic instantiation or that do not h
 
 **FCall**
 
-Internal methods implemented in unmanaged code. These are [methods marked with MethodImplAttribute(MethodImplOptions.InternalCall) attribute](mscorlib.md), delegate constructors and tlbimp constructors.
+Internal methods implemented in unmanaged code. These are [methods marked with MethodImplAttribute(MethodImplOptions.InternalCall) attribute](corelib.md), delegate constructors and tlbimp constructors.
 
 **NDirect**
 

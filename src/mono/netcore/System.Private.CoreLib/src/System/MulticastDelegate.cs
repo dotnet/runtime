@@ -36,7 +36,7 @@ namespace System
             }
             else
             {
-                object r;
+                object? r;
                 int i = 0, len = delegates.Length;
                 do
                 {
@@ -82,7 +82,7 @@ namespace System
             }
             else
             {
-                if (delegates.Length != d.delegates.Length)
+                if (delegates!.Length != d.delegates!.Length)
                     return false;
 
                 for (int i = 0; i < delegates.Length; ++i)
@@ -144,7 +144,7 @@ namespace System
             }
             else if (delegates == null)
             {
-                ret.delegates = new Delegate[1 + other.delegates.Length];
+                ret.delegates = new Delegate[1 + other.delegates!.Length];
 
                 ret.delegates[0] = this;
                 Array.Copy(other.delegates, 0, ret.delegates, 1, other.delegates.Length);
@@ -196,7 +196,7 @@ namespace System
             return -1;
         }
 
-        protected sealed override Delegate RemoveImpl(Delegate value)
+        protected sealed override Delegate? RemoveImpl(Delegate value)
         {
             if (value == null)
                 return this;
@@ -211,7 +211,7 @@ namespace System
             }
             else if (delegates == null)
             {
-                foreach (Delegate? d in other.delegates)
+                foreach (Delegate? d in other.delegates!)
                 {
                     if (this.Equals(d))
                         return null;
@@ -267,7 +267,7 @@ namespace System
             }
         }
 
-        public static bool operator ==(MulticastDelegate d1, MulticastDelegate d2)
+        public static bool operator ==(MulticastDelegate? d1, MulticastDelegate? d2)
         {
             if (d1 == null)
                 return d2 == null;
@@ -275,7 +275,7 @@ namespace System
             return d1.Equals(d2);
         }
 
-        public static bool operator !=(MulticastDelegate d1, MulticastDelegate d2)
+        public static bool operator !=(MulticastDelegate? d1, MulticastDelegate? d2)
         {
             if (d1 == null)
                 return d2 != null;
@@ -283,7 +283,7 @@ namespace System
             return !d1.Equals(d2);
         }
 
-        internal override object GetTarget()
+        internal override object? GetTarget()
         {
             return delegates?.Length > 0 ? delegates[delegates.Length - 1].GetTarget() : base.GetTarget();
         }

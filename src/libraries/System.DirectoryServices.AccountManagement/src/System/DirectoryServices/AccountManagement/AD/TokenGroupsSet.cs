@@ -33,12 +33,12 @@ namespace System.DirectoryServices.AccountManagement
         private readonly ADStoreCtx _storeCtx;
 
         private bool _atBeginning = true;
-        private DirectoryEntry _current = null; // current member of the group (or current group of the user)
+        private DirectoryEntry _current; // current member of the group (or current group of the user)
 
         private IEnumerator _tokenGroupsEnum;
 
         private SecurityIdentifier _currentSID;
-        private bool _disposed = false;
+        private bool _disposed;
 
         private readonly string _attributeToQuery;
 

@@ -375,7 +375,6 @@ namespace Dynamic
             Assert.AreEqual(string.Empty, obj.String_Property);
         }
 
-#pragma warning disable 618
         private void StringWrapper(string toWrap, string expected)
         {
             var val = new BStrWrapper(toWrap);
@@ -421,6 +420,7 @@ namespace Dynamic
             Assert.AreEqual(val.ErrorCode, obj.Variant_Property);
         }
 
+#pragma warning disable 618 // CurrencyWrapper is marked obsolete
         private void CurrencyWrapper()
         {
             decimal toWrap = rand.Next() / 10.0m;
@@ -430,6 +430,7 @@ namespace Dynamic
             obj.Variant_Property = val;
             Assert.AreEqual(val.WrappedObject, obj.Variant_Property);
         }
+#pragma warning restore 618
 
         private void VariantWrapper()
         {
@@ -449,7 +450,6 @@ namespace Dynamic
             obj.Variant_InOut(ref val);
             Assert.AreEqual(expected, val.WrappedObject);
         }
-#pragma warning restore 618
 
         private void Variant<T>(T val, Action<T> validate)
         {

@@ -159,7 +159,7 @@ namespace System.Net
                     return DateTime.Now;
                 }
 
-                if (HttpDateParser.TryStringToDate(lastmodHeaderValue, out var dateTimeOffset))
+                if (HttpDateParser.TryParse(lastmodHeaderValue, out DateTimeOffset dateTimeOffset))
                 {
                     return dateTimeOffset.LocalDateTime;
                 }
@@ -349,7 +349,7 @@ namespace System.Net
             CheckDisposed();
             if (_httpResponseMessage.Content != null)
             {
-                return _httpResponseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
+                return _httpResponseMessage.Content.ReadAsStream();
             }
 
             return Stream.Null;

@@ -30,27 +30,22 @@
 // (C) 2001-2002 Ximian, Inc.  http://www.ximian.com
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-
-    [Obsolete("An alternate API is available: Emit the MarshalAs custom attribute instead.")]
-    [ComVisible(true)]
-    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public sealed class UnmanagedMarshal
+    internal sealed class UnmanagedMarshal
     {
 #pragma warning disable 169, 414
         private int count;
         private UnmanagedType t;
         private UnmanagedType tbase;
-        private string guid;
-        private string mcookie;
-        private string marshaltype;
-        internal Type marshaltyperef;
+        private string? guid;
+        private string? mcookie;
+        private string? marshaltype;
+        internal Type? marshaltyperef;
         private int param_num;
         private bool has_size;
 #pragma warning restore 169, 414
@@ -66,36 +61,6 @@ namespace System.Reflection.Emit
             count = 0;
             t = maint;
             tbase = elemt;
-        }
-
-        public UnmanagedType BaseType
-        {
-            get
-            {
-                if (t == UnmanagedType.LPArray)
-                    throw new ArgumentException();
-
-#if FEATURE_COMINTEROP
-				if (t == UnmanagedType.SafeArray)
-					throw new ArgumentException ();
-#endif
-                return tbase;
-            }
-        }
-
-        public int ElementCount
-        {
-            get { return count; }
-        }
-
-        public UnmanagedType GetUnmanagedType
-        {
-            get { return t; }
-        }
-
-        public Guid IIDGuid
-        {
-            get { return new Guid(guid); }
         }
 
         public static UnmanagedMarshal DefineByValArray(int elemCount)

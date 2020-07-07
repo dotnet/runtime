@@ -8,13 +8,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-
 namespace System.IO
 {
     /*
@@ -62,11 +55,6 @@ namespace System.IO
         // Needed for subclasses that need to map a file, etc.
         protected UnmanagedMemoryStream()
         {
-            unsafe
-            {
-                _mem = null;
-            }
-            _isOpen = false;
         }
 
         /// <summary>
@@ -214,75 +202,6 @@ namespace System.IO
         public override bool CanWrite => _isOpen && (_access & FileAccess.Write) != 0;
 
         /// <summary>
-        /// Calls the given callback with a span of the memory stream data
-        /// </summary>
-        /// <param name="callback">the callback to be called</param>
-        /// <param name="state">A user-defined state, passed to the callback</param>
-        /// <param name="bufferSize">the maximum size of the memory span</param>
-        public override void CopyTo(ReadOnlySpanAction<byte, object?> callback, object? state, int bufferSize)
-        {
-            // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Read() which a subclass might have overridden.
-            // To be safe we will only use this implementation in cases where we know it is safe to do so,
-            // and delegate to our base class (which will call into Read) when we are not sure.
-            if (GetType() != typeof(UnmanagedMemoryStream))
-            {
-                base.CopyTo(callback, state, bufferSize);
-                return;
-            }
-
-            if (callback == null) throw new ArgumentNullException(nameof(callback));
-
-            EnsureNotClosed();
-            EnsureReadable();
-
-            // Use a local variable to avoid a race where another thread
-            // changes our position after we decide we can read some bytes.
-            long pos = Interlocked.Read(ref _position);
-            long len = Interlocked.Read(ref _length);
-            long n = len - pos;
-            if (n <= 0)
-            {
-                return;
-            }
-
-            int nInt = (int)n; // Safe because n <= count, which is an Int32
-            if (nInt < 0)
-            {
-                return;  // _position could be beyond EOF
-            }
-
-            unsafe
-            {
-                if (_buffer != null)
-                {
-                    byte* pointer = null;
-
-                    try
-                    {
-                        _buffer.AcquirePointer(ref pointer);
-                        ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(pointer + pos + _offset, nInt);
-                        Interlocked.Exchange(ref _position, pos + n);
-                        callback(span, state);
-                    }
-                    finally
-                    {
-                        if (pointer != null)
-                        {
-                            _buffer.ReleasePointer();
-                        }
-                    }
-                }
-                else
-                {
-                    ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(_mem + pos, nInt);
-                    Interlocked.Exchange(ref _position, pos + n);
-                    callback(span, state);
-                }
-            }
-        }
-
-        /// <summary>
         /// Closes the stream. The stream's memory needs to be dealt with separately.
         /// </summary>
         /// <param name="disposing"></param>
@@ -415,7 +334,7 @@ namespace System.IO
                     throw new IOException(SR.IO_SeekBeforeBegin);
                 long newPosition = (long)value - (long)_mem;
                 if (newPosition < 0)
-                    throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
 
                 Interlocked.Exchange(ref _position, newPosition);
             }
@@ -554,7 +473,7 @@ namespace System.IO
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             try
@@ -578,7 +497,7 @@ namespace System.IO
             }
             catch (Exception ex)
             {
-                return new ValueTask<int>(Task.FromException<int>(ex));
+                return ValueTask.FromException<int>(ex);
             }
         }
 
@@ -847,7 +766,7 @@ namespace System.IO
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask(Task.FromCanceled(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
             }
 
             try
@@ -866,7 +785,7 @@ namespace System.IO
             }
             catch (Exception ex)
             {
-                return new ValueTask(Task.FromException(ex));
+                return ValueTask.FromException(ex);
             }
         }
 

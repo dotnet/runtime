@@ -146,15 +146,15 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
     noway_assert(begBlk->bbNum <= endBlk->bbNum);
     noway_assert(begBlk->isLoopHead());
     noway_assert(fgReachable(begBlk, endBlk));
+    noway_assert(!opts.MinOpts());
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nMarking loop L%02u", begBlk->bbLoopNum);
+        printf("\nMarking a loop from " FMT_BB " to " FMT_BB, begBlk->bbNum,
+               excludeEndBlk ? endBlk->bbPrev->bbNum : endBlk->bbNum);
     }
 #endif
-
-    noway_assert(!opts.MinOpts());
 
     /* Build list of backedges for block begBlk */
     flowList* backedgeList = nullptr;
@@ -327,11 +327,11 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         {
             if (backEdgeCount > 0)
             {
-                printf("\nNot removing loop L%02u, due to an additional back edge", begBlk->bbLoopNum);
+                printf("\nNot removing loop at " FMT_BB ", due to an additional back edge", begBlk->bbNum);
             }
             else if (backEdgeCount == 0)
             {
-                printf("\nNot removing loop L%02u, due to no back edge", begBlk->bbLoopNum);
+                printf("\nNot removing loop at " FMT_BB ", due to no back edge", begBlk->bbNum);
             }
         }
 #endif
@@ -343,7 +343,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nUnmarking loop L%02u", begBlk->bbLoopNum);
+        printf("\nUnmarking loop at " FMT_BB, begBlk->bbNum);
     }
 #endif
 
@@ -651,14 +651,6 @@ void Compiler::optPrintLoopInfo(unsigned      loopInd,
 {
     noway_assert(lpHead);
 
-    //
-    // NOTE: we take "loopInd" as an argument instead of using the one
-    //       stored in begBlk->bbLoopNum because sometimes begBlk->bbLoopNum
-    //       has not be set correctly. For example, in optRecordLoop().
-    //       However, in most of the cases, loops should have been recorded.
-    //       Therefore the correct way is to call the Compiler::optPrintLoopInfo(unsigned lnum)
-    //       version of this method.
-    //
     printf("L%02u, from " FMT_BB, loopInd, lpFirst->bbNum);
     if (lpTop != lpFirst)
     {
@@ -2677,6 +2669,20 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
     }
 }
 
+// Returns true if 'block' is an entry block for any loop in 'optLoopTable'
+bool Compiler::optIsLoopEntry(BasicBlock* block)
+{
+    for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
+    {
+        // Traverse the outermost loops as entries into the loop nest; so skip non-outermost.
+        if (optLoopTable[loopInd].lpEntry == block)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Canonicalize the loop nest rooted at parent loop 'loopInd'.
 // Returns 'true' if the flow graph is modified.
 bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
@@ -3793,6 +3799,8 @@ void Compiler::optUnrollLoops()
                             testCopyStmt->SetRootNode(sideEffList);
                         }
                         newBlock->bbJumpKind = BBJ_NONE;
+                        newBlock->bbFlags &=
+                            ~BBF_NEEDS_GCPOLL; // Clear any NEEDS_GCPOLL flag as this block no longer can be a back edge
 
                         // Exit this loop; we've walked all the blocks.
                         break;
@@ -4371,8 +4379,6 @@ void Compiler::optOptimizeLayout()
             continue;
         }
 
-        assert(block->bbLoopNum == 0);
-
         if (compCodeOpt() != SMALL_CODE)
         {
             /* Optimize "while(cond){}" loops to "cond; do{}while(cond);" */
@@ -4480,11 +4486,6 @@ void Compiler::optOptimizeLoops()
             if (foundBottom)
             {
                 loopNum++;
-#ifdef DEBUG
-                /* Mark the loop header as such */
-                assert(FitsIn<unsigned char>(loopNum));
-                top->bbLoopNum = (unsigned char)loopNum;
-#endif
 
                 /* Mark all blocks between 'top' and 'bottom' */
 
@@ -7368,6 +7369,12 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
     preHead->inheritWeight(head);
     preHead->bbFlags &= ~BBF_PROF_WEIGHT;
 
+    // Copy the bbReach set from head for the new preHead block
+    preHead->bbReach = BlockSetOps::MakeEmpty(this);
+    BlockSetOps::Assign(this, preHead->bbReach, head->bbReach);
+    // Also include 'head' in the preHead bbReach set
+    BlockSetOps::AddElemD(this, preHead->bbReach, head->bbNum);
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -7657,17 +7664,55 @@ void Compiler::optComputeLoopNestSideEffects(unsigned lnum)
 {
     assert(optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP); // Requires: lnum is outermost.
     BasicBlock* botNext = optLoopTable[lnum].lpBottom->bbNext;
+    JITDUMP("optComputeLoopSideEffects botNext is " FMT_BB ", lnum is %d\n", botNext->bbNum, lnum);
     for (BasicBlock* bbInLoop = optLoopTable[lnum].lpFirst; bbInLoop != botNext; bbInLoop = bbInLoop->bbNext)
     {
-        optComputeLoopSideEffectsOfBlock(bbInLoop);
+        if (!optComputeLoopSideEffectsOfBlock(bbInLoop))
+        {
+            // When optComputeLoopSideEffectsOfBlock returns false, we encountered
+            // a block that was moved into the loop range (by fgReorderBlocks),
+            // but not marked correctly as being inside the loop.
+            // We conservatively mark this loop (and any outer loops)
+            // as having memory havoc side effects.
+            //
+            // Record that all loops containing this block have memory havoc effects.
+            //
+            optRecordLoopNestsMemoryHavoc(lnum, fullMemoryKindSet);
+
+            // All done, no need to keep visiting more blocks
+            break;
+        }
     }
 }
 
-void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
+void Compiler::optRecordLoopNestsMemoryHavoc(unsigned lnum, MemoryKindSet memoryHavoc)
+{
+    // We should start out with 'lnum' set to a valid natural loop index
+    assert(lnum != BasicBlock::NOT_IN_LOOP);
+
+    while (lnum != BasicBlock::NOT_IN_LOOP)
+    {
+        for (MemoryKind memoryKind : allMemoryKinds())
+        {
+            if ((memoryHavoc & memoryKindSet(memoryKind)) != 0)
+            {
+                optLoopTable[lnum].lpLoopHasMemoryHavoc[memoryKind] = true;
+            }
+        }
+
+        // Move lnum to the next outtermost loop that we need to mark
+        lnum = optLoopTable[lnum].lpParent;
+    }
+}
+
+bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 {
     unsigned mostNestedLoop = blk->bbNatLoopNum;
-    assert(mostNestedLoop != BasicBlock::NOT_IN_LOOP);
-
+    JITDUMP("optComputeLoopSideEffectsOfBlock " FMT_BB ", mostNestedLoop %d\n", blk->bbNum, mostNestedLoop);
+    if (mostNestedLoop == BasicBlock::NOT_IN_LOOP)
+    {
+        return false;
+    }
     AddVariableLivenessAllContainingLoops(mostNestedLoop, blk);
 
     // MemoryKinds for which an in-loop call or store has arbitrary effects.
@@ -7920,20 +7965,10 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 
     if (memoryHavoc != emptyMemoryKindSet)
     {
-        // Record that all loops containing this block have memory havoc effects.
-        unsigned lnum = mostNestedLoop;
-        while (lnum != BasicBlock::NOT_IN_LOOP)
-        {
-            for (MemoryKind memoryKind : allMemoryKinds())
-            {
-                if ((memoryHavoc & memoryKindSet(memoryKind)) != 0)
-                {
-                    optLoopTable[lnum].lpLoopHasMemoryHavoc[memoryKind] = true;
-                }
-            }
-            lnum = optLoopTable[lnum].lpParent;
-        }
+        // Record that all loops containing this block have this kind of memoryHavoc effects.
+        optRecordLoopNestsMemoryHavoc(mostNestedLoop, memoryHavoc);
     }
+    return true;
 }
 
 // Marks the containsCall information to "lnum" and any parent loops.
@@ -9159,4 +9194,271 @@ void Compiler::optOptimizeBools()
 #ifdef DEBUG
     fgDebugCheckBBlist();
 #endif
+}
+
+typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> LclVarRefCounts;
+
+//------------------------------------------------------------------------------------------
+// optRemoveRedundantZeroInits: Remove redundant zero intializations.
+//
+// Notes:
+//    This phase iterates over basic blocks starting with the first basic block until there is no unique
+//    basic block successor or until it detects a loop. It keeps track of local nodes it encounters.
+//    When it gets to an assignment to a local variable or a local field, it checks whether the assignment
+//    is the first reference to the local (or to the parent of the local field), and, if so,
+//    it may do one of two optimizations:
+//      1. If the following conditions are true:
+//            the local is untracked,
+//            the rhs of the assignment is 0,
+//            the local is guaranteed to be fully initialized in the prolog,
+//         then the explicit zero initialization is removed.
+//      2. If the following conditions are true:
+//            the assignment is to a local (and not a field),
+//            the local is not lvLiveInOutOfHndlr or no exceptions can be thrown between the prolog and the assignment,
+//            either the local has no gc pointers or there are no gc-safe points between the prolog and the assignment,
+//         then the local is marked with lvHasExplicitInit which tells the codegen not to insert zero initialization
+//         for this local in the prolog.
+
+void Compiler::optRemoveRedundantZeroInits()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In optRemoveRedundantZeroInits()\n");
+    }
+#endif // DEBUG
+
+    CompAllocator   allocator(getAllocator(CMK_ZeroInit));
+    LclVarRefCounts refCounts(allocator);
+    BitVecTraits    bitVecTraits(lvaCount, this);
+    BitVec          zeroInitLocals = BitVecOps::MakeEmpty(&bitVecTraits);
+    bool            hasGCSafePoint = false;
+    bool            canThrow       = false;
+
+    assert(fgStmtListThreaded);
+
+    for (BasicBlock* block = fgFirstBB; (block != nullptr) && ((block->bbFlags & BBF_MARKED) == 0);
+         block             = block->GetUniqueSucc())
+    {
+        block->bbFlags |= BBF_MARKED;
+        CompAllocator   allocator(getAllocator(CMK_ZeroInit));
+        LclVarRefCounts defsInBlock(allocator);
+        bool            removedTrackedDefs = false;
+        for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr;)
+        {
+            Statement* next = stmt->GetNextStmt();
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            {
+                if (((tree->gtFlags & GTF_CALL) != 0) && (!tree->IsCall() || !tree->AsCall()->IsSuppressGCTransition()))
+                {
+                    hasGCSafePoint = true;
+                }
+
+                if ((tree->gtFlags & GTF_EXCEPT) != 0)
+                {
+                    canThrow = true;
+                }
+
+                switch (tree->gtOper)
+                {
+                    case GT_LCL_VAR:
+                    case GT_LCL_FLD:
+                    case GT_LCL_VAR_ADDR:
+                    case GT_LCL_FLD_ADDR:
+                    {
+                        unsigned  lclNum    = tree->AsLclVarCommon()->GetLclNum();
+                        unsigned* pRefCount = refCounts.LookupPointer(lclNum);
+                        if (pRefCount != nullptr)
+                        {
+                            *pRefCount = (*pRefCount) + 1;
+                        }
+                        else
+                        {
+                            refCounts.Set(lclNum, 1);
+                        }
+
+                        if ((tree->gtFlags & GTF_VAR_DEF) == 0)
+                        {
+                            break;
+                        }
+
+                        // We need to count the number of tracked var defs in the block
+                        // so that we can update block->bbVarDef if we remove any tracked var defs.
+
+                        LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
+                        if (lclDsc->lvTracked)
+                        {
+                            unsigned* pDefsCount = defsInBlock.LookupPointer(lclNum);
+                            if (pDefsCount != nullptr)
+                            {
+                                *pDefsCount = (*pDefsCount) + 1;
+                            }
+                            else
+                            {
+                                defsInBlock.Set(lclNum, 1);
+                            }
+                        }
+                        else if (varTypeIsStruct(lclDsc) && ((tree->gtFlags & GTF_VAR_USEASG) == 0) &&
+                                 lvaGetPromotionType(lclDsc) != PROMOTION_TYPE_NONE)
+                        {
+                            for (unsigned i = lclDsc->lvFieldLclStart; i < lclDsc->lvFieldLclStart + lclDsc->lvFieldCnt;
+                                 ++i)
+                            {
+                                if (lvaGetDesc(i)->lvTracked)
+                                {
+                                    unsigned* pDefsCount = defsInBlock.LookupPointer(i);
+                                    if (pDefsCount != nullptr)
+                                    {
+                                        *pDefsCount = (*pDefsCount) + 1;
+                                    }
+                                    else
+                                    {
+                                        defsInBlock.Set(i, 1);
+                                    }
+                                }
+                            }
+                        }
+
+                        break;
+                    }
+                    case GT_ASG:
+                    {
+                        GenTreeOp* treeOp = tree->AsOp();
+
+                        unsigned lclNum = BAD_VAR_NUM;
+
+                        if (treeOp->gtOp1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                        {
+                            lclNum = treeOp->gtOp1->AsLclVarCommon()->GetLclNum();
+                        }
+                        else if (treeOp->gtOp1->OperIs(GT_OBJ, GT_BLK))
+                        {
+                            GenTreeLclVarCommon* lcl = treeOp->gtOp1->gtGetOp1()->IsLocalAddrExpr();
+
+                            if (lcl != nullptr)
+                            {
+                                lclNum = lcl->GetLclNum();
+                            }
+                        }
+
+                        if (lclNum == BAD_VAR_NUM)
+                        {
+                            break;
+                        }
+
+                        LclVarDsc* const lclDsc    = lvaGetDesc(lclNum);
+                        unsigned*        pRefCount = refCounts.LookupPointer(lclNum);
+
+                        // pRefCount can't be null because the local node on the lhs of the assignment
+                        // must have already been seen.
+                        assert(pRefCount != nullptr);
+                        if (*pRefCount != 1)
+                        {
+                            break;
+                        }
+
+                        unsigned parentRefCount = 0;
+                        if (lclDsc->lvIsStructField && refCounts.Lookup(lclDsc->lvParentLcl, &parentRefCount) &&
+                            (parentRefCount != 0))
+                        {
+                            break;
+                        }
+
+                        unsigned fieldRefCount = 0;
+                        if (lclDsc->lvPromoted)
+                        {
+                            for (unsigned i = lclDsc->lvFieldLclStart;
+                                 (fieldRefCount == 0) && (i < lclDsc->lvFieldLclStart + lclDsc->lvFieldCnt); ++i)
+                            {
+                                refCounts.Lookup(i, &fieldRefCount);
+                            }
+                        }
+
+                        if (fieldRefCount != 0)
+                        {
+                            break;
+                        }
+
+                        // The local hasn't been referenced before this assignment.
+                        bool removedExplicitZeroInit = false;
+
+                        if (treeOp->gtOp2->IsIntegralConst(0))
+                        {
+                            bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+                            bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+
+                            if (BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclNum) ||
+                                (lclDsc->lvIsStructField &&
+                                 BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
+                                (!lclDsc->lvTracked && !fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn)))
+                            {
+                                // We are guaranteed to have a zero initialization in the prolog or a
+                                // dominating explicit zero initialization and the local hasn't been redefined
+                                // between the prolog and this explicit zero initialization so the assignment
+                                // can be safely removed.
+                                if (tree == stmt->GetRootNode())
+                                {
+                                    fgRemoveStmt(block, stmt);
+                                    removedExplicitZeroInit      = true;
+                                    lclDsc->lvSuppressedZeroInit = 1;
+
+                                    if (lclDsc->lvTracked)
+                                    {
+                                        removedTrackedDefs   = true;
+                                        unsigned* pDefsCount = defsInBlock.LookupPointer(lclNum);
+                                        *pDefsCount          = (*pDefsCount) - 1;
+                                    }
+                                }
+                            }
+
+                            if (treeOp->gtOp1->OperIs(GT_LCL_VAR))
+                            {
+                                BitVecOps::AddElemD(&bitVecTraits, zeroInitLocals, lclNum);
+                            }
+                            *pRefCount = 0;
+                        }
+
+                        if (!removedExplicitZeroInit && treeOp->gtOp1->OperIs(GT_LCL_VAR) &&
+                            (!canThrow || !lclDsc->lvLiveInOutOfHndlr))
+                        {
+                            // If compMethodRequiresPInvokeFrame() returns true, lower may later
+                            // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME which is a gc-safe point.
+                            if (!lclDsc->HasGCPtr() ||
+                                (!GetInterruptible() && !hasGCSafePoint && !compMethodRequiresPInvokeFrame()))
+                            {
+                                // The local hasn't been used and won't be reported to the gc between
+                                // the prolog and this explicit intialization. Therefore, it doesn't
+                                // require zero initialization in the prolog.
+                                lclDsc->lvHasExplicitInit = 1;
+                            }
+                        }
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+            stmt = next;
+        }
+
+        if (removedTrackedDefs)
+        {
+            LclVarRefCounts::KeyIterator iter(defsInBlock.Begin());
+            LclVarRefCounts::KeyIterator end(defsInBlock.End());
+            for (; !iter.Equal(end); iter++)
+            {
+                unsigned int lclNum = iter.Get();
+                if (defsInBlock[lclNum] == 0)
+                {
+                    VarSetOps::RemoveElemD(this, block->bbVarDef, lvaGetDesc(lclNum)->lvVarIndex);
+                }
+            }
+        }
+    }
+
+    for (BasicBlock* block = fgFirstBB; (block != nullptr) && ((block->bbFlags & BBF_MARKED) != 0);
+         block             = block->GetUniqueSucc())
+    {
+        block->bbFlags &= ~BBF_MARKED;
+    }
 }

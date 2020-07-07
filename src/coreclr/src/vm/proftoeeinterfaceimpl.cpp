@@ -142,6 +142,8 @@
 #include "eventpipeprovider.h"
 #include "eventpipemetadatagenerator.h"
 #include "eventpipeeventpayload.h"
+#include "eventpipesession.h"
+#include "eventpipesessionprovider.h"
 #endif // FEATURE_PERFTRACING
 
 //---------------------------------------------------------------------------------------
@@ -665,14 +667,14 @@ void __stdcall GarbageCollectionStartedCallback(int generation, BOOL induced)
     // Notify the profiler of start of the collection
     {
         BEGIN_PIN_PROFILER(CORProfilerTrackGC() || CORProfilerTrackBasicGC());
-        BOOL generationCollected[COR_PRF_GC_LARGE_OBJECT_HEAP+1];
+        BOOL generationCollected[COR_PRF_GC_PINNED_OBJECT_HEAP+1];
         if (generation == COR_PRF_GC_GEN_2)
-            generation = COR_PRF_GC_LARGE_OBJECT_HEAP;
-        for (int gen = 0; gen <= COR_PRF_GC_LARGE_OBJECT_HEAP; gen++)
+            generation = COR_PRF_GC_PINNED_OBJECT_HEAP;
+        for (int gen = 0; gen <= COR_PRF_GC_PINNED_OBJECT_HEAP; gen++)
             generationCollected[gen] = gen <= generation;
 
         g_profControlBlock.pProfInterface->GarbageCollectionStarted(
-            COR_PRF_GC_LARGE_OBJECT_HEAP+1,
+            COR_PRF_GC_PINNED_OBJECT_HEAP+1,
             generationCollected,
             induced ? COR_PRF_GC_INDUCED : COR_PRF_GC_OTHER);
         END_PIN_PROFILER();
@@ -726,7 +728,7 @@ struct GenerationTable
 {
     ULONG count;
     ULONG capacity;
-    static const ULONG defaultCapacity = 4; // that's the minimum for 3 generation plus the large object heap
+    static const ULONG defaultCapacity = 5; // that's the minimum for Gen0-2 + LOH + POH
     GenerationTable *prev;
     GenerationDesc *genDescTable;
 #ifdef  _DEBUG
@@ -765,7 +767,7 @@ static void GenWalkFunc(void * context,
         GC_NOTRIGGER;
         MODE_ANY; // can be called even on GC threads
         PRECONDITION(CheckPointer(context));
-        PRECONDITION(0 <= generation && generation <= 3);
+        PRECONDITION(0 <= generation && generation <= 4);
         PRECONDITION(CheckPointer(rangeStart));
         PRECONDITION(CheckPointer(rangeEnd));
         PRECONDITION(CheckPointer(rangeEndReserved));
@@ -3145,6 +3147,12 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
         return CORPROF_E_DATAINCOMPLETE;
     }
 
+    if (typeHandle.GetModule()->GetLoaderAllocator() == NULL ||
+        typeHandle.GetModule()->GetLoaderAllocator()->GetExposedObject() == NULL)
+    {
+        return CORPROF_E_DATAINCOMPLETE;
+    }
+
     //
     // Get the field descriptor object
     //
@@ -3911,7 +3919,7 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        CAN_TAKE_LOCK;     // IsWindowsRuntimeModule accesses metadata directly, which takes locks
+        CANNOT_TAKE_LOCK;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3975,11 +3983,6 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     if (pModule->IsResource())
     {
         dwRet |= COR_PRF_MODULE_RESOURCE;
-    }
-
-    if (pModule->IsWindowsRuntimeModule())
-    {
-        dwRet |= COR_PRF_MODULE_WINDOWS_RUNTIME;
     }
 
     return dwRet;
@@ -4633,8 +4636,7 @@ HRESULT ProfToEEInterfaceImpl::ForceGC()
 
 #ifdef FEATURE_EVENT_TRACE
     // This helper, used by ETW and profAPI ensures a managed thread gets created for
-    // this thread before forcing the GC (to work around Jupiter issues where it's
-    // expected this thread is already managed before starting the GC).
+    // this thread before forcing the GC.
     HRESULT hr = ETW::GCLog::ForceGCForDiagnostics();
 #else // !FEATURE_EVENT_TRACE
     HRESULT hr = E_FAIL;
@@ -6534,9 +6536,13 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
             NativeCodeVersionCollection nativeCodeVersions = ilCodeVersion.GetNativeCodeVersions(pMD);
             for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
             {
-                addresses.Append((*iter).GetNativeCode());
+                PCODE codeStart = (*iter).GetNativeCode();
 
-                ++trueLen;
+                if (codeStart != NULL)
+                {
+                    addresses.Append(codeStart);
+                    ++trueLen;
+                }
             }
         }
 
@@ -7024,7 +7030,160 @@ HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const
     return SetEnvironmentVariableW(szName, szValue) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
 }
 
-HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVENTPIPE_PROVIDER *pProviderHandle)
+HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
+    UINT32 cProviderConfigs,
+    COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[],
+    BOOL requestRundown,
+    EVENTPIPE_SESSION* pSession)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeStartSession.\n"));
+
+#ifdef FEATURE_PERFTRACING
+
+    static_assert(offsetof(EventPipeProviderConfiguration, m_pProviderName) == offsetof(COR_PRF_EVENTPIPE_PROVIDER_CONFIG, providerName)
+                  && offsetof(EventPipeProviderConfiguration, m_keywords) == offsetof(COR_PRF_EVENTPIPE_PROVIDER_CONFIG, keywords)
+                  && offsetof(EventPipeProviderConfiguration, m_loggingLevel) == offsetof(COR_PRF_EVENTPIPE_PROVIDER_CONFIG, loggingLevel)
+                  && offsetof(EventPipeProviderConfiguration, m_pFilterData) == offsetof(COR_PRF_EVENTPIPE_PROVIDER_CONFIG, filterData)
+                  && sizeof(EventPipeProviderConfiguration) == sizeof(COR_PRF_EVENTPIPE_PROVIDER_CONFIG),
+        "Layouts of EventPipeProviderConfiguration type and COR_PRF_EVENTPIPE_PROVIDER_CONFIG type do not match!");
+
+    if (cProviderConfigs == 0
+        || pProviderConfigs == NULL
+        || pSession == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        EventPipeProviderConfiguration *pProviders = reinterpret_cast<EventPipeProviderConfiguration *>(pProviderConfigs);
+        UINT64 sessionID = EventPipe::Enable(NULL,
+                                             0, // We don't use a circular buffer since it's synchronous
+                                             pProviders,
+                                             cProviderConfigs,
+                                             EventPipeSessionType::Synchronous,
+                                             EventPipeSerializationFormat::NetTraceV4,
+                                             requestRundown,
+                                             NULL,
+                                             &ProfToEEInterfaceImpl::EventPipeCallbackHelper);
+        if (sessionID != 0)
+        {
+            EventPipe::StartStreaming(sessionID);
+
+            *pSession = sessionID;
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+#else // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeAddProviderToSession(
+        EVENTPIPE_SESSION session,
+        COR_PRF_EVENTPIPE_PROVIDER_CONFIG providerConfig)
+{
+
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeAddProviderToSession.\n"));
+
+#ifdef FEATURE_PERFTRACING
+    if (providerConfig.providerName == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        EventPipeSession *pSession = EventPipe::GetSession(session);
+        if (pSession == NULL)
+        {
+            hr = E_INVALIDARG;
+        }
+        else
+        {
+            EventPipeSessionProvider *pProvider = new EventPipeSessionProvider(
+                    providerConfig.providerName,
+                    providerConfig.keywords,
+                    (EventPipeEventLevel)providerConfig.loggingLevel,
+                    providerConfig.filterData);
+
+            EventPipe::AddProviderToSession(pProvider, pSession);
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+#else // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeStopSession(
+    EVENTPIPE_SESSION session)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeStopSession.\n"));
+
+#ifdef FEATURE_PERFTRACING
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        EventPipe::Disable(session);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+#else // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(
+    const WCHAR *providerName,
+    EVENTPIPE_PROVIDER *pProvider)
 {
     CONTRACTL
     {
@@ -7041,7 +7200,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVEN
         "**PROF: EventPipeCreateProvider.\n"));
 
 #ifdef FEATURE_PERFTRACING
-    if (szName == NULL || pProviderHandle == NULL)
+    if (providerName == NULL || pProvider == NULL)
     {
         return E_INVALIDARG;
     }
@@ -7049,14 +7208,81 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVEN
     HRESULT hr = S_OK;
     EX_TRY
     {
-        EventPipeProvider *pProvider = EventPipe::CreateProvider(szName, NULL, NULL);
-        if (pProvider == NULL)
+        EventPipeProvider *pRealProvider = EventPipe::CreateProvider(providerName, NULL, NULL);
+        if (pRealProvider == NULL)
         {
             hr = E_FAIL;
         }
         else
         {
-            *pProviderHandle = reinterpret_cast<EVENTPIPE_PROVIDER>(pProvider);
+            *pProvider = reinterpret_cast<EVENTPIPE_PROVIDER>(pRealProvider);
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+#else // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeGetProviderInfo(
+            EVENTPIPE_PROVIDER provider,
+            ULONG      cchName,
+            ULONG      *pcchName,
+            WCHAR      szName[])
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeGetProviderInfo.\n"));
+
+#ifdef FEATURE_PERFTRACING
+        if (cchName > 0 && szName == NULL)
+        {
+            return E_INVALIDARG;
+        }
+
+        EventPipeProvider *pRealProvider = reinterpret_cast<EventPipeProvider *>(provider);
+        if (pRealProvider == NULL)
+        {
+            // Bogus provider passed in
+            return E_INVALIDARG;
+        }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        const SString &providerName = pRealProvider->GetProviderName();
+        ULONG numChars = providerName.GetCount() + 1;
+        if (pcchName != NULL)
+        {
+            *pcchName = numChars;
+        }
+
+        if (numChars >= cchName)
+        {
+            hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+        }
+        else
+        {
+            size_t pos = 0;
+            for (SString::CIterator it = providerName.Begin(); it != providerName.End(); ++it)
+            {
+                szName[pos] = *it;
+                ++pos;
+            }
+
+            szName[pos] = '\0';
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -7068,16 +7294,17 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVEN
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
-    EVENTPIPE_PROVIDER provHandle,
-    const WCHAR *szName,
+    EVENTPIPE_PROVIDER provider,
+    const WCHAR *eventName,
     UINT32 eventID,
     UINT64 keywords,
     UINT32 eventVersion,
     UINT32 level,
+    UINT8 opcode,
     BOOL needStack,
     UINT32 cParamDescs,
     COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
-    EVENTPIPE_EVENT *pEventHandle)
+    EVENTPIPE_EVENT *pEvent)
 {
     CONTRACTL
     {
@@ -7092,9 +7319,10 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: EventPipeDefineEvent.\n"));
+
 #ifdef FEATURE_PERFTRACING
-    EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
-    if (pProvider == NULL || szName == NULL || pEventHandle == NULL)
+    EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provider);
+    if (pProvider == NULL || eventName == NULL || pEvent == NULL)
     {
         return E_INVALIDARG;
     }
@@ -7104,10 +7332,21 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
         return E_INVALIDARG;
     }
 
+    for (UINT32 i = 0; i < cParamDescs; ++i)
+    {
+        if ((EventPipeParameterType)(pParamDescs[i].type) == EventPipeParameterType::Object)
+        {
+            // The native EventPipeMetadataGenerator only knows how to encode
+            // primitive types, it would not handle Object correctly
+            return E_INVALIDARG;
+        }
+    }
+
     HRESULT hr = S_OK;
     EX_TRY
     {
         static_assert(offsetof(EventPipeParameterDesc, Type) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, type)
+                      && offsetof(EventPipeParameterDesc, ElementType) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, elementType)
                       && offsetof(EventPipeParameterDesc, Name) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, name)
                       && sizeof(EventPipeParameterDesc) == sizeof(COR_PRF_EVENTPIPE_PARAM_DESC),
             "Layouts of EventPipeParameterDesc type and COR_PRF_EVENTPIPE_PARAM_DESC type do not match!");
@@ -7116,16 +7355,17 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
         size_t metadataLength;
         NewArrayHolder<BYTE> pMetadata = EventPipeMetadataGenerator::GenerateEventMetadata(
             eventID,
-            szName,
+            eventName,
             keywords,
             eventVersion,
             (EventPipeEventLevel)level,
+            opcode,
             params,
             cParamDescs,
             &metadataLength);
 
         // Add the event.
-        EventPipeEvent *pEvent = pProvider->AddEvent(
+        EventPipeEvent *pRealEvent = pProvider->AddEvent(
             eventID,
             keywords,
             eventVersion,
@@ -7134,7 +7374,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
             pMetadata,
             (unsigned int)metadataLength);
 
-        *pEventHandle = reinterpret_cast<EVENTPIPE_EVENT>(pEvent);
+        *pEvent = reinterpret_cast<EVENTPIPE_EVENT>(pRealEvent);
     }
     EX_CATCH_HRESULT(hr);
 
@@ -7145,9 +7385,9 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
-    EVENTPIPE_EVENT eventHandle,
-    COR_PRF_EVENT_DATA data[],
+    EVENTPIPE_EVENT event,
     UINT32 cData,
+    COR_PRF_EVENT_DATA data[],
     LPCGUID pActivityId,
     LPCGUID pRelatedActivityId)
 {
@@ -7165,7 +7405,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
         LL_INFO1000,
         "**PROF: EventPipeWriteEvent.\n"));
 #ifdef FEATURE_PERFTRACING
-    EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(eventHandle);
+    EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(event);
 
     if (pEvent == NULL)
     {
@@ -7185,6 +7425,43 @@ HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
     return E_NOTIMPL;
 #endif // FEATURE_PERFTRACING
 }
+
+void ProfToEEInterfaceImpl::EventPipeCallbackHelper(EventPipeProvider *provider,
+                                                    DWORD eventId,
+                                                    DWORD eventVersion,
+                                                    ULONG cbMetadataBlob,
+                                                    LPCBYTE metadataBlob,
+                                                    ULONG cbEventData,
+                                                    LPCBYTE eventData,
+                                                    LPCGUID pActivityId,
+                                                    LPCGUID pRelatedActivityId,
+                                                    Thread *pEventThread,
+                                                    ULONG numStackFrames,
+                                                    UINT_PTR stackFrames[])
+{
+    // If we got here we know a profiler has started an EventPipe session
+    BEGIN_PIN_PROFILER(true);
+    // But, a profiler could always register for a session and then detach without
+    // closing the session. So check if we have an interface before proceeding.
+    if (g_profControlBlock.pProfInterface != nullptr)
+    {
+        g_profControlBlock.pProfInterface->EventPipeEventDelivered(provider,
+                                                                   eventId,
+                                                                   eventVersion,
+                                                                   cbMetadataBlob,
+                                                                   metadataBlob,
+                                                                   cbEventData,
+                                                                   eventData,
+                                                                   pActivityId,
+                                                                   pRelatedActivityId,
+                                                                   pEventThread,
+                                                                   numStackFrames,
+                                                                   stackFrames);
+    }
+    END_PIN_PROFILER();
+};
+
+
 
 /*
  * GetStringLayout
@@ -8821,15 +9098,15 @@ HRESULT ProfToEEInterfaceImpl::GetReJITIDs(
         // The rejit tables use a lock
         CAN_TAKE_LOCK;
 
-
         PRECONDITION(CheckPointer(pcReJitIds, NULL_OK));
         PRECONDITION(CheckPointer(reJitIds, NULL_OK));
+        PRECONDITION((cReJitIds == 0) == (reJitIds == NULL));
 
     }
     CONTRACTL_END;
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EEAllowableAfterAttach,
+        kP2EEAllowableAfterAttach | kP2EETriggers,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetReJITIDs 0x%p.\n",
@@ -8840,7 +9117,7 @@ HRESULT ProfToEEInterfaceImpl::GetReJITIDs(
         return E_INVALIDARG;
     }
 
-    if ((cReJitIds == 0) || (pcReJitIds == NULL) || (reJitIds == NULL))
+    if ((pcReJitIds == NULL) || ((cReJitIds != 0) && (reJitIds == NULL)))
     {
         return E_INVALIDARG;
     }
@@ -9211,30 +9488,44 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
 
     if (pcchVersionString != NULL)
     {
-        HRESULT hr = GetCORVersionInternal(szVersionString, (DWORD)cchVersionString, (DWORD *)pcchVersionString);
-        if (FAILED(hr))
-            return hr;
+        PCWSTR pczVersionString = CLR_PRODUCT_VERSION_L;
+
+        // Get the module file name
+        ULONG trueLen = (ULONG)(wcslen(pczVersionString) + 1);
+
+        // Return name of module as required.
+        if (szVersionString && cchVersionString > 0)
+        {
+            ULONG copyLen = trueLen;
+
+            if (copyLen >= cchVersionString)
+            {
+                copyLen = cchVersionString - 1;
+            }
+
+            wcsncpy_s(szVersionString, cchVersionString, pczVersionString, copyLen);
+        }
+
+        *pcchVersionString = trueLen;
     }
 
     if (pClrInstanceId != NULL)
         *pClrInstanceId = static_cast<USHORT>(GetClrInstanceId());
 
     if (pRuntimeType != NULL)
-    {
         *pRuntimeType = COR_PRF_CORE_CLR;
-    }
 
     if (pMajorVersion != NULL)
-        *pMajorVersion = CLR_MAJOR_VERSION;
+        *pMajorVersion = RuntimeProductMajorVersion;
 
     if (pMinorVersion != NULL)
-        *pMinorVersion = CLR_MINOR_VERSION;
+        *pMinorVersion = RuntimeProductMinorVersion;
 
     if (pBuildNumber != NULL)
-        *pBuildNumber = CLR_BUILD_VERSION;
+        *pBuildNumber = RuntimeProductPatchVersion;
 
     if (pQFEVersion != NULL)
-        *pQFEVersion = CLR_BUILD_VERSION_QFE;
+        *pQFEVersion = 0;
 
     return S_OK;
 }
@@ -10225,184 +10516,6 @@ void __stdcall ProfilerUnmanagedToManagedTransitionMD(MethodDesc *pMD,
 
 
 #endif // PROFILING_SUPPORTED
-
-
-FCIMPL0(FC_BOOL_RET, ProfilingFCallHelper::FC_TrackRemoting)
-{
-    FCALL_CONTRACT;
-
-#ifdef PROFILING_SUPPORTED
-    FC_RETURN_BOOL(CORProfilerTrackRemoting());
-#else // !PROFILING_SUPPORTED
-    FC_RETURN_BOOL(FALSE);
-#endif // !PROFILING_SUPPORTED
-}
-FCIMPLEND
-
-FCIMPL0(FC_BOOL_RET, ProfilingFCallHelper::FC_TrackRemotingCookie)
-{
-    FCALL_CONTRACT;
-
-#ifdef PROFILING_SUPPORTED
-    FC_RETURN_BOOL(CORProfilerTrackRemotingCookie());
-#else // !PROFILING_SUPPORTED
-    FC_RETURN_BOOL(FALSE);
-#endif // !PROFILING_SUPPORTED
-}
-FCIMPLEND
-
-FCIMPL0(FC_BOOL_RET, ProfilingFCallHelper::FC_TrackRemotingAsync)
-{
-    FCALL_CONTRACT;
-
-#ifdef PROFILING_SUPPORTED
-    FC_RETURN_BOOL(CORProfilerTrackRemotingAsync());
-#else // !PROFILING_SUPPORTED
-    FC_RETURN_BOOL(FALSE);
-#endif // !PROFILING_SUPPORTED
-}
-FCIMPLEND
-
-FCIMPL2(void, ProfilingFCallHelper::FC_RemotingClientSendingMessage, GUID *pId, CLR_BOOL fIsAsync)
-{
-    FCALL_CONTRACT;
-
-#ifdef PROFILING_SUPPORTED
-    // Need to erect a GC frame so that GCs can occur without a problem
-    // within the profiler code.
-
-    // Note that we don't need to worry about pId moving around since
-    // it is a value class declared on the stack and so GC doesn't
-    // know about it.
-
-    _ASSERTE (!GCHeapUtilities::GetGCHeap()->IsHeapPointer(pId));     // should be on the stack, not in the heap
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
-        GCX_PREEMP();
-        if (CORProfilerTrackRemotingCookie())
-        {
-            g_profControlBlock.pProfInterface->GetGUID(pId);
-            _ASSERTE(pId->Data1);
-
-            g_profControlBlock.pProfInterface->RemotingClientSendingMessage(pId, fIsAsync);
-        }
-        else
-        {
-            g_profControlBlock.pProfInterface->RemotingClientSendingMessage(NULL, fIsAsync);
-        }
-        END_PIN_PROFILER();
-    }
-    HELPER_METHOD_FRAME_END_POLL();
-#endif // PROFILING_SUPPORTED
-}
-FCIMPLEND
-
-
-FCIMPL2_VI(void, ProfilingFCallHelper::FC_RemotingClientReceivingReply, GUID id, CLR_BOOL fIsAsync)
-{
-    FCALL_CONTRACT;
-
-#ifdef PROFILING_SUPPORTED
-    // Need to erect a GC frame so that GCs can occur without a problem
-    // within the profiler code.
-
-    // Note that we don't need to worry about pId moving around since
-    // it is a value class declared on the stack and so GC doesn't
-    // know about it.
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-
-    {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
-        GCX_PREEMP();
-        if (CORProfilerTrackRemotingCookie())
-        {
-            g_profControlBlock.pProfInterface->RemotingClientReceivingReply(&id, fIsAsync);
-        }
-        else
-        {
-            g_profControlBlock.pProfInterface->RemotingClientReceivingReply(NULL, fIsAsync);
-        }
-        END_PIN_PROFILER();
-    }
-
-    HELPER_METHOD_FRAME_END_POLL();
-#endif // PROFILING_SUPPORTED
-}
-FCIMPLEND
-
-
-FCIMPL2_VI(void, ProfilingFCallHelper::FC_RemotingServerReceivingMessage, GUID id, CLR_BOOL fIsAsync)
-{
-    FCALL_CONTRACT;
-
-#ifdef PROFILING_SUPPORTED
-    // Need to erect a GC frame so that GCs can occur without a problem
-    // within the profiler code.
-
-    // Note that we don't need to worry about pId moving around since
-    // it is a value class declared on the stack and so GC doesn't
-    // know about it.
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
-        GCX_PREEMP();
-        if (CORProfilerTrackRemotingCookie())
-        {
-            g_profControlBlock.pProfInterface->RemotingServerReceivingMessage(&id, fIsAsync);
-        }
-        else
-        {
-            g_profControlBlock.pProfInterface->RemotingServerReceivingMessage(NULL, fIsAsync);
-        }
-        END_PIN_PROFILER();
-    }
-
-    HELPER_METHOD_FRAME_END_POLL();
-#endif // PROFILING_SUPPORTED
-}
-FCIMPLEND
-
-FCIMPL2(void, ProfilingFCallHelper::FC_RemotingServerSendingReply, GUID *pId, CLR_BOOL fIsAsync)
-{
-    FCALL_CONTRACT;
-
-#ifdef PROFILING_SUPPORTED
-    // Need to erect a GC frame so that GCs can occur without a problem
-    // within the profiler code.
-
-    // Note that we don't need to worry about pId moving around since
-    // it is a value class declared on the stack and so GC doesn't
-    // know about it.
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
-        GCX_PREEMP();
-        if (CORProfilerTrackRemotingCookie())
-        {
-            g_profControlBlock.pProfInterface->GetGUID(pId);
-            _ASSERTE(pId->Data1);
-
-            g_profControlBlock.pProfInterface->RemotingServerSendingReply(pId, fIsAsync);
-        }
-        else
-        {
-            g_profControlBlock.pProfInterface->RemotingServerSendingReply(NULL, fIsAsync);
-        }
-        END_PIN_PROFILER();
-    }
-
-    HELPER_METHOD_FRAME_END_POLL();
-#endif // PROFILING_SUPPORTED
-}
-FCIMPLEND
 
 
 //*******************************************************************************************

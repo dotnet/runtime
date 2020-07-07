@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.ComponentModel;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class SecurityDescriptorFlagControlTests
     {
         [Fact]
@@ -18,12 +20,18 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.801", control.Type);
 
-            Assert.Equal(new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 0 }, control.GetValue());
+            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 0 } : new byte[] { 48, 3, 2, 1, 0 };
+            Assert.Equal(expected, control.GetValue());
+        }
+
+        public static IEnumerable<object[]> Ctor_Flags_Data()
+        {
+            yield return new object[] { SecurityMasks.Group, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 2 } : new byte[] { 48, 3, 2, 1, 2 } };
+            yield return new object[] { SecurityMasks.None - 1, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 6, 2, 4, 255, 255, 255, 255 } : new byte[] { 48, 3, 2, 1, 255 } };
         }
 
         [Theory]
-        [InlineData(SecurityMasks.Group, new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 2 })]
-        [InlineData(SecurityMasks.None - 1, new byte[] { 48, 132, 0, 0, 0, 6, 2, 4, 255, 255, 255, 255 })]
+        [MemberData(nameof(Ctor_Flags_Data))]
         public void Ctor_Flags(SecurityMasks masks, byte[] expectedValue)
         {
             var control = new SecurityDescriptorFlagControl(masks);
@@ -31,7 +39,6 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Equal(masks, control.SecurityMasks);
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.801", control.Type);
-
             Assert.Equal(expectedValue, control.GetValue());
         }
     }

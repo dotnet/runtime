@@ -243,18 +243,18 @@ namespace System.DirectoryServices.ActiveDirectory
         }
 
         // The OSVersionInfoSize field must be set to Marshal.SizeOf(this)
-        public int osVersionInfoSize = 0;
-        public int majorVersion = 0;
-        public int minorVersion = 0;
-        public int buildNumber = 0;
-        public int platformId = 0;
+        public int osVersionInfoSize;
+        public int majorVersion;
+        public int minorVersion;
+        public int buildNumber;
+        public int platformId;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
         public string csdVersion = null;
-        public short servicePackMajor = 0;
-        public short servicePackMinor = 0;
-        public short suiteMask = 0;
-        public byte productType = 0;
-        public byte reserved = 0;
+        public short servicePackMajor;
+        public short servicePackMinor;
+        public short suiteMask;
+        public byte productType;
+        public byte reserved;
     }
 
     /*typedef struct _LUID {

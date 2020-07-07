@@ -8,6 +8,7 @@ namespace System.Drawing.Tests
     public class Graphics_DrawBezierTests : DrawingTest
     {
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void DrawBezier_Point()
         {
             using (Bitmap image = new Bitmap(100, 100))

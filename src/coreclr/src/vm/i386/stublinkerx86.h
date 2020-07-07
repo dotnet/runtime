@@ -443,14 +443,6 @@ class StubLinkerCPU : public StubLinker
         virtual VOID EmitUnwindInfoCheckSubfunction();
 #endif
 
-#ifdef TARGET_AMD64
-
-        static Stub * CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
-                                                  MethodDesc* pMD,
-                                                  CorInfoHelperTailCallSpecialHandling flags);
-
-#endif // TARGET_AMD64
-
     private:
         VOID X86EmitSubEspWorker(INT32 imm32);
 
@@ -511,9 +503,9 @@ struct InvalidPrecode {
 struct StubPrecode {
 
 #ifdef HOST_64BIT
-    static const BYTE Type = 0x40;
+    static const BYTE Type = 0xF8;
     // mov r10,pMethodDesc
-    // inc eax
+    // clc
     // jmp Stub
 #else
     static const BYTE Type = 0xED;
@@ -584,9 +576,9 @@ typedef DPTR(StubPrecode) PTR_StubPrecode;
 struct NDirectImportPrecode : StubPrecode {
 
 #ifdef HOST_64BIT
-    static const int Type = 0x48;
+    static const int Type = 0xF9;
     // mov r10,pMethodDesc
-    // dec eax
+    // stc
     // jmp NDirectImportThunk
 #else
     static const int Type = 0xC0;

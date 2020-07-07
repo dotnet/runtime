@@ -818,7 +818,9 @@ namespace System.Text.RegularExpressions.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void RegexParseException_Serializes()
         {
+#pragma warning disable RE0001 // Regex issue: Not enough )'s
             ArgumentException e = Assert.ThrowsAny<ArgumentException>(() => new Regex("(abc|def"));
+#pragma warning restore RE0001 // Regex issue: Not enough )'s
 
             var bf = new BinaryFormatter();
             var s = new MemoryStream();

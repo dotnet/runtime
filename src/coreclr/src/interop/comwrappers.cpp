@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 #include "comwrappers.hpp"
+#include <interoplibabi.h>
 #include <interoplibimports.h>
 
 #include <new> // placement new
 
 using OBJECTHANDLE = InteropLib::OBJECTHANDLE;
 using AllocScenario = InteropLibImports::AllocScenario;
+using TryInvokeICustomQueryInterfaceResult = InteropLibImports::TryInvokeICustomQueryInterfaceResult;
 
 namespace ABI
 {
@@ -46,8 +48,8 @@ namespace ABI
     };
     ABI_ASSERT(sizeof(ComInterfaceDispatch) == sizeof(void*));
 
-    const size_t DispatchAlignmentThisPtr = 16; // Should be a power of 2.
-    const intptr_t DispatchThisPtrMask = ~(DispatchAlignmentThisPtr - 1);
+    using InteropLib::ABI::DispatchAlignmentThisPtr;
+    using InteropLib::ABI::DispatchThisPtrMask;
     ABI_ASSERT(sizeof(void*) < DispatchAlignmentThisPtr);
 
     const intptr_t AlignmentThisPtrMaxPadding = DispatchAlignmentThisPtr - sizeof(void*);
@@ -178,17 +180,20 @@ namespace ABI
     }
 }
 
+// ManagedObjectWrapper_QueryInterface needs to be visible outside of this compilation unit
+// to support the DAC. See code:ClrDataAccess::DACTryGetComWrappersObjectFromCCW for the
+// usage in the DAC (look for the GetEEFuncEntryPoint call).
+HRESULT STDMETHODCALLTYPE ManagedObjectWrapper_QueryInterface(
+    _In_ ABI::ComInterfaceDispatch* disp,
+    /* [in] */ REFIID riid,
+    /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+{
+    ManagedObjectWrapper* wrapper = ABI::ToManagedObjectWrapper(disp);
+    return wrapper->QueryInterface(riid, ppvObject);
+}
+
 namespace
 {
-    HRESULT STDMETHODCALLTYPE ManagedObjectWrapper_QueryInterface(
-        _In_ ABI::ComInterfaceDispatch* disp,
-        /* [in] */ REFIID riid,
-        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
-    {
-        ManagedObjectWrapper* wrapper = ABI::ToManagedObjectWrapper(disp);
-        return wrapper->QueryInterface(riid, ppvObject);
-    }
-
     ULONG STDMETHODCALLTYPE ManagedObjectWrapper_AddRef(_In_ ABI::ComInterfaceDispatch* disp)
     {
         ManagedObjectWrapper* wrapper = ABI::ToManagedObjectWrapper(disp);
@@ -309,6 +314,7 @@ void ManagedObjectWrapper::GetIUnknownImpl(
     *fpRelease = ManagedObjectWrapper_IUnknownImpl.Release;
 }
 
+// The logic here should match code:ClrDataAccess::DACTryGetComWrappersObjectFromCCW in daccess/request.cpp
 ManagedObjectWrapper* ManagedObjectWrapper::MapFromIUnknown(_In_ IUnknown* pUnk)
 {
     _ASSERTE(pUnk != nullptr);
@@ -488,9 +494,8 @@ ULONGLONG ManagedObjectWrapper::UniversalRelease(_In_ ULONGLONG dec)
     return refCount;
 }
 
-void* ManagedObjectWrapper::As(_In_ REFIID riid)
+void* ManagedObjectWrapper::AsRuntimeDefined(_In_ REFIID riid)
 {
-    // Find target interface and return dispatcher or null if not found.
     for (int32_t i = 0; i < _runtimeDefinedCount; ++i)
     {
         if (IsEqualGUID(_runtimeDefined[i].IID, riid))
@@ -499,6 +504,11 @@ void* ManagedObjectWrapper::As(_In_ REFIID riid)
         }
     }
 
+    return nullptr;
+}
+
+void* ManagedObjectWrapper::AsUserDefined(_In_ REFIID riid)
+{
     for (int32_t i = 0; i < _userDefinedCount; ++i)
     {
         if (IsEqualGUID(_userDefined[i].IID, riid))
@@ -508,6 +518,16 @@ void* ManagedObjectWrapper::As(_In_ REFIID riid)
     }
 
     return nullptr;
+}
+
+void* ManagedObjectWrapper::As(_In_ REFIID riid)
+{
+    // Find target interface and return dispatcher or null if not found.
+    void* typeMaybe = AsRuntimeDefined(riid);
+    if (typeMaybe == nullptr)
+        typeMaybe = AsUserDefined(riid);
+
+    return typeMaybe;
 }
 
 bool ManagedObjectWrapper::TrySetObjectHandle(_In_ OBJECTHANDLE objectHandle, _In_ OBJECTHANDLE current)
@@ -582,9 +602,50 @@ HRESULT ManagedObjectWrapper::QueryInterface(
         return E_POINTER;
 
     // Find target interface
-    *ppvObject = As(riid);
+    *ppvObject = AsRuntimeDefined(riid);
     if (*ppvObject == nullptr)
-        return E_NOINTERFACE;
+    {
+        // Check if the managed object has implemented ICustomQueryInterface
+        if (!IsSet(CreateComInterfaceFlagsEx::LacksICustomQueryInterface))
+        {
+            TryInvokeICustomQueryInterfaceResult result = InteropLibImports::TryInvokeICustomQueryInterface(Target, riid, ppvObject);
+            switch (result)
+            {
+                case TryInvokeICustomQueryInterfaceResult::Handled:
+                    _ASSERTE(*ppvObject != nullptr);
+                    return S_OK;
+
+                case TryInvokeICustomQueryInterfaceResult::NotHandled:
+                    // Continue querying the static tables.
+                    break;
+
+                case TryInvokeICustomQueryInterfaceResult::Failed:
+                    _ASSERTE(*ppvObject == nullptr);
+                    return E_NOINTERFACE;
+
+                default:
+                    _ASSERTE(false && "Unknown result value");
+                case TryInvokeICustomQueryInterfaceResult::FailedToInvoke:
+                    // Set the 'lacks' flag since our attempt to use ICustomQueryInterface
+                    // indicated the object lacks an implementation.
+                    SetFlag(CreateComInterfaceFlagsEx::LacksICustomQueryInterface);
+                    break;
+
+                case TryInvokeICustomQueryInterfaceResult::OnGCThread:
+                    // We are going to assume the caller is attempting to
+                    // check if this wrapper has an interface that is supported
+                    // during a GC and not trying to do something bad.
+                    // Instead of returning immediately, we handle the case
+                    // the same way that would occur if the managed object lacked
+                    // an ICustomQueryInterface implementation.
+                    break;
+            }
+        }
+
+        *ppvObject = AsUserDefined(riid);
+        if (*ppvObject == nullptr)
+            return E_NOINTERFACE;
+    }
 
     (void)AddRef();
     return S_OK;

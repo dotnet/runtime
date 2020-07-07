@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using Xunit;
 
@@ -16,12 +17,12 @@ namespace System.Globalization.Tests
 
         // On Windows, hiragana characters sort after katakana.
         // On ICU, it is the opposite
-        private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.IsWindows ? 1 : -1;
+        private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.IsNlsGlobalization ? 1 : -1;
 
         // On Windows, all halfwidth characters sort before fullwidth characters.
         // On ICU, half and fullwidth characters that aren't in the "Halfwidth and fullwidth forms" block U+FF00-U+FFEF
         // sort before the corresponding characters that are in the block U+FF00-U+FFEF
-        private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsWindows ? -1 : 1;
+        private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsNlsGlobalization ? -1 : 1;
 
         private const string SoftHyphen = "\u00AD";
 
@@ -39,13 +40,13 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "\u3060", "\uFF80\uFF9E", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
 
-            bool isWindows = PlatformDetection.IsWindows;
+            bool useNls = PlatformDetection.IsNlsGlobalization;
 
-            yield return new object[] { s_invariantCompare, "\u30C7\u30BF\u30D9\u30B9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E\uFF7D", CompareOptions.None, isWindows ? 1 : -1 };
-            yield return new object[] { s_invariantCompare, "\u30C7", "\uFF83\uFF9E", CompareOptions.None, isWindows ? 1 : -1 };
-            yield return new object[] { s_invariantCompare, "\u30C7\u30BF", "\uFF83\uFF9E\uFF80", CompareOptions.None, isWindows ? 1 : -1 };
-            yield return new object[] { s_invariantCompare, "\u30C7\u30BF\u30D9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E", CompareOptions.None, isWindows ? 1 : -1 };
-            yield return new object[] { s_invariantCompare, "\uFF83\uFF9E\uFF70\uFF80\uFF8D\uFF9E\uFF70\uFF7D", "\u3067\u30FC\u305F\u3079\u30FC\u3059", CompareOptions.None, isWindows ? -1 : 1 };
+            yield return new object[] { s_invariantCompare, "\u30C7\u30BF\u30D9\u30B9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E\uFF7D", CompareOptions.None, useNls ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "\u30C7", "\uFF83\uFF9E", CompareOptions.None, useNls ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "\u30C7\u30BF", "\uFF83\uFF9E\uFF80", CompareOptions.None, useNls ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "\u30C7\u30BF\u30D9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E", CompareOptions.None, useNls ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "\uFF83\uFF9E\uFF70\uFF80\uFF8D\uFF9E\uFF70\uFF7D", "\u3067\u30FC\u305F\u3079\u30FC\u3059", CompareOptions.None, useNls ? -1 : 1 };
         }
 
         public static IEnumerable<object[]> Compare_TestData()
@@ -207,6 +208,13 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "Test's", null, CompareOptions.None, 1 };
             yield return new object[] { s_invariantCompare, null, null, CompareOptions.None, 0 };
 
+            yield return new object[] { s_invariantCompare, "", "Tests", CompareOptions.None, -1 };
+            yield return new object[] { s_invariantCompare, "Tests", "", CompareOptions.None, 1 };
+
+            yield return new object[] { s_invariantCompare, null, "", CompareOptions.None, -1 };
+            yield return new object[] { s_invariantCompare, "", null, CompareOptions.None, 1 };
+            yield return new object[] { s_invariantCompare, "", "", CompareOptions.None, 0 };
+
             yield return new object[] { s_invariantCompare, new string('a', 5555), new string('a', 5555), CompareOptions.None, 0 };
             yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", CompareOptions.IgnoreNonSpace, -1 };
@@ -237,28 +245,29 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("es-ES").CompareInfo, "llegar", "lugar", CompareOptions.None, -1 };
 
             // Misc differences between platforms
-            bool isWindows = PlatformDetection.IsWindows;
+            bool useNls = PlatformDetection.IsNlsGlobalization;
 
-            yield return new object[] { s_invariantCompare, "\u3042", "\u30A1", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, isWindows ? 1: 0 };
-            yield return new object[] { s_invariantCompare, "'\u3000'", "''", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, isWindows ? 1 : -1 };
-            yield return new object[] { s_invariantCompare, "\u30BF", "\uFF80", CompareOptions.None, isWindows ? 1 : -1 };
-            yield return new object[] { s_invariantCompare, "'\u3000'", "''", CompareOptions.None, isWindows ? 1 : -1 };
-            yield return new object[] { s_invariantCompare, "\u30FC", "\uFF70", CompareOptions.None, isWindows ? 0 : -1 };
-            yield return new object[] { s_hungarianCompare, "dzsdzs", "ddzs", CompareOptions.None, isWindows ? 0 : -1 };
-            yield return new object[] { s_invariantCompare, "Test's", "Tests", CompareOptions.None, isWindows ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "\u3042", "\u30A1", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, useNls ? 1: 0 };
+            yield return new object[] { s_invariantCompare, "'\u3000'", "''", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, useNls ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "\u30BF", "\uFF80", CompareOptions.None, useNls ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "'\u3000'", "''", CompareOptions.None, useNls ? 1 : -1 };
+            yield return new object[] { s_invariantCompare, "\u30FC", "\uFF70", CompareOptions.None, useNls ? 0 : -1 };
+            yield return new object[] { s_hungarianCompare, "dzsdzs", "ddzs", CompareOptions.None, useNls ? 0 : -1 };
+            yield return new object[] { s_invariantCompare, "Test's", "Tests", CompareOptions.None, useNls ? 1 : -1 };
             yield return new object[] { new CultureInfo("de-DE").CompareInfo, "\u00DC", "UE", CompareOptions.None, -1 };
-            yield return new object[] { new CultureInfo("de-DE_phoneb").CompareInfo, "\u00DC", "UE", CompareOptions.None, isWindows ? 0 : -1 };
-            yield return new object[] { new CultureInfo("es-ES_tradnl").CompareInfo, "llegar", "lugar", CompareOptions.None, isWindows ? 1 : -1 };
+            yield return new object[] { new CultureInfo("de-DE_phoneb").CompareInfo, "\u00DC", "UE", CompareOptions.None, useNls ? 0 : -1 };
+            yield return new object[] { new CultureInfo("es-ES_tradnl").CompareInfo, "llegar", "lugar", CompareOptions.None, useNls ? 1 : -1 };
         }
 
         // There is a regression in Windows 190xx version with the Kana comparison. Avoid running this test there.
         public static bool IsNotWindowsKanaRegressedVersion() => !PlatformDetection.IsWindows10Version1903OrGreater ||
+                                                              PlatformDetection.IsIcuGlobalization ||
                                                               s_invariantCompare.Compare("\u3060", "\uFF80\uFF9E", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase) == 0;
 
         [Fact]
         public void CompareWithUnassignedChars()
         {
-            int result = PlatformDetection.IsWindows ? 0 : -1;
+            int result = PlatformDetection.IsNlsGlobalization ? 0 : -1;
             Compare(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.None, result);
             Compare(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.IgnoreNonSpace, result);
         }
@@ -267,14 +276,14 @@ namespace System.Globalization.Tests
         [MemberData(nameof(Compare_Kana_TestData))]
         public void CompareWithKana(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
-            Compare(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);
+            Compare_Advanced(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);
         }
 
         [Theory]
         [MemberData(nameof(Compare_TestData))]
         public void Compare(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
-            Compare(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);
+            Compare_Advanced(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);
         }
 
         public static IEnumerable<object[]> Compare_Advanced_TestData()
@@ -326,7 +335,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Compare_Advanced_TestData))]
-        public void Compare(CompareInfo compareInfo, string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options, int expected)
+        public void Compare_Advanced(CompareInfo compareInfo, string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options, int expected)
         {
             if (offset1 + length1 == (string1?.Length ?? 0) && offset2 + length2 == (string2?.Length ?? 0))
             {
@@ -361,6 +370,26 @@ namespace System.Globalization.Tests
             // Use Compare(string, int, int, string, int, int, CompareOptions)
             Assert.Equal(expected, Math.Sign(compareInfo.Compare(string1, offset1, length1, string2, offset2, length2, options)));
             Assert.Equal(-expected, Math.Sign(compareInfo.Compare(string2, offset2, length2, string1, offset1, length1, options)));
+
+            // Now test the span-based versions - use BoundedMemory to detect buffer overruns
+            // We can't run this test for null inputs since they implicitly convert to empty span
+
+            if (string1 != null && string2 != null)
+            {
+                RunSpanCompareTest(compareInfo, string1.AsSpan(offset1, length1), string2.AsSpan(offset2, length2), options, expected);
+            }
+
+            static void RunSpanCompareTest(CompareInfo compareInfo, ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options, int expected)
+            {
+                using BoundedMemory<char> string1BoundedMemory = BoundedMemory.AllocateFromExistingData(string1);
+                string1BoundedMemory.MakeReadonly();
+
+                using BoundedMemory<char> string2BoundedMemory = BoundedMemory.AllocateFromExistingData(string2);
+                string2BoundedMemory.MakeReadonly();
+
+                Assert.Equal(expected, Math.Sign(compareInfo.Compare(string1, string2, options)));
+                Assert.Equal(-expected, Math.Sign(compareInfo.Compare(string2, string1, options)));
+            }
         }
 
         [Fact]

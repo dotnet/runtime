@@ -4,21 +4,24 @@
 
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if TARGET_64BIT
-using nint = System.Int64;
+using nint_t = System.Int64;
 #else
-using nint = System.Int32;
+using nint_t = System.Int32;
 #endif
 
 namespace System
 {
     [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct IntPtr : IEquatable<IntPtr>, ISerializable
+    public readonly struct IntPtr : IEquatable<IntPtr>, IComparable, IComparable<IntPtr>, IFormattable, ISerializable
     {
         // WARNING: We allow diagnostic tools to directly inspect this member (_value).
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details.
@@ -72,9 +75,6 @@ namespace System
 
         public override unsafe bool Equals(object? obj) =>
             obj is IntPtr other &&
-            _value == other._value;
-
-        unsafe bool IEquatable<IntPtr>.Equals(IntPtr other) =>
             _value == other._value;
 
         public override unsafe int GetHashCode()
@@ -162,17 +162,67 @@ namespace System
         public static int Size
         {
             [NonVersionable]
-            get => sizeof(nint);
+            get => sizeof(nint_t);
         }
 
         [CLSCompliant(false)]
         [NonVersionable]
         public unsafe void* ToPointer() => _value;
 
-        public override unsafe string ToString() =>
-            ((nint)_value).ToString(CultureInfo.InvariantCulture);
+        public static IntPtr MaxValue
+        {
+            [NonVersionable]
+            get => (IntPtr)nint_t.MaxValue;
+        }
 
-        public unsafe string ToString(string format) =>
-            ((nint)_value).ToString(format, CultureInfo.InvariantCulture);
+        public static IntPtr MinValue
+        {
+            [NonVersionable]
+            get => (IntPtr)nint_t.MinValue;
+        }
+
+        // Don't just delegate to nint_t.CompareTo as it needs to throw when not IntPtr
+        public unsafe int CompareTo(object? value)
+        {
+            if (value is null)
+            {
+                return 1;
+            }
+            if (value is nint i)
+            {
+                if ((nint)_value < i) return -1;
+                if ((nint)_value > i) return 1;
+                return 0;
+            }
+
+            throw new ArgumentException(SR.Arg_MustBeIntPtr);
+        }
+
+        public unsafe int CompareTo(IntPtr value) => ((nint_t)_value).CompareTo((nint_t)value);
+
+        [NonVersionable]
+        public unsafe bool Equals(IntPtr other) => (nint_t)_value == (nint_t)other;
+
+        public unsafe override string ToString() => ((nint_t)_value).ToString();
+        public unsafe string ToString(string? format) => ((nint_t)_value).ToString(format);
+        public unsafe string ToString(IFormatProvider? provider) => ((nint_t)_value).ToString(provider);
+        public unsafe string ToString(string? format, IFormatProvider? provider) => ((nint_t)_value).ToString(format, provider);
+
+        public static IntPtr Parse(string s) => (IntPtr)nint_t.Parse(s);
+        public static IntPtr Parse(string s, NumberStyles style) => (IntPtr)nint_t.Parse(s, style);
+        public static IntPtr Parse(string s, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, provider);
+        public static IntPtr Parse(string s, NumberStyles style, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, style, provider);
+
+        public static bool TryParse(string? s, out IntPtr result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(s, out Unsafe.As<IntPtr, nint_t>(ref result));
+        }
+
+        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(s, style, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+        }
     }
 }

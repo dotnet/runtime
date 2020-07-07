@@ -15,12 +15,11 @@ if(CLR_CMAKE_HOST_WIN32)
         include.rc
     )
 
-    install_clr(TARGETS mscorrc)
-    install_clr(TARGETS mscorrc DESTINATION sharedFramework)
+    install_clr(TARGETS mscorrc ADDITIONAL_DESTINATION sharedFramework)
 else()
     build_resources(${CMAKE_CURRENT_SOURCE_DIR}/include.rc mscorrc TARGET_CPP_FILE)
 
-    add_library_clr(mscorrc STATIC
+    add_library_clr(mscorrc OBJECT
         ${TARGET_CPP_FILE}
     )
 endif(CLR_CMAKE_HOST_WIN32)

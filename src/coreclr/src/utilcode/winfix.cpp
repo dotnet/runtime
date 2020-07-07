@@ -19,7 +19,6 @@
 #include "winwrap.h"                    // Header for macros and functions.
 #include "utilcode.h"
 #include "holder.h"
-#include "ndpversion.h"
 #include "pedecoder.h"
 
 

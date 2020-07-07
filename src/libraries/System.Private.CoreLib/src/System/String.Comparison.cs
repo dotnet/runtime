@@ -10,13 +10,6 @@ using System.Runtime.InteropServices;
 
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-
 namespace System
 {
     public partial class String
@@ -928,6 +921,17 @@ namespace System
             // StringComparison.OrdinalIgnoreCase           0x05
 
             return (CompareOptions)((int)comparisonType & (int)CompareOptions.IgnoreCase);
+        }
+
+        private static CompareOptions GetCompareOptionsFromOrdinalStringComparison(StringComparison comparisonType)
+        {
+            Debug.Assert(comparisonType == StringComparison.Ordinal || comparisonType == StringComparison.OrdinalIgnoreCase);
+
+            // StringComparison.Ordinal (0x04) --> CompareOptions.Ordinal (0x4000_0000)
+            // StringComparison.OrdinalIgnoreCase (0x05) -> CompareOptions.OrdinalIgnoreCase (0x1000_0000)
+
+            int ct = (int)comparisonType;
+            return (CompareOptions)((ct & -ct) << 28); // neg and shl
         }
     }
 }

@@ -52,6 +52,8 @@ namespace System.Reflection.Emit
 
         public override Module Module => m_type.Module;
 
+        public override bool IsByRefLike => false;
+
         internal int MetadataTokenInternal => m_type.MetadataTokenInternal;
         #endregion
 
@@ -201,7 +203,7 @@ namespace System.Reflection.Emit
             m_type.SetGenParamCustomAttribute(customBuilder);
         }
 
-        public void SetBaseTypeConstraint(Type? baseTypeConstraint)
+        public void SetBaseTypeConstraint([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
         {
             m_type.CheckContext(baseTypeConstraint);
             m_type.SetParent(baseTypeConstraint);

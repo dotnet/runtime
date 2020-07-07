@@ -9,7 +9,6 @@ namespace System.Reflection.Emit.Tests
     public class ConstructorBuilderToString
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void ToString_NullRequiredOptionalCustomModifiers()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

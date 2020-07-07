@@ -154,7 +154,9 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/runtime/issues/28330
+        private static bool IsNotWindowsSubsystemForLinuxAndRemoteExecutorSupported => PlatformDetection.IsNotWindowsSubsystemForLinux && RemoteExecutor.IsSupported;
+
+        [ConditionalTheory(nameof(IsNotWindowsSubsystemForLinuxAndRemoteExecutorSupported))] // https://github.com/dotnet/runtime/issues/28330
         [InlineData(10, 0, 10, 1, 2)]
         [InlineData(10, 3, 5, 3, 5)]
         [InlineData(10, 3, 5, 3, 4)]

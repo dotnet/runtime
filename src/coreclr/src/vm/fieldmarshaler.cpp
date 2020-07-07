@@ -56,20 +56,13 @@ VOID ParseNativeType(Module*                     pModule,
     CONTRACTL_END;
 
     BOOL fAnsi = (flags == ParseNativeTypeFlags::IsAnsi);
-#ifdef FEATURE_COMINTEROP
-    BOOL fIsWinRT = (flags == ParseNativeTypeFlags::IsWinRT);
-#endif // FEATURE_COMINTEROP
 
     MarshalInfo mlInfo(
         pModule,
         sig,
         pTypeContext,
         pFD->GetMemberDef(),
-#if FEATURE_COMINTEROP
-        fIsWinRT ? MarshalInfo::MARSHAL_SCENARIO_WINRT_FIELD : MarshalInfo::MARSHAL_SCENARIO_FIELD,
-#else
         MarshalInfo::MARSHAL_SCENARIO_FIELD,
-#endif
         fAnsi ? nltAnsi : nltUnicode,
         nlfNone,
         FALSE,
@@ -158,12 +151,6 @@ VOID ParseNativeType(Module*                     pModule,
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(void*), sizeof(void*));
             break;
 #ifdef FEATURE_COMINTEROP
-        case MarshalInfo::MARSHAL_TYPE_HSTRING:
-            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(HSTRING), sizeof(HSTRING));
-            break;
-        case MarshalInfo::MARSHAL_TYPE_DATETIME:
-            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(INT64), sizeof(INT64));
-            break;
         case MarshalInfo::MARSHAL_TYPE_INTERFACE:
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(IUnknown*), sizeof(IUnknown*));
             break;
@@ -210,17 +197,6 @@ VOID ParseNativeType(Module*                     pModule,
         case MarshalInfo::MARSHAL_TYPE_FIXED_WSTR:
             *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__UINT16), pargs->fs.fixedStringLength);
             break;
-#ifdef FEATURE_COMINTEROP
-        case MarshalInfo::MARSHAL_TYPE_SYSTEMTYPE:
-            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__TYPENAMENATIVE));
-            break;
-        case MarshalInfo::MARSHAL_TYPE_EXCEPTION:
-            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(int), sizeof(int));
-            break;
-        case MarshalInfo::MARSHAL_TYPE_NULLABLE:
-            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(IUnknown*), sizeof(IUnknown*));
-            break;
-#endif
         case MarshalInfo::MARSHAL_TYPE_UNKNOWN:
         default:
             *pNFD = NativeFieldDescriptor(pFD);
@@ -244,11 +220,6 @@ bool IsFieldBlittable(
     if (pModule->GetMDImport()->GetFieldMarshal(fd, &marshalInfoSig, &marshalInfoSigLength) == S_OK && marshalInfoSigLength > 0)
     {
         nativeType = (CorNativeType)*marshalInfoSig;
-    }
-
-    if (nativeType != NATIVE_TYPE_DEFAULT && flags == ParseNativeTypeFlags::IsWinRT)
-    {
-        return false;
     }
 
     bool isBlittable = false;
@@ -289,10 +260,10 @@ bool IsFieldBlittable(
             isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_INT) || (nativeType == NATIVE_TYPE_UINT);
             break;
         case ELEMENT_TYPE_PTR:
-            isBlittable = nativeType == NATIVE_TYPE_DEFAULT && flags != ParseNativeTypeFlags::IsWinRT;
+            isBlittable = nativeType == NATIVE_TYPE_DEFAULT;
             break;
         case ELEMENT_TYPE_FNPTR:
-            isBlittable = flags != ParseNativeTypeFlags::IsWinRT && (nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_FUNC);
+            isBlittable = nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_FUNC;
             break;
         case ELEMENT_TYPE_VALUETYPE:
             if (nativeType != NATIVE_TYPE_DEFAULT && nativeType != NATIVE_TYPE_STRUCT)
@@ -305,19 +276,6 @@ bool IsFieldBlittable(
                 // As a result, a field of type System.Decimal can't be blittable.
                 isBlittable = false;
             }
-#if FEATURE_COMINTEROP
-            else if (flags == ParseNativeTypeFlags::IsWinRT)
-            {
-                if (valueTypeHandle.GetMethodTable()->HasSameTypeDefAs(g_pNullableClass))
-                {
-                    isBlittable = false;
-                }
-                else if (valueTypeHandle.GetMethodTable()->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC)))
-                {
-                    isBlittable = false;
-                }
-            }
-#endif
             else
             {
                 isBlittable = !valueTypeHandle.GetMethodTable()->HasInstantiation() && valueTypeHandle.GetMethodTable()->IsBlittable();

@@ -305,7 +305,7 @@ namespace System.Drawing
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public string Name { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        public string OriginalFontName { get { throw null; } }
+        public string? OriginalFontName { get { throw null; } }
         public float Size { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public float SizeInPoints { get { throw null; } }
@@ -2719,6 +2719,8 @@ namespace System.Drawing.Printing
         public virtual System.Drawing.Graphics? OnStartPage(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintPageEventArgs e) { throw null; }
         public virtual void OnStartPrint(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintEventArgs e) { }
     }
+    [System.ComponentModel.DefaultPropertyAttribute("DocumentName")]
+    [System.ComponentModel.DefaultEventAttribute("PrintPage")]
     public partial class PrintDocument : System.ComponentModel.Component
     {
         public PrintDocument() { }

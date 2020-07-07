@@ -8,8 +8,10 @@ namespace System.Runtime.CompilerServices
     {
         public static void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
         {
-            if (array == null || fldHandle.Value == IntPtr.Zero)
-                throw new ArgumentNullException();
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (fldHandle.Value == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(fldHandle));
 
             InitializeArray(array, fldHandle.Value);
         }
@@ -43,7 +45,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern object GetObjectValue(object obj);
+        public static extern object? GetObjectValue(object? obj);
 
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
@@ -80,13 +82,13 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public static void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[] instantiation)
+        public static void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[]? instantiation)
         {
             if (method.IsNullHandle())
                 throw new ArgumentException(SR.Argument_InvalidHandle);
             unsafe
             {
-                IntPtr[] instantiations = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, out int length);
+                IntPtr[]? instantiations = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, out int length);
                 fixed (IntPtr* pinst = instantiations)
                 {
                     PrepareMethod(method.Value, pinst, length);

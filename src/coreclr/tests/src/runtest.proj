@@ -65,10 +65,12 @@
 
     <Message Text="Found $(TestCount) built tests"/>
 
-    <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &lt;= 2000" Text="Unexpected test count. Expected &gt; 2000, found $(TestCount).'" />
-    <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &gt;= 3000" Text="Unexpected test count. Expected &lt; 3000, found $(TestCount).'" />
-    <Error Condition="'$(CLRTestPriorityToBuild)' == '1' and '$(TestCount)' &lt;= 9000" Text="Unexpected test count. Expected &gt; 9000, found $(TestCount).'" />
-    <Error Condition="'$(CLRTestPriorityToBuild)' != '0' and '$(CLRTestPriorityToBuild)' != '1'" Text="Unknown priority $(CLRTestPriorityToBuild)" />
+    <ItemGroup>
+      <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &lt;= 2000" Text="Unexpected test count. Expected &gt; 2000, found $(TestCount).'" />
+      <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &gt;= 3000" Text="Unexpected test count. Expected &lt; 3000, found $(TestCount).'" />
+      <Error Condition="'$(CLRTestPriorityToBuild)' == '1' and '$(TestCount)' &lt;= 9000" Text="Unexpected test count. Expected &gt; 9000, found $(TestCount).'" />
+      <Error Condition="'$(CLRTestPriorityToBuild)' != '0' and '$(CLRTestPriorityToBuild)' != '1'" Text="Unknown priority $(CLRTestPriorityToBuild)" />
+    </ItemGroup>
   </Target>
 
   <Import Project="$(__Exclude)" Condition="'$(__Exclude)' != '' AND '$(XunitTestBinBase)' != ''" />
@@ -284,7 +286,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                 if (infraEx != null)
                 {
-                    Assert.True(false, "Test Infrastructure Failure: " + infraEx.Message)%3B
+                    Assert.True(false, "Test Infrastructure Failure: " + infraEx.ToString())%3B
                 }
                 else
                 {
@@ -297,7 +299,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     catch (Exception ex)
                     {
                         testOutput.Add("Unable to read error file: " + errorFile)%3B
-                        testOutput.Add(ex.Message)%3B
+                        testOutput.Add(ex.ToString())%3B
                     }
 
                     testOutput.Add(string.Empty)%3B
@@ -312,7 +314,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     catch(Exception ex)
                     {
                         testOutput.Add("Unable to read output file: " + outputFile)%3B
-                        testOutput.Add(ex.Message)%3B
+                        testOutput.Add(ex.ToString())%3B
                     }
 
                     testOutput.Add("To run the test:")%3B
@@ -347,7 +349,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   </Target>
 
   <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity);TestSrcDir=$(XunitTestBinBase)" />
   </Target>
 
   <Target Name="GetListOfTestCmds">

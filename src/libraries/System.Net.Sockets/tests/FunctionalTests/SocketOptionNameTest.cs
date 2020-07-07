@@ -558,6 +558,21 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(ExpectedGetSize, socket.ReceiveBufferSize);
             }
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        public void Get_AcceptConnection_Succeeds()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Equal(0, s.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.AcceptConnection));
+
+                s.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                s.Listen();
+
+                Assert.Equal(1, s.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.AcceptConnection));
+            }
+        }
+
     }
 
     [Collection("NoParallelTests")]

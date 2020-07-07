@@ -18,7 +18,7 @@ namespace Internal.Cryptography.Pal.Windows
     internal sealed partial class DecryptorPalWindows : DecryptorPal
     {
         internal static DecryptorPalWindows Decode(
-            byte[] encodedMessage,
+            ReadOnlySpan<byte> encodedMessage,
             out int version,
             out ContentInfo contentInfo,
             out AlgorithmIdentifier contentEncryptionAlgorithm,
@@ -30,8 +30,14 @@ namespace Internal.Cryptography.Pal.Windows
             if (hCryptMsg == null || hCryptMsg.IsInvalid)
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
 
-            if (!Interop.Crypt32.CryptMsgUpdate(hCryptMsg, encodedMessage, encodedMessage.Length, fFinal: true))
+            if (!Interop.Crypt32.CryptMsgUpdate(
+                hCryptMsg,
+                ref MemoryMarshal.GetReference(encodedMessage),
+                encodedMessage.Length,
+                fFinal: true))
+            {
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
+            }
 
             CryptMsgType cryptMsgType = hCryptMsg.GetMessageType();
             if (cryptMsgType != CryptMsgType.CMSG_ENVELOPED)
@@ -48,7 +54,7 @@ namespace Internal.Cryptography.Pal.Windows
                 {
                     CRYPT_ALGORITHM_IDENTIFIER* pCryptAlgorithmIdentifier = (CRYPT_ALGORITHM_IDENTIFIER*)(sh.DangerousGetHandle());
                     contentEncryptionAlgorithm = (*pCryptAlgorithmIdentifier).ToAlgorithmIdentifier();
-                    contentEncryptionAlgorithmAsn.Algorithm = contentEncryptionAlgorithm.Oid;
+                    contentEncryptionAlgorithmAsn.Algorithm = contentEncryptionAlgorithm.Oid.Value!;
                     contentEncryptionAlgorithmAsn.Parameters = (*pCryptAlgorithmIdentifier).Parameters.ToByteArray();
                 }
             }

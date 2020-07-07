@@ -46,6 +46,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(70, 0, 63)] // 0 (or default) max depth is treated as 64
         public static void WriteCyclicFail(int objectHierarchyDepth, int maxDepth, int expectedPathDepth)
         {
+            int effectiveMaxDepth = maxDepth == 0 ? 64 : maxDepth;
             var rootObj = new TestClassWithCycle("root");
             CreateObjectHierarchy(1, objectHierarchyDepth, rootObj);
 
@@ -57,7 +58,7 @@ namespace System.Text.Json.Serialization.Tests
             // Since the last Parent property is null, the serializer moves onto the Children property.
             string expectedPath = "$" + string.Concat(Enumerable.Repeat(".Parent", expectedPathDepth));
             Assert.Contains(expectedPath, ex.Path);
-            Assert.Contains(maxDepth.ToString(), ex.ToString());
+            Assert.Contains(effectiveMaxDepth.ToString(), ex.Message);
         }
 
         private static TestClassWithCycle CreateObjectHierarchy(int i, int max, TestClassWithCycle previous)

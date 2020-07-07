@@ -35,7 +35,7 @@ namespace System.Text.Json
         public bool IsContinuation => _continuationCount != 0;
 
         // The bag of preservable references.
-        public DefaultReferenceResolver ReferenceResolver;
+        public ReferenceResolver ReferenceResolver;
 
         /// <summary>
         /// Internal flag to let us know that we need to read ahead in the inner read loop.
@@ -66,10 +66,9 @@ namespace System.Text.Json
         /// <summary>
         /// Initialize the state without delayed initialization of the JsonClassInfo.
         /// </summary>
-        public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
+        public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
-
+            JsonClassInfo jsonClassInfo = options.GetOrAddClassForRootType(type);
             Current.JsonClassInfo = jsonClassInfo;
 
             if ((jsonClassInfo.ClassType & (ClassType.Enumerable | ClassType.Dictionary)) == 0)
@@ -77,12 +76,14 @@ namespace System.Text.Json
                 Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
             }
 
-            if (options.ReferenceHandling.ShouldWritePreservedReferences())
+            if (options.ReferenceHandler != null)
             {
-                ReferenceResolver = new DefaultReferenceResolver(writing: true);
+                ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: true);
             }
 
             SupportContinuation = supportContinuation;
+
+            return jsonClassInfo.PropertyInfoForClassInfo.ConverterBase;
         }
 
         public void Push()
