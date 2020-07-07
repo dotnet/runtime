@@ -73,23 +73,23 @@ namespace System.Text.Encodings.Web
                     // Load the next 8 characters.
                     Vector128<short> sourceValue;
                     Vector128<short> mask;
-                    bool allCharsAreAscii;
+                    bool containsNonAsciiChars;
 
                     if (Sse2.IsSupported)
                     {
                         sourceValue = Sse2.LoadVector128(startingAddress);
                         mask = Sse2Helper.CreateAsciiMask(sourceValue);
-                        allCharsAreAscii = Sse2.MoveMask(mask.AsByte()) != 0;
+                        containsNonAsciiChars = Sse2.MoveMask(mask.AsByte()) != 0;
                     }
                     else
                     {
                         Debug.Assert(AdvSimd.Arm64.IsSupported);
                         sourceValue = AdvSimd.LoadVector128(startingAddress);
                         mask = AdvSimdHelper.CreateAsciiMask(sourceValue);
-                        allCharsAreAscii = AdvSimd.Arm64.MinAcross(mask.AsByte()).ToScalar() >= 0;
+                        containsNonAsciiChars = AdvSimd.Arm64.MinAcross(mask.AsByte()).ToScalar() < 0;
                     }
 
-                    if (allCharsAreAscii)
+                    if (containsNonAsciiChars)
                     {
                         // At least one of the following 8 characters is non-ASCII.
                         int processNextEight = idx + 8;
@@ -171,22 +171,22 @@ namespace System.Text.Encodings.Web
 
                         // Load the next 16 bytes.
                         Vector128<sbyte> sourceValue;
-                        bool allBytesAreAscii;
+                        bool containsNonAsciiBytes;
 
                         // Check for ASCII text. Any byte that's not in the ASCII range will already be negative when
                         // casted to signed byte.
                         if (Sse2.IsSupported)
                         {
                             sourceValue = Sse2.LoadVector128(startingAddress);
-                            allBytesAreAscii = Sse2.MoveMask(sourceValue) != 0;
+                            containsNonAsciiBytes = Sse2.MoveMask(sourceValue) != 0;
                         }
                         else
                         {
                             sourceValue = AdvSimd.LoadVector128(startingAddress);
-                            allBytesAreAscii = AdvSimd.Arm64.MinAcross(sourceValue).ToScalar() >= 0;
+                            containsNonAsciiBytes = AdvSimd.Arm64.MinAcross(sourceValue).ToScalar() < 0;
                         }
 
-                        if (allBytesAreAscii)
+                        if (containsNonAsciiBytes)
                         {
                             // At least one of the following 16 bytes is non-ASCII.
 
