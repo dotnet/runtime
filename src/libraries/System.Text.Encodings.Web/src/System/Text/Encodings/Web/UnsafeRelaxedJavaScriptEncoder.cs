@@ -11,6 +11,7 @@ using System.Text.Unicode;
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Arm;
 #endif
 
 namespace System.Text.Encodings.Web
@@ -62,7 +63,7 @@ namespace System.Text.Encodings.Web
             int idx = 0;
 
 #if NETCOREAPP
-            if (Sse2.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
             {
                 short* startingAddress = (short*)text;
                 while (textLength - 8 >= idx)
@@ -70,12 +71,25 @@ namespace System.Text.Encodings.Web
                     Debug.Assert(startingAddress >= text && startingAddress <= (text + textLength - 8));
 
                     // Load the next 8 characters.
-                    Vector128<short> sourceValue = Sse2.LoadVector128(startingAddress);
+                    Vector128<short> sourceValue;
+                    Vector128<short> mask;
+                    bool allCharsAreAscii;
 
-                    Vector128<short> mask = Sse2Helper.CreateAsciiMask(sourceValue);
-                    int index = Sse2.MoveMask(mask.AsByte());
+                    if (Sse2.IsSupported)
+                    {
+                        sourceValue = Sse2.LoadVector128(startingAddress);
+                        mask = Sse2Helper.CreateAsciiMask(sourceValue);
+                        allCharsAreAscii = Sse2.MoveMask(mask.AsByte()) != 0;
+                    }
+                    else
+                    {
+                        Debug.Assert(AdvSimd.Arm64.IsSupported);
+                        sourceValue = AdvSimd.LoadVector128(startingAddress);
+                        mask = AdvSimdHelper.CreateAsciiMask(sourceValue);
+                        allCharsAreAscii = AdvSimd.Arm64.MinAcross(mask.AsByte()).ToScalar() >= 0;
+                    }
 
-                    if (index != 0)
+                    if (allCharsAreAscii)
                     {
                         // At least one of the following 8 characters is non-ASCII.
                         int processNextEight = idx + 8;
@@ -92,10 +106,21 @@ namespace System.Text.Encodings.Web
                     }
                     else
                     {
-                        // Check if any of the 8 characters need to be escaped.
-                        mask = Sse2Helper.CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
+                        int index;
 
-                        index = Sse2.MoveMask(mask.AsByte());
+                        // Check if any of the 8 characters need to be escaped.
+                        if (Sse2.IsSupported)
+                        {
+                            mask = Sse2Helper.CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
+                            index = Sse2.MoveMask(mask.AsByte());
+                        }
+                        else
+                        {
+                            Debug.Assert(AdvSimd.Arm64.IsSupported);
+                            mask = AdvSimdHelper.CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
+                            index = AdvSimdHelper.MoveMask(mask.AsByte());
+                        }
+
                         // If index == 0, that means none of the 8 characters needed to be escaped.
                         // TrailingZeroCount is relatively expensive, avoid it if possible.
                         if (index != 0)
