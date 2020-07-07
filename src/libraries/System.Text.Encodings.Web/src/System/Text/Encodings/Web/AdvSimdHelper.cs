@@ -33,27 +33,8 @@ namespace System.Text.Encodings.Web
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ushort MoveMask(Vector128<byte> value)
-        {
-            Debug.Assert(AdvSimd.Arm64.IsSupported);
-
-            Vector128<byte> mostSignficantBitMask = Vector128.Create((byte)0x80);
-            Vector128<byte> mostSignificantBitIsSet = AdvSimd.CompareEqual(AdvSimd.And(value, mostSignficantBitMask), mostSignficantBitMask);
-
-            // self-pairwise add until all flags have moved to the first two bytes of the vector
-            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_bitMask128);
-            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
-            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
-            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
-            return extractedBits.AsUInt16().ToScalar();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<sbyte> CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(Vector128<sbyte> sourceValue)
         {
-            // This is an instruction-by-instruction port of the Sse2 optimization.
-            // TODO investigate further optimizations.
-
             Debug.Assert(AdvSimd.IsSupported);
 
             // Anything in the control characters range (except 0x7F), and anything above sbyte.MaxValue but less than or equal byte.MaxValue
@@ -73,9 +54,6 @@ namespace System.Text.Encodings.Web
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<sbyte> CreateEscapingMask_DefaultJavaScriptEncoderBasicLatin(Vector128<sbyte> sourceValue)
         {
-            // This is an instruction-by-instruction port of the Sse2 optimization.
-            // TODO investigate further optimizations.
-
             Debug.Assert(AdvSimd.IsSupported);
 
             Vector128<sbyte> mask = CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
@@ -105,6 +83,24 @@ namespace System.Text.Encodings.Web
             return mask;
         }
 
+        // Encodes an operation equivalent to Sse2.MoveMask
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort MoveMask(Vector128<byte> value)
+        {
+            Debug.Assert(AdvSimd.Arm64.IsSupported);
+
+            // extractedBits[i] = (value[i] & 0x80) == 0x80 & (1 << i);
+            Vector128<byte> mostSignficantBitMask = s_mostSignficantBitMask;
+            Vector128<byte> mostSignificantBitIsSet = AdvSimd.CompareEqual(AdvSimd.And(value, mostSignficantBitMask), mostSignficantBitMask);
+            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_bitMask128);
+
+            // self-pairwise add until all flags have moved to the first two bytes of the vector
+            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
+            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
+            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
+            return extractedBits.AsUInt16().ToScalar();
+        }
+
         private static readonly Vector128<short> s_nullMaskInt16 = Vector128<short>.Zero;
         private static readonly Vector128<short> s_spaceMaskInt16 = Vector128.Create((short)' ');
         private static readonly Vector128<short> s_quotationMarkMaskInt16 = Vector128.Create((short)'"');
@@ -123,6 +119,7 @@ namespace System.Text.Encodings.Web
         private static readonly Vector128<sbyte> s_graveAccentMaskSByte = Vector128.Create((sbyte)'`');
         private static readonly Vector128<sbyte> s_tildeMaskSByte = Vector128.Create((sbyte)'~');
 
+        private static readonly Vector128<byte> s_mostSignficantBitMask = Vector128.Create((byte)0x80);
         private static readonly Vector128<byte> s_bitMask128 = BitConverter.IsLittleEndian ?
                                         Vector128.Create(0x80402010_08040201).AsByte() :
                                         Vector128.Create(0x01020408_10204080).AsByte();
