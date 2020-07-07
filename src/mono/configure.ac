@@ -6767,8 +6767,10 @@ AC_SUBST(MONO_NATIVE_PLATFORM_TYPE_UNIFIED)
 #
 if test "x$enable_llvm_runtime" = "xyes"; then
 	AC_SUBST(MONO_CXXLD, [$CXX])
+	AC_SUBST(MONO_LIBTOOL_TAG, '--tag=CXX')
 else
 	AC_SUBST(MONO_CXXLD, [$CC])
+	AC_SUBST(MONO_LIBTOOL_TAG, '')
 fi
 
 ### Set -Werror options
