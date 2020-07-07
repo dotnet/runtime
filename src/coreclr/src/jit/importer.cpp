@@ -1184,12 +1184,23 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 
     if (src->gtOper == GT_CALL)
     {
-        if (src->AsCall()->TreatAsHasRetBufArg(this))
+        GenTreeCall* srcCall = src->AsCall();
+        if (srcCall->TreatAsHasRetBufArg(this))
         {
             // Case of call returning a struct via hidden retbuf arg
 
-            // insert the return value buffer into the argument list as first byref parameter
-            src->AsCall()->gtCallArgs = gtPrependNewCallArg(destAddr, src->AsCall()->gtCallArgs);
+#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+            // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter
+            if ((srcCall->gtFlags & GTF_CALL_UNMANAGED) && (srcCall->gtCallMoreFlags & GTF_CALL_M_UNMGD_INST_CALL))
+            {
+                GenTreeCall::Use* thisArg = gtInsertNewCallArgAfter(destAddr, srcCall->gtCallArgs);
+            }
+            else
+#endif
+            {
+                // insert the return value buffer into the argument list as first byref parameter
+                srcCall->gtCallArgs = gtPrependNewCallArg(destAddr, srcCall->gtCallArgs);
+            }
 
             // now returns void, not a struct
             src->gtType = TYP_VOID;
@@ -1201,7 +1212,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         {
             // Case of call returning a struct in one or more registers.
 
-            var_types returnType = (var_types)src->AsCall()->gtReturnType;
+            var_types returnType = (var_types)srcCall->gtReturnType;
 
             if (compDoOldStructRetyping())
             {
