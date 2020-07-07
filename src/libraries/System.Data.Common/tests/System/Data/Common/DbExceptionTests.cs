@@ -24,6 +24,7 @@ namespace System.Data.Common.Tests
 
             Assert.False(defaultException.IsTransient);
         }
+
         [Fact]
         public void Ctor_ArgumentsRoundtrip()
         {
