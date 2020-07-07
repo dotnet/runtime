@@ -61,5 +61,24 @@ namespace System.Net.Mime.Tests
 
             Assert.Equal(testHeader, MimeBasePart.DecodeHeaderValue(result));
         }
+
+        [Fact]
+        public void EncodeHeader_ShouldSplitBetweenCodepoints()
+        {
+            // header parts split by max line length = 70 with respect to codepoints
+            string headerPart1 = "Emoji subject : 🕐🕑🕒🕓🕔🕕";
+            string headerPart2 = "🕖🕗🕘🕙🕚";
+            string longEmojiHeader = headerPart1 + headerPart2;
+
+            string encodedHeader = MimeBasePart.EncodeHeaderValue(longEmojiHeader, Encoding.UTF8, true);
+
+            string encodedPart1 = MimeBasePart.EncodeHeaderValue(headerPart1, Encoding.UTF8, true);
+            string encodedPart2 = MimeBasePart.EncodeHeaderValue(headerPart2, Encoding.UTF8, true);
+            Assert.Equal("=?utf-8?B?RW1vamkgc3ViamVjdCA6IPCflZDwn5WR8J+VkvCflZPwn5WU8J+VlQ==?=", encodedPart1);
+            Assert.Equal("=?utf-8?B?8J+VlvCflZfwn5WY8J+VmfCflZo=?=", encodedPart2);
+
+            string expectedEncodedHeader = encodedPart1 + "\r\n " + encodedPart2;
+            Assert.Equal(expectedEncodedHeader, encodedHeader);
+        }
     }
 }
