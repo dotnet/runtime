@@ -21,10 +21,10 @@ namespace System.Xml.Schema
         private Hashtable _attPresence;
         private XmlQualifiedName _name = XmlQualifiedName.Empty;
         private XmlNamespaceManager _nsManager;
-        private bool _isProcessContents = false;
+        private bool _isProcessContents;
         private Hashtable? _IDs;
         private IdRefNode? _idRefListHead;
-        private Parser? _inlineSchemaParser = null;
+        private Parser? _inlineSchemaParser;
         private const string x_schema = "x-schema:";
 
         internal XdrValidator(BaseValidator validator) : base(validator)

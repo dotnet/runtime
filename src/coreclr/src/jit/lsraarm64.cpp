@@ -717,16 +717,8 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
         case GT_NULLCHECK:
-            // Unlike ARM, ARM64 implements NULLCHECK as a load to REG_ZR, so no internal register
-            // is required, and it is not a localDefUse.
-            assert(dstCount == 0);
-            assert(!tree->gtGetOp1()->isContained());
-            BuildUse(tree->gtGetOp1());
-            srcCount = 1;
-            break;
-
         case GT_IND:
-            assert(dstCount == 1);
+            assert(dstCount == (tree->OperIs(GT_NULLCHECK) ? 0 : 1));
             srcCount = BuildIndir(tree->AsIndir());
             break;
 
@@ -849,10 +841,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         }
         break;
 
-        case SIMDIntrinsicAdd:
         case SIMDIntrinsicSub:
-        case SIMDIntrinsicMul:
-        case SIMDIntrinsicDiv:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicEqual:
@@ -904,19 +893,11 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // We have an array and an index, which may be contained.
             break;
 
-        case SIMDIntrinsicDotProduct:
-            buildInternalFloatRegisterDefForNode(simdTree);
-            break;
-
         case SIMDIntrinsicInitArrayX:
         case SIMDIntrinsicInitFixed:
         case SIMDIntrinsicCopyToArray:
         case SIMDIntrinsicCopyToArrayX:
         case SIMDIntrinsicNone:
-        case SIMDIntrinsicGetCount:
-        case SIMDIntrinsicGetOne:
-        case SIMDIntrinsicGetZero:
-        case SIMDIntrinsicGetAllOnes:
         case SIMDIntrinsicGetX:
         case SIMDIntrinsicGetY:
         case SIMDIntrinsicGetZ:
@@ -1033,6 +1014,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     case NI_AdvSimd_DuplicateSelectedScalarToVector128:
                     case NI_AdvSimd_Extract:
                     case NI_AdvSimd_Insert:
+                    case NI_AdvSimd_InsertScalar:
                     case NI_AdvSimd_LoadAndInsertScalar:
                     case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
                         needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();

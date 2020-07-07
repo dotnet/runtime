@@ -21,9 +21,9 @@ namespace System.Diagnostics
     {
         private readonly string? _description;
         private readonly string _displayName;
-        private int _switchSetting = 0;
-        private volatile bool _initialized = false;
-        private bool _initializing = false;
+        private int _switchSetting;
+        private volatile bool _initialized;
+        private bool _initializing;
         private volatile string _switchValueString = string.Empty;
         private readonly string? _defaultValue;
         private object? _initializedLock;

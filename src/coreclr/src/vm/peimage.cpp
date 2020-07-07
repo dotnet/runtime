@@ -1420,38 +1420,3 @@ BOOL PEImage::IsPtrInImage(PTR_CVOID data)
 
     return FALSE;
 }
-
-
-#if !defined(DACCESS_COMPILE)
-PEImage * PEImage::OpenImage(
-    ICLRPrivResource * pIResource,
-    MDInternalImportFlags flags)
-{
-    STANDARD_VM_CONTRACT;
-    HRESULT hr = S_OK;
-
-    PEImageHolder pPEImage;
-
-
-    IID iidResource;
-    IfFailThrow(pIResource->GetResourceType(&iidResource));
-
-    if (iidResource == __uuidof(ICLRPrivResourcePath))
-    {
-        ReleaseHolder<ICLRPrivResourcePath> pIResourcePath;
-        IfFailThrow(pIResource->QueryInterface(__uuidof(ICLRPrivResourcePath), (LPVOID*)&pIResourcePath));
-        WCHAR wzPath[_MAX_PATH];
-        DWORD cchPath = NumItems(wzPath);
-        IfFailThrow(pIResourcePath->GetPath(cchPath, &cchPath, wzPath));
-        pPEImage = PEImage::OpenImage(wzPath, flags);
-    }
-    else
-    {
-        ThrowHR(COR_E_BADIMAGEFORMAT);
-    }
-
-    return pPEImage.Extract();
-}
-#endif
-
-

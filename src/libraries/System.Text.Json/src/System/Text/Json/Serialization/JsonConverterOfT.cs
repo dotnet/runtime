@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -75,8 +74,6 @@ namespace System.Text.Json.Serialization
         /// Is the converter built-in.
         /// </summary>
         internal bool IsInternalConverter { get; set; }
-
-        internal readonly EqualityComparer<T> _defaultComparer = EqualityComparer<T>.Default;
 
         // This non-generic API is sealed as it just forwards to the generic version.
         internal sealed override bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
@@ -338,8 +335,6 @@ namespace System.Text.Json.Serialization
 
             Debug.Assert(this is JsonDictionaryConverter<T>);
 
-            state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
-
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
                 ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
@@ -436,5 +431,14 @@ namespace System.Text.Json.Serialization
         /// <param name="value">The value to convert.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         public abstract void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options);
+
+        internal virtual T ReadWithQuotes(ref Utf8JsonReader reader)
+            => throw new InvalidOperationException();
+
+        internal virtual void WriteWithQuotes(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options, ref WriteStack state)
+            => throw new InvalidOperationException();
+
+        internal sealed override void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
+            => WriteWithQuotes(writer, (T)value, options, ref state);
     }
 }

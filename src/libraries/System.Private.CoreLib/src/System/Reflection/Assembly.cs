@@ -25,6 +25,7 @@ namespace System.Reflection
 
         public virtual IEnumerable<TypeInfo> DefinedTypes
         {
+            [RequiresUnreferencedCode("Types might be removed")]
             get
             {
                 Type[] types = GetTypes();
@@ -41,6 +42,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type[] GetTypes()
         {
             Module[] m = GetModules(false);
@@ -70,8 +72,14 @@ namespace System.Reflection
             return ret;
         }
 
-        public virtual IEnumerable<Type> ExportedTypes => GetExportedTypes();
+        public virtual IEnumerable<Type> ExportedTypes
+        {
+            [RequiresUnreferencedCode("Types might be removed")]
+            get => GetExportedTypes();
+        }
+        [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type[] GetExportedTypes() { throw NotImplemented.ByDesign; }
+        [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type[] GetForwardedTypes() { throw NotImplemented.ByDesign; }
 
         public virtual string? CodeBase => throw NotImplemented.ByDesign;
@@ -93,8 +101,11 @@ namespace System.Reflection
         public virtual AssemblyName GetName() => GetName(copiedName: false);
         public virtual AssemblyName GetName(bool copiedName) { throw NotImplemented.ByDesign; }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type? GetType(string name) => GetType(name, throwOnError: false, ignoreCase: false);
+        [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type? GetType(string name, bool throwOnError) => GetType(name, throwOnError: throwOnError, ignoreCase: false);
+        [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type? GetType(string name, bool throwOnError, bool ignoreCase) { throw NotImplemented.ByDesign; }
 
         public virtual bool IsDefined(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
@@ -135,6 +146,7 @@ namespace System.Reflection
         public Module[] GetLoadedModules() => GetLoadedModules(getResourceModules: false);
         public virtual Module[] GetLoadedModules(bool getResourceModules) { throw NotImplemented.ByDesign; }
 
+        [RequiresUnreferencedCode("Assembly references might be removed")]
         public virtual AssemblyName[] GetReferencedAssemblies() { throw NotImplemented.ByDesign; }
 
         public virtual Assembly GetSatelliteAssembly(CultureInfo culture) { throw NotImplemented.ByDesign; }
@@ -197,7 +209,7 @@ namespace System.Reflection
         }
 
         // internal test hook
-        private static bool s_forceNullEntryPoint = false;
+        private static bool s_forceNullEntryPoint;
 
         public static Assembly? GetEntryAssembly()
         {

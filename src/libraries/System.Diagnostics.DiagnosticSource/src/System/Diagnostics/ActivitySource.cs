@@ -116,11 +116,13 @@ namespace System.Diagnostics
             Activity? activity = null;
 
             ActivityDataRequest dataRequest = ActivityDataRequest.None;
+            bool? useContext = default;
+            ActivityCreationOptions<ActivityContext> optionsWithContext = default;
 
             if (parentId != null)
             {
                 var aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links);
-                listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<string> data, ref ActivityDataRequest request) => {
+                listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<string> data, ref ActivityDataRequest request, ref bool? canUseContext, ref ActivityCreationOptions<ActivityContext> dataWithContext) => {
                     GetRequestedData<string>? getRequestedDataUsingParentId = listener.GetRequestedDataUsingParentId;
                     if (getRequestedDataUsingParentId != null)
                     {
@@ -133,14 +135,44 @@ namespace System.Diagnostics
                         // Stop the enumeration if we get the max value RecordingAndSampling.
                         return request != ActivityDataRequest.AllDataAndRecorded;
                     }
+                    else
+                    {
+                        // In case we have a parent Id and the listener not providing the GetRequestedDataUsingParentId, we'll try to find out if the following conditions are true:
+                        //   - The listener is providing the GetRequestedDataUsingContext callback
+                        //   - Can convert the parent Id to a Context
+                        // Then we can call the listener GetRequestedDataUsingContext callback with the constructed context.
+                        GetRequestedData<ActivityContext>? getRequestedDataUsingContext = listener.GetRequestedDataUsingContext;
+                        if (getRequestedDataUsingContext != null)
+                        {
+                            if (!canUseContext.HasValue)
+                            {
+                                canUseContext = Activity.TryConvertIdToContext(parentId, out ActivityContext ctx);
+                                if (canUseContext.Value)
+                                {
+                                    dataWithContext = new ActivityCreationOptions<ActivityContext>(data.Source, data.Name, ctx, data.Kind, data.Tags, data.Links);
+                                }
+                            }
+
+                            if (canUseContext.Value)
+                            {
+                                ActivityDataRequest dr = getRequestedDataUsingContext(ref dataWithContext);
+                                if (dr > request)
+                                {
+                                    request = dr;
+                                }
+                                // Stop the enumeration if we get the max value RecordingAndSampling.
+                                return request != ActivityDataRequest.AllDataAndRecorded;
+                            }
+                        }
+                    }
                     return true;
-                }, ref aco, ref dataRequest);
+                }, ref aco, ref dataRequest, ref useContext, ref optionsWithContext);
             }
             else
             {
                 ActivityContext initializedContext =  context == default && Activity.Current != null ? Activity.Current.Context : context;
                 var aco = new ActivityCreationOptions<ActivityContext>(this, name, initializedContext, kind, tags, links);
-                listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<ActivityContext> data, ref ActivityDataRequest request) => {
+                listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<ActivityContext> data, ref ActivityDataRequest request, ref bool? canUseContext, ref ActivityCreationOptions<ActivityContext> dataWithContext) => {
                     GetRequestedData<ActivityContext>? getRequestedDataUsingContext = listener.GetRequestedDataUsingContext;
                     if (getRequestedDataUsingContext != null)
                     {
@@ -154,11 +186,17 @@ namespace System.Diagnostics
                         return request != ActivityDataRequest.AllDataAndRecorded;
                     }
                     return true;
-                }, ref aco, ref dataRequest);
+                }, ref aco, ref dataRequest, ref useContext, ref optionsWithContext);
             }
 
             if (dataRequest != ActivityDataRequest.None)
             {
+                if (useContext.HasValue && useContext.Value)
+                {
+                    context = optionsWithContext.Parent;
+                    parentId = null;
+                }
+
                 activity = Activity.CreateAndStart(this, name, kind, parentId, context, tags, links, startTime, dataRequest);
                 listeners.EnumWithAction((listener, obj) => listener.ActivityStarted?.Invoke((Activity) obj), activity);
             }
@@ -198,7 +236,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal delegate bool Function<T, TParent>(T item, ref ActivityCreationOptions<TParent> data, ref ActivityDataRequest dataRequest);
+        internal delegate bool Function<T, TParent>(T item, ref ActivityCreationOptions<TParent> data, ref ActivityDataRequest dataRequest, ref bool? ctxInitialized, ref ActivityCreationOptions<ActivityContext> dataWithContext);
 
         internal void AddListener(ActivityListener listener)
         {
@@ -290,7 +328,7 @@ namespace System.Diagnostics
 
         public int Count => _list.Count;
 
-        public void EnumWithFunc<TParent>(ActivitySource.Function<T, TParent> func, ref ActivityCreationOptions<TParent> data, ref ActivityDataRequest dataRequest)
+        public void EnumWithFunc<TParent>(ActivitySource.Function<T, TParent> func, ref ActivityCreationOptions<TParent> data, ref ActivityDataRequest dataRequest, ref bool? ctxInitialized, ref ActivityCreationOptions<ActivityContext> dataWithContext)
         {
             uint version = _version;
             int index = 0;
@@ -313,7 +351,7 @@ namespace System.Diagnostics
 
                 // Important to call the func outside the lock.
                 // This is the whole point we are having this wrapper class.
-                if (!func(item, ref data, ref dataRequest))
+                if (!func(item, ref data, ref dataRequest, ref ctxInitialized, ref dataWithContext))
                 {
                     break;
                 }

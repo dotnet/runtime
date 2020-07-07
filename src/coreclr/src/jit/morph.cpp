@@ -2704,6 +2704,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
         size_t   addrValue           = (size_t)call->gtEntryPoint.addr;
         GenTree* indirectCellAddress = gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
+#ifdef DEBUG
+        indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
+#endif
         indirectCellAddress->SetRegNum(REG_R2R_INDIRECT_PARAM);
 
         // Push the stub address onto the list of arguments.
@@ -6094,6 +6097,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             {
                 offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->AsField()->gtFieldLookup.addr,
                                                       GTF_ICON_FIELD_HDL, false);
+#ifdef DEBUG
+                offsetNode->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)symHnd;
+#endif
             }
             else
             {
@@ -8391,6 +8397,9 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
         assert(call->gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT);
         ssize_t addr = ssize_t(call->gtStubCallStubAddr);
         stubAddrArg  = gtNewIconHandleNode(addr, GTF_ICON_FTN_ADDR);
+#ifdef DEBUG
+        stubAddrArg->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
+#endif
     }
     assert(stubAddrArg != nullptr);
     stubAddrArg->SetRegNum(virtualStubParamInfo->GetReg());
@@ -13159,12 +13168,18 @@ DONE_MORPHING_CHILDREN:
                 {
                     if (op2->AsDblCon()->gtDconVal == 2.0)
                     {
-                        // Fold "x*2.0" to "x+x"
-                        op2  = op1->OperIsLeaf() ? gtCloneExpr(op1) : fgMakeMultiUse(&tree->AsOp()->gtOp1);
-                        op1  = tree->AsOp()->gtOp1;
-                        oper = GT_ADD;
-                        tree = gtNewOperNode(oper, tree->TypeGet(), op1, op2);
-                        INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                        bool needsComma = !op1->OperIsLeaf() && !op1->IsLocal();
+                        // if op1 is not a leaf/local we have to introduce a temp via GT_COMMA.
+                        // Unfortunately, it's not optHoistLoopCode-friendly yet so let's do it later.
+                        if (!needsComma || (fgOrder == FGOrderLinear))
+                        {
+                            // Fold "x*2.0" to "x+x"
+                            op2  = fgMakeMultiUse(&tree->AsOp()->gtOp1);
+                            op1  = tree->AsOp()->gtOp1;
+                            oper = GT_ADD;
+                            tree = gtNewOperNode(oper, tree->TypeGet(), op1, op2);
+                            INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                        }
                     }
                     else if (op2->AsDblCon()->gtDconVal == 1.0)
                     {
@@ -16311,6 +16326,17 @@ void Compiler::fgMorphBlocks()
     fgGlobalMorph = false;
     compCurBB     = nullptr;
 
+    // Under OSR, we no longer need to specially protect the original method entry
+    //
+    if (opts.IsOSR() && (fgEntryBB != nullptr) && (fgEntryBB->bbFlags & BBF_IMPORTED))
+    {
+        JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+        assert(fgEntryBB->bbRefs > 0);
+        fgEntryBB->bbRefs--;
+        // We don't need to remember this block anymore.
+        fgEntryBB = nullptr;
+    }
+
 #ifdef DEBUG
     if (verboseTrees)
     {
@@ -16589,18 +16615,18 @@ GenTree* Compiler::fgInitThisClass()
         switch (kind.runtimeLookupKind)
         {
             case CORINFO_LOOKUP_THISOBJ:
+            {
                 // This code takes a this pointer; but we need to pass the static method desc to get the right point in
                 // the hierarchy
-                {
-                    GenTree* vtTree = gtNewLclvNode(info.compThisArg, TYP_REF);
-                    vtTree->gtFlags |= GTF_VAR_CONTEXT;
-                    // Vtable pointer of this object
-                    vtTree = gtNewOperNode(GT_IND, TYP_I_IMPL, vtTree);
-                    vtTree->gtFlags |= GTF_EXCEPT; // Null-pointer exception
-                    GenTree* methodHnd = gtNewIconEmbMethHndNode(info.compMethodHnd);
+                GenTree* vtTree = gtNewLclvNode(info.compThisArg, TYP_REF);
+                vtTree->gtFlags |= GTF_VAR_CONTEXT;
+                // Vtable pointer of this object
+                vtTree = gtNewOperNode(GT_IND, TYP_I_IMPL, vtTree);
+                vtTree->gtFlags |= GTF_EXCEPT; // Null-pointer exception
+                GenTree* methodHnd = gtNewIconEmbMethHndNode(info.compMethodHnd);
 
-                    return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, TYP_VOID, gtNewCallArgs(vtTree, methodHnd));
-                }
+                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, TYP_VOID, gtNewCallArgs(vtTree, methodHnd));
+            }
 
             case CORINFO_LOOKUP_CLASSPARAM:
             {
@@ -16616,11 +16642,12 @@ GenTree* Compiler::fgInitThisClass()
                 return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, TYP_VOID,
                                            gtNewCallArgs(gtNewIconNode(0), methHndTree));
             }
+
+            default:
+                noway_assert(!"Unknown LOOKUP_KIND");
+                UNREACHABLE();
         }
     }
-
-    noway_assert(!"Unknown LOOKUP_KIND");
-    UNREACHABLE();
 }
 
 #ifdef DEBUG

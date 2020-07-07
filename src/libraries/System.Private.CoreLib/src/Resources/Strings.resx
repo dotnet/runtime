@@ -3742,6 +3742,9 @@
   <data name="SwitchExpressionException_UnmatchedValue" xml:space="preserve">
     <value>Unmatched value was {0}.</value>
   </data>
+  <data name="Encoding_UTF7_Disabled" xml:space="preserve">
+    <value>Support for UTF-7 is disabled. See {0} for more information.</value>
+  </data>
   <data name="IDynamicInterfaceCastable_DoesNotImplementRequested" xml:space="preserve">
     <value>Type '{0}' returned by IDynamicInterfaceCastable does not implement the requested interface '{1}'.</value>
   </data>
@@ -3750,5 +3753,8 @@
   </data>
   <data name="IDynamicInterfaceCastable_NotInterface" xml:space="preserve">
     <value>Type '{0}' returned by IDynamicInterfaceCastable is not an interface.</value>
+  </data>
+  <data name="Arg_MustBeHalf" xml:space="preserve">
+    <value>Object must be of type Half.</value>
   </data>
 </root>

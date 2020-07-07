@@ -1000,7 +1000,36 @@ internal class Program
 
         return true;
     }
-    
+
+    interface IGenericWithSealedDefaultMethod<T>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        sealed
+        string Method()
+        {
+            Type t = typeof(T);
+            return t.FullName;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        sealed
+        string GenericMethod<V>()
+        {
+            Type t = typeof(V);
+            return t.FullName;
+        }
+
+    }
+
+    class ImplementGenericWithSealedDefaultMethod: IGenericWithSealedDefaultMethod<string>
+    {
+    }
+
+    class ImplementGenericWithSealedDefaultMethodAcrossModule : IGenericWithSealedDefaultMethodAcrossModule<string>
+    {
+    }
+
+
     class MyGen<T>
     {
         public static string GcValue;
@@ -1237,6 +1266,321 @@ internal class Program
         return file;
     }
 
+    private static bool DelegateFromAnotherModuleTest()
+    {
+        // This test tests referencing a method from another module while creating a delegate.
+        Action del = HelperClass.DelegateReferencedMethod;
+        string delegateMethodString = del.Method.ToString();
+        Console.WriteLine(delegateMethodString);
+        if (!delegateMethodString.Contains("DelegateReferencedMethod"))
+            return false;
+        else
+            return true;
+    }
+
+    private static bool SealedDefaultInterfaceMethodTest()
+    {
+        IGenericWithSealedDefaultMethod<string> igsdf = new ImplementGenericWithSealedDefaultMethod();
+        if (!igsdf.Method().Equals("System.String"))
+            return false;
+        if (!igsdf.GenericMethod<bool>().Equals("System.Boolean"))
+            return false;
+
+
+        // Test a similar case across modules
+        IGenericWithSealedDefaultMethodAcrossModule<string> igsdf2 = new ImplementGenericWithSealedDefaultMethodAcrossModule();
+        if (!igsdf2.Method().Equals("System.String"))
+            return false;
+        if (!igsdf2.GenericMethod<bool>().Equals("System.Boolean"))
+            return false;
+
+        return true;
+    }
+
+    private static bool FunctionPointerFromAnotherModuleTest()
+    {
+        // This test tests referencing a method from another module while creating a function pointer.
+        // Function pointers to managed functions should be stable, and result in calling the right function
+        IntPtr initialFunctionPointer = HelperILCode.GetFunctionPointerFromOtherModule();
+        HelperILCode.CallFunctionPointer(initialFunctionPointer);
+        HelperILCode.CallFunctionPointer(initialFunctionPointer);
+        HelperILCode.CallFunctionPointer(initialFunctionPointer);
+        IntPtr finalFunctionPointer = HelperILCode.GetFunctionPointerFromOtherModule();
+
+        return finalFunctionPointer == initialFunctionPointer;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Size = 0x14)]
+    public struct ExplicitlySizedStructSequential
+    {
+        private long A;
+        private long B;
+        public int C;
+        public void Set(long a, long b, int c)
+        {
+            A = a;
+            B = b;
+            C = c;
+        }
+        public override string ToString()
+        {
+            return $"{A} {B} {C}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Size = 0x10)]
+    public struct ExplicitlySizedStructSequentialSizeTooSmall
+    {
+        private long A;
+        private long B;
+        public int C;
+        public void Set(long a, long b, int c)
+        {
+            A = a;
+            B = b;
+            C = c;
+        }
+        public override string ToString()
+        {
+            return $"{A} {B} {C}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 0x15)]
+    public struct ExplicitlySizedStructExplicit
+    {
+        [FieldOffset(0)]
+        private long A;
+        [FieldOffset(0x8)]
+        private long B;
+        [FieldOffset(0x11)]
+        public int C;
+        public void Set(long a, long b, int c)
+        {
+            A = a;
+            B = b;
+            C = c;
+        }
+        public override string ToString()
+        {
+            return $"{A} {B} {C}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 0x10)]
+    public struct ExplicitlySizedStructExplicitSizeTooSmall
+    {
+        [FieldOffset(0)]
+        private long A;
+        [FieldOffset(0x8)]
+        private long B;
+        [FieldOffset(0x11)]
+        public int C;
+        public void Set(long a, long b, int c)
+        {
+            A = a;
+            B = b;
+            C = c;
+        }
+        public override string ToString()
+        {
+            return $"{A} {B} {C}";
+        }
+    }
+
+    public struct NormalStruct
+    {
+        public long A;
+        public long B;
+        public long C;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 0x0)]
+    public struct ExplicitlySizedStructExplicitSizeZero
+    {
+        [FieldOffset(0)]
+        private long A;
+        [FieldOffset(0x8)]
+        private long B;
+        [FieldOffset(0x11)]
+        public int C;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void Set(long a, long b, int c)
+        {
+            A = a;
+            B = b;
+            C = c;
+        }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override string ToString()
+        {
+            return $"{A} {B} {C}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Size = 0x14)]
+    public class ExplicitlySizedClass
+    {
+        public byte A;
+        public long B;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Size = 0x10)]
+    public class DerivedFromExplicitlySizedClass : ExplicitlySizedClass
+    {
+        public byte C;
+        public long D;
+    }
+
+    public class MoreDerivedFromExplicitlySizedClass : DerivedFromExplicitlySizedClass
+    {
+        public byte E;
+        public long F;
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override string ToString()
+        {
+            return $"{A} {B} {C} {D} {E} {F}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Auto, Size = 0x14)]
+    public struct ExplicitlySizedStructAuto
+    {
+        private long A;
+        private long B;
+        public int C;
+        public void Set(long a, long b, int c)
+        {
+            A = a;
+            B = b;
+            C = c;
+        }
+        public override string ToString()
+        {
+            return $"{A} {B} {C}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Auto, Size = 0x10)]
+    public struct ExplicitlySizedStructAutoSizeTooSmall
+    {
+        private long A;
+        private long B;
+        public int C;
+        public void Set(long a, long b, int c)
+        {
+            A = a;
+            B = b;
+            C = c;
+        }
+        public override string ToString()
+        {
+            return $"{A} {B} {C}";
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private unsafe static bool ExplicitlySizedStructTest()
+    {
+        {
+            if (sizeof(ExplicitlySizedStructSequential) != 0x14)
+                return false;
+            
+            ExplicitlySizedStructSequential str = new ExplicitlySizedStructSequential();
+            str.Set(100, 200, 300);
+            Console.WriteLine(str.ToString());
+            if (str.ToString() != "100 200 300")
+                return false;
+        }
+
+        {
+            if (sizeof(ExplicitlySizedStructSequentialSizeTooSmall) != 0x14)
+                return false;
+            
+            ExplicitlySizedStructSequentialSizeTooSmall str2 = new ExplicitlySizedStructSequentialSizeTooSmall();
+            str2.Set(100, 200, 300);
+            Console.WriteLine(str2.ToString());
+            if (str2.ToString() != "100 200 300")
+                return false;
+        }
+
+        {
+            if (sizeof(ExplicitlySizedStructExplicit) != 0x15)
+                return false;
+            
+            ExplicitlySizedStructExplicit str3 = new ExplicitlySizedStructExplicit();
+            str3.Set(100, 200, 300);
+            Console.WriteLine(str3.ToString());
+            if (str3.ToString() != "100 200 300")
+                return false;
+        }
+
+        {
+            if (sizeof(ExplicitlySizedStructExplicitSizeTooSmall) != 0x15)
+                return false;
+            
+            ExplicitlySizedStructExplicitSizeTooSmall str4 = new ExplicitlySizedStructExplicitSizeTooSmall();
+            str4.Set(100, 200, 300);
+            Console.WriteLine(str4.ToString());
+            if (str4.ToString() != "100 200 300")
+                return false;
+        }
+
+        {
+            if (sizeof(ExplicitlySizedStructExplicitSizeZero) != sizeof(NormalStruct))
+                return false;
+            
+            ExplicitlySizedStructExplicitSizeZero str5 = new ExplicitlySizedStructExplicitSizeZero();
+            str5.Set(100, 200, 300);
+            Console.WriteLine(str5.ToString());
+            if (str5.ToString() != "100 200 300")
+                return false;
+        }
+
+        {
+            if (sizeof(ExplicitlySizedStructAuto) != sizeof(NormalStruct))
+                return false;
+            
+            ExplicitlySizedStructAuto str6 = new ExplicitlySizedStructAuto();
+            str6.Set(100, 200, 300);
+            Console.WriteLine(str6.ToString());
+            if (str6.ToString() != "100 200 300")
+                return false;
+        }
+
+        {
+            if (sizeof(ExplicitlySizedStructAutoSizeTooSmall) != sizeof(NormalStruct))
+                return false;
+            
+            ExplicitlySizedStructAutoSizeTooSmall str7 = new ExplicitlySizedStructAutoSizeTooSmall();
+            str7.Set(100, 200, 300);
+            Console.WriteLine(str7.ToString());
+            if (str7.ToString() != "100 200 300")
+                return false;
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private unsafe static bool ExplicitlySizedClassTest()
+    {
+        var cls = new MoreDerivedFromExplicitlySizedClass();
+        cls.A = 100;
+        cls.B = 200;
+        cls.C = 101;
+        cls.D = 201;
+        cls.E = 102;
+        cls.F = 202;
+
+        Console.WriteLine(cls.ToString());
+        if (cls.ToString() != "100 200 101 201 102 202")
+            return false;
+
+        return true;
+    }
+
     public static int Main(string[] args)
     {
         _passedTests = new List<string>();
@@ -1296,6 +1640,11 @@ internal class Program
         RunTest("ObjectToStringOnGenericParamTestSByte", ObjectToStringOnGenericParamTestSByte());
         RunTest("ObjectToStringOnGenericParamTestVersionBubbleLocalStruct", ObjectToStringOnGenericParamTestVersionBubbleLocalStruct());
         RunTest("EnumValuesToStringTest", EnumValuesToStringTest());
+        RunTest("DelegateFromAnotherModuleTest", DelegateFromAnotherModuleTest());
+        RunTest("SealedDefaultInterfaceMethodTest", SealedDefaultInterfaceMethodTest());
+        RunTest("FunctionPointerFromAnotherModuleTest", FunctionPointerFromAnotherModuleTest());
+        RunTest("ExplicitlySizedStructTest", ExplicitlySizedStructTest());
+        RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
 
         File.Delete(TextFileName);
 

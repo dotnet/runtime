@@ -92,6 +92,7 @@ namespace Tracing.Tests.Common
                     }
                 });
 
+                process.EnableRaisingEvents = true;
                 fSuccess &= process.Start();
                 if (!fSuccess)
                     throw new Exception("Failed to start subprocess");
@@ -100,6 +101,18 @@ namespace Tracing.Tests.Common
                 process.BeginErrorReadLine();
                 Logger.logger.Log($"subprocess started: {fSuccess}");
                 Logger.logger.Log($"subprocess PID: {process.Id}");
+
+                bool fGotToEnd = false;
+                process.Exited += (s, e) => 
+                {
+                    Logger.logger.Log("================= Subprocess Exited =================");
+                    if (!fGotToEnd)
+                    {
+                        Logger.logger.Log($"- Exit code: {process.ExitCode}");
+                        Logger.logger.Log($"Subprocess stdout: {stdoutSb.ToString()}");
+                        Logger.logger.Log($"Subprocess stderr: {stderrSb.ToString()}");
+                    }
+                };
 
                 while (!EventPipeClient.ListAvailablePorts().Contains(process.Id))
                 {
@@ -111,13 +124,13 @@ namespace Tracing.Tests.Common
                 {
                     if (duringExecution != null)
                         await duringExecution(process.Id);
+                    fGotToEnd = true;
                     Logger.logger.Log($"Sending 'exit' to subprocess stdin");
                     subprocesssStdIn.WriteLine("exit");
                     subprocesssStdIn.Close();
-                    if (!process.WaitForExit(5000))
+                    while (!process.WaitForExit(5000))
                     {
                         Logger.logger.Log("Subprocess didn't exit in 5 seconds!");
-                        throw new TimeoutException("Subprocess didn't exit in 5 seconds");
                     }
                     Logger.logger.Log($"SubProcess exited - Exit code: {process.ExitCode}");
                 }

@@ -5,9 +5,12 @@
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 using System;
+using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Security;
+using System.Security.Cryptography.X509Certificates.Asn1;
 using System.Text;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -22,6 +25,9 @@ namespace System.Security.Cryptography.X509Certificates
         private volatile PublicKey? _lazyPublicKey;
         private volatile AsymmetricAlgorithm? _lazyPrivateKey;
         private volatile X509ExtensionCollection? _lazyExtensions;
+        private static readonly string[] s_EcPublicKeyPrivateKeyLabels = { PemLabels.EcPrivateKey, PemLabels.Pkcs8PrivateKey };
+        private static readonly string[] s_RsaPublicKeyPrivateKeyLabels = { PemLabels.RsaPrivateKey, PemLabels.Pkcs8PrivateKey };
+        private static readonly string[] s_DsaPublicKeyPrivateKeyLabels = { PemLabels.Pkcs8PrivateKey };
 
         public override void Reset()
         {
@@ -69,6 +75,37 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="X509Certificate2"/> class from certificate data.
+        /// </summary>
+        /// <param name="rawData">
+        ///   The certificate data to process.
+        /// </param>
+        /// <exception cref="CryptographicException">An error with the certificate occurs.</exception>
+        public X509Certificate2(ReadOnlySpan<byte> rawData)
+            : base(rawData)
+        {
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="X509Certificate2"/> class from certificate data,
+        ///   a password, and key storage flags.
+        /// </summary>
+        /// <param name="rawData">
+        ///   The certificate data to process.
+        /// </param>
+        /// <param name="password">
+        ///   The password required to access the certificate data.
+        /// </param>
+        /// <param name="keyStorageFlags">
+        ///   A bitwise combination of the enumeration values that control where and how to import the certificate.
+        /// </param>
+        /// <exception cref="CryptographicException">An error with the certificate occurs.</exception>
+        public X509Certificate2(ReadOnlySpan<byte> rawData, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
+            : base(rawData, password, keyStorageFlags)
+        {
+        }
+
         public X509Certificate2(IntPtr handle)
             : base(handle)
         {
@@ -103,6 +140,11 @@ namespace System.Security.Cryptography.X509Certificates
 
         [System.CLSCompliantAttribute(false)]
         public X509Certificate2(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags)
+            : base(fileName, password, keyStorageFlags)
+        {
+        }
+
+        public X509Certificate2(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
             : base(fileName, password, keyStorageFlags)
         {
         }
@@ -342,6 +384,23 @@ namespace System.Security.Cryptography.X509Certificates
         public static X509ContentType GetCertContentType(byte[] rawData)
         {
             if (rawData == null || rawData.Length == 0)
+                throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
+
+            return X509Pal.Instance.GetCertContentType(rawData);
+        }
+
+        /// <summary>
+        ///   Indicates the type of certificate contained in the provided data.
+        /// </summary>
+        /// <param name="rawData">
+        ///   The data to identify.
+        /// </param>
+        /// <returns>
+        ///   One of the enumeration values that indicate the content type of the provided data.
+        /// </returns>
+        public static X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
+        {
+            if (rawData.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
 
             return X509Pal.Instance.GetCertContentType(rawData);
@@ -626,6 +685,355 @@ namespace System.Security.Cryptography.X509Certificates
 
                 return verified;
             }
+        }
+
+        /// <summary>
+        /// Creates a new X509 certificate from the file contents of an RFC 7468 PEM-encoded
+        /// certificate and private key.
+        /// </summary>
+        /// <param name="certPemFilePath">The path for the PEM-encoded X509 certificate.</param>
+        /// <param name="keyPemFilePath">
+        /// If specified, the path for the PEM-encoded private key.
+        /// If unspecified, the <paramref name="certPemFilePath" /> file will be used to load
+        /// the private key.
+        /// </param>
+        /// <returns>A new certificate with the private key.</returns>
+        /// <exception cref="CryptographicException">
+        /// <para>
+        ///   The contents of the file path in <paramref name="certPemFilePath" /> do not contain
+        ///   a PEM-encoded certificate, or it is malformed.
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
+        ///   The contents of the file path in <paramref name="keyPemFilePath" /> do not contain a
+        ///   PEM-encoded private key, or it is malformed.
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
+        ///   The contents of the file path in <paramref name="keyPemFilePath" /> contains
+        ///   a key that does not match the public key in the certificate.
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>The certificate uses an unknown public key algorithm.</para>
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="certPemFilePath" /> is <see langword="null" />.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// See <see cref="System.IO.File.ReadAllText(string)" /> for additional documentation about
+        /// exceptions that can be thrown.
+        /// </para>
+        /// <para>
+        ///   The SubjectPublicKeyInfo from the certificate determines what PEM labels are accepted for the private key.
+        ///   For RSA certificates, accepted private key PEM labels are "RSA PRIVATE KEY" and "PRIVATE KEY".
+        ///   For ECDSA certificates, accepted private key PEM labels are "EC PRIVATE KEY" and "PRIVATE KEY".
+        ///   For DSA certificates, the accepted private key PEM label is "PRIVATE KEY".
+        /// </para>
+        /// <para>PEM-encoded items that have a different label are ignored.</para>
+        /// <para>
+        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate, the
+        ///   the first certificate with a CERTIFICATE label is loaded. For the private key, the first private
+        ///   key with an acceptable label is loaded. More advanced scenarios for loading certificates and
+        ///   private keys can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
+        ///   PEM-encoded values and apply any custom loading behavior.
+        /// </para>
+        /// <para>
+        /// For password protected PEM-encoded keys, use <see cref="CreateFromEncryptedPemFile" /> to specify a password.
+        /// </para>
+        /// </remarks>
+        public static X509Certificate2 CreateFromPemFile(string certPemFilePath, string? keyPemFilePath = default)
+        {
+            if (certPemFilePath is null)
+                throw new ArgumentNullException(nameof(certPemFilePath));
+
+            ReadOnlySpan<char> certContents = File.ReadAllText(certPemFilePath);
+            ReadOnlySpan<char> keyContents = keyPemFilePath is null ? certContents : File.ReadAllText(keyPemFilePath);
+
+            return CreateFromPem(certContents, keyContents);
+        }
+
+        /// <summary>
+        /// Creates a new X509 certificate from the file contents of an RFC 7468 PEM-encoded
+        /// certificate and password protected private key.
+        /// </summary>
+        /// <param name="certPemFilePath">The path for the PEM-encoded X509 certificate.</param>
+        /// <param name="keyPemFilePath">
+        /// If specified, the path for the password protected PEM-encoded private key.
+        /// If unspecified, the <paramref name="certPemFilePath" /> file will be used to load
+        /// the private key.
+        /// </param>
+        /// <param name="password">The password for the encrypted PEM.</param>
+        /// <returns>A new certificate with the private key.</returns>
+        /// <exception cref="CryptographicException">
+        /// <para>
+        ///   The contents of the file path in <paramref name="certPemFilePath" /> do not contain
+        ///   a PEM-encoded certificate, or it is malformed.
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
+        ///   The contents of the file path in <paramref name="keyPemFilePath" /> do not contain a
+        ///   password protected PEM-encoded private key, or it is malformed.
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>
+        ///   The contents of the file path in <paramref name="keyPemFilePath" /> contains
+        ///   a key that does not match the public key in the certificate.
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>The certificate uses an unknown public key algorithm.</para>
+        /// <para>-or-</para>
+        /// <para>The password specified for the private key is incorrect.</para>
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="certPemFilePath" /> is <see langword="null" />.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// See <see cref="System.IO.File.ReadAllText(string)" /> for additional documentation about
+        /// exceptions that can be thrown.
+        /// </para>
+        /// <para>
+        /// Password protected PEM-encoded keys are always expected to have the PEM label "ENCRYPTED PRIVATE KEY".
+        /// </para>
+        /// <para>PEM-encoded items that have a different label are ignored.</para>
+        /// <para>
+        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate, the
+        ///   the first certificate with a CERTIFICATE label is loaded. For the private key, the first private
+        ///   key with the label "ENCRYPTED PRIVATE KEY" is loaded. More advanced scenarios for loading certificates and
+        ///   private keys can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
+        ///   PEM-encoded values and apply any custom loading behavior.
+        /// </para>
+        /// <para>
+        /// For PEM-encoded keys without a password, use <see cref="CreateFromPemFile" />.
+        /// </para>
+        /// </remarks>
+        public static X509Certificate2 CreateFromEncryptedPemFile(string certPemFilePath, ReadOnlySpan<char> password, string? keyPemFilePath = default)
+        {
+            if (certPemFilePath is null)
+                throw new ArgumentNullException(nameof(certPemFilePath));
+
+            ReadOnlySpan<char> certContents = File.ReadAllText(certPemFilePath);
+            ReadOnlySpan<char> keyContents = keyPemFilePath is null ? certContents : File.ReadAllText(keyPemFilePath);
+
+            return CreateFromEncryptedPem(certContents, keyContents, password);
+        }
+
+        /// <summary>
+        /// Creates a new X509 certificate from the contents of an RFC 7468 PEM-encoded certificate and private key.
+        /// </summary>
+        /// <param name="certPem">The text of the PEM-encoded X509 certificate.</param>
+        /// <param name="keyPem">The text of the PEM-encoded private key.</param>
+        /// <returns>A new certificate with the private key.</returns>
+        /// <exception cref="CryptographicException">
+        /// <para>The contents of <paramref name="certPem" /> do not contain a PEM-encoded certificate, or it is malformed.</para>
+        /// <para>-or-</para>
+        /// <para>The contents of <paramref name="keyPem" /> do not contain a PEM-encoded private key, or it is malformed.</para>
+        /// <para>-or-</para>
+        /// <para>The contents of <paramref name="keyPem" /> contains a key that does not match the public key in the certificate.</para>
+        /// <para>-or-</para>
+        /// <para>The certificate uses an unknown public key algorithm.</para>
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        ///   The SubjectPublicKeyInfo from the certificate determines what PEM labels are accepted for the private key.
+        ///   For RSA certificates, accepted private key PEM labels are "RSA PRIVATE KEY" and "PRIVATE KEY".
+        ///   For ECDSA certificates, accepted private key PEM labels are "EC PRIVATE KEY" and "PRIVATE KEY".
+        ///   For DSA certificates, the accepted private key PEM label is "PRIVATE KEY".
+        /// </para>
+        /// <para>PEM-encoded items that have a different label are ignored.</para>
+        /// <para>
+        ///   If the PEM-encoded certificate and private key are in the same text, use the same
+        ///   string for both <paramref name="certPem" /> and <paramref name="keyPem" />, such as:
+        ///   <code>
+        ///     CreateFromPem(combinedCertAndKey, combinedCertAndKey);
+        ///   </code>
+        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate, the
+        ///   the first certificate with a CERTIFICATE label is loaded. For the private key, the first private
+        ///   key with an acceptable label is loaded. More advanced scenarios for loading certificates and
+        ///   private keys can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
+        ///   PEM-encoded values and apply any custom loading behavior.
+        /// </para>
+        /// <para>
+        /// For password protected PEM-encoded keys, use <see cref="CreateFromEncryptedPem" /> to specify a password.
+        /// </para>
+        /// </remarks>
+        public static X509Certificate2 CreateFromPem(ReadOnlySpan<char> certPem, ReadOnlySpan<char> keyPem)
+        {
+            using (X509Certificate2 certificate = ExtractCertificateFromPem(certPem))
+            {
+                string keyAlgorithm = certificate.GetKeyAlgorithm();
+
+                return keyAlgorithm switch
+                {
+                    Oids.Rsa => ExtractKeyFromPem<RSA>(keyPem, s_RsaPublicKeyPrivateKeyLabels, RSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.Dsa => ExtractKeyFromPem<DSA>(keyPem, s_DsaPublicKeyPrivateKeyLabels, DSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey => ExtractKeyFromPem<ECDsa>(keyPem, s_EcPublicKeyPrivateKeyLabels, ECDsa.Create, certificate.CopyWithPrivateKey),
+                    _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm)),
+                };
+            }
+        }
+
+        /// <summary>
+        /// Creates a new X509 certificate from the contents of an RFC 7468 PEM-encoded
+        /// certificate and password protected private key.
+        /// </summary>
+        /// <param name="certPem">The text of the PEM-encoded X509 certificate.</param>
+        /// <param name="keyPem">The text of the password protected PEM-encoded private key.</param>
+        /// <param name="password">The password for the encrypted PEM.</param>
+        /// <returns>A new certificate with the private key.</returns>
+        /// <exception cref="CryptographicException">
+        /// <para>The contents of <paramref name="certPem" /> do not contain a PEM-encoded certificate, or it is malformed.</para>
+        /// <para>-or-</para>
+        /// <para>
+        ///   The contents of <paramref name="keyPem" /> do not contain a password protected PEM-encoded private key,
+        ///   or it is malformed.
+        /// </para>
+        /// <para>-or-</para>
+        /// <para>The contents of <paramref name="keyPem" /> contains a key that does not match the public key in the certificate.</para>
+        /// <para>-or-</para>
+        /// <para>The certificate uses an unknown public key algorithm.</para>
+        /// <para>-or-</para>
+        /// <para>The password specified for the private key is incorrect.</para>
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// Password protected PEM-encoded keys are always expected to have the PEM label "ENCRYPTED PRIVATE KEY".
+        /// </para>
+        /// <para>PEM-encoded items that have a different label are ignored.</para>
+        /// <para>
+        ///   If the PEM-encoded certificate and private key are in the same text, use the same
+        ///   string for both <paramref name="certPem" /> and <paramref name="keyPem" />, such as:
+        ///   <code>
+        ///     CreateFromEncryptedPem(combinedCertAndKey, combinedCertAndKey, theKeyPassword);
+        ///   </code>
+        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate, the
+        ///   the first certificate with a CERTIFICATE label is loaded. For the private key, the first private
+        ///   key with the label "ENCRYPTED PRIVATE KEY" is loaded. More advanced scenarios for loading certificates and
+        ///   private keys can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
+        ///   PEM-encoded values and apply any custom loading behavior.
+        /// </para>
+        /// <para>
+        /// For PEM-encoded keys without a password, use <see cref="CreateFromPem" />.
+        /// </para>
+        /// </remarks>
+        public static X509Certificate2 CreateFromEncryptedPem(ReadOnlySpan<char> certPem, ReadOnlySpan<char> keyPem, ReadOnlySpan<char> password)
+        {
+            using (X509Certificate2 certificate = ExtractCertificateFromPem(certPem))
+            {
+                string keyAlgorithm = certificate.GetKeyAlgorithm();
+
+                return keyAlgorithm switch
+                {
+                    Oids.Rsa => ExtractKeyFromEncryptedPem<RSA>(keyPem, password, RSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.Dsa => ExtractKeyFromEncryptedPem<DSA>(keyPem, password, DSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey => ExtractKeyFromEncryptedPem<ECDsa>(keyPem, password, ECDsa.Create, certificate.CopyWithPrivateKey),
+                    _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm)),
+                };
+            }
+        }
+
+        private static X509Certificate2 ExtractCertificateFromPem(ReadOnlySpan<char> certPem)
+        {
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(certPem))
+            {
+                ReadOnlySpan<char> label = contents[fields.Label];
+
+                if (label.SequenceEqual(PemLabels.X509Certificate))
+                {
+                    byte[] certBytes = CryptoPool.Rent(fields.DecodedDataLength);
+
+                    if (!Convert.TryFromBase64Chars(contents[fields.Base64Data], certBytes, out int bytesWritten)
+                        || bytesWritten != fields.DecodedDataLength)
+                    {
+                        Debug.Fail("The contents should have already been validated by the PEM reader.");
+                        throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
+                    }
+
+                    ReadOnlyMemory<byte> certData = new ReadOnlyMemory<byte>(certBytes, 0, bytesWritten);
+
+                    try
+                    {
+                        // Check that the contents are actually an X509 DER encoded
+                        // certificate, not something else that the constructor will
+                        // will otherwise be able to figure out.
+                        CertificateAsn.Decode(certData, AsnEncodingRules.DER);
+                    }
+                    catch (CryptographicException)
+                    {
+                        throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
+                    }
+
+                    X509Certificate2 ret = new X509Certificate2(certData.Span);
+                    // Certs are public data, no need to clear.
+                    CryptoPool.Return(certBytes, clearSize: 0);
+                    return ret;
+                }
+            }
+
+            throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
+        }
+
+        private static X509Certificate2 ExtractKeyFromPem<TAlg>(
+            ReadOnlySpan<char> keyPem,
+            string[] labels,
+            Func<TAlg> factory,
+            Func<TAlg, X509Certificate2> import) where TAlg : AsymmetricAlgorithm
+        {
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(keyPem))
+            {
+                ReadOnlySpan<char> label = contents[fields.Label];
+
+                foreach (string eligibleLabel in labels)
+                {
+                    if (label.SequenceEqual(eligibleLabel))
+                    {
+                        TAlg key = factory();
+                        key.ImportFromPem(contents[fields.Location]);
+
+                        try
+                        {
+                            return import(key);
+                        }
+                        catch (ArgumentException ae)
+                        {
+                            throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                        }
+                    }
+                }
+            }
+
+            throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey);
+        }
+
+        private static X509Certificate2 ExtractKeyFromEncryptedPem<TAlg>(
+            ReadOnlySpan<char> keyPem,
+            ReadOnlySpan<char> password,
+            Func<TAlg> factory,
+            Func<TAlg, X509Certificate2> import) where TAlg : AsymmetricAlgorithm
+        {
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(keyPem))
+            {
+                ReadOnlySpan<char> label = contents[fields.Label];
+
+                if (label.SequenceEqual(PemLabels.EncryptedPkcs8PrivateKey))
+                {
+                    TAlg key = factory();
+                    key.ImportFromEncryptedPem(contents[fields.Location], password);
+
+                    try
+                    {
+                        return import(key);
+                    }
+                    catch (ArgumentException ae)
+                    {
+                        throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                    }
+
+                }
+            }
+
+            throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey);
         }
 
         private static X509Extension? CreateCustomExtensionIfAny(Oid oid) =>

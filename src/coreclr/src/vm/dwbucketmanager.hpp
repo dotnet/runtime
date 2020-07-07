@@ -88,10 +88,6 @@ DWORD GetCountBucketParamsForEvent(LPCWSTR wzEventName)
 #include "dbginterface.h"
 #include <sha1.h>
 
-#ifdef FEATURE_APPX
-#include "appxutil.h"
-#endif
-
 //------------------------------------------------------------------------------
 // Description
 //   Converts an array of bytes to a string of base32 encoded characters.
@@ -340,7 +336,7 @@ public:
 };
 
 BaseBucketParamsManager::BaseBucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE initialFaultingPc, Thread* pFaultingThread, OBJECTREF* pThrownException)
-    : m_pFaultingMD(NULL), m_faultingPc(initialFaultingPc), m_pGmb(pGenericModeBlock), m_tore(typeOfError), m_pThread(pFaultingThread), m_pException(pThrownException)
+    : m_pGmb(pGenericModeBlock), m_tore(typeOfError), m_pThread(pFaultingThread), m_pException(pThrownException), m_pFaultingMD(NULL), m_faultingPc(initialFaultingPc)
 {
     CONTRACTL
     {

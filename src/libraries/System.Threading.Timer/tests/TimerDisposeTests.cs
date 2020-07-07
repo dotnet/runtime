@@ -9,7 +9,7 @@ namespace System.Threading.Tests
 {
     public class TimerDisposeTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Dispose_NotFired_WaitHandleSignaledImmediately()
         {
             var t = new Timer(_ => { }, null, int.MaxValue, int.MaxValue);

@@ -215,10 +215,6 @@ namespace System.IO.Pipes
             return HandleGetImpersonationUserNameError(Marshal.GetLastWin32Error(), UserNameMaxLength, userName);
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         // This method calls a delegate while impersonating the client. Note that we will not have
         // access to the client's security token until it has written at least once to the pipe
         // (and has set its impersonationLevel argument appropriately).

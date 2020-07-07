@@ -26,15 +26,14 @@ namespace System.Net.Http.Functional.Tests
     {
         public HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalFact]
+        [Fact]
         public async Task Dispose_HandlerWithProxy_ProxyNotDisposed()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             var proxy = new TrackDisposalProxy();
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -386,7 +385,7 @@ namespace System.Net.Http.Functional.Tests
         public static IEnumerable<object[]> CredentialsForProxy()
         {
             yield return new object[] { null, false };
-            foreach (bool wrapCredsInCache in new[] { true, false })
+            foreach (bool wrapCredsInCache in BoolValues)
             {
                 yield return new object[] { new NetworkCredential("username", "password"), wrapCredsInCache };
                 yield return new object[] { new NetworkCredential("username", "password", "domain"), wrapCredsInCache };

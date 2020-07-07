@@ -14,7 +14,7 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class StorePal : IDisposable, IStorePal, IExportPal, ILoaderPal
     {
-        public static ILoaderPal FromBlob(byte[] rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        public static ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             return FromBlobOrFile(rawData, null, password, keyStorageFlags);
         }
@@ -24,7 +24,7 @@ namespace Internal.Cryptography.Pal
             return FromBlobOrFile(null, fileName, password, keyStorageFlags);
         }
 
-        private static StorePal FromBlobOrFile(byte[]? rawData, string? fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        private static StorePal FromBlobOrFile(ReadOnlySpan<byte> rawData, string? fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
 

@@ -177,6 +177,12 @@ EventPipeSessionProvider *EventPipeSessionProviderList::GetSessionProvider(const
     return pSessionProvider;
 }
 
+EventPipeSessionProviderIterator EventPipeSessionProviderList::GetProviders()
+{
+    LIMITED_METHOD_CONTRACT;
+    return EventPipeSessionProviderIterator(m_pProviders);
+}
+
 bool EventPipeSessionProviderList::IsEmpty() const
 {
     LIMITED_METHOD_CONTRACT;

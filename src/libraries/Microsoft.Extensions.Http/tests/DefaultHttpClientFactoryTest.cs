@@ -250,7 +250,7 @@ namespace Microsoft.Extensions.Http
             Assert.Same(expected[7], handler);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Factory_CreateClient_WithExpiry_CanExpire()
         {
             // Arrange
@@ -293,7 +293,7 @@ namespace Microsoft.Extensions.Http
             Assert.NotSame(activeEntry1.Handler, activeEntry2.Handler);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Factory_CreateClient_WithExpiry_HandlerCanBeReusedBeforeExpiry()
         {
             // Arrange

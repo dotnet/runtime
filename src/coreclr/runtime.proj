@@ -10,6 +10,7 @@
       <_CoreClrBuildArg Include="$(Compiler)" />
       <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
       <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
+      <_CoreClrBuildArg Condition="'$(PortableBuild)' != 'true'" Include="-portablebuild=false" />
       <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows))" Include="-os $(TargetOS)" />
 
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and

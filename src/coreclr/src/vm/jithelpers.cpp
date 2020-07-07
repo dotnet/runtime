@@ -5206,7 +5206,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
             return;
         }
         
-        LONG newFlags = ppInfo->m_flags | PerPatchpointInfo::patchpoint_triggered;
+        LONG newFlags = oldFlags | PerPatchpointInfo::patchpoint_triggered;
         BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
         
         if (!triggerTransition)
@@ -5238,8 +5238,8 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         if (osrMethodCode == NULL)
         {
             // Unexpected, but not fatal
-            STRESS_LOG4(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_Patchpoint: patchpoint (0x%p) OSR method creation failed,"
-                " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, hitCount, pMD, ilOffset);
+            STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_Patchpoint: patchpoint (0x%p) OSR method creation failed,"
+                " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
             
             InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
             return;
@@ -5279,8 +5279,9 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     if ((UINT_PTR)ip != GetIP(&frameContext))
     {
         // Should be fatal
-        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
+        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
             " unexpected context IP 0x%p\n", ip, GetIP(&frameContext));
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
     
     // Now unwind back to the original method caller frame.

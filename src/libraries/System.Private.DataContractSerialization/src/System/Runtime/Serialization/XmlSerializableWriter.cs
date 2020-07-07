@@ -11,7 +11,7 @@ namespace System.Runtime.Serialization
     internal class XmlSerializableWriter : XmlWriter
     {
         private XmlWriter _xmlWriter;
-        private int _depth = 0;
+        private int _depth;
         private object _obj;
 
         internal void BeginWrite(XmlWriter xmlWriter, object obj)

@@ -27,7 +27,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public class DelegateWrapper
         {
-            private bool _once = false;
+            private bool _once;
             private int _expectedParamsCount;
             private Type?[]? _cachedTargetTypes;
 

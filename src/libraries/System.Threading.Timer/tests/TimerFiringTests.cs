@@ -88,7 +88,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Timer_FiresOnlyOnce_OnDueTime_With_InfinitePeriod()
         {
             int count = 0;
@@ -138,7 +138,7 @@ namespace System.Threading.Tests
             GC.KeepAlive(t);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Timer_CanBeDisposedMultipleTimes()
         {
             // There's nothing to validate besides that we don't throw an exception, so rely on xunit

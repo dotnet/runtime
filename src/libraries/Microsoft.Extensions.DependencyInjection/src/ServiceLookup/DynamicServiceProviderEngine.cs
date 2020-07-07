@@ -11,13 +11,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     internal class DynamicServiceProviderEngine : CompiledServiceProviderEngine
     {
-        public DynamicServiceProviderEngine(IEnumerable<ServiceDescriptor> serviceDescriptors, IServiceProviderEngineCallback callback) : base(serviceDescriptors, callback)
+        public DynamicServiceProviderEngine(IEnumerable<ServiceDescriptor> serviceDescriptors)
+            : base(serviceDescriptors)
         {
         }
 
         protected override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite)
         {
-            var callCount = 0;
+            int callCount = 0;
             return scope =>
             {
                 if (Interlocked.Increment(ref callCount) == 2)

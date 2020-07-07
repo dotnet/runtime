@@ -1719,23 +1719,62 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
  *
  *  Constructor
  */
-
-void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
+void Compiler::compInit(ArenaAllocator*       pAlloc,
+                        CORINFO_METHOD_HANDLE methodHnd,
+                        COMP_HANDLE           compHnd,
+                        CORINFO_METHOD_INFO*  methodInfo,
+                        InlineInfo*           inlineInfo)
 {
     assert(pAlloc);
     compArenaAllocator = pAlloc;
-
-#if defined(DEBUG) || defined(LATE_DISASM)
-    info.compMethodName = nullptr;
-    info.compClassName  = nullptr;
-    info.compFullName   = nullptr;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
 
     // Inlinee Compile object will only be allocated when needed for the 1st time.
     InlineeCompiler = nullptr;
 
     // Set the inline info.
-    impInlineInfo = inlineInfo;
+    impInlineInfo       = inlineInfo;
+    info.compCompHnd    = compHnd;
+    info.compMethodHnd  = methodHnd;
+    info.compMethodInfo = methodInfo;
+
+#ifdef DEBUG
+    bRangeAllowStress = false;
+#endif
+
+#if defined(DEBUG) || defined(LATE_DISASM)
+    // Initialize the method name and related info, as it is used early in determining whether to
+    // apply stress modes, and which ones to apply.
+    // Note that even allocating memory can invoke the stress mechanism, so ensure that both
+    // 'compMethodName' and 'compFullName' are either null or valid before we allocate.
+    // (The stress mode checks references these prior to checking bRangeAllowStress.)
+    //
+    info.compMethodName = nullptr;
+    info.compClassName  = nullptr;
+    info.compFullName   = nullptr;
+
+    const char* classNamePtr;
+    const char* methodName;
+
+    methodName          = eeGetMethodName(methodHnd, &classNamePtr);
+    unsigned len        = (unsigned)roundUp(strlen(classNamePtr) + 1);
+    info.compClassName  = getAllocator(CMK_DebugOnly).allocate<char>(len);
+    info.compMethodName = methodName;
+    strcpy_s((char*)info.compClassName, len, classNamePtr);
+
+    info.compFullName  = eeGetMethodFullName(methodHnd);
+    info.compPerfScore = 0.0;
+#endif // defined(DEBUG) || defined(LATE_DISASM)
+
+#ifdef DEBUG
+    // Opt-in to jit stress based on method hash ranges.
+    //
+    // Note the default (with JitStressRange not set) is that all
+    // methods will be subject to stress.
+    static ConfigMethodRange fJitStressRange;
+    fJitStressRange.EnsureInit(JitConfig.JitStressRange());
+    assert(!fJitStressRange.Error());
+    bRangeAllowStress = fJitStressRange.Contains(info.compMethodHash());
+#endif // DEBUG
 
     eeInfoInitialized = false;
 
@@ -1769,10 +1808,6 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     info.compILCodeSize = 0;
     info.compMethodHnd  = nullptr;
     compJitTelemetry.Initialize(this);
-#endif
-
-#ifdef DEBUG
-    bRangeAllowStress = false;
 #endif
 
     fgInit();
@@ -2681,6 +2716,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     featureSIMD = jitFlags->IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD);
     setUsesSIMDTypes(false);
 #endif // FEATURE_SIMD
+
+    lvaEnregEHVars       = (((opts.compFlags & CLFLG_REGVAR) != 0) && JitConfig.EnableEHWriteThru());
+    lvaEnregMultiRegVars = (((opts.compFlags & CLFLG_REGVAR) != 0) && JitConfig.EnableMultiRegLocals());
 
     if (compIsForImportOnly())
     {
@@ -4326,7 +4364,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
         // Insert call to class constructor as the first basic block if
         // we were asked to do so.
-        if (info.compCompHnd->initClass(nullptr /* field */, info.compMethodHnd /* method */,
+        if (info.compCompHnd->initClass(nullptr /* field */, nullptr /* method */,
                                         impTokenLookupContextHandle /* context */) &
             CORINFO_INITCLASS_USE_HELPER)
         {
@@ -4718,8 +4756,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
                 //
                 DoPhase(this, PHASE_BUILD_SSA, &Compiler::fgSsaBuild);
             }
-
-            DoPhase(this, PHASE_ZERO_INITS, &Compiler::optRemoveRedundantZeroInits);
 
             if (doEarlyProp)
             {
@@ -5209,14 +5245,16 @@ bool Compiler::skipMethod()
 
 /*****************************************************************************/
 
-int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
-                          CORINFO_MODULE_HANDLE classPtr,
-                          COMP_HANDLE           compHnd,
-                          CORINFO_METHOD_INFO*  methodInfo,
+int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
                           void**                methodCodePtr,
                           ULONG*                methodCodeSize,
                           JitFlags*             compileFlags)
 {
+    // compInit should have set these already.
+    noway_assert(info.compMethodInfo != nullptr);
+    noway_assert(info.compCompHnd != nullptr);
+    noway_assert(info.compMethodHnd != nullptr);
+
 #ifdef FEATURE_JIT_METHOD_PERF
     static bool checkedForJitTimeLog = false;
 
@@ -5227,7 +5265,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         // Call into VM to get the config strings. FEATURE_JIT_METHOD_PERF is enabled for
         // retail builds. Do not call the regular Config helper here as it would pull
         // in a copy of the config parser into the clrjit.dll.
-        InterlockedCompareExchangeT(&Compiler::compJitTimeLogFilename, compHnd->getJitTimeLogFilename(), NULL);
+        InterlockedCompareExchangeT(&Compiler::compJitTimeLogFilename, info.compCompHnd->getJitTimeLogFilename(), NULL);
 
         // At a process or module boundary clear the file and start afresh.
         JitTimer::PrintCsvHeader();
@@ -5236,7 +5274,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     }
     if ((Compiler::compJitTimeLogFilename != nullptr) || (JitTimeLogCsv() != nullptr))
     {
-        pCompJitTimer = JitTimer::Create(this, methodInfo->ILCodeSize);
+        pCompJitTimer = JitTimer::Create(this, info.compMethodInfo->ILCodeSize);
     }
 #endif // FEATURE_JIT_METHOD_PERF
 
@@ -5273,10 +5311,6 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 #endif // FUNC_INFO_LOGGING
 
     // if (s_compMethodsCount==0) setvbuf(jitstdout, NULL, _IONBF, 0);
-
-    info.compCompHnd    = compHnd;
-    info.compMethodHnd  = methodHnd;
-    info.compMethodInfo = methodInfo;
 
     if (compIsForInlining())
     {
@@ -5346,7 +5380,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     {
         impTokenLookupContextHandle = impInlineInfo->tokenLookupContextHandle;
 
-        assert(impInlineInfo->inlineCandidateInfo->clsHandle == compHnd->getMethodClass(methodHnd));
+        assert(impInlineInfo->inlineCandidateInfo->clsHandle == info.compCompHnd->getMethodClass(info.compMethodHnd));
         info.compClassHnd = impInlineInfo->inlineCandidateInfo->clsHandle;
 
         assert(impInlineInfo->inlineCandidateInfo->clsAttr == info.compCompHnd->getClassAttribs(info.compClassHnd));
@@ -5356,9 +5390,9 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     }
     else
     {
-        impTokenLookupContextHandle = MAKE_METHODCONTEXT(info.compMethodHnd);
+        impTokenLookupContextHandle = METHOD_BEING_COMPILED_CONTEXT();
 
-        info.compClassHnd  = compHnd->getMethodClass(methodHnd);
+        info.compClassHnd  = info.compCompHnd->getMethodClass(info.compMethodHnd);
         info.compClassAttr = info.compCompHnd->getClassAttribs(info.compClassHnd);
     }
 
@@ -5367,12 +5401,12 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 #if defined(DEBUG) || defined(LATE_DISASM)
     const char* classNamePtr;
 
-    info.compMethodName = eeGetMethodName(methodHnd, &classNamePtr);
+    info.compMethodName = eeGetMethodName(info.compMethodHnd, &classNamePtr);
     unsigned len        = (unsigned)roundUp(strlen(classNamePtr) + 1);
     info.compClassName  = getAllocator(CMK_DebugOnly).allocate<char>(len);
     strcpy_s((char*)info.compClassName, len, classNamePtr);
 
-    info.compFullName  = eeGetMethodFullName(methodHnd);
+    info.compFullName  = eeGetMethodFullName(info.compMethodHnd);
     info.compPerfScore = 0.0;
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
@@ -5391,15 +5425,6 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         }
         return CORJIT_SKIPPED;
     }
-
-    // Opt-in to jit stress based on method hash ranges.
-    //
-    // Note the default (with JitStressRange not set) is that all
-    // methods will be subject to stress.
-    static ConfigMethodRange fJitStressRange;
-    fJitStressRange.EnsureInit(JitConfig.JitStressRange());
-    assert(!fJitStressRange.Error());
-    bRangeAllowStress = fJitStressRange.Contains(info.compMethodHash());
 
 #endif // DEBUG
 
@@ -5427,14 +5452,14 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     } param;
     param.pThis          = this;
     param.classPtr       = classPtr;
-    param.compHnd        = compHnd;
-    param.methodInfo     = methodInfo;
+    param.compHnd        = info.compCompHnd;
+    param.methodInfo     = info.compMethodInfo;
     param.methodCodePtr  = methodCodePtr;
     param.methodCodeSize = methodCodeSize;
     param.compileFlags   = compileFlags;
     param.result         = CORJIT_INTERNALERROR;
 
-    setErrorTrap(compHnd, Param*, pParam, &param) // ERROR TRAP: Start normal block
+    setErrorTrap(info.compCompHnd, Param*, pParam, &param) // ERROR TRAP: Start normal block
     {
         pParam->result =
             pParam->pThis->compCompileHelper(pParam->classPtr, pParam->compHnd, pParam->methodInfo,
@@ -6732,16 +6757,16 @@ START:
             assert(pParam->pComp != nullptr);
 #endif
 
-            pParam->pComp->compInit(pParam->pAlloc, pParam->inlineInfo);
+            pParam->pComp->compInit(pParam->pAlloc, pParam->methodHnd, pParam->compHnd, pParam->methodInfo,
+                                    pParam->inlineInfo);
 
 #ifdef DEBUG
             pParam->pComp->jitFallbackCompile = pParam->jitFallbackCompile;
 #endif
 
             // Now generate the code
-            pParam->result =
-                pParam->pComp->compCompile(pParam->methodHnd, pParam->classPtr, pParam->compHnd, pParam->methodInfo,
-                                           pParam->methodCodePtr, pParam->methodCodeSize, pParam->compileFlags);
+            pParam->result = pParam->pComp->compCompile(pParam->classPtr, pParam->methodCodePtr, pParam->methodCodeSize,
+                                                        pParam->compileFlags);
         }
         finallyErrorTrap()
         {

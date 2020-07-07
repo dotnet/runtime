@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -105,14 +106,14 @@ namespace System.Text
         internal const int ISO_8859_1 = 28591;    // Latin1
 
         // Special code pages
-        private const int CodePageUTF7 = 65000;
+        internal const int CodePageUTF7 = 65000;
         private const int CodePageUTF8 = 65001;
         private const int CodePageUTF32 = 12000;
         private const int CodePageUTF32BE = 12001;
 
-        internal int _codePage = 0;
+        internal int _codePage;
 
-        internal CodePageDataItem? _dataItem = null;
+        internal CodePageDataItem? _dataItem;
 
         // Because of encoders we may be read only
         [OptionalField(VersionAdded = 2)]
@@ -214,7 +215,7 @@ namespace System.Text
 
         public static Encoding GetEncoding(int codepage)
         {
-            Encoding? result = EncodingProvider.GetEncodingFromProvider(codepage);
+            Encoding? result = FilterDisallowedEncodings(EncodingProvider.GetEncodingFromProvider(codepage));
             if (result != null)
                 return result;
 
@@ -225,7 +226,6 @@ namespace System.Text
                 case CodePageBigEndian: return BigEndianUnicode; // 1201
                 case CodePageUTF32: return UTF32;                // 12000
                 case CodePageUTF32BE: return BigEndianUTF32;     // 12001
-                case CodePageUTF7: return UTF7;                  // 65000
                 case CodePageUTF8: return UTF8;                  // 65001
                 case CodePageASCII: return ASCII;                // 20127
                 case ISO_8859_1: return Latin1;                  // 28591
@@ -236,6 +236,27 @@ namespace System.Text
                 case CodePageNoThread:                           // 3 CP_THREAD_ACP
                 case CodePageNoSymbol:                           // 42 CP_SYMBOL
                     throw new ArgumentException(SR.Format(SR.Argument_CodepageNotSupported, codepage), nameof(codepage));
+
+                case CodePageUTF7:                               // 65000
+                    {
+                        // Support for UTF-7 is disabled by default. It can be re-enabled by registering a custom
+                        // provider (which early-exits this method before the 'switch' statement) or by using
+                        // AppContext. If support is not enabled, we'll provide a friendly error message stating
+                        // how the developer can re-enable it in their application.
+
+                        if (LocalAppContextSwitches.EnableUnsafeUTF7Encoding)
+                        {
+#pragma warning disable MSLIB0001 // Encoding.UTF7 property getter is obsolete
+                            return UTF7;
+#pragma warning restore MSLIB0001
+                        }
+                        else
+                        {
+                            string moreInfoUrl = string.Format(CultureInfo.InvariantCulture, Obsoletions.SharedUrlFormat, Obsoletions.SystemTextEncodingUTF7DiagId);
+                            string exceptionMessage = SR.Format(SR.Encoding_UTF7_Disabled, moreInfoUrl);
+                            throw new NotSupportedException(exceptionMessage); // matches generic "unknown code page" exception type
+                        }
+                    }
             }
 
             if (codepage < 0 || codepage > 65535)
@@ -250,7 +271,7 @@ namespace System.Text
         public static Encoding GetEncoding(int codepage,
             EncoderFallback encoderFallback, DecoderFallback decoderFallback)
         {
-            Encoding? baseEncoding = EncodingProvider.GetEncodingFromProvider(codepage, encoderFallback, decoderFallback);
+            Encoding? baseEncoding = FilterDisallowedEncodings(EncodingProvider.GetEncodingFromProvider(codepage, encoderFallback, decoderFallback));
 
             if (baseEncoding != null)
                 return baseEncoding;
@@ -274,7 +295,7 @@ namespace System.Text
             // add the corresponding item in EncodingTable.
             // Otherwise, the code below will throw exception when trying to call
             // EncodingTable.GetCodePageFromName().
-            return EncodingProvider.GetEncodingFromProvider(name) ??
+            return FilterDisallowedEncodings(EncodingProvider.GetEncodingFromProvider(name)) ??
                 GetEncoding(EncodingTable.GetCodePageFromName(name));
         }
 
@@ -287,8 +308,22 @@ namespace System.Text
             // add the corresponding item in EncodingTable.
             // Otherwise, the code below will throw exception when trying to call
             // EncodingTable.GetCodePageFromName().
-            return EncodingProvider.GetEncodingFromProvider(name, encoderFallback, decoderFallback) ??
+            return FilterDisallowedEncodings(EncodingProvider.GetEncodingFromProvider(name, encoderFallback, decoderFallback)) ??
                 GetEncoding(EncodingTable.GetCodePageFromName(name), encoderFallback, decoderFallback);
+        }
+
+        // If the input encoding is forbidden (currently, only UTF-7), returns null.
+        // Otherwise returns the input encoding unchanged.
+        private static Encoding? FilterDisallowedEncodings(Encoding? encoding)
+        {
+            if (LocalAppContextSwitches.EnableUnsafeUTF7Encoding)
+            {
+                return encoding;
+            }
+            else
+            {
+                return (encoding?.CodePage == CodePageUTF7) ? null : encoding;
+            }
         }
 
         /// <summary>
@@ -1020,6 +1055,7 @@ namespace System.Text
         // Returns an encoding for the UTF-7 format. The returned encoding will be
         // an instance of the UTF7Encoding class.
 
+        [Obsolete(Obsoletions.SystemTextEncodingUTF7Message, DiagnosticId = Obsoletions.SystemTextEncodingUTF7DiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Encoding UTF7 => UTF7Encoding.s_default;
 
         // Returns an encoding for the UTF-8 format. The returned encoding will be
@@ -1263,7 +1299,7 @@ namespace System.Text
             private unsafe char* _chars;
             private readonly unsafe char* _charStart;
             private readonly unsafe char* _charEnd;
-            private int _charCountResult = 0;
+            private int _charCountResult;
             private readonly Encoding _enc;
             private readonly DecoderNLS? _decoder;
             private readonly unsafe byte* _byteStart;
@@ -1414,7 +1450,7 @@ namespace System.Text
             private unsafe char* _chars;
             private readonly unsafe char* _charStart;
             private readonly unsafe char* _charEnd;
-            private int _byteCountResult = 0;
+            private int _byteCountResult;
             private readonly Encoding _enc;
             private readonly EncoderNLS? _encoder;
             internal EncoderFallbackBuffer fallbackBuffer;

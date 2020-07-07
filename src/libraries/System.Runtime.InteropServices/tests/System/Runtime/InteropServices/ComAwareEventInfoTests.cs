@@ -102,7 +102,6 @@ namespace System.Runtime.InteropServices.Tests
 
         internal class NonComObject
         {
-            [ExcludeFromCodeCoverage]
             public event EventHandler Event;
 
             public void Raise(object sender) => Event.Invoke(1, null);

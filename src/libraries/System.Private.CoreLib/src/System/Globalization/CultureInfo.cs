@@ -187,7 +187,6 @@ namespace System.Globalization
             Debug.Assert(cultureData != null);
             _cultureData = cultureData;
             _name = cultureData.CultureName;
-            _isInherited = false;
             _isReadOnly = isReadOnly;
         }
 
@@ -674,7 +673,7 @@ namespace System.Globalization
                     CultureTypes.NeutralCultures :
                     CultureTypes.SpecificCultures;
 
-                if (_cultureData.IsWin32Installed)
+                if (CultureData.IsWin32Installed)
                 {
                     types |= CultureTypes.InstalledWin32Cultures;
                 }
@@ -750,6 +749,9 @@ namespace System.Globalization
         public void ClearCachedData()
         {
             // reset the default culture values
+#if TARGET_WINDOWS
+            UserDefaultLocaleName = GetUserDefaultLocaleName();
+#endif
             s_userDefaultCulture = GetUserDefaultCulture();
             s_userDefaultUICulture = GetUserDefaultUICulture();
 

@@ -644,6 +644,27 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
+            case NI_AdvSimd_InsertScalar:
+            {
+                assert(isRMW);
+                assert(targetReg != op3Reg);
+
+                if (targetReg != op1Reg)
+                {
+                    GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
+                }
+
+                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int elementIndex = helper.ImmValue();
+
+                    GetEmitter()->emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, elementIndex, 0, opt);
+                }
+            }
+            break;
+
             case NI_AdvSimd_Arm64_InsertSelectedScalar:
             {
                 assert(isRMW);
@@ -733,6 +754,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_SubtractWideningLower:
             case NI_AdvSimd_SubtractWideningUpper:
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+
+            case NI_AdvSimd_Arm64_AddSaturateScalar:
+                if (varTypeIsUnsigned(node->GetAuxiliaryType()) != varTypeIsUnsigned(intrin.baseType))
+                {
+                    ins = varTypeIsUnsigned(intrin.baseType) ? INS_usqadd : INS_suqadd;
+
+                    if (targetReg != op1Reg)
+                    {
+                        GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
+                    }
+
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                }
                 break;
 
             // mvni doesn't support the range of element types, so hard code the 'opts' value.

@@ -366,5 +366,14 @@ namespace System.Text.Json
             Debug.Assert(result);
             BytesPending += bytesWritten;
         }
+
+        internal void WritePropertyName(double value)
+        {
+            JsonWriterHelper.ValidateDouble(value);
+            Span<byte> utf8PropertyName = stackalloc byte[JsonConstants.MaximumFormatDoubleLength];
+            bool result = TryFormatDouble(value, utf8PropertyName, out int bytesWritten);
+            Debug.Assert(result);
+            WritePropertyNameUnescaped(utf8PropertyName.Slice(0, bytesWritten));
+        }
     }
 }

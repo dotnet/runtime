@@ -366,5 +366,13 @@ namespace System.Text.Json
             Debug.Assert(result);
             BytesPending += bytesWritten;
         }
+
+        internal void WritePropertyName(float value)
+        {
+            Span<byte> utf8PropertyName = stackalloc byte[JsonConstants.MaximumFormatSingleLength];
+            bool result = TryFormatSingle(value, utf8PropertyName, out int bytesWritten);
+            Debug.Assert(result);
+            WritePropertyNameUnescaped(utf8PropertyName.Slice(0, bytesWritten));
+        }
     }
 }

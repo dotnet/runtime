@@ -8,7 +8,7 @@ namespace System.Data.Odbc.Tests
 {
     public class SmokeTest : IntegrationTestBase
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact]
         public void CreateInsertSelectTest()
         {
             command.CommandText =

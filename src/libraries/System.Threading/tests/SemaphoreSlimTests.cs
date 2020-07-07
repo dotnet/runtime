@@ -70,7 +70,7 @@ namespace System.Threading.Tests
                (10, 10, new TimeSpan(0, 0, int.MaxValue), true, typeof(ArgumentOutOfRangeException));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunSemaphoreSlimTest1_WaitAsync()
         {
             // Infinite timeout
@@ -88,7 +88,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest1_WaitAsync_Helper(0, 10, 10, false, null);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunSemaphoreSlimTest1_WaitAsync_NegativeCases()
         {
             // Invalid timeout
@@ -460,7 +460,7 @@ namespace System.Threading.Tests
         /// <param name="failedWait">Number of failed wait threads</param>
         /// <param name="finalCount">The final semaphore count</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(5, 1000, 50, 50, 50, 0, 5, 1000)]
         [InlineData(0, 1000, 50, 25, 25, 25, 0, 500)]
         [InlineData(0, 1000, 50, 0, 0, 50, 0, 100)]
@@ -526,7 +526,7 @@ namespace System.Threading.Tests
         /// <param name="failedWait">Number of failed wait threads</param>
         /// <param name="finalCount">The final semaphore count</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(5, 1000, 50, 50, 50, 0, 5, 500)]
         [InlineData(0, 1000, 50, 25, 25, 25, 0, 500)]
         [InlineData(0, 1000, 50, 0, 0, 50, 0, 100)]
@@ -575,7 +575,7 @@ namespace System.Threading.Tests
             Assert.Equal(finalCount, semaphore.CurrentCount);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(10, 10)]
         [InlineData(1, 10)]
         [InlineData(10, 1)]

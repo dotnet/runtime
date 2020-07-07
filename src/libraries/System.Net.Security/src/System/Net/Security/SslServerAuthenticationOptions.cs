@@ -31,6 +31,8 @@ namespace System.Net.Security
 
         public X509Certificate? ServerCertificate { get; set; }
 
+        public SslStreamCertificateContext? ServerCertificateContext { get; set; }
+
         public SslProtocols EnabledSslProtocols
         {
             get => _enabledSslProtocols;

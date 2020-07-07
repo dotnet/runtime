@@ -76,7 +76,7 @@ namespace System.DirectoryServices.AccountManagement
         // The ResultSet returned by the query.
         private readonly ResultSet _resultSet;
 
-        private bool _disposed = false;
+        private bool _disposed;
 
         private void CheckDisposed()
         {

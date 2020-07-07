@@ -2542,7 +2542,6 @@ public:
 
 #ifdef FEATURE_SIMD
     GenTree* gtNewSIMDVectorZero(var_types simdType, var_types baseType, unsigned size);
-    GenTree* gtNewSIMDVectorOne(var_types simdType, var_types baseType, unsigned size);
 #endif
 
     GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock);
@@ -2630,6 +2629,9 @@ public:
                                                  var_types      baseType,
                                                  unsigned       size);
 
+    GenTreeHWIntrinsic* gtNewSimdCreateBroadcastNode(
+        var_types type, GenTree* op1, var_types baseType, unsigned size, bool isSimdAsHWIntrinsic);
+
     GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
                                                    NamedIntrinsic hwIntrinsicID,
                                                    var_types      baseType,
@@ -2686,7 +2688,7 @@ public:
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
-    GenTree* gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type);
+    GenTree* gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, unsigned __int64 bbFlags);
 
     GenTree* gtNewFieldRef(var_types typ, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
@@ -3649,7 +3651,7 @@ protected:
     };
 
     bool impIsPrimitive(CorInfoType type);
-    bool impILConsumesAddr(const BYTE* codeAddr, CORINFO_METHOD_HANDLE fncHandle, CORINFO_MODULE_HANDLE scpHandle);
+    bool impILConsumesAddr(const BYTE* codeAddr);
 
     void impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind);
 
@@ -3751,7 +3753,7 @@ protected:
                                   CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
-                                  bool                  mustExpand);
+                                  GenTree*              newobjThis);
 
 protected:
     bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
@@ -3761,7 +3763,8 @@ protected:
                                          CORINFO_SIG_INFO*    sig,
                                          var_types            retType,
                                          var_types            baseType,
-                                         unsigned             simdSize);
+                                         unsigned             simdSize,
+                                         GenTree*             newobjThis);
 
     GenTree* impSimdAsHWIntrinsicCndSel(CORINFO_CLASS_HANDLE clsHnd,
                                         var_types            retType,
@@ -3779,7 +3782,10 @@ protected:
                                  var_types             retType,
                                  unsigned              simdSize);
 
-    GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr = false);
+    GenTree* getArgForHWIntrinsic(var_types            argType,
+                                  CORINFO_CLASS_HANDLE argClass,
+                                  bool                 expectAddr = false,
+                                  GenTree*             newobjThis = nullptr);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
@@ -7192,6 +7198,7 @@ public:
     var_types eeGetArgType(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig);
     var_types eeGetArgType(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig, bool* isPinned);
     CORINFO_CLASS_HANDLE eeGetArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE list);
+    CORINFO_CLASS_HANDLE eeGetClassFromContext(CORINFO_CONTEXT_HANDLE context);
     unsigned eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig);
 
     // VOM info, method sigs
@@ -9321,7 +9328,11 @@ public:
     static void compStartup();  // One-time initialization
     static void compShutdown(); // One-time finalization
 
-    void compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo);
+    void compInit(ArenaAllocator*       pAlloc,
+                  CORINFO_METHOD_HANDLE methodHnd,
+                  COMP_HANDLE           compHnd,
+                  CORINFO_METHOD_INFO*  methodInfo,
+                  InlineInfo*           inlineInfo);
     void compDone();
 
     static void compDisplayStaticSizes(FILE* fout);
@@ -9344,10 +9355,7 @@ public:
     void compDoComponentUnitTestsOnce();
 #endif // DEBUG
 
-    int compCompile(CORINFO_METHOD_HANDLE methodHnd,
-                    CORINFO_MODULE_HANDLE classPtr,
-                    COMP_HANDLE           compHnd,
-                    CORINFO_METHOD_INFO*  methodInfo,
+    int compCompile(CORINFO_MODULE_HANDLE classPtr,
                     void**                methodCodePtr,
                     ULONG*                methodCodeSize,
                     JitFlags*             compileFlags);

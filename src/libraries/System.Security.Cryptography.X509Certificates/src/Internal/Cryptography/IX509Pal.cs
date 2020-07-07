@@ -14,7 +14,7 @@ namespace Internal.Cryptography.Pal
         string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag);
         byte[] X500DistinguishedNameEncode(string distinguishedName, X500DistinguishedNameFlags flag);
         string X500DistinguishedNameFormat(byte[] encodedDistinguishedName, bool multiLine);
-        X509ContentType GetCertContentType(byte[] rawData);
+        X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData);
         X509ContentType GetCertContentType(string fileName);
         byte[] EncodeX509KeyUsageExtension(X509KeyUsageFlags keyUsages);
         void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages);
@@ -24,7 +24,7 @@ namespace Internal.Cryptography.Pal
         void DecodeX509BasicConstraints2Extension(byte[] encoded, out bool certificateAuthority, out bool hasPathLengthConstraint, out int pathLengthConstraint);
         byte[] EncodeX509EnhancedKeyUsageExtension(OidCollection usages);
         void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages);
-        byte[] EncodeX509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier);
+        byte[] EncodeX509SubjectKeyIdentifierExtension(ReadOnlySpan<byte> subjectKeyIdentifier);
         void DecodeX509SubjectKeyIdentifierExtension(byte[] encoded, out byte[] subjectKeyIdentifier);
         byte[] ComputeCapiSha1OfPublicKey(PublicKey key);
     }

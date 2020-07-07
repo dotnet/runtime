@@ -43,7 +43,7 @@ namespace System.Diagnostics
             int loadedPeSize, IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
             out string? sourceFile, out int sourceLine, out int sourceColumn);
 
-        private static GetSourceLineInfoDelegate? s_getSourceLineInfo = null;
+        private static GetSourceLineInfoDelegate? s_getSourceLineInfo;
 
         [ThreadStatic]
         private static int t_reentrancy;

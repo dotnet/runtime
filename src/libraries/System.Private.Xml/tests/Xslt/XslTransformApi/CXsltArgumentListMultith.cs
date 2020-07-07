@@ -106,7 +106,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple GetParam for same parameter name")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void proc1()
         {
             CThreads rThreads = new CThreads(_output);
@@ -124,7 +124,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple GetParam for different parameter name")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void proc2()
         {
             CThreads rThreads = new CThreads(_output);
@@ -190,7 +190,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple GetExtensionObject for same namespace System.Xml.Tests")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void proc1()
         {
             CThreads rThreads = new CThreads(_output);
@@ -208,7 +208,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple GetExtensionObject for different namespace System.Xml.Tests")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void proc2()
         {
             CThreads rThreads = new CThreads(_output);
@@ -276,7 +276,7 @@ namespace System.Xml.Tests
         // Multiple Transform() using shared ArgumentList
         ////////////////////////////////////////////////////////////////
         //[Variation("Multiple transforms using shared ArgumentList")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void proc1()
         {
             CThreads rThreads = new CThreads(_output);

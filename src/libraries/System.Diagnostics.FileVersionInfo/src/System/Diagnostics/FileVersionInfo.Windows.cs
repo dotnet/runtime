@@ -53,10 +53,6 @@ namespace System.Diagnostics
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         // Some dlls might not contain correct codepage information,
         // in which case the lookup will fail. Explorer will take
         // a few shots in dark. We'll simulate similar behavior by

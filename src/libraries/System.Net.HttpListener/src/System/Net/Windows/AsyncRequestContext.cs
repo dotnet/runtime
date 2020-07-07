@@ -15,8 +15,8 @@ namespace System.Net
         private readonly ListenerAsyncResult _result;
 
 #if DEBUG
-        private volatile int _nativeOverlappedCounter = 0;
-        private volatile int _nativeOverlappedUsed = 0;
+        private volatile int _nativeOverlappedCounter;
+        private volatile int _nativeOverlappedUsed;
 
         private void DebugRefCountReleaseNativeOverlapped()
         {

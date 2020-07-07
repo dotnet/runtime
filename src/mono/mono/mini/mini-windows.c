@@ -281,7 +281,7 @@ mono_dump_native_crash_info (const char *signal, MonoContext *mctx, MONO_SIG_HAN
 }
 
 void
-mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining)
+mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining, void *context)
 {
 	if (!crash_chaining)
 		abort ();
