@@ -120,8 +120,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 for (int j = 0; j < Count; j++)
                 {
-                    string key = "Key: i=" + i + ", j=" + j;
-                    string value = "Value: i=" + i + ", j=" + j;
+                    string key = $"Key: i={i}, j={j}";
+                    string value = $"Value: i={i}, j={j}";
                     hash.Add(key, value);
                 }
 
@@ -138,7 +138,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 for (int i = 0; i < map2.Count; i++)
                 {
-                    string key = "Key_" + i;
+                    string key = $"Key_{i}";
                     Assert.True(map2.Contains(key));
                 }
 
@@ -159,7 +159,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 for (int i = 0; i < map2.Count; i++)
                 {
-                    string key = "Key_" + i;
+                    string key = $"Key_{i}";
                     Assert.True(map2.Contains(key));
                 }
                 Assert.Equal(map2.Count, map2.Keys.Count);
@@ -180,8 +180,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 for (int i = 0; i < map2.Count; i++)
                 {
-                    string value = "Value_" + i;
-                    Assert.True(map2["Key_" + i].ToString() == value);
+                    string value = $"Value_{i}";
+                    Assert.True(map2[$"Key_{i}"].ToString() == value);
                 }
                 Assert.True(map2["Non Existent Value"] == null);
                 Assert.True(map2[101] == null);
@@ -201,8 +201,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
                 for (int i = start; i < start + count; i++)
                 {
-                    string key = "Key_" + i;
-                    string value = "Value_" + i;
+                    string key = $"Key_{i}";
+                    string value = $"Value_{i}";
 
                     map.Add(key, value);
                 }
