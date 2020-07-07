@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
@@ -25,23 +24,6 @@ namespace System.Text.Json.Serialization.Converters
             return typeof(IEnumerable).IsAssignableFrom(typeToConvert);
         }
 
-        [DynamicDependency("#ctor", typeof(ArrayConverter<,>))]
-        [DynamicDependency("#ctor", typeof(ConcurrentQueueOfTConverter<,>))]
-        [DynamicDependency("#ctor", typeof(ConcurrentStackOfTConverter<,>))]
-        [DynamicDependency("#ctor", typeof(DictionaryOfTKeyTValueConverter<,,>))]
-        [DynamicDependency("#ctor", typeof(ICollectionOfTConverter<,>))]
-        [DynamicDependency("#ctor", typeof(IDictionaryOfTKeyTValueConverter<,,>))]
-        [DynamicDependency("#ctor", typeof(IEnumerableOfTConverter<,>))]
-        [DynamicDependency("#ctor", typeof(IEnumerableWithAddMethodConverter<>))]
-        [DynamicDependency("#ctor", typeof(IListConverter<>))]
-        [DynamicDependency("#ctor", typeof(IListOfTConverter<,>))]
-        [DynamicDependency("#ctor", typeof(ImmutableDictionaryOfTKeyTValueConverter<,,>))]
-        [DynamicDependency("#ctor", typeof(ImmutableEnumerableOfTConverter<,>))]
-        [DynamicDependency("#ctor", typeof(IReadOnlyDictionaryOfTKeyTValueConverter<,,>))]
-        [DynamicDependency("#ctor", typeof(ISetOfTConverter<,>))]
-        [DynamicDependency("#ctor", typeof(ListOfTConverter<,>))]
-        [DynamicDependency("#ctor", typeof(QueueOfTConverter<,>))]
-        [DynamicDependency("#ctor", typeof(StackOfTConverter<,>))]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             Type converterType;

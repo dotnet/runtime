@@ -61,7 +61,6 @@ public:
 
     static FCDECL0(void,            SetLastError            );
     static FCDECL0(void,            ClearLastError          );
-    static FCDECL1(FC_BOOL_RET,     IsQCall,                NDirectMethodDesc* pNMD);
     static FCDECL1(void,            InitDeclaringType,      NDirectMethodDesc* pMND);
     static FCDECL1(void*,           GetNDirectTarget,       NDirectMethodDesc* pNMD);
     static FCDECL2(void*,           GetDelegateTarget,      DelegateObject *pThisUNSAFE, UINT_PTR *ppStubArg);
