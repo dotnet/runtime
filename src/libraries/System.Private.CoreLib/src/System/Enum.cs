@@ -1032,67 +1032,67 @@ namespace System
 
         bool IConvertible.ToBoolean(IFormatProvider? provider)
         {
-            return Convert.ToBoolean(GetValue(), null);
+            return Convert.ToBoolean(GetValue());
         }
 
         char IConvertible.ToChar(IFormatProvider? provider)
         {
-            return Convert.ToChar(GetValue(), null);
+            return Convert.ToChar(GetValue());
         }
 
         sbyte IConvertible.ToSByte(IFormatProvider? provider)
         {
-            return Convert.ToSByte(GetValue(), null);
+            return Convert.ToSByte(GetValue());
         }
 
         byte IConvertible.ToByte(IFormatProvider? provider)
         {
-            return Convert.ToByte(GetValue(), null);
+            return Convert.ToByte(GetValue());
         }
 
         short IConvertible.ToInt16(IFormatProvider? provider)
         {
-            return Convert.ToInt16(GetValue(), null);
+            return Convert.ToInt16(GetValue());
         }
 
         ushort IConvertible.ToUInt16(IFormatProvider? provider)
         {
-            return Convert.ToUInt16(GetValue(), null);
+            return Convert.ToUInt16(GetValue());
         }
 
         int IConvertible.ToInt32(IFormatProvider? provider)
         {
-            return Convert.ToInt32(GetValue(), null);
+            return Convert.ToInt32(GetValue());
         }
 
         uint IConvertible.ToUInt32(IFormatProvider? provider)
         {
-            return Convert.ToUInt32(GetValue(), null);
+            return Convert.ToUInt32(GetValue());
         }
 
         long IConvertible.ToInt64(IFormatProvider? provider)
         {
-            return Convert.ToInt64(GetValue(), null);
+            return Convert.ToInt64(GetValue());
         }
 
         ulong IConvertible.ToUInt64(IFormatProvider? provider)
         {
-            return Convert.ToUInt64(GetValue(), null);
+            return Convert.ToUInt64(GetValue());
         }
 
         float IConvertible.ToSingle(IFormatProvider? provider)
         {
-            return Convert.ToSingle(GetValue(), null);
+            return Convert.ToSingle(GetValue());
         }
 
         double IConvertible.ToDouble(IFormatProvider? provider)
         {
-            return Convert.ToDouble(GetValue(), null);
+            return Convert.ToDouble(GetValue());
         }
 
         decimal IConvertible.ToDecimal(IFormatProvider? provider)
         {
-            return Convert.ToDecimal(GetValue(), null);
+            return Convert.ToDecimal(GetValue());
         }
 
         DateTime IConvertible.ToDateTime(IFormatProvider? provider)
