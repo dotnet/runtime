@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// <summary>
         /// Disables colors when <see langword="true" />.
         /// </summary>
-        [System.ObsoleteAttribute("ConsoleLoggerOptions.DisableColors has been deprecated. Please use ColoredConsoleFormatterOptions.DisableColors instead.", false)]
+        [System.ObsoleteAttribute("ConsoleLoggerOptions.DisableColors has been deprecated. Please use SimpleConsoleFormatterOptions.DisableColors instead.", false)]
         public bool DisableColors { get; set; }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// <summary>
         /// Includes scopes when <see langword="true" />.
         /// </summary>
-        [System.ObsoleteAttribute("ConsoleLoggerOptions.IncludeScopes has been deprecated..", false)]
+        [System.ObsoleteAttribute("ConsoleLoggerOptions.IncludeScopes has been deprecated. Please use ConsoleFormatterOptions.IncludeScopes instead.", false)]
         public bool IncludeScopes { get; set; }
 
         /// <summary>
@@ -59,13 +59,13 @@ namespace Microsoft.Extensions.Logging.Console
         /// <summary>
         /// Gets or sets format string used to format timestamp in logging messages. Defaults to <c>null</c>.
         /// </summary>
-        [System.ObsoleteAttribute("ConsoleLoggerOptions.TimestampFormat has been deprecated..", false)]
+        [System.ObsoleteAttribute("ConsoleLoggerOptions.TimestampFormat has been deprecated. Please use ConsoleFormatterOptions.TimestampFormat instead.", false)]
         public string TimestampFormat { get; set; }
 
         /// <summary>
         /// Gets or sets indication whether or not UTC timezone should be used to for timestamps in logging messages. Defaults to <c>false</c>.
         /// </summary>
-        [System.ObsoleteAttribute("ConsoleLoggerOptions.UseUtcTimestamp has been deprecated..", false)]
+        [System.ObsoleteAttribute("ConsoleLoggerOptions.UseUtcTimestamp has been deprecated. Please use ConsoleFormatterOptions.UseUtcTimestamp instead.", false)]
         public bool UseUtcTimestamp { get; set; }
     }
 }

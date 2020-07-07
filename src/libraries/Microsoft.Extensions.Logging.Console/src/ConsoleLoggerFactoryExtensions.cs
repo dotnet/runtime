@@ -57,15 +57,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/> options for the built-in default log formatter.</param>
         public static ILoggingBuilder AddSimpleConsole(this ILoggingBuilder builder, Action<SimpleConsoleFormatterOptions> configure)
         {
-            if (configure == null)
-            {
-                throw new ArgumentNullException(nameof(configure));
-            }
-
-            builder.AddConsole((ConsoleLoggerOptions options) => options.FormatterName = ConsoleFormatterNames.Simple);
-            builder.Services.Configure(configure);
-
-            return builder;
+            return builder.AddConsoleWithFormatter<SimpleConsoleFormatterOptions>(ConsoleFormatterNames.Simple, configure);
         }
 
         /// <summary>
@@ -75,15 +67,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/> options for the built-in json log formatter.</param>
         public static ILoggingBuilder AddJsonConsole(this ILoggingBuilder builder, Action<JsonConsoleFormatterOptions> configure)
         {
-            if (configure == null)
-            {
-                throw new ArgumentNullException(nameof(configure));
-            }
-
-            builder.AddConsole((ConsoleLoggerOptions options) => options.FormatterName = ConsoleFormatterNames.Json);
-            builder.Services.Configure(configure);
-
-            return builder;
+            return builder.AddConsoleWithFormatter<JsonConsoleFormatterOptions>(ConsoleFormatterNames.Json, configure);
         }
 
         /// <summary>
@@ -93,12 +77,17 @@ namespace Microsoft.Extensions.Logging
         /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/> options for the built-in systemd log formatter.</param>
         public static ILoggingBuilder AddSystemdConsole(this ILoggingBuilder builder, Action<ConsoleFormatterOptions> configure)
         {
+            return builder.AddConsoleWithFormatter<ConsoleFormatterOptions>(ConsoleFormatterNames.Systemd, configure);
+        }
+
+        internal static ILoggingBuilder AddConsoleWithFormatter<TOptions>(this ILoggingBuilder builder, string name, Action<TOptions> configure)
+            where TOptions : ConsoleFormatterOptions
+        {
             if (configure == null)
             {
                 throw new ArgumentNullException(nameof(configure));
             }
-
-            builder.AddConsole((ConsoleLoggerOptions options) => options.FormatterName = ConsoleFormatterNames.Systemd);
+            builder.AddConsole((ConsoleLoggerOptions options) => options.FormatterName = name);
             builder.Services.Configure(configure);
 
             return builder;

@@ -60,23 +60,24 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private void SetFormatters(IEnumerable<ConsoleFormatter> fromSetup = null)
+        private void SetFormatters(IEnumerable<ConsoleFormatter> formatters = null)
         {
-            IEnumerable<ConsoleFormatter> formatters = fromSetup;
+            _formatters = new ConcurrentDictionary<string, ConsoleFormatter>(StringComparer.OrdinalIgnoreCase);
             if (formatters == null || !formatters.Any())
             {
                 var defaultMonitor = new FormatterOptionsMonitor<SimpleConsoleFormatterOptions>(new SimpleConsoleFormatterOptions());
                 var systemdMonitor = new FormatterOptionsMonitor<ConsoleFormatterOptions>(new ConsoleFormatterOptions());
-                formatters = new List<ConsoleFormatter>()
-                {
-                    new SimpleConsoleFormatter(defaultMonitor),
-                    new SystemdConsoleFormatter(systemdMonitor)
-                };
+                var jsonMonitor = new FormatterOptionsMonitor<JsonConsoleFormatterOptions>(new JsonConsoleFormatterOptions());
+                _formatters.GetOrAdd(ConsoleFormatterNames.Simple, formatterName => new SimpleConsoleFormatter(defaultMonitor));
+                _formatters.GetOrAdd(ConsoleFormatterNames.Systemd, formatterName => new SystemdConsoleFormatter(systemdMonitor));
+                _formatters.GetOrAdd(ConsoleFormatterNames.Json, formatterName => new JsonConsoleLogFormatter(jsonMonitor));
             }
-            _formatters = new ConcurrentDictionary<string, ConsoleFormatter>(StringComparer.OrdinalIgnoreCase);
-            foreach (ConsoleFormatter formatter in formatters)
+            else
             {
-                _formatters.GetOrAdd(formatter.Name, formatterName => formatter);
+                foreach (ConsoleFormatter formatter in formatters)
+                {
+                    _formatters.GetOrAdd(formatter.Name, formatterName => formatter);
+                }
             }
         }
 
