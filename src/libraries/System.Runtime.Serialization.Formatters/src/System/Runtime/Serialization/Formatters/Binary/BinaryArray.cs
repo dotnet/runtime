@@ -14,7 +14,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal int[]? _lowerBoundA;
         internal BinaryTypeEnum _binaryTypeEnum;
         internal object? _typeInformation;
-        internal int _assemId = 0;
+        internal int _assemId;
         private BinaryHeaderEnum _binaryHeaderEnum;
         internal BinaryArrayTypeEnum _binaryArrayTypeEnum;
 

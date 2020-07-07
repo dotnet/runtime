@@ -98,7 +98,6 @@
 
 #define POISONC ((UINT_PTR)((sizeof(int *) == 4)?0xCCCCCCCCL:I64(0xCCCCCCCCCCCCCCCC)))
 
-#include "ndpversion.h"
 #include "switches.h"
 #include "holder.h"
 #include "classnames.h"
@@ -113,6 +112,7 @@ typedef DPTR(class ArrayBase)           PTR_ArrayBase;
 typedef DPTR(class Assembly)            PTR_Assembly;
 typedef DPTR(class AssemblyBaseObject)  PTR_AssemblyBaseObject;
 typedef DPTR(class AssemblyLoadContextBaseObject) PTR_AssemblyLoadContextBaseObject;
+typedef DPTR(class AssemblyLoadContext) PTR_AssemblyLoadContext;
 typedef DPTR(class AssemblyNameBaseObject) PTR_AssemblyNameBaseObject;
 typedef VPTR(class BaseDomain)          PTR_BaseDomain;
 typedef DPTR(class ClassLoader)         PTR_ClassLoader;
@@ -286,6 +286,7 @@ namespace Loader
 #include "log.h"
 #include "loaderheap.h"
 #include "fixuppointer.h"
+#include "stgpool.h"
 
 // src/vm
 #include "gcenv.interlocked.h"
@@ -347,10 +348,6 @@ namespace Loader
 #include "codeman.h"
 #include "threads.h"
 #include "clrex.inl"
-#ifdef FEATURE_COMINTEROP
-    #include "windowsruntime.h"
-    #include "windowsstring.h"
-#endif
 #include "loaderallocator.hpp"
 #include "appdomain.hpp"
 #include "appdomain.inl"
@@ -424,10 +421,6 @@ extern DummyGlobalContract ___contract;
 #include "syncblk.inl"
 #include "threads.inl"
 #include "eehash.inl"
-#ifdef FEATURE_COMINTEROP
-#include "WinRTRedirector.h"
-#include "winrtredirector.inl"
-#endif // FEATURE_COMINTEROP
 #include "eventtrace.inl"
 
 #if defined(COMMON_TURNED_FPO_ON)

@@ -50,8 +50,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\ValidationException.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ValidationResult.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\Validator.cs" />
-    <Compile Include="$(CommonPath)System\NotImplemented.cs">
-      <Link>Common\System\NotImplemented.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\NotImplemented.cs"
+             Link="Common\System\NotImplemented.cs" />
   </ItemGroup>
 </Project>

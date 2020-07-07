@@ -9,8 +9,6 @@ namespace System.Transactions
 {
     public sealed class CommittableTransaction : Transaction, IAsyncResult
     {
-        internal bool _completedSynchronously = false;
-
         // Create a transaction with defaults
         public CommittableTransaction() : this(TransactionManager.DefaultIsolationLevel, TransactionManager.DefaultTimeout)
         {
@@ -194,7 +192,7 @@ namespace System.Transactions
 
         object? IAsyncResult.AsyncState => _internalTransaction._asyncState;
 
-        bool IAsyncResult.CompletedSynchronously => _completedSynchronously;
+        bool IAsyncResult.CompletedSynchronously => false;
 
         WaitHandle IAsyncResult.AsyncWaitHandle
         {

@@ -55,6 +55,8 @@ Docker_opts_arm32 = '-e ROOTFS_DIR=/crossrootfs/arm'
 Docker_name_arm64 = 'microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921'
 Docker_opts_arm64 = '-e ROOTFS_DIR=/crossrootfs/arm64'
 
+Is_illumos = ('illumos' in subprocess.Popen(["uname", "-o"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0].decode('utf-8'))
+
 # This should be factored out of build.sh
 Unix_name_map = {
     'Linux': 'Linux',
@@ -62,7 +64,7 @@ Unix_name_map = {
     'FreeBSD': 'FreeBSD',
     'OpenBSD': 'OpenBSD',
     'NetBSD': 'NetBSD',
-    'SunOS': 'SunOS'
+    'SunOS': 'illumos' if Is_illumos else 'Solaris'
 }
 
 Is_windows = (os.name == 'nt')
@@ -131,13 +133,13 @@ def validate_args(args):
     Returns:
         args (CoreclrArguments)         : Args parsed
     Notes:
-        If the arguments are valid then return them all in a tuple. If not, 
+        If the arguments are valid then return them all in a tuple. If not,
         raise an exception stating x argument is incorrect.
     """
 
-    coreclr_setup_args = CoreclrArguments(args, 
-                                          require_built_test_dir=False, 
-                                          require_built_core_root=True, 
+    coreclr_setup_args = CoreclrArguments(args,
+                                          require_built_test_dir=False,
+                                          require_built_core_root=True,
                                           require_built_product_dir=False)
 
     coreclr_setup_args.verify(args,
@@ -161,7 +163,7 @@ def validate_args(args):
                               "skip_baseline_build",
                               lambda unused: True,
                               "Error setting baseline build")
-    
+
     coreclr_setup_args.verify(args,
                               "skip_diffs",
                               lambda unused: True,
@@ -183,15 +185,15 @@ def validate_args(args):
                               "Error setting ci_arch")
 
     args = (
-        coreclr_setup_args.arch, 
-        coreclr_setup_args.ci_arch, 
-        coreclr_setup_args.build_type, 
-        coreclr_setup_args.base_root, 
-        coreclr_setup_args.diff_root, 
-        coreclr_setup_args.scratch_root, 
-        coreclr_setup_args.skip_baseline_build, 
-        coreclr_setup_args.skip_diffs, 
-        coreclr_setup_args.target_branch, 
+        coreclr_setup_args.arch,
+        coreclr_setup_args.ci_arch,
+        coreclr_setup_args.build_type,
+        coreclr_setup_args.base_root,
+        coreclr_setup_args.diff_root,
+        coreclr_setup_args.scratch_root,
+        coreclr_setup_args.skip_baseline_build,
+        coreclr_setup_args.skip_diffs,
+        coreclr_setup_args.target_branch,
         coreclr_setup_args.commit_hash
     )
 
@@ -328,7 +330,7 @@ def baseline_build():
             buildOpts = 'cross'
             scriptPath = baseCoreClrPath
 
-        # Build a checked baseline jit 
+        # Build a checked baseline jit
 
         if Is_windows:
             command = 'set __TestIntermediateDir=int&&build.cmd %s checked skiptests skipbuildpackages' % arch

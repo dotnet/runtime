@@ -25,8 +25,8 @@ namespace System.Net.Mail
         private string? _body = string.Empty;
         private Encoding? _bodyEncoding;
         private TransferEncoding _bodyTransferEncoding = TransferEncoding.Unknown;
-        private bool _isBodyHtml = false;
-        private bool _disposed = false;
+        private bool _isBodyHtml;
+        private bool _disposed;
         private readonly Message _message;
         private DeliveryNotificationOptions _deliveryStatusNotification = DeliveryNotificationOptions.None;
 
@@ -44,10 +44,10 @@ namespace System.Net.Mail
             if (to == null)
                 throw new ArgumentNullException(nameof(to));
 
-            if (from == string.Empty)
+            if (from.Length == 0)
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(from)), nameof(from));
 
-            if (to == string.Empty)
+            if (to.Length == 0)
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(to)), nameof(to));
 
             _message = new Message(from, to);

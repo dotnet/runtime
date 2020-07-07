@@ -18,7 +18,7 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpConvertBinder : ConvertBinder, ICSharpBinder
     {
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Name should not be called for this binder")]
         public string Name
         {
             get
@@ -118,7 +118,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
 #if ENABLECOMBINDER
             DynamicMetaObject com;
-            if (!BinderHelper.IsWindowsRuntimeObject(target) && ComInterop.ComBinder.TryConvert(this, target, out com))
+            if (ComInterop.ComBinder.TryConvert(this, target, out com))
             {
                 return com;
             }

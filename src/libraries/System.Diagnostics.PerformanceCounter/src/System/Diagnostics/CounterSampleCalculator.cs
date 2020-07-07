@@ -14,7 +14,7 @@ namespace System.Diagnostics
     /// </summary>
     public static class CounterSampleCalculator
     {
-        private static volatile bool s_perfCounterDllLoaded = false;
+        private static volatile bool s_perfCounterDllLoaded;
 
         /// <summary>
         ///    Converts 100NS elapsed time to fractional seconds

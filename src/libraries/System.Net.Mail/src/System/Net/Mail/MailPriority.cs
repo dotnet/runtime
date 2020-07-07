@@ -51,10 +51,10 @@ namespace System.Net.Mail
             if (to == null)
                 throw new ArgumentNullException(nameof(to));
 
-            if (from == string.Empty)
+            if (from.Length == 0)
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(from)), nameof(from));
 
-            if (to == string.Empty)
+            if (to.Length == 0)
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(to)), nameof(to));
 
             _from = new MailAddress(from);

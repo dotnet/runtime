@@ -22,6 +22,10 @@ using System.Threading.Tasks;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.IO.Compression;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using System.Diagnostics.CodeAnalysis;
+using ILCompiler.Reflection.ReadyToRun;
+using Microsoft.Diagnostics.Tools.Pgo;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
@@ -39,6 +43,27 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         showtimestamp = 2,
     }
 
+    class CommandLineOptions
+    {
+        public FileInfo TraceFile { get; set; }
+        public FileInfo OutputFileName { get; set; }
+        public int? Pid { get; set; }
+        public string ProcessName { get; set; }
+        public PgoFileType? PgoFileType { get; set; }
+        public IEnumerable<FileInfo> Reference { get; set; }
+        public int? ClrInstanceId { get; set; }
+        public bool ProcessJitEvents { get; set; }
+        public bool ProcessR2REvents { get; set; }
+        public bool DisplayProcessedEvents { get; set; }
+        public bool ValidateOutputFile { get; set; }
+        public bool GenerateCallGraph { get; set; }
+        public bool VerboseWarnings { get; set; }
+        public jittraceoptions JitTraceOptions { get; set; }
+        public double ExcludeEventsBefore { get; set; }
+        public double ExcludeEventsAfter { get; set; }
+        public bool Warnings { get; set; }
+    }
+
     class Program
     {
         static bool s_reachedInnerMain;
@@ -52,7 +77,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     Description = "Specify the trace file to be parsed",
                     Argument = new Argument<FileInfo>()
                     {
-                        Arity = ArgumentArity.ExactlyOne
+                        Arity = ArgumentArity.ExactlyOne,
                     }
                 },
                 new Option("--output-file-name")
@@ -106,47 +131,52 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 new Option("--process-jit-events")
                 {
                     Description = "Process JIT events. Defaults to true",
-                    Argument = new Argument<bool>()
+                    Argument = new Argument<bool>(() => true)
                 },
                 new Option("--process-r2r-events")
                 {
                     Description = "Process R2R events. Defaults to true",
-                    Argument = new Argument<bool>()
+                    Argument = new Argument<bool>(() => true)
                 },
                 new Option("--display-processed-events")
                 {
                     Description = "Process R2R events. Defaults to true",
-                    Argument = new Argument<bool>()
+                    Argument = new Argument<bool>(() => false)
                 },
                 new Option("--warnings")
                 {
                     Description = "Display warnings for methods which could not be processed. Defaults to true",
-                    Argument = new Argument<bool>()
+                    Argument = new Argument<bool>(() => true)
                 },
                 new Option("--verbose-warnings")
                 {
                     Description = "Display information about why jit events may be not processed. Defaults to false",
-                    Argument = new Argument<bool>()
+                    Argument = new Argument<bool>(() => false)
                 },
                 new Option("--validate-output-file")
                 {
                     Description = "Validate output file. Defaults to true. Not all output formats support validation",
-                    Argument = new Argument<bool>()
+                    Argument = new Argument<bool>(() => true)
                 },
                 new Option("--jittrace-options")
                 {
                     Description = "Jit Trace emit options (defaults to sorted) Valid options are 'none', 'sorted', 'showtimestamp', 'sorted,showtimestamp'",
-                    Argument = new Argument<jittraceoptions>()
+                    Argument = new Argument<jittraceoptions>(() => jittraceoptions.sorted)
                 },
                 new Option("--exclude-events-before")
                 {
                     Description = "Exclude data from events before specified time",
-                    Argument = new Argument<double>()
+                    Argument = new Argument<double>(() => 0)
                 },
                 new Option("--exclude-events-after")
                 {
                     Description = "Exclude data from events after specified time",
-                    Argument = new Argument<double>()
+                    Argument = new Argument<double>(() => Double.MaxValue)
+                },
+                new Option("--generate-call-graph")
+                {
+                    Description = "Generate Call Graph using sampling data",
+                    Argument = new Argument<bool>(() => true)
                 }
             };
 
@@ -154,7 +184,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             try
             {
                 s_reachedInnerMain = false;
-                rootCommand.Handler = CommandHandler.Create(new Func<FileInfo, FileInfo, int?, string, PgoFileType?, IEnumerable<FileInfo>, int?, bool, bool, bool, bool, bool, jittraceoptions, double, double, bool, int>(InnerMain));
+                rootCommand.Handler = CommandHandler.Create<CommandLineOptions>((CommandLineOptions options) => InnerMain(options));
                 Task<int> command = rootCommand.InvokeAsync(args);
 
                 command.Wait();
@@ -211,61 +241,122 @@ Example tracing commands used to generate the input to this tool:
                 Millisecond = millisecond;
                 Method = method;
                 Reason = reason;
+                WeightedCallData = null;
+                ExclusiveWeight = 0;
             }
 
             public readonly double Millisecond;
             public readonly MethodDesc Method;
             public readonly string Reason;
+            public Dictionary<MethodDesc, int> WeightedCallData;
+            public int ExclusiveWeight;
         }
 
-        static int InnerMain(FileInfo traceFile,
-                             FileInfo outputFileName,
-                             int? pid,
-                             string processName,
-                             PgoFileType? pgoFileType,
-                             IEnumerable<FileInfo> reference,
-                             int? clrInstanceId = null,
-                             bool processJitEvents = true,
-                             bool processR2REvents = true,
-                             bool displayProcessedEvents = false,
-                             bool validateOutputFile = true,
-                             bool verboseWarnings = false,
-                             jittraceoptions jitTraceOptions = jittraceoptions.sorted,
-                             double excludeEventsBefore = 0,
-                             double excludeEventsAfter = Double.MaxValue,
-                             bool warnings = true)
+        struct InstructionPointerRange : IComparable<InstructionPointerRange>
+        {
+            public InstructionPointerRange(ulong startAddress, int size)
+            {
+                StartAddress = startAddress;
+                EndAddress = startAddress + (ulong)size;
+            }
+
+            public ulong StartAddress;
+            public ulong EndAddress;
+
+            public int CompareTo(InstructionPointerRange other)
+            {
+                if (StartAddress < other.StartAddress)
+                {
+                    return -1;
+                }
+                if (StartAddress > other.StartAddress)
+                {
+                    return 1;
+                }
+                return (int)((long)EndAddress - (long)other.EndAddress);
+            }
+        }
+
+        internal static void UnZipIfNecessary(ref string inputFileName, TextWriter log)
+        {
+            if (inputFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
+            {
+                log.WriteLine($"'{inputFileName}' is a linux trace.");
+                return;
+            }
+
+            var extension = Path.GetExtension(inputFileName);
+            if (string.Compare(extension, ".zip", StringComparison.OrdinalIgnoreCase) == 0 ||
+                string.Compare(extension, ".vspx", StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                string unzipedEtlFile;
+                if (inputFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    unzipedEtlFile = inputFileName.Substring(0, inputFileName.Length - 4);
+                }
+                else if (inputFileName.EndsWith(".vspx", StringComparison.OrdinalIgnoreCase))
+                {
+                    unzipedEtlFile = Path.ChangeExtension(inputFileName, ".etl");
+                }
+                else
+                {
+                    throw new ApplicationException("File does not end with the .etl.zip file extension");
+                }
+
+                ZippedETLReader etlReader = new ZippedETLReader(inputFileName, log);
+                etlReader.EtlFileName = unzipedEtlFile;
+
+                // Figure out where to put the symbols.  
+                var inputDir = Path.GetDirectoryName(inputFileName);
+                if (inputDir.Length == 0)
+                {
+                    inputDir = ".";
+                }
+
+                var symbolsDir = Path.Combine(inputDir, "symbols");
+                etlReader.SymbolDirectory = symbolsDir;
+                if (!Directory.Exists(symbolsDir))
+                    Directory.CreateDirectory(symbolsDir);
+                log.WriteLine("Putting symbols in {0}", etlReader.SymbolDirectory);
+
+                etlReader.UnpackArchive();
+                inputFileName = unzipedEtlFile;
+            }
+        }
+
+        static int InnerMain(CommandLineOptions commandLineOptions)
         {
             s_reachedInnerMain = true;
 
-            if (traceFile == null)
+            if (commandLineOptions.TraceFile == null)
             {
                 PrintUsage("--trace-file must be specified");
                 return -8;
             }
 
-            if (outputFileName != null)
+            if (commandLineOptions.OutputFileName != null)
             {
-                if (!pgoFileType.HasValue)
+                if (!commandLineOptions.PgoFileType.HasValue)
                 {
                     PrintUsage($"--pgo-file-type must be specified");
                     return -9;
                 }
-                if ((pgoFileType.Value != PgoFileType.jittrace) && (pgoFileType != PgoFileType.mibc))
+                if ((commandLineOptions.PgoFileType.Value != PgoFileType.jittrace) && (commandLineOptions.PgoFileType != PgoFileType.mibc))
                 {
-                    PrintUsage($"Invalid output pgo type {pgoFileType} specified.");
+                    PrintUsage($"Invalid output pgo type {commandLineOptions.PgoFileType} specified.");
                     return -9;
                 }
-                if (pgoFileType == PgoFileType.jittrace)
+                if (commandLineOptions.PgoFileType == PgoFileType.jittrace)
                 {
-                    if (!outputFileName.Name.EndsWith(".jittrace"))
+                    if (!commandLineOptions.OutputFileName.Name.EndsWith(".jittrace"))
                     {
                         PrintUsage($"jittrace output file name must end with .jittrace");
                         return -9;
                     }
                 }
-                if (pgoFileType == PgoFileType.mibc)
+                if (commandLineOptions.PgoFileType == PgoFileType.mibc)
                 {
-                    if (!outputFileName.Name.EndsWith(".mibc"))
+                    if (!commandLineOptions.OutputFileName.Name.EndsWith(".mibc"))
                     {
                         PrintUsage($"jittrace output file name must end with .mibc");
                         return -9;
@@ -273,28 +364,30 @@ Example tracing commands used to generate the input to this tool:
                 }
             }
 
-            string etlFileName = traceFile.FullName;
+            string etlFileName = commandLineOptions.TraceFile.FullName;
             foreach (string nettraceExtension in new string[] { ".netperf", ".netperf.zip", ".nettrace" })
             {
-                if (traceFile.FullName.EndsWith(nettraceExtension))
+                if (commandLineOptions.TraceFile.FullName.EndsWith(nettraceExtension))
                 {
-                    etlFileName = traceFile.FullName.Substring(0, traceFile.FullName.Length - nettraceExtension.Length) + ".etlx";
-                    Console.WriteLine($"Creating ETLX file {etlFileName} from {traceFile.FullName}");
-                    TraceLog.CreateFromEventPipeDataFile(traceFile.FullName, etlFileName);
+                    etlFileName = commandLineOptions.TraceFile.FullName.Substring(0, commandLineOptions.TraceFile.FullName.Length - nettraceExtension.Length) + ".etlx";
+                    Console.WriteLine($"Creating ETLX file {etlFileName} from {commandLineOptions.TraceFile.FullName}");
+                    TraceLog.CreateFromEventPipeDataFile(commandLineOptions.TraceFile.FullName, etlFileName);
                 }
             }
 
             string lttngExtension = ".trace.zip";
-            if (traceFile.FullName.EndsWith(lttngExtension))
+            if (commandLineOptions.TraceFile.FullName.EndsWith(lttngExtension))
             {
-                etlFileName = traceFile.FullName.Substring(0, traceFile.FullName.Length - lttngExtension.Length) + ".etlx";
-                Console.WriteLine($"Creating ETLX file {etlFileName} from {traceFile.FullName}");
-                TraceLog.CreateFromLttngTextDataFile(traceFile.FullName, etlFileName);
+                etlFileName = commandLineOptions.TraceFile.FullName.Substring(0, commandLineOptions.TraceFile.FullName.Length - lttngExtension.Length) + ".etlx";
+                Console.WriteLine($"Creating ETLX file {etlFileName} from {commandLineOptions.TraceFile.FullName}");
+                TraceLog.CreateFromLttngTextDataFile(commandLineOptions.TraceFile.FullName, etlFileName);
             }
+
+            UnZipIfNecessary(ref etlFileName, Console.Out);
 
             using (var traceLog = TraceLog.OpenOrConvert(etlFileName))
             {
-                if ((!pid.HasValue && processName == null) && traceLog.Processes.Count != 1)
+                if ((!commandLineOptions.Pid.HasValue && commandLineOptions.ProcessName == null) && traceLog.Processes.Count != 1)
                 {
                     Console.WriteLine("Either a pid or process name from the following list must be specified");
                     foreach (TraceProcess proc in traceLog.Processes)
@@ -304,7 +397,7 @@ Example tracing commands used to generate the input to this tool:
                     return 0;
                 }
 
-                if (pid.HasValue && (processName != null))
+                if (commandLineOptions.Pid.HasValue && (commandLineOptions.ProcessName != null))
                 {
                     PrintError("--pid and --process-name cannot be specified together");
                     return -1;
@@ -312,16 +405,16 @@ Example tracing commands used to generate the input to this tool:
 
                 // For a particular process
                 TraceProcess p;
-                if (pid.HasValue)
+                if (commandLineOptions.Pid.HasValue)
                 {
-                    p = traceLog.Processes.LastProcessWithID(pid.Value);
+                    p = traceLog.Processes.LastProcessWithID(commandLineOptions.Pid.Value);
                 }
-                else if (processName != null)
+                else if (commandLineOptions.ProcessName != null)
                 {
                     List<TraceProcess> matchingProcesses = new List<TraceProcess>();
                     foreach (TraceProcess proc in traceLog.Processes)
                     {
-                        if (String.Compare(proc.Name, processName, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (String.Compare(proc.Name, commandLineOptions.ProcessName, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             matchingProcesses.Add(proc);
                         }
@@ -375,7 +468,7 @@ Example tracing commands used to generate the input to this tool:
                     return -5;
                 }
 
-                if (processR2REvents)
+                if (commandLineOptions.ProcessR2REvents)
                 {
                     if (!p.EventsInProcess.ByEventType<R2RGetEntryPointTraceData>().Any())
                     {
@@ -384,7 +477,7 @@ Example tracing commands used to generate the input to this tool:
                 }
 
                 PgoTraceProcess pgoProcess = new PgoTraceProcess(p);
-
+                int? clrInstanceId = commandLineOptions.ClrInstanceId;
                 if (!clrInstanceId.HasValue)
                 {
                     HashSet<int> clrInstanceIds = new HashSet<int>();
@@ -427,13 +520,13 @@ Example tracing commands used to generate the input to this tool:
 
                 var tsc = new TraceTypeSystemContext(pgoProcess, clrInstanceId.Value, s_logger);
 
-                if (verboseWarnings)
+                if (commandLineOptions.VerboseWarnings)
                     Console.WriteLine($"{traceLog.EventsLost} Lost events");
 
                 bool filePathError = false;
-                if (reference != null)
+                if (commandLineOptions.Reference != null)
                 {
-                    foreach (FileInfo fileReference in reference)
+                    foreach (FileInfo fileReference in commandLineOptions.Reference)
                     {
                         if (!File.Exists(fileReference.FullName))
                         {
@@ -455,7 +548,7 @@ Example tracing commands used to generate the input to this tool:
 
                 SortedDictionary<int, ProcessedMethodData> methodsToAttemptToPrepare = new SortedDictionary<int, ProcessedMethodData>();
 
-                if (processR2REvents)
+                if (commandLineOptions.ProcessR2REvents)
                 {
                     foreach (var e in p.EventsInProcess.ByEventType<R2RGetEntryPointTraceData>())
                     {
@@ -465,7 +558,7 @@ Example tracing commands used to generate the input to this tool:
                         string methodNameFromEventDirectly = retArg + e.MethodNamespace + "." + e.MethodName + paramsArgs;
                         if (e.ClrInstanceID != clrInstanceId.Value)
                         {
-                            if (!warnings)
+                            if (!commandLineOptions.Warnings)
                                 continue;
 
                             PrintWarning($"Skipped R2REntryPoint {methodNameFromEventDirectly} due to ClrInstanceID of {e.ClrInstanceID}");
@@ -475,7 +568,7 @@ Example tracing commands used to generate the input to this tool:
                         string extraWarningText = null;
                         try
                         {
-                            method = idParser.ResolveMethodID(e.MethodID, verboseWarnings);
+                            method = idParser.ResolveMethodID(e.MethodID, commandLineOptions.VerboseWarnings);
                         }
                         catch (Exception exception)
                         {
@@ -484,7 +577,7 @@ Example tracing commands used to generate the input to this tool:
 
                         if (method == null)
                         {
-                            if ((e.MethodNamespace == "dynamicClass") || !warnings)
+                            if ((e.MethodNamespace == "dynamicClass") || !commandLineOptions.Warnings)
                                 continue;
 
                             PrintWarning($"Unable to parse {methodNameFromEventDirectly} when looking up R2R methods");
@@ -492,13 +585,14 @@ Example tracing commands used to generate the input to this tool:
                                 PrintWarning(extraWarningText);
                             continue;
                         }
-                        if ((e.TimeStampRelativeMSec >= excludeEventsBefore) && (e.TimeStampRelativeMSec <= excludeEventsAfter))
+
+                        if ((e.TimeStampRelativeMSec >= commandLineOptions.ExcludeEventsBefore) && (e.TimeStampRelativeMSec <= commandLineOptions.ExcludeEventsAfter))
                             methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, method, "R2RLoad"));
                     }
                 }
 
                 // Find all the jitStart events.
-                if (processJitEvents)
+                if (commandLineOptions.ProcessJitEvents)
                 {
                     foreach (var e in p.EventsInProcess.ByEventType<MethodJittingStartedTraceData>())
                     {
@@ -508,7 +602,7 @@ Example tracing commands used to generate the input to this tool:
                         string methodNameFromEventDirectly = retArg + e.MethodNamespace + "." + e.MethodName + paramsArgs;
                         if (e.ClrInstanceID != clrInstanceId.Value)
                         {
-                            if (!warnings)
+                            if (!commandLineOptions.Warnings)
                                 continue;
 
                             PrintWarning($"Skipped {methodNameFromEventDirectly} due to ClrInstanceID of {e.ClrInstanceID}");
@@ -519,7 +613,7 @@ Example tracing commands used to generate the input to this tool:
                         string extraWarningText = null;
                         try
                         {
-                            method = idParser.ResolveMethodID(e.MethodID, verboseWarnings);
+                            method = idParser.ResolveMethodID(e.MethodID, commandLineOptions.VerboseWarnings);
                         }
                         catch (Exception exception)
                         {
@@ -528,7 +622,7 @@ Example tracing commands used to generate the input to this tool:
 
                         if (method == null)
                         {
-                            if (!warnings)
+                            if (!commandLineOptions.Warnings)
                                 continue;
 
                             PrintWarning($"Unable to parse {methodNameFromEventDirectly}");
@@ -537,12 +631,199 @@ Example tracing commands used to generate the input to this tool:
                             continue;
                         }
 
-                        if ((e.TimeStampRelativeMSec >= excludeEventsBefore) && (e.TimeStampRelativeMSec <= excludeEventsAfter))
+                        if ((e.TimeStampRelativeMSec >= commandLineOptions.ExcludeEventsBefore) && (e.TimeStampRelativeMSec <= commandLineOptions.ExcludeEventsAfter))
                             methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, method, "JitStart"));
                     }
                 }
 
-                if (displayProcessedEvents)
+                Dictionary<MethodDesc, Dictionary<MethodDesc, int>> callGraph = null;
+                Dictionary<MethodDesc, int> exclusiveSamples = null;
+                if (commandLineOptions.GenerateCallGraph)
+                {
+                    HashSet<MethodDesc> methodsListedToPrepare = new HashSet<MethodDesc>();
+                    foreach (var entry in methodsToAttemptToPrepare)
+                    {
+                        methodsListedToPrepare.Add(entry.Value.Method);
+                    }
+
+                    callGraph = new Dictionary<MethodDesc, Dictionary<MethodDesc, int>>();
+                    exclusiveSamples = new Dictionary<MethodDesc, int>();
+                    // Capture the addresses of jitted code
+                    List<ValueTuple<InstructionPointerRange, MethodDesc>> codeLocations = new List<(InstructionPointerRange, MethodDesc)>();
+                    foreach (var e in p.EventsInProcess.ByEventType<MethodLoadUnloadTraceData>())
+                    {
+                        if (e.ClrInstanceID != clrInstanceId.Value)
+                        {
+                            continue;
+                        }
+
+                        MethodDesc method = null;
+                        try
+                        {
+                            method = idParser.ResolveMethodID(e.MethodID, commandLineOptions.VerboseWarnings);
+                        }
+                        catch (Exception)
+                        {
+                        }
+
+                        if (method != null)
+                        {
+                            codeLocations.Add((new InstructionPointerRange(e.MethodStartAddress, e.MethodSize), method));
+                        }
+                    }
+                    foreach (var e in p.EventsInProcess.ByEventType<MethodLoadUnloadVerboseTraceData>())
+                    {
+                        if (e.ClrInstanceID != clrInstanceId.Value)
+                        {
+                            continue;
+                        }
+
+                        MethodDesc method = null;
+                        try
+                        {
+                            method = idParser.ResolveMethodID(e.MethodID, commandLineOptions.VerboseWarnings);
+                        }
+                        catch (Exception)
+                        {
+                        }
+
+                        if (method != null)
+                        {
+                            codeLocations.Add((new InstructionPointerRange(e.MethodStartAddress, e.MethodSize), method));
+                        }
+                    }
+
+                    var sigProvider = new R2RSignatureTypeProvider(tsc);
+                    foreach (var module in p.LoadedModules)
+                    {
+                        if (module.FilePath == "")
+                            continue;
+
+                        if (!File.Exists(module.FilePath))
+                            continue;
+
+                        try
+                        {
+                            var reader = new ILCompiler.Reflection.ReadyToRun.ReadyToRunReader(tsc, module.FilePath);
+                            foreach (var methodEntry in reader.GetCustomMethodToRuntimeFunctionMapping<TypeDesc, MethodDesc, R2RSigProviderContext>(sigProvider))
+                            {
+                                foreach (var runtimeFunction in methodEntry.Value.RuntimeFunctions)
+                                {
+                                    codeLocations.Add((new InstructionPointerRange(module.ImageBase + (ulong)runtimeFunction.StartAddress, runtimeFunction.Size), methodEntry.Key));
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+
+                    InstructionPointerRange[] instructionPointerRanges = new InstructionPointerRange[codeLocations.Count];
+                    MethodDesc[] methods = new MethodDesc[codeLocations.Count];
+                    for (int i = 0; i < codeLocations.Count; i++)
+                    {
+                        instructionPointerRanges[i] = codeLocations[i].Item1;
+                        methods[i] = codeLocations[i].Item2;
+                    }
+
+                    Array.Sort(instructionPointerRanges, methods);
+
+                    foreach (var e in p.EventsInProcess.ByEventType<SampledProfileTraceData>())
+                    {
+                        var callstack = e.CallStack();
+                        if (callstack == null)
+                            continue;
+
+                        ulong address1 = callstack.CodeAddress.Address;
+                        MethodDesc topOfStackMethod = LookupMethodByAddress(address1);
+                        MethodDesc nextMethod = null;
+                        if (callstack.Caller != null)
+                        {
+                            ulong address2 = callstack.Caller.CodeAddress.Address;
+                            nextMethod = LookupMethodByAddress(address2);
+                        }
+
+                        if (topOfStackMethod != null)
+                        {
+                            if (!methodsListedToPrepare.Contains(topOfStackMethod))
+                            {
+                                methodsListedToPrepare.Add(topOfStackMethod);
+                                methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, topOfStackMethod, "SampleMethod"));
+                            }
+
+                            if (exclusiveSamples.TryGetValue(topOfStackMethod, out int count))
+                            {
+                                exclusiveSamples[topOfStackMethod] = count + 1;
+                            }
+                            else
+                            {
+                                exclusiveSamples[topOfStackMethod] = 1;
+                            }
+                        }
+
+                        if (topOfStackMethod != null && nextMethod != null)
+                        {
+                            if (!methodsListedToPrepare.Contains(nextMethod))
+                            {
+                                methodsListedToPrepare.Add(nextMethod);
+                                methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, nextMethod, "SampleMethodCaller"));
+                            }
+
+                            if (!callGraph.TryGetValue(nextMethod, out var innerDictionary))
+                            {
+                                innerDictionary = new Dictionary<MethodDesc, int>();
+                                callGraph[nextMethod] = innerDictionary;
+                            }
+                            if (innerDictionary.TryGetValue(topOfStackMethod, out int count))
+                            {
+                                innerDictionary[topOfStackMethod] = count + 1;
+                            }
+                            else
+                            {
+                                innerDictionary[topOfStackMethod] = 1;
+                            }
+                        }
+                    }
+
+                    MethodDesc LookupMethodByAddress(ulong address)
+                    {
+                        int index = Array.BinarySearch(instructionPointerRanges, new InstructionPointerRange(address, 1));
+
+                        if (index >= 0)
+                        {
+                            return methods[index];
+                        }
+                        else
+                        {
+                            index = ~index;
+                            if (index >= instructionPointerRanges.Length)
+                                return null;
+
+                            if (instructionPointerRanges[index].StartAddress < address)
+                            {
+                                if (instructionPointerRanges[index].EndAddress > address)
+                                {
+                                    return methods[index];
+                                }
+                            }
+
+                            if (index == 0)
+                                return null;
+
+                            index--;
+
+                            if (instructionPointerRanges[index].StartAddress < address)
+                            {
+                                if (instructionPointerRanges[index].EndAddress > address)
+                                {
+                                    return methods[index];
+                                }
+                            }
+
+                            return null;
+                        }
+                    }
+                }
+
+                if (commandLineOptions.DisplayProcessedEvents)
                 {
                     foreach (var entry in methodsToAttemptToPrepare)
                     {
@@ -554,7 +835,7 @@ Example tracing commands used to generate the input to this tool:
 
                 Console.WriteLine($"Done processing input file");
 
-                if (outputFileName == null)
+                if (commandLineOptions.OutputFileName == null)
                 {
                     return 0;
                 }
@@ -566,14 +847,20 @@ Example tracing commands used to generate the input to this tool:
                 {
                     if (methodsInListAlready.Add(entry.Value.Method))
                     {
-                        methodsUsedInProcess.Add(entry.Value);
+                        var methodData = entry.Value;
+                        if (commandLineOptions.GenerateCallGraph)
+                        {
+                            exclusiveSamples.TryGetValue(methodData.Method, out methodData.ExclusiveWeight);
+                            callGraph.TryGetValue(methodData.Method, out methodData.WeightedCallData);
+                        }
+                        methodsUsedInProcess.Add(methodData);
                     }
                 }
 
-                if (pgoFileType.Value == PgoFileType.jittrace)
-                    GenerateJittraceFile(outputFileName, methodsUsedInProcess, jitTraceOptions);
-                else if (pgoFileType.Value == PgoFileType.mibc)
-                    return GenerateMibcFile(tsc, outputFileName, methodsUsedInProcess, validateOutputFile);
+                if (commandLineOptions.PgoFileType.Value == PgoFileType.jittrace)
+                    GenerateJittraceFile(commandLineOptions.OutputFileName, methodsUsedInProcess, commandLineOptions.JitTraceOptions);
+                else if (commandLineOptions.PgoFileType.Value == PgoFileType.mibc)
+                    return GenerateMibcFile(tsc, commandLineOptions.OutputFileName, methodsUsedInProcess, commandLineOptions.ValidateOutputFile);
             }
             return 0;
         }
@@ -602,13 +889,41 @@ Example tracing commands used to generate the input to this tool:
 
                 // Format is 
                 // ldtoken method
-                // variable amount of extra metadata about the method
+                // variable amount of extra metadata about the method, Extension data is encoded via ldstr "id"
                 // pop
+
+                // Extensions generated by this emitter:
+                //
+                // ldstr "ExclusiveWeight"
+                // Any ldc.i4 or ldc.r4 or ldc.r8 instruction to indicate the exclusive weight
+                //
+                // ldstr "WeightedCallData"
+                // ldc.i4 <Count of methods called>
+                // Repeat <Count of methods called times>
+                //  ldtoken <Method called from this method>
+                //  ldc.i4 <Weight associated with calling the <Method called from this method>>
                 try
                 {
                     EntityHandle methodHandle = _emitter.GetMethodRef(method);
                     _il.OpCode(ILOpCode.Ldtoken);
                     _il.Token(methodHandle);
+                    if (processedMethodData.ExclusiveWeight != 0)
+                    {
+                        _il.LoadString(_emitter.GetUserStringHandle("ExclusiveWeight"));
+                        _il.LoadConstantI4(processedMethodData.ExclusiveWeight);
+                    }
+                    if (processedMethodData.WeightedCallData != null)
+                    {
+                        _il.LoadString(_emitter.GetUserStringHandle("WeightedCallData"));
+                        _il.LoadConstantI4(processedMethodData.WeightedCallData.Count);
+                        foreach (var entry in processedMethodData.WeightedCallData)
+                        {
+                            EntityHandle calledMethod = _emitter.GetMethodRef(entry.Key);
+                            _il.OpCode(ILOpCode.Ldtoken);
+                            _il.Token(calledMethod);
+                            _il.LoadConstantI4(entry.Value);
+                        }
+                    }
                     _il.OpCode(ILOpCode.Pop);
                 }
                 catch (Exception ex)
@@ -806,12 +1121,16 @@ Example tracing commands used to generate the input to this tool:
                 {
                     case ILOpcode.ldtoken:
                         UInt32 token = (UInt32)(ilBytes[currentOffset + 1] + (ilBytes[currentOffset + 2] << 8) + (ilBytes[currentOffset + 3] << 16) + (ilBytes[currentOffset + 4] << 24));
-                        metadataObject = ilBody.GetObject((int)token);
+
+                        if (metadataObject == null)
+                            metadataObject = ilBody.GetObject((int)token);
                         break;
                     case ILOpcode.pop:
                         MIbcData mibcData = new MIbcData();
                         mibcData.MetadataObject = metadataObject;
                         yield return mibcData;
+
+                        metadataObject = null;
                         break;
                 }
 

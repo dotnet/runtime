@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -9,17 +10,17 @@ namespace System.Xml.Schema
 
     public class XmlSchemaAttributeGroup : XmlSchemaAnnotated
     {
-        private string _name;
+        private string? _name;
         private XmlSchemaObjectCollection _attributes = new XmlSchemaObjectCollection();
-        private XmlSchemaAnyAttribute _anyAttribute;
+        private XmlSchemaAnyAttribute? _anyAttribute;
         private XmlQualifiedName _qname = XmlQualifiedName.Empty;
-        private XmlSchemaAttributeGroup _redefined;
-        private XmlSchemaObjectTable _attributeUses;
-        private XmlSchemaAnyAttribute _attributeWildcard;
+        private XmlSchemaAttributeGroup? _redefined;
+        private XmlSchemaObjectTable? _attributeUses;
+        private XmlSchemaAnyAttribute? _attributeWildcard;
         private int _selfReferenceCount;
 
         [XmlAttribute("name")]
-        public string Name
+        public string? Name
         {
             get { return _name; }
             set { _name = value; }
@@ -33,7 +34,7 @@ namespace System.Xml.Schema
         }
 
         [XmlElement("anyAttribute")]
-        public XmlSchemaAnyAttribute AnyAttribute
+        public XmlSchemaAnyAttribute? AnyAttribute
         {
             get { return _anyAttribute; }
             set { _anyAttribute = value; }
@@ -59,20 +60,20 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        internal XmlSchemaAnyAttribute AttributeWildcard
+        internal XmlSchemaAnyAttribute? AttributeWildcard
         {
             get { return _attributeWildcard; }
             set { _attributeWildcard = value; }
         }
 
         [XmlIgnore]
-        public XmlSchemaAttributeGroup RedefinedAttributeGroup
+        public XmlSchemaAttributeGroup? RedefinedAttributeGroup
         {
             get { return _redefined; }
         }
 
         [XmlIgnore]
-        internal XmlSchemaAttributeGroup Redefined
+        internal XmlSchemaAttributeGroup? Redefined
         {
             get { return _redefined; }
             set { _redefined = value; }
@@ -86,7 +87,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        internal override string NameAttribute
+        internal override string? NameAttribute
         {
             get { return Name; }
             set { Name = value; }

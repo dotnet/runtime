@@ -13,6 +13,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Principal;
 
 namespace System.Security.AccessControl
@@ -234,7 +235,7 @@ namespace System.Security.AccessControl
         #region Private Members
 
         private byte _revision;
-        private List<GenericAce> _aces = null!; // Initialized in helper
+        private List<GenericAce> _aces;
 
         #endregion
 
@@ -315,6 +316,7 @@ namespace System.Security.AccessControl
             binaryForm[offset + 7] = 0;
         }
 
+        [MemberNotNull(nameof(_aces))]
         internal void SetBinaryForm(byte[] binaryForm, int offset)
         {
             int count, length;
@@ -838,7 +840,7 @@ namespace System.Security.AccessControl
         #region Private Members
 
         private readonly RawAcl _acl;
-        private bool _isDirty = false;
+        private bool _isDirty;
         private readonly bool _isCanonical;
         private readonly bool _isContainer;
 
@@ -3059,7 +3061,7 @@ namespace System.Security.AccessControl
     {
         #region
         private static readonly SecurityIdentifier _sidEveryone = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
-        private bool everyOneFullAccessForNullDacl = false;
+        private bool everyOneFullAccessForNullDacl;
         #endregion
 
         #region Constructors

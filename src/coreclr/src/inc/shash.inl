@@ -947,5 +947,23 @@ bool SHash<TRAITS>::CheckAddInPhases(
     // 4. addCall's destructor will take care of any required cleanup.
 }
 
+template <typename KEY, typename VALUE, typename TRAITS>
+BOOL MapSHash<KEY, VALUE, TRAITS>::Lookup(KEY key, VALUE* pValue) const
+{
+    CONTRACTL
+    {
+        NOTHROW_UNLESS_TRAITS_THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(key != (KEY)0);
+    }
+    CONTRACTL_END;
+
+    const KeyValuePair<KEY,VALUE> *pRet = PARENT::LookupPtr(key);
+    if (pRet == NULL)
+        return FALSE;
+
+    *pValue = pRet->Value();
+    return TRUE;
+}
 
 #endif // _SHASH_INL_

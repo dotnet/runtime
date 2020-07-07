@@ -504,10 +504,6 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
     if (ownerCompositeExecutableName != NULL)
     {
         AssemblyLoadContext *loadContext = pModule->GetFile()->GetAssemblyLoadContext();
-        if (loadContext == nullptr)
-        {
-            loadContext = (AssemblyLoadContext *)AppDomain::GetCurrentDomain()->CreateBinderContext();
-        }
         return loadContext->LoadNativeImage(pModule, ownerCompositeExecutableName);
     }
     

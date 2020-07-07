@@ -4,9 +4,8 @@
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.Asn1.Pkcs7
 {
@@ -25,9 +24,23 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
         {
             writer.PushSequence(tag);
 
-            writer.WriteObjectIdentifier(ContentType);
+            try
+            {
+                writer.WriteObjectIdentifier(ContentType);
+            }
+            catch (ArgumentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
             writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-            writer.WriteEncodedValue(Content.Span);
+            try
+            {
+                writer.WriteEncodedValue(Content.Span);
+            }
+            catch (ArgumentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
             writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
             writer.PopSequence(tag);
         }
@@ -39,11 +52,18 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
 
         internal static ContentInfoAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, expectedTag, encoded, out ContentInfoAsn decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                DecodeCore(ref reader, expectedTag, encoded, out ContentInfoAsn decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out ContentInfoAsn decoded)
@@ -53,6 +73,18 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
 
         internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out ContentInfoAsn decoded)
         {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out ContentInfoAsn decoded)
+        {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
             AsnValueReader explicitReader;
@@ -60,7 +92,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             int offset;
             ReadOnlySpan<byte> tmpSpan;
 
-            decoded.ContentType = sequenceReader.ReadObjectIdentifierAsString();
+            decoded.ContentType = sequenceReader.ReadObjectIdentifier();
 
             explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
             tmpSpan = explicitReader.ReadEncodedValue();

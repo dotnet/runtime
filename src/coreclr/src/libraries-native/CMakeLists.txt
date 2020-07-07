@@ -9,7 +9,3 @@ include_directories("${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/Common")
 
 add_subdirectory(${GLOBALIZATION_NATIVE_DIR} System.Globalization.Native)
 
-add_library(libraries-native
-    STATIC
-    entrypoints.c
-)

@@ -92,7 +92,7 @@ public:
                                                                                                                          "3. See documentation for more details on each level.")                                   \
     INT_CONFIG   (LogFileSize,            "GCLogFileSize",          NULL,                             0,                 "Specifies the GC log file size")                                                         \
     INT_CONFIG   (CompactRatio,           "GCCompactRatio",         NULL,                             0,                 "Specifies the ratio compacting GCs vs sweeping")                                         \
-    INT_CONFIG   (GCHeapAffinitizeMask,   "GCHeapAffinitizeMask",   NULL,                             0,                 "Specifies processor mask for Server GC threads")                                         \
+    INT_CONFIG   (GCHeapAffinitizeMask,   "GCHeapAffinitizeMask",   "System.GC.HeapAffinitizeMask",   0,                 "Specifies processor mask for Server GC threads")                                         \
     STRING_CONFIG(GCHeapAffinitizeRanges, "GCHeapAffinitizeRanges", NULL,                                                "Specifies list of processors for Server GC threads. The format is a comma separated "    \
                                                                                                                          "list of processor numbers or ranges of processor numbers. On Windows, each entry is "    \
                                                                                                                          "prefixed by the CPU group number. Example: Unix - 1,3,5,7-9,12, Windows - 0:1,1:7-9")    \
@@ -122,7 +122,13 @@ public:
     INT_CONFIG   (BGCFLEnableSmooth,      "BGCFLEnableSmooth",      NULL,                             0,                 "Enables smoothing")                                                                      \
     INT_CONFIG   (BGCFLEnableTBH,         "BGCFLEnableTBH",         NULL,                             0,                 "Enables TBH")                                                                            \
     INT_CONFIG   (BGCFLEnableFF,          "BGCFLEnableFF",          NULL,                             0,                 "Enables FF")                                                                             \
-    INT_CONFIG   (BGCG2RatioStep,         "BGCG2RatioStep",         NULL,                             5,                 "Ratio correction factor for ML loop") 
+    INT_CONFIG   (BGCG2RatioStep,         "BGCG2RatioStep",         NULL,                             5,                 "Ratio correction factor for ML loop")                                                    \
+    INT_CONFIG   (GCHeapHardLimitSOH,     "GCHeapHardLimitSOH",     NULL,                             0,                 "Specifies a hard limit for the GC heap SOH")                                             \
+    INT_CONFIG   (GCHeapHardLimitLOH,     "GCHeapHardLimitLOH",     NULL,                             0,                 "Specifies a hard limit for the GC heap LOH")                                             \
+    INT_CONFIG   (GCHeapHardLimitPOH,     "GCHeapHardLimitPOH",     NULL,                             0,                 "Specifies a hard limit for the GC heap POH")                                             \
+    INT_CONFIG   (GCHeapHardLimitSOHPercent, "GCHeapHardLimitSOHPercent", NULL,                             0,                 "Specifies the GC heap SOH usage as a percentage of the total memory")              \
+    INT_CONFIG   (GCHeapHardLimitLOHPercent, "GCHeapHardLimitLOHPercent", NULL,                             0,                 "Specifies the GC heap LOH usage as a percentage of the total memory")              \
+    INT_CONFIG   (GCHeapHardLimitPOHPercent, "GCHeapHardLimitPOHPercent", NULL,                             0,                 "Specifies the GC heap POH usage as a percentage of the total memory")              \
 
 // This class is responsible for retreiving configuration information
 // for how the GC should operate.

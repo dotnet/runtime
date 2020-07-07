@@ -21,7 +21,7 @@ internal partial class Interop
             out int bytesNeeded,
             out int servicesReturned,
             ref int resumeHandle,
-            string group);
+            string? group);
 
     }
 }

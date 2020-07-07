@@ -37,7 +37,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void WaitHandleWaitAll()
         {
             ManualResetEvent[] handles = new ManualResetEvent[10];
@@ -55,7 +55,7 @@ namespace System.Threading.Tests
             Assert.True(Task.Run(() => WaitHandle.WaitAll(handles, 0)).Result); // Task.Run used to ensure MTA thread (necessary for desktop)
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void WaitHandleWaitAny()
         {
             ManualResetEvent[] handles = new ManualResetEvent[10];
@@ -69,7 +69,7 @@ namespace System.Threading.Tests
             Assert.Equal(5, WaitHandle.WaitAny(handles, 0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void PingPong()
         {
             using (ManualResetEvent mre1 = new ManualResetEvent(true), mre2 = new ManualResetEvent(false))

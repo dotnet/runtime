@@ -10,11 +10,20 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
     public class UnixDomainSocketTest
     {
+        private readonly ITestOutputHelper _log;
+        private static Random _random = new Random();
+
+        public UnixDomainSocketTest(ITestOutputHelper output)
+        {
+            _log = output;
+        }
+
         [Fact]
         public void OSSupportsUnixDomainSockets_ReturnsCorrectValue()
         {
@@ -50,9 +59,9 @@ namespace System.Net.Sockets.Tests
 
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.RemoteEndPoint = endPoint;
-                args.Completed += (s, e) => ((TaskCompletionSource<bool>)e.UserToken).SetResult(true);
+                args.Completed += (s, e) => ((TaskCompletionSource)e.UserToken).SetResult();
 
-                var complete = new TaskCompletionSource<bool>();
+                var complete = new TaskCompletionSource();
                 args.UserToken = complete;
 
                 using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -85,9 +94,9 @@ namespace System.Net.Sockets.Tests
             {
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.RemoteEndPoint = endPoint;
-                args.Completed += (s, e) => ((TaskCompletionSource<bool>)e.UserToken).SetResult(true);
+                args.Completed += (s, e) => ((TaskCompletionSource)e.UserToken).SetResult();
 
-                var complete = new TaskCompletionSource<bool>();
+                var complete = new TaskCompletionSource();
                 args.UserToken = complete;
 
                 using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -166,6 +175,11 @@ namespace System.Net.Sockets.Tests
                         using var clientClone = new Socket(client.SafeHandle);
                         using var acceptedClone = new Socket(accepted.SafeHandle);
 
+                        _log.WriteLine($"accepted: LocalEndPoint={accepted.LocalEndPoint} RemoteEndPoint={accepted.RemoteEndPoint}");
+                        _log.WriteLine($"acceptedClone: LocalEndPoint={acceptedClone.LocalEndPoint} RemoteEndPoint={acceptedClone.RemoteEndPoint}");
+
+                        Assert.True(clientClone.Connected);
+                        Assert.True(acceptedClone.Connected);
                         Assert.Equal(client.LocalEndPoint.ToString(), clientClone.LocalEndPoint.ToString());
                         Assert.Equal(client.RemoteEndPoint.ToString(), clientClone.RemoteEndPoint.ToString());
                         Assert.Equal(accepted.LocalEndPoint.ToString(), acceptedClone.LocalEndPoint.ToString());
@@ -470,6 +484,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(IsSubWindows10))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Socket_CreateUnixDomainSocket_Throws_OnWindows()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => new UnixDomainSocketEndPoint(null));
@@ -483,7 +498,8 @@ namespace System.Net.Sockets.Tests
             string result;
             do
             {
-                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                // get random name and append random number of characters to get variable name length.
+                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + new string('A', _random.Next(1, 32)));
             }
             while (File.Exists(result));
 

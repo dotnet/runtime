@@ -12,53 +12,37 @@
     <Compile Include="$(TestSourceFolder)..\MyResolver.cs" />
     <Compile Include="$(TestSourceFolder)..\XmlDictionaryReaderTests.cs" />
     <Compile Include="$(TestSourceFolder)..\XmlDictionaryWriterTest.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\DataContractSerializerHelper.cs">
-      <Link>Common\System\Runtime\Serialization\DataContractSerializerHelper.cs</Link>
-    </Compile>
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\ObjRefSample.cs">
-      <Link>SerializationTestTypes\ObjRefSample.cs</Link>
-    </Compile>
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\ComparisonHelper.cs">
-      <Link>SerializationTestTypes\ComparisonHelper.cs</Link>
-    </Compile>
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\DataContractResolverLibrary.cs">
-      <Link>SerializationTestTypes\DataContractResolverLibrary.cs</Link>
-    </Compile>
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\DCRSampleType.cs">
-      <Link>SerializationTestTypes\DCRSampleType.cs</Link>
-    </Compile>
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\DCRTypeLibrary.cs">
-      <Link>SerializationTestTypes\DCRTypeLibrary.cs</Link>
-    </Compile>
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\Primitives.cs">
-      <Link>SerializationTestTypes\Primitives.cs</Link>
-    </Compile>
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\Collections.cs">
-      <Link>SerializationTestTypes\Collections.cs</Link>
-    </Compile>
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\DataContract.cs">
-      <Link>SerializationTestTypes\DataContract.cs</Link>
-    </Compile>
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\DCRImplVariations.cs">
-      <Link>SerializationTestTypes\DCRImplVariations.cs</Link>
-    </Compile>
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\InheritenceCases.cs">
-      <Link>SerializationTestTypes\InheritenceCases.cs</Link>
-    </Compile>
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\InheritenceObjectRef.cs">
-      <Link>SerializationTestTypes\InheritenceObjectRef.cs</Link>
-    </Compile>
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\SampleIObjectRef.cs">
-      <Link>SerializationTestTypes\SampleIObjectRef.cs</Link>
-    </Compile>
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\SampleTypes.cs">
-      <Link>SerializationTestTypes\SampleTypes.cs</Link>
-    </Compile>
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\SelfRefAndCycles.cs">
-      <Link>SerializationTestTypes\SelfRefAndCycles.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\DataContractSerializerHelper.cs"
+             Link="Common\System\Runtime\Serialization\DataContractSerializerHelper.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\ObjRefSample.cs"
+             Link="SerializationTestTypes\ObjRefSample.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\ComparisonHelper.cs"
+             Link="SerializationTestTypes\ComparisonHelper.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\DataContractResolverLibrary.cs"
+             Link="SerializationTestTypes\DataContractResolverLibrary.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\DCRSampleType.cs"
+             Link="SerializationTestTypes\DCRSampleType.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\DCRTypeLibrary.cs"
+             Link="SerializationTestTypes\DCRTypeLibrary.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\Primitives.cs"
+             Link="SerializationTestTypes\Primitives.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\Collections.cs"
+             Link="SerializationTestTypes\Collections.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\DataContract.cs"
+             Link="SerializationTestTypes\DataContract.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\DCRImplVariations.cs"
+             Link="SerializationTestTypes\DCRImplVariations.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\InheritenceCases.cs"
+             Link="SerializationTestTypes\InheritenceCases.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\InheritenceObjectRef.cs"
+             Link="SerializationTestTypes\InheritenceObjectRef.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\SampleIObjectRef.cs"
+             Link="SerializationTestTypes\SampleIObjectRef.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\SampleTypes.cs"
+             Link="SerializationTestTypes\SampleTypes.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\SelfRefAndCycles.cs"
+             Link="SerializationTestTypes\SelfRefAndCycles.cs" />
   </ItemGroup>
 </Project>

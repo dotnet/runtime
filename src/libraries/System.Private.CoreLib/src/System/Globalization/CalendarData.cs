@@ -42,7 +42,7 @@ namespace System.Globalization
 
         // Integers at end to make marshaller happier
         internal int iTwoDigitYearMax = 2029; // Max 2 digit year (for Y2K bug data entry)
-        internal int iCurrentEra = 0;  // current era # (usually 1)
+        private int iCurrentEra;  // current era # (usually 1)
 
         // Use overrides?
         internal bool bUseUserOverrides; // True if we want user overrides.
@@ -105,9 +105,7 @@ namespace System.Globalization
 
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            bool loadedCalendarData = GlobalizationMode.UseNls ?
-                                        NlsLoadCalendarDataFromSystem(localeName, calendarId) :
-                                        IcuLoadCalendarDataFromSystem(localeName, calendarId);
+            bool loadedCalendarData = LoadCalendarDataFromSystemCore(localeName, calendarId);
 
             if (!loadedCalendarData)
             {
@@ -322,8 +320,13 @@ namespace System.Globalization
             }
         }
 
-        internal static CalendarData GetCalendarData(CalendarId calendarId)
+        internal static int GetCalendarCurrentEra(Calendar calendar)
         {
+            if (GlobalizationMode.Invariant)
+            {
+                return CalendarData.Invariant.iCurrentEra;
+            }
+
             //
             // Get a calendar.
             // Unfortunately we depend on the locale in the OS, so we need a locale
@@ -333,10 +336,11 @@ namespace System.Globalization
 
             // Get a culture name
             // TODO: Note that this doesn't handle the new calendars (lunisolar, etc)
+            CalendarId calendarId = calendar.BaseCalendarID;
             string culture = CalendarIdToCultureName(calendarId);
 
             // Return our calendar
-            return CultureInfo.GetCultureInfo(culture)._cultureData.GetCalendar(calendarId);
+            return CultureInfo.GetCultureInfo(culture)._cultureData.GetCalendar(calendarId).iCurrentEra;
         }
 
         private static string CalendarIdToCultureName(CalendarId calendarId)

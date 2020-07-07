@@ -25,7 +25,7 @@ namespace System
         private IntPtr ArgPtr;                  // Pointer to remaining args.
         private int RemainingArgs;           // # of remaining args.
 
-#if TARGET_WINDOWS // Native Varargs are not supported on Unix
+#if (TARGET_WINDOWS && !TARGET_ARM)   // Native Varargs are not supported on Unix (all architectures) and Windows ARM
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern ArgIterator(IntPtr arglist);
 
@@ -85,7 +85,9 @@ namespace System
                 // malicious caller to increment the pointer to an arbitrary
                 // location in memory and read the contents.
                 if (ArgPtr == IntPtr.Zero)
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, the argument not applicable
                     throw new ArgumentNullException();
+#pragma warning restore CA2208
 
                 TypedReference result = default;
                 // reference to TypedReference is banned, so have to pass result as pointer

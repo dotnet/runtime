@@ -10,6 +10,8 @@ namespace System.Text
 {
     public sealed class DecoderExceptionFallback : DecoderFallback
     {
+        internal static readonly DecoderExceptionFallback s_default = new DecoderExceptionFallback();
+
         public override DecoderFallbackBuffer CreateFallbackBuffer() =>
             new DecoderExceptionFallbackBuffer();
 
@@ -73,8 +75,8 @@ namespace System.Text
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class DecoderFallbackException : ArgumentException
     {
-        private readonly byte[]? _bytesUnknown = null;
-        private readonly int _index = 0;
+        private readonly byte[]? _bytesUnknown;
+        private readonly int _index;
 
         public DecoderFallbackException()
             : base(SR.Arg_ArgumentException)

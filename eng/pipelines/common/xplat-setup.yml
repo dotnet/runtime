@@ -11,6 +11,10 @@ parameters:
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
+    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
+      runtimeFlavorDisplayName: 'CoreCLR'
+    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
+      runtimeFlavorDisplayName: 'Mono'
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
       # are they a service. Also the component governance jobs issue lots of inconsequential
@@ -25,6 +29,17 @@ jobs:
       # https://github.com/dotnet/runtime/issues/32805
       - name: System.DisableZipDownload
         value: true
+
+      - name: buildConfigUpper
+        ${{ if eq(parameters.jobParameters.buildConfig, 'debug') }}:
+          value: 'Debug'
+        ${{ if eq(parameters.jobParameters.buildConfig, 'release') }}:
+          value: 'Release'
+        ${{ if eq(parameters.jobParameters.buildConfig, 'checked') }}:
+          value: 'Checked'
+
+      - name: _BuildConfig
+        value: $(buildConfigUpper)
 
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - name: archiveExtension
@@ -64,10 +79,6 @@ jobs:
         - name: ROOTFS_DIR
           value: ${{ parameters.jobParameters.crossrootfsDir }}
 
-      - ${{ if eq(parameters.osGroup, 'Android') }}:
-        - name: ANDROID_NDK_HOME
-          value: /usr/local/ndk
-
       - name: runtimeFlavorName
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
           value: Mono
@@ -88,12 +99,12 @@ jobs:
     ${{ if eq(parameters.jobParameters.pool, '') }}:
       pool:
         # Public Linux Build Pool
-        ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD'), eq(variables['System.TeamProject'], 'public')) }}:
           name:  NetCorePublic-Pool
           queue: BuildPool.Ubuntu.1604.Amd64.Open
 
         # Official Build Linux Pool
-        ${{ if and(eq(parameters.osGroup, 'Linux'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Ubuntu.1604.Amd64
 

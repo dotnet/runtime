@@ -72,8 +72,8 @@ DispatchMemberInfo::DispatchMemberInfo(DispatchInfo *pDispInfo, DISPID DispID, S
 , m_hndMemberInfo(NULL)
 , m_apParamMarshaler(NULL)
 , m_pParamInOnly(NULL)
-, m_strName(strName)
 , m_pNext(NULL)
+, m_strName(strName)
 , m_enumType (Uninitted)
 , m_iNumParams(-1)
 , m_CultureAwareState(Unknown)
@@ -1035,8 +1035,8 @@ DispatchInfo::DispatchInfo(MethodTable *pMT)
 , m_pFirstMemberInfo(NULL)
 , m_lock(CrstInterop, (CrstFlags)(CRST_HOST_BREAKABLE | CRST_REENTRANCY))
 , m_CurrentDispID(0x10000)
-, m_bInvokeUsingInvokeMember(FALSE)
 , m_bAllowMembersNotInComMTMemberMap(FALSE)
+, m_bInvokeUsingInvokeMember(FALSE)
 {
     CONTRACTL
     {
@@ -2193,10 +2193,8 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         EX_CATCH
         {
             pThrowable = GET_THROWABLE();
-
-            // RethrowCorruptingExceptionsEx, in EX_END_CATCH below, will ensure that CEs are rethrown.
         }
-        EX_END_CATCH(RethrowCorruptingExceptionsEx(!CEHelper::CanIDispatchTargetHandleException()))
+        EX_END_CATCH(RethrowTerminalExceptions)
         catchFrame.Pop();
 
         if (pThrowable != NULL)

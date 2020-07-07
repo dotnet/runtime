@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!-- Native COM interfaces left alive at the test exit -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- Test unsupported outside of windows -->
-    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-    <DisableProjectBuild Condition="'$(TargetsWindows)' != 'true'">true</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="../Common.cs" />

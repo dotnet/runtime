@@ -1,15 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)Extensions\HashCodeCombiner\HashCodeCombiner.cs">
-      <Link>Common\src\Extensions\HashCodeCombiner\HashCodeCombiner.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Extensions\HashCodeCombiner\HashCodeCombiner.cs"
+             Link="Common\src\Extensions\HashCodeCombiner\HashCodeCombiner.cs" />
   </ItemGroup>
 
 </Project>

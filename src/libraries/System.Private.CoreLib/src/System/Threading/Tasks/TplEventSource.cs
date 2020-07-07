@@ -33,12 +33,6 @@ namespace System.Threading.Tasks
         /// </summary>
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
-            // To get the AsyncCausality events, we need to inform the AsyncCausalityTracer
-            if (command.Command == EventCommand.Enable)
-                AsyncCausalityTracer.EnableToETW(true);
-            else if (command.Command == EventCommand.Disable)
-                AsyncCausalityTracer.EnableToETW(false);
-
             if (IsEnabled(EventLevel.Informational, Keywords.TasksFlowActivityIds))
                 ActivityTracker.Instance.Enable();
             else
@@ -269,7 +263,7 @@ namespace System.Threading.Tasks
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
             int TaskID, bool IsExceptional)
         {
-            if (IsEnabled(EventLevel.Informational, Keywords.Tasks))
+            if (IsEnabled() && IsEnabled(EventLevel.Informational, Keywords.Tasks))
             {
                 unsafe
                 {
@@ -538,7 +532,7 @@ namespace System.Threading.Tasks
         public void IncompleteAsyncMethod(IAsyncStateMachineBox stateMachineBox)
         {
             System.Diagnostics.Debug.Assert(stateMachineBox != null);
-            if (IsEnabled(EventLevel.Warning, Keywords.AsyncMethod))
+            if (IsEnabled() && IsEnabled(EventLevel.Warning, Keywords.AsyncMethod))
             {
                 IAsyncStateMachine stateMachine = stateMachineBox.GetStateMachineObject();
                 if (stateMachine != null)

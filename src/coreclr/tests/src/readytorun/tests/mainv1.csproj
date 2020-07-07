@@ -27,7 +27,11 @@ if not exist test.dll (
     echo FAILED to copy test.dll
     exit /b 1
 )
-%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out test.ni.dll test.dll 
+if defined RunCrossGen2 (
+  %Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:test.ni.dll test.dll
+) else (
+  %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out test.ni.dll test.dll 
+)
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
     ECHO Crossgen failed with exitcode - !CrossGenStatus!
@@ -37,7 +41,11 @@ if not exist test.ni.dll (
     echo FAILED to build test.ni.dll
     exit /b 1
 )
-%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out fieldgetter.ni.dll fieldgetter.dll 
+if defined RunCrossGen2 (
+  %Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:fieldgetter.ni.dll fieldgetter.dll 
+) else (
+  %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out fieldgetter.ni.dll fieldgetter.dll 
+)
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
     ECHO Crossgen failed with exitcode - !CrossGenStatus!
@@ -47,7 +55,11 @@ if not exist fieldgetter.ni.dll (
     echo FAILED to build fieldgetter.ni.dll
     exit /b 1
 )
-%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out mainv1.ni.dll mainv1.dll
+if defined RunCrossGen2 (
+  %Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:mainv1.ni.dll mainv1.dll
+) else (
+  %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out mainv1.ni.dll mainv1.dll
+)
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
     ECHO Crossgen failed with exitcode - !CrossGenStatus!
@@ -72,7 +84,11 @@ then
   echo Failed to copy test.dll
   exit 1
 fi
-$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out test.ni.dll test.dll
+if [ ! -z "$RunCrossGen2" ]; then
+  $CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:test.ni.dll test.dll
+else
+  $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out test.ni.dll test.dll
+fi
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
 then
@@ -84,7 +100,11 @@ then
   echo Failed to build test.ni.dll
   exit 1
 fi
-$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out fieldgetter.ni.dll fieldgetter.dll
+if [ ! -z "$RunCrossGen2" ]; then
+  $CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:fieldgetter.ni.dll fieldgetter.dll
+else
+  $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out fieldgetter.ni.dll fieldgetter.dll
+fi
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
 then
@@ -96,7 +116,11 @@ then
   echo Failed to build fieldgetter.ni.dll
   exit 1
 fi
-$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out mainv1.ni.dll mainv1.dll
+if [ ! -z "$RunCrossGen2" ]; then
+  $CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:mainv1.ni.dll mainv1.dll
+else
+  $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out mainv1.ni.dll mainv1.dll
+fi
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
 then

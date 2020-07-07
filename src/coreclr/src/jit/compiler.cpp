@@ -1719,23 +1719,62 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
  *
  *  Constructor
  */
-
-void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
+void Compiler::compInit(ArenaAllocator*       pAlloc,
+                        CORINFO_METHOD_HANDLE methodHnd,
+                        COMP_HANDLE           compHnd,
+                        CORINFO_METHOD_INFO*  methodInfo,
+                        InlineInfo*           inlineInfo)
 {
     assert(pAlloc);
     compArenaAllocator = pAlloc;
-
-#if defined(DEBUG) || defined(LATE_DISASM)
-    info.compMethodName = nullptr;
-    info.compClassName  = nullptr;
-    info.compFullName   = nullptr;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
 
     // Inlinee Compile object will only be allocated when needed for the 1st time.
     InlineeCompiler = nullptr;
 
     // Set the inline info.
-    impInlineInfo = inlineInfo;
+    impInlineInfo       = inlineInfo;
+    info.compCompHnd    = compHnd;
+    info.compMethodHnd  = methodHnd;
+    info.compMethodInfo = methodInfo;
+
+#ifdef DEBUG
+    bRangeAllowStress = false;
+#endif
+
+#if defined(DEBUG) || defined(LATE_DISASM)
+    // Initialize the method name and related info, as it is used early in determining whether to
+    // apply stress modes, and which ones to apply.
+    // Note that even allocating memory can invoke the stress mechanism, so ensure that both
+    // 'compMethodName' and 'compFullName' are either null or valid before we allocate.
+    // (The stress mode checks references these prior to checking bRangeAllowStress.)
+    //
+    info.compMethodName = nullptr;
+    info.compClassName  = nullptr;
+    info.compFullName   = nullptr;
+
+    const char* classNamePtr;
+    const char* methodName;
+
+    methodName          = eeGetMethodName(methodHnd, &classNamePtr);
+    unsigned len        = (unsigned)roundUp(strlen(classNamePtr) + 1);
+    info.compClassName  = getAllocator(CMK_DebugOnly).allocate<char>(len);
+    info.compMethodName = methodName;
+    strcpy_s((char*)info.compClassName, len, classNamePtr);
+
+    info.compFullName  = eeGetMethodFullName(methodHnd);
+    info.compPerfScore = 0.0;
+#endif // defined(DEBUG) || defined(LATE_DISASM)
+
+#ifdef DEBUG
+    // Opt-in to jit stress based on method hash ranges.
+    //
+    // Note the default (with JitStressRange not set) is that all
+    // methods will be subject to stress.
+    static ConfigMethodRange fJitStressRange;
+    fJitStressRange.EnsureInit(JitConfig.JitStressRange());
+    assert(!fJitStressRange.Error());
+    bRangeAllowStress = fJitStressRange.Contains(info.compMethodHash());
+#endif // DEBUG
 
     eeInfoInitialized = false;
 
@@ -1769,10 +1808,6 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     info.compILCodeSize = 0;
     info.compMethodHnd  = nullptr;
     compJitTelemetry.Initialize(this);
-#endif
-
-#ifdef DEBUG
-    bRangeAllowStress = false;
 #endif
 
     fgInit();
@@ -1824,6 +1859,8 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     compQmarkUsed         = false;
     compFloatingPointUsed = false;
     compUnsafeCastUsed    = false;
+
+    compSuppressedZeroInit = false;
 
     compNeedsGSSecurityCookie = false;
     compGSReorderStackLayout  = false;
@@ -2159,7 +2196,7 @@ const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
 void Compiler::compSetProcessor()
 {
     //
-    // NOTE: This function needs to be kept in sync with EEJitManager::SetCpuInfo() in vm\codemap.cpp
+    // NOTE: This function needs to be kept in sync with EEJitManager::SetCpuInfo() in vm\codeman.cpp
     //
 
     const JitFlags& jitFlags = *opts.jitFlags;
@@ -2193,13 +2230,14 @@ void Compiler::compSetProcessor()
 
 #endif // TARGET_X86
 
+    // The VM will set the ISA flags depending on actual hardware support.
+    // We then select which ISAs to leave enabled based on the JIT config.
+    // The exception to this is the dummy Vector64/128/256 ISAs, which must be added explicitly.
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
     opts.compSupportsISA                            = 0;
     opts.compSupportsISAReported                    = 0;
 
 #ifdef TARGET_XARCH
-    bool avxSupported = false;
-
     if (JitConfig.EnableHWIntrinsic())
     {
         // Dummy ISAs for simplifying the JIT code
@@ -2313,8 +2351,6 @@ void Compiler::compSetProcessor()
     if (JitConfig.EnableHWIntrinsic())
     {
         // Dummy ISAs for simplifying the JIT code
-        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
-        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase_Arm64);
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
     }
@@ -2681,6 +2717,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     setUsesSIMDTypes(false);
 #endif // FEATURE_SIMD
 
+    lvaEnregEHVars       = (((opts.compFlags & CLFLG_REGVAR) != 0) && JitConfig.EnableEHWriteThru());
+    lvaEnregMultiRegVars = (((opts.compFlags & CLFLG_REGVAR) != 0) && JitConfig.EnableMultiRegLocals());
+
     if (compIsForImportOnly())
     {
         return;
@@ -2692,6 +2731,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // inlinees as well.
     opts.compTailCallOpt = true;
 #endif // FEATURE_TAILCALL_OPT
+
+#if FEATURE_FASTTAILCALL
+    // By default fast tail calls are enabled.
+    opts.compFastTailCalls = true;
+#endif // FEATURE_FASTTAILCALL
 
     if (compIsForInlining())
     {
@@ -3032,6 +3076,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compTailCallLoopOpt = false;
     }
 #endif
+
+#if FEATURE_FASTTAILCALL
+    if (JitConfig.FastTailCalls() == 0)
+    {
+        opts.compFastTailCalls = false;
+    }
+#endif // FEATURE_FASTTAILCALL
 
     opts.compScopeInfo = opts.compDbgInfo;
 
@@ -4313,7 +4364,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
         // Insert call to class constructor as the first basic block if
         // we were asked to do so.
-        if (info.compCompHnd->initClass(nullptr /* field */, info.compMethodHnd /* method */,
+        if (info.compCompHnd->initClass(nullptr /* field */, nullptr /* method */,
                                         impTokenLookupContextHandle /* context */) &
             CORINFO_INITCLASS_USE_HELPER)
         {
@@ -4447,6 +4498,35 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
             printf(""); // flush
         }
     }
+    if (lvaEnregMultiRegVars)
+    {
+        unsigned methHash   = info.compMethodHash();
+        char*    lostr      = getenv("JitMultiRegHashLo");
+        unsigned methHashLo = 0;
+        bool     dump       = false;
+        if (lostr != nullptr)
+        {
+            sscanf_s(lostr, "%x", &methHashLo);
+            dump = true;
+        }
+        char*    histr      = getenv("JitMultiRegHashHi");
+        unsigned methHashHi = UINT32_MAX;
+        if (histr != nullptr)
+        {
+            sscanf_s(histr, "%x", &methHashHi);
+            dump = true;
+        }
+        if (methHash < methHashLo || methHash > methHashHi)
+        {
+            lvaEnregMultiRegVars = false;
+        }
+        else if (dump)
+        {
+            printf("Enregistering MultiReg Vars for method %s, hash = 0x%x.\n", info.compFullName,
+                   info.compMethodHash());
+            printf(""); // flush
+        }
+    }
 #endif
 
     // Compute bbNum, bbRefs and bbPreds
@@ -4461,9 +4541,16 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     };
     DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
 
-    // Run an early flow graph simplification pass
+    // Now that we have pred lists, do some flow-related optimizations
+    //
     if (opts.OptimizationEnabled())
     {
+        // Merge common throw blocks
+        //
+        DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
+
+        // Run an early flow graph simplification pass
+        //
         auto earlyUpdateFlowGraphPhase = [this]() {
             const bool doTailDup = false;
             fgUpdateFlowGraph(doTailDup);
@@ -4578,9 +4665,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     if (opts.OptimizationEnabled())
     {
-        // Merge common throw blocks
-        //
-        DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
         // Optimize block order
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
@@ -5161,14 +5245,16 @@ bool Compiler::skipMethod()
 
 /*****************************************************************************/
 
-int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
-                          CORINFO_MODULE_HANDLE classPtr,
-                          COMP_HANDLE           compHnd,
-                          CORINFO_METHOD_INFO*  methodInfo,
+int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
                           void**                methodCodePtr,
                           ULONG*                methodCodeSize,
                           JitFlags*             compileFlags)
 {
+    // compInit should have set these already.
+    noway_assert(info.compMethodInfo != nullptr);
+    noway_assert(info.compCompHnd != nullptr);
+    noway_assert(info.compMethodHnd != nullptr);
+
 #ifdef FEATURE_JIT_METHOD_PERF
     static bool checkedForJitTimeLog = false;
 
@@ -5179,7 +5265,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         // Call into VM to get the config strings. FEATURE_JIT_METHOD_PERF is enabled for
         // retail builds. Do not call the regular Config helper here as it would pull
         // in a copy of the config parser into the clrjit.dll.
-        InterlockedCompareExchangeT(&Compiler::compJitTimeLogFilename, compHnd->getJitTimeLogFilename(), NULL);
+        InterlockedCompareExchangeT(&Compiler::compJitTimeLogFilename, info.compCompHnd->getJitTimeLogFilename(), NULL);
 
         // At a process or module boundary clear the file and start afresh.
         JitTimer::PrintCsvHeader();
@@ -5188,7 +5274,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     }
     if ((Compiler::compJitTimeLogFilename != nullptr) || (JitTimeLogCsv() != nullptr))
     {
-        pCompJitTimer = JitTimer::Create(this, methodInfo->ILCodeSize);
+        pCompJitTimer = JitTimer::Create(this, info.compMethodInfo->ILCodeSize);
     }
 #endif // FEATURE_JIT_METHOD_PERF
 
@@ -5225,10 +5311,6 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 #endif // FUNC_INFO_LOGGING
 
     // if (s_compMethodsCount==0) setvbuf(jitstdout, NULL, _IONBF, 0);
-
-    info.compCompHnd    = compHnd;
-    info.compMethodHnd  = methodHnd;
-    info.compMethodInfo = methodInfo;
 
     if (compIsForInlining())
     {
@@ -5298,7 +5380,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     {
         impTokenLookupContextHandle = impInlineInfo->tokenLookupContextHandle;
 
-        assert(impInlineInfo->inlineCandidateInfo->clsHandle == compHnd->getMethodClass(methodHnd));
+        assert(impInlineInfo->inlineCandidateInfo->clsHandle == info.compCompHnd->getMethodClass(info.compMethodHnd));
         info.compClassHnd = impInlineInfo->inlineCandidateInfo->clsHandle;
 
         assert(impInlineInfo->inlineCandidateInfo->clsAttr == info.compCompHnd->getClassAttribs(info.compClassHnd));
@@ -5308,9 +5390,9 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     }
     else
     {
-        impTokenLookupContextHandle = MAKE_METHODCONTEXT(info.compMethodHnd);
+        impTokenLookupContextHandle = METHOD_BEING_COMPILED_CONTEXT();
 
-        info.compClassHnd  = compHnd->getMethodClass(methodHnd);
+        info.compClassHnd  = info.compCompHnd->getMethodClass(info.compMethodHnd);
         info.compClassAttr = info.compCompHnd->getClassAttribs(info.compClassHnd);
     }
 
@@ -5319,12 +5401,12 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 #if defined(DEBUG) || defined(LATE_DISASM)
     const char* classNamePtr;
 
-    info.compMethodName = eeGetMethodName(methodHnd, &classNamePtr);
+    info.compMethodName = eeGetMethodName(info.compMethodHnd, &classNamePtr);
     unsigned len        = (unsigned)roundUp(strlen(classNamePtr) + 1);
     info.compClassName  = getAllocator(CMK_DebugOnly).allocate<char>(len);
     strcpy_s((char*)info.compClassName, len, classNamePtr);
 
-    info.compFullName  = eeGetMethodFullName(methodHnd);
+    info.compFullName  = eeGetMethodFullName(info.compMethodHnd);
     info.compPerfScore = 0.0;
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
@@ -5343,15 +5425,6 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         }
         return CORJIT_SKIPPED;
     }
-
-    // Opt-in to jit stress based on method hash ranges.
-    //
-    // Note the default (with JitStressRange not set) is that all
-    // methods will be subject to stress.
-    static ConfigMethodRange fJitStressRange;
-    fJitStressRange.EnsureInit(JitConfig.JitStressRange());
-    assert(!fJitStressRange.Error());
-    bRangeAllowStress = fJitStressRange.Contains(info.compMethodHash());
 
 #endif // DEBUG
 
@@ -5379,14 +5452,14 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     } param;
     param.pThis          = this;
     param.classPtr       = classPtr;
-    param.compHnd        = compHnd;
-    param.methodInfo     = methodInfo;
+    param.compHnd        = info.compCompHnd;
+    param.methodInfo     = info.compMethodInfo;
     param.methodCodePtr  = methodCodePtr;
     param.methodCodeSize = methodCodeSize;
     param.compileFlags   = compileFlags;
     param.result         = CORJIT_INTERNALERROR;
 
-    setErrorTrap(compHnd, Param*, pParam, &param) // ERROR TRAP: Start normal block
+    setErrorTrap(info.compCompHnd, Param*, pParam, &param) // ERROR TRAP: Start normal block
     {
         pParam->result =
             pParam->pThis->compCompileHelper(pParam->classPtr, pParam->compHnd, pParam->methodInfo,
@@ -5875,6 +5948,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     info.compIsStatic = (info.compFlags & CORINFO_FLG_STATIC) != 0;
 
     info.compPublishStubParam = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM);
+
+    info.compHasNextCallRetAddr = false;
 
     switch (methodInfo->args.getCallConv())
     {
@@ -6682,16 +6757,16 @@ START:
             assert(pParam->pComp != nullptr);
 #endif
 
-            pParam->pComp->compInit(pParam->pAlloc, pParam->inlineInfo);
+            pParam->pComp->compInit(pParam->pAlloc, pParam->methodHnd, pParam->compHnd, pParam->methodInfo,
+                                    pParam->inlineInfo);
 
 #ifdef DEBUG
             pParam->pComp->jitFallbackCompile = pParam->jitFallbackCompile;
 #endif
 
             // Now generate the code
-            pParam->result =
-                pParam->pComp->compCompile(pParam->methodHnd, pParam->classPtr, pParam->compHnd, pParam->methodInfo,
-                                           pParam->methodCodePtr, pParam->methodCodeSize, pParam->compileFlags);
+            pParam->result = pParam->pComp->compCompile(pParam->classPtr, pParam->methodCodePtr, pParam->methodCodeSize,
+                                                        pParam->compileFlags);
         }
         finallyErrorTrap()
         {
@@ -8979,9 +9054,9 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     {
                         chars += printf("[CALL_M_FRAME_VAR_DEATH]");
                     }
-                    if (call->gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_HELPER)
+                    if (call->gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER)
                     {
-                        chars += printf("[CALL_M_TAILCALL_VIA_HELPER]");
+                        chars += printf("[CALL_M_TAILCALL_VIA_JIT_HELPER]");
                     }
 #if FEATURE_TAILCALL_OPT
                     if (call->gtCallMoreFlags & GTF_CALL_M_IMPLICIT_TAILCALL)

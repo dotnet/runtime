@@ -155,7 +155,7 @@ int SHMLock(void)
     PALCEnterCriticalSection(&shm_critsec);
 
     _ASSERTE((0 == lock_count && 0 == locking_thread) ||
-             (0 < lock_count && (HANDLE)pthread_self() == locking_thread));
+             (0 < lock_count && reinterpret_cast<HANDLE>(pthread_self()) == locking_thread));
 
     if(lock_count == 0)
     {
@@ -166,7 +166,7 @@ int SHMLock(void)
 
         // Store the id of the current thread as the (only) one that is
         // trying to grab the spinlock from the current process
-        locking_thread = (HANDLE)pthread_self();
+        locking_thread = reinterpret_cast<HANDLE>(pthread_self());
 
         my_pid = gPID;
 
@@ -336,7 +336,7 @@ SHMPTR SHMGetInfo(SHM_INFO_ID element)
 
     /* verify that this thread holds the SHM lock. No race condition: if the
        current thread is here, it can't be in SHMLock or SHMUnlock */
-    if( (HANDLE)pthread_self() != locking_thread )
+    if( reinterpret_cast<HANDLE>(pthread_self()) != locking_thread )
     {
         ASSERT("SHMGetInfo called while thread does not hold the SHM lock!\n");
     }
@@ -374,7 +374,7 @@ BOOL SHMSetInfo(SHM_INFO_ID element, SHMPTR value)
 
     /* verify that this thread holds the SHM lock. No race condition: if the
        current thread is here, it can't be in SHMLock or SHMUnlock */
-    if( (HANDLE)pthread_self() != locking_thread )
+    if( reinterpret_cast<HANDLE>(pthread_self()) != locking_thread )
     {
         ASSERT("SHMGetInfo called while thread does not hold the SHM lock!\n");
     }

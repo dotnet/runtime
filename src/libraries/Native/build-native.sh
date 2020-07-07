@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-usage_list=("-outconfig: Configuration, typically a quadruplet such as 'netcoreapp5.0-Linux-Release-x64', used to name output directory.")
+usage_list=("-outconfig: Configuration, typically a quadruplet such as 'net5.0-Linux-Release-x64', used to name output directory.")
 usage_list+=("-staticLibLink: Optional argument to statically link any native library.")
 
 __scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
@@ -79,13 +79,13 @@ if [[ "$__TargetOS" == OSX ]]; then
     # set default OSX deployment target
     __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
 elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
-    if [[ -z "$ANDROID_NDK_HOME" ]]; then
-        echo "Error: You need to set the ANDROID_NDK_HOME environment variable pointing to the Android NDK root."
+    if [[ -z "$ANDROID_NDK_ROOT" ]]; then
+        echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
         exit 1
     fi
 
     # keep ANDROID_NATIVE_API_LEVEL in sync with src/mono/Directory.Build.props
-    __CMakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake -DANDROID_STL=none -DANDROID_NATIVE_API_LEVEL=21 $__CMakeArgs"
+    __CMakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_STL=none -DANDROID_NATIVE_API_LEVEL=21 $__CMakeArgs"
 
     # workaround init-compiler.sh trying to detect clang, it's handled in android.toolchain.cmake already
     export CLR_CC=$(which false)
@@ -109,6 +109,10 @@ elif [[ "$__TargetOS" == iOS ]]; then
         # set default iOS simulator deployment target (8.0 is the minimum supported by Xcode 11)
         # keep in sync with src/mono/Directory.Build.props
         __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=8.0 -DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
+    elif [[ "$__BuildArch" == x86 ]]; then
+        # set default iOS simulator deployment target (8.0 is the minimum supported by Xcode 11)
+        # keep in sync with src/mono/Directory.Build.props
+        __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=8.0 -DCMAKE_OSX_ARCHITECTURES=\"i386\" $__CMakeArgs"
     elif [[ "$__BuildArch" == arm64 ]]; then
         # set default iOS device deployment target (7.0 is the minimum supported by Xcode 11)
         # keep in sync with src/mono/Directory.Build.props

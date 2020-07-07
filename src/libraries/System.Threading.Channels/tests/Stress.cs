@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Threading.Tasks;
 using System.Collections.Generic;
-using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Threading.Channels.Tests
 {
     public class StressTests
     {
-        public static IEnumerable<object[]> TestData()
+        public static IEnumerable<object[]> ReadWriteVariations_TestData()
         {
             foreach (var readDelegate in new Func<ChannelReader<int>, Task<bool>>[] { ReadSynchronous, ReadAsynchronous, ReadSyncAndAsync} )
             foreach (var writeDelegate in new Func<ChannelWriter<int>, int, Task>[] { WriteSynchronous, WriteAsynchronous, WriteSyncAndAsync} )
@@ -122,12 +122,12 @@ namespace System.Threading.Channels.Tests
         private static readonly int MaxTaskCounts = Math.Max(2, Environment.ProcessorCount);
 
         [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
-        [MemberData(nameof(TestData))]
-        public void RunInStressMode(
-                        Func<ChannelOptions, Channel<int>> channelCreator,
-                        ChannelOptions options,
-                        Func<ChannelReader<int>, Task<bool>> readDelegate,
-                        Func<ChannelWriter<int>, int, Task> writeDelegate)
+        [MemberData(nameof(ReadWriteVariations_TestData))]
+        public void ReadWriteVariations(
+            Func<ChannelOptions, Channel<int>> channelCreator,
+            ChannelOptions options,
+            Func<ChannelReader<int>, Task<bool>> readDelegate,
+            Func<ChannelWriter<int>, int, Task> writeDelegate)
         {
             Channel<int> channel = channelCreator(options);
             ChannelReader<int> reader = channel.Reader;
@@ -206,7 +206,68 @@ namespace System.Threading.Channels.Tests
             {
                 Assert.InRange(readCount, 0, MaxNumberToWriteToChannel);
             }
+        }
 
+        public static IEnumerable<object[]> CanceledReads_TestData()
+        {
+            yield return new object[] { new Func<Channel<int>>(() => Channel.CreateUnbounded<int>()) };
+            yield return new object[] { new Func<Channel<int>>(() => Channel.CreateUnbounded<int>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = true })) };
+            yield return new object[] { new Func<Channel<int>>(() => Channel.CreateBounded<int>(int.MaxValue)) };
+        }
+
+        [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
+        [MemberData(nameof(CanceledReads_TestData))]
+        public async Task CanceledReads(Func<Channel<int>> channelFactory)
+        {
+            const int Attempts = 100;
+            const int Writes = 1_000;
+            const int WaitTimeoutMs = 100_000;
+
+            for (int i = 0; i < Attempts; i++)
+            {
+                var cts = new CancellationTokenSource();
+                Channel<int> channel = channelFactory();
+
+                // Create a bunch of reads, half of which are cancelable
+                Task<int>[] reads = Enumerable.Range(0, Writes).Select(i => channel.Reader.ReadAsync(i % 2 == 0 ? cts.Token : default).AsTask()).ToArray();
+
+                // Queue cancellation
+                _ = Task.Run(() => cts.Cancel());
+
+                // Write to complete the rest of the tasks
+                for (int item = 0; item < Writes; item++)
+                {
+                    Assert.True(channel.Writer.TryWrite(item));
+                }
+                channel.Writer.Complete();
+
+                // Wait for all the reads to complete
+                try
+                {
+                    Assert.True(Task.WaitAll(reads, WaitTimeoutMs));
+                }
+                catch (AggregateException ae)
+                {
+                    Assert.All(ae.InnerExceptions, e => Assert.IsAssignableFrom<OperationCanceledException>(e));
+                }
+
+                // Validate all write data showed up
+                int expected = 0;
+                int actual = 0;
+                for (int write = 0; write < Writes; write++)
+                {
+                    expected += write;
+                    if (reads[write].Status == TaskStatus.RanToCompletion)
+                    {
+                        actual += reads[write].Result;
+                    }
+                }
+                await foreach (int remaining in channel.Reader.ReadAllAsync())
+                {
+                    actual += remaining;
+                }
+                Assert.Equal(expected, actual);
+            }
         }
     }
 }

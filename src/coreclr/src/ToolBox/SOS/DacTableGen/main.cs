@@ -8,7 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 #if !TARGET_UNIX
-using Dia;
+using DIALib;
 using Dia.Util;
 #endif // !TARGET_UNIX
 using System.Globalization;

@@ -692,7 +692,7 @@ namespace System.Collections.Concurrent
         /// <remarks>For <see cref="ConcurrentStack{T}"/>, this operation will attempt to pope the object at
         /// the top of the <see cref="ConcurrentStack{T}"/>.
         /// </remarks>
-        bool IProducerConsumerCollection<T>.TryTake(out T item)
+        bool IProducerConsumerCollection<T>.TryTake([MaybeNullWhen(false)] out T item)
         {
             return TryPop(out item);
         }

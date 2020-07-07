@@ -691,7 +691,7 @@ namespace System.IO.Ports.Tests
             int totalCharsRead;
             int lastIndexOfNewLine = -newLineStringLength;
             string expectedString;
-            bool isUTF7Encoding = com1.Encoding.EncodingName == Encoding.UTF7.EncodingName;
+            bool isUTF7Encoding = IsUTF7Encoding(com1.Encoding);
 
             char[] charsToWrite = strToWrite.ToCharArray();
             byte[] bytesToWrite = com1.Encoding.GetBytes(charsToWrite);
@@ -805,7 +805,7 @@ namespace System.IO.Ports.Tests
                 Random rndGen = new Random(-55);
                 StringBuilder strBldrToWrite;
                 string strExpected;
-                bool isUTF7Encoding = encoding.EncodingName == Encoding.UTF7.EncodingName;
+                bool isUTF7Encoding = IsUTF7Encoding(encoding);
 
                 Debug.WriteLine("Verifying ReadTo with WriteLine encoding={0}, newLine={1}", encoding, newLine);
 
@@ -861,10 +861,10 @@ namespace System.IO.Ports.Tests
 
         private int GetUTF7EncodingBytes(char[] chars, int index, int count)
         {
-            byte[] bytes = Encoding.UTF7.GetBytes(chars, index, count);
+            byte[] bytes = LegacyUTF7Encoding.GetBytes(chars, index, count);
             int byteCount = bytes.Length;
 
-            while (Encoding.UTF7.GetCharCount(bytes, 0, byteCount) == count)
+            while (LegacyUTF7Encoding.GetCharCount(bytes, 0, byteCount) == count)
             {
                 --byteCount;
             }

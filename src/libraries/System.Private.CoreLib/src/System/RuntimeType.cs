@@ -72,10 +72,17 @@ namespace System
 
         // GetDefaultMembers
         // This will return a MemberInfo that has been marked with the [DefaultMemberAttribute]
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.PublicMethods
+            | DynamicallyAccessedMemberTypes.PublicEvents
+            | DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors
+            | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public override MemberInfo[] GetDefaultMembers()
         {
             // See if we have cached the default member name
-            MemberInfo[] members = null!;
+            MemberInfo[]? members = null;
 
             string? defaultMemberName = GetDefaultMemberName();
             if (defaultMemberName != null)
@@ -236,6 +243,9 @@ namespace System
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
+
+            if (!IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             // Check if both of them are of the same type
             RuntimeType valueType = (RuntimeType)value.GetType();

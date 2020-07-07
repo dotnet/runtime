@@ -63,8 +63,8 @@
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>
   </data>
-  <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
-    <value>The destination is too small to hold the encoded value.</value>
+  <data name="Argument_DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
   </data>
   <data name="Argument_InvalidRandomRange" xml:space="preserve">
     <value>Range of random number does not contain at least one possibility.</value>
@@ -199,10 +199,10 @@
     <value>Input string does not contain a valid encoding of the '{0}' '{1}' parameter.</value>
   </data>
   <data name="Cryptography_InvalidECCharacteristic2Curve" xml:space="preserve">
-    <value>The specified Characteristic2 curve parameters are not valid. Polynomial, A, B, G.X, G.Y, and Order are required. A, B, G.X, G.Y must be the same length, and the same length as Q.X, Q.Y and D if those are specified. Seed, Cofactor and Hash are optional. Other parameters are not allowed.</value>
+    <value>The specified Characteristic2 curve parameters are not valid. Polynomial, A, B, G.X, G.Y, and Order are required. A, B, G.X, G.Y must be the same length, and the same length as Q.X, Q.Y and D if those are specified. Cofactor is required. Seed and Hash are optional. Other parameters are not allowed.</value>
   </data>
   <data name="Cryptography_InvalidECPrimeCurve" xml:space="preserve">
-    <value>The specified prime curve parameters are not valid. Prime, A, B, G.X, G.Y and Order are required and must be the same length, and the same length as Q.X, Q.Y and D if those are specified. Seed, Cofactor and Hash are optional. Other parameters are not allowed.</value>
+    <value>The specified prime curve parameters are not valid. Prime, A, B, G.X, G.Y and Order are required and must be the same length, and the same length as Q.X, Q.Y and D if those are specified. Cofactor is required. Seed and Hash are optional. Other parameters are not allowed.</value>
   </data>
   <data name="Cryptography_InvalidECNamedCurve" xml:space="preserve">
     <value>The specified named curve parameters are not valid. Only the Oid parameter must be set.</value>
@@ -232,7 +232,7 @@
     <value>Padding is invalid and cannot be removed.</value>
   </data>
   <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
-    <value>The specified RSA parameters are not valid; both Exponent and Modulus are required fields.</value>
+    <value>The specified RSA parameters are not valid. Exponent and Modulus are required. If D is present, it must have the same length as Modulus. If D is present, P, Q, DP, DQ, and InverseQ are required and must have half the length of Modulus, rounded up, otherwise they must be omitted.</value>
   </data>
   <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
     <value>Specified padding mode is not valid for this algorithm.</value>
@@ -347,5 +347,8 @@
   </data>
   <data name="Cryptography_Okm_TooLarge" xml:space="preserve">
     <value>Output keying material length can be at most {0} bytes (255 * hash length).</value>
+  </data>
+  <data name="Cryptography_PlatformNotSupported_Browser" xml:space="preserve">
+    <value>System.Security.Cryptography is not supported on Browser.</value>
   </data>
 </root>

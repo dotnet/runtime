@@ -1,11 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard1.0;netstandard1.1</TargetFrameworks>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard2.0'">$(DefineConstants);FEATURE_TRACING</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.0'">$(DefineConstants);USE_INTERNAL_CONCURRENT_COLLECTIONS</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.1'">$(DefineConstants);USE_INTERNAL_THREADING</DefineConstants>
     <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
-    <TargetFrameworks>netstandard2.0;netstandard1.0;netstandard1.1</TargetFrameworks>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Base\DataflowBlock.cs" />
@@ -41,9 +44,8 @@
     <Compile Include="Internal\SpscTargetCore.cs" />
     <Compile Include="Internal\TargetCore.cs" />
     <Compile Include="Internal\TargetRegistry.cs" />
-    <Compile Include="$(CommonPath)Internal\Padding.cs">
-      <Link>Common\Internal\Padding.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Internal\Padding.cs"
+             Link="Common\Internal\Padding.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.1'">
     <Compile Include="Internal\Threading.cs" />

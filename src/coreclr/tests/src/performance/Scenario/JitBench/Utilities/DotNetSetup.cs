@@ -235,7 +235,7 @@ namespace JitBench
         {
             if (runtimeVersion.StartsWith("5.0"))
             {
-                return "netcoreapp5.0";
+                return "net5.0";
             }
             else if (runtimeVersion.StartsWith("3.0"))
             {

@@ -16,7 +16,7 @@ namespace System.Net
     /// </devdoc>
     public class NetworkCredential : ICredentials, ICredentialsByHost
     {
-        private string _domain = null!;
+        private string _domain;
         private string _userName = string.Empty;
         private object? _password;
 
@@ -132,6 +132,7 @@ namespace System.Net
         public string Domain
         {
             get { return _domain; }
+            [MemberNotNull(nameof(_domain))]
             set { _domain = value ?? string.Empty; }
         }
 

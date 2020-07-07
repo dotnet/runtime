@@ -51,7 +51,6 @@
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"
 #include "runtimecallablewrapper.h"
-#include "winrttypenameconverter.h"
 #endif // FEATURE_COMINTEROP
 
 #include "typeequivalencehash.hpp"
@@ -62,6 +61,7 @@
 #include "typedesc.h"
 #include "array.h"
 #include "castcache.h"
+#include "dynamicinterfacecastable.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -606,6 +606,17 @@ BOOL MethodTable::IsICastable()
 #endif
 }
 
+void MethodTable::SetIDynamicInterfaceCastable()
+{
+    LIMITED_METHOD_CONTRACT;
+    SetFlag(enum_flag_IDynamicInterfaceCastable);
+}
+
+BOOL MethodTable::IsIDynamicInterfaceCastable()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetFlag(enum_flag_IDynamicInterfaceCastable);
+}
 
 #endif // !DACCESS_COMPILE
 
@@ -760,6 +771,27 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         RETURN(pResultMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
     }
 #endif
+
+    // For IDynamicInterfaceCastable, instead of trying to find method implementation in the real object type
+    // we call GetInterfaceImplementation on the object and call GetMethodDescForInterfaceMethod
+    // with whatever type it returns.
+    if (pServerMT->IsIDynamicInterfaceCastable()
+        && !pItfMD->HasMethodInstantiation()
+        && !TypeHandle(pServerMT).CanCastTo(ownerType)) // we need to make sure object doesn't implement this interface in a natural way
+    {
+        TypeHandle implTypeHandle;
+        OBJECTREF obj = *pServer;
+
+        GCPROTECT_BEGIN(obj);
+        OBJECTREF implTypeRef = DynamicInterfaceCastable::GetInterfaceImplementation(&obj, ownerType);
+        _ASSERTE(implTypeRef != NULL);
+
+        ReflectClassBaseObject *implTypeObj = ((ReflectClassBaseObject *)OBJECTREFToObject(implTypeRef));
+        implTypeHandle = implTypeObj->GetType();
+        GCPROTECT_END();
+
+        RETURN(implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
+    }
 
 #ifdef FEATURE_COMINTEROP
     if (pServerMT->IsComObjectType() && !pItfMD->HasMethodInstantiation())
@@ -1674,8 +1706,8 @@ BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited
                                 CanCastToClass(pTargetMT, pVisited);
 
     // We only consider type-based conversion rules here.
-    // Therefore a negative result cannot rule out convertibility for ICastable and COM objects
-    if (result || !(pTargetMT->IsInterface() && (this->IsComObjectType() || this->IsICastable())))
+    // Therefore a negative result cannot rule out convertibility for ICastable, IDynamicInterfaceCastable, and COM objects
+    if (result || !(pTargetMT->IsInterface() && (this->IsComObjectType() || this->IsICastable() || this->IsIDynamicInterfaceCastable())))
     {
         CastCache::TryAddToCache(this, pTargetMT, (BOOL)result);
     }
@@ -3123,39 +3155,6 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         // a subclass of Error</TODO>
         *pThrowable = GET_THROWABLE();
         _ASSERTE(fRet == FALSE);
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        // If active thread state does not have a CorruptionSeverity set for the exception,
-        // then set one up based upon the current exception code and/or the throwable.
-        //
-        // When can we be here and current exception tracker may not have corruption severity set?
-        // Incase of SO in managed code, SO is never seen by CLR's exception handler for managed code
-        // and if this happens in cctor, we can end up here without the corruption severity set.
-        Thread *pThread = GetThread();
-        _ASSERTE(pThread != NULL);
-        ThreadExceptionState *pCurTES = pThread->GetExceptionState();
-        _ASSERTE(pCurTES != NULL);
-        if (pCurTES->GetLastActiveExceptionCorruptionSeverity() == NotSet)
-        {
-            if (CEHelper::IsProcessCorruptedStateException(GetCurrentExceptionCode()) ||
-                CEHelper::IsProcessCorruptedStateException(*pThrowable))
-            {
-                // Process Corrupting
-                pCurTES->SetLastActiveExceptionCorruptionSeverity(ProcessCorrupting);
-                LOG((LF_EH, LL_INFO100, "MethodTable::RunClassInitEx - Exception treated as ProcessCorrupting.\n"));
-            }
-            else
-            {
-                // Not Corrupting
-                pCurTES->SetLastActiveExceptionCorruptionSeverity(NotCorrupting);
-                LOG((LF_EH, LL_INFO100, "MethodTable::RunClassInitEx - Exception treated as non-corrupting.\n"));
-            }
-        }
-        else
-        {
-            LOG((LF_EH, LL_INFO100, "MethodTable::RunClassInitEx - Exception already has corruption severity set.\n"));
-        }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
     }
     EX_END_CATCH(SwallowAllExceptions)
 
@@ -3289,17 +3288,7 @@ void MethodTable::DoRunClassInitThrowing()
             ((EXCEPTIONREF)(gc.pThrowable))->ClearStackTraceForThrow();
         }
 
-        // <FEATURE_CORRUPTING_EXCEPTIONS>
-        // Specify the corruption severity to be used to raise this exception in COMPlusThrow below.
-        // This will ensure that when the exception is seen by the managed code personality routine,
-        // it will setup the correct corruption severity in the exception tracker.
-        // </FEATURE_CORRUPTING_EXCEPTIONS>
-
-        COMPlusThrow(gc.pThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-            , pEntry->m_CorruptionSeverity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-            );
+        COMPlusThrow(gc.pThrowable);
     }
 
     description = ".cctor lock";
@@ -3389,21 +3378,7 @@ void MethodTable::DoRunClassInitThrowing()
                             pEntry->m_hrResultCode = E_FAIL;
                             SetClassInitError();
 
-    #ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                            // Save the corruption severity of the exception so that if the type system
-                            // attempts to pick it up from its cache list and throw again, it should
-                            // treat the exception as corrupting, if applicable.
-                            pEntry->m_CorruptionSeverity = pThread->GetExceptionState()->GetLastActiveExceptionCorruptionSeverity();
-
-                            // We should be having a valid corruption severity at this point
-                            _ASSERTE(pEntry->m_CorruptionSeverity != NotSet);
-    #endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-                            COMPlusThrow(gc.pThrowable
-    #ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                                , pEntry->m_CorruptionSeverity
-    #endif // FEATURE_CORRUPTING_EXCEPTIONS
-                                );
+                            COMPlusThrow(gc.pThrowable);
                         }
 
                         GCPROTECT_END();
@@ -4002,40 +3977,6 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
 
     GetSavedExtent(&start, &end);
 
-#ifdef FEATURE_COMINTEROP
-    if (HasGuidInfo())
-    {
-        // Make sure our GUID is computed
-
-        // Generic WinRT types can have their GUID computed only if the instantiation is WinRT-legal
-        if (IsLegalNonArrayWinRTType())
-        {
-            GUID dummy;
-            if (SUCCEEDED(GetGuidNoThrow(&dummy, TRUE, FALSE)))
-            {
-                GuidInfo* pGuidInfo = GetGuidInfo();
-                _ASSERTE(pGuidInfo != NULL);
-
-                image->StoreStructure(pGuidInfo,
-                                      sizeof(GuidInfo),
-                                      DataImage::ITEM_GUID_INFO);
-
-                Module *pModule = GetModule();
-                if (pModule->CanCacheWinRTTypeByGuid(this))
-                {
-                    pModule->CacheWinRTTypeByGuid(this, pGuidInfo);
-                }
-            }
-            else
-            {
-                GuidInfo** ppGuidInfo = GetGuidInfoPtr();
-                *ppGuidInfo = NULL;
-            }
-        }
-    }
-#endif // FEATURE_COMINTEROP
-
-
 #ifdef _DEBUG
     if (GetDebugClassName() != NULL && !image->IsStored(GetDebugClassName()))
         image->StoreStructure(debug_m_szClassName, (ULONG)(strlen(GetDebugClassName())+1),
@@ -4452,15 +4393,6 @@ BOOL MethodTable::IsWriteable()
     // (see code:MethodTable::AddDynamicInterface)
     if (HasDynamicInterfaceMap())
         return TRUE;
-
-    // CCW template is created lazily and when that happens, the
-    // pointer is written directly into the method table.
-    if (HasCCWTemplate())
-        return TRUE;
-
-    // RCW per-type data is created lazily at run-time.
-    if (HasRCWPerTypeData())
-        return TRUE;
 #endif
 
     return FALSE;
@@ -4655,35 +4587,6 @@ void MethodTable::Fixup(DataImage *image)
     _ASSERTE(GetWriteableData());
     image->FixupPlainOrRelativePointerField(this, &MethodTable::m_pWriteableData);
     m_pWriteableData.GetValue()->Fixup(image, this, needsRestore);
-
-#ifdef FEATURE_COMINTEROP
-    if (HasGuidInfo())
-    {
-        GuidInfo **ppGuidInfo = GetGuidInfoPtr();
-        if (*ppGuidInfo != NULL)
-        {
-            image->FixupPointerField(this, (BYTE *)ppGuidInfo - (BYTE *)this);
-        }
-        else
-        {
-            image->ZeroPointerField(this, (BYTE *)ppGuidInfo - (BYTE *)this);
-        }
-    }
-
-    if (HasCCWTemplate())
-    {
-        ComCallWrapperTemplate **ppTemplate = GetCCWTemplatePtr();
-        image->ZeroPointerField(this, (BYTE *)ppTemplate - (BYTE *)this);
-    }
-
-    if (HasRCWPerTypeData())
-    {
-        // it would be nice to save these but the impact on mscorlib.ni size is prohibitive
-        RCWPerTypeData **ppData = GetRCWPerTypeDataPtr();
-        image->ZeroPointerField(this, (BYTE *)ppData - (BYTE *)this);
-    }
-#endif // FEATURE_COMINTEROP
-
 
     //
     // Fix flags
@@ -5716,20 +5619,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     {
         case CLASS_DEPENDENCIES_LOADED:
             SetIsDependenciesLoaded();
-
-#if defined(FEATURE_COMINTEROP) && !defined(DACCESS_COMPILE)
-            if (WinRTSupported() && g_fEEStarted)
-            {
-                _ASSERTE(GetAppDomain() != NULL);
-
-                AppDomain* pAppDomain = GetAppDomain();
-                if (pAppDomain->CanCacheWinRTTypeByGuid(this))
-                {
-                    pAppDomain->CacheWinRTTypeByGuid(this);
-                }
-            }
-#endif // FEATURE_COMINTEROP && !DACCESS_COMPILE
-
             break;
 
         case CLASS_LOADED:
@@ -5959,27 +5848,9 @@ MethodTable* MethodTable::GetComPlusParentMethodTable()
 
     if (pParent && pParent->IsComImport())
     {
-        if (pParent->IsProjectedFromWinRT())
-        {
-            // skip all Com Import classes
-            do
-            {
-                pParent = pParent->GetParentMethodTable();
-                _ASSERTE(pParent != NULL);
-            }while(pParent->IsComImport());
-
-            // Now we have either System.__ComObject or WindowsRuntime.RuntimeClass
-            if (pParent != g_pBaseCOMObject)
-            {
-                return pParent;
-            }
-        }
-        else
-        {
-            // Skip the single ComImport class we expect
-            _ASSERTE(pParent->GetParentMethodTable() != NULL);
-            pParent = pParent->GetParentMethodTable();
-        }
+        // Skip the single ComImport class we expect
+        _ASSERTE(pParent->GetParentMethodTable() != NULL);
+        pParent = pParent->GetParentMethodTable();
         _ASSERTE(!pParent->IsComImport());
 
         // Skip over System.__ComObject, expect System.MarshalByRefObject
@@ -5990,39 +5861,6 @@ MethodTable* MethodTable::GetComPlusParentMethodTable()
     }
 
     return pParent;
-}
-
-BOOL MethodTable::IsWinRTObjectType()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Try to determine if this object represents a WindowsRuntime object - i.e. is either
-    // ProjectedFromWinRT or derived from a class that is
-
-    if (!IsComObjectType())
-        return FALSE;
-
-    // Ideally we'd compute this once in BuildMethodTable and track it with another
-    // flag, but we're now out of bits on m_dwFlags, and this is used very rarely
-    // so for now we'll just recompute it when necessary.
-    MethodTable* pMT = this;
-    do
-    {
-        if (pMT->IsProjectedFromWinRT())
-        {
-            // Found a WinRT COM object
-            return TRUE;
-        }
-        if (pMT->IsComImport())
-        {
-            // Found a class that is actually imported from COM but not WinRT
-            // this is definitely a non-WinRT COM object
-            return FALSE;
-        }
-        pMT = pMT->GetParentMethodTable();
-    }while(pMT != NULL);
-
-    return FALSE;
 }
 
 #endif // FEATURE_COMINTEROP
@@ -6264,173 +6102,6 @@ void MethodTable::SetInternalCorElementType (CorElementType _NormType)
 }
 
 #endif // !DACCESS_COMPILE
-
-#ifdef FEATURE_COMINTEROP
-#ifndef DACCESS_COMPILE
-
-#ifndef CROSSGEN_COMPILE
-BOOL MethodTable::IsLegalWinRTType(OBJECTREF *poref)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(IsProtectedByGCFrame(poref));
-        PRECONDITION(CheckPointer(poref));
-        PRECONDITION((*poref) != NULL);
-    }
-    CONTRACTL_END
-
-    if (IsArray())
-    {
-        BASEARRAYREF arrayRef = (BASEARRAYREF)(*poref);
-
-        // WinRT array must be one-dimensional array with 0 lower-bound
-        if (arrayRef->GetRank() == 1 && arrayRef->GetLowerBoundsPtr()[0] == 0)
-        {
-            MethodTable *pElementMT = ((BASEARRAYREF)(*poref))->GetArrayElementTypeHandle().GetMethodTable();
-
-            // Element must be a legal WinRT type and not an array
-            if (!pElementMT->IsArray() && pElementMT->IsLegalNonArrayWinRTType())
-                return TRUE;
-        }
-
-        return FALSE;
-    }
-    else
-    {
-        // Non-Array version of IsLegalNonArrayWinRTType
-        return IsLegalNonArrayWinRTType();
-    }
-}
-#endif //#ifndef CROSSGEN_COMPILE
-
-BOOL MethodTable::IsLegalNonArrayWinRTType()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(!IsArray()); // arrays are handled in the callers
-    }
-    CONTRACTL_END
-
-    if (WinRTTypeNameConverter::IsWinRTPrimitiveType(this))
-        return TRUE;
-
-    // Attributes are not legal
-    MethodTable *pParentMT = GetParentMethodTable();
-    if (pParentMT == MscorlibBinder::GetExistingClass(CLASS__ATTRIBUTE))
-    {
-        return FALSE;
-    }
-
-    bool fIsRedirected = false;
-    if (!IsProjectedFromWinRT() && !IsExportedToWinRT())
-    {
-        // If the type is not primitive and not coming from .winmd, it can still be legal if
-        // it's one of the redirected types (e.g. IEnumerable<T>).
-        if (!WinRTTypeNameConverter::IsRedirectedType(this))
-            return FALSE;
-
-        fIsRedirected = true;
-    }
-
-    if (IsValueType())
-    {
-        if (!fIsRedirected)
-        {
-            // check fields
-            ApproxFieldDescIterator fieldIterator(this, ApproxFieldDescIterator::INSTANCE_FIELDS);
-            for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
-            {
-                TypeHandle thField = pFD->GetFieldTypeHandleThrowing(CLASS_LOAD_EXACTPARENTS);
-
-                if (thField.IsTypeDesc())
-                    return FALSE;
-
-                MethodTable *pFieldMT = thField.GetMethodTable();
-
-                // the only allowed reference types are System.String and types projected from WinRT value types
-                if (!pFieldMT->IsValueType() && !pFieldMT->IsString())
-                {
-                    WinMDAdapter::RedirectedTypeIndex index;
-                    if (!WinRTTypeNameConverter::ResolveRedirectedType(pFieldMT, &index))
-                        return FALSE;
-
-                    WinMDAdapter::WinMDTypeKind typeKind;
-                    WinMDAdapter::GetRedirectedTypeInfo(index, NULL, NULL, NULL, NULL, NULL, &typeKind);
-                    if (typeKind != WinMDAdapter::WinMDTypeKind_Struct && typeKind != WinMDAdapter::WinMDTypeKind_Enum)
-                        return FALSE;
-                }
-
-                if (!pFieldMT->IsLegalNonArrayWinRTType())
-                    return FALSE;
-            }
-        }
-    }
-
-    if (IsInterface() || IsDelegate() || (IsValueType() && fIsRedirected))
-    {
-        // interfaces, delegates, and redirected structures can be generic - check the instantiation
-        if (HasInstantiation())
-        {
-            Instantiation inst = GetInstantiation();
-            for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-            {
-                // arrays are not allowed as generic arguments
-                if (inst[i].IsArray())
-                    return FALSE;
-
-                if (inst[i].IsTypeDesc())
-                    return FALSE;
-
-                if (!inst[i].AsMethodTable()->IsLegalNonArrayWinRTType())
-                    return FALSE;
-            }
-        }
-    }
-    else
-    {
-        // generic structures and runtime clases are not supported
-        if (HasInstantiation())
-            return FALSE;
-    }
-
-    return TRUE;
-}
-
-//==========================================================================================
-// Returns the default WinRT interface if this is a WinRT class, NULL otherwise.
-MethodTable *MethodTable::GetDefaultWinRTInterface()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    if (!IsProjectedFromWinRT() && !IsExportedToWinRT())
-        return NULL;
-
-    if (IsInterface())
-        return NULL;
-
-    // System.Runtime.InteropServices.WindowsRuntime.RuntimeClass is weird
-    // It is ProjectedFromWinRT but isn't really a WinRT class
-    if (this == g_pBaseRuntimeClass)
-        return NULL;
-
-    WinRTClassFactory *pFactory = ::GetComClassFactory(this)->AsWinRTClassFactory();
-    return pFactory->GetDefaultInterface();
-}
-
-#endif // !DACCESS_COMPILE
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_TYPEEQUIVALENCE
 #ifndef DACCESS_COMPILE
@@ -6893,6 +6564,130 @@ void ThrowExceptionForConflictingOverride(
         assemblyName);
 }
 
+namespace
+{
+    bool TryGetCandidateImplementation(
+        MethodTable *pMT,
+        MethodDesc *interfaceMD,
+        MethodTable *interfaceMT,
+        BOOL allowVariance,
+        MethodDesc **candidateMD)
+    {
+        *candidateMD = NULL;
+
+        MethodDesc *candidateMaybe = NULL;
+        if (pMT == interfaceMT)
+        {
+            if (!interfaceMD->IsAbstract())
+            {
+                // exact match
+                candidateMaybe = interfaceMD;
+            }
+        }
+        else if (pMT->CanCastToInterface(interfaceMT))
+        {
+            if (pMT->HasSameTypeDefAs(interfaceMT))
+            {
+                if (allowVariance && !interfaceMD->IsAbstract())
+                {
+                    // Generic variance match - we'll instantiate pCurMD with the right type arguments later
+                    candidateMaybe = interfaceMD;
+                }
+            }
+            else
+            {
+                //
+                // A more specific interface - search for an methodimpl for explicit override
+                // Implicit override in default interface methods are not allowed
+                //
+                MethodTable::MethodIterator methodIt(pMT);
+                for (; methodIt.IsValid() && candidateMaybe == NULL; methodIt.Next())
+                {
+                    MethodDesc *pMD = methodIt.GetMethodDesc();
+                    int targetSlot = interfaceMD->GetSlot();
+
+                    // If this is not a MethodImpl, it can't be implementing the method we're looking for
+                    if (!pMD->IsMethodImpl())
+                        continue;
+
+                    // We have a MethodImpl - iterate over all the declarations it's implementing,
+                    // looking for the interface method we need.
+                    MethodImpl::Iterator it(pMD);
+                    for (; it.IsValid() && candidateMaybe == NULL; it.Next())
+                    {
+                        MethodDesc *pDeclMD = it.GetMethodDesc();
+
+                        // Is this the right slot?
+                        if (pDeclMD->GetSlot() != targetSlot)
+                            continue;
+
+                        // Is this the right interface?
+                        if (!pDeclMD->HasSameMethodDefAs(interfaceMD))
+                            continue;
+
+                        if (interfaceMD->HasClassInstantiation())
+                        {
+                            // pInterfaceMD will be in the canonical form, so we need to check the specific
+                            // instantiation against pInterfaceMT.
+                            //
+                            // The parent of pDeclMD is unreliable for this purpose because it may or
+                            // may not be canonicalized. Let's go from the metadata.
+
+                            SigTypeContext typeContext = SigTypeContext(pMT);
+
+                            mdTypeRef tkParent;
+                            IfFailThrow(pMD->GetModule()->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
+
+                            MethodTable *pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
+                                pMD->GetModule(),
+                                tkParent,
+                                &typeContext).AsMethodTable();
+
+                            // We do CanCastToInterface to also cover variance.
+                            // We already know this is a method on the same type definition as the (generic)
+                            // interface but we need to make sure the instantiations match.
+                            if ((allowVariance && pDeclMT->CanCastToInterface(interfaceMT))
+                                || pDeclMT == interfaceMT)
+                            {
+                                // We have a match
+                                candidateMaybe = pMD;
+                            }
+                        }
+                        else
+                        {
+                            // No generics involved. If the method definitions match, it's a match.
+                            candidateMaybe = pMD;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (candidateMaybe == NULL)
+            return false;
+
+        if (candidateMaybe->HasClassOrMethodInstantiation())
+        {
+            // Instantiate the MethodDesc
+            // We don't want generic dictionary from this pointer - we need pass secret type argument
+            // from instantiating stubs to resolve ambiguity
+            candidateMaybe = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                candidateMaybe,
+                pMT,
+                FALSE,                  // forceBoxedEntryPoint
+                candidateMaybe->HasMethodInstantiation() ?
+                candidateMaybe->AsInstantiatedMethodDesc()->IMD_GetMethodInstantiation() :
+                Instantiation(),    // for method themselves that are generic
+                FALSE,                  // allowInstParam
+                TRUE                    // forceRemoteableMethod
+            );
+        }
+
+        *candidateMD = candidateMaybe;
+        return true;
+    }
+}
+
 // Find the default interface implementation method for interface dispatch
 // It is either the interface method with default interface method implementation,
 // or an most specific interface with an explicit methodimpl overriding the method
@@ -6920,7 +6715,22 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 
     CQuickArray<MatchCandidate> candidates;
     unsigned candidatesCount = 0;
-    candidates.AllocThrows(this->GetNumInterfaces());
+
+    // Check the current method table itself
+    MethodDesc *candidateMaybe = NULL;
+    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, allowVariance, &candidateMaybe))
+    {
+        _ASSERTE(candidateMaybe != NULL);
+
+        candidates.AllocThrows(this->GetNumInterfaces() + 1);
+        candidates[candidatesCount].pMT = this;
+        candidates[candidatesCount].pMD = candidateMaybe;
+        candidatesCount++;
+    }
+    else
+    {
+        candidates.AllocThrows(this->GetNumInterfaces());
+    }
 
     //
     // Walk interface from derived class to parent class
@@ -6929,6 +6739,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     // interface methods in highly complex interface hierarchies we can revisit this
     //
     MethodTable *pMT = this;
+
     while (pMT != NULL)
     {
         MethodTable *pParentMT = pMT->GetParentMethodTable();
@@ -6945,117 +6756,13 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             while (!it.Finished())
             {
                 MethodTable *pCurMT = it.GetInterface();
-
                 MethodDesc *pCurMD = NULL;
-                if (pCurMT == pInterfaceMT)
-                {
-                    if (!pInterfaceMD->IsAbstract())
-                    {
-                        // exact match
-                        pCurMD = pInterfaceMD;
-                    }
-                }
-                else if (pCurMT->CanCastToInterface(pInterfaceMT))
-                {
-                    if (pCurMT->HasSameTypeDefAs(pInterfaceMT))
-                    {
-                        if (allowVariance && !pInterfaceMD->IsAbstract())
-                        {
-                            // Generic variance match - we'll instantiate pCurMD with the right type arguments later
-                            pCurMD = pInterfaceMD;
-                        }
-                    }
-                    else
-                    {
-                        //
-                        // A more specific interface - search for an methodimpl for explicit override
-                        // Implicit override in default interface methods are not allowed
-                        //
-                        MethodIterator methodIt(pCurMT);
-                        for (; methodIt.IsValid() && pCurMD == NULL; methodIt.Next())
-                        {
-                            MethodDesc *pMD = methodIt.GetMethodDesc();
-                            int targetSlot = pInterfaceMD->GetSlot();
-
-                            // If this is not a MethodImpl, it can't be implementing the method we're looking for
-                            if (!pMD->IsMethodImpl())
-                                continue;
-
-                            // We have a MethodImpl - iterate over all the declarations it's implementing,
-                            // looking for the interface method we need.
-                            MethodImpl::Iterator it(pMD);
-                            for (; it.IsValid() && pCurMD == NULL; it.Next())
-                            {
-                                MethodDesc *pDeclMD = it.GetMethodDesc();
-
-                                // Is this the right slot?
-                                if (pDeclMD->GetSlot() != targetSlot)
-                                    continue;
-
-                                // Is this the right interface?
-                                if (!pDeclMD->HasSameMethodDefAs(pInterfaceMD))
-                                    continue;
-
-                                if (pInterfaceMD->HasClassInstantiation())
-                                {
-                                    // pInterfaceMD will be in the canonical form, so we need to check the specific
-                                    // instantiation against pInterfaceMT.
-                                    //
-                                    // The parent of pDeclMD is unreliable for this purpose because it may or
-                                    // may not be canonicalized. Let's go from the metadata.
-
-                                    SigTypeContext typeContext = SigTypeContext(pCurMT);
-
-                                    mdTypeRef tkParent;
-                                    IfFailThrow(pMD->GetModule()->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
-
-                                    MethodTable* pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
-                                        pMD->GetModule(),
-                                        tkParent,
-                                        &typeContext).AsMethodTable();
-
-                                    // We do CanCastToInterface to also cover variance.
-                                    // We already know this is a method on the same type definition as the (generic)
-                                    // interface but we need to make sure the instantiations match.
-                                    if ((allowVariance && pDeclMT->CanCastToInterface(pInterfaceMT))
-                                        || pDeclMT == pInterfaceMT)
-                                    {
-                                        // We have a match
-                                        pCurMD = pMD;
-                                    }
-                                }
-                                else
-                                {
-                                    // No generics involved. If the method definitions match, it's a match.
-                                    pCurMD = pMD;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (pCurMD != NULL)
+                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD))
                 {
                     //
                     // Found a match. But is it a more specific match (we want most specific interfaces)
                     //
-                    if (pCurMD->HasClassOrMethodInstantiation())
-                    {
-                        // Instantiate the MethodDesc
-                        // We don't want generic dictionary from this pointer - we need pass secret type argument
-                        // from instantiating stubs to resolve ambiguity
-                        pCurMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                            pCurMD,
-                            pCurMT,
-                            FALSE,                  // forceBoxedEntryPoint
-                            pCurMD->HasMethodInstantiation() ?
-                                pCurMD->AsInstantiatedMethodDesc()->IMD_GetMethodInstantiation() :
-                                Instantiation(),    // for method themselves that are generic
-                            FALSE,                  // allowInstParam
-                            TRUE                    // forceRemoteableMethod
-                        );
-                    }
-
+                    _ASSERTE(pCurMD != NULL);
                     bool needToInsert = true;
                     bool seenMoreSpecific = false;
 
@@ -7509,13 +7216,6 @@ HRESULT MethodTable::GetGuidNoThrow(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL 
 // If metadata does not specify GUID for the type, GUID_NULL is returned (if bGenerateIfNotFound
 // is FALSE) or a GUID is auto-generated on the fly from the name and members of the type
 // (bGenerateIfNotFound is TRUE).
-//
-// Redirected WinRT types may have two GUIDs, the "classic" one which matches the return value
-// of Type.Guid, and the new one which is the GUID of the WinRT type to which it is redirected.
-// The bClassic parameter controls which one is returned from this method. Note that the parameter
-// is ignored for genuine WinRT types, i.e. types loaded from .winmd files, those always return
-// the new GUID.
-//
 void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /*=TRUE*/)
 {
     CONTRACTL {
@@ -7529,7 +7229,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
 #ifdef DACCESS_COMPILE
 
     _ASSERTE(pGuid != NULL);
-    PTR_GuidInfo pGuidInfo = (bClassic ? GetClass()->GetGuidInfo() : GetGuidInfo());
+    PTR_GuidInfo pGuidInfo = GetClass()->GetGuidInfo();
     if (pGuidInfo != NULL)
        *pGuid = pGuidInfo->m_Guid;
     else
@@ -7546,14 +7246,13 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     _ASSERTE(pGuid != NULL);
     _ASSERTE(!this->IsArray());
 
-    // Use the per-EEClass GuidInfo if we are asked for the "classic" non-WinRT GUID of non-WinRT type
-    GuidInfo *pInfo = ((bClassic && !IsProjectedFromWinRT()) ? GetClass()->GetGuidInfo() : GetGuidInfo());
+    GuidInfo *pInfo = GetClass()->GetGuidInfo();
 
     // First check to see if we have already cached the guid for this type.
     // We currently only cache guids on interfaces and WinRT delegates.
     // In classic mode, though, ensure we don't retrieve the GuidInfo for redirected interfaces
-    if ((IsInterface() || IsWinRTDelegate()) && pInfo != NULL
-        && (!bClassic || !SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, modeRedirected)))
+    if ((IsInterface()) && pInfo != NULL
+        && (!bClassic))
     {
         if (pInfo->m_bGeneratedFromName)
         {
@@ -7571,26 +7270,6 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
         return;
     }
 
-#ifdef FEATURE_COMINTEROP
-    if ((SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, modeProjected))
-        || (!bClassic
-             && SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, modeRedirected)
-             && IsLegalNonArrayWinRTType()))
-    {
-        // Closed generic WinRT interfaces/delegates have their GUID computed
-        // based on the "PIID" in metadata and the instantiation.
-        // Note that we explicitly do this computation for redirected mscorlib
-        // interfaces only if !bClassic, so typeof(Enumerable<T>).GUID
-        // for example still returns the same result as pre-v4.5 runtimes.
-        // ComputeGuidForGenericType() may throw for generics nested beyond 64 levels.
-        WinRTGuidGenerator::ComputeGuidForGenericType(this, pGuid);
-
-        // This GUID is per-instantiation so make sure that the cache
-        // where we are going to keep it is per-instantiation as well.
-        _ASSERTE(IsCanonicalMethodTable() || HasGuidInfo());
-    }
-    else
-#endif // FEATURE_COMINTEROP
     if (GetClass()->HasNoGuid())
     {
         *pGuid = GUID_NULL;
@@ -7675,44 +7354,21 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     // Cache the guid in the type, if not already cached.
     // We currently only do this for interfaces.
     // Also, in classic mode do NOT cache GUID for redirected interfaces.
-    if ((IsInterface() || IsWinRTDelegate()) && (pInfo == NULL) && (*pGuid != GUID_NULL)
-#ifdef FEATURE_COMINTEROP
-        && !(bClassic
-             && SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, modeRedirected)
-             && IsLegalNonArrayWinRTType())
-#endif // FEATURE_COMINTEROP
-        )
+    if ((IsInterface()) && (pInfo == NULL) && (*pGuid != GUID_NULL))
     {
         AllocMemTracker amTracker;
-        BOOL bStoreGuidInfoOnEEClass = false;
-        PTR_LoaderAllocator pLoaderAllocator;
 
-#if FEATURE_COMINTEROP
-        if ((bClassic && !IsProjectedFromWinRT()) || !HasGuidInfo())
-        {
-            bStoreGuidInfoOnEEClass = true;
-        }
-#else
         // We will always store the GuidInfo on the methodTable.
-        bStoreGuidInfoOnEEClass = true;
-#endif
-        if(bStoreGuidInfoOnEEClass)
-        {
-            // Since the GUIDInfo will be stored on the EEClass,
-            // the memory should be allocated on the loaderAllocator of the class.
-            // The definining module and the loaded module could be different in some scenarios.
-            // For example - in case of shared generic instantiations
-            // a shared generic i.e. System.__Canon which would be loaded in shared domain
-            // but the this->GetLoaderAllocator will be the loader allocator for the definining
-            // module which can get unloaded anytime.
-            _ASSERTE(GetClass());
-            _ASSERTE(GetClass()->GetMethodTable());
-            pLoaderAllocator = GetClass()->GetMethodTable()->GetLoaderAllocator();
-        }
-        else
-        {
-            pLoaderAllocator = GetLoaderAllocator();
-        }
+        // Since the GUIDInfo will be stored on the EEClass,
+        // the memory should be allocated on the loaderAllocator of the class.
+        // The definining module and the loaded module could be different in some scenarios.
+        // For example - in case of shared generic instantiations
+        // a shared generic i.e. System.__Canon which would be loaded in shared domain
+        // but the this->GetLoaderAllocator will be the loader allocator for the definining
+        // module which can get unloaded anytime.
+        _ASSERTE(GetClass());
+        _ASSERTE(GetClass()->GetMethodTable());
+        PTR_LoaderAllocator pLoaderAllocator = GetClass()->GetMethodTable()->GetLoaderAllocator();
 
         _ASSERTE(pLoaderAllocator);
 
@@ -7722,24 +7378,10 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
         pInfo->m_Guid = *pGuid;
         pInfo->m_bGeneratedFromName = bGenerated;
 
-        // Set in in the interface method table.
-        if (bClassic && !IsProjectedFromWinRT())
-        {
-            // Set the per-EEClass GuidInfo if we are asked for the "classic" non-WinRT GUID.
-            // The MethodTable may be NGENed and read-only - and there's no point in saving
-            // classic GUIDs in non-WinRT MethodTables anyway.
-            _ASSERTE(bStoreGuidInfoOnEEClass);
-            GetClass()->SetGuidInfo(pInfo);
-        }
-        else
-        {
-#if FEATURE_COMINTEROP
-            _ASSERTE(bStoreGuidInfoOnEEClass || HasGuidInfo());
-#else
-            _ASSERTE(bStoreGuidInfoOnEEClass);
-#endif
-            SetGuidInfo(pInfo);
-        }
+        // Set the per-EEClass GuidInfo
+        // The MethodTable may be NGENed and read-only - and there's no point in saving
+        // classic GUIDs in non-WinRT MethodTables anyway.
+        GetClass()->SetGuidInfo(pInfo);
 
         amTracker.SuppressRelease();
     }
@@ -8469,6 +8111,22 @@ MethodDesc *MethodTable::MethodDataObject::GetImplMethodDesc(UINT32 slotNumber)
 }
 
 //==========================================================================================
+void MethodTable::MethodDataObject::UpdateImplMethodDesc(MethodDesc* pMD, UINT32 slotNumber)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(slotNumber < GetNumVirtuals());
+    _ASSERTE(pMD->IsMethodImpl());
+
+    MethodDataObjectEntry* pEntry = GetEntry(slotNumber);
+
+    // Fill the entries one level of inheritance at a time,
+    // stopping when we have filled the MD we are looking for.
+    while (!pEntry->GetImplMethodDesc() && PopulateNextLevel());
+
+    pEntry->SetImplMethodDesc(pMD);
+}
+
+//==========================================================================================
 void MethodTable::MethodDataObject::InvalidateCachedVirtualSlot(UINT32 slotNumber)
 {
     WRAPPER_NO_CONTRACT;
@@ -8674,7 +8332,7 @@ MethodDesc *MethodTable::MethodDataInterfaceImpl::GetImplMethodDesc(UINT32 slotN
     if (implSlotNumber == INVALID_SLOT_NUMBER) {
         return NULL;
     }
-    return m_pImpl->GetImplMethodDesc(MapToImplSlotNumber(slotNumber));
+    return m_pImpl->GetImplMethodDesc(implSlotNumber);
 }
 
 //==========================================================================================
@@ -8685,7 +8343,7 @@ void MethodTable::MethodDataInterfaceImpl::InvalidateCachedVirtualSlot(UINT32 sl
     if (implSlotNumber == INVALID_SLOT_NUMBER) {
         return;
     }
-    return m_pImpl->InvalidateCachedVirtualSlot(MapToImplSlotNumber(slotNumber));
+    return m_pImpl->InvalidateCachedVirtualSlot(implSlotNumber);
 }
 
 //==========================================================================================
@@ -9040,129 +8698,6 @@ MethodDesc * MethodTable::IntroducedMethodIterator::GetNext(MethodDesc * pMD)
 
     return pMD;
 }
-
-//==========================================================================================
-PTR_GuidInfo MethodTable::GetGuidInfo()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_COMINTEROP
-    if (HasGuidInfo())
-    {
-        return *GetGuidInfoPtr();
-    }
-#endif // FEATURE_COMINTEROP
-    _ASSERTE(GetClass());
-    return GetClass()->GetGuidInfo();
-}
-
-//==========================================================================================
-void MethodTable::SetGuidInfo(GuidInfo* pGuidInfo)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_COMINTEROP
-    if (HasGuidInfo())
-    {
-        *GetGuidInfoPtr() = pGuidInfo;
-        return;
-    }
-#endif // FEATURE_COMINTEROP
-    _ASSERTE(GetClass());
-    GetClass()->SetGuidInfo (pGuidInfo);
-
-#endif // DACCESS_COMPILE
-}
-
-#if defined(FEATURE_COMINTEROP) && !defined(DACCESS_COMPILE)
-
-//==========================================================================================
-RCWPerTypeData *MethodTable::CreateRCWPerTypeData(bool bThrowOnOOM)
-{
-    CONTRACTL
-    {
-        if (bThrowOnOOM) THROWS; else NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(HasRCWPerTypeData());
-    }
-    CONTRACTL_END;
-
-    AllocMemTracker amTracker;
-
-    RCWPerTypeData *pData;
-    if (bThrowOnOOM)
-    {
-        TaggedMemAllocPtr ptr = GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(RCWPerTypeData)));
-        pData = (RCWPerTypeData *)amTracker.Track(ptr);
-    }
-    else
-    {
-        TaggedMemAllocPtr ptr = GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem_NoThrow(S_SIZE_T(sizeof(RCWPerTypeData)));
-        pData = (RCWPerTypeData *)amTracker.Track_NoThrow(ptr);
-        if (pData == NULL)
-        {
-            return NULL;
-        }
-    }
-
-    // memory is zero-inited which means that nothing has been computed yet
-    _ASSERTE(pData->m_dwFlags == 0);
-
-    RCWPerTypeData **pDataPtr = GetRCWPerTypeDataPtr();
-
-    if (InterlockedCompareExchangeT(pDataPtr, pData, NULL) == NULL)
-    {
-        amTracker.SuppressRelease();
-    }
-    else
-    {
-        // another thread already published the pointer
-        pData = *pDataPtr;
-    }
-
-    return pData;
-}
-
-//==========================================================================================
-RCWPerTypeData *MethodTable::GetRCWPerTypeData(bool bThrowOnOOM /*= true*/)
-{
-    CONTRACTL
-    {
-        if (bThrowOnOOM) THROWS; else NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!HasRCWPerTypeData())
-        return NULL;
-
-    RCWPerTypeData *pData = *GetRCWPerTypeDataPtr();
-    if (pData == NULL)
-    {
-        // creation is factored out into a separate routine to avoid paying the EH cost here
-        pData = CreateRCWPerTypeData(bThrowOnOOM);
-    }
-
-    return pData;
-}
-
-#endif // FEATURE_COMINTEROP && !DACCESS_COMPILE
 
 //==========================================================================================
 CHECK MethodTable::CheckActivated()
@@ -9920,83 +9455,6 @@ EEClassNativeLayoutInfo const* MethodTable::EnsureNativeLayoutInfoInitialized()
     return nullptr;
 #endif
 }
-
-#ifdef FEATURE_COMINTEROP
-//==========================================================================================
-BOOL MethodTable::IsWinRTRedirectedDelegate()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (!IsDelegate())
-    {
-        return FALSE;
-    }
-
-    return !!WinRTDelegateRedirector::ResolveRedirectedDelegate(this, nullptr);
-}
-
-//==========================================================================================
-BOOL MethodTable::IsWinRTRedirectedInterface(TypeHandle::InteropKind interopKind)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (!IsInterface())
-        return FALSE;
-
-    if (!HasRCWPerTypeData())
-    {
-        // All redirected interfaces have per-type RCW data
-        return FALSE;
-    }
-
-#ifdef DACCESS_COMPILE
-    RCWPerTypeData *pData = NULL;
-#else // DACCESS_COMPILE
-    // We want to keep this function LIMITED_METHOD_CONTRACT so we call GetRCWPerTypeData with
-    // the non-throwing flag. pData can be NULL if it could not be allocated.
-    RCWPerTypeData *pData = GetRCWPerTypeData(false);
-#endif // DACCESS_COMPILE
-
-    DWORD dwFlags = (pData != NULL ? pData->m_dwFlags : 0);
-    if ((dwFlags & RCWPerTypeData::InterfaceFlagsInited) == 0)
-    {
-        dwFlags = RCWPerTypeData::InterfaceFlagsInited;
-
-        if (WinRTInterfaceRedirector::ResolveRedirectedInterface(this, NULL))
-        {
-            dwFlags |= RCWPerTypeData::IsRedirectedInterface;
-        }
-        else if (HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__ICOLLECTIONGENERIC)) ||
-                 HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IREADONLYCOLLECTIONGENERIC)) ||
-                 this == MscorlibBinder::GetExistingClass(CLASS__ICOLLECTION))
-        {
-            dwFlags |= RCWPerTypeData::IsICollectionGeneric;
-        }
-
-        if (pData != NULL)
-        {
-            FastInterlockOr(&pData->m_dwFlags, dwFlags);
-        }
-    }
-
-    if ((dwFlags & RCWPerTypeData::IsRedirectedInterface) != 0)
-        return TRUE;
-
-    if (interopKind == TypeHandle::Interop_ManagedToNative)
-    {
-        // ICollection<T> is redirected in the managed->WinRT direction (i.e. we have stubs
-        // that implement ICollection<T> methods in terms of IVector/IMap), but it is not
-        // treated specially in the WinRT->managed direction (we don't build a WinRT vtable
-        // for a class that only implements ICollection<T>).  IReadOnlyCollection<T> is
-        // treated similarly.
-        if ((dwFlags & RCWPerTypeData::IsICollectionGeneric) != 0)
-            return TRUE;
-    }
-
-    return FALSE;
-}
-
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_READYTORUN_COMPILER
 

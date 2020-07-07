@@ -15,15 +15,12 @@ using Internal.Runtime.CompilerServices;
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if SYSTEM_PRIVATE_CORELIB
 #if TARGET_64BIT
-using nint = System.Int64;
-using nuint = System.UInt64;
+using nuint_t = System.UInt64;
 #else // TARGET_64BIT
-using nint = System.Int32;
-using nuint = System.UInt32;
+using nuint_t = System.UInt32;
 #endif // TARGET_64BIT
 #else
-using nint = System.Int64; // https://github.com/dotnet/runtime/issues/33575 - use long/ulong outside of corelib until the compiler supports it
-using nuint = System.UInt64;
+using nuint_t = System.UInt64;
 #endif
 
 namespace System.Text.Unicode
@@ -33,8 +30,7 @@ namespace System.Text.Unicode
 #if DEBUG && SYSTEM_PRIVATE_CORELIB
         static Utf16Utility()
         {
-            Debug.Assert(sizeof(nint) == IntPtr.Size && nint.MinValue < 0, "nint is defined incorrectly.");
-            Debug.Assert(sizeof(nuint) == IntPtr.Size && nuint.MinValue == 0, "nuint is defined incorrectly.");
+            Debug.Assert(sizeof(nuint_t) == IntPtr.Size && nuint.MinValue == 0, "nuint_t is defined incorrectly.");
         }
 #endif // DEBUG && SYSTEM_PRIVATE_CORELIB
 
@@ -291,15 +287,15 @@ namespace System.Text.Unicode
                         Vector<ushort> utf16Data = Unsafe.ReadUnaligned<Vector<ushort>>(pInputBuffer);
                         Vector<ushort> twoOrMoreUtf8Bytes = Vector.GreaterThanOrEqual(utf16Data, vector0080);
                         Vector<ushort> threeOrMoreUtf8Bytes = Vector.GreaterThanOrEqual(utf16Data, vector0800);
-                        Vector<nuint> sumVector = (Vector<nuint>)(Vector<ushort>.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes);
+                        Vector<nuint_t> sumVector = (Vector<nuint_t>)(Vector<ushort>.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes);
 
                         // We'll try summing by a natural word (rather than a 16-bit word) at a time,
                         // which should halve the number of operations we must perform.
 
                         nuint popcnt = 0;
-                        for (int i = 0; i < Vector<nuint>.Count; i++)
+                        for (int i = 0; i < Vector<nuint_t>.Count; i++)
                         {
-                            popcnt += sumVector[i];
+                            popcnt += (nuint)sumVector[i];
                         }
 
                         uint popcnt32 = (uint)popcnt;

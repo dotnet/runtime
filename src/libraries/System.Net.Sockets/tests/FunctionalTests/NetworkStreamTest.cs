@@ -535,7 +535,7 @@ namespace System.Net.Sockets.Tests
             {
                 var clientData = new byte[] { 42 };
                 var serverData = new byte[clientData.Length];
-                var tcs = new TaskCompletionSource<bool>();
+                var tcs = new TaskCompletionSource();
 
                 client.BeginWrite(clientData, 0, clientData.Length, writeIar =>
                 {
@@ -547,7 +547,7 @@ namespace System.Net.Sockets.Tests
                             try
                             {
                                 Assert.Equal(serverData.Length, server.EndRead(readIar));
-                                tcs.SetResult(true);
+                                tcs.SetResult();
                             }
                             catch (Exception e2) { tcs.SetException(e2); }
                         }, null);
@@ -1004,7 +1004,7 @@ namespace System.Net.Sockets.Tests
                 {
                     Assert.Null(SynchronizationContext.Current);
 
-                    var continuationRan = new TaskCompletionSource<bool>();
+                    var continuationRan = new TaskCompletionSource();
                     var asyncLocal = new AsyncLocal<int>();
                     bool schedulerWasFlowed = false;
                     bool executionContextWasFlowed = false;
@@ -1012,7 +1012,7 @@ namespace System.Net.Sockets.Tests
                     {
                         schedulerWasFlowed = TaskScheduler.Current is CustomTaskScheduler;
                         executionContextWasFlowed = 42 == asyncLocal.Value;
-                        continuationRan.SetResult(true);
+                        continuationRan.SetResult();
                     };
 
                     var readBuffer = new byte[1];

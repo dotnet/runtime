@@ -62,7 +62,7 @@ namespace Internal.TypeSystem
 
         public static TypeDesc GetParameterType(this TypeDesc type)
         {
-            ParameterizedType paramType = (ParameterizedType) type;
+            ParameterizedType paramType = (ParameterizedType)type;
             return paramType.ParameterType;
         }
 
@@ -381,17 +381,13 @@ namespace Internal.TypeSystem
                     return ((ParameterizedType)thisType).ParameterType.ContainsSignatureVariables();
 
                 case TypeFlags.FunctionPointer:
+                    MethodSignature pointerSignature = ((FunctionPointerType)thisType).Signature;
 
-                    var fptr = (FunctionPointerType)thisType;
-                    if (fptr.Signature.ReturnType.ContainsSignatureVariables())
-                        return true;
-
-                    for (int i = 0; i < fptr.Signature.Length; i++)
-                    {
-                        if (fptr.Signature[i].ContainsSignatureVariables())
+                    for (int i = 0; i < pointerSignature.Length; i++)
+                        if (pointerSignature[i].ContainsSignatureVariables())
                             return true;
-                    }
-                    return false;
+
+                    return pointerSignature.ReturnType.ContainsSignatureVariables();
 
                 case TypeFlags.SignatureMethodVariable:
                 case TypeFlags.SignatureTypeVariable:
@@ -410,6 +406,38 @@ namespace Internal.TypeSystem
 
                     return false;
             }
+        }
+
+        /// <summary>
+        /// Check if MethodImpl requires slot unification.
+        /// </summary>
+        /// <param name="method">Method to check</param>
+        /// <returns>True when the method is marked with the PreserveBaseOverrides custom attribute, false otherwise.</returns>
+        public static bool RequiresSlotUnification(this MethodDesc method)
+        {
+            if (method.HasCustomAttribute("System.Runtime.CompilerServices", "PreserveBaseOverridesAttribute"))
+            {
+#if DEBUG
+                // We shouldn't be calling this for non-MethodImpls, so verify that the method being checked is really a MethodImpl
+                MetadataType mdType = method.OwningType as MetadataType;
+                if (mdType != null)
+                {
+                    bool isMethodImpl = false;
+                    foreach (MethodImplRecord methodImplRecord in mdType.VirtualMethodImplsForType)
+                    {
+                        if (method == methodImplRecord.Body)
+                        {
+                            isMethodImpl = true;
+                            break;
+                        }
+                    }
+                    Debug.Assert(isMethodImpl);
+                }
+#endif
+                return true;
+            }
+
+            return false;
         }
     }
 }

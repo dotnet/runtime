@@ -25,7 +25,6 @@ namespace System.Text.Json
             // Nullable converter should always be first since it forwards to any nullable type.
             new NullableConverterFactory(),
             new EnumConverterFactory(),
-            new KeyValuePairConverterFactory(),
             // IEnumerable should always be second to last since they can convert any IEnumerable.
             new IEnumerableConverterFactory(),
             // Object should always be last since it converts any type.
@@ -71,7 +70,72 @@ namespace System.Text.Json
             return converters;
 
             void Add(JsonConverter converter) =>
-                converters.Add(converter.TypeToConvert!, converter);
+                converters.Add(converter.TypeToConvert, converter);
+        }
+
+        internal JsonConverter GetDictionaryKeyConverter(Type keyType)
+        {
+            _dictionaryKeyConverters ??= GetDictionaryKeyConverters();
+
+            if (!_dictionaryKeyConverters.TryGetValue(keyType, out JsonConverter? converter))
+            {
+                if (keyType.IsEnum)
+                {
+                    converter = GetEnumConverter();
+                    _dictionaryKeyConverters[keyType] = converter;
+                }
+                else
+                {
+                    ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(keyType);
+                }
+            }
+
+            return converter!;
+
+            // Use factory pattern to generate an EnumConverter with AllowStrings and AllowNumbers options for dictionary keys.
+            // There will be one converter created for each enum type.
+            JsonConverter GetEnumConverter()
+                => (JsonConverter)Activator.CreateInstance(
+                        typeof(EnumConverter<>).MakeGenericType(keyType),
+                        BindingFlags.Instance | BindingFlags.Public,
+                        binder: null,
+                        new object[] { EnumConverterOptions.AllowStrings | EnumConverterOptions.AllowNumbers, this },
+                        culture: null)!;
+        }
+
+        private ConcurrentDictionary<Type, JsonConverter>? _dictionaryKeyConverters;
+
+        private static ConcurrentDictionary<Type, JsonConverter> GetDictionaryKeyConverters()
+        {
+            const int NumberOfConverters = 18;
+            var converters = new ConcurrentDictionary<Type, JsonConverter>(Environment.ProcessorCount, NumberOfConverters);
+
+            // When adding to this, update NumberOfConverters above.
+            Add(s_defaultSimpleConverters[typeof(bool)]);
+            Add(s_defaultSimpleConverters[typeof(byte)]);
+            Add(s_defaultSimpleConverters[typeof(char)]);
+            Add(s_defaultSimpleConverters[typeof(DateTime)]);
+            Add(s_defaultSimpleConverters[typeof(DateTimeOffset)]);
+            Add(s_defaultSimpleConverters[typeof(double)]);
+            Add(s_defaultSimpleConverters[typeof(decimal)]);
+            Add(s_defaultSimpleConverters[typeof(Guid)]);
+            Add(s_defaultSimpleConverters[typeof(short)]);
+            Add(s_defaultSimpleConverters[typeof(int)]);
+            Add(s_defaultSimpleConverters[typeof(long)]);
+            Add(s_defaultSimpleConverters[typeof(object)]);
+            Add(s_defaultSimpleConverters[typeof(sbyte)]);
+            Add(s_defaultSimpleConverters[typeof(float)]);
+            Add(s_defaultSimpleConverters[typeof(string)]);
+            Add(s_defaultSimpleConverters[typeof(ushort)]);
+            Add(s_defaultSimpleConverters[typeof(uint)]);
+            Add(s_defaultSimpleConverters[typeof(ulong)]);
+
+            Debug.Assert(NumberOfConverters == converters.Count);
+
+            return converters;
+
+            void Add(JsonConverter converter) =>
+                converters[converter.TypeToConvert] = converter;
         }
 
         /// <summary>

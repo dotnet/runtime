@@ -220,7 +220,6 @@ void DispParamInterfaceMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VAR
     V_VT(pDestVar) = static_cast<VARTYPE>(m_bDispatch ? VT_DISPATCH : VT_UNKNOWN);
 }
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
 void DispParamArrayMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTREF *pDestObj)
 {
     CONTRACTL
@@ -358,7 +357,6 @@ void DispParamArrayMarshaler::MarshalManagedToNativeRef(OBJECTREF *pSrcObj, VARI
     // Copy the converted variant back into the byref variant.
     OleVariant::InsertContentsIntoByrefVariant(&vtmp, pRefVar);
 }
-#endif // FEATURE_CLASSIC_COMINTEROP
 
 void DispParamRecordMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTREF *pDestObj)
 {

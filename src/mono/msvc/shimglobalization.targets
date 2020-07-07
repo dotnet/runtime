@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="shim_libraries">
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_calendarData.c">
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_casing.c">
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_collation.c">
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_idna.c">
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile> 
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_locale.c">
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_localeNumberData.c">
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile> 
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_localeStringData.c">
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_normalization.c">
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+      <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_icushim.c">
+        <CompileAs>CompileAsCpp</CompileAs>
+      </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_timeZoneInfo.c">
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\entrypoints.c">
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_calendarData.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_casing.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_collation.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_errors.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_errors_internal.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_icushim.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_icushim_internal.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_icushim_internal_android.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_idna.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_locale.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_localeNumberData.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_localeStringData.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_locale_internal.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_normalization.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_timeZoneInfo.h" />
+    <ClInclude Include="$(SHIM_GLOBALIZATION_COMMON)\pal_compiler.h" />
+  </ItemGroup>
+</Project>

@@ -177,7 +177,7 @@ namespace System.Threading.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // names aren't supported on Unix
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(EventResetMode.ManualReset)]
         [InlineData(EventResetMode.AutoReset)]
         public void PingPong(EventResetMode mode)

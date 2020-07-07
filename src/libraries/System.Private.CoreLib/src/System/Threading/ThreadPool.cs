@@ -22,26 +22,6 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
 {
-    internal static class ThreadPoolGlobals
-    {
-        public static volatile bool threadPoolInitialized;
-        public static bool enableWorkerTracking;
-
-        public static readonly ThreadPoolWorkQueue workQueue = new ThreadPoolWorkQueue();
-
-        /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
-        internal static readonly Action<object?> s_invokeAsyncStateMachineBox = state =>
-        {
-            if (!(state is IAsyncStateMachineBox box))
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
-                return;
-            }
-
-            box.MoveNext();
-        };
-    }
-
     [StructLayout(LayoutKind.Sequential)] // enforce layout so that padding reduces false sharing
     internal sealed class ThreadPoolWorkQueue
     {
@@ -404,7 +384,7 @@ namespace System.Threading
 
         private readonly Internal.PaddingFor32 pad1;
 
-        private volatile int numOutstandingThreadRequests = 0;
+        private volatile int numOutstandingThreadRequests;
 
         private readonly Internal.PaddingFor32 pad2;
 
@@ -552,7 +532,7 @@ namespace System.Threading
         /// </returns>
         internal static bool Dispatch()
         {
-            ThreadPoolWorkQueue outerWorkQueue = ThreadPoolGlobals.workQueue;
+            ThreadPoolWorkQueue outerWorkQueue = ThreadPool.s_workQueue;
 
             //
             // Save the start time
@@ -627,7 +607,8 @@ namespace System.Threading
                     //
                     // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
                     //
-                    if (ThreadPoolGlobals.enableWorkerTracking)
+#pragma warning disable CS0162 // Unreachable code detected. EnableWorkerTracking may be constant false in some runtimes.
+                    if (ThreadPool.EnableWorkerTracking)
                     {
                         bool reportedStatus = false;
                         try
@@ -650,6 +631,7 @@ namespace System.Threading
                                 ThreadPool.ReportThreadStatus(isWorking: false);
                         }
                     }
+#pragma warning restore CS0162
                     else if (workItem is Task task)
                     {
                         // Check for Task first as it's currently faster to type check
@@ -954,6 +936,20 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
+        internal static readonly ThreadPoolWorkQueue s_workQueue = new ThreadPoolWorkQueue();
+
+        /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
+        internal static readonly Action<object?> s_invokeAsyncStateMachineBox = state =>
+        {
+            if (!(state is IAsyncStateMachineBox box))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
+                return;
+            }
+
+            box.MoveNext();
+        };
+
         [CLSCompliant(false)]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
@@ -1080,15 +1076,13 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
             }
 
-            EnsureInitialized();
-
             ExecutionContext? context = ExecutionContext.Capture();
 
             object tpcallBack = (context == null || context.IsDefault) ?
                 new QueueUserWorkItemCallbackDefaultContext(callBack!, state) :
                 (object)new QueueUserWorkItemCallback(callBack!, state, context);
 
-            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: true);
+            s_workQueue.Enqueue(tpcallBack, forceGlobal: true);
 
             return true;
         }
@@ -1100,15 +1094,13 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
             }
 
-            EnsureInitialized();
-
             ExecutionContext? context = ExecutionContext.Capture();
 
             object tpcallBack = (context == null || context.IsDefault) ?
                 new QueueUserWorkItemCallbackDefaultContext<TState>(callBack!, state) :
                 (object)new QueueUserWorkItemCallback<TState>(callBack!, state, context);
 
-            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: !preferLocal);
+            s_workQueue.Enqueue(tpcallBack, forceGlobal: !preferLocal);
 
             return true;
         }
@@ -1126,7 +1118,7 @@ namespace System.Threading
             //
             // This occurs when user code queues its provided continuation to the ThreadPool;
             // internally we call UnsafeQueueUserWorkItemInternal directly for Tasks.
-            if (ReferenceEquals(callBack, ThreadPoolGlobals.s_invokeAsyncStateMachineBox))
+            if (ReferenceEquals(callBack, ThreadPool.s_invokeAsyncStateMachineBox))
             {
                 if (!(state is IAsyncStateMachineBox))
                 {
@@ -1138,9 +1130,7 @@ namespace System.Threading
                 return true;
             }
 
-            EnsureInitialized();
-
-            ThreadPoolGlobals.workQueue.Enqueue(
+            s_workQueue.Enqueue(
                 new QueueUserWorkItemCallbackDefaultContext<TState>(callBack!, state), forceGlobal: !preferLocal);
 
             return true;
@@ -1153,11 +1143,9 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
             }
 
-            EnsureInitialized();
-
             object tpcallBack = new QueueUserWorkItemCallbackDefaultContext(callBack!, state);
 
-            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: true);
+            s_workQueue.Enqueue(tpcallBack, forceGlobal: true);
 
             return true;
         }
@@ -1183,25 +1171,21 @@ namespace System.Threading
         {
             Debug.Assert((callBack is IThreadPoolWorkItem) ^ (callBack is Task));
 
-            EnsureInitialized();
-
-            ThreadPoolGlobals.workQueue.Enqueue(callBack, forceGlobal: !preferLocal);
+            s_workQueue.Enqueue(callBack, forceGlobal: !preferLocal);
         }
 
         // This method tries to take the target callback out of the current thread's queue.
         internal static bool TryPopCustomWorkItem(object workItem)
         {
             Debug.Assert(null != workItem);
-            return
-                ThreadPoolGlobals.threadPoolInitialized && // if not initialized, so there's no way this workitem was ever queued.
-                ThreadPoolGlobals.workQueue.LocalFindAndPop(workItem);
+            return s_workQueue.LocalFindAndPop(workItem);
         }
 
         // Get all workitems.  Called by TaskScheduler in its debugger hooks.
         internal static IEnumerable<object> GetQueuedWorkItems()
         {
             // Enumerate global queue
-            foreach (object workItem in ThreadPoolGlobals.workQueue.workItems)
+            foreach (object workItem in s_workQueue.workItems)
             {
                 yield return workItem;
             }
@@ -1239,7 +1223,7 @@ namespace System.Threading
             }
         }
 
-        internal static IEnumerable<object> GetGloballyQueuedWorkItems() => ThreadPoolGlobals.workQueue.workItems;
+        internal static IEnumerable<object> GetGloballyQueuedWorkItems() => s_workQueue.workItems;
 
         private static object[] ToObjectArray(IEnumerable<object> workitems)
         {
@@ -1285,7 +1269,7 @@ namespace System.Threading
         {
             get
             {
-                ThreadPoolWorkQueue workQueue = ThreadPoolGlobals.workQueue;
+                ThreadPoolWorkQueue workQueue = s_workQueue;
                 return workQueue.LocalCount + workQueue.GlobalCount + PendingUnmanagedWorkItemCount;
             }
         }

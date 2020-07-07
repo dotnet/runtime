@@ -295,7 +295,7 @@ namespace System.IO.Tests
 
     public sealed class Directory_GetEntries_CurrentDirectory : FileCleanupTestBase
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CurrentDirectory()
         {
             string testDir = GetTestFilePath();

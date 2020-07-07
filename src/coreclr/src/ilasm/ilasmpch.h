@@ -24,4 +24,7 @@
 #include "openum.h"             // for CEE_*
 #include <stdarg.h>         // for vararg macros
 
+#include "mdfileformat.h"
+#include "stgpooli.h"
+
 #endif

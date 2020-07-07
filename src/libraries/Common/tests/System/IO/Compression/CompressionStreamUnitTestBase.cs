@@ -1227,7 +1227,7 @@ namespace System.IO.Compression
                 baseStream.Read(bytes, 0, size);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Parallel_CompressDecompressMultipleStreamsConcurrently()
         {
             const int ParallelOperations = 20;

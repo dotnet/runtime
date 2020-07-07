@@ -24,9 +24,8 @@
     <Compile Include="LoggingTest.cs" />
     <Compile Include="RequestCachePolicyTest.cs" />
     <Compile Include="CookieContainerAddTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs">
-      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
+             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />

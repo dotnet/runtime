@@ -80,7 +80,6 @@ namespace System.Collections.Generic
             }
             else
             {
-                _size = 0;
                 _items = s_emptyArray;
                 using (IEnumerator<T> en = collection!.GetEnumerator())
                 {

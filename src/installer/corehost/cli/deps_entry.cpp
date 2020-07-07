@@ -38,11 +38,12 @@ static pal::string_t normalize_dir_separator(const pal::string_t& path)
 // Returns:
 //    If the file exists in the path relative to the "base" directory within the 
 //    single-file or on disk.
-bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_dir, bool look_in_base, bool look_in_bundle, pal::string_t* str) const
+bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_dir, bool look_in_base, bool look_in_bundle, pal::string_t* str, bool &loaded_from_bundle) const
 {
     pal::string_t& candidate = *str;
 
     candidate.clear();
+    loaded_from_bundle = false;
 
     // Base directory must be present to obtain full path
     if (base.empty())
@@ -67,9 +68,11 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
         {
             // If sub_path is found in the single-file bundle,
             // app::locate() will set candidate to the full-path to the assembly extracted out to disk.
-            if (app->locate(sub_path, candidate))
+            bool extracted_to_disk = false;
+            if (app->locate(sub_path, candidate, extracted_to_disk))
             {
-                trace::verbose(_X("    %s found in bundle [%s]"), sub_path.c_str(), candidate.c_str());
+                loaded_from_bundle = !extracted_to_disk;
+                trace::verbose(_X("    %s found in bundle [%s] %s"), sub_path.c_str(), candidate.c_str(), extracted_to_disk ? _X("(extracted)") : _X(""));
                 return true;
             }
             else
@@ -112,7 +115,7 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
 // Returns:
 //    If the file exists in the path relative to the "base" directory.
 //
-bool deps_entry_t::to_dir_path(const pal::string_t& base, bool look_in_bundle, pal::string_t* str) const
+bool deps_entry_t::to_dir_path(const pal::string_t& base, bool look_in_bundle, pal::string_t* str, bool& loaded_from_bundle) const
 {
     pal::string_t ietf_dir;
 
@@ -134,7 +137,7 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, bool look_in_bundle, p
                         base.c_str(), ietf_dir.c_str(), asset.name.c_str());
     }
 
-    return to_path(base, ietf_dir, true, look_in_bundle, str);
+    return to_path(base, ietf_dir, true, look_in_bundle, str, loaded_from_bundle);
 }
 
 // -----------------------------------------------------------------------------
@@ -150,7 +153,10 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, bool look_in_bundle, p
 //
 bool deps_entry_t::to_rel_path(const pal::string_t& base, bool look_in_bundle, pal::string_t* str) const
 {
-    return to_path(base, _X(""), false, look_in_bundle, str);
+    bool loaded_from_bundle;
+    bool result = to_path(base, _X(""), false, look_in_bundle, str, loaded_from_bundle);
+    assert(!loaded_from_bundle);
+    return result;
 }
 
 // -----------------------------------------------------------------------------

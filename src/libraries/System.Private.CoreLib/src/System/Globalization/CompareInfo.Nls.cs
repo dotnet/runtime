@@ -110,6 +110,19 @@ namespace System.Globalization
             Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
+#if TARGET_WINDOWS
+            if (!Environment.IsWindows8OrAbove)
+            {
+                // On Windows 7 / Server 2008, LCMapStringEx exhibits strange behaviors if the destination
+                // buffer is both non-null and too small for the required output. To prevent this from
+                // causing issues for us, we need to make an immutable copy of the input buffer so that
+                // its contents can't change between when we calculate the required sort key length and
+                // when we populate the sort key buffer.
+
+                source = source.ToString();
+            }
+#endif
+
             // LCMapStringEx doesn't support passing cchSrc = 0, so if given a null or empty input
             // we'll normalize it to an empty null-terminated string and pass -1 to indicate that
             // the underlying OS function should read until it encounters the null terminator.
@@ -189,55 +202,6 @@ namespace System.Globalization
                 {
                     throw new ArgumentException(SR.Arg_ExternalException);
                 }
-                return result - 2;
-            }
-        }
-
-        // TODO https://github.com/dotnet/runtime/issues/8890:
-        // This method shouldn't be necessary, as we should be able to just use the overload
-        // that takes two spans.  But due to this issue, that's adding significant overhead.
-        private unsafe int NlsCompareString(ReadOnlySpan<char> string1, string string2, CompareOptions options)
-        {
-            Debug.Assert(string2 != null);
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-
-            string? localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
-
-            // CompareStringEx may try to dereference the first character of its input, even if an explicit
-            // length of 0 is specified. To work around potential AVs we'll always ensure zero-length inputs
-            // are normalized to a null-terminated empty string.
-
-            if (string1.IsEmpty)
-            {
-                string1 = string.Empty;
-            }
-
-            fixed (char* pLocaleName = localeName)
-            fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
-            fixed (char* pString2 = &string2.GetPinnableReference())
-            {
-                Debug.Assert(*pString1 >= 0); // assert that we can always dereference this
-                Debug.Assert(*pString2 >= 0); // assert that we can always dereference this
-
-                int result = Interop.Kernel32.CompareStringEx(
-                                    pLocaleName,
-                                    (uint)GetNativeCompareFlags(options),
-                                    pString1,
-                                    string1.Length,
-                                    pString2,
-                                    string2.Length,
-                                    null,
-                                    null,
-                                    _sortHandle);
-
-                if (result == 0)
-                {
-                    throw new ArgumentException(SR.Arg_ExternalException);
-                }
-
-                // Map CompareStringEx return value to -1, 0, 1.
                 return result - 2;
             }
         }
@@ -343,72 +307,22 @@ namespace System.Globalization
             }
         }
 
-        private unsafe int NlsIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-
-            Debug.Assert(target != null);
-            Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
-            Debug.Assert((options & CompareOptions.Ordinal) == 0);
-
-            int retValue = FindString(FIND_FROMSTART | (uint)GetNativeCompareFlags(options), source.AsSpan(startIndex, count), target, matchLengthPtr);
-            if (retValue >= 0)
-            {
-                return retValue + startIndex;
-            }
-
-            return -1;
-        }
-
         private unsafe int NlsIndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
 
             Debug.Assert(target.Length != 0);
-            Debug.Assert(options == CompareOptions.None || options == CompareOptions.IgnoreCase);
 
             uint positionFlag = fromBeginning ? (uint)FIND_FROMSTART : FIND_FROMEND;
             return FindString(positionFlag | (uint)GetNativeCompareFlags(options), source, target, matchLengthPtr);
         }
 
-        private unsafe int NlsLastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
+        private unsafe bool NlsStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
 
-            Debug.Assert(!string.IsNullOrEmpty(source));
-            Debug.Assert(target != null);
-            Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
-
-            // startIndex points to the final char to include in the search space.
-            // empty target strings trivially occur at the end of the search space.
-
-            if (target.Length == 0)
-                return startIndex + 1;
-
-            if ((options & CompareOptions.Ordinal) != 0)
-            {
-                return FastLastIndexOfString(source, target, startIndex, count, target.Length);
-            }
-            else
-            {
-                int retValue = FindString(FIND_FROMEND | (uint)GetNativeCompareFlags(options), source.AsSpan(startIndex - count + 1, count), target, null);
-
-                if (retValue >= 0)
-                {
-                    return retValue + startIndex - (count - 1);
-                }
-            }
-
-            return -1;
-        }
-
-        private unsafe bool NlsStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-
-            Debug.Assert(!source.IsEmpty);
             Debug.Assert(!prefix.IsEmpty);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
@@ -432,50 +346,6 @@ namespace System.Globalization
         private const int FIND_ENDSWITH = 0x00200000;
         private const int FIND_FROMSTART = 0x00400000;
         private const int FIND_FROMEND = 0x00800000;
-
-        // TODO: Instead of this method could we just have upstack code call LastIndexOfOrdinal with ignoreCase = false?
-        private static unsafe int FastLastIndexOfString(string source, string target, int startIndex, int sourceCount, int targetCount)
-        {
-            int retValue = -1;
-
-            int sourceStartIndex = startIndex - sourceCount + 1;
-
-            fixed (char* pSource = source, spTarget = target)
-            {
-                char* spSubSource = pSource + sourceStartIndex;
-
-                int endPattern = sourceCount - targetCount;
-                if (endPattern < 0)
-                    return -1;
-
-                Debug.Assert(target.Length >= 1);
-                char patternChar0 = spTarget[0];
-                for (int ctrSrc = endPattern; ctrSrc >= 0; ctrSrc--)
-                {
-                    if (spSubSource[ctrSrc] != patternChar0)
-                        continue;
-
-                    int ctrPat;
-                    for (ctrPat = 1; ctrPat < targetCount; ctrPat++)
-                    {
-                        if (spSubSource[ctrSrc + ctrPat] != spTarget[ctrPat])
-                            break;
-                    }
-                    if (ctrPat == targetCount)
-                    {
-                        retValue = ctrSrc;
-                        break;
-                    }
-                }
-
-                if (retValue >= 0)
-                {
-                    retValue += startIndex - sourceCount + 1;
-                }
-            }
-
-            return retValue;
-        }
 
         private unsafe SortKey NlsCreateSortKey(string source, CompareOptions options)
         {
@@ -531,13 +401,159 @@ namespace System.Globalization
             return new SortKey(this, source, options, keyData);
         }
 
-        private static unsafe bool NlsIsSortable(char* text, int length)
+        private unsafe int NlsGetSortKey(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
+
+            // LCMapStringEx doesn't allow cchDest = 0 unless we're trying to query
+            // the total number of bytes necessary.
+
+            if (destination.IsEmpty)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+#if TARGET_WINDOWS
+            if (!Environment.IsWindows8OrAbove)
+            {
+                // On Windows 7 / Server 2008, LCMapStringEx exhibits strange behaviors if the destination
+                // buffer is both non-null and too small for the required output. To prevent this from
+                // causing issues for us, we need to make an immutable copy of the input buffer so that
+                // its contents can't change between when we calculate the required sort key length and
+                // when we populate the sort key buffer.
+
+                source = source.ToString();
+            }
+#endif
+
+            uint flags = LCMAP_SORTKEY | (uint)GetNativeCompareFlags(options);
+
+            // LCMapStringEx doesn't support passing cchSrc = 0, so if given an empty span
+            // we'll instead normalize to a null-terminated empty string and pass -1 as
+            // the length to indicate that the implicit null terminator should be used.
+
+            int sourceLength = source.Length;
+            if (sourceLength == 0)
+            {
+                source = string.Empty;
+                sourceLength = -1;
+            }
+
+            int actualSortKeyLength;
+
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            fixed (byte* pSortKey = &MemoryMarshal.GetReference(destination))
+            {
+                Debug.Assert(pSource != null);
+                Debug.Assert(pSortKey != null);
+
+#if TARGET_WINDOWS
+                if (!Environment.IsWindows8OrAbove)
+                {
+                    // Manually check that the destination buffer is large enough to hold the full output.
+                    // See earlier comment for reasoning.
+
+                    int requiredSortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                                                               flags,
+                                                                               pSource, sourceLength,
+                                                                               null, 0,
+                                                                               null, null, _sortHandle);
+
+                    if (requiredSortKeyLength > destination.Length)
+                    {
+                        ThrowHelper.ThrowArgumentException_DestinationTooShort();
+                    }
+
+                    if (requiredSortKeyLength <= 0)
+                    {
+                        throw new ArgumentException(SR.Arg_ExternalException);
+                    }
+                }
+#endif
+
+                actualSortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                                                     flags,
+                                                                     pSource, sourceLength,
+                                                                     pSortKey, destination.Length,
+                                                                     null, null, _sortHandle);
+            }
+
+            if (actualSortKeyLength <= 0)
+            {
+                Debug.Assert(actualSortKeyLength == 0, "LCMapStringEx should never return a negative value.");
+
+                // This could fail for a variety of reasons, including NLS being unable
+                // to allocate a temporary buffer large enough to hold intermediate state,
+                // or the destination buffer being too small.
+
+                if (Marshal.GetLastWin32Error() == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                {
+                    ThrowHelper.ThrowArgumentException_DestinationTooShort();
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_ExternalException);
+                }
+            }
+
+            Debug.Assert(actualSortKeyLength <= destination.Length);
+            return actualSortKeyLength;
+        }
+
+        private unsafe int NlsGetSortKeyLength(ReadOnlySpan<char> source, CompareOptions options)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
+
+            uint flags = LCMAP_SORTKEY | (uint)GetNativeCompareFlags(options);
+
+            // LCMapStringEx doesn't support passing cchSrc = 0, so if given an empty span
+            // we'll instead normalize to a null-terminated empty string and pass -1 as
+            // the length to indicate that the implicit null terminator should be used.
+
+            int sourceLength = source.Length;
+            if (sourceLength == 0)
+            {
+                source = string.Empty;
+                sourceLength = -1;
+            }
+
+            int sortKeyLength;
+
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            {
+                Debug.Assert(pSource != null);
+                sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                                               flags,
+                                                               pSource, sourceLength,
+                                                               null, 0,
+                                                               null, null, _sortHandle);
+            }
+
+            if (sortKeyLength <= 0)
+            {
+                Debug.Assert(sortKeyLength == 0, "LCMapStringEx should never return a negative value.");
+
+                // This could fail for a variety of reasons, including NLS being unable
+                // to allocate a temporary buffer large enough to hold intermediate state.
+
+                throw new ArgumentException(SR.Arg_ExternalException);
+            }
+
+            return sortKeyLength;
+        }
+
+        private static unsafe bool NlsIsSortable(ReadOnlySpan<char> text)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(text != null);
+            Debug.Assert(!text.IsEmpty);
 
-            return Interop.Kernel32.IsNLSDefinedString(Interop.Kernel32.COMPARE_STRING, 0, IntPtr.Zero, text, length);
+            fixed (char* pText = &MemoryMarshal.GetReference(text))
+            {
+                return Interop.Kernel32.IsNLSDefinedString(Interop.Kernel32.COMPARE_STRING, 0, IntPtr.Zero, pText, text.Length);
+            }
         }
 
         private const int COMPARE_OPTIONS_ORDINAL = 0x40000000;       // Ordinal

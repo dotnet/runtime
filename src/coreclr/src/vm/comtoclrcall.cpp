@@ -272,49 +272,6 @@ OBJECTREF COMToCLRGetObjectAndTarget_Delegate(ComCallWrapper * pWrap, PCODE * pp
     return pDelObj->GetTarget();
 }
 
-// returns true on success, false otherwise
-NOINLINE // keep the EH tax out of our caller
-bool COMToCLRGetObjectAndTarget_WinRTCtor(Thread * pThread, MethodDesc * pRealMD, ComCallMethodDesc * pCMD, PCODE * ppManagedTargetOut,
-                                          OBJECTREF* pObjectOut, UINT64* pRetValOut)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // Ctor is not virtual and operates on a newly created object.
-    _ASSERTE(!pCMD->IsVirtual());
-
-    *pObjectOut = NULL;
-    *ppManagedTargetOut = pRealMD->GetSingleCallableAddrOfCode();
-    MethodTable *pMT = pRealMD->GetMethodTable();
-
-    // We should not see a unsealed class here
-    _ASSERTE(pMT->IsSealed());
-
-    // we know for sure that we are allocating a new object
-
-    // @TODO: move this object allocation into the IL stub to avoid the try/catch and SO-intolerant region.
-
-    bool fSuccess = true;
-
-    EX_TRY
-    {
-        *pObjectOut = AllocateObject(pMT);
-    }
-    EX_CATCH
-    {
-        fSuccess = false;
-        *pRetValOut = SetupErrorInfo(GET_THROWABLE());
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return fSuccess;
-}
-
 FORCEINLINE_NONDEBUG
 OBJECTREF COMToCLRGetObjectAndTarget_Virtual(ComCallWrapper * pWrap, MethodDesc * pRealMD, ComCallMethodDesc * pCMD, PCODE * ppManagedTargetOut)
 {
@@ -335,16 +292,6 @@ OBJECTREF COMToCLRGetObjectAndTarget_Virtual(ComCallWrapper * pWrap, MethodDesc 
         // For transparent proxies, we need to call on the interface method desc if
         // this method represents an interface method and not an IClassX method.
         *ppManagedTargetOut = pCMD->GetCallMethodDesc()->GetSingleCallableAddrOfCode();
-    }
-    else if (pWrap->IsAggregated() && pWrap->GetComCallWrapperTemplate()->GetClassType().IsExportedToWinRT())
-    {
-        // we know the slot number for this method desc, grab the actual
-        // address from the vtable for this slot. The slot number should
-        // remain the same through out the heirarchy.
-        //
-        // This is the WinRT inheritance case where we want to always call the method as
-        // most recently implemented in the managed world.
-        *ppManagedTargetOut = pWrap->GetComCallWrapperTemplate()->GetClassType().GetMethodTable()->GetSlot(pCMD->GetSlot());
     }
     else
     {
@@ -419,19 +366,12 @@ void COMToCLRWorkerBody_Rare(Thread * pThread, ComMethodFrame * pFrame, ComCallW
 
     maskedFlags &= ~(enum_NativeR4Retval|enum_NativeR8Retval);
 
-    CONSISTENCY_CHECK(maskedFlags != (                      enum_IsWinRTCtor|enum_IsVirtual));
-    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke|enum_IsWinRTCtor|enum_IsVirtual));
-    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke|enum_IsWinRTCtor               ));
     switch (maskedFlags)
     {
     case enum_IsDelegateInvoke|enum_IsVirtual:
     case enum_IsDelegateInvoke: pObject = COMToCLRGetObjectAndTarget_Delegate(pWrap, &pManagedTarget); break;
     case enum_IsVirtual:        pObject = COMToCLRGetObjectAndTarget_Virtual(pWrap, pRealMD, pCMD, &pManagedTarget); break;
     case 0:                     pObject = COMToCLRGetObjectAndTarget_NonVirtual(pWrap, pRealMD, pCMD, &pManagedTarget); break;
-    case enum_IsWinRTCtor:
-        if (!COMToCLRGetObjectAndTarget_WinRTCtor(pThread, pRealMD, pCMD, &pManagedTarget, &pObject, pRetValOut))
-            return;
-        break;
     default:                    UNREACHABLE();
     }
 
@@ -498,25 +438,17 @@ void COMToCLRWorkerBody(
 
     DWORD mask = (
         enum_IsDelegateInvoke |
-        enum_IsWinRTCtor |
         enum_IsVirtual |
         enum_NativeR4Retval |
         enum_NativeR8Retval);
     DWORD maskedFlags = pCMD->GetFlags() & mask;
 
-    CONSISTENCY_CHECK(maskedFlags != (                      enum_IsWinRTCtor|enum_IsVirtual));
-    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke|enum_IsWinRTCtor|enum_IsVirtual));
-    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke|enum_IsWinRTCtor               ));
     switch (maskedFlags)
     {
     case enum_IsDelegateInvoke|enum_IsVirtual:
     case enum_IsDelegateInvoke: pObject = COMToCLRGetObjectAndTarget_Delegate(pWrap, &pManagedTarget); break;
     case enum_IsVirtual:        pObject = COMToCLRGetObjectAndTarget_Virtual(pWrap, pRealMD, pCMD, &pManagedTarget); break;
     case 0:                     pObject = COMToCLRGetObjectAndTarget_NonVirtual(pWrap, pRealMD, pCMD, &pManagedTarget); break;
-    case enum_IsWinRTCtor:
-        if (!COMToCLRGetObjectAndTarget_WinRTCtor(pThread, pRealMD, pCMD, &pManagedTarget, &pObject, pRetValOut))
-            return;
-        break;
     default:
         COMToCLRWorkerBody_Rare(pThread, pFrame, pWrap, pRealMD, pCMD, maskedFlags, pRetValOut);
         return;
@@ -728,7 +660,7 @@ static UINT64 __stdcall FieldCallWorker(Thread *pThread, ComMethodFrame* pFrame)
         {
             // Transform the exception into an HRESULT. This also sets up
             // an IErrorInfo on the current thread for the exception.
-            hrRetVal = SetupErrorInfo(pThrowable, pFrame->GetComCallMethodDesc());
+            hrRetVal = SetupErrorInfo(pThrowable);
         }
     }
 
@@ -835,7 +767,7 @@ PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppSt
     else
     {
         // if this represents a ctor or static, use the class method (i.e. the actual ctor or static)
-        MethodDesc *pMD = ((IsWinRTCtor() || IsWinRTStatic()) ? GetMethodDesc() : GetCallMethodDesc());
+        MethodDesc *pMD = GetCallMethodDesc();
 
         // first see if we have an NGENed stub
         pStubMD = GetStubMethodDescFromInteropMethodDesc(pMD, dwStubFlags);
@@ -982,7 +914,7 @@ void ComCallMethodDesc::InitRuntimeNativeInfo(MethodDesc *pStubMD)
 }
 #endif //CROSSGEN_COMPILE
 
-void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD, BOOL fRedirectedInterface /* = FALSE */)
+void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD)
 {
     CONTRACTL
     {
@@ -1003,27 +935,6 @@ void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD, BO
     m_dwSlotInfo = 0;
     m_pwStubStackSlotOffsets = NULL;
 #endif // TARGET_X86
-
-    if (fRedirectedInterface)
-        m_flags |= enum_IsWinRTRedirected;
-
-    // check whether this is a WinRT ctor/static/event method
-    MethodDesc *pCallMD = GetCallMethodDesc();
-    MethodTable *pCallMT = pCallMD->GetMethodTable();
-    if (pCallMT->IsProjectedFromWinRT() || pCallMT->IsExportedToWinRT())
-    {
-        m_flags |= enum_IsWinRTCall;
-
-        if (pMD->IsCtor())
-        {
-            m_flags |= enum_IsWinRTCtor;
-        }
-        else
-        {
-            if (pMD->IsStatic())
-                m_flags |= enum_IsWinRTStatic;
-        }
-    }
 
     if (!SystemDomain::GetCurrentDomain()->IsCompilationDomain())
     {
@@ -1111,7 +1022,7 @@ void ComCallMethodDesc::InitNativeInfo()
             ReadBestFitCustomAttribute(fsig.GetModule(), pFD->GetEnclosingMethodTable()->GetCl(), &BestFit, &ThrowOnUnmappableChar);
 
             MarshalInfo info(fsig.GetModule(), fsig.GetArgProps(), fsig.GetSigTypeContext(), pFD->GetMemberDef(), MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
-                             (CorNativeLinkType)0, (CorNativeLinkFlags)0, 
+                             (CorNativeLinkType)0, (CorNativeLinkFlags)0,
                              FALSE, 0, fsig.NumFixedArgs(), BestFit, ThrowOnUnmappableChar, FALSE, TRUE, NULL, FALSE
 #ifdef _DEBUG
                              , szDebugName, szDebugClassName, 0
@@ -1179,18 +1090,10 @@ void ComCallMethodDesc::InitNativeInfo()
             }
 #endif
 
-            BOOL WinRTType = pMT->IsProjectedFromWinRT();
-
             // Look up the best fit mapping info via Assembly & Interface level attributes
             BOOL BestFit = TRUE;
             BOOL ThrowOnUnmappableChar = FALSE;
-
-            // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes
-            // are not going to affect the marshaling behavior.
-            if (!WinRTType)
-            {
-                ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
-            }
+            ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
 
             int numArgs = msig.NumFixedArgs();
 
@@ -1216,7 +1119,7 @@ void ComCallMethodDesc::InitNativeInfo()
                     nativeArgSize += StackElemSize(sizeof(LCID));
 
                 MarshalInfo info(msig.GetModule(), msig.GetArgProps(), msig.GetSigTypeContext(), params[iArg],
-                                 WinRTType ? MarshalInfo::MARSHAL_SCENARIO_WINRT : MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
+                                 MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
                                  (CorNativeLinkType)0, (CorNativeLinkFlags)0,
                                  TRUE, iArg, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, FALSE
 #ifdef _DEBUG
@@ -1234,12 +1137,6 @@ void ComCallMethodDesc::InitNativeInfo()
                     info.SetupArgumentSizes();
 
                     nativeArgSize += info.GetNativeArgSize();
-
-                    if (info.GetMarshalType() == MarshalInfo::MARSHAL_TYPE_HIDDENLENGTHARRAY)
-                    {
-                        // count the hidden length
-                        nativeArgSize += info.GetHiddenLengthParamStackSize();
-                    }
                 }
 
                 ++iArg;
@@ -1278,7 +1175,7 @@ void ComCallMethodDesc::InitNativeInfo()
 
             {
                 MarshalInfo info(msig.GetModule(), msig.GetReturnProps(), msig.GetSigTypeContext(), params[0],
-                                    WinRTType ? MarshalInfo::MARSHAL_SCENARIO_WINRT : MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
+                                    MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
                                     (CorNativeLinkType)0, (CorNativeLinkFlags)0,
                                     FALSE, 0, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, FALSE
 #ifdef _DEBUG
@@ -1297,12 +1194,6 @@ void ComCallMethodDesc::InitNativeInfo()
 
                     // count the output by-ref argument
                     nativeArgSize += sizeof(void *);
-
-                    if (info.GetMarshalType() == MarshalInfo::MARSHAL_TYPE_HIDDENLENGTHARRAY)
-                    {
-                        // count the output hidden length
-                        nativeArgSize += info.GetHiddenLengthParamStackSize();
-                    }
 
                     goto Done;
                 }
@@ -1419,29 +1310,9 @@ void ComCall::PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubF
         MethodDesc *pMD = pCMD->GetCallMethodDesc();
         _ASSERTE(IsMethodVisibleFromCom(pMD) && "Calls are not permitted on this member since it isn't visible from COM. The only way you can have reached this code path is if your native interface doesn't match the managed interface.");
 
-        MethodTable *pMT = pMD->GetMethodTable();
-        if (pMT->IsProjectedFromWinRT() || pMT->IsExportedToWinRT() || pCMD->IsWinRTRedirectedMethod())
-        {
-            dwStubFlags |= NDIRECTSTUB_FL_WINRT;
-
-            if (pMT->IsDelegate())
-                dwStubFlags |= NDIRECTSTUB_FL_WINRTDELEGATE;
-            else if (pCMD->IsWinRTCtor())
-            {
-                dwStubFlags |= NDIRECTSTUB_FL_WINRTCTOR;
-            }
-            else
-            {
-                if (pCMD->IsWinRTStatic())
-                    dwStubFlags |= NDIRECTSTUB_FL_WINRTSTATIC;
-            }
-        }
-        else
-        {
-            // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes
-            // are not going to affect the marshaling behavior.
-            ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
-        }
+        // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes
+        // are not going to affect the marshaling behavior.
+        ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
     }
 
     if (BestFit)
@@ -1621,90 +1492,6 @@ MethodDesc* ComCall::GetILStubMethodDesc(FieldDesc *pFD, DWORD dwStubFlags)
                                             pFD->GetMemberDef(),
                                             dwStubFlags,
                                             pFD);
-}
-
-// static
-MethodDesc *ComCall::GetCtorForWinRTFactoryMethod(MethodTable *pClsMT, MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(pClsMT->IsSealed());
-    }
-    CONTRACTL_END;
-
-    PCCOR_SIGNATURE pSig;
-    DWORD cSig;
-    pMD->GetSig(&pSig, &cSig);
-    SigParser sig(pSig, cSig);
-
-    ULONG numArgs;
-
-    IfFailThrow(sig.GetCallingConv(NULL)); // calling convention
-    IfFailThrow(sig.GetData(&numArgs));    // number of args
-    IfFailThrow(sig.SkipExactlyOne());     // skip return type
-
-    SigBuilder sigBuilder;
-    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_HASTHIS);
-    sigBuilder.AppendData(numArgs);
-
-    // ctor returns void
-    sigBuilder.AppendElementType(ELEMENT_TYPE_VOID);
-
-    sig.GetSignature(&pSig, &cSig);
-
-    // parameter types are identical for sealed classes
-    sigBuilder.AppendBlob((const PVOID)pSig, cSig);
-
-    pSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cSig);
-
-    MethodDesc *pCtorMD = MemberLoader::FindMethod(pClsMT, COR_CTOR_METHOD_NAME, pSig, cSig, pMD->GetModule());
-
-    if (pCtorMD == NULL)
-    {
-        SString ctorMethodName(SString::Utf8, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, ctorMethodName.GetUnicode());
-    }
-    return pCtorMD;
-}
-
-// static
-MethodDesc *ComCall::GetStaticForWinRTFactoryMethod(MethodTable *pClsMT, MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    PCCOR_SIGNATURE pSig;
-    DWORD cSig;
-    pMD->GetSig(&pSig, &cSig);
-    SigParser sig(pSig, cSig);
-
-    IfFailThrow(sig.GetCallingConv(NULL)); // calling convention
-
-    SigBuilder sigBuilder;
-    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
-
-    // number of parameters, return type, and parameter types are identical
-    sig.GetSignature(&pSig, &cSig);
-    sigBuilder.AppendBlob((const PVOID)pSig, cSig);
-
-    pSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cSig);
-
-    MethodDesc *pStaticMD = MemberLoader::FindMethod(pClsMT, pMD->GetName(), pSig, cSig, pMD->GetModule());
-
-    if (pStaticMD == NULL)
-    {
-        SString staticMethodName(SString::Utf8, pMD->GetName());
-        COMPlusThrowNonLocalized(kMissingMethodException, staticMethodName.GetUnicode());
-    }
-    return pStaticMD;
 }
 
 #endif // DACCESS_COMPILE

@@ -42,6 +42,13 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowNotSupportedException_DictionaryKeyTypeNotSupported(Type keyType)
+        {
+            throw new NotSupportedException(SR.Format(SR.DictionaryKeyTypeNotSupported, keyType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
         {
             var ex = new JsonException(SR.Format(SR.DeserializeUnableToConvertValue, propertyType));
@@ -94,9 +101,16 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_CannotSerializeOpenGeneric(Type type)
+        public static void ThrowInvalidOperationException_CannotSerializeInvalidType(Type type, Type? parentClassType, PropertyInfo? propertyInfo)
         {
-            throw new InvalidOperationException(SR.Format(SR.CannotSerializeOpenGeneric, type));
+            if (parentClassType == null)
+            {
+                Debug.Assert(propertyInfo == null);
+                throw new InvalidOperationException(SR.Format(SR.CannotSerializeInvalidType, type));
+            }
+
+            Debug.Assert(propertyInfo != null);
+            throw new InvalidOperationException(SR.Format(SR.CannotSerializeInvalidMember, type, propertyInfo.Name, parentClassType));
         }
 
         [DoesNotReturn]
@@ -156,9 +170,9 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_SerializerDictionaryKeyNull(Type policyType)
+        public static void ThrowInvalidOperationException_NamingPolicyReturnNull(JsonNamingPolicy namingPolicy)
         {
-            throw new InvalidOperationException(SR.Format(SR.SerializerDictionaryKeyNull, policyType));
+            throw new InvalidOperationException(SR.Format(SR.NamingPolicyReturnNull, namingPolicy));
         }
 
         [DoesNotReturn]
@@ -416,16 +430,27 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowNotSupportedException_DeserializeNoDeserializationConstructor(Type invalidType)
+        public static void ThrowNotSupportedException_DeserializeNoConstructor(Type type, ref Utf8JsonReader reader, ref ReadStack state)
         {
-            if (invalidType.IsInterface)
+            string message;
+
+            if (type.IsInterface)
             {
-                throw new NotSupportedException(SR.Format(SR.DeserializePolymorphicInterface, invalidType));
+                message = SR.Format(SR.DeserializePolymorphicInterface, type);
             }
             else
             {
-                throw new NotSupportedException(SR.Format(SR.DeserializeMissingDeserializationConstructor, nameof(JsonConstructorAttribute), invalidType));
+                message = SR.Format(SR.DeserializeNoConstructor, nameof(JsonConstructorAttribute), type);
             }
+
+            ThrowNotSupportedException(state, reader, new NotSupportedException(message));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowNotSupportedException_CannotPopulateCollection(Type type, ref Utf8JsonReader reader, ref ReadStack state)
+        {
+            ThrowNotSupportedException(state, reader, new NotSupportedException(SR.Format(SR.CannotPopulateCollection, type)));
         }
 
         [DoesNotReturn]
@@ -491,11 +516,8 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataDuplicateIdFound(string id, ref ReadStack state)
+        public static void ThrowJsonException_MetadataDuplicateIdFound(string id)
         {
-            // Set so JsonPath throws exception with $id in it.
-            state.Current.JsonPropertyName = JsonSerializer.s_metadataId.EncodedUtf8Bytes.ToArray();
-
             ThrowJsonException(SR.Format(SR.MetadataDuplicateIdFound, id));
         }
 

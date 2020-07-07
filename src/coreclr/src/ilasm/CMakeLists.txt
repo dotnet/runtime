@@ -52,7 +52,7 @@ if(CLR_CMAKE_HOST_UNIX)
   set_source_files_properties( prebuilt/asmparse.cpp PROPERTIES COMPILE_FLAGS "-O0" )
 endif(CLR_CMAKE_HOST_UNIX)
 
-if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
@@ -61,8 +61,7 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     # ensure proper resolving of circular references between a subset of the libraries.
     set(START_LIBRARY_GROUP -Wl,--start-group)
     set(END_LIBRARY_GROUP -Wl,--end-group)
-endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
-
+endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
 _add_executable(ilasm
   ${ILASM_SOURCES}
@@ -87,7 +86,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND ILASM_LINK_LIBRARIES
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
-        mdwinmd_wks
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -115,14 +113,8 @@ if(CLR_CMAKE_HOST_UNIX)
     mscorrc
     coreclrpal
     palrt
+    ${CMAKE_DL_LIBS}
   )
-
-  # FreeBSD and NetBSD implement dlopen(3) in libc
-  if(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
-    target_link_libraries(ilasm
-      dl
-    )
-  endif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
 else()
   target_link_libraries(ilasm
     ${ILASM_LINK_LIBRARIES}

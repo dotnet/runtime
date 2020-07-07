@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -15,6 +14,11 @@ namespace System.Text.Json
     [DebuggerDisplay("ClassType.{ClassType}, {Type.Name}")]
     internal sealed partial class JsonClassInfo
     {
+        /// <summary>
+        /// Cached typeof(object). It is faster to cache this than to call typeof(object) multiple times.
+        /// </summary>
+        public static readonly Type ObjectType = typeof(object);
+
         // The length of the property name embedded in the key (in bytes).
         // The key is a ulong (8 bytes) containing the first 7 bytes of the property name
         // followed by a byte representing the length.
@@ -48,34 +52,6 @@ namespace System.Text.Json
         // Fast cache of properties by first JSON ordering; may not contain all properties. Accessed before PropertyCache.
         // Use an array (instead of List<T>) for highest performance.
         private volatile PropertyRef[]? _propertyRefsSorted;
-
-        private Dictionary<string, JsonPropertyInfo> CreatePropertyCache(int capacity)
-        {
-            StringComparer comparer;
-
-            if (Options.PropertyNameCaseInsensitive)
-            {
-                comparer = StringComparer.OrdinalIgnoreCase;
-            }
-            else
-            {
-                comparer = StringComparer.Ordinal;
-            }
-
-            return new Dictionary<string, JsonPropertyInfo>(capacity, comparer);
-        }
-
-        public Dictionary<string, JsonParameterInfo> CreateParameterCache(int capacity, JsonSerializerOptions options)
-        {
-            if (options.PropertyNameCaseInsensitive)
-            {
-                return new Dictionary<string, JsonParameterInfo>(capacity, StringComparer.OrdinalIgnoreCase);
-            }
-            else
-            {
-                return new Dictionary<string, JsonParameterInfo>(capacity);
-            }
-        }
 
         public static JsonPropertyInfo AddProperty(PropertyInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
         {
@@ -140,25 +116,32 @@ namespace System.Text.Json
             JsonConverter converter,
             JsonSerializerOptions options)
         {
-            return CreateProperty(
+            JsonPropertyInfo jsonPropertyInfo = CreateProperty(
                 declaredPropertyType: declaredPropertyType,
                 runtimePropertyType: runtimePropertyType,
                 propertyInfo: null, // Not a real property so this is null.
-                parentClassType: typeof(object), // a dummy value (not used)
-                converter : converter,
+                parentClassType: JsonClassInfo.ObjectType, // a dummy value (not used)
+                converter: converter,
                 options);
+
+            Debug.Assert(jsonPropertyInfo.IsForClassInfo);
+
+            return jsonPropertyInfo;
         }
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public JsonPropertyInfo GetProperty(ReadOnlySpan<byte> propertyName, ref ReadStackFrame frame)
+        public JsonPropertyInfo GetProperty(
+            ReadOnlySpan<byte> propertyName,
+            ref ReadStackFrame frame,
+            out byte[] utf8PropertyName)
         {
-            JsonPropertyInfo? info = null;
+            PropertyRef propertyRef;
+
+            ulong key = GetKey(propertyName);
 
             // Keep a local copy of the cache in case it changes by another thread.
             PropertyRef[]? localPropertyRefsSorted = _propertyRefsSorted;
-
-            ulong key = GetKey(propertyName);
 
             // If there is an existing cache, then use it.
             if (localPropertyRefsSorted != null)
@@ -174,10 +157,11 @@ namespace System.Text.Json
                 {
                     if (iForward < count)
                     {
-                        PropertyRef propertyRef = localPropertyRefsSorted[iForward];
-                        if (TryIsPropertyRefEqual(propertyRef, propertyName, key, ref info))
+                        propertyRef = localPropertyRefsSorted[iForward];
+                        if (IsPropertyRefEqual(propertyRef, propertyName, key))
                         {
-                            return info;
+                            utf8PropertyName = propertyRef.NameFromJson;
+                            return propertyRef.Info;
                         }
 
                         ++iForward;
@@ -185,9 +169,10 @@ namespace System.Text.Json
                         if (iBackward >= 0)
                         {
                             propertyRef = localPropertyRefsSorted[iBackward];
-                            if (TryIsPropertyRefEqual(propertyRef, propertyName, key, ref info))
+                            if (IsPropertyRefEqual(propertyRef, propertyName, key))
                             {
-                                return info;
+                                utf8PropertyName = propertyRef.NameFromJson;
+                                return propertyRef.Info;
                             }
 
                             --iBackward;
@@ -195,10 +180,11 @@ namespace System.Text.Json
                     }
                     else if (iBackward >= 0)
                     {
-                        PropertyRef propertyRef = localPropertyRefsSorted[iBackward];
-                        if (TryIsPropertyRefEqual(propertyRef, propertyName, key, ref info))
+                        propertyRef = localPropertyRefsSorted[iBackward];
+                        if (IsPropertyRefEqual(propertyRef, propertyName, key))
                         {
-                            return info;
+                            utf8PropertyName = propertyRef.NameFromJson;
+                            return propertyRef.Info;
                         }
 
                         --iBackward;
@@ -211,24 +197,39 @@ namespace System.Text.Json
                 }
             }
 
-            // No cached item was found. Try the main list which has all of the properties.
-
-            string stringPropertyName = JsonHelpers.Utf8GetString(propertyName);
-
+            // No cached item was found. Try the main dictionary which has all of the properties.
             Debug.Assert(PropertyCache != null);
 
-            if (!PropertyCache.TryGetValue(stringPropertyName, out info))
+            if (PropertyCache.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonPropertyInfo? info))
+            {
+                if (Options.PropertyNameCaseInsensitive)
+                {
+                    if (propertyName.SequenceEqual(info.NameAsUtf8Bytes))
+                    {
+                        Debug.Assert(key == GetKey(info.NameAsUtf8Bytes.AsSpan()));
+
+                        // Use the existing byte[] reference instead of creating another one.
+                        utf8PropertyName = info.NameAsUtf8Bytes!;
+                    }
+                    else
+                    {
+                        // Make a copy of the original Span.
+                        utf8PropertyName = propertyName.ToArray();
+                    }
+                }
+                else
+                {
+                    Debug.Assert(key == GetKey(info.NameAsUtf8Bytes!.AsSpan()));
+                    utf8PropertyName = info.NameAsUtf8Bytes!;
+                }
+            }
+            else
             {
                 info = JsonPropertyInfo.s_missingProperty;
+
+                // Make a copy of the original Span.
+                utf8PropertyName = propertyName.ToArray();
             }
-
-            Debug.Assert(info != null);
-
-            // Three code paths to get here:
-            // 1) info == s_missingProperty. Property not found.
-            // 2) key == info.PropertyNameKey. Exact match found.
-            // 3) key != info.PropertyNameKey. Match found due to case insensitivity.
-            Debug.Assert(info == JsonPropertyInfo.s_missingProperty || key == info.PropertyNameKey || Options.PropertyNameCaseInsensitive);
 
             // Check if we should add this to the cache.
             // Only cache up to a threshold length and then just use the dictionary when an item is not found in the cache.
@@ -255,7 +256,9 @@ namespace System.Text.Json
                         frame.PropertyRefCache = new List<PropertyRef>();
                     }
 
-                    PropertyRef propertyRef = new PropertyRef(key, info);
+                    Debug.Assert(info != null);
+
+                    propertyRef = new PropertyRef(key, info, utf8PropertyName);
                     frame.PropertyRefCache.Add(propertyRef);
                 }
             }
@@ -265,17 +268,17 @@ namespace System.Text.Json
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryGetParameter(
+        public JsonParameterInfo? GetParameter(
             ReadOnlySpan<byte> propertyName,
             ref ReadStackFrame frame,
-            out JsonParameterInfo? jsonParameterInfo)
+            out byte[] utf8PropertyName)
         {
-            JsonParameterInfo? info = null;
+            ParameterRef parameterRef;
+
+            ulong key = GetKey(propertyName);
 
             // Keep a local copy of the cache in case it changes by another thread.
             ParameterRef[]? localParameterRefsSorted = _parameterRefsSorted;
-
-            ulong key = GetKey(propertyName);
 
             // If there is an existing cache, then use it.
             if (localParameterRefsSorted != null)
@@ -291,11 +294,11 @@ namespace System.Text.Json
                 {
                     if (iForward < count)
                     {
-                        ParameterRef parameterRef = localParameterRefsSorted[iForward];
-                        if (TryIsParameterRefEqual(parameterRef, propertyName, key, ref info))
+                        parameterRef = localParameterRefsSorted[iForward];
+                        if (IsParameterRefEqual(parameterRef, propertyName, key))
                         {
-                            jsonParameterInfo = info;
-                            return true;
+                            utf8PropertyName = parameterRef.NameFromJson;
+                            return parameterRef.Info;
                         }
 
                         ++iForward;
@@ -303,10 +306,10 @@ namespace System.Text.Json
                         if (iBackward >= 0)
                         {
                             parameterRef = localParameterRefsSorted[iBackward];
-                            if (TryIsParameterRefEqual(parameterRef, propertyName, key, ref info))
+                            if (IsParameterRefEqual(parameterRef, propertyName, key))
                             {
-                                jsonParameterInfo = info;
-                                return true;
+                                utf8PropertyName = parameterRef.NameFromJson;
+                                return parameterRef.Info;
                             }
 
                             --iBackward;
@@ -314,11 +317,11 @@ namespace System.Text.Json
                     }
                     else if (iBackward >= 0)
                     {
-                        ParameterRef parameterRef = localParameterRefsSorted[iBackward];
-                        if (TryIsParameterRefEqual(parameterRef, propertyName, key, ref info))
+                        parameterRef = localParameterRefsSorted[iBackward];
+                        if (IsParameterRefEqual(parameterRef, propertyName, key))
                         {
-                            jsonParameterInfo = info;
-                            return true;
+                            utf8PropertyName = parameterRef.NameFromJson;
+                            return parameterRef.Info;
                         }
 
                         --iBackward;
@@ -331,26 +334,39 @@ namespace System.Text.Json
                 }
             }
 
-            string propertyNameAsString = JsonHelpers.Utf8GetString(propertyName);
-
+            // No cached item was found. Try the main dictionary which has all of the parameters.
             Debug.Assert(ParameterCache != null);
 
-            if (!ParameterCache.TryGetValue(propertyNameAsString, out info))
+            if (ParameterCache.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonParameterInfo? info))
             {
-                // Constructor parameter not found. We'll check if it's a property next.
-                jsonParameterInfo = null;
-                return false;
+                if (Options.PropertyNameCaseInsensitive)
+                {
+                    if (propertyName.SequenceEqual(info.NameAsUtf8Bytes))
+                    {
+                        Debug.Assert(key == GetKey(info.NameAsUtf8Bytes.AsSpan()));
+
+                        // Use the existing byte[] reference instead of creating another one.
+                        utf8PropertyName = info.NameAsUtf8Bytes!;
+                    }
+                    else
+                    {
+                        // Make a copy of the original Span.
+                        utf8PropertyName = propertyName.ToArray();
+                    }
+                }
+                else
+                {
+                    Debug.Assert(key == GetKey(info.NameAsUtf8Bytes!.AsSpan()));
+                    utf8PropertyName = info.NameAsUtf8Bytes!;
+                }
             }
+            else
+            {
+                Debug.Assert(info == null);
 
-            jsonParameterInfo = info;
-            Debug.Assert(info != null);
-
-            // Two code paths to get here:
-            // 1) key == info.PropertyNameKey. Exact match found.
-            // 2) key != info.PropertyNameKey. Match found due to case insensitivity.
-            // TODO: recheck these conditions
-            Debug.Assert(key == info.ParameterNameKey ||
-                propertyNameAsString.Equals(info.NameAsString, StringComparison.OrdinalIgnoreCase));
+                // Make a copy of the original Span.
+                utf8PropertyName = propertyName.ToArray();
+            }
 
             // Check if we should add this to the cache.
             // Only cache up to a threshold length and then just use the dictionary when an item is not found in the cache.
@@ -377,24 +393,23 @@ namespace System.Text.Json
                         frame.CtorArgumentState.ParameterRefCache = new List<ParameterRef>();
                     }
 
-                    ParameterRef parameterRef = new ParameterRef(key, jsonParameterInfo);
+                    parameterRef = new ParameterRef(key, info!, utf8PropertyName);
                     frame.CtorArgumentState.ParameterRefCache.Add(parameterRef);
                 }
             }
 
-            return true;
+            return info;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryIsPropertyRefEqual(in PropertyRef propertyRef, ReadOnlySpan<byte> propertyName, ulong key, [NotNullWhen(true)] ref JsonPropertyInfo? info)
+        private static bool IsPropertyRefEqual(in PropertyRef propertyRef, ReadOnlySpan<byte> propertyName, ulong key)
         {
             if (key == propertyRef.Key)
             {
                 // We compare the whole name, although we could skip the first 7 bytes (but it's not any faster)
                 if (propertyName.Length <= PropertyNameKeyLength ||
-                    propertyName.SequenceEqual(propertyRef.Info.Name))
+                    propertyName.SequenceEqual(propertyRef.NameFromJson))
                 {
-                    info = propertyRef.Info;
                     return true;
                 }
             }
@@ -403,15 +418,14 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryIsParameterRefEqual(in ParameterRef parameterRef, ReadOnlySpan<byte> parameterName, ulong key, [NotNullWhen(true)] ref JsonParameterInfo? info)
+        private static bool IsParameterRefEqual(in ParameterRef parameterRef, ReadOnlySpan<byte> parameterName, ulong key)
         {
             if (key == parameterRef.Key)
             {
                 // We compare the whole name, although we could skip the first 7 bytes (but it's not any faster)
                 if (parameterName.Length <= PropertyNameKeyLength ||
-                    parameterName.SequenceEqual(parameterRef.Info.ParameterName))
+                    parameterName.SequenceEqual(parameterRef.NameFromJson))
                 {
-                    info = parameterRef.Info;
                     return true;
                 }
             }
@@ -433,18 +447,10 @@ namespace System.Text.Json
 
             if (length > 7)
             {
-                key = MemoryMarshal.Read<ulong>(propertyName);
-
-                // Max out the length byte.
-                // This will cause the comparison logic to always test for equality against the full contents
-                // when the first 7 bytes are the same.
-                key |= 0xFF00000000000000;
-
-                // It is also possible to include the length up to 0xFF in order to prevent false positives
-                // when the first 7 bytes match but a different length (up to 0xFF). However the extra logic
-                // slows key generation in the majority of cases:
-                // key &= 0x00FFFFFFFFFFFFFF;
-                // key |= (ulong) 7 << Math.Max(length, 0xFF);
+                key = MemoryMarshal.Read<ulong>(propertyName)
+                    & 0x00FFFFFFFFFFFFFF
+                    // Include the length with a max of 0xFF.
+                    | ((ulong)Math.Min(length, 0xFF)) << (7 * BitsInByte);
             }
             else if (length > 3)
             {
@@ -500,13 +506,17 @@ namespace System.Text.Json
 
             // Verify key contains the embedded bytes as expected.
             Debug.Assert(
-                (length < 1 || propertyName[0] == ((key & ((ulong)0xFF << 8 * 0)) >> 8 * 0)) &&
-                (length < 2 || propertyName[1] == ((key & ((ulong)0xFF << 8 * 1)) >> 8 * 1)) &&
-                (length < 3 || propertyName[2] == ((key & ((ulong)0xFF << 8 * 2)) >> 8 * 2)) &&
-                (length < 4 || propertyName[3] == ((key & ((ulong)0xFF << 8 * 3)) >> 8 * 3)) &&
-                (length < 5 || propertyName[4] == ((key & ((ulong)0xFF << 8 * 4)) >> 8 * 4)) &&
-                (length < 6 || propertyName[5] == ((key & ((ulong)0xFF << 8 * 5)) >> 8 * 5)) &&
-                (length < 7 || propertyName[6] == ((key & ((ulong)0xFF << 8 * 6)) >> 8 * 6)));
+                // Verify embedded property name.
+                (length < 1 || propertyName[0] == ((key & ((ulong)0xFF << BitsInByte * 0)) >> BitsInByte * 0)) &&
+                (length < 2 || propertyName[1] == ((key & ((ulong)0xFF << BitsInByte * 1)) >> BitsInByte * 1)) &&
+                (length < 3 || propertyName[2] == ((key & ((ulong)0xFF << BitsInByte * 2)) >> BitsInByte * 2)) &&
+                (length < 4 || propertyName[3] == ((key & ((ulong)0xFF << BitsInByte * 3)) >> BitsInByte * 3)) &&
+                (length < 5 || propertyName[4] == ((key & ((ulong)0xFF << BitsInByte * 4)) >> BitsInByte * 4)) &&
+                (length < 6 || propertyName[5] == ((key & ((ulong)0xFF << BitsInByte * 5)) >> BitsInByte * 5)) &&
+                (length < 7 || propertyName[6] == ((key & ((ulong)0xFF << BitsInByte * 6)) >> BitsInByte * 6)) &&
+                // Verify embedded length.
+                (length >= 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == (ulong)length) &&
+                (length < 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == 0xFF));
 
             return key;
         }

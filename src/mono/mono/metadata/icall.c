@@ -171,7 +171,7 @@ static void
 array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, gboolean strict_enums, gboolean strict_signs, MonoError *error);
 
 static MonoArrayHandle
-type_array_from_modifiers (MonoImage *image, MonoType *type, int optional, MonoError *error);
+type_array_from_modifiers (MonoType *type, int optional, MonoError *error);
 
 static inline MonoBoolean
 is_generic_parameter (MonoType *type)
@@ -1156,9 +1156,12 @@ ves_icall_System_Runtime_RuntimeImports_Memmove (guint8 *destination, guint8 *so
 
 #if ENABLE_NETCORE
 void
-ves_icall_System_Runtime_RuntimeImports_RhBulkMoveWithWriteBarrier (guint8 *destination, guint8 *source, size_t byte_count)
+ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *destination, guint8 *source, size_t len, MonoType *type)
 {
-	mono_gc_wbarrier_range_copy (destination, source, byte_count);
+	if (MONO_TYPE_IS_REFERENCE (type))
+		mono_gc_wbarrier_arrayref_copy_internal (destination, source, (guint)len);
+	else
+		mono_gc_wbarrier_value_copy_internal (destination, source, (guint)len, mono_class_from_mono_type_internal (type));
 }
 #else
 void
@@ -2083,16 +2086,6 @@ handle_enum:
 }
 #endif
 
-static MonoType*
-mono_type_get_underlying_type_ignore_byref (MonoType *type)
-{
-	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass))
-		return mono_class_enum_basetype_internal (type->data.klass);
-	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class))
-		return mono_class_enum_basetype_internal (type->data.generic_class->container_class);
-	return type;
-}
-
 guint32
 ves_icall_RuntimeTypeHandle_type_is_assignable_from (MonoReflectionTypeHandle ref_type, MonoReflectionTypeHandle ref_c, MonoError *error)
 {
@@ -2107,26 +2100,7 @@ ves_icall_RuntimeTypeHandle_type_is_assignable_from (MonoReflectionTypeHandle re
 		return FALSE;
 
 	if (type->byref) {
-		MonoType *t = mono_type_get_underlying_type_ignore_byref (type);
-		MonoType *ot = mono_type_get_underlying_type_ignore_byref (ctype);
-
-		klass = mono_class_from_mono_type_internal (t);
-		klassc = mono_class_from_mono_type_internal (ot);
-
-		if (mono_type_is_primitive (t)) {
-			return mono_type_is_primitive (ot) && m_class_get_instance_size (klass) == m_class_get_instance_size (klassc);
-		} else if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) {
-			return t->type == ot->type && t->data.generic_param->num == ot->data.generic_param->num;
-		} else if (t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR) {
-			return t->type == ot->type;
-		} else {
-			 if (ot->type == MONO_TYPE_VAR || ot->type == MONO_TYPE_MVAR)
-				 return FALSE;
-
-			 if (m_class_is_valuetype (klass))
-				return klass == klassc;
-			 return m_class_is_valuetype (klass) == m_class_is_valuetype (klassc);
-		}
+		return mono_byref_type_is_assignable_from (type, ctype, FALSE);
 	}
 
 	gboolean result;
@@ -2317,7 +2291,7 @@ ves_icall_System_Reflection_FieldInfo_GetTypeModifiers (MonoReflectionFieldHandl
 	MonoType *type = mono_field_get_type_checked (field, error);
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 
-	return type_array_from_modifiers (m_class_get_image (field->parent), type, optional, error);
+	return type_array_from_modifiers (type, optional, error);
 }
 
 int
@@ -5472,7 +5446,7 @@ ves_icall_System_Reflection_RuntimeAssembly_GetAotIdInternal (MonoArrayHandle gu
 #endif
 
 static MonoAssemblyName*
-create_referenced_assembly_name (MonoDomain *domain, MonoImage *image, MonoTableInfo *t, int i, MonoError *error)
+create_referenced_assembly_name (MonoDomain *domain, MonoImage *image, int i, MonoError *error)
 {
 	MonoAssemblyName *aname = g_new0 (MonoAssemblyName, 1);
 
@@ -5501,14 +5475,21 @@ ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoReflec
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly);
 	MonoAssembly *ass = MONO_HANDLE_GETVAL(assembly, assembly);
 	MonoImage *image = ass->image;
+	int count;
 
-	MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
-	int count = t->rows;
+	if (image_is_dynamic (ass->image)) {
+		MonoDynamicTable *t = &(((MonoDynamicImage*) image)->tables [MONO_TABLE_ASSEMBLYREF]);
+		count = t->rows;
+	}
+	else {
+		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
+		count = t->rows;
+	}
 
 	GPtrArray *result = g_ptr_array_sized_new (count);
 
 	for (int i = 0; i < count; i++) {
-		MonoAssemblyName *aname = create_referenced_assembly_name (domain, image, t, i, error);
+		MonoAssemblyName *aname = create_referenced_assembly_name (domain, image, i, error);
 		if (!is_ok (error))
 			break;
 		g_ptr_array_add (result, aname);
@@ -5533,8 +5514,47 @@ g_concat_dir_and_file (const char *dir, const char *file)
 		return g_strconcat (dir, file, (const char*)NULL);
 }
 
-void *
-ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, gint32 *size, MonoReflectionModuleHandleOut ref_module, MonoError *error) 
+#ifdef ENABLE_NETCORE
+static MonoReflectionAssemblyHandle
+try_resource_resolve_name (MonoReflectionAssemblyHandle assembly_handle, MonoStringHandle name_handle)
+{
+	MonoObjectHandle ret;
+
+	ERROR_DECL (error);
+
+	HANDLE_FUNCTION_ENTER ();
+
+	if (mono_runtime_get_no_exec ())
+		goto return_null;
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, resolve_method)
+
+		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+		g_assert (alc_class);
+		resolve_method = mono_class_get_method_from_name_checked (alc_class, "OnResourceResolve", -1, 0, error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, resolve_method)
+
+	goto_if_nok (error, return_null);
+
+	gpointer args [2];
+	args [0] = MONO_HANDLE_RAW (assembly_handle);
+	args [1] = MONO_HANDLE_RAW (name_handle);
+	ret = mono_runtime_try_invoke_handle (resolve_method, NULL_HANDLE, args, error);
+	goto_if_nok (error, return_null);
+
+	goto exit;
+
+return_null:
+	ret = NULL_HANDLE;
+
+exit:
+	HANDLE_FUNCTION_RETURN_REF (MonoReflectionAssembly, MONO_HANDLE_CAST (MonoReflectionAssembly, ret));
+}
+#endif
+
+static void *
+get_manifest_resource_internal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, gint32 *size, MonoReflectionModuleHandleOut ref_module, MonoError *error)
 {
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly_h);
 	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_h, assembly);
@@ -5580,6 +5600,22 @@ ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceInternal (MonoRef
 	MONO_HANDLE_ASSIGN (ref_module, rm);
 
 	return (void*)mono_image_get_resource (module, cols [MONO_MANIFEST_OFFSET], (guint32*)size);
+}
+
+void *
+ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, gint32 *size, MonoReflectionModuleHandleOut ref_module, MonoError *error) 
+{
+	gpointer ret = get_manifest_resource_internal (assembly_h, name, size, ref_module, error);
+
+#ifdef ENABLE_NETCORE
+	if (!ret) {
+		MonoReflectionAssemblyHandle event_assembly_h = try_resource_resolve_name (assembly_h, name);
+		if (MONO_HANDLE_BOOL (event_assembly_h))
+			ret = get_manifest_resource_internal (event_assembly_h, name, size, ref_module, error);
+	}
+#endif
+
+	return ret;
 }
 
 static gboolean
@@ -7310,7 +7346,7 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionTypeHandle ref_
 		return_val_if_nok (error, NULL_HANDLE);
 	}
 
-	mono_delegate_ctor_with_method (delegate, target, NULL, method, error);
+	mono_delegate_ctor (delegate, target, NULL, method, error);
 	return_val_if_nok (error, NULL_HANDLE);
 	return delegate;
 }
@@ -8427,115 +8463,6 @@ ves_icall_System_Diagnostics_Debugger_Log (int level, MonoString *volatile* cate
 		mono_get_runtime_callbacks ()->debug_log (level, *category, *message);
 }
 
-#ifdef ENABLE_NETCORE
-#define EVENT_PIPE_DUMMY_PROVIDER_ID 1
-#define EVENT_PIPE_DUMMY_SESSION_ID 1
-#define EVENT_PIPE_DUMMY_EVENT_ID 1
-#define EVENT_PIPE_ERROR_SUCCESS 0
-#define EVENT_PIPE_INVALID_WAIT_HANDLE 0
-
-typedef enum _EventPipeSerializationFormat{
-	NetPerf,
-	NetTrace
-} EventPipeSerializationFormat;
-
-typedef struct _EventPipeProviderConfigurationNative {
-    gunichar2 *provider_name;
-    uint64_t keywords;
-    uint32_t logging_level;
-    gunichar2 *filter_data;
-} EventPipeProviderConfigurationNative;
-
-typedef struct _EventProviderEventData {
-    uint64_t ptr;
-    uint32_t size;
-    uint32_t reserved;
-} EventProviderEventData;
-
-typedef struct _EventPipeSessionInfo {
-    int64_t starttime_as_utc_filetime;
-    int64_t start_timestamp;
-    int64_t timestamp_frequency;
-} EventPipeSessionInfo;
-
-typedef struct _EventPipeEventInstanceData {
-    intptr_t provider_id;
-    uint32_t event_id;
-    uint32_t thread_id;
-    int64_t timestamp;
-    uint8_t activity_id[16];
-    uint8_t related_activity_id[16];
-    const uint8_t *payload;
-    uint32_t payload_length;
-} EventPipeEventInstanceData;
-
-gconstpointer
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (MonoStringHandle provider_name, MonoDelegateHandle callback_func, MonoError *error)
-{
-	return GUINT_TO_POINTER (EVENT_PIPE_DUMMY_PROVIDER_ID);
-}
-
-intptr_t
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DefineEvent (intptr_t prov_handle, uint32_t event_id, int64_t keywords, uint32_t event_version, uint32_t level, const uint8_t *metadata, uint32_t metadata_len)
-{
-	return EVENT_PIPE_DUMMY_EVENT_ID;
-}
-
-void
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DeleteProvider (intptr_t prov_handle)
-{
-	;
-}
-
-void
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Disable (uint64_t session_id)
-{
-	;
-}
-
-uint64_t
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (const_gunichar2_ptr output_file, /* EventPipeSerializationFormat */int32_t format, uint32_t circular_buffer_size_mb, /* EventPipeProviderConfigurationNative[] */const void *providers, uint32_t num_providers)
-{
-	return EVENT_PIPE_DUMMY_SESSION_ID;
-}
-
-int32_t
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_EventActivityIdControl (uint32_t control_code, /* GUID * */uint8_t *activity_id)
-{
-	return EVENT_PIPE_ERROR_SUCCESS;
-}
-
-MonoBoolean
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetNextEvent (uint64_t session_id, /* EventPipeEventInstanceData * */void *instance)
-{
-	return FALSE;
-}
-
-intptr_t
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetProvider (const_gunichar2_ptr provider_name)
-{
-	return EVENT_PIPE_DUMMY_PROVIDER_ID;
-}
-
-MonoBoolean
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (uint64_t session_id, /* EventPipeSessionInfo * */void *session_info)
-{
-	return FALSE;
-}
-
-intptr_t
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle (uint64_t session_id)
-{
-	return EVENT_PIPE_INVALID_WAIT_HANDLE;
-}
-
-void
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData (intptr_t event_handle, /* EventProviderEventData[] */const void *event_data, uint32_t data_count, /* GUID * */const uint8_t *activity_id, /* GUID * */const uint8_t *related_activity_id)
-{
-	;
-}
-#endif /* ENABLE_NETCORE */
-
 #ifndef HOST_WIN32
 static inline void
 mono_icall_write_windows_debug_string (const gunichar2 *message)
@@ -8862,7 +8789,7 @@ leave:
  * and avoid useless allocations.
  */
 static MonoArrayHandle
-type_array_from_modifiers (MonoImage *image, MonoType *type, int optional, MonoError *error)
+type_array_from_modifiers (MonoType *type, int optional, MonoError *error)
 {
 	int i, count = 0;
 	MonoDomain *domain = mono_domain_get ();
@@ -8918,6 +8845,12 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 		if (!(method = prop->get))
 			method = prop->set;
 		g_assert (method);	
+	} else if (strcmp (m_class_get_name (member_class), "DynamicMethod") == 0 && strcmp (m_class_get_name_space (member_class), "System.Reflection.Emit") == 0) {
+		MonoArrayHandle params = MONO_HANDLE_NEW_GET (MonoArray, MONO_HANDLE_CAST (MonoReflectionDynamicMethod, member), parameters);
+		MonoReflectionTypeHandle t = MONO_HANDLE_NEW (MonoReflectionType, NULL);
+		MONO_HANDLE_ARRAY_GETREF (t, params, pos);
+		type = mono_reflection_type_handle_mono_type (t, error);
+		return type_array_from_modifiers (type, optional, error);
 	} else {
 		char *type_name = mono_type_get_full_name (member_class);
 		mono_error_set_not_supported (error, "Custom modifiers on a ParamInfo with member %s are not supported", type_name);
@@ -8932,7 +8865,7 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 	else
 		type = sig->params [pos];
 
-	return type_array_from_modifiers (image, type, optional, error);
+	return type_array_from_modifiers (type, optional, error);
 }
 
 static MonoType*
@@ -8954,13 +8887,11 @@ ves_icall_RuntimePropertyInfo_GetTypeModifiers (MonoReflectionPropertyHandle pro
 {
 	error_init (error);
 	MonoProperty *prop = MONO_HANDLE_GETVAL (property, property);
-	MonoClass *klass = MONO_HANDLE_GETVAL (property, klass);
 	MonoType *type = get_property_type (prop);
-	MonoImage *image = m_class_get_image (klass);
 
 	if (!type)
 		return NULL_HANDLE_ARRAY;
-	return type_array_from_modifiers (image, type, optional, error);
+	return type_array_from_modifiers (type, optional, error);
 }
 
 /*

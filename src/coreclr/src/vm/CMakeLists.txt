@@ -42,6 +42,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     assemblyloadcontext.cpp
     baseassemblyspec.cpp
     binder.cpp
+    bundle.cpp
     castcache.cpp
     callcounting.cpp
     ceeload.cpp
@@ -106,6 +107,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     peimagelayout.cpp
     perfmap.cpp
     perfinfo.cpp
+    pgo.cpp
     precode.cpp
     prestub.cpp
     profilerdiagnosticprotocolhelper.cpp
@@ -186,7 +188,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     gctoclreventsink.h
     gcheaputilities.h
     generics.h
-    generics.inl
     hash.h
     hillclimbing.h
     ilinstrumentation.h
@@ -217,6 +218,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     peimagelayout.inl
     perfmap.h
     perfinfo.h
+    pgo.h
     precode.h
     rejit.h
     rejit.inl
@@ -302,10 +304,8 @@ set(VM_SOURCES_WKS
     cachelinealloc.cpp
     callhelpers.cpp
     callsiteinspect.cpp
-    ceemain.cpp
     clrconfignative.cpp
     clrex.cpp
-    clrprivbinderutil.cpp
     clrvarargs.cpp
     comdatetime.cpp
     comdependenthandle.cpp
@@ -321,6 +321,7 @@ set(VM_SOURCES_WKS
     autotrace.cpp
     diagnosticserver.cpp
     dllimportcallback.cpp
+    dynamicinterfacecastable.cpp
     eeconfig.cpp
     eecontract.cpp
     eemessagebox.cpp
@@ -350,7 +351,6 @@ set(VM_SOURCES_WKS
     fcall.cpp
     fieldmarshaler.cpp
     finalizerthread.cpp
-    frameworkexceptionloader.cpp
     gccover.cpp
     gcenv.ee.static.cpp
     gcenv.ee.common.cpp
@@ -364,6 +364,7 @@ set(VM_SOURCES_WKS
     interoputil.cpp
     interpreter.cpp
     invokeutil.cpp
+    ipcstreamfactory.cpp
     jithelpers.cpp
     managedmdimport.cpp
     marshalnative.cpp
@@ -398,13 +399,16 @@ set(VM_SOURCES_WKS
     stubhelpers.cpp
     syncclean.cpp
     synch.cpp
-    synchronizationcontextnative.cpp
+    tailcallhelp.cpp
     threaddebugblockinginfo.cpp
     threadsuspend.cpp
     typeparse.cpp
     weakreferencenative.cpp
     ${VM_SOURCES_GDBJIT}
 )
+
+# coreclr needs to compile codeman.cpp differently depending on flavor (i.e. dll vs. static lib))
+list(REMOVE_ITEM VM_SOURCES_WKS codeman.cpp)
 
 set(VM_HEADERS_WKS
     ${VM_HEADERS_DAC_AND_WKS_COMMON}
@@ -469,7 +473,6 @@ set(VM_HEADERS_WKS
     fcall.h
     fieldmarshaler.h
     finalizerthread.h
-    frameworkexceptionloader.h
     gcenv.h
     gcenv.ee.h
     gcenv.os.h
@@ -482,6 +485,7 @@ set(VM_HEADERS_WKS
     interpreter.h
     interpreter.hpp
     invokeutil.h
+    ipcstreamfactory.h
     managedmdimport.hpp
     marshalnative.h
     methodtablebuilder.h
@@ -516,7 +520,7 @@ set(VM_HEADERS_WKS
     stubhelpers.h
     syncclean.hpp
     synch.h
-    synchronizationcontextnative.h
+    tailcallhelp.h
     tieredcompilation.h
     threaddebugblockinginfo.h
     threadsuspend.h
@@ -568,23 +572,17 @@ if(CLR_CMAKE_TARGET_WIN32)
 set(VM_SOURCES_DAC_AND_WKS_WIN32
     amsi.cpp
     clrtocomcall.cpp
-    rcwwalker.cpp
-    winrttypenameconverter.cpp
 )
 
 set(VM_HEADERS_DAC_AND_WKS_WIN32
     amsi.h
     clrtocomcall.h
-    rcwwalker.h
-    winrttypenameconverter.h
 )
 
 list(APPEND VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_WIN32}
     # These should not be included for Linux
     classcompat.cpp
-    clrprivbinderwinrt.cpp
-    clrprivtypecachewinrt.cpp
     comcache.cpp
     comcallablewrapper.cpp
     comconnectionpoints.cpp
@@ -605,15 +603,12 @@ list(APPEND VM_SOURCES_WKS
     stacksampler.cpp
     stdinterfaces.cpp
     stdinterfaces_wrapper.cpp
-    winrthelpers.cpp
 )
 
 list(APPEND VM_HEADERS_WKS
     ${VM_HEADERS_DAC_AND_WKS_WIN32}
     # These should not be included for Linux
     classcompat.h
-    clrprivbinderwinrt.h
-    clrprivtypecachewinrt.h
     comcache.h
     comcallablewrapper.h
     comconnectionpoints.h
@@ -634,21 +629,14 @@ list(APPEND VM_HEADERS_WKS
     stacksampler.h
     stdinterfaces.h
     stdinterfaces_internal.h
-    winrthelpers.h
 )
 
 list(APPEND VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_WIN32}
-    # These should not be included for Linux
-    clrprivbinderwinrt.cpp
-    clrprivtypecachewinrt.cpp
 )
 
 list(APPEND VM_HEADERS_DAC
     ${VM_HEADERS_DAC_AND_WKS_WIN32}
-    # These should not be included for Linux
-    clrprivbinderwinrt.h
-    clrprivtypecachewinrt.h
 )
 
 endif(CLR_CMAKE_TARGET_WIN32)
@@ -782,7 +770,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
     )
 
     set(VM_SOURCES_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/jithelpersamd64.cpp
         ${ARCH_SOURCES_DIR}/jitinterfaceamd64.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         exceptionhandling.cpp
@@ -835,7 +822,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
     )
 
     set(VM_SOURCES_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/jithelpersarm.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
@@ -925,9 +911,16 @@ if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND VM_SOURCES_DAC ${VM_HEADERS_DAC})
 endif(CLR_CMAKE_TARGET_WIN32)
 
+#these two files we need to compile differently for standalone and mergeable flavors of WKS
+set (VM_SOURCES_WKS_SPECIAL
+    codeman.cpp
+    ceemain.cpp
+)
+
 convert_to_absolute_path(VM_SOURCES_WKS ${VM_SOURCES_WKS})
 convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
 convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
+convert_to_absolute_path(VM_SOURCES_WKS_SPECIAL ${VM_SOURCES_WKS_SPECIAL})
 
 add_library_clr(cee_dac ${VM_SOURCES_DAC})
 add_dependencies(cee_dac eventing_headers)

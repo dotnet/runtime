@@ -4,9 +4,8 @@
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.Pkcs.Asn1
 {
@@ -35,13 +34,13 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             if (Millis.HasValue)
             {
-                writer.WriteInteger(new Asn1Tag(TagClass.ContextSpecific, 0), Millis.Value);
+                writer.WriteInteger(Millis.Value, new Asn1Tag(TagClass.ContextSpecific, 0));
             }
 
 
             if (Micros.HasValue)
             {
-                writer.WriteInteger(new Asn1Tag(TagClass.ContextSpecific, 1), Micros.Value);
+                writer.WriteInteger(Micros.Value, new Asn1Tag(TagClass.ContextSpecific, 1));
             }
 
             writer.PopSequence(tag);
@@ -54,11 +53,18 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
         internal static Rfc3161Accuracy Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, expectedTag, encoded, out Rfc3161Accuracy decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                Decode(ref reader, expectedTag, encoded, out Rfc3161Accuracy decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out Rfc3161Accuracy decoded)
@@ -67,6 +73,18 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         }
 
         internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out Rfc3161Accuracy decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out Rfc3161Accuracy decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
@@ -90,7 +108,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
 
-                if (sequenceReader.TryReadInt32(new Asn1Tag(TagClass.ContextSpecific, 0), out int tmpMillis))
+                if (sequenceReader.TryReadInt32(out int tmpMillis, new Asn1Tag(TagClass.ContextSpecific, 0)))
                 {
                     decoded.Millis = tmpMillis;
                 }
@@ -105,7 +123,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
             {
 
-                if (sequenceReader.TryReadInt32(new Asn1Tag(TagClass.ContextSpecific, 1), out int tmpMicros))
+                if (sequenceReader.TryReadInt32(out int tmpMicros, new Asn1Tag(TagClass.ContextSpecific, 1)))
                 {
                     decoded.Micros = tmpMicros;
                 }

@@ -188,13 +188,41 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Gets a value indicating whether this is one of the primitive types (boolean, char, void,
-        /// a floating point, or an integer type).
+        /// a floating-point, or an integer type).
         /// </summary>
         public bool IsPrimitive
         {
             get
             {
                 return GetTypeFlags(TypeFlags.CategoryMask) < TypeFlags.ValueType;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is one of the primitive numeric types
+        /// (a floating-point or an integer type).
+        /// </summary>
+        public bool IsPrimitiveNumeric
+        {
+            get
+            {
+                switch (GetTypeFlags(TypeFlags.CategoryMask))
+                {
+                    case TypeFlags.SByte:
+                    case TypeFlags.Byte:
+                    case TypeFlags.Int16:
+                    case TypeFlags.UInt16:
+                    case TypeFlags.Int32:
+                    case TypeFlags.UInt32:
+                    case TypeFlags.Int64:
+                    case TypeFlags.UInt64:
+                    case TypeFlags.Single:
+                    case TypeFlags.Double:
+                        return true;
+
+                    default:
+                        return false;
+                }
             }
         }
 
@@ -485,14 +513,25 @@ namespace Internal.TypeSystem
         /// If signature is not specified and there are multiple matches, the first one
         /// is returned. Returns null if method not found.
         /// </summary>
-        // TODO: Substitutions, generics, modopts, ...
-        public virtual MethodDesc GetMethod(string name, MethodSignature signature)
+        public MethodDesc GetMethod(string name, MethodSignature signature)
+        {
+            return GetMethod(name, signature, default(Instantiation));
+        }
+
+        /// <summary>
+        /// Gets a named method on the type. This method only looks at methods defined
+        /// in type's metadata. The <paramref name="signature"/> parameter can be null.
+        /// If signature is not specified and there are multiple matches, the first one
+        /// is returned. If substitution is not null, then substitution will be applied to
+        /// possible target methods before signature comparison. Returns null if method not found.
+        /// </summary>
+        public virtual MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
         {
             foreach (var method in GetMethods())
             {
                 if (method.Name == name)
                 {
-                    if (signature == null || signature.Equals(method.Signature))
+                    if (signature == null || signature.Equals(method.Signature.ApplySubstitution(substitution)))
                         return method;
                 }
             }
@@ -627,6 +666,17 @@ namespace Internal.TypeSystem
             get
             {
                 return (GetTypeFlags(TypeFlags.IsByRefLike | TypeFlags.AttributeCacheComputed) & TypeFlags.IsByRefLike) != 0;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type implements <code>IDynamicInterfaceCastable</code>
+        /// </summary>
+        public bool IsIDynamicInterfaceCastable
+        {
+            get
+            {
+                return (GetTypeFlags(TypeFlags.IsIDynamicInterfaceCastable | TypeFlags.IsIDynamicInterfaceCastableComputed) & TypeFlags.IsIDynamicInterfaceCastable) != 0;
             }
         }
     }

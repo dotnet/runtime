@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Text;
@@ -12,10 +13,6 @@ namespace Internal.Cryptography
     internal abstract partial class AsnFormatter
     {
         private static readonly AsnFormatter s_instance = new AppleAsnFormatter();
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
     }
 
     internal class AppleAsnFormatter : AsnFormatter
@@ -139,7 +136,7 @@ namespace Internal.Cryptography
 
                 return output.ToString();
             }
-            catch (CryptographicException)
+            catch (AsnContentException)
             {
                 return null;
             }

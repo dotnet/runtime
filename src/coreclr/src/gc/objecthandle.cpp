@@ -426,7 +426,7 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
     case    HNDTYPE_WEAK_SHORT:
     case    HNDTYPE_WEAK_LONG:
 #ifdef FEATURE_COMINTEROP
-    case    HNDTYPE_WEAK_WINRT:
+    case    HNDTYPE_WEAK_NATIVE_COM:
 #endif // FEATURE_COMINTEROP
         rootFlags |= kEtwGCRootFlagsWeakRef;
         break;
@@ -520,7 +520,7 @@ static const uint32_t s_rgTypeFlags[] =
     HNDF_EXTRAINFO, // HNDTYPE_DEPENDENT
     HNDF_NORMAL,    // HNDTYPE_ASYNCPINNED
     HNDF_EXTRAINFO, // HNDTYPE_SIZEDREF
-    HNDF_EXTRAINFO, // HNDTYPE_WEAK_WINRT
+    HNDF_EXTRAINFO, // HNDTYPE_WEAK_NATIVE_COM
 };
 
 int getNumberOfSlots()
@@ -1380,7 +1380,7 @@ void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
     {
         HNDTYPE_WEAK_SHORT
 #ifdef FEATURE_COMINTEROP
-        , HNDTYPE_WEAK_WINRT
+        , HNDTYPE_WEAK_NATIVE_COM
 #endif // FEATURE_COMINTEROP
     };
     uint32_t flags = (((ScanContext*) lp1)->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
@@ -1439,7 +1439,7 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
 #ifdef FEATURE_COMINTEROP
-        HNDTYPE_WEAK_WINRT,
+        HNDTYPE_WEAK_NATIVE_COM,
 #endif // FEATURE_COMINTEROP
         HNDTYPE_SIZEDREF,
     };
@@ -1485,7 +1485,7 @@ void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_sca
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
 #ifdef FEATURE_COMINTEROP
-        HNDTYPE_WEAK_WINRT,
+        HNDTYPE_WEAK_NATIVE_COM,
 #endif // FEATURE_COMINTEROP
         HNDTYPE_PINNED,
 //        HNDTYPE_VARIABLE,
@@ -1631,7 +1631,7 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
 #ifdef FEATURE_COMINTEROP
-        HNDTYPE_WEAK_WINRT,
+        HNDTYPE_WEAK_NATIVE_COM,
 #endif // FEATURE_COMINTEROP
         HNDTYPE_ASYNCPINNED,
         HNDTYPE_SIZEDREF,
@@ -1674,7 +1674,7 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
 #ifdef FEATURE_COMINTEROP
-        HNDTYPE_WEAK_WINRT,
+        HNDTYPE_WEAK_NATIVE_COM,
 #endif // FEATURE_COMINTEROP
         HNDTYPE_ASYNCPINNED,
         HNDTYPE_SIZEDREF,
@@ -1716,7 +1716,7 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
 #ifdef FEATURE_COMINTEROP
-        HNDTYPE_WEAK_WINRT,
+        HNDTYPE_WEAK_NATIVE_COM,
 #endif // FEATURE_COMINTEROP
         HNDTYPE_ASYNCPINNED,
         HNDTYPE_SIZEDREF,

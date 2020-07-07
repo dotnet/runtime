@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection
 {
@@ -10,7 +11,9 @@ namespace System.Reflection
     {
         private const BindingFlags Everything = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
 
-        public static IEnumerable<FieldInfo> GetRuntimeFields(this Type type)
+        public static IEnumerable<FieldInfo> GetRuntimeFields(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+            this Type type)
         {
             if (type == null)
             {
@@ -19,7 +22,9 @@ namespace System.Reflection
             return type.GetFields(Everything);
         }
 
-        public static IEnumerable<MethodInfo> GetRuntimeMethods(this Type type)
+        public static IEnumerable<MethodInfo> GetRuntimeMethods(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+            this Type type)
         {
             if (type == null)
             {
@@ -28,7 +33,9 @@ namespace System.Reflection
             return type.GetMethods(Everything);
         }
 
-        public static IEnumerable<PropertyInfo> GetRuntimeProperties(this Type type)
+        public static IEnumerable<PropertyInfo> GetRuntimeProperties(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+            this Type type)
         {
             if (type == null)
             {
@@ -37,7 +44,9 @@ namespace System.Reflection
             return type.GetProperties(Everything);
         }
 
-        public static IEnumerable<EventInfo> GetRuntimeEvents(this Type type)
+        public static IEnumerable<EventInfo> GetRuntimeEvents(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
+            this Type type)
         {
             if (type == null)
             {
@@ -46,7 +55,9 @@ namespace System.Reflection
             return type.GetEvents(Everything);
         }
 
-        public static FieldInfo? GetRuntimeField(this Type type, string name)
+        public static FieldInfo? GetRuntimeField(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+            this Type type, string name)
         {
             if (type == null)
             {
@@ -55,7 +66,9 @@ namespace System.Reflection
             return type.GetField(name);
         }
 
-        public static MethodInfo? GetRuntimeMethod(this Type type, string name, Type[] parameters)
+        public static MethodInfo? GetRuntimeMethod(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            this Type type, string name, Type[] parameters)
         {
             if (type == null)
             {
@@ -64,7 +77,9 @@ namespace System.Reflection
             return type.GetMethod(name, parameters);
         }
 
-        public static PropertyInfo? GetRuntimeProperty(this Type type, string name)
+        public static PropertyInfo? GetRuntimeProperty(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+            this Type type, string name)
         {
             if (type == null)
             {
@@ -73,7 +88,9 @@ namespace System.Reflection
             return type.GetProperty(name);
         }
 
-        public static EventInfo? GetRuntimeEvent(this Type type, string name)
+        public static EventInfo? GetRuntimeEvent(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
+            this Type type, string name)
         {
             if (type == null)
             {

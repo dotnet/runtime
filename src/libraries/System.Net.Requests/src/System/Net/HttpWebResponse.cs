@@ -349,7 +349,7 @@ namespace System.Net
             CheckDisposed();
             if (_httpResponseMessage.Content != null)
             {
-                return _httpResponseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
+                return _httpResponseMessage.Content.ReadAsStream();
             }
 
             return Stream.Null;

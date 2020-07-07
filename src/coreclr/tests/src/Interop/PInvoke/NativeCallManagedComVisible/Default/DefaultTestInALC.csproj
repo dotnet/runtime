@@ -2,8 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!-- Test unsupported outside of windows -->
-    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TestInALC.cs" />
@@ -12,5 +11,4 @@
     <ProjectReference Include="..\CMakeLists.txt" />
     <ProjectReference Include="DefaultTest.csproj" />
   </ItemGroup>
-  <Import Project="../../../Interop.settings.targets" />
 </Project>

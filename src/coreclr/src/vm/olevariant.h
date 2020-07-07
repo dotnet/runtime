@@ -18,7 +18,6 @@
 // the COM interop marshaler.
 #define VTHACK_INSPECTABLE     247
 #define VTHACK_HSTRING         248
-#define VTHACK_REDIRECTEDTYPE  249
 #define VTHACK_CBOOL           250
 #define VTHACK_NONBLITTABLERECORD 251
 #define VTHACK_BLITTABLERECORD 252
@@ -601,7 +600,7 @@ private:
     static void MarshalDecimalVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
     static void MarshalDecimalVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
     static void MarshalRecordVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
     static void MarshalRecordVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
     static void MarshalRecordVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
@@ -625,7 +624,7 @@ private:
                                             SIZE_T cElements, PCODE pManagedMarshalerCode);
     static void ClearVariantArray(void* oleArray, SIZE_T cElements, MethodTable* pInterfaceMT, PCODE pManagedMarshalerCode);
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
     static void MarshalArrayVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
     static void MarshalArrayVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
     static void MarshalArrayVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);

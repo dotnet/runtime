@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -14,11 +15,14 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
         {
-            bool success = jsonParameterInfo.ReadJson(ref state, ref reader, out object? arg0);
+            Debug.Assert(jsonParameterInfo.ShouldDeserialize);
+            Debug.Assert(jsonParameterInfo.Options != null);
+
+            bool success = jsonParameterInfo.ConverterBase.TryReadAsObject(ref reader, jsonParameterInfo.Options!, ref state, out object? arg);
 
             if (success)
             {
-                ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg0!;
+                ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg!;
             }
 
             return success;
@@ -28,7 +32,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             object[] arguments = (object[])frame.CtorArgumentState!.Arguments;
 
-            var createObject = (JsonClassInfo.ParameterizedConstructorDelegate<T>?)frame.JsonClassInfo.CreateObjectWithParameterizedCtor;
+            var createObject = (JsonClassInfo.ParameterizedConstructorDelegate<T>?)frame.JsonClassInfo.CreateObjectWithArgs;
 
             if (createObject == null)
             {
@@ -46,9 +50,9 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonClassInfo classInfo = state.Current.JsonClassInfo;
 
-            if (classInfo.CreateObjectWithParameterizedCtor == null)
+            if (classInfo.CreateObjectWithArgs == null)
             {
-                classInfo.CreateObjectWithParameterizedCtor = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo!);
+                classInfo.CreateObjectWithArgs = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo!);
             }
 
             object[] arguments = ArrayPool<object>.Shared.Rent(classInfo.ParameterCount);

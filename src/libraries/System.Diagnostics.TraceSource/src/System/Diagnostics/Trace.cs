@@ -19,7 +19,7 @@ namespace System.Diagnostics
         {
         }
 
-        private static CorrelationManager? s_correlationManager = null;
+        private static CorrelationManager? s_correlationManager;
         public static CorrelationManager CorrelationManager
         {
             get

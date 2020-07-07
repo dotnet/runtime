@@ -14,8 +14,10 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslClientAuthenticationOptionsTest
+    public abstract class SslClientAuthenticationOptionsTestBase
     {
+        protected abstract bool TestAuthenticateAsync { get; }
+
         [Fact]
         public async Task ClientOptions_ServerOptions_NotMutatedDuringAuthentication()
         {
@@ -41,6 +43,7 @@ namespace System.Net.Security.Tests
                 SslProtocols serverSslProtocols = SslProtocols.Tls11 | SslProtocols.Tls12;
                 EncryptionPolicy serverEncryption = EncryptionPolicy.AllowNoEncryption;
                 RemoteCertificateValidationCallback serverRemoteCallback = new RemoteCertificateValidationCallback(delegate { return true; });
+                SslStreamCertificateContext certificateContext = SslStreamCertificateContext.Create(serverCert, null, false);
 
                 var network = new VirtualNetwork();
                 using (var client = new SslStream(new VirtualNetworkStream(network, isServer: false)))
@@ -70,13 +73,14 @@ namespace System.Net.Security.Tests
                         EnabledSslProtocols = serverSslProtocols,
                         EncryptionPolicy = serverEncryption,
                         RemoteCertificateValidationCallback = serverRemoteCallback,
-                        ServerCertificate = serverCert
+                        ServerCertificate = serverCert,
+                        ServerCertificateContext = certificateContext,
                     };
 
                     // Authenticate
-                    Task clientTask = client.AuthenticateAsClientAsync(clientOptions, default);
-                    Task serverTask = server.AuthenticateAsServerAsync(serverOptions, default);
-                    await new[] { clientTask, serverTask }.WhenAllOrAnyFailed();
+                    Task clientTask = client.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
+                    Task serverTask = server.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
+                    await new[] {clientTask, serverTask}.WhenAllOrAnyFailed();
 
                     // Validate that client options are unchanged
                     Assert.Equal(clientAllowRenegotiation, clientOptions.AllowRenegotiation);
@@ -101,8 +105,19 @@ namespace System.Net.Security.Tests
                     Assert.Equal(serverEncryption, serverOptions.EncryptionPolicy);
                     Assert.Same(serverRemoteCallback, serverOptions.RemoteCertificateValidationCallback);
                     Assert.Same(serverCert, serverOptions.ServerCertificate);
+                    Assert.Same(certificateContext, serverOptions.ServerCertificateContext);
                 }
             }
         }
+    }
+
+    public sealed class SslClientAuthenticationOptionsTestBase_Sync : SslClientAuthenticationOptionsTestBase
+    {
+        protected override bool TestAuthenticateAsync => false;
+    }
+
+    public sealed class SslClientAuthenticationOptionsTestBase_Async : SslClientAuthenticationOptionsTestBase
+    {
+        protected override bool TestAuthenticateAsync => true;
     }
 }

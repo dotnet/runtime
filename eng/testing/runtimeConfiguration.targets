@@ -1,10 +1,10 @@
 <Project> 
   <PropertyGroup>
     <!-- Copies the app.config file to the OutDir. -->
-    <TestRuntimeConfigurationFile Condition="'$(TargetsNetFx)' == 'true'">$(MSBuildThisFileDirectory)netfx.exe.config</TestRuntimeConfigurationFile>
+    <TestRuntimeConfigurationFile Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">$(MSBuildThisFileDirectory)netfx.exe.config</TestRuntimeConfigurationFile>
 
     <!-- By default copy the test runtime config file for executable test projects (+ test support projects). -->
-    <GenerateRuntimeConfigurationFiles Condition="'$(IsTestProject)' == 'true' and ('$(IsTestSupportProject)' != 'true' or '$(OutputType.ToLower())' == 'exe')">true</GenerateRuntimeConfigurationFiles>
+    <GenerateRuntimeConfigurationFiles Condition="'$(IsTestProject)' == 'true' or '$(OutputType.ToLower())' == 'exe'">true</GenerateRuntimeConfigurationFiles>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(GenerateRuntimeConfigurationFiles)' == 'true'">
@@ -19,11 +19,11 @@
       Tracking issue: https://github.com/dotnet/sdk/issues/1675
     -->
     <ContentWithTargetPath Include="$(ProjectDepsFilePath)"
-                           Condition="'$(TargetsNetCoreApp)' == 'true' and '$(GenerateDependencyFile)' == 'true'"
+                           Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(GenerateDependencyFile)' == 'true'"
                            CopyToOutputDirectory="PreserveNewest"
                            TargetPath="$(ProjectDepsFileName)" />
     <ContentWithTargetPath Include="$(ProjectRuntimeConfigFilePath)"
-                           Condition="'$(TargetsNetCoreApp)' == 'true'"
+                           Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'"
                            CopyToOutputDirectory="PreserveNewest"
                            TargetPath="$(ProjectRuntimeConfigFileName)" />
   </ItemGroup>
