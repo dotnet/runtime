@@ -334,6 +334,7 @@ namespace CoreclrTestLib
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
 
+                outputWriter.WriteLine("\nStarting process. Now= " + DateTime.Now + ", Timeout= " + timeout + " milliseconds.");
                 process.Start();
 
                 var cts = new CancellationTokenSource();
@@ -348,14 +349,19 @@ namespace CoreclrTestLib
                 }
                 else
                 {
+                    int exitCode = -1;
                     // Timed out.
                     try
                     {
                         cts.Cancel();
+                        if (process.HasExited)
+                        {
+                            exitCode = process.ExitCode;
+                        }
                     }
                     catch {}
 
-                    outputWriter.WriteLine("\ncmdLine:" + executable + " Timed Out");
+                    outputWriter.WriteLine("\ncmdLine:" + executable + " Timed Out. Now= " + DateTime.Now + ", exitCode= " + exitCode);
                     errorWriter.WriteLine("\ncmdLine:" + executable + " Timed Out");
 
                     if (collectCrashDumps)
