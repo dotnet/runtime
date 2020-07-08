@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // This test was extracted from the corefx System.Numerics.Vectors tests,
 // and was failing with minOpts because a SIMD12 was being spilled using

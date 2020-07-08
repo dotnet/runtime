@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Tests that SzArray is castable to multidimensional array of rank 1 with zero lower bounds
 // and that the MdArray methods can operate on such `this`.

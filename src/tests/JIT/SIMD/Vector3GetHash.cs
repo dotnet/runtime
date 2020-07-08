@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This was copied from corefx\src\System.Numerics.Vectors\tests\Vector3Tests.cs.
 // It exposed a bug in morph, in which a SIMD field was being morphed in

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
  * Problem: There were no SSA edges added for cloned finally blocks. A finally block is cloned if there is an EH, switch or throw within it. This implied bad codegen as described in the customer scenario below. The call to Console.WriteLine changes code movement around the call and so the issue appears to go away but the Console.WriteLine is not really related.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This test validates the behavior in the presence/absence of the PreserveBaseOverridesAttribute.
 // Each test scenario will have 3 layers of type inheritance (T1,T2,T3), and we test the following scenarios:

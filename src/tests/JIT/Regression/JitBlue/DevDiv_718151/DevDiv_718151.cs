@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // The test originally showed unsupported PUTARG_STK(OBJ(LCL_FLD_ADDR)) when both OBJ and LCL_FLD_ADDR were contained.
 // codegenarmarch `genPutArgStk` did not expect that.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // The test exposed an issue in the prolog generation for arm64. The jit did not expect any holes in the mask
 // of registers that needed to be zero initialized in the prolog. 
