@@ -6851,11 +6851,12 @@ get_marshal_cb (void)
 gboolean
 mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method)
 {
+#ifndef ENABLE_NETCORE
+	return FALSE;
+#else
 	ERROR_DECL (attr_error);
 	MonoClass *attr_klass = NULL;
-#ifdef ENABLE_NETCORE
 	attr_klass = mono_class_try_get_unmanaged_callers_only_attribute_class ();
-#endif
 	if (!attr_klass)
 		return FALSE;
 	MonoCustomAttrInfo *cinfo;
@@ -6869,4 +6870,5 @@ mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method)
 	if (!cinfo->cached)
 		mono_custom_attrs_free (cinfo);
 	return result;
+#endif
 }
