@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Globalization;
@@ -38,7 +37,7 @@ namespace System.Net
 
         private long _contentLength = -1;
         private DateTime _lastModified;
-        private bool _dataHandshakeStarted = false;
+        private bool _dataHandshakeStarted;
         private string? _loginDirectory;
         private string? _establishedServerDirectory;
         private string? _requestedServerDirectory;

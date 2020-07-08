@@ -949,6 +949,14 @@
     ]
   },
   {
+    "Name": "System.Formats.Cbor",
+    "Description": "Provides classes that can read and write the CBOR data format.",
+    "CommonTypes": [
+        "System.Formats.Cbor.CborReader",
+        "System.Formats.Cbor.CborWriter"
+    ]
+  },
+  {
     "Name": "System.Globalization",
     "Description": "Provides classes that define culture-related information, including language, country/region, calendars in use, format patterns for dates, currency, and numbers, and sort order for strings.",
     "CommonTypes": [

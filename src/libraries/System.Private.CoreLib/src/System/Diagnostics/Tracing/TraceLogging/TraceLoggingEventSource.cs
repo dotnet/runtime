@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin
@@ -38,7 +37,7 @@ namespace System.Diagnostics.Tracing
 #endif
 
 #if FEATURE_PERFTRACING
-        private readonly TraceLoggingEventHandleTable m_eventHandleTable = new TraceLoggingEventHandleTable();
+        private readonly TraceLoggingEventHandleTable m_eventHandleTable = null!;
 #endif
 
         /// <summary>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -114,8 +113,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Fact]
         public static void Pkcs9AttributeAsnEncodedDataCtorNullOidValue()
         {
-            Oid oid = new Oid(Oids.Aes128);
-            oid.Value = null;
+            Oid oid = new Oid(null, null);
 
             AsnEncodedData a = new AsnEncodedData(oid, new byte[3]);
             object ign;
@@ -125,8 +123,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Fact]
         public static void Pkcs9AttributeAsnEncodedDataCtorEmptyOidValue()
         {
-            Oid oid = new Oid(Oids.Aes128);
-            oid.Value = string.Empty;
+            Oid oid = new Oid(string.Empty, null);
 
             AsnEncodedData a = new AsnEncodedData(oid, new byte[3]);
             object ign;

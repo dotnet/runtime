@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.IO;
@@ -15,11 +14,11 @@ namespace System.Security.Cryptography.Xml
     {
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlDocument) };
         private readonly Type[] _outputTypes = { typeof(XmlDocument) };
-        private XmlNodeList _encryptedDataList = null;
-        private ArrayList _arrayListUri = null; // this ArrayList object represents the Uri's to be excluded
-        private EncryptedXml _exml = null; // defines the XML encryption processing rules
-        private XmlDocument _containingDocument = null;
-        private XmlNamespaceManager _nsm = null;
+        private XmlNodeList _encryptedDataList;
+        private ArrayList _arrayListUri; // this ArrayList object represents the Uri's to be excluded
+        private EncryptedXml _exml; // defines the XML encryption processing rules
+        private XmlDocument _containingDocument;
+        private XmlNamespaceManager _nsm;
         private const string XmlDecryptionTransformNamespaceUrl = "http://www.w3.org/2002/07/decrypt#";
 
         public XmlDecryptionTransform()

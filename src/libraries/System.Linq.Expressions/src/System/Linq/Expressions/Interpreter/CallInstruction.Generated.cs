@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Linq.Expressions.Interpreter
@@ -160,16 +159,7 @@ namespace System.Linq.Expressions.Interpreter
 #endif
 
 #if FEATURE_DLG_INVOKE
-        [PreserveDependency(".ctor", "System.Linq.Expressions.Interpreter.ActionCallInstruction")]
-        [PreserveDependency(".ctor", "System.Linq.Expressions.Interpreter.ActionCallInstruction`1")]
-        [PreserveDependency(".ctor", "System.Linq.Expressions.Interpreter.ActionCallInstruction`2")]
-        [PreserveDependency(".ctor", "System.Linq.Expressions.Interpreter.ActionCallInstruction`3")]
-        [PreserveDependency(".ctor", "System.Linq.Expressions.Interpreter.ActionCallInstruction`4")]
-        [PreserveDependency(".ctor", "System.Linq.Expressions.Interpreter.FuncCallInstruction`1")]
-        [PreserveDependency(".ctor", "System.Linq.Expressions.Interpreter.FuncCallInstruction`2")]
-        [PreserveDependency(".ctor", "System.Linq.Expressions.Interpreter.FuncCallInstruction`3")]
-        [PreserveDependency(".ctor", "System.Linq.Expressions.Interpreter.FuncCallInstruction`4")]
-        [PreserveDependency(".ctor", "System.Linq.Expressions.Interpreter.FuncCallInstruction`5")]
+        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.PublicConstructors)]
         private static Type GetHelperType(MethodInfo info, Type[] arrTypes)
         {
             Type t;

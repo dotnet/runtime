@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -25,7 +24,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Make sure that range Partitioner.Create can be called from multiple threads
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void IntPartitionerThreadSafety()
         {
             ConcurrentBag<OrderablePartitioner<Tuple<int, int>>> bag = new ConcurrentBag<OrderablePartitioner<Tuple<int, int>>>();
@@ -61,7 +60,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Make sure that range Partitioner.Create(long overload) can be called from multiple threads
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void LongPartitionerThreadSafety()
         {
             ConcurrentBag<OrderablePartitioner<Tuple<long, long>>> bag = new ConcurrentBag<OrderablePartitioner<Tuple<long, long>>>();

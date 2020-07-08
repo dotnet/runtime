@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -48,7 +47,7 @@ namespace System.Threading
         /// if an object was not used and to then dispose of the object appropriately.
         /// </para>
         /// </remarks>
-        public static T EnsureInitialized<T>([NotNull] ref T? target) where T : class =>
+        public static T EnsureInitialized<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>([NotNull] ref T? target) where T : class =>
             Volatile.Read(ref target!) ?? EnsureInitializedCore(ref target);
 
         /// <summary>
@@ -57,7 +56,7 @@ namespace System.Threading
         /// <typeparam name="T">The reference type of the reference to be initialized.</typeparam>
         /// <param name="target">The variable that need to be initialized</param>
         /// <returns>The initialized variable</returns>
-        private static T EnsureInitializedCore<T>([NotNull] ref T? target) where T : class
+        private static T EnsureInitializedCore<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>([NotNull] ref T? target) where T : class
         {
             try
             {
@@ -136,7 +135,7 @@ namespace System.Threading
         /// <paramref name="target"/>. If <paramref name="syncLock"/> is null, and if the target hasn't already
         /// been initialized, a new object will be instantiated.</param>
         /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
-        public static T EnsureInitialized<T>([AllowNull] ref T target, ref bool initialized, [NotNullIfNotNull("syncLock")] ref object? syncLock)
+        public static T EnsureInitialized<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>([AllowNull] ref T target, ref bool initialized, [NotNullIfNotNull("syncLock")] ref object? syncLock)
         {
             // Fast path.
             if (Volatile.Read(ref initialized))
@@ -158,7 +157,7 @@ namespace System.Threading
         /// a new object will be instantiated.
         /// </param>
         /// <returns>The initialized object.</returns>
-        private static T EnsureInitializedCore<T>([AllowNull] ref T target, ref bool initialized, [NotNull] ref object? syncLock)
+        private static T EnsureInitializedCore<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>([AllowNull] ref T target, ref bool initialized, [NotNull] ref object? syncLock)
         {
             // Lazily initialize the lock if necessary and then double check if initialization is still required.
             lock (EnsureLockInitialized(ref syncLock))

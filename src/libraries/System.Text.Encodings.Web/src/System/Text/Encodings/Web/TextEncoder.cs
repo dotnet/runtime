@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.ComponentModel;
@@ -29,7 +28,12 @@ namespace System.Text.Encodings.Web
         // Fast cache for Ascii
         private readonly byte[][] _asciiEscape = new byte[0x80][];
 
-        private readonly int[] _asciiNeedsEscaping = new int[0x80];
+        private volatile bool _isAsciiCacheInitialized;
+        private AsciiNeedsEscapingData _asciiNeedsEscaping;
+
+#if NETCOREAPP
+        private Vector128<sbyte> _bitMaskLookupAsciiNeedsEscaping;
+#endif
 
         // Keep a reference to Array.Empty<byte> as this is used as a singleton for comparisons
         // and there is no guarantee that Array.Empty<byte>() will always be the same instance.
@@ -694,6 +698,11 @@ namespace System.Text.Encodings.Web
         [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual unsafe int FindFirstCharacterToEncodeUtf8(ReadOnlySpan<byte> utf8Text)
         {
+            if (!_isAsciiCacheInitialized)
+            {
+                InitializeAsciiCache();
+            }
+
             // Loop through the input text, terminating when we see ill-formed UTF-8 or when we decode a scalar value
             // that must be encoded. If we see either of these things then we'll return its index in the original
             // input sequence. If we consume the entire text without seeing either of these, return -1 to indicate
@@ -704,10 +713,16 @@ namespace System.Text.Encodings.Web
                 int idx = 0;
 
 #if NETCOREAPP
-                if (Sse2.IsSupported)
+                if (Sse2.IsSupported && utf8Text.Length - 16 >= idx)
                 {
+                    // Hoist these outside the loop, as the JIT won't do it.
+                    Vector128<sbyte> bitMaskLookupAsciiNeedsEscaping = _bitMaskLookupAsciiNeedsEscaping;
+                    Vector128<sbyte> bitPosLookup = Ssse3Helper.s_bitPosLookup;
+                    Vector128<sbyte> nibbleMaskSByte = Ssse3Helper.s_nibbleMaskSByte;
+                    Vector128<sbyte> nullMaskSByte = Ssse3Helper.s_nullMaskSByte;
+
                     sbyte* startingAddress = (sbyte*)ptr;
-                    while (utf8Text.Length - 16 >= idx)
+                    do
                     {
                         Debug.Assert(startingAddress >= ptr && startingAddress <= (ptr + utf8Text.Length - 16));
 
@@ -718,7 +733,45 @@ namespace System.Text.Encodings.Web
                         // casted to signed byte.
                         int index = Sse2.MoveMask(sourceValue);
 
-                        if (index != 0)
+                        if (index == 0)
+                        {
+                            // All of the following 16 bytes is ASCII.
+
+                            if (Ssse3.IsSupported)
+                            {
+                                Vector128<sbyte> mask = Ssse3Helper.CreateEscapingMask(sourceValue, bitMaskLookupAsciiNeedsEscaping, bitPosLookup, nibbleMaskSByte, nullMaskSByte);
+                                index = Sse2.MoveMask(mask);
+
+                                if (index != 0)
+                                {
+                                    idx += BitHelper.GetIndexOfFirstNeedToEscape(index);
+                                    goto Return;
+                                }
+                            }
+                            else
+                            {
+                                byte* p = (byte*)startingAddress;
+                                if (DoesAsciiNeedEncoding(p[0])) goto Return;
+                                if (DoesAsciiNeedEncoding(p[1])) goto Return1;
+                                if (DoesAsciiNeedEncoding(p[2])) goto Return2;
+                                if (DoesAsciiNeedEncoding(p[3])) goto Return3;
+                                if (DoesAsciiNeedEncoding(p[4])) goto Return4;
+                                if (DoesAsciiNeedEncoding(p[5])) goto Return5;
+                                if (DoesAsciiNeedEncoding(p[6])) goto Return6;
+                                if (DoesAsciiNeedEncoding(p[7])) goto Return7;
+                                if (DoesAsciiNeedEncoding(p[8])) goto Return8;
+                                if (DoesAsciiNeedEncoding(p[9])) goto Return9;
+                                if (DoesAsciiNeedEncoding(p[10])) goto Return10;
+                                if (DoesAsciiNeedEncoding(p[11])) goto Return11;
+                                if (DoesAsciiNeedEncoding(p[12])) goto Return12;
+                                if (DoesAsciiNeedEncoding(p[13])) goto Return13;
+                                if (DoesAsciiNeedEncoding(p[14])) goto Return14;
+                                if (DoesAsciiNeedEncoding(p[15])) goto Return15;
+                            }
+
+                            idx += 16;
+                        }
+                        else
                         {
                             // At least one of the following 16 bytes is non-ASCII.
 
@@ -731,7 +784,7 @@ namespace System.Text.Encodings.Web
 
                                 if (UnicodeUtility.IsAsciiCodePoint(ptr[idx]))
                                 {
-                                    if (DoesAsciiNeedEncoding(ptr[idx]) == 1)
+                                    if (DoesAsciiNeedEncoding(ptr[idx]))
                                     {
                                         goto Return;
                                     }
@@ -752,35 +805,9 @@ namespace System.Text.Encodings.Web
                                 }
                             }
                         }
-                        else
-                        {
-                            if (DoesAsciiNeedEncoding(ptr[idx]) == 1
-
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1)
-                            {
-                                goto Return;
-                            }
-                            idx++;
-                        }
                         startingAddress = (sbyte*)ptr + idx;
                     }
+                    while (utf8Text.Length - 16 >= idx);
 
                     // Process the remaining bytes.
                     Debug.Assert(utf8Text.Length - idx < 16);
@@ -793,7 +820,7 @@ namespace System.Text.Encodings.Web
 
                     if (UnicodeUtility.IsAsciiCodePoint(ptr[idx]))
                     {
-                        if (DoesAsciiNeedEncoding(ptr[idx]) == 1)
+                        if (DoesAsciiNeedEncoding(ptr[idx]))
                         {
                             goto Return;
                         }
@@ -816,7 +843,40 @@ namespace System.Text.Encodings.Web
                 Debug.Assert(idx == utf8Text.Length);
 
                 idx = -1; // All bytes are allowed.
+                goto Return;
 
+#if NETCOREAPP
+            Return15:
+                return idx + 15;
+            Return14:
+                return idx + 14;
+            Return13:
+                return idx + 13;
+            Return12:
+                return idx + 12;
+            Return11:
+                return idx + 11;
+            Return10:
+                return idx + 10;
+            Return9:
+                return idx + 9;
+            Return8:
+                return idx + 8;
+            Return7:
+                return idx + 7;
+            Return6:
+                return idx + 6;
+            Return5:
+                return idx + 5;
+            Return4:
+                return idx + 4;
+            Return3:
+                return idx + 3;
+            Return2:
+                return idx + 2;
+            Return1:
+                return idx + 1;
+#endif
             Return:
                 return idx;
             }
@@ -895,21 +955,52 @@ namespace System.Text.Encodings.Web
             return encoding;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private unsafe void InitializeAsciiCache()
+        {
+#if NETCOREAPP
+            if (Ssse3.IsSupported)
+            {
+                Vector128<sbyte> vector = Vector128<sbyte>.Zero;
+                sbyte* tmp = (sbyte*)&vector;
+
+                for (int i = 0; i < 0x80; i++)
+                {
+                    bool willEncode = WillEncode(i);
+                    _asciiNeedsEscaping.Data[i] = willEncode;
+
+                    if (willEncode)
+                    {
+                        int highNibble = i >> 4;
+                        int lowNibble = i & 0xF;
+
+                        tmp[lowNibble] |= (sbyte)(1 << highNibble);
+                    }
+                }
+
+                _bitMaskLookupAsciiNeedsEscaping = vector;
+                return;
+            }
+#endif
+            for (int i = 0; i < 0x80; i++)
+            {
+                _asciiNeedsEscaping.Data[i] = WillEncode(i);
+            }
+
+            _isAsciiCacheInitialized = true;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int DoesAsciiNeedEncoding(byte value)
+        private unsafe bool DoesAsciiNeedEncoding(uint value)
         {
             Debug.Assert(value <= 0x7F);
 
-            int needsEscaping = _asciiNeedsEscaping[value];
+            return _asciiNeedsEscaping.Data[value];
+        }
 
-            Debug.Assert(needsEscaping == 0 || needsEscaping == 1 || needsEscaping == -1);
-
-            if (needsEscaping == 0)
-            {
-                needsEscaping = WillEncode(value) ? 1 : -1;
-                _asciiNeedsEscaping[value] = needsEscaping;
-            }
-            return needsEscaping;
+        private unsafe struct AsciiNeedsEscapingData
+        {
+            public fixed bool Data[0x80];
         }
 
         private static void ThrowArgumentException_MaxOutputCharsPerInputChar()

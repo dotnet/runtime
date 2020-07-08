@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -181,6 +180,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostNonRewindableContentUsingAuth_NoPreAuthenticate_ThrowsHttpRequestException(Configuration.Http.RemoteServer remoteServer)
         {
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync && remoteServer.HttpVersion.Major >= 2)
+            {
+                return;
+            }
+
             HttpContent content = new StreamContent(new CustomContent.CustomStream(Encoding.UTF8.GetBytes(ExpectedContent), false));
             var credential = new NetworkCredential(UserName, Password);
             await Assert.ThrowsAsync<HttpRequestException>(() =>
@@ -191,6 +196,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostNonRewindableContentUsingAuth_PreAuthenticate_Success(Configuration.Http.RemoteServer remoteServer)
         {
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync && remoteServer.HttpVersion.Major >= 2)
+            {
+                return;
+            }
+
             HttpContent content = new StreamContent(new CustomContent.CustomStream(Encoding.UTF8.GetBytes(ExpectedContent), false));
             var credential = new NetworkCredential(UserName, Password);
             await PostUsingAuthHelper(remoteServer, ExpectedContent, content, credential, preAuthenticate: true);
@@ -265,7 +276,7 @@ namespace System.Net.Http.Functional.Tests
                 // Send HEAD request to help bypass the 401 auth challenge for the latter POST assuming
                 // that the authentication will be cached and re-used later when PreAuthenticate is true.
                 var request = new HttpRequestMessage(HttpMethod.Head, serverUri) { Version = remoteServer.HttpVersion };
-                using (HttpResponseMessage response = await client.SendAsync(request))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }
@@ -276,7 +287,7 @@ namespace System.Net.Http.Functional.Tests
                 requestContent.Headers.ContentLength = null;
                 request.Headers.TransferEncodingChunked = true;
 
-                using (HttpResponseMessage response = await client.SendAsync(request))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     string responseContent = await response.Content.ReadAsStringAsync();

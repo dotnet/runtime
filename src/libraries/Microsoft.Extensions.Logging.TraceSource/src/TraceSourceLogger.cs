@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -23,7 +22,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
             {
                 return;
             }
-            var message = string.Empty;
+            string message = string.Empty;
             if (formatter != null)
             {
                 message = formatter(state, exception);
@@ -52,7 +51,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
                 return false;
             }
 
-            var traceEventType = GetEventType(logLevel);
+            TraceEventType traceEventType = GetEventType(logLevel);
             return _traceSource.Switch.ShouldTrace(traceEventType);
         }
 

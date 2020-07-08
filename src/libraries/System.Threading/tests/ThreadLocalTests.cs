@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -60,7 +59,7 @@ namespace System.Threading.Tests
             Assert.True(tlocal.IsValueCreated);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunThreadLocalTest4_Value()
         {
             ThreadLocal<string> tlocal = null;
@@ -109,7 +108,7 @@ namespace System.Threading.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunThreadLocalTest5_Dispose()
         {
             // test recycling the combination index;
@@ -224,7 +223,7 @@ namespace System.Threading.Tests
             threadLocalWeakReferenceTest.Run();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunThreadLocalTest8_Values()
         {
             // Test adding values and updating values

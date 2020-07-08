@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -10,7 +9,7 @@ namespace System.Net.NetworkInformation
     public class PhysicalAddress
     {
         private readonly byte[] _address;
-        private int _hash = 0;
+        private int _hash;
 
         public static readonly PhysicalAddress None = new PhysicalAddress(Array.Empty<byte>());
 

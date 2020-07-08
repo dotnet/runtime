@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.IO;
@@ -15,15 +14,13 @@ namespace System.Data.Common
 {
     internal sealed class ObjectStorage : DataStorage
     {
-        private static readonly object s_defaultValue = null;
-
         private enum Families { DATETIME, NUMBER, STRING, BOOLEAN, ARRAY };
 
         private object[] _values;
         private readonly bool _implementsIXmlSerializable;
 
         internal ObjectStorage(DataColumn column, Type type)
-        : base(column, type, s_defaultValue, DBNull.Value, typeof(ICloneable).IsAssignableFrom(type), GetStorageType(type))
+        : base(column, type, null, DBNull.Value, typeof(ICloneable).IsAssignableFrom(type), GetStorageType(type))
         {
             _implementsIXmlSerializable = typeof(IXmlSerializable).IsAssignableFrom(type);
         }

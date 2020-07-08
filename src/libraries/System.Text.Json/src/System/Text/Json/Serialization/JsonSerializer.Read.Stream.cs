@@ -1,9 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -35,7 +35,7 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static ValueTask<TValue> DeserializeAsync<TValue>(
+        public static ValueTask<TValue> DeserializeAsync<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(
             Stream utf8Json,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
@@ -73,7 +73,7 @@ namespace System.Text.Json
         /// </exception>
         public static ValueTask<object?> DeserializeAsync(
             Stream utf8Json,
-            Type returnType,
+            [DynamicallyAccessedMembers(MembersAccessedOnRead)] Type returnType,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {

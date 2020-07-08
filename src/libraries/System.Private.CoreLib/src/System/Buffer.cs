@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if TARGET_AMD64 || TARGET_ARM64 || (TARGET_32BIT && !TARGET_ARM)
 #define HAS_CUSTOM_BLOCKS
@@ -303,29 +302,6 @@ namespace System
 
         PInvoke:
             _Memmove(dest, src, len);
-        }
-
-        // This method has different signature for x64 and other platforms and is done for performance reasons.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void Memmove<T>(ref T destination, ref T source, nuint elementCount)
-        {
-            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                // Blittable memmove
-
-                Memmove(
-                    ref Unsafe.As<T, byte>(ref destination),
-                    ref Unsafe.As<T, byte>(ref source),
-                    elementCount * (nuint)Unsafe.SizeOf<T>());
-            }
-            else
-            {
-                // Non-blittable memmove
-                BulkMoveWithWriteBarrier(
-                    ref Unsafe.As<T, byte>(ref destination),
-                    ref Unsafe.As<T, byte>(ref source),
-                    elementCount * (nuint)Unsafe.SizeOf<T>());
-            }
         }
 
         // This method has different signature for x64 and other platforms and is done for performance reasons.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // DomainFile.cpp
 //
@@ -1445,15 +1444,6 @@ void DomainAssembly::Allocate()
         pamTracker->SuppressRelease();
         assemblyHolder.SuppressRelease();
     }
-
-#ifdef FEATURE_COMINTEROP
-    // If we are in an AppX process we should prevent loading of PIA in the AppDomain.
-    // This will ensure that we do not run into any compatibility issues in case a type has both a co-Class and a Winrt Class
-    if (AppX::IsAppXProcess() && pAssembly->IsPIA())
-    {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_PIAInAppxProcess"));
-    }
-#endif
 
     SetAssembly(pAssembly);
 

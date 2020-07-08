@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_digest.h"
 
@@ -162,4 +161,13 @@ int32_t AppleCryptoNative_DigestFinal(DigestCtx* ctx, uint8_t* pOutput, int32_t 
             assert(false);
             return -2;
     }
+}
+
+int32_t AppleCryptoNative_DigestCurrent(const DigestCtx* ctx, uint8_t* pOutput, int32_t cbOutput)
+{
+    if (ctx == NULL || pOutput == NULL || cbOutput < ctx->cbDigest)
+        return -1;
+
+    DigestCtx dup = *ctx;
+    return AppleCryptoNative_DigestFinal(&dup, pOutput, cbOutput);
 }

@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using ILCompiler.Reflection.ReadyToRun;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -53,6 +53,7 @@ namespace R2RDump
             }
             IntPtr pBuffer = GetOutputBuffer();
             instr = Marshal.PtrToStringAnsi(pBuffer);
+            ClearOutputBuffer();
             return instrSize;
         }
 
@@ -97,6 +98,11 @@ namespace R2RDump
         private const int NakedWithOffsetIndentation = 11;
 
         /// <summary>
+        /// Indentation of instruction comments.
+        /// </summary>
+        private const int CommentIndentation = 62;
+
+        /// <summary>
         /// R2R reader is used to access architecture info, the PE image data and symbol table.
         /// </summary>
         private readonly ReadyToRunReader _reader;
@@ -110,6 +116,16 @@ namespace R2RDump
         /// COM interface to the native disassembler in the CoreDisTools.dll library.
         /// </summary>
         private readonly IntPtr _disasm;
+
+        /// <summary>
+        /// ARM64: The image offset of the ADD instruction in an ADRP+ADD pair.
+        /// </summary>
+        private int _addInstructionOffset;
+
+        /// <summary>
+        /// ARM64: The target of the ADD instruction in an ADRP+ADD pair.
+        /// </summary>
+        private int _addInstructionTarget;
 
         /// <summary>
         /// Indentation of instruction mnemonics.
@@ -206,7 +222,6 @@ namespace R2RDump
             }
 
             int instrSize = CoreDisTools.GetInstruction(_disasm, rtf, imageOffset, rtfOffset, _reader.Image, out instruction);
-            CoreDisTools.ClearOutputBuffer();
 
             // CoreDisTools dumps instructions in the following format:
             //
@@ -303,34 +318,43 @@ namespace R2RDump
                     builder.Append(line.Replace('\t', ' '));
                 }
 
-                builder.Append('\n');
+                string translatedLine = builder.ToString(lineStartIndex, builder.Length - lineStartIndex);
+                string fixedTranslatedLine = translatedLine;
+
+                switch (_reader.Machine)
+                {
+                    case Machine.Amd64:
+                        ProbeX64Quirks(rtf, imageOffset, rtfOffset, instrSize, ref fixedTranslatedLine);
+                        break;
+
+                    case Machine.I386:
+                        ProbeX86Quirks(rtf, imageOffset, rtfOffset, instrSize, ref fixedTranslatedLine);
+                        break;
+
+                    case Machine.Arm64:
+                        ProbeArm64Quirks(rtf, imageOffset, rtfOffset, ref fixedTranslatedLine);
+                        break;
+
+                    case Machine.ArmThumb2:
+                        break;
+
+                    default:
+                        break;
+                }
+
+                // If the translated line has been changed, replace it in the builder
+                if (!object.ReferenceEquals(fixedTranslatedLine, translatedLine))
+                {
+                    builder.Length = lineStartIndex;
+                    builder.Append(fixedTranslatedLine);
+                }
+
+                builder.Append(Environment.NewLine);
                 lineNum++;
                 lineStartIndex = builder.Length;
             }
 
             instruction = builder.ToString();
-
-            switch (_reader.Machine)
-            {
-                case Machine.Amd64:
-                    ProbeX64Quirks(rtf, imageOffset, rtfOffset, instrSize, ref instruction);
-                    break;
-
-                case Machine.I386:
-                    ProbeX86Quirks(rtf, imageOffset, rtfOffset, instrSize, ref instruction);
-                    break;
-
-                case Machine.ArmThumb2:
-                    break;
-
-                case Machine.Arm64:
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
-
-            instruction = instruction.Replace("\n", Environment.NewLine);
             return instrSize;
         }
 
@@ -352,13 +376,14 @@ namespace R2RDump
             if (TryParseRipRelative(instruction, out leftBracket, out rightBracketPlusOne, out displacement))
             {
                 int target = rtf.StartAddress + rtfOffset + instrSize + displacement;
-                int newline = instruction.LastIndexOf('\n');
                 StringBuilder translated = new StringBuilder();
                 translated.Append(instruction, 0, leftBracket);
+
+                _reader.ImportCellNames.TryGetValue(target, out string targetName);
+
                 if (_options.Naked)
                 {
-                    String targetName;
-                    if (_reader.ImportCellNames.TryGetValue(target, out targetName))
+                    if (targetName != null)
                     {
                         translated.AppendFormat("[{0}]", targetName);
                     }
@@ -366,17 +391,18 @@ namespace R2RDump
                     {
                         translated.AppendFormat("[0x{0:x4}]", target);
                     }
+                    translated.Append(instruction, rightBracketPlusOne, instruction.Length - rightBracketPlusOne);
                 }
                 else
                 {
                     translated.AppendFormat("[0x{0:x4}]", target);
-
-                    AppendImportCellName(translated, target);
+                    translated.Append(instruction, rightBracketPlusOne, instruction.Length - rightBracketPlusOne);
+                    if (targetName != null)
+                    {
+                        AppendComment(translated, targetName);
+                    }
                 }
 
-                translated.Append(instruction, rightBracketPlusOne, newline - rightBracketPlusOne);
-
-                translated.Append(instruction, newline, instruction.Length - newline);
                 instruction = translated.ToString();
             }
             else
@@ -400,14 +426,16 @@ namespace R2RDump
             int absoluteAddress;
             if (TryParseRipRelative(instruction, out leftBracket, out rightBracketPlusOne, out absoluteAddress))
             {
-                int target = absoluteAddress - (int)_reader.PEReader.PEHeaders.PEHeader.ImageBase;
+                int target = absoluteAddress - (int)_reader.ImageBase;
 
                 StringBuilder translated = new StringBuilder();
                 translated.Append(instruction, 0, leftBracket);
+
+                _reader.ImportCellNames.TryGetValue(target, out string targetName);
+
                 if (_options.Naked)
                 {
-                    String targetName;
-                    if (_reader.ImportCellNames.TryGetValue(target, out targetName))
+                    if (targetName != null)
                     {
                         translated.AppendFormat("[{0}]", targetName);
                     }
@@ -415,12 +443,16 @@ namespace R2RDump
                     {
                         translated.AppendFormat("[0x{0:x4}]", target);
                     }
+                    translated.Append(instruction, rightBracketPlusOne, instruction.Length - rightBracketPlusOne);
                 }
                 else
                 {
                     translated.AppendFormat("[0x{0:x4}]", target);
-
-                    AppendImportCellName(translated, target);
+                    translated.Append(instruction, rightBracketPlusOne, instruction.Length - rightBracketPlusOne);
+                    if (targetName != null)
+                    {
+                        AppendComment(translated, targetName);
+                    }
                 }
 
                 translated.Append(instruction, rightBracketPlusOne, instruction.Length - rightBracketPlusOne);
@@ -474,10 +506,8 @@ namespace R2RDump
                         ReplaceRelativeOffset(ref instruction, targetRVA, rtf);
                         if (haveImportCell)
                         {
-                            int instructionEnd = instruction.IndexOf('\n');
-                            StringBuilder builder = new StringBuilder(instruction, 0, instructionEnd, capacity: 256);
-                            AppendComment(builder, @$"JMP [0x{thunkTargetRVA:X4}]: {importCellName}");
-                            builder.AppendLine();
+                            StringBuilder builder = new StringBuilder(instruction, capacity: 256);
+                            AppendComment(builder, @$"JMP [0x{thunkTargetRVA:x4}]: {importCellName}");
                             instruction = builder.ToString();
                         }
                     }
@@ -493,16 +523,14 @@ namespace R2RDump
                     else
                     {
                         ReplaceRelativeOffset(ref instruction, targetRVA, rtf);
-                        int instructionEnd = instruction.IndexOf('\n');
-                        StringBuilder builder = new StringBuilder(instruction, 0, instructionEnd, capacity: 256);
+                        StringBuilder builder = new StringBuilder(instruction,capacity: 256);
                         AppendComment(builder, runtimeFunctionName);
-                        builder.AppendLine();
                         instruction = builder.ToString();
                     }
                 }
                 else
                 {
-                    ReplaceRelativeOffset(ref instruction, nextInstructionRVA + offset, rtf);
+                    ReplaceRelativeOffset(ref instruction, targetRVA, rtf);
                 }
             }
             else if (instrSize == 6 && IsIntel2ByteJumpInstructionWithIntOffset(imageOffset + rtfOffset))
@@ -520,17 +548,17 @@ namespace R2RDump
         /// <param name="rightBracketPlusOne">Index of the right bracket in the instruction plus one</param>
         /// <param name="displacement">Value of the IP-relative delta</param>
         /// <returns></returns>
-        private bool TryParseRipRelative(string instruction, out int leftBracket, out int rightBracket, out int displacement)
+        private bool TryParseRipRelative(string instruction, out int leftBracket, out int rightBracketPlusOne, out int displacement)
         {
-            int relip = instruction.IndexOf(RelIPTag);
+            int relip = instruction.IndexOf(RelIPTag, StringComparison.Ordinal);
             if (relip >= 0 && instruction.Length >= relip + RelIPTag.Length + 3)
             {
                 int start = relip;
                 relip += RelIPTag.Length;
                 char sign = instruction[relip];
-                if (sign == '+' || sign == '-' &&
+                if ((sign == '+' || sign == '-') &&
                     instruction[relip + 1] == ' ' &&
-                    Char.IsDigit(instruction[relip + 2]))
+                    IsDigit(instruction[relip + 2]))
                 {
                     relip += 2;
                     int offset = 0;
@@ -538,7 +566,7 @@ namespace R2RDump
                     {
                         offset = 10 * offset + (int)(instruction[relip] - '0');
                     }
-                    while (++relip < instruction.Length && Char.IsDigit(instruction[relip]));
+                    while (++relip < instruction.Length && IsDigit(instruction[relip]));
                     if (relip < instruction.Length && instruction[relip] == ']')
                     {
                         relip++;
@@ -547,7 +575,7 @@ namespace R2RDump
                             offset = -offset;
                         }
                         leftBracket = start;
-                        rightBracket = relip;
+                        rightBracketPlusOne = relip;
                         displacement = offset;
                         return true;
                     }
@@ -555,23 +583,9 @@ namespace R2RDump
             }
 
             leftBracket = 0;
-            rightBracket = 0;
+            rightBracketPlusOne = 0;
             displacement = 0;
             return false;
-        }
-
-        /// <summary>
-        /// Append import cell name to the constructed instruction string as a comment if available.
-        /// </summary>
-        /// <param name="builder"></param>
-        /// <param name="importCellRva"></param>
-        private void AppendImportCellName(StringBuilder builder, int importCellRva)
-        {
-            String targetName;
-            if (_reader.ImportCellNames.TryGetValue(importCellRva, out targetName))
-            {
-                AppendComment(builder, targetName);
-            }
         }
 
         /// <summary>
@@ -579,15 +593,10 @@ namespace R2RDump
         /// </summary>
         /// <param name="builder">String builder to append comment to</param>
         /// <param name="comment">Comment to append</param>
-        private void AppendComment(StringBuilder builder, string comment)
+        private static void AppendComment(StringBuilder builder, string comment)
         {
-            int fill = 61 - builder.Length;
-            if (fill > 0)
-            {
-                builder.Append(' ', fill);
-            }
-            builder.Append(" // ");
-            builder.Append(comment);
+            EnsureIndentation(builder, 0, CommentIndentation);
+            builder.Append("// ").Append(comment);
         }
 
         /// <summary>
@@ -601,9 +610,9 @@ namespace R2RDump
             int outputOffset = target;
             if (_options.Naked)
             {
-                outputOffset -= rtf.StartAddress;
+                outputOffset = outputOffset - rtf.StartAddress + rtf.CodeOffset;
             }
-            ReplaceRelativeOffset(ref instruction, string.Format("0x{0:X4}", outputOffset), rtf);
+            ReplaceRelativeOffset(ref instruction, string.Format("0x{0:x4}", outputOffset), rtf);
         }
 
         /// <summary>
@@ -612,14 +621,13 @@ namespace R2RDump
         /// <param name="instruction">Disassembled instruction to modify</param>
         /// <param name="replacementString">String to replace offset with</param>
         /// <param name="rtf">Runtime function being disassembled</param>
-        private void ReplaceRelativeOffset(ref string instruction, string replacementString, RuntimeFunction rtf)
+        private static void ReplaceRelativeOffset(ref string instruction, string replacementString, RuntimeFunction rtf)
         {
-            int numberEnd = instruction.IndexOf('\n');
-            int number = numberEnd;
+            int number = instruction.Length;
             while (number > 0)
             {
                 char c = instruction[number - 1];
-                if (c >= ' ' && !Char.IsDigit(c) && c != '-')
+                if (c >= ' ' && !IsDigit(c) && c != '-')
                 {
                     break;
                 }
@@ -629,7 +637,6 @@ namespace R2RDump
             StringBuilder translated = new StringBuilder();
             translated.Append(instruction, 0, number);
             translated.Append(replacementString);
-            translated.Append(instruction, numberEnd, instruction.Length - numberEnd);
             instruction = translated.ToString();
         }
 
@@ -712,13 +719,404 @@ namespace R2RDump
         }
 
         /// <summary>
+        /// Improves disassembler output for ARM64.
+        /// </summary>
+        /// <param name="rtf">Runtime function</param>
+        /// <param name="imageOffset">Offset within the image byte array</param>
+        /// <param name="rtfOffset">Offset within the runtime function</param>
+        /// <param name="instruction">Textual representation of the instruction</param>
+        private void ProbeArm64Quirks(RuntimeFunction rtf, int imageOffset, int rtfOffset, ref string instruction)
+        {
+            const int InstructionSize = 4;
+
+            // The list of PC-relative instructions: ADR, ADRP, B.cond, B, BL, CBNZ, CBZ, TBNZ, TBZ.
+
+            // Handle an ADR instruction
+            if (IsArm64AdrInstruction(imageOffset + rtfOffset, out int adrOffset))
+            {
+                ReplaceRelativeOffset(ref instruction, rtf.StartAddress + rtfOffset + adrOffset, rtf);
+            }
+            // Handle the ADRP instruction of an ADRP+ADD pair
+            else if (IsArm64AdrpInstruction(imageOffset + rtfOffset, out uint adrpRegister, out long pageOffset))
+            {
+                int pc = rtf.StartAddress + rtfOffset;
+                long targetPage = (pc & ~0xfff) + pageOffset;
+
+                if ((0 <= targetPage) && (targetPage <= int.MaxValue) &&
+                    IsArm64AddImmediate64NoShiftInstruction(imageOffset + rtfOffset + InstructionSize, out uint addSrcRegister, out uint offset) &&
+                    (addSrcRegister == adrpRegister))
+                {
+                    int target = (int)targetPage + (int)offset;
+                    _addInstructionOffset = imageOffset + rtfOffset + 4;
+                    _addInstructionTarget = target;
+
+                    int hashPos = instruction.LastIndexOf('#');
+                    var translated = new StringBuilder();
+                    translated.Append(instruction, 0, hashPos);
+
+                    _reader.ImportCellNames.TryGetValue(target, out string targetName);
+
+                    if (_options.Naked && (targetName != null))
+                    {
+                        translated.Append("import_hi21{").Append(targetName).Append('}');
+                    }
+                    else
+                    {
+                        translated.AppendFormat("#0x{0:x4}", targetPage);
+                    }
+
+                    instruction = translated.ToString();
+                }
+            }
+            // Handle the ADD instruction of an ADRP+ADD pair
+            else if (imageOffset + rtfOffset == _addInstructionOffset)
+            {
+                int target = _addInstructionTarget;
+                _addInstructionOffset = 0;
+                _addInstructionTarget = 0;
+
+                int hashPos = instruction.LastIndexOf('#');
+                var translated = new StringBuilder();
+                translated.Append(instruction, 0, hashPos);
+
+                _reader.ImportCellNames.TryGetValue(target, out string targetName);
+
+                if (_options.Naked && (targetName != null))
+                {
+                    translated.Append("import_lo12{").Append(targetName).Append('}');
+                }
+                else
+                {
+                    translated.AppendFormat("#0x{0:x}", target & 0xfff);
+                    if (targetName != null)
+                    {
+                        AppendComment(translated, "import{" + targetName + "}");
+                    }
+                }
+
+                instruction = translated.ToString();
+            }
+            // Handle a B.cond, B, CBZ, CBNZ, TBZ, TBNZ instruction
+            else if (IsArm64BCondInstruction(imageOffset + rtfOffset, out int branchOffset) ||
+                IsArm64BInstruction(imageOffset + rtfOffset, out branchOffset) ||
+                IsArm64CbzOrCbnzInstruction(imageOffset + rtfOffset, out branchOffset) ||
+                IsArm64TbzOrTbnzInstruction(imageOffset + rtfOffset, out branchOffset))
+            {
+                ReplaceRelativeOffset(ref instruction, rtf.StartAddress + rtfOffset + branchOffset, rtf);
+            }
+            // Handle a BL instruction
+            else if (IsArm64BLInstruction(imageOffset + rtfOffset, out int blOffset))
+            {
+                int blTargetImageOffset = imageOffset + rtfOffset + blOffset;
+                int blTargetRva = rtf.StartAddress + rtfOffset + blOffset;
+
+                // Search for one of the two patterns below at the BL target:
+                //      580000ac  ldr     x12, label
+                //      f940018c  ldr     x12, [x12]
+                //      d61f0180  br      x12
+                // or
+                //      580000a1  ldr     x1, label1
+                //      f9400021  ldr     x1, [x1]
+                //      580000ac  ldr     x12, label2
+                //      f940018c  ldr     x12, [x12]
+                //      d61f0180  br      x12
+
+                if (IsArm64LdrLiteral64Instruction(blTargetImageOffset, out uint ldr1Register, out int ldr1Offset) &&
+                    IsArm64LdrImmediate64ZeroOffsetInstruction(blTargetImageOffset + InstructionSize, out uint ldr2DestRegister, out uint ldr2SrcRegister))
+                {
+                    int ldr1ImageOffset = blTargetImageOffset;
+                    if (IsArm64LdrLiteral64Instruction(ldr1ImageOffset + InstructionSize * 2, out uint ldr3Register, out int ldr3Offset) &&
+                        IsArm64LdrImmediate64ZeroOffsetInstruction(ldr1ImageOffset + InstructionSize * 3, out uint ldr4DestRegister, out uint ldr4SrcRegister))
+                    {
+                        ldr1ImageOffset += InstructionSize * 2;
+                        ldr1Register = ldr3Register;
+                        ldr1Offset = ldr3Offset;
+                        ldr2DestRegister = ldr4DestRegister;
+                        ldr2SrcRegister = ldr4SrcRegister;
+                    }
+
+                    if (IsArm64BrInstruction(ldr1ImageOffset + InstructionSize * 2, out uint brRegister) &&
+                        (ldr2SrcRegister == ldr1Register) &&
+                        (brRegister == ldr2DestRegister))
+                    {
+                        int labelOffset = ldr1ImageOffset + ldr1Offset;
+                        int target = checked((int)(BitConverter.ToUInt64(_reader.Image, labelOffset) - _reader.ImageBase));
+                        _reader.ImportCellNames.TryGetValue(target, out string targetName);
+                        var translated = new StringBuilder();
+
+                        if (_options.Naked && (targetName != null))
+                        {
+                            int hashPos = instruction.LastIndexOf('#');
+                            translated.Append(instruction, 0, hashPos);
+                            translated.Append("thunk{").Append(targetName).Append('}');
+                        }
+                        else
+                        {
+                            ReplaceRelativeOffset(ref instruction, rtf.StartAddress + rtfOffset + blOffset, rtf);
+                            translated.Append(instruction);
+                            if (targetName != null)
+                            {
+                                AppendComment(translated, $"br [0x{target:x4}]: {targetName}");
+                            }
+                        }
+
+                        instruction = translated.ToString();
+                    }
+                }
+                else if (IsAnotherRuntimeFunctionWithinMethod(blTargetRva, rtf, out int runtimeFunctionIndex))
+                {
+                    string runtimeFunctionName = string.Format("RUNTIME_FUNCTION[{0}]", runtimeFunctionIndex);
+                    var translated = new StringBuilder();
+
+                    if (_options.Naked)
+                    {
+                        int hashPos = instruction.LastIndexOf('#');
+                        translated.Append(instruction, 0, hashPos);
+                        translated.Append(runtimeFunctionName);
+                    }
+                    else
+                    {
+                        ReplaceRelativeOffset(ref instruction, blTargetRva, rtf);
+                        translated.Append(instruction);
+                        AppendComment(translated, runtimeFunctionName);
+                    }
+
+                    instruction = translated.ToString();
+                }
+                else
+                {
+                    Debug.Fail("Is this a new pattern that we need to handle?");
+                    ReplaceRelativeOffset(ref instruction, blTargetRva, rtf);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is an ADR.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array.</param>
+        private bool IsArm64AdrInstruction(int imageOffset, out int immediate)
+        {
+            byte highByte = _reader.Image[imageOffset + 3];
+            if ((highByte & 0x9f) != 0x10)
+            {
+                immediate = 0;
+                return false;
+            }
+
+            uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
+            // imm = SignExtend(immhi:immlo, 64)
+            immediate = (((int)instruction & ~0x1f) | ((int)instruction >> 26) & 0x18) << 8 >> 11;
+            return true;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is an ADRP.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array.</param>
+        private bool IsArm64AdrpInstruction(int imageOffset, out uint register, out long immediate)
+        {
+            byte highByte = _reader.Image[imageOffset + 3];
+            if ((highByte & 0x9f) != 0x90)
+            {
+                register = 0;
+                immediate = 0;
+                return false;
+            }
+
+            uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
+            register = instruction & 0x1f;
+            // imm = SignExtend(immhi:immlo:Zeros(12), 64)
+            immediate = (long)unchecked((int)(((instruction ^ register) | (instruction >> 26) & 0x18) << 8)) << 1;
+            return true;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is an ADD immediate 64-bit with no shift.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array.</param>
+        private bool IsArm64AddImmediate64NoShiftInstruction(int imageOffset, out uint sourceRegister, out uint immediate)
+        {
+            uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
+            if ((instruction & 0xffc0_0000) != 0x9100_0000)
+            {
+                sourceRegister = 0;
+                immediate = 0;
+                return false;
+            }
+
+            sourceRegister = (instruction >> 5) & 0x1f;
+            // imm = ZeroExtend(imm12, 64)
+            immediate = instruction << 10 >> 20;
+            return true;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is a B.cond.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array.</param>
+        private bool IsArm64BCondInstruction(int imageOffset, out int offset)
+        {
+            byte highByte = _reader.Image[imageOffset + 3];
+            if (highByte != 0x54)
+            {
+                offset = 0;
+                return false;
+            }
+
+            uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
+            if ((instruction & 0x10) != 0)
+            {
+                offset = 0;
+                return false;
+            }
+
+            // offset = SignExtend(imm19:'00', 64)
+            offset = ((int)instruction & ~0xf) << 8 >> 11;
+            return true;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is a B.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array.</param>
+        private bool IsArm64BInstruction(int imageOffset, out int offset)
+        {
+            byte highByte = _reader.Image[imageOffset + 3];
+            if ((highByte & 0xfc) != 0x14)
+            {
+                offset = 0;
+                return false;
+            }
+
+            uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
+            // offset = SignExtend(imm26:'00', 64)
+            offset = (int)instruction << 6 >> 4;
+            return true;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is a CBZ or a CBNZ.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array.</param>
+        private bool IsArm64CbzOrCbnzInstruction(int imageOffset, out int offset)
+        {
+            byte highByte = _reader.Image[imageOffset + 3];
+            if ((highByte & 0x7e) != 0x34)
+            {
+                offset = 0;
+                return false;
+            }
+
+            uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
+            // offset = SignExtend(imm19:'00', 64)
+            offset = ((int)instruction & ~0x1f) << 8 >> 11;
+            return true;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is a TBZ or a TBNZ.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array.</param>
+        private bool IsArm64TbzOrTbnzInstruction(int imageOffset, out int offset)
+        {
+            byte highByte = _reader.Image[imageOffset + 3];
+            if ((highByte & 0x7e) != 0x36)
+            {
+                offset = 0;
+                return false;
+            }
+
+            uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
+            // offset = SignExtend(imm14:'00', 64)
+            offset = ((int)instruction & ~0x1f) << 13 >> 16;
+            return true;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is a BL.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array.</param>
+        private bool IsArm64BLInstruction(int imageOffset, out int offset)
+        {
+            byte highByte = _reader.Image[imageOffset + 3];
+            if ((highByte & 0xfc) != 0x94)
+            {
+                offset = 0;
+                return false;
+            }
+
+            uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
+            // offset = SignExtend(imm26:'00', 64)
+            offset = (int)instruction << 6 >> 4;
+            return true;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is an LDR literal 64-bit.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array.</param>
+        private bool IsArm64LdrLiteral64Instruction(int imageOffset, out uint register, out int offset)
+        {
+            byte highByte = _reader.Image[imageOffset + 3];
+            if (highByte != 0x58)
+            {
+                register = 0;
+                offset = 0;
+                return false;
+            }
+
+            uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
+            register = instruction & 0x1f;
+            // offset = SignExtend(imm19:'00', 64)
+            offset = (int)(instruction ^ register) << 8 >> 11;
+            return true;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is an LDR immediate 64-bit with the zero offset, e.g., <c>ldr x12, [x12]</c>.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array.</param>
+        private bool IsArm64LdrImmediate64ZeroOffsetInstruction(int imageOffset, out uint destRegister, out uint sourceRegister)
+        {
+            uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
+            if ((instruction & 0xffff_fc00) != 0xf940_0000)
+            {
+                destRegister = 0;
+                sourceRegister = 0;
+                return false;
+            }
+
+            destRegister = instruction & 0x1f;
+            sourceRegister = (instruction >> 5) & 0x1f;
+            return true;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is a BR.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array.</param>
+        private bool IsArm64BrInstruction(int imageOffset, out uint register)
+        {
+            uint instruction = BitConverter.ToUInt32(_reader.Image, imageOffset);
+            if ((instruction & 0xffff_fc1f) != 0xd61f_0000)
+            {
+                register = 0;
+                return false;
+            }
+
+            register = (instruction >> 5) & 0x1f;
+            return true;
+        }
+
+        /// <summary>
         /// Check whether a given target RVA corresponds to another runtime function within the same method.
         /// </summary>
         /// <param name="rva">Target RVA to analyze</param>
         /// <param name="rtf">Runtime function being disassembled</param>
         /// <param name="runtimeFunctionIndex">Output runtime function index if found, -1 otherwise</param>
         /// <returns>true if target runtime function has been found, false otherwise</returns>
-        private bool IsAnotherRuntimeFunctionWithinMethod(int rva, RuntimeFunction rtf, out int runtimeFunctionIndex)
+        private static bool IsAnotherRuntimeFunctionWithinMethod(int rva, RuntimeFunction rtf, out int runtimeFunctionIndex)
         {
             for (int rtfIndex = 0; rtfIndex < rtf.Method.RuntimeFunctions.Count; rtfIndex++)
             {
@@ -732,5 +1130,10 @@ namespace R2RDump
             runtimeFunctionIndex = -1;
             return false;
         }
+
+        /// <summary>
+        /// Determine whether a given character is an ASCII digit.
+        /// </summary>
+        private static bool IsDigit(char c) => (uint)(c - '0') <= (uint)('9' - '0');
     }
 }

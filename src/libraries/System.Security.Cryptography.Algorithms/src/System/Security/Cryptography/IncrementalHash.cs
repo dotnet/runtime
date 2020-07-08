@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using Internal.Cryptography;
@@ -17,6 +16,14 @@ namespace System.Security.Cryptography
         private HMACCommon? _hmac;
         private bool _disposed;
 
+        /// <summary>
+        ///   Gets the output size of this hash or HMAC algorithm, in bytes.
+        /// </summary>
+        /// <value>
+        ///   The output size of this hash or HMAC algorithm, in bytes.
+        /// </value>
+        public int HashLengthInBytes { get; }
+
         private IncrementalHash(HashAlgorithmName name, HashProvider hash)
         {
             Debug.Assert(!string.IsNullOrEmpty(name.Name));
@@ -24,6 +31,7 @@ namespace System.Security.Cryptography
 
             _algorithmName = name;
             _hash = hash;
+            HashLengthInBytes = _hash.HashSizeInBytes;
         }
 
         private IncrementalHash(HashAlgorithmName name, HMACCommon hmac)
@@ -33,6 +41,7 @@ namespace System.Security.Cryptography
 
             _algorithmName = new HashAlgorithmName("HMAC" + name.Name);
             _hmac = hmac;
+            HashLengthInBytes = _hmac.HashSizeInBytes;
         }
 
         /// <summary>
@@ -51,7 +60,7 @@ namespace System.Security.Cryptography
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
 
-            AppendData(data, 0, data.Length);
+            AppendData(new ReadOnlySpan<byte>(data));
         }
 
         /// <summary>
@@ -85,7 +94,7 @@ namespace System.Security.Cryptography
             if ((data.Length - count) < offset)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             if (_disposed)
-                throw new ObjectDisposedException(typeof(IncrementalHash).Name);
+                throw new ObjectDisposedException(nameof(IncrementalHash));
 
             AppendData(new ReadOnlySpan<byte>(data, offset, count));
         }
@@ -94,7 +103,7 @@ namespace System.Security.Cryptography
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(typeof(IncrementalHash).Name);
+                throw new ObjectDisposedException(nameof(IncrementalHash));
             }
 
             Debug.Assert((_hash != null) ^ (_hmac != null));
@@ -118,27 +127,159 @@ namespace System.Security.Cryptography
         public byte[] GetHashAndReset()
         {
             if (_disposed)
-            {
-                throw new ObjectDisposedException(typeof(IncrementalHash).Name);
-            }
+                throw new ObjectDisposedException(nameof(IncrementalHash));
 
-            Debug.Assert((_hash != null) ^ (_hmac != null));
-            return _hash != null ?
-                _hash.FinalizeHashAndReset() :
-                _hmac!.FinalizeHashAndReset();
+            byte[] ret = new byte[HashLengthInBytes];
+
+            int written = GetHashAndResetCore(ret);
+            Debug.Assert(written == HashLengthInBytes);
+
+            return ret;
+        }
+
+        /// <summary>
+        ///   Retrieves the hash or Hash-based Message Authentication Code (HMAC) for the data
+        ///   accumulated from prior calls to the
+        ///   <see cref="AppendData(ReadOnlySpan{byte})" />
+        ///   methods, and resets the object to its initial state.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the hash or HMAC value.
+        /// </param>
+        /// <returns>
+        ///   The number of bytes written to <paramref name="destination"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination"/> has a <see cref="Span{T}.Length"/> value less
+        ///   than <see cref="HashLengthInBytes"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public int GetHashAndReset(Span<byte> destination)
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(IncrementalHash));
+            if (destination.Length < HashLengthInBytes)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+
+            return GetHashAndResetCore(destination);
         }
 
         public bool TryGetHashAndReset(Span<byte> destination, out int bytesWritten)
         {
             if (_disposed)
+                throw new ObjectDisposedException(nameof(IncrementalHash));
+
+            if (destination.Length < HashLengthInBytes)
             {
-                throw new ObjectDisposedException(typeof(IncrementalHash).Name);
+                bytesWritten = 0;
+                return false;
             }
+
+            bytesWritten = GetHashAndResetCore(destination);
+            return true;
+        }
+
+        private int GetHashAndResetCore(Span<byte> destination)
+        {
+            Debug.Assert(destination.Length >= HashLengthInBytes);
 
             Debug.Assert((_hash != null) ^ (_hmac != null));
             return _hash != null ?
-                _hash.TryFinalizeHashAndReset(destination, out bytesWritten) :
-                _hmac!.TryFinalizeHashAndReset(destination, out bytesWritten);
+                _hash.FinalizeHashAndReset(destination) :
+                _hmac!.FinalizeHashAndReset(destination);
+        }
+
+        /// <summary>
+        ///   Retrieves the hash or Hash-based Message Authentication Code (HMAC) for the data
+        ///   accumulated from prior calls to the
+        ///   <see cref="AppendData(ReadOnlySpan{byte})" />
+        ///   methods, without resetting the object to its initial state.
+        /// </summary>
+        /// <returns>
+        ///   The computed hash or HMAC.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] GetCurrentHash()
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(IncrementalHash));
+
+            byte[] ret = new byte[HashLengthInBytes];
+
+            int written = GetCurrentHashCore(ret);
+            Debug.Assert(written == HashLengthInBytes);
+
+            return ret;
+        }
+
+        /// <summary>
+        ///   Retrieves the hash or Hash-based Message Authentication Code (HMAC) for the data
+        ///   accumulated from prior calls to the
+        ///   <see cref="AppendData(ReadOnlySpan{byte})" />
+        ///   methods, without resetting the object to its initial state.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the hash or HMAC value.
+        /// </param>
+        /// <returns>
+        ///   The number of bytes written to <paramref name="destination"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination"/> has a <see cref="Span{T}.Length"/> value less
+        ///   than <see cref="HashLengthInBytes"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public int GetCurrentHash(Span<byte> destination)
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(IncrementalHash));
+            if (destination.Length < HashLengthInBytes)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+
+            return GetCurrentHashCore(destination);
+        }
+
+        /// <summary>
+        ///   Attempts to retrieve the hash or Hash-based Message Authentication Code (HMAC) for
+        ///   the data accumulated from prior calls to the
+        ///   <see cref="AppendData(ReadOnlySpan{byte})" />
+        ///   methods, without resetting the object to its initial state.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the hash or HMAC value.
+        /// </param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, the total number of bytes written into <paramref name="destination" />.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if <paramref name="destination" /> is long enough to receive
+        ///   the hash or HMAC value; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public bool TryGetCurrentHash(Span<byte> destination, out int bytesWritten)
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(IncrementalHash));
+
+            if (destination.Length < HashLengthInBytes)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            bytesWritten = GetCurrentHashCore(destination);
+            return true;
+        }
+
+        private int GetCurrentHashCore(Span<byte> destination)
+        {
+            Debug.Assert(destination.Length >= HashLengthInBytes);
+
+            Debug.Assert((_hash != null) ^ (_hmac != null));
+            return _hash != null ?
+                _hash.GetCurrentHash(destination) :
+                _hmac!.GetCurrentHash(destination);
         }
 
         /// <summary>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -136,7 +135,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         // Check that some queries run in parallel by default, and some require forcing.
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(WithExecutionModeQueryData), new[] { 1, 4 })] // DOP of 1 to verify sequential and 4 to verify parallel
         public static void WithExecutionMode(
             Labeled<ParallelQuery<int>> labeled,

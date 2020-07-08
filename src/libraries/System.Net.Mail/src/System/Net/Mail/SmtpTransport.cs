@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -23,7 +22,7 @@ namespace System.Net.Mail
         private bool _identityRequired;
         private bool _shouldAbort;
 
-        private bool _enableSsl = false;
+        private bool _enableSsl;
         private X509CertificateCollection? _clientCertificates;
 
         internal SmtpTransport(SmtpClient client) : this(client, SmtpAuthenticationManager.GetModules())

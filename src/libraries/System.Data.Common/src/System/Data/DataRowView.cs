@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 
@@ -139,6 +138,7 @@ namespace System.Data
         /// with the specified <see cref="System.Data.DataRelation"/>.
         /// </summary>
         /// <param name="relation">Specified <see cref="System.Data.DataRelation"/>.</param>
+        /// <param name="followParent">The parent object.</param>
         /// <exception cref="ArgumentException">null or mismatch between <paramref name="relation"/> and <see cref="System.Data.DataView.get_Table"/>.</exception>
         public DataView CreateChildView(DataRelation relation, bool followParent)
         {
@@ -169,6 +169,7 @@ namespace System.Data
 
         /// <summary><see cref="CreateChildView(DataRelation)"/></summary>
         /// <param name="relationName">Specified <see cref="System.Data.DataRelation"/> name.</param>
+        /// <param name="followParent">The parent object.</param>
         /// <exception cref="ArgumentException">Unmatched <paramref name="relationName"/>.</exception>
         public DataView CreateChildView(string relationName, bool followParent) =>
             CreateChildView(DataView.Table.ChildRelations[relationName], followParent);

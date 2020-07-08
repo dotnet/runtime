@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // <spec>http://webdata/xml/specs/XslCompiledTransform.xml</spec>
 //------------------------------------------------------------------------------
@@ -51,16 +50,16 @@ namespace System.Xml.Xsl
 #endif
 
         // Options of compilation
-        private readonly bool _enableDebug = false;
+        private readonly bool _enableDebug;
 
         // Results of compilation
-        private CompilerErrorCollection _compilerErrorColl = null;
-        private XmlWriterSettings _outputSettings = null;
-        private QilExpression _qil = null;
+        private CompilerErrorCollection _compilerErrorColl;
+        private XmlWriterSettings _outputSettings;
+        private QilExpression _qil;
 
 #if FEATURE_COMPILED_XSL
         // Executable command for the compiled stylesheet
-        private XmlILCommand _command = null;
+        private XmlILCommand _command;
 #endif
 
         public XslCompiledTransform() { }

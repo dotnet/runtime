@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -41,6 +40,9 @@ namespace System
 
         private const int SingleMaxExponent = 39;
         private const int SingleMinExponent = -45;
+
+        private const int HalfMaxExponent = 5;
+        private const int HalfMinExponent = -8;
 
         /// <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>
         internal static ReadOnlySpan<byte> CharToHexLookup => new byte[]
@@ -1707,6 +1709,16 @@ namespace System
             return result;
         }
 
+        internal static Half ParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
+        {
+            if (!TryParseHalf(value, styles, info, out Half result))
+            {
+                ThrowOverflowOrFormatException(ParsingStatus.Failed);
+            }
+
+            return result;
+        }
+
         internal static unsafe ParsingStatus TryParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
         {
             byte* pDigits = stackalloc byte[DecimalNumberBufferLength];
@@ -1784,6 +1796,73 @@ namespace System
             else
             {
                 result = NumberToDouble(ref number);
+            }
+
+            return true;
+        }
+
+        internal static unsafe bool TryParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Half result)
+        {
+            byte* pDigits = stackalloc byte[HalfNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, HalfNumberBufferLength);
+
+            if (!TryStringToNumber(value, styles, ref number, info))
+            {
+                ReadOnlySpan<char> valueTrim = value.Trim();
+
+                // This code would be simpler if we only had the concept of `InfinitySymbol`, but
+                // we don't so we'll check the existing cases first and then handle `PositiveSign` +
+                // `PositiveInfinitySymbol` and `PositiveSign/NegativeSign` + `NaNSymbol` last.
+                //
+                // Additionally, since some cultures ("wo") actually define `PositiveInfinitySymbol`
+                // to include `PositiveSign`, we need to check whether `PositiveInfinitySymbol` fits
+                // that case so that we don't start parsing things like `++infini`.
+
+                if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
+                {
+                    result = Half.PositiveInfinity;
+                }
+                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NegativeInfinitySymbol))
+                {
+                    result = Half.NegativeInfinity;
+                }
+                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = Half.NaN;
+                }
+                else if (valueTrim.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    valueTrim = valueTrim.Slice(info.PositiveSign.Length);
+
+                    if (!info.PositiveInfinitySymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
+                    {
+                        result = Half.PositiveInfinity;
+                    }
+                    else if (!info.NaNSymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                    {
+                        result = Half.NaN;
+                    }
+                    else
+                    {
+                        result = (Half)0;
+                        return false;
+                    }
+                }
+                else if (valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                         !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                         valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = Half.NaN;
+                }
+                else
+                {
+                    result = (Half)0;
+                    return false; // We really failed
+                }
+            }
+            else
+            {
+                result = NumberToHalf(ref number);
             }
 
             return true;
@@ -1997,6 +2076,28 @@ namespace System
             }
 
             return number.IsNegative ? -result : result;
+        }
+
+        internal static Half NumberToHalf(ref NumberBuffer number)
+        {
+            number.CheckConsistency();
+            Half result;
+
+            if ((number.DigitsCount == 0) || (number.Scale < HalfMinExponent))
+            {
+                result = default;
+            }
+            else if (number.Scale > HalfMaxExponent)
+            {
+                result = Half.PositiveInfinity;
+            }
+            else
+            {
+                ushort bits = (ushort)(NumberToFloatingPointBits(ref number, in FloatingPointInfo.Half));
+                result = new Half(bits);
+            }
+
+            return number.IsNegative ? Half.Negate(result) : result;
         }
 
         internal static float NumberToSingle(ref NumberBuffer number)

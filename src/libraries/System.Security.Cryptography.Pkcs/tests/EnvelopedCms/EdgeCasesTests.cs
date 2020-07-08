@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography.Xml;
 using System.Security.Cryptography.X509Certificates;
@@ -309,6 +308,30 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Throws<ArgumentNullException>(() => ecms.Decode(null));
         }
 
+        [Theory]
+#if !NET472
+        [InlineData(true)]
+#endif
+        [InlineData(false)]
+        public static void EnvelopedCmsEmptyDecode(bool useSpan)
+        {
+            EnvelopedCms cms = new EnvelopedCms();
+
+            if (useSpan)
+            {
+#if !NET472
+                Assert.ThrowsAny<CryptographicException>(() => cms.Decode(ReadOnlySpan<byte>.Empty));
+#else
+                throw new Xunit.Sdk.XunitException(
+                    "This test should not evaluate for .NET Framework, the API is missing.");
+#endif
+            }
+            else
+            {
+                Assert.ThrowsAny<CryptographicException>(() => cms.Decode(Array.Empty<byte>()));
+            }
+        }
+
         [Fact]
         public static void EnvelopedCmsDecryptNullary()
         {
@@ -477,12 +500,31 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Throws<ArgumentNullException>(() => ContentInfo.GetContentType(null));
         }
 
-        [Fact]
-        public static void ContentInfoGetContentTypeUnknown()
+        [Theory]
+        [InlineData(false)]
+#if !NET472
+        [InlineData(true)]
+#endif
+        public static void ContentInfoGetContentTypeUnknown(bool fromSpan)
         {
             byte[] encodedMessage =
                  ("301A06092A864886F70D010700A00D040B48656C6C6F202E4E455421").HexToByteArray();
-            Assert.ThrowsAny<CryptographicException>(() => ContentInfo.GetContentType(encodedMessage));
+
+            if (fromSpan)
+            {
+#if NET472
+                throw new Xunit.Sdk.XunitException(
+                    "This test should not evaluate for .NET Framework, the API is missing.");
+#else
+                Assert.ThrowsAny<CryptographicException>(
+                    () => ContentInfo.GetContentType(new ReadOnlySpan<byte>(encodedMessage)));
+#endif
+            }
+            else
+            {
+                Assert.ThrowsAny<CryptographicException>(
+                    () => ContentInfo.GetContentType(encodedMessage));
+            }
         }
 
         [Fact]

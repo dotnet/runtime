@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -17,7 +16,7 @@ namespace System.Net.Http
         private const int RecentAutoDetectionInterval = 120_000; // 2 minutes in milliseconds.
         private readonly string? _autoConfigUrl, _proxy, _proxyBypass;
         private readonly bool _autoDetect;
-        private readonly bool _useProxy = false;
+        private readonly bool _useProxy;
         private bool _autoDetectionFailed;
         private int _lastTimeAutoDetectionFailed; // Environment.TickCount units (milliseconds).
 

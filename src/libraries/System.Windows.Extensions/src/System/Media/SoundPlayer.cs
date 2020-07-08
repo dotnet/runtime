@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -18,7 +17,7 @@ namespace System.Media
         private const int BlockSize = 1024;
         private const int DefaultLoadTimeout = 10000; // 10 secs
 
-        private Uri _uri = null;
+        private Uri _uri;
         private string _soundLocation = string.Empty;
         private int _loadTimeout = DefaultLoadTimeout;
 
@@ -28,16 +27,16 @@ namespace System.Media
         // the worker copyTask
         // we start the worker copyTask ONLY from entry points in the SoundPlayer API
         // we also set the tread to null only from the entry points in the SoundPlayer API
-        private Task _copyTask = null;
-        private CancellationTokenSource _copyTaskCancellation = null;
+        private Task _copyTask;
+        private CancellationTokenSource _copyTaskCancellation;
 
         // local buffer information
-        private int _currentPos = 0;
-        private Stream _stream = null;
-        private Exception _lastLoadException = null;
-        private bool _doesLoadAppearSynchronous = false;
-        private byte[] _streamData = null;
-        private AsyncOperation _asyncOperation = null;
+        private int _currentPos;
+        private Stream _stream;
+        private Exception _lastLoadException;
+        private bool _doesLoadAppearSynchronous;
+        private byte[] _streamData;
+        private AsyncOperation _asyncOperation;
         private readonly SendOrPostCallback _loadAsyncOperationCompleted;
 
         // event
@@ -124,9 +123,9 @@ namespace System.Media
             }
         }
 
-        public bool IsLoadCompleted { get; private set; } = false;
+        public bool IsLoadCompleted { get; private set; }
 
-        public object Tag { get; set; } = null;
+        public object Tag { get; set; }
 
         public void LoadAsync()
         {

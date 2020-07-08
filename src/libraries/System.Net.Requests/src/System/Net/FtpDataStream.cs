@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Net.Sockets;
@@ -19,8 +18,8 @@ namespace System.Net
         private readonly NetworkStream _networkStream;
         private bool _writeable;
         private bool _readable;
-        private bool _isFullyRead = false;
-        private bool _closing = false;
+        private bool _isFullyRead;
+        private bool _closing;
 
         private const int DefaultCloseTimeout = -1;
 

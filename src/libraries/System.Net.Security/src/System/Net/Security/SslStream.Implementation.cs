@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.ComponentModel;
@@ -1093,13 +1092,6 @@ namespace System.Net.Security
                     return Framing.Invalid;
                 }
 
-#if TRACE_VERBOSE
-                if (bytes[1] != 3 && NetEventSource.IsEnabled)
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"WARNING: SslState::DetectFraming() SSL protocol is > 3, trying SSL3 framing in retail = {bytes[1]:x}");
-                }
-#endif
-
                 version = (bytes[1] << 8) | bytes[2];
                 if (version < 0x300 || version >= 0x500)
                 {
@@ -1111,14 +1103,6 @@ namespace System.Net.Security
                 //
                 return Framing.SinceSSL3;
             }
-
-#if TRACE_VERBOSE
-            if ((bytes[0] & 0x80) == 0 && NetEventSource.IsEnabled)
-            {
-                // We have a three-byte header format
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"WARNING: SslState::DetectFraming() SSL v <=2 HELLO has no high bit set for 3 bytes header, we are broken, received byte = {bytes[0]:x}");
-            }
-#endif
 
             if (bytes.Length < 3)
             {

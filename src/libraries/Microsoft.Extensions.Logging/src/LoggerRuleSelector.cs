@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -23,9 +22,9 @@ namespace Microsoft.Extensions.Logging
             // 4. If there are multiple rules use last
             // 5. If there are no applicable rules use global minimal level
 
-            var providerAlias = ProviderAliasUtilities.GetAlias(providerType);
+            string providerAlias = ProviderAliasUtilities.GetAlias(providerType);
             LoggerFilterRule current = null;
-            foreach (var rule in options.Rules)
+            foreach (LoggerFilterRule rule in options.Rules)
             {
                 if (IsBetter(rule, current, providerType.FullName, category)
                     || (!string.IsNullOrEmpty(providerAlias) && IsBetter(rule, current, providerAlias, category)))
@@ -52,14 +51,14 @@ namespace Microsoft.Extensions.Logging
 
             if (rule.CategoryName != null)
             {
-                var categoryParts = rule.CategoryName.Split(WildcardChar);
+                string[] categoryParts = rule.CategoryName.Split(WildcardChar);
                 if (categoryParts.Length > 2)
                 {
                     throw new InvalidOperationException("Only one wildcard character is allowed in category name.");
                 }
 
-                var prefix = categoryParts[0];
-                var suffix = categoryParts.Length > 1 ? categoryParts[1] : string.Empty;
+                string prefix = categoryParts[0];
+                string suffix = categoryParts.Length > 1 ? categoryParts[1] : string.Empty;
 
                 if (!category.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
                     !category.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))

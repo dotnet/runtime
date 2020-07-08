@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -221,9 +220,10 @@ namespace System.IO
             if (_availableKeys.Count > 0)
             {
                 ConsoleKeyInfo keyInfo = peek ? _availableKeys.Peek() : _availableKeys.Pop();
-                if (!IsEol(keyInfo.KeyChar))
+                char keyChar = (keyInfo.KeyChar == '\r') ? '\n' : keyInfo.KeyChar; // Map CR chars to LF
+                if (!IsEol(keyChar))
                 {
-                    return keyInfo.KeyChar;
+                    return keyChar;
                 }
             }
 
@@ -251,7 +251,12 @@ namespace System.IO
                 case '\t':
                     return ConsoleKey.Tab;
 
+                case '\r':
+                    return ConsoleKey.Enter;
+
                 case '\n':
+                    // Windows compatibility; LF is Ctrl+Enter
+                    isCtrl = true;
                     return ConsoleKey.Enter;
 
                 case (char)(0x1B):
@@ -412,6 +417,7 @@ namespace System.IO
                 }
 
                 MapBufferToConsoleKey(out key, out ch, out isShift, out isAlt, out isCtrl);
+
                 return new ConsoleKeyInfo(ch, key, isShift, isAlt, isCtrl);
             }
             finally

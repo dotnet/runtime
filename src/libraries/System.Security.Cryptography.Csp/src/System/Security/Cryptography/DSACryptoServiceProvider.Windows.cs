@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
 using System.Diagnostics;
@@ -17,7 +16,7 @@ namespace System.Security.Cryptography
         private SafeKeyHandle? _safeKeyHandle;
         private SafeProvHandle? _safeProvHandle;
         private readonly SHA1 _sha1;
-        private static volatile CspProviderFlags s_useMachineKeyStore = 0;
+        private static volatile CspProviderFlags s_useMachineKeyStore;
         private bool _disposed;
 
         /// <summary>

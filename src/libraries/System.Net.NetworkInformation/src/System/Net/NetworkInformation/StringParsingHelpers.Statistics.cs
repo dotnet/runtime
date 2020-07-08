@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.IO;
@@ -222,14 +221,14 @@ namespace System.Net.NetworkInformation
         {
             string fileContents = File.ReadAllText(filePath);
             RowConfigReader reader = new RowConfigReader(fileContents);
-            int Icmp6OutErrorsIdx = fileContents.IndexOf("Icmp6OutErrors", StringComparison.Ordinal);
+            bool hasIcmp6OutErrors = fileContents.Contains("Icmp6OutErrors");
 
             return new Icmpv6StatisticsTable()
             {
                 InMsgs = reader.GetNextValueAsInt64("Icmp6InMsgs"),
                 InErrors = reader.GetNextValueAsInt64("Icmp6InErrors"),
                 OutMsgs = reader.GetNextValueAsInt64("Icmp6OutMsgs"),
-                OutErrors = Icmp6OutErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt64("Icmp6OutErrors"),
+                OutErrors = hasIcmp6OutErrors ? reader.GetNextValueAsInt64("Icmp6OutErrors") : 0,
                 InDestUnreachs = reader.GetNextValueAsInt64("Icmp6InDestUnreachs"),
                 InPktTooBigs = reader.GetNextValueAsInt64("Icmp6InPktTooBigs"),
                 InTimeExcds = reader.GetNextValueAsInt64("Icmp6InTimeExcds"),
@@ -388,7 +387,7 @@ namespace System.Net.NetworkInformation
         {
             string fileContents = File.ReadAllText(filePath);
             RowConfigReader reader = new RowConfigReader(fileContents);
-            int udp6ErrorsIdx = fileContents.IndexOf("Udp6SndbufErrors", StringComparison.Ordinal);
+            bool hasUdp6Errors = fileContents.Contains("Udp6SndbufErrors");
 
             return new UdpGlobalStatisticsTable()
             {
@@ -396,9 +395,9 @@ namespace System.Net.NetworkInformation
                 NoPorts = reader.GetNextValueAsInt64("Udp6NoPorts"),
                 InErrors = reader.GetNextValueAsInt64("Udp6InErrors"),
                 OutDatagrams = reader.GetNextValueAsInt64("Udp6OutDatagrams"),
-                RcvbufErrors = udp6ErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt64("Udp6RcvbufErrors"),
-                SndbufErrors = udp6ErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt64("Udp6SndbufErrors"),
-                InCsumErrors = udp6ErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt64("Udp6InCsumErrors"),
+                RcvbufErrors = hasUdp6Errors ? reader.GetNextValueAsInt64("Udp6RcvbufErrors") : 0,
+                SndbufErrors = hasUdp6Errors ? reader.GetNextValueAsInt64("Udp6SndbufErrors") : 0,
+                InCsumErrors = hasUdp6Errors ? reader.GetNextValueAsInt64("Udp6InCsumErrors") : 0,
             };
         }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 namespace System.Xml.Schema
@@ -26,7 +25,7 @@ namespace System.Xml.Schema
                 return XmlReservedNs.NsXml;
             }
             Dictionary<string, string> namespaces;
-            for (XmlSchemaObject current = _node; current != null; current = current.Parent)
+            for (XmlSchemaObject? current = _node; current != null; current = current.Parent)
             {
                 namespaces = current.Namespaces.Namespaces;
                 if (namespaces != null && namespaces.Count > 0)
@@ -46,7 +45,7 @@ namespace System.Xml.Schema
                 return "xml";
             }
             Dictionary<string, string> namespaces;
-            for (XmlSchemaObject current = _node; current != null; current = current.Parent)
+            for (XmlSchemaObject? current = _node; current != null; current = current.Parent)
             {
                 namespaces = current.Namespaces.Namespaces;
                 if (namespaces != null && namespaces.Count > 0)

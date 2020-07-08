@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Serialization
 {
@@ -20,7 +19,7 @@ namespace System.Xml.Serialization
     internal abstract class Accessor
     {
         private string _name;
-        private object _defaultValue = null;
+        private object _defaultValue;
         private string _ns;
         private TypeMapping _mapping;
         private bool _any;
@@ -139,7 +138,7 @@ namespace System.Xml.Serialization
     {
         private bool _nullable;
         private bool _isSoap;
-        private bool _unbounded = false;
+        private bool _unbounded;
 
         internal bool IsSoap
         {
@@ -283,7 +282,7 @@ namespace System.Xml.Serialization
         private bool _referencedByElement;
         private bool _referencedByTopLevelElement;
         private bool _includeInSchema = true;
-        private bool _reference = false;
+        private bool _reference;
 
         internal bool ReferencedByTopLevelElement
         {
@@ -461,7 +460,7 @@ namespace System.Xml.Serialization
         private StructMapping _baseMapping;
         private StructMapping _derivedMappings;
         private StructMapping _nextDerivedMapping;
-        private MemberMapping _xmlnsMember = null;
+        private MemberMapping _xmlnsMember;
         private bool _hasSimpleContent;
         private bool _openModel;
         private bool _isSequence;
@@ -909,7 +908,7 @@ namespace System.Xml.Serialization
         private bool _checkShouldPersist;
         private SpecifiedAccessor _checkSpecified;
         private bool _isReturnValue;
-        private bool _readOnly = false;
+        private bool _readOnly;
         private int _sequenceId = -1;
         private MemberInfo _memberInfo;
         private MemberInfo _checkSpecifiedMemberInfo;
@@ -1014,7 +1013,7 @@ namespace System.Xml.Serialization
         private bool _hasWrapperElement = true;
         private bool _validateRpcWrapperElement;
         private bool _writeAccessors = true;
-        private MemberMapping _xmlnsMember = null;
+        private MemberMapping _xmlnsMember;
 
         internal MemberMapping[] Members
         {

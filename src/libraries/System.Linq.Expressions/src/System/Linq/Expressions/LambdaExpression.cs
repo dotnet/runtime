@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -76,25 +75,25 @@ namespace System.Linq.Expressions
 
         internal virtual bool TailCallCore => false;
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual ReadOnlyCollection<ParameterExpression> GetOrMakeParameters()
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         ParameterExpression IParameterProvider.GetParameter(int index) => GetParameter(index);
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual ParameterExpression GetParameter(int index)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         int IParameterProvider.ParameterCount => ParameterCount;
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual int ParameterCount
         {
             get
@@ -249,13 +248,13 @@ namespace System.Linq.Expressions
             return Lambda<TDelegate>(body, Name, TailCall, parameters);
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual bool SameParameters(ICollection<ParameterExpression>? parameters)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {
             throw ContractUtils.Unreachable;
@@ -308,7 +307,7 @@ namespace System.Linq.Expressions
     // Separate expression creation class to hide the CreateExpressionFunc function from users reflecting on Expression<T>
     public class ExpressionCreator<TDelegate>
     {
-        public static LambdaExpression CreateExpressionFunc(Expression body, string name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
+        public static Expression<TDelegate> CreateExpressionFunc(Expression body, string? name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
         {
             if (name == null && !tailCall)
             {
@@ -598,7 +597,7 @@ namespace System.Linq.Expressions
 #if FEATURE_COMPILE
                 MethodInfo create = typeof(Expression<>).MakeGenericType(delegateType).GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic)!;
 #else
-                MethodInfo create = typeof(ExpressionCreator<>).MakeGenericType(delegateType).GetMethod("CreateExpressionFunc", BindingFlags.Static | BindingFlags.Public);
+                MethodInfo create = typeof(ExpressionCreator<>).MakeGenericType(delegateType).GetMethod("CreateExpressionFunc", BindingFlags.Static | BindingFlags.Public)!;
 #endif
                 if (delegateType.IsCollectible)
                 {

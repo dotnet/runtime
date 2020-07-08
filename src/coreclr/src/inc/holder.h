@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef __HOLDER_H_
@@ -85,12 +84,6 @@ struct AutoExpVisibleValue
   private:
     union
     {
-        // Only include a class name here if it is customarily referred to through an abstract interface.
-
-#if defined(FEATURE_APPX)
-        const class AppXBindResultImpl                      *_asAppXBindResultImpl;
-#endif
-
         const void                                          *_pPreventEmptyUnion;
     };
 };

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -87,7 +86,7 @@ namespace System.Threading.Tests
             trwl.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void InvalidLockCookieTest()
         {
             // Invalid lock cookie created by using one up with Upgrade/Downgrade
@@ -122,7 +121,7 @@ namespace System.Threading.Tests
             trwl.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void BasicLockTest()
         {
             var trwl = new TestReaderWriterLock();
@@ -480,7 +479,7 @@ namespace System.Threading.Tests
             trwl.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void WaitingReadersTest()
         {
             var trwl = new TestReaderWriterLock();
@@ -510,7 +509,7 @@ namespace System.Threading.Tests
             trwl.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void WaitingWritersTest()
         {
             var trwl = new TestReaderWriterLock();
@@ -541,7 +540,7 @@ namespace System.Threading.Tests
             trwl.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ReadersWaitingOnWaitingWriterTest()
         {
             var trwl = new TestReaderWriterLock();
@@ -591,7 +590,7 @@ namespace System.Threading.Tests
             trwl.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ReadersWaitingOnWaitingUpgraderTest()
         {
             var trwl = new TestReaderWriterLock();
@@ -644,7 +643,7 @@ namespace System.Threading.Tests
             trwl.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void WaitingUpgradersTest()
         {
             var trwl = new TestReaderWriterLock();
@@ -689,7 +688,7 @@ namespace System.Threading.Tests
             trwl.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void AtomicRecursiveReaderTest()
         {
             var trwl = new TestReaderWriterLock();
@@ -715,7 +714,7 @@ namespace System.Threading.Tests
             trwl.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void AtomicDowngradeTest()
         {
             var trwl = new TestReaderWriterLock();

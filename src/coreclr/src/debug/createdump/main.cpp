@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "createdump.h"
 
@@ -19,6 +18,8 @@ const char* g_help = "createdump [options] pid\n"
 "-t, --triage - create triage minidump.\n"
 "-u, --full - create full core dump.\n"
 "-d, --diag - enable diagnostic messages.\n";
+
+bool g_diagnostics = false;
 
 bool CreateDump(const char* dumpPathTemplate, int pid, MINIDUMP_TYPE minidumpType);
 

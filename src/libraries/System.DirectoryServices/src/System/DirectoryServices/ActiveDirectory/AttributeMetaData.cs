@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Runtime.InteropServices;
@@ -10,12 +9,12 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class AttributeMetadata
     {
-        private readonly string _pszLastOriginatingDsaDN = null;
+        private readonly string _pszLastOriginatingDsaDN;
 
-        private string _originatingServerName = null;
-        private readonly DirectoryServer _server = null;
-        private readonly Hashtable _nameTable = null;
-        private readonly bool _advanced = false;
+        private string _originatingServerName;
+        private readonly DirectoryServer _server;
+        private readonly Hashtable _nameTable;
+        private readonly bool _advanced;
 
         internal AttributeMetadata(IntPtr info, bool advanced, DirectoryServer server, Hashtable table)
         {

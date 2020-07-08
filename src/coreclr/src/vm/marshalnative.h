@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: MarshalNative.h
 //
@@ -69,16 +68,6 @@ public:
     static FCDECL1(LPVOID, GetFunctionPointerForDelegateInternal, Object* refDelegateUNSAFE);
 
 #ifdef FEATURE_COMINTEROP
-    //====================================================================
-    // map GUID to Type
-    //====================================================================
-    static FCDECL1(Object*, GetLoadedTypeForGUID, GUID* pGuid);
-
-    //====================================================================
-    // map Type to ITypeInfo*
-    //====================================================================
-    static FCDECL1(ITypeInfo*, GetITypeInfoForType, ReflectClassBaseObject* refClassUNSAFE);
-
     //====================================================================
     // return the IUnknown* for an Object
     //====================================================================

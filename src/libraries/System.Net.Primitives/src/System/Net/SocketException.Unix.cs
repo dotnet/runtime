@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 
@@ -26,15 +25,11 @@ namespace System.Net.Sockets
         private static int GetNativeErrorForSocketError(SocketError error)
         {
             int nativeErr = (int)error;
-            if (error != SocketError.SocketError)
-            {
-                Interop.Error interopErr;
 
-                // If an interop error was not found, then don't invoke Info().RawErrno as that will fail with assert.
-                if (SocketErrorPal.TryGetNativeErrorForSocketError(error, out interopErr))
-                {
-                    nativeErr = interopErr.Info().RawErrno;
-                }
+            // If an interop error was not found, then don't invoke Info().RawErrno as that will fail with assert.
+            if (SocketErrorPal.TryGetNativeErrorForSocketError(error, out Interop.Error interopErr))
+            {
+                nativeErr = interopErr.Info().RawErrno;
             }
 
             return nativeErr;

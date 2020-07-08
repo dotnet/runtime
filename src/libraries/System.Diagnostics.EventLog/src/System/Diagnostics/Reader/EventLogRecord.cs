@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Text;
@@ -21,10 +20,10 @@ namespace System.Diagnostics.Eventing.Reader
         private readonly object _syncObject;
 
         // Cached DisplayNames for each instance
-        private string _levelName = null;
-        private string _taskName = null;
-        private string _opcodeName = null;
-        private IEnumerable<string> _keywordsNames = null;
+        private string _levelName;
+        private string _taskName;
+        private string _opcodeName;
+        private IEnumerable<string> _keywordsNames;
 
         // Cached DisplayNames for each instance
         private bool _levelNameReady;

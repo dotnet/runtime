@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -42,14 +41,14 @@ namespace Microsoft.Extensions.Hosting.Internal
             _logger.Starting();
 
             using var combinedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _applicationLifetime.ApplicationStopping);
-            var combinedCancellationToken = combinedCancellationTokenSource.Token;
+            CancellationToken combinedCancellationToken = combinedCancellationTokenSource.Token;
 
-            await _hostLifetime.WaitForStartAsync(combinedCancellationToken);
+            await _hostLifetime.WaitForStartAsync(combinedCancellationToken).ConfigureAwait(false);
 
             combinedCancellationToken.ThrowIfCancellationRequested();
             _hostedServices = Services.GetService<IEnumerable<IHostedService>>();
 
-            foreach (var hostedService in _hostedServices)
+            foreach (IHostedService hostedService in _hostedServices)
             {
                 // Fire IHostedService.Start
                 await hostedService.StartAsync(combinedCancellationToken).ConfigureAwait(false);
@@ -68,14 +67,14 @@ namespace Microsoft.Extensions.Hosting.Internal
             using (var cts = new CancellationTokenSource(_options.ShutdownTimeout))
             using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken))
             {
-                var token = linkedCts.Token;
+                CancellationToken token = linkedCts.Token;
                 // Trigger IHostApplicationLifetime.ApplicationStopping
                 _applicationLifetime.StopApplication();
 
                 IList<Exception> exceptions = new List<Exception>();
                 if (_hostedServices != null) // Started?
                 {
-                    foreach (var hostedService in _hostedServices.Reverse())
+                    foreach (IHostedService hostedService in _hostedServices.Reverse())
                     {
                         token.ThrowIfCancellationRequested();
                         try
@@ -90,7 +89,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 }
 
                 token.ThrowIfCancellationRequested();
-                await _hostLifetime.StopAsync(token);
+                await _hostLifetime.StopAsync(token).ConfigureAwait(false);
 
                 // Fire IHostApplicationLifetime.Stopped
                 _applicationLifetime.NotifyStopped();
@@ -113,7 +112,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             switch (Services)
             {
                 case IAsyncDisposable asyncDisposable:
-                    await asyncDisposable.DisposeAsync();
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
                     break;
                 case IDisposable disposable:
                     disposable.Dispose();

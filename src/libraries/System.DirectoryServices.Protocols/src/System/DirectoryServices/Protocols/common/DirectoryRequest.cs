@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Collections.Specialized;
@@ -188,7 +187,7 @@ namespace System.DirectoryServices.Protocols
 
     public class ExtendedRequest : DirectoryRequest
     {
-        private byte[] _requestValue = null;
+        private byte[] _requestValue;
 
         public ExtendedRequest() { }
 
@@ -326,10 +325,10 @@ namespace System.DirectoryServices.Protocols
 
         public bool TypesOnly { get; set; }
 
-        private object _directoryFilter = null;
+        private object _directoryFilter;
         private SearchScope _directoryScope = SearchScope.Subtree;
         private DereferenceAlias _directoryRefAlias = DereferenceAlias.Never;
-        private int _directorySizeLimit = 0;
+        private int _directorySizeLimit;
         private TimeSpan _directoryTimeLimit = new TimeSpan(0);
     }
 }

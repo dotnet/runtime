@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Inlining Policies
 //
@@ -89,6 +88,7 @@ public:
         , m_Multiplier(0.0)
         , m_CodeSize(0)
         , m_CallsiteFrequency(InlineCallsiteFrequency::UNUSED)
+        , m_CallsiteDepth(0)
         , m_InstructionCount(0)
         , m_LoadStoreCount(0)
         , m_ArgFeedsTest(0)
@@ -154,6 +154,7 @@ protected:
     double                  m_Multiplier;
     unsigned                m_CodeSize;
     InlineCallsiteFrequency m_CallsiteFrequency;
+    unsigned                m_CallsiteDepth;
     unsigned                m_InstructionCount;
     unsigned                m_LoadStoreCount;
     unsigned                m_ArgFeedsTest;
@@ -225,7 +226,6 @@ protected:
         MAX_ARGS = 6
     };
 
-    unsigned    m_Depth;
     unsigned    m_BlockCount;
     unsigned    m_Maxstack;
     unsigned    m_ArgCount;

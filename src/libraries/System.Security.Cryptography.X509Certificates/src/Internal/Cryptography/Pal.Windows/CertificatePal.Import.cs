@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.IO;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -17,19 +15,19 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class CertificatePal : IDisposable, ICertificatePal
     {
-        public static ICertificatePal FromBlob(byte[] rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        public static ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             return FromBlobOrFile(rawData, null, password, keyStorageFlags);
         }
 
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
-            return FromBlobOrFile(null, fileName, password, keyStorageFlags);
+            return FromBlobOrFile(ReadOnlySpan<byte>.Empty, fileName, password, keyStorageFlags);
         }
 
-        private static ICertificatePal FromBlobOrFile(byte[]? rawData, string? fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        private static ICertificatePal FromBlobOrFile(ReadOnlySpan<byte> rawData, string? fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
-            Debug.Assert(rawData != null || fileName != null);
+            Debug.Assert(!rawData.IsEmpty || fileName != null);
             Debug.Assert(password != null);
 
             bool loadFromFile = (fileName != null);
@@ -52,7 +50,7 @@ namespace Internal.Cryptography.Pal
                     {
                         fixed (char* pFileName = fileName)
                         {
-                            CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB(loadFromFile ? 0 : rawData!.Length, pRawData);
+                            CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB(loadFromFile ? 0 : rawData.Length, pRawData);
 
                             CertQueryObjectType objectType = loadFromFile ? CertQueryObjectType.CERT_QUERY_OBJECT_FILE : CertQueryObjectType.CERT_QUERY_OBJECT_BLOB;
                             void* pvObject = loadFromFile ? (void*)pFileName : (void*)&certBlob;
@@ -147,7 +145,10 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private static SafeCertContextHandle FilterPFXStore(byte[] rawData, SafePasswordHandle password, PfxCertStoreFlags pfxCertStoreFlags)
+        private static SafeCertContextHandle FilterPFXStore(
+            ReadOnlySpan<byte> rawData,
+            SafePasswordHandle password,
+            PfxCertStoreFlags pfxCertStoreFlags)
         {
             SafeCertStoreHandle hStore;
             unsafe
@@ -157,7 +158,9 @@ namespace Internal.Cryptography.Pal
                     CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB(rawData.Length, pbRawData);
                     hStore = Interop.crypt32.PFXImportCertStore(ref certBlob, password, pfxCertStoreFlags);
                     if (hStore.IsInvalid)
+                    {
                         throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                    }
                 }
             }
 

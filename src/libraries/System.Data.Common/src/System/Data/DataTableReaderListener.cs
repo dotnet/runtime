@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 
@@ -8,8 +7,8 @@ namespace System.Data
 {
     internal sealed class DataTableReaderListener
     {
-        private DataTable _currentDataTable = null;
-        private bool _isSubscribed = false;
+        private DataTable _currentDataTable;
+        private bool _isSubscribed;
         private readonly WeakReference _readerWeak;
 
         internal DataTableReaderListener(DataTableReader reader)

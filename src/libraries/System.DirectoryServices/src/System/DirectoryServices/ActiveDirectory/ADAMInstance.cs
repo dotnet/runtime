@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net;
 using System.Collections;
@@ -11,23 +10,23 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class AdamInstance : DirectoryServer
     {
-        private readonly string[] _becomeRoleOwnerAttrs = null;
-        private bool _disposed = false;
+        private readonly string[] _becomeRoleOwnerAttrs;
+        private bool _disposed;
 
         // for public properties
-        private string _cachedHostName = null;
+        private string _cachedHostName;
         private int _cachedLdapPort = -1;
         private int _cachedSslPort = -1;
-        private bool _defaultPartitionInitialized = false;
-        private bool _defaultPartitionModified = false;
-        private ConfigurationSet _currentConfigSet = null;
-        private string _cachedDefaultPartition = null;
-        private AdamRoleCollection _cachedRoles = null;
+        private bool _defaultPartitionInitialized;
+        private bool _defaultPartitionModified;
+        private ConfigurationSet _currentConfigSet;
+        private string _cachedDefaultPartition;
+        private AdamRoleCollection _cachedRoles;
 
         private IntPtr _ADAMHandle = (IntPtr)0;
         private IntPtr _authIdentity = IntPtr.Zero;
-        private SyncUpdateCallback _userDelegate = null;
-        private readonly SyncReplicaFromAllServersCallback _syncAllFunctionPointer = null;
+        private SyncUpdateCallback _userDelegate;
+        private readonly SyncReplicaFromAllServersCallback _syncAllFunctionPointer;
 
         #region constructors
         internal AdamInstance(DirectoryContext context, string adamInstanceName)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 .intel_syntax noprefix
 #include "unixasmmacros.inc"
@@ -33,8 +32,13 @@ LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
         // See if this is in GCHeap
         PREPARE_EXTERNAL_VAR g_lowest_address, rax
         cmp     rdi, [rax]
+#ifdef FEATURE_WRITEBARRIER_COPY
+        // jb      NotInHeap
+        .byte 0x72, 0x12
+#else
         // jb      NotInHeap
         .byte 0x72, 0x0e
+#endif
         PREPARE_EXTERNAL_VAR g_highest_address, rax
         cmp     rdi, [rax]
 

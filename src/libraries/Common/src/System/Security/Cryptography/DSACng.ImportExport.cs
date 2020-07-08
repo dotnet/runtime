@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using Internal.Cryptography;
@@ -431,6 +430,7 @@ namespace System.Security.Cryptography
             /// <summary>
             ///     This function checks the magic value in the key blob header
             /// </summary>
+            /// <param name="magic">The expected magic number.</param>
             /// <param name="includePrivateParameters">Private blob if true else public key blob</param>
             private static void CheckMagicValueOfKey(KeyBlobMagicNumber magic, bool includePrivateParameters)
             {

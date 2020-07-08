@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using Microsoft.Win32.SafeHandles;
@@ -30,9 +29,6 @@ namespace System.Net
         private void Trace()
         {
             _trace = "WARNING! GC-ed  >>" + this.GetType().ToString() + "<< (should be explicitly closed) \r\n";
-#if TRACE_VERBOSE
-            _trace += Environment.StackTrace;
-#endif
         }
 
         ~DebugSafeHandle()

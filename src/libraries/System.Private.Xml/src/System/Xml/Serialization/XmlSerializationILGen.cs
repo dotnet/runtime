@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Serialization
 {
@@ -14,7 +13,7 @@ namespace System.Xml.Serialization
 
     internal class XmlSerializationILGen
     {
-        private int _nextMethodNumber = 0;
+        private int _nextMethodNumber;
         private readonly Dictionary<TypeMapping, string> _methodNames = new Dictionary<TypeMapping, string>();
         // Lookup name->created Method
         private readonly Dictionary<string, MethodBuilderInfo> _methodBuilders = new Dictionary<string, MethodBuilderInfo>();
@@ -24,11 +23,11 @@ namespace System.Xml.Serialization
         internal Dictionary<string, MemberInfo> memberInfos = new Dictionary<string, MemberInfo>();
         private readonly ReflectionAwareILGen _raCodeGen;
         private readonly TypeScope[] _scopes;
-        private readonly TypeDesc _stringTypeDesc = null;
-        private readonly TypeDesc _qnameTypeDesc = null;
+        private readonly TypeDesc _stringTypeDesc;
+        private readonly TypeDesc _qnameTypeDesc;
         private readonly string _className;
         private TypeMapping[] _referencedMethods;
-        private int _references = 0;
+        private int _references;
         private readonly HashSet<TypeMapping> _generatedMethods = new HashSet<TypeMapping>();
         private ModuleBuilder _moduleBuilder;
         private readonly TypeAttributes _typeAttributes;

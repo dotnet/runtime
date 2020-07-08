@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
@@ -844,8 +843,8 @@ namespace System.Net.WebSockets
             private readonly WebSocketHttpListenerDuplexStream _currentStream;
 
 #if DEBUG
-            private volatile int _nativeOverlappedCounter = 0;
-            private volatile int _nativeOverlappedUsed = 0;
+            private volatile int _nativeOverlappedCounter;
+            private volatile int _nativeOverlappedUsed;
 
             private void DebugRefCountReleaseNativeOverlapped()
             {

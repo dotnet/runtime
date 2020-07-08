@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #ifdef _MSC_VER
@@ -42,6 +41,72 @@ void copyFlags(GenTree* dst, GenTree* src, unsigned mask)
 {
     dst->gtFlags &= ~mask;
     dst->gtFlags |= (src->gtFlags & mask);
+}
+
+// RewriteIndir: Rewrite an indirection and clear the flags that should not be set after rationalize.
+//
+// Arguments:
+//    use - A use of an indirection node.
+//
+void Rationalizer::RewriteIndir(LIR::Use& use)
+{
+    GenTreeIndir* indir = use.Def()->AsIndir();
+    assert(indir->OperIs(GT_IND, GT_BLK, GT_OBJ));
+
+    // Clear the `GTF_IND_ASG_LHS` flag, which overlaps with `GTF_IND_REQ_ADDR_IN_REG`.
+    indir->gtFlags &= ~GTF_IND_ASG_LHS;
+
+    if (indir->OperIs(GT_IND))
+    {
+        if (varTypeIsSIMD(indir))
+        {
+            RewriteSIMDIndir(use);
+        }
+        else
+        {
+            // Due to promotion of structs containing fields of type struct with a
+            // single scalar type field, we could potentially see IR nodes of the
+            // form GT_IND(GT_ADD(lclvarAddr, 0)) where 0 is an offset representing
+            // a field-seq. These get folded here.
+            //
+            // TODO: This code can be removed once JIT implements recursive struct
+            // promotion instead of lying about the type of struct field as the type
+            // of its single scalar field.
+            GenTree* addr = indir->Addr();
+            if (addr->OperGet() == GT_ADD && addr->gtGetOp1()->OperGet() == GT_LCL_VAR_ADDR &&
+                addr->gtGetOp2()->IsIntegralConst(0))
+            {
+                GenTreeLclVarCommon* lclVarNode = addr->gtGetOp1()->AsLclVarCommon();
+                unsigned             lclNum     = lclVarNode->GetLclNum();
+                LclVarDsc*           varDsc     = comp->lvaTable + lclNum;
+                if (indir->TypeGet() == varDsc->TypeGet())
+                {
+                    JITDUMP("Rewriting GT_IND(GT_ADD(LCL_VAR_ADDR,0)) to LCL_VAR\n");
+                    lclVarNode->SetOper(GT_LCL_VAR);
+                    lclVarNode->gtType = indir->TypeGet();
+                    use.ReplaceWith(comp, lclVarNode);
+                    BlockRange().Remove(addr);
+                    BlockRange().Remove(addr->gtGetOp2());
+                    BlockRange().Remove(indir);
+                }
+            }
+        }
+    }
+    else if (indir->OperIs(GT_OBJ))
+    {
+        assert((indir->TypeGet() == TYP_STRUCT) || !use.User()->OperIsInitBlkOp());
+        if (varTypeIsSIMD(indir->TypeGet()))
+        {
+            indir->SetOper(GT_IND);
+            RewriteSIMDIndir(use);
+        }
+    }
+    else
+    {
+        assert(indir->OperIs(GT_BLK));
+        // We should only see GT_BLK for TYP_STRUCT or for InitBlocks.
+        assert((indir->TypeGet() == TYP_STRUCT) || use.User()->OperIsInitBlkOp());
+    }
 }
 
 // RewriteSIMDIndir: Rewrite a SIMD indirection as a simple lclVar if possible.
@@ -557,42 +622,9 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             break;
 
         case GT_IND:
-            // Clear the `GTF_IND_ASG_LHS` flag, which overlaps with `GTF_IND_REQ_ADDR_IN_REG`.
-            node->gtFlags &= ~GTF_IND_ASG_LHS;
-
-            if (varTypeIsSIMD(node))
-            {
-                RewriteSIMDIndir(use);
-            }
-            else
-            {
-                // Due to promotion of structs containing fields of type struct with a
-                // single scalar type field, we could potentially see IR nodes of the
-                // form GT_IND(GT_ADD(lclvarAddr, 0)) where 0 is an offset representing
-                // a field-seq. These get folded here.
-                //
-                // TODO: This code can be removed once JIT implements recursive struct
-                // promotion instead of lying about the type of struct field as the type
-                // of its single scalar field.
-                GenTree* addr = node->AsIndir()->Addr();
-                if (addr->OperGet() == GT_ADD && addr->gtGetOp1()->OperGet() == GT_LCL_VAR_ADDR &&
-                    addr->gtGetOp2()->IsIntegralConst(0))
-                {
-                    GenTreeLclVarCommon* lclVarNode = addr->gtGetOp1()->AsLclVarCommon();
-                    unsigned             lclNum     = lclVarNode->GetLclNum();
-                    LclVarDsc*           varDsc     = comp->lvaTable + lclNum;
-                    if (node->TypeGet() == varDsc->TypeGet())
-                    {
-                        JITDUMP("Rewriting GT_IND(GT_ADD(LCL_VAR_ADDR,0)) to LCL_VAR\n");
-                        lclVarNode->SetOper(GT_LCL_VAR);
-                        lclVarNode->gtType = node->TypeGet();
-                        use.ReplaceWith(comp, lclVarNode);
-                        BlockRange().Remove(addr);
-                        BlockRange().Remove(addr->gtGetOp2());
-                        BlockRange().Remove(node);
-                    }
-                }
-            }
+        case GT_BLK:
+        case GT_OBJ:
+            RewriteIndir(use);
             break;
 
         case GT_NOP:
@@ -695,20 +727,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         case GT_INTRINSIC:
             // Non-target intrinsics should have already been rewritten back into user calls.
             assert(comp->IsTargetIntrinsic(node->AsIntrinsic()->gtIntrinsicId));
-            break;
-
-        case GT_BLK:
-            // We should only see GT_BLK for TYP_STRUCT or for InitBlocks.
-            assert((node->TypeGet() == TYP_STRUCT) || use.User()->OperIsInitBlkOp());
-            break;
-
-        case GT_OBJ:
-            assert((node->TypeGet() == TYP_STRUCT) || !use.User()->OperIsInitBlkOp());
-            if (varTypeIsSIMD(node->TypeGet()))
-            {
-                node->SetOper(GT_IND);
-                RewriteSIMDIndir(use);
-            }
             break;
 
 #ifdef FEATURE_SIMD

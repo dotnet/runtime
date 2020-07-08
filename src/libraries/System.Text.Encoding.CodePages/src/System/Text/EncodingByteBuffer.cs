@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -14,7 +13,7 @@ namespace System.Text
         private unsafe char* _chars;
         private readonly unsafe char* _charStart;
         private readonly unsafe char* _charEnd;
-        private int _byteCountResult = 0;
+        private int _byteCountResult;
         private readonly EncodingNLS _enc;
         private readonly EncoderNLS? _encoder;
         internal EncoderFallbackBuffer fallbackBuffer;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // The worker functions in this file was optimized for performance. If you make changes
 // you should use care to consider all of the interesting cases.
@@ -65,9 +64,9 @@ namespace System.Text
 
         // Yes, the idea of emitting U+FEFF as a UTF-8 identifier has made it into
         // the standard.
-        private readonly bool _emitUTF8Identifier = false;
+        private readonly bool _emitUTF8Identifier;
 
-        private readonly bool _isThrowException = false;
+        private readonly bool _isThrowException;
 
 
         public UTF8Encoding() : this(false)

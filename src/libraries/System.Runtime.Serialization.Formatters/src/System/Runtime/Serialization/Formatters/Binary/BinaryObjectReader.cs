@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.IO;
@@ -22,7 +21,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         // Top object and headers
         internal long _topId;
-        internal bool _isSimpleAssembly = false;
+        internal bool _isSimpleAssembly;
         internal object? _topObject;
         internal SerObjectInfoInit? _serObjectInfoInit;
         internal IFormatterConverter? _formatterConverter;
@@ -44,7 +43,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Older formatters generate ids for valuetypes using a different counter than ref types. Newer ones use
         // a single counter, only value types have a negative value. Need a way to handle older formats.
         private const int ThresholdForValueTypeIds = int.MaxValue;
-        private bool _oldFormatDetected = false;
+        private bool _oldFormatDetected;
         private IntSizedArray? _valTypeObjectIdTable;
 
         private readonly NameCache _typeCache = new NameCache();

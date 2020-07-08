@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Test.Cryptography;
@@ -429,11 +428,19 @@ namespace System.Security.Cryptography.Algorithms.Tests
             var incrementalHash = IncrementalHash.CreateHash(hashAlgorithm);
             incrementalHash.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(() => incrementalHash.AppendData(new byte[1]));
-            Assert.Throws<ObjectDisposedException>(() => incrementalHash.AppendData(new ReadOnlySpan<byte>(new byte[1])));
+            byte[] tmpDest = new byte[1];
+
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.AppendData(tmpDest));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.AppendData(tmpDest, 0, 0));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.AppendData(new ReadOnlySpan<byte>(tmpDest)));
 
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetHashAndReset());
-            Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetHashAndReset(new byte[1], out int _));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetHashAndReset(tmpDest));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetHashAndReset(tmpDest, out int _));
+
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash());
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash(tmpDest));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetCurrentHash(tmpDest, out int _));
         }
 
         [Theory]
@@ -444,11 +451,246 @@ namespace System.Security.Cryptography.Algorithms.Tests
             var incrementalHash = IncrementalHash.CreateHMAC(hashAlgorithm, s_hmacKey);
             incrementalHash.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(() => incrementalHash.AppendData(new byte[1]));
-            Assert.Throws<ObjectDisposedException>(() => incrementalHash.AppendData(new ReadOnlySpan<byte>(new byte[1])));
+            byte[] tmpDest = new byte[1];
+
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.AppendData(tmpDest));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.AppendData(tmpDest, 0, 0));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.AppendData(new ReadOnlySpan<byte>(tmpDest)));
 
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetHashAndReset());
-            Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetHashAndReset(new byte[1], out int _));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetHashAndReset(tmpDest));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetHashAndReset(tmpDest, out int _));
+
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash());
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash(tmpDest));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetCurrentHash(tmpDest, out int _));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashAlgorithms))]
+        public static void VerifyGetCurrentHash_Digest(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            referenceAlgorithm.Dispose();
+            
+            using (IncrementalHash single = IncrementalHash.CreateHash(hashAlgorithm))
+            using (IncrementalHash accumulated = IncrementalHash.CreateHash(hashAlgorithm))
+            {
+                VerifyGetCurrentHash(single, accumulated);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHMACs))]
+        public static void VerifyGetCurrentHash_HMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            referenceAlgorithm.Dispose();
+
+            using (IncrementalHash single = IncrementalHash.CreateHMAC(hashAlgorithm, s_hmacKey))
+            using (IncrementalHash accumulated = IncrementalHash.CreateHMAC(hashAlgorithm, s_hmacKey))
+            {
+                VerifyGetCurrentHash(single, accumulated);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHMACs))]
+        public static void VerifyBounds_GetCurrentHash_HMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (referenceAlgorithm)
+            using (IncrementalHash incremental = IncrementalHash.CreateHMAC(hashAlgorithm, s_hmacKey))
+            {
+                referenceAlgorithm.Key = s_hmacKey;
+                byte[] comparison = referenceAlgorithm.ComputeHash(Array.Empty<byte>());
+
+                VerifyBounds(
+                    comparison,
+                    incremental,
+                    inc => inc.GetCurrentHash(),
+                    (inc, dest) => inc.GetCurrentHash(dest),
+                    (IncrementalHash inc, Span<byte> dest, out int bytesWritten) =>
+                        inc.TryGetCurrentHash(dest, out bytesWritten));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHMACs))]
+        public static void VerifyBounds_GetHashAndReset_HMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (referenceAlgorithm)
+            using (IncrementalHash incremental = IncrementalHash.CreateHMAC(hashAlgorithm, s_hmacKey))
+            {
+                referenceAlgorithm.Key = s_hmacKey;
+                byte[] comparison = referenceAlgorithm.ComputeHash(Array.Empty<byte>());
+
+                VerifyBounds(
+                    comparison,
+                    incremental,
+                    inc => inc.GetHashAndReset(),
+                    (inc, dest) => inc.GetHashAndReset(dest),
+                    (IncrementalHash inc, Span<byte> dest, out int bytesWritten) =>
+                        inc.TryGetHashAndReset(dest, out bytesWritten));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashAlgorithms))]
+        public static void VerifyBounds_GetCurrentHash_Hash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (referenceAlgorithm)
+            using (IncrementalHash incremental = IncrementalHash.CreateHash(hashAlgorithm))
+            {
+                byte[] comparison = referenceAlgorithm.ComputeHash(Array.Empty<byte>());
+
+                VerifyBounds(
+                    comparison,
+                    incremental,
+                    inc => inc.GetCurrentHash(),
+                    (inc, dest) => inc.GetCurrentHash(dest),
+                    (IncrementalHash inc, Span<byte> dest, out int bytesWritten) =>
+                        inc.TryGetCurrentHash(dest, out bytesWritten));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashAlgorithms))]
+        public static void VerifyBounds_GetHashAndReset_Hash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (referenceAlgorithm)
+            using (IncrementalHash incremental = IncrementalHash.CreateHash(hashAlgorithm))
+            {
+                byte[] comparison = referenceAlgorithm.ComputeHash(Array.Empty<byte>());
+
+                VerifyBounds(
+                    comparison,
+                    incremental,
+                    inc => inc.GetHashAndReset(),
+                    (inc, dest) => inc.GetHashAndReset(dest),
+                    (IncrementalHash inc, Span<byte> dest, out int bytesWritten) =>
+                        inc.TryGetHashAndReset(dest, out bytesWritten));
+            }
+        }
+
+        private static void VerifyGetCurrentHash(IncrementalHash single, IncrementalHash accumulated)
+        {
+            Span<byte> buf = stackalloc byte[2048];
+            Span<byte> fullDigest = stackalloc byte[512 / 8];
+            Span<byte> curDigest = stackalloc byte[fullDigest.Length];
+            SequenceFill(buf);
+
+            int count = 0;
+            const int Step = 13;
+            int writtenA;
+            int writtenB;
+
+            while (count + Step < buf.Length)
+            {
+                // Accumulate only the current slice
+                accumulated.AppendData(buf.Slice(count, Step));
+
+                // The comparison needs the whole thing, since we're
+                // comparing GetHashAndReset vs GetCurrentHash.
+                count += Step;
+                single.AppendData(buf.Slice(0, count));
+
+                writtenA = single.GetHashAndReset(fullDigest);
+                writtenB = accumulated.GetCurrentHash(curDigest);
+
+                Assert.Equal(
+                    fullDigest.Slice(0, writtenA).ByteArrayToHex(),
+                    curDigest.Slice(0, writtenB).ByteArrayToHex());
+            }
+
+            accumulated.AppendData(buf.Slice(count));
+            single.AppendData(buf);
+
+            writtenA = single.GetHashAndReset(fullDigest);
+
+            // Drain/reset accumulated with this last call
+            writtenB = accumulated.GetHashAndReset(curDigest);
+
+            Assert.Equal(
+                fullDigest.Slice(0, writtenA).ByteArrayToHex(),
+                curDigest.Slice(0, writtenB).ByteArrayToHex());
+        }
+
+        private delegate int SpanWriter(
+            IncrementalHash incremental,
+            Span<byte> destination);
+
+        private delegate bool TrySpanWriter(
+            IncrementalHash incremental,
+            Span<byte> destination,
+            out int bytesWritten);
+
+        private static void VerifyBounds(
+            byte[] comparison,
+            IncrementalHash incremental,
+            Func<IncrementalHash, byte[]> oneShot,
+            SpanWriter spanWriter,
+            TrySpanWriter trySpanWriter)
+        {
+            string comparisonHex = comparison.ByteArrayToHex();
+            Span<byte> dest = stackalloc byte[512 / 8 + 1];
+
+            // Empty
+            Assert.False(trySpanWriter(incremental, Span<byte>.Empty, out int written));
+            Assert.Equal(0, written);
+
+            AssertExtensions.Throws<ArgumentException>(
+                "destination",
+                () => spanWriter(incremental, Array.Empty<byte>()));
+
+            // HashLengthInBytes - 1
+            Assert.False(
+                trySpanWriter(incremental, comparison.AsSpan(0, comparison.Length - 1), out written));
+            Assert.Equal(0, written);
+
+            AssertExtensions.Throws<ArgumentException>(
+                "destination",
+                () => spanWriter(incremental, comparison.AsSpan(0, comparison.Length - 1)));
+
+            // Ensure comparison wasn't overwritten
+            Assert.Equal(comparisonHex, comparison.ByteArrayToHex());
+
+            // > HashLengthInBytes
+            Assert.True(trySpanWriter(incremental, dest, out written));
+            Assert.Equal(comparison.Length, written);
+            Assert.Equal(incremental.HashLengthInBytes, written);
+            Assert.Equal(comparisonHex, dest.Slice(0, written).ByteArrayToHex());
+
+            dest.Clear();
+            written = spanWriter(incremental, dest);
+            Assert.Equal(comparison.Length, written);
+            Assert.Equal(incremental.HashLengthInBytes, written);
+            Assert.Equal(comparisonHex, dest.Slice(0, written).ByteArrayToHex());
+
+            // == HashLengthInBytes
+            dest = dest.Slice(0, written);
+            dest.Clear();
+
+            Assert.True(trySpanWriter(incremental, dest, out written));
+            Assert.Equal(comparison.Length, written);
+            Assert.Equal(incremental.HashLengthInBytes, written);
+            Assert.Equal(comparisonHex, dest.Slice(0, written).ByteArrayToHex());
+
+            dest.Clear();
+            written = spanWriter(incremental, dest);
+            Assert.Equal(comparison.Length, written);
+            Assert.Equal(incremental.HashLengthInBytes, written);
+            Assert.Equal(comparisonHex, dest.Slice(0, written).ByteArrayToHex());
+
+            byte[] returned = oneShot(incremental);
+            Assert.Equal(comparison.Length, returned.Length);
+            Assert.Equal(incremental.HashLengthInBytes, returned.Length);
+            Assert.Equal(comparisonHex, returned.ByteArrayToHex());
+        }
+
+        private static void SequenceFill(Span<byte> span)
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                span[i] = (byte)i;
+            }
         }
     }
 }

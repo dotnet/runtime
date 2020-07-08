@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Buffers;
@@ -16,7 +15,7 @@ namespace System.IO.Pipelines.Tests
     {
         public delegate Task WriteAsyncDelegate(Stream stream, byte[] data);
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DisposingPipeWriterStreamCompletesPipeWriter()
         {
             var pipe = new Pipe();
@@ -119,7 +118,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Writer.Complete();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancellingPendingFlushThrowsOperationCancelledException()
         {
             var pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 10, resumeWriterThreshold: 0));
@@ -136,7 +135,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancellationTokenFlowsToUnderlyingPipeWriter()
         {
             var pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 10, resumeWriterThreshold: 0));

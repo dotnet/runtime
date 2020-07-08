@@ -1,0 +1,112 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\General\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
+namespace JIT.HardwareIntrinsics.General
+{
+    public static partial class Program
+    {
+        private static void {Method}Element{BaseType}()
+        {
+            var test = new VectorCreate__{Method}Element{BaseType}();
+
+            // Validates basic functionality works
+            test.RunBasicScenario();
+
+            // Validates calling via reflection works
+            test.RunReflectionScenario();
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class VectorCreate__{Method}Element{BaseType}
+    {
+        private static readonly int LargestVectorSize = {LargestVectorSize};
+
+        private static readonly int ElementCount = Unsafe.SizeOf<{VectorType}<{BaseType}>>() / sizeof({BaseType});
+
+        public bool Succeeded { get; set; } = true;
+
+        public void RunBasicScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
+
+            {BaseType}[] values = new {BaseType}[ElementCount];
+
+            for (int i = 0; i < ElementCount; i++)
+            {
+                values[i] = {NextValueOp};
+            }
+
+            {VectorType}<{BaseType}> result = {Isa}.{Method}({ConsumeValues});
+
+            ValidateResult(result, values);
+        }
+
+        public void RunReflectionScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
+
+            Type[] operandTypes = new Type[ElementCount];
+            {BaseType}[] values = new {BaseType}[ElementCount];
+
+            for (int i = 0; i < ElementCount; i++)
+            {
+                operandTypes[i] = typeof({BaseType});
+                values[i] = {NextValueOp};
+            }
+
+            object result = typeof({Isa})
+                                .GetMethod(nameof({Isa}.{Method}), operandTypes)
+                                .Invoke(null, new object[] { {ConsumeValues} });
+
+            ValidateResult(({VectorType}<{BaseType}>)(result), values);
+        }
+
+        private void ValidateResult({VectorType}<{BaseType}> result, {BaseType}[] expectedValues, [CallerMemberName] string method = "")
+        {
+            {BaseType}[] resultElements = new {BaseType}[ElementCount];
+            Unsafe.WriteUnaligned(ref Unsafe.As<{BaseType}, byte>(ref resultElements[0]), result);
+            ValidateResult(resultElements, expectedValues, method);
+        }
+
+        private void ValidateResult({BaseType}[] resultElements, {BaseType}[] expectedValues, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            for (var i = 0; i < ElementCount; i++)
+            {
+                if (resultElements[i] != expectedValues[i])
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{Isa}.{Method}({BaseType}): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", expectedValues)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", resultElements)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: stubhelpers.h
 //
@@ -61,7 +60,6 @@ public:
 
     static FCDECL0(void,            SetLastError            );
     static FCDECL0(void,            ClearLastError          );
-    static FCDECL1(FC_BOOL_RET,     IsQCall,                NDirectMethodDesc* pNMD);
     static FCDECL1(void,            InitDeclaringType,      NDirectMethodDesc* pMND);
     static FCDECL1(void*,           GetNDirectTarget,       NDirectMethodDesc* pNMD);
     static FCDECL2(void*,           GetDelegateTarget,      DelegateObject *pThisUNSAFE, UINT_PTR *ppStubArg);

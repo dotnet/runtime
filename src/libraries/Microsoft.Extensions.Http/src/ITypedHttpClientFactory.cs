@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Net.Http;
@@ -29,7 +28,7 @@ namespace Microsoft.Extensions.Http
     /// </para>
     /// <para>
     /// The default <see cref="ITypedHttpClientFactory{TClient}"/> uses type activation to create typed client instances. Typed
-    /// client types are not retrieved directly from the <see cref="IServiceProvider"/>. See 
+    /// client types are not retrieved directly from the <see cref="IServiceProvider"/>. See
     /// <see cref="ActivatorUtilities.CreateInstance(IServiceProvider, Type, object[])" /> for details.
     /// </para>
     /// </remarks>
@@ -45,7 +44,7 @@ namespace Microsoft.Extensions.Http
     ///     public ExampleClient(HttpClient httpClient, ILogger&lt;ExampleClient&gt; logger)
     ///     {
     ///         _httpClient = httpClient;
-    ///         _logger = logger;     
+    ///         _logger = logger;
     ///     }
     ///
     ///     // typed clients can expose the HttpClient for application code to call directly

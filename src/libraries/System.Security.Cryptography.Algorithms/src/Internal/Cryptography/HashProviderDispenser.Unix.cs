@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -48,10 +47,6 @@ namespace Internal.Cryptography
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private sealed class EvpHashProvider : HashProvider
         {
             private readonly IntPtr _algorithmEvp;
@@ -77,32 +72,29 @@ namespace Internal.Cryptography
             public override void AppendHashData(ReadOnlySpan<byte> data) =>
                 Check(Interop.Crypto.EvpDigestUpdate(_ctx, data, data.Length));
 
-            public override byte[] FinalizeHashAndReset()
+            public override int FinalizeHashAndReset(Span<byte> destination)
             {
-                var result = new byte[_hashSize];
-                bool success = TryFinalizeHashAndReset(result, out int bytesWritten);
-                Debug.Assert(success);
-                Debug.Assert(result.Length == bytesWritten);
-                return result;
-            }
-
-            public override bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
-            {
-                if (destination.Length < _hashSize)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
+                Debug.Assert(destination.Length >= _hashSize);
 
                 uint length = (uint)destination.Length;
                 Check(Interop.Crypto.EvpDigestFinalEx(_ctx, ref MemoryMarshal.GetReference(destination), ref length));
                 Debug.Assert(length == _hashSize);
-                bytesWritten = (int)length;
 
                 // Reset the algorithm provider.
                 Check(Interop.Crypto.EvpDigestReset(_ctx, _algorithmEvp));
 
-                return true;
+                return _hashSize;
+            }
+
+            public override int GetCurrentHash(Span<byte> destination)
+            {
+                Debug.Assert(destination.Length >= _hashSize);
+
+                uint length = (uint)destination.Length;
+                Check(Interop.Crypto.EvpDigestCurrent(_ctx, ref MemoryMarshal.GetReference(destination), ref length));
+                Debug.Assert(length == _hashSize);
+
+                return _hashSize;
             }
 
             public override int HashSizeInBytes => _hashSize;
@@ -138,30 +130,27 @@ namespace Internal.Cryptography
             public override void AppendHashData(ReadOnlySpan<byte> data) =>
                 Check(Interop.Crypto.HmacUpdate(_hmacCtx, data, data.Length));
 
-            public override byte[] FinalizeHashAndReset()
+            public override int FinalizeHashAndReset(Span<byte> destination)
             {
-                var hash = new byte[_hashSize];
-                bool success = TryFinalizeHashAndReset(hash, out int bytesWritten);
-                Debug.Assert(success);
-                Debug.Assert(hash.Length == bytesWritten);
-                return hash;
-            }
-
-            public override unsafe bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
-            {
-                if (destination.Length < _hashSize)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
+                Debug.Assert(destination.Length >= _hashSize);
 
                 int length = destination.Length;
                 Check(Interop.Crypto.HmacFinal(_hmacCtx, ref MemoryMarshal.GetReference(destination), ref length));
                 Debug.Assert(length == _hashSize);
-                bytesWritten = length;
 
                 Check(Interop.Crypto.HmacReset(_hmacCtx));
-                return true;
+                return _hashSize;
+            }
+
+            public override int GetCurrentHash(Span<byte> destination)
+            {
+                Debug.Assert(destination.Length >= _hashSize);
+
+                int length = destination.Length;
+                Check(Interop.Crypto.HmacCurrent(_hmacCtx, ref MemoryMarshal.GetReference(destination), ref length));
+                Debug.Assert(length == _hashSize);
+
+                return _hashSize;
             }
 
             public override int HashSizeInBytes => _hashSize;

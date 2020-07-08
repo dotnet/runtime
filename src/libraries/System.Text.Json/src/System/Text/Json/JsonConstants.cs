@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Text.Json
 {
@@ -66,6 +65,7 @@ namespace System.Text.Json
         public const int MaxBase64ValueTokenSize = (MaxEscapedTokenSize >> 2) * 3 / MaxExpansionFactorWhileEscaping;  // 125_000_000 bytes
         public const int MaxCharacterTokenSize = MaxEscapedTokenSize / MaxExpansionFactorWhileEscaping; // 166_666_666 characters
 
+        public const int MaximumFormatBooleanLength = 5;
         public const int MaximumFormatInt64Length = 20;   // 19 + sign (i.e. -9223372036854775808)
         public const int MaximumFormatUInt64Length = 20;  // i.e. 18446744073709551615
         public const int MaximumFormatDoubleLength = 128;  // default (i.e. 'G'), using 128 (rather than say 32) to be future-proof.

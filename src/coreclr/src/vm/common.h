@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // common.h - precompiled headers include for the COM+ Execution Engine
 //
@@ -112,6 +111,7 @@ typedef DPTR(class ArrayBase)           PTR_ArrayBase;
 typedef DPTR(class Assembly)            PTR_Assembly;
 typedef DPTR(class AssemblyBaseObject)  PTR_AssemblyBaseObject;
 typedef DPTR(class AssemblyLoadContextBaseObject) PTR_AssemblyLoadContextBaseObject;
+typedef DPTR(class AssemblyLoadContext) PTR_AssemblyLoadContext;
 typedef DPTR(class AssemblyNameBaseObject) PTR_AssemblyNameBaseObject;
 typedef VPTR(class BaseDomain)          PTR_BaseDomain;
 typedef DPTR(class ClassLoader)         PTR_ClassLoader;

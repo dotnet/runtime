@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Net.Cache;
@@ -191,8 +190,8 @@ namespace System.Net
         private DateTime _startTime;
         private int _timeout = s_DefaultTimeout;
         private int _remainingTimeout;
-        private long _contentLength = 0;
-        private long _contentOffset = 0;
+        private long _contentLength;
+        private long _contentOffset;
         private X509CertificateCollection? _clientCertificates;
         private bool _passive = true;
         private bool _binary = true;

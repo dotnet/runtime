@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 
@@ -92,6 +91,9 @@ MIDL_DEFINE_GUID(IID, IID_ISOSDacInterface6,0x11206399,0x4B66,0x4EDB,0x98,0xEA,0
 
 
 MIDL_DEFINE_GUID(IID, IID_ISOSDacInterface7,0xc1020dde,0xfe98,0x4536,0xa5,0x3b,0xf3,0x5a,0x74,0xc3,0x27,0xeb);
+
+
+MIDL_DEFINE_GUID(IID, IID_ISOSDacInterface8,0xc12f35a9,0xe55c,0x4520,0xa8,0x94,0xb3,0xdc,0x51,0x65,0xdf,0xce);
 
 #undef MIDL_DEFINE_GUID
 

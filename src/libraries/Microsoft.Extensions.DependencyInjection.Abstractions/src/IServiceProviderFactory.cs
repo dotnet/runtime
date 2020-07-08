@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -9,7 +8,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// Provides an extension point for creating a container specific builder and an <see cref="IServiceProvider"/>.
     /// </summary>
-    public interface IServiceProviderFactory<TContainerBuilder>
+    public interface IServiceProviderFactory<TContainerBuilder> where TContainerBuilder : notnull
     {
         /// <summary>
         /// Creates a container builder from an <see cref="IServiceCollection"/>.

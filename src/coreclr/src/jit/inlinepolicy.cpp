@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #ifdef _MSC_VER
@@ -369,14 +368,33 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 // the candidate IL size during the inlining pass it
                 // "reestablishes" candidacy rather than alters
                 // candidacy ... so instead we bail out here.
-
+                //
                 if (!m_IsPrejitRoot)
                 {
                     InlineStrategy* strategy   = m_RootCompiler->m_inlineStrategy;
-                    bool            overBudget = strategy->BudgetCheck(m_CodeSize);
+                    const bool      overBudget = strategy->BudgetCheck(m_CodeSize);
+
                     if (overBudget)
                     {
-                        SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
+                        // If the candidate is a forceinline and the callsite is
+                        // not too deep, allow the inline even if it goes over budget.
+                        //
+                        // For now, "not too deep" means a top-level inline. Note
+                        // depth 0 is used for the root method, so inline candidate depth
+                        // will be 1 or more.
+                        //
+                        assert(m_IsForceInlineKnown);
+                        assert(m_CallsiteDepth > 0);
+                        const bool allowOverBudget = m_IsForceInline && (m_CallsiteDepth == 1);
+
+                        if (allowOverBudget)
+                        {
+                            JITDUMP("Allowing over-budget top-level forceinline\n");
+                        }
+                        else
+                        {
+                            SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
+                        }
                     }
                 }
 
@@ -531,9 +549,9 @@ void DefaultPolicy::NoteInt(InlineObservation obs, int value)
 
         case InlineObservation::CALLSITE_DEPTH:
         {
-            unsigned depth = static_cast<unsigned>(value);
+            m_CallsiteDepth = static_cast<unsigned>(value);
 
-            if (depth > m_RootCompiler->m_inlineStrategy->GetMaxInlineDepth())
+            if (m_CallsiteDepth > m_RootCompiler->m_inlineStrategy->GetMaxInlineDepth())
             {
                 SetFailure(InlineObservation::CALLSITE_IS_TOO_DEEP);
             }
@@ -1110,7 +1128,6 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 // clang-format off
 DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
     : DefaultPolicy(compiler, isPrejitRoot)
-    , m_Depth(0)
     , m_BlockCount(0)
     , m_Maxstack(0)
     , m_ArgCount(0)
@@ -1251,10 +1268,6 @@ void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
 
         case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
             m_BlockCount = value;
-            break;
-
-        case InlineObservation::CALLSITE_DEPTH:
-            m_Depth = value;
             break;
 
         case InlineObservation::CALLSITE_WEIGHT:
@@ -1791,7 +1804,6 @@ void DiscretionaryPolicy::DumpSchema(FILE* file) const
     fprintf(file, ",CallsiteFrequency");
     fprintf(file, ",InstructionCount");
     fprintf(file, ",LoadStoreCount");
-    fprintf(file, ",Depth");
     fprintf(file, ",BlockCount");
     fprintf(file, ",Maxstack");
     fprintf(file, ",ArgCount");
@@ -1858,6 +1870,7 @@ void DiscretionaryPolicy::DumpSchema(FILE* file) const
     fprintf(file, ",CallerHasNewObj");
     fprintf(file, ",CalleeDoesNotReturn");
     fprintf(file, ",CalleeHasGCStruct");
+    fprintf(file, ",CallsiteDepth");
 }
 
 //------------------------------------------------------------------------
@@ -1873,7 +1886,6 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_CallsiteFrequency);
     fprintf(file, ",%u", m_InstructionCount);
     fprintf(file, ",%u", m_LoadStoreCount);
-    fprintf(file, ",%u", m_Depth);
     fprintf(file, ",%u", m_BlockCount);
     fprintf(file, ",%u", m_Maxstack);
     fprintf(file, ",%u", m_ArgCount);
@@ -1940,6 +1952,7 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_CallerHasNewObj ? 1 : 0);
     fprintf(file, ",%u", m_IsNoReturn ? 1 : 0);
     fprintf(file, ",%u", m_CalleeHasGCStruct ? 1 : 0);
+    fprintf(file, ",%u", m_CallsiteDepth);
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
@@ -2013,7 +2026,7 @@ void ModelPolicy::NoteInt(InlineObservation obs, int value)
     {
         unsigned depthLimit = m_RootCompiler->m_inlineStrategy->GetMaxInlineDepth();
 
-        if (m_Depth > depthLimit)
+        if (m_CallsiteDepth > depthLimit)
         {
             SetFailure(InlineObservation::CALLSITE_IS_TOO_DEEP);
             return;
@@ -2178,7 +2191,7 @@ void FullPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
     unsigned depthLimit = m_RootCompiler->m_inlineStrategy->GetMaxInlineDepth();
 
-    if (m_Depth > depthLimit)
+    if (m_CallsiteDepth > depthLimit)
     {
         SetFailure(InlineObservation::CALLSITE_IS_TOO_DEEP);
         return;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -44,7 +43,7 @@ namespace Microsoft.Extensions.Logging.Console
             // Adding is completed so just log the message
             try
             {
-                WriteMessage(message);            
+                WriteMessage(message);
             }
             catch (Exception) { }
         }
@@ -52,7 +51,7 @@ namespace Microsoft.Extensions.Logging.Console
         // for testing
         internal virtual void WriteMessage(LogMessageEntry message)
         {
-            var console = message.LogAsError ? ErrorConsole : Console;
+            IConsole console = message.LogAsError ? ErrorConsole : Console;
 
             if (message.TimeStamp != null)
             {
@@ -72,7 +71,7 @@ namespace Microsoft.Extensions.Logging.Console
         {
             try
             {
-                foreach (var message in _messageQueue.GetConsumingEnumerable())
+                foreach (LogMessageEntry message in _messageQueue.GetConsumingEnumerable())
                 {
                     WriteMessage(message);
                 }

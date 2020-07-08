@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml;
@@ -12,7 +11,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class NumberFunctions : ValueQuery
     {
-        private readonly Query _arg = null;
+        private readonly Query _arg;
         private readonly FT _ftype;
 
         public NumberFunctions(FT ftype, Query arg)

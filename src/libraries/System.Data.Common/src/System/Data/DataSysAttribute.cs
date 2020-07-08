@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 
@@ -15,7 +14,7 @@ namespace System.Data
     [Obsolete("DataSysDescriptionAttribute has been deprecated.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
     public class DataSysDescriptionAttribute : DescriptionAttribute
     {
-        private bool _replaced = false;
+        private bool _replaced;
 
         /// <summary>
         /// Constructs a new sys description.

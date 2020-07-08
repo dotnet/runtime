@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -47,8 +46,8 @@ namespace System.Linq.Parallel
         private readonly Func<TResult, int, bool>? _indexedPredicate;
 
         private readonly bool _take; // Whether to take (true) or skip (false).
-        private bool _prematureMerge = false; // Whether to prematurely merge the input of this operator.
-        private bool _limitsParallelism = false; // The precomputed value of LimitsParallelism
+        private bool _prematureMerge; // Whether to prematurely merge the input of this operator.
+        private bool _limitsParallelism; // The precomputed value of LimitsParallelism
 
         //---------------------------------------------------------------------------------------
         // Initializes a new take-while operator.
@@ -400,7 +399,7 @@ namespace System.Linq.Parallel
 
         private class OperatorState<TKey>
         {
-            internal volatile int _updatesDone = 0;
+            internal volatile int _updatesDone;
             internal TKey _currentLowKey = default!;
         }
     }

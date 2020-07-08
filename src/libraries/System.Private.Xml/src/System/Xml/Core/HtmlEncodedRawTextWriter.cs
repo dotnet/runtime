@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify HtmlRawTextWriterGenerator.ttinclude
@@ -449,7 +448,7 @@ namespace System.Xml
 
             if (_elementPropertySearch == null)
             {
-                //_elementPropertySearch should be init last for the mutli thread safe situation.
+                // _elementPropertySearch should be init last for the mutli thread safe situation.
                 _attributePropertySearch = new TernaryTreeReadOnly(HtmlTernaryTree.htmlAttributes);
                 _elementPropertySearch = new TernaryTreeReadOnly(HtmlTernaryTree.htmlElements);
             }

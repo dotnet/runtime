@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -89,8 +88,8 @@ namespace System.Threading
             private readonly Random _randomIntervalGenerator = new Random();
 
             private readonly LogEntry[] _log = new LogEntry[LogCapacity];
-            private int _logStart = 0;
-            private int _logSize = 0;
+            private int _logStart;
+            private int _logSize;
 
             public HillClimbing(int wavePeriod, int maxWaveMagnitude, double waveMagnitudeMultiplier, int waveHistorySize, double targetThroughputRatio,
                 double targetSignalToNoiseRatio, double maxChangePerSecond, double maxChangePerSample, int sampleIntervalMsLow, int sampleIntervalMsHigh,

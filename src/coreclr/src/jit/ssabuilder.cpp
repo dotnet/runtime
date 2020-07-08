@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #include "ssaconfig.h"
@@ -749,7 +748,15 @@ void SsaBuilder::RenameDef(GenTreeOp* asgNode, BasicBlock* block)
 
     if (isLocal)
     {
-        unsigned lclNum = lclNode->GetLclNum();
+        unsigned   lclNum = lclNode->GetLclNum();
+        LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclNum);
+
+        if (!m_pCompiler->lvaInSsa(lclNum) && varDsc->CanBeReplacedWithItsField(m_pCompiler))
+        {
+            lclNum = varDsc->lvFieldLclStart;
+            varDsc = m_pCompiler->lvaGetDesc(lclNum);
+            assert(isFullDef);
+        }
 
         if (m_pCompiler->lvaInSsa(lclNum))
         {
@@ -758,7 +765,7 @@ void SsaBuilder::RenameDef(GenTreeOp* asgNode, BasicBlock* block)
             // This should have been marked as defintion.
             assert((lclNode->gtFlags & GTF_VAR_DEF) != 0);
 
-            unsigned ssaNum = m_pCompiler->lvaGetDesc(lclNum)->lvPerSsaData.AllocSsaNum(m_allocator, block, asgNode);
+            unsigned ssaNum = varDsc->lvPerSsaData.AllocSsaNum(m_allocator, block, asgNode);
 
             if (!isFullDef)
             {
@@ -787,7 +794,7 @@ void SsaBuilder::RenameDef(GenTreeOp* asgNode, BasicBlock* block)
             }
 
             // If it's a SSA local then it cannot be address exposed and thus does not define SSA memory.
-            assert(!m_pCompiler->lvaVarAddrExposed(lclNode->GetLclNum()));
+            assert(!m_pCompiler->lvaVarAddrExposed(lclNum));
             return;
         }
 
@@ -1541,6 +1548,9 @@ void SsaBuilder::Build()
     // Compute liveness on the graph.
     m_pCompiler->fgLocalVarLiveness();
     EndPhase(PHASE_BUILD_SSA_LIVENESS);
+
+    m_pCompiler->optRemoveRedundantZeroInits();
+    EndPhase(PHASE_ZERO_INITS);
 
     // Mark all variables that will be tracked by SSA
     for (unsigned lclNum = 0; lclNum < m_pCompiler->lvaCount; lclNum++)

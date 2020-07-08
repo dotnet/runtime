@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_hmac.h"
 
@@ -111,4 +110,13 @@ int32_t AppleCryptoNative_HmacFinal(HmacCtx* ctx, uint8_t* pbOutput)
     // No return value
     CCHmacFinal(&ctx->hmac, pbOutput);
     return 1;
+}
+
+int32_t AppleCryptoNative_HmacCurrent(const HmacCtx* ctx, uint8_t* pbOutput)
+{
+    if (ctx == NULL || pbOutput == NULL)
+        return 0;
+    
+    HmacCtx dup = *ctx;
+    return AppleCryptoNative_HmacFinal(&dup, pbOutput);
 }

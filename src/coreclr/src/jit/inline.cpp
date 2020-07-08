@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #ifdef _MSC_VER
@@ -1151,8 +1150,16 @@ void InlineStrategy::NoteOutcome(InlineContext* context)
 
 bool InlineStrategy::BudgetCheck(unsigned ilSize)
 {
-    int timeDelta = EstimateInlineTime(ilSize);
-    return (timeDelta + m_CurrentTimeEstimate > m_CurrentTimeBudget);
+    const int  timeDelta = EstimateInlineTime(ilSize);
+    const bool result    = (timeDelta + m_CurrentTimeEstimate > m_CurrentTimeBudget);
+
+    if (result)
+    {
+        JITDUMP("\nBudgetCheck: for IL Size %d, timeDelta %d +  currentEstimate %d > currentBudget %d\n", ilSize,
+                timeDelta, m_CurrentTimeEstimate, m_CurrentTimeBudget);
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------

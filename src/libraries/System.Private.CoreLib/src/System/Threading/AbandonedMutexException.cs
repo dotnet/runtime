@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // AbandonedMutexException
 // Thrown when a wait completes because one or more mutexes was abandoned.
@@ -16,7 +15,7 @@ namespace System.Threading
     public class AbandonedMutexException : SystemException
     {
         private int _mutexIndex = -1;
-        private Mutex? _mutex = null;
+        private Mutex? _mutex;
 
         public AbandonedMutexException()
             : base(SR.Threading_AbandonedMutexException)

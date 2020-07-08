@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __DIAGNOSTICS_PROTOCOL_H__
 #define __DIAGNOSTICS_PROTOCOL_H__
@@ -75,10 +74,21 @@ namespace DiagnosticsIpc
         Server        = 0xFF,
     };
 
+    // Overlaps with DiagnosticServerResponseId
+    // DON'T create overlapping values
     enum class DiagnosticServerCommandId : uint8_t
     {
-        OK    = 0x00,
-        Error = 0xFF,
+        // 0x00 used in DiagnosticServerResponseId
+        ResumeRuntime = 0x01,
+        // 0xFF used DiagnosticServerResponseId
+    };
+
+    // Overlaps with DiagnosticServerCommandId
+    // DON'T create overlapping values
+    enum class DiagnosticServerResponseId : uint8_t
+    {
+        OK            = 0x00,
+        Error         = 0xFF,
     };
 
     struct MagicVersion
@@ -162,7 +172,7 @@ namespace DiagnosticsIpc
         { DotnetIpcMagic_V1 },
         (uint16_t)sizeof(IpcHeader),
         (uint8_t)DiagnosticServerCommandSet::Server,
-        (uint8_t)DiagnosticServerCommandId::OK,
+        (uint8_t)DiagnosticServerResponseId::OK,
         (uint16_t)0x0000
     };
 
@@ -171,7 +181,7 @@ namespace DiagnosticsIpc
         { DotnetIpcMagic_V1 },
         (uint16_t)sizeof(IpcHeader),
         (uint8_t)DiagnosticServerCommandSet::Server,
-        (uint8_t)DiagnosticServerCommandId::Error,
+        (uint8_t)DiagnosticServerResponseId::Error,
         (uint16_t)0x0000
     };
 

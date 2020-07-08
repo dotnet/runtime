@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _NATIVEIMAGE_H
 #define _NATIVEIMAGE_H
@@ -38,6 +37,25 @@ public:
     static count_t Hash(LPCUTF8 a);
 };
 
+typedef DPTR(class NativeImage) PTR_NativeImage;
+
+class NativeImageIndexTraits : public NoRemoveSHashTraits<MapSHashTraits<LPCUTF8, PTR_NativeImage>>
+{
+public:
+    // Similar to BaseAssemblySpec::CompareStrings, we're using temporary SStrings that throw
+    // for case-insensitive UTF8 assembly name comparisons.
+    static const bool s_NoThrow = false;
+
+    static LPCUTF8 GetKey(const KeyValuePair<LPCUTF8, PTR_NativeImage>& e) { return e.Key(); }
+    static BOOL Equals(LPCUTF8 a, LPCUTF8 b);
+    static count_t Hash(LPCUTF8 a);
+
+    static KeyValuePair<LPCUTF8, PTR_NativeImage> Null() { LIMITED_METHOD_CONTRACT; return KeyValuePair<LPCUTF8, PTR_NativeImage>(nullptr, PTR_NativeImage(nullptr)); }
+    static KeyValuePair<LPCUTF8, PTR_NativeImage> Deleted() { LIMITED_METHOD_CONTRACT; return KeyValuePair<LPCUTF8, PTR_NativeImage>(nullptr, PTR_NativeImage(nullptr)); }
+    static bool IsNull(const KeyValuePair<LPCUTF8, PTR_NativeImage>& e) { LIMITED_METHOD_CONTRACT; return e.Key() == nullptr; }
+    static bool IsDeleted(const KeyValuePair<LPCUTF8, PTR_NativeImage>& e) { return e.Key() == nullptr; }
+};
+
 class AssemblyLoadContext;
 class ReadyToRunInfo;
 class PEFile;
@@ -58,7 +76,8 @@ class NativeImage
 private:
     // Points to the OwnerCompositeExecutable section content within the component MSIL module
     LPCUTF8 m_fileName;
-    
+
+    AssemblyLoadContext *m_pAssemblyLoadContext;
     ReadyToRunInfo *m_pReadyToRunInfo;
     IMDInternalImport *m_pManifestMetadata;
     PEImageLayout *m_pImageLayout;
@@ -73,7 +92,7 @@ private:
     bool m_eagerFixupsHaveRun;
 
 private:
-    NativeImage(PEImageLayout *peImageLayout, LPCUTF8 imageFileName);
+    NativeImage(AssemblyLoadContext *pAssemblyLoadContext, PEImageLayout *peImageLayout, LPCUTF8 imageFileName);
 
 protected:
     void Initialize(READYTORUN_HEADER *header, LoaderAllocator *loaderAllocator, AllocMemTracker *pamTracker);
@@ -82,10 +101,10 @@ public:
     ~NativeImage();
 
     static NativeImage *Open(
-        LPCWSTR fullPath,
+        Module *componentModule,
         LPCUTF8 nativeImageFileName,
-        LoaderAllocator *pLoaderAllocator,
-        AllocMemTracker *pamTracker);
+        AssemblyLoadContext *pAssemblyLoadContext,
+        LoaderAllocator *pLoaderAllocator);
 
     Crst *EagerFixupsLock() { return &m_eagerFixupsLock; }
     bool EagerFixupsHaveRun() const { return m_eagerFixupsHaveRun; }
@@ -97,6 +116,7 @@ public:
     IMDInternalImport *GetManifestMetadata() const { return m_pManifestMetadata; }
     uint32_t GetManifestAssemblyCount() const { return m_manifestAssemblyCount; }
     PTR_Assembly *GetManifestMetadataAssemblyRefMap() { return m_pNativeMetadataAssemblyRefMap; }
+    AssemblyLoadContext *GetAssemblyLoadContext() const { return m_pAssemblyLoadContext; }
 
     Assembly *LoadManifestAssembly(uint32_t rowid);
     

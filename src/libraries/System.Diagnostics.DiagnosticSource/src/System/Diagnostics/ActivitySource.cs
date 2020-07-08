@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Collections.Generic;
@@ -32,13 +31,18 @@ namespace System.Diagnostics
 
             if (s_allListeners.Count > 0)
             {
-                s_allListeners.EnumWithAction(listener => {
-                    var shouldListenTo = listener.ShouldListenTo;
-                    if (shouldListenTo != null && shouldListenTo(this))
+                s_allListeners.EnumWithAction((listener, source) =>
+                {
+                    Func<ActivitySource, bool>? shouldListenTo = listener.ShouldListenTo;
+                    if (shouldListenTo != null)
                     {
-                        AddListener(listener);
+                        var activitySource = (ActivitySource)source;
+                        if (shouldListenTo(activitySource))
+                        {
+                            activitySource.AddListener(listener);
+                        }
                     }
-                });
+                }, this);
             }
         }
 
@@ -111,57 +115,89 @@ namespace System.Diagnostics
             Activity? activity = null;
 
             ActivityDataRequest dataRequest = ActivityDataRequest.None;
+            bool? useContext = default;
+            ActivityCreationOptions<ActivityContext> optionsWithContext = default;
 
             if (parentId != null)
             {
-                listeners.EnumWithFunc(listener => {
-                    var getRequestedDataUsingParentId = listener.GetRequestedDataUsingParentId;
+                var aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links);
+                listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<string> data, ref ActivityDataRequest request, ref bool? canUseContext, ref ActivityCreationOptions<ActivityContext> dataWithContext) => {
+                    GetRequestedData<string>? getRequestedDataUsingParentId = listener.GetRequestedDataUsingParentId;
                     if (getRequestedDataUsingParentId != null)
                     {
-                        ActivityCreationOptions<string> aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links);
-                        ActivityDataRequest dr = getRequestedDataUsingParentId(ref aco);
-                        if (dr > dataRequest)
+                        ActivityDataRequest dr = getRequestedDataUsingParentId(ref data);
+                        if (dr > request)
                         {
-                            dataRequest = dr;
+                            request = dr;
                         }
 
                         // Stop the enumeration if we get the max value RecordingAndSampling.
-                        return dataRequest != ActivityDataRequest.AllDataAndRecorded;
+                        return request != ActivityDataRequest.AllDataAndRecorded;
+                    }
+                    else
+                    {
+                        // In case we have a parent Id and the listener not providing the GetRequestedDataUsingParentId, we'll try to find out if the following conditions are true:
+                        //   - The listener is providing the GetRequestedDataUsingContext callback
+                        //   - Can convert the parent Id to a Context
+                        // Then we can call the listener GetRequestedDataUsingContext callback with the constructed context.
+                        GetRequestedData<ActivityContext>? getRequestedDataUsingContext = listener.GetRequestedDataUsingContext;
+                        if (getRequestedDataUsingContext != null)
+                        {
+                            if (!canUseContext.HasValue)
+                            {
+                                canUseContext = Activity.TryConvertIdToContext(parentId, out ActivityContext ctx);
+                                if (canUseContext.Value)
+                                {
+                                    dataWithContext = new ActivityCreationOptions<ActivityContext>(data.Source, data.Name, ctx, data.Kind, data.Tags, data.Links);
+                                }
+                            }
+
+                            if (canUseContext.Value)
+                            {
+                                ActivityDataRequest dr = getRequestedDataUsingContext(ref dataWithContext);
+                                if (dr > request)
+                                {
+                                    request = dr;
+                                }
+                                // Stop the enumeration if we get the max value RecordingAndSampling.
+                                return request != ActivityDataRequest.AllDataAndRecorded;
+                            }
+                        }
                     }
                     return true;
-                });
+                }, ref aco, ref dataRequest, ref useContext, ref optionsWithContext);
             }
             else
             {
                 ActivityContext initializedContext =  context == default && Activity.Current != null ? Activity.Current.Context : context;
-                listeners.EnumWithFunc(listener => {
-                    var getRequestedDataUsingContext = listener.GetRequestedDataUsingContext;
+                var aco = new ActivityCreationOptions<ActivityContext>(this, name, initializedContext, kind, tags, links);
+                listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<ActivityContext> data, ref ActivityDataRequest request, ref bool? canUseContext, ref ActivityCreationOptions<ActivityContext> dataWithContext) => {
+                    GetRequestedData<ActivityContext>? getRequestedDataUsingContext = listener.GetRequestedDataUsingContext;
                     if (getRequestedDataUsingContext != null)
                     {
-                        ActivityCreationOptions<ActivityContext> aco = new ActivityCreationOptions<ActivityContext>(this, name, initializedContext, kind, tags, links);
-                        ActivityDataRequest dr = getRequestedDataUsingContext(ref aco);
-                        if (dr > dataRequest)
+                        ActivityDataRequest dr = getRequestedDataUsingContext(ref data);
+                        if (dr > request)
                         {
-                            dataRequest = dr;
+                            request = dr;
                         }
 
                         // Stop the enumeration if we get the max value RecordingAndSampling.
-                        return dataRequest != ActivityDataRequest.AllDataAndRecorded;
+                        return request != ActivityDataRequest.AllDataAndRecorded;
                     }
                     return true;
-                });
+                }, ref aco, ref dataRequest, ref useContext, ref optionsWithContext);
             }
 
             if (dataRequest != ActivityDataRequest.None)
             {
+                if (useContext.HasValue && useContext.Value)
+                {
+                    context = optionsWithContext.Parent;
+                    parentId = null;
+                }
+
                 activity = Activity.CreateAndStart(this, name, kind, parentId, context, tags, links, startTime, dataRequest);
-                listeners.EnumWithAction(listener => {
-                    var activityStarted = listener.ActivityStarted;
-                    if (activityStarted != null)
-                    {
-                        activityStarted(activity);
-                    }
-                });
+                listeners.EnumWithAction((listener, obj) => listener.ActivityStarted?.Invoke((Activity) obj), activity);
             }
 
             return activity;
@@ -189,15 +225,17 @@ namespace System.Diagnostics
 
             if (s_allListeners.AddIfNotExist(listener))
             {
-                s_activeSources.EnumWithAction(source => {
-                    var shouldListenTo = listener.ShouldListenTo;
+                s_activeSources.EnumWithAction((source, obj) => {
+                    var shouldListenTo = ((ActivityListener)obj).ShouldListenTo;
                     if (shouldListenTo != null && shouldListenTo(source))
                     {
-                        source.AddListener(listener);
+                        source.AddListener((ActivityListener)obj);
                     }
-                });
+                }, listener);
             }
         }
+
+        internal delegate bool Function<T, TParent>(T item, ref ActivityCreationOptions<TParent> data, ref ActivityDataRequest dataRequest, ref bool? ctxInitialized, ref ActivityCreationOptions<ActivityContext> dataWithContext);
 
         internal void AddListener(ActivityListener listener)
         {
@@ -212,11 +250,7 @@ namespace System.Diagnostics
         internal static void DetachListener(ActivityListener listener)
         {
             s_allListeners.Remove(listener);
-
-            s_activeSources.EnumWithAction(source => {
-                var listeners = source._listeners;
-                listeners?.Remove(listener);
-            });
+            s_activeSources.EnumWithAction((source, obj) => source._listeners?.Remove((ActivityListener) obj), listener);
         }
 
         internal void NotifyActivityStart(Activity activity)
@@ -227,7 +261,7 @@ namespace System.Diagnostics
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners != null &&  listeners.Count > 0)
             {
-                listeners.EnumWithAction(listener => listener.ActivityStarted?.Invoke(activity));
+                listeners.EnumWithAction((listener, obj) => listener.ActivityStarted?.Invoke((Activity) obj), activity);
             }
         }
 
@@ -239,7 +273,7 @@ namespace System.Diagnostics
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners != null &&  listeners.Count > 0)
             {
-                listeners.EnumWithAction(listener => listener.ActivityStopped?.Invoke(activity));
+                listeners.EnumWithAction((listener, obj) => listener.ActivityStopped?.Invoke((Activity) obj), activity);
             }
         }
     }
@@ -293,7 +327,7 @@ namespace System.Diagnostics
 
         public int Count => _list.Count;
 
-        public void EnumWithFunc(Func<T, bool> func)
+        public void EnumWithFunc<TParent>(ActivitySource.Function<T, TParent> func, ref ActivityCreationOptions<TParent> data, ref ActivityDataRequest dataRequest, ref bool? ctxInitialized, ref ActivityCreationOptions<ActivityContext> dataWithContext)
         {
             uint version = _version;
             int index = 0;
@@ -316,14 +350,14 @@ namespace System.Diagnostics
 
                 // Important to call the func outside the lock.
                 // This is the whole point we are having this wrapper class.
-                if (!func(item))
+                if (!func(item, ref data, ref dataRequest, ref ctxInitialized, ref dataWithContext))
                 {
                     break;
                 }
             }
         }
 
-        public void EnumWithAction(Action<T> action)
+        public void EnumWithAction(Action<T, object> action, object arg)
         {
             uint version = _version;
             int index = 0;
@@ -346,7 +380,7 @@ namespace System.Diagnostics
 
                 // Important to call the action outside the lock.
                 // This is the whole point we are having this wrapper class.
-                action(item);
+                action(item, arg);
             }
         }
 

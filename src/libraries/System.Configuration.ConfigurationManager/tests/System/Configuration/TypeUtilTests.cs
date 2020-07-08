@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -37,9 +36,26 @@ namespace System.ConfigurationTests
             InlineData("System.Collections.Specialized.StringDictionary", typeof(StringDictionary)),
             InlineData("System.Collections.Specialized.OrderedDictionary", typeof(OrderedDictionary)),
             InlineData("System.Collections.Specialized.StringCollection", typeof(StringCollection)),
-            InlineData("System.Collections.Specialized.NameValueCollection", typeof(NameValueCollection))
+            InlineData("System.Collections.Specialized.NameValueCollection", typeof(NameValueCollection)),
             ]
         public void GetType_NoAssemblyQualifcation(string typeString, Type expectedType)
+        {
+            Assert.Equal(expectedType, TypeUtil.GetType(typeString, throwOnError: false));
+        }
+
+
+        [Theory,
+            // ConfigurationManager types roll forward
+            InlineData(
+                "System.Configuration.UserSettingsGroup, System.Configuration.ConfigurationManager, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51",
+                typeof(UserSettingsGroup)),
+            // Mono doesn't care about the versioning here and will resolve the type back
+            InlineData(
+                "System.Configuration.UserSettingsGroup, System.Configuration.ConfigurationManager, Version=255.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51",
+                null)
+            ]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38351", TestRuntimes.Mono)]
+        public void GetType_ConfigurationManagerTypes(string typeString, Type expectedType)
         {
             Assert.Equal(expectedType, TypeUtil.GetType(typeString, throwOnError: false));
         }

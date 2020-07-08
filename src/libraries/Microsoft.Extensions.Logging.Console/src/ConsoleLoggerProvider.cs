@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -49,7 +48,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         private void ReloadLoggerOptions(ConsoleLoggerOptions options)
         {
-            foreach (var logger in _loggers)
+            foreach (System.Collections.Generic.KeyValuePair<string, ConsoleLogger> logger in _loggers)
             {
                 logger.Value.Options = options;
             }
@@ -77,7 +76,7 @@ namespace Microsoft.Extensions.Logging.Console
         {
             _scopeProvider = scopeProvider;
 
-            foreach (var logger in _loggers)
+            foreach (System.Collections.Generic.KeyValuePair<string, ConsoleLogger> logger in _loggers)
             {
                 logger.Value.ScopeProvider = _scopeProvider;
             }

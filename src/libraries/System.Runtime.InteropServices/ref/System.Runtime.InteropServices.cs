@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -1016,11 +1015,11 @@ namespace System.Runtime.InteropServices
         public static void RegisterForMarshalling(ComWrappers instance) { }
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
     public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
     {
         public UnmanagedCallersOnlyAttribute() { }
-        public System.Runtime.InteropServices.CallingConvention CallingConvention;
+        public System.Type[]? CallConvs;
         public string? EntryPoint;
     }
 }

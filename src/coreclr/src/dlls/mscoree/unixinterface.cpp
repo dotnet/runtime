@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 //*****************************************************************************
@@ -24,6 +23,9 @@
 
 // Holder for const wide strings
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
+
+// Specifies whether coreclr is embedded or standalone
+extern bool g_coreclr_embedded;
 
 // Holder for array of wide strings
 class ConstWStringArrayHolder : public NewArrayHolder<LPCWSTR>
@@ -171,8 +173,21 @@ int coreclr_initialize(
             unsigned int* domainId)
 {
     HRESULT hr;
+
+    LPCWSTR* propertyKeysW;
+    LPCWSTR* propertyValuesW;
+    BundleProbe* bundleProbe = nullptr;
+
+    ConvertConfigPropertiesToUnicode(
+        propertyKeys,
+        propertyValues,
+        propertyCount,
+        &propertyKeysW,
+        &propertyValuesW,
+        &bundleProbe);
+
 #ifdef TARGET_UNIX
-    DWORD error = PAL_InitializeCoreCLR(exePath);
+    DWORD error = PAL_InitializeCoreCLR(exePath, g_coreclr_embedded);
     hr = HRESULT_FROM_WIN32(error);
 
     // If PAL initialization failed, then we should return right away and avoid
@@ -189,18 +204,6 @@ int coreclr_initialize(
     IfFailRet(hr);
 
     ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
-
-    LPCWSTR* propertyKeysW;
-    LPCWSTR* propertyValuesW;
-    BundleProbe* bundleProbe = nullptr;
-
-    ConvertConfigPropertiesToUnicode(
-        propertyKeys,
-        propertyValues,
-        propertyCount,
-        &propertyKeysW,
-        &propertyValuesW,
-        &bundleProbe);
 
     if (bundleProbe != nullptr)
     {

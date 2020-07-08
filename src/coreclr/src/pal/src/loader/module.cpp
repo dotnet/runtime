@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -87,6 +86,7 @@ MODSTRUCT exe_module;
 MODSTRUCT *pal_module = nullptr;
 
 char * g_szCoreCLRPath = nullptr;
+bool g_running_in_exe = false;
 
 int MaxWCharToAcpLength = 3;
 
@@ -1436,6 +1436,18 @@ static LPWSTR LOADGetModuleFileName(MODSTRUCT *module)
     return module->lib_name;
 }
 
+static bool ShouldRedirectToCurrentLibrary(LPCSTR libraryNameOrPath)
+{
+    if (!g_running_in_exe)
+        return false;
+
+    // Getting nullptr as name indicates redirection to current library
+    if (libraryNameOrPath == nullptr)
+        return true;
+
+    return false;
+}
+
 /*
 Function:
     LOADLoadLibraryDirect [internal]
@@ -1450,10 +1462,19 @@ Return value:
 */
 static NATIVE_LIBRARY_HANDLE LOADLoadLibraryDirect(LPCSTR libraryNameOrPath)
 {
-    _ASSERTE(libraryNameOrPath != nullptr);
-    _ASSERTE(libraryNameOrPath[0] != '\0');
+    NATIVE_LIBRARY_HANDLE dl_handle;
 
-    NATIVE_LIBRARY_HANDLE dl_handle = dlopen(libraryNameOrPath, RTLD_LAZY);
+    if (ShouldRedirectToCurrentLibrary(libraryNameOrPath))
+    {
+        dl_handle = dlopen(NULL, RTLD_LAZY);
+    }
+    else
+    {
+        _ASSERTE(libraryNameOrPath != nullptr);
+        _ASSERTE(libraryNameOrPath[0] != '\0');
+        dl_handle = dlopen(libraryNameOrPath, RTLD_LAZY);
+    }
+
     if (dl_handle == nullptr)
     {
         SetLastError(ERROR_MOD_NOT_FOUND);
@@ -1536,8 +1557,7 @@ Return value:
 static MODSTRUCT *LOADAddModule(NATIVE_LIBRARY_HANDLE dl_handle, LPCSTR libraryNameOrPath)
 {
     _ASSERTE(dl_handle != nullptr);
-    _ASSERTE(libraryNameOrPath != nullptr);
-    _ASSERTE(libraryNameOrPath[0] != '\0');
+    _ASSERTE(g_running_in_exe || (libraryNameOrPath != nullptr && libraryNameOrPath[0] != '\0'));
 
 #if !RETURNS_NEW_HANDLES_ON_REPEAT_DLOPEN
     /* search module list for a match. */
@@ -1663,7 +1683,8 @@ Function :
     implementation of LoadLibrary (for use by the A/W variants)
 
 Parameters :
-    LPSTR shortAsciiName : name of module as specified to LoadLibrary
+    LPSTR shortAsciiName : name of module as specified to LoadLibrary.
+                           Could be nullptr if loading containing executable.
 
     BOOL fDynamic : TRUE if dynamic load through LoadLibrary, FALSE if static load through RegisterLibrary
 
@@ -1676,7 +1697,8 @@ static HMODULE LOADLoadLibrary(LPCSTR shortAsciiName, BOOL fDynamic)
     HMODULE module = nullptr;
     NATIVE_LIBRARY_HANDLE dl_handle = nullptr;
 
-    shortAsciiName = FixLibCName(shortAsciiName);
+    if (shortAsciiName != nullptr)
+        shortAsciiName = FixLibCName(shortAsciiName);
 
     LockModuleList();
 
@@ -1762,7 +1784,14 @@ MODSTRUCT *LOADGetPalLibrary()
             }
         }
 
-        pal_module = (MODSTRUCT *)LOADLoadLibrary(info.dli_fname, FALSE);
+        if (g_running_in_exe)
+        {
+            pal_module = (MODSTRUCT*)LOADLoadLibrary(nullptr, FALSE);
+        }
+        else
+        {
+            pal_module = (MODSTRUCT*)LOADLoadLibrary(info.dli_fname, FALSE);
+        }
     }
 
 exit:

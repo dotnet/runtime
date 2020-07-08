@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -43,9 +42,9 @@ namespace Microsoft.Extensions.Logging.EventLog
 
         private IEventLog CreateDefaultEventLog()
         {
-            var logName = string.IsNullOrEmpty(LogName) ? "Application" : LogName;
-            var machineName = string.IsNullOrEmpty(MachineName) ? "." : MachineName;
-            var sourceName = string.IsNullOrEmpty(SourceName) ? ".NET Runtime" : SourceName;
+            string logName = string.IsNullOrEmpty(LogName) ? "Application" : LogName;
+            string machineName = string.IsNullOrEmpty(MachineName) ? "." : MachineName;
+            string sourceName = string.IsNullOrEmpty(SourceName) ? ".NET Runtime" : SourceName;
             int? defaultEventId = null;
 
             if (string.IsNullOrEmpty(SourceName))

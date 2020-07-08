@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -209,7 +208,7 @@ namespace R2RDump
                 writer.WriteLine($"Flags:              0x{amd64UnwindInfo.Flags:X2}{parsedFlags}");
                 writer.WriteLine($"SizeOfProlog:       0x{amd64UnwindInfo.SizeOfProlog:X4}");
                 writer.WriteLine($"CountOfUnwindCodes: {amd64UnwindInfo.CountOfUnwindCodes}");
-                writer.WriteLine($"FrameRegister:      {amd64UnwindInfo.FrameRegister}");
+                writer.WriteLine($"FrameRegister:      {((amd64UnwindInfo.FrameRegister == 0) ? "None" : amd64UnwindInfo.FrameRegister.ToString())}");
                 writer.WriteLine($"FrameOffset:        0x{amd64UnwindInfo.FrameOffset}");
                 if (!options.Naked)
                 {

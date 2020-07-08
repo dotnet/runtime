@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: methodtable.inl
 //
@@ -360,21 +359,6 @@ inline BOOL MethodTable::HasExplicitGuid()
     GUID guid;
     GetGuid(&guid, FALSE);
     return (guid != GUID_NULL);
-}
-
-//==========================================================================================
-// Get the GUID used for WinRT interop
-//   * if the type is not a WinRT type or a redirected interfae return FALSE
-inline BOOL MethodTable::GetGuidForWinRT(GUID *pGuid)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    return FALSE;
 }
 
 #endif // FEATURE_COMINTEROP

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Security;
@@ -22,13 +21,14 @@ namespace System
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
-        public static bool IsNotMonoInterpreter => !IsMonoInterpreter;
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsIllumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
+        public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
+        public static bool IsNotBrowser => !IsBrowser;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -41,6 +41,7 @@ namespace System
         public static bool Is32BitProcess => IntPtr.Size == 4;
         public static bool IsNotWindows => !IsWindows;
 
+        public static bool IsThreadingSupported => !IsBrowser;
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
         public static bool IsDrawingSupported
@@ -284,6 +285,10 @@ namespace System
 
         private static bool GetIsRunningOnMonoInterpreter()
         {
+            // Browser is always using interpreter right now
+            if (IsBrowser)
+                return true;
+
             // This is a temporary solution because mono does not support interpreter detection
             // within the runtime.
             var val = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");

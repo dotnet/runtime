@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Net.Test.Common;
@@ -36,7 +35,7 @@ namespace System.Net.Http.Functional.Tests
                         ValidateResponseHeaders(response1, simpleContent.Length, mode);
 
                         // Read up to exactly 1 byte before the end of the response
-                        Stream responseStream = await response1.Content.ReadAsStreamAsync();
+                        Stream responseStream = await response1.Content.ReadAsStreamAsync(TestAsync);
                         byte[] bytes = await ReadToByteCount(responseStream, simpleContent.Length - 1);
                         Assert.Equal(simpleContent.Substring(0, simpleContent.Length - 1), Encoding.ASCII.GetString(bytes));
 
@@ -107,7 +106,7 @@ namespace System.Net.Http.Functional.Tests
                         ValidateResponseHeaders(response1, totalSize, mode);
 
                         // Read part but not all of response
-                        Stream responseStream = await response1.Content.ReadAsStreamAsync();
+                        Stream responseStream = await response1.Content.ReadAsStreamAsync(TestAsync);
                         await ReadToByteCount(responseStream, readSize);
 
                         response1.Dispose();
@@ -179,7 +178,7 @@ namespace System.Net.Http.Functional.Tests
                         ValidateResponseHeaders(response1, totalSize, mode);
 
                         // Read part but not all of response
-                        Stream responseStream = await response1.Content.ReadAsStreamAsync();
+                        Stream responseStream = await response1.Content.ReadAsStreamAsync(TestAsync);
                         await ReadToByteCount(responseStream, readSize);
 
                         response1.Dispose();

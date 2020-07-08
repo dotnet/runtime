@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // This file contains the globals and statics that are visible to DAC.
 // It is used for the following:
 // 1. in daccess.h to build the table of DAC globals
@@ -134,10 +133,6 @@ DEFINE_DACVAR(ULONG, DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
 DEFINE_DACVAR(ULONG, DWORD, dac__g_TlsIndex, g_TlsIndex)
 
 DEFINE_DACVAR(ULONG, PTR_SString, SString__s_Empty, SString::s_Empty)
-
-#ifdef FEATURE_APPX
-DEFINE_DACVAR(ULONG, BOOL, dac__g_fAppX, ::g_fAppX)
-#endif // FEATURE_APPX
 
 DEFINE_DACVAR(ULONG, INT32, ArrayBase__s_arrayBoundsZero, ArrayBase::s_arrayBoundsZero)
 

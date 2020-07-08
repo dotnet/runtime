@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.SqlTypes;
 using System.Xml;
@@ -17,8 +16,8 @@ namespace System.Data.Common
     internal sealed class SqlUdtStorage : DataStorage
     {
         private object[] _values;
-        private readonly bool _implementsIXmlSerializable = false;
-        private readonly bool _implementsIComparable = false;
+        private readonly bool _implementsIXmlSerializable;
+        private readonly bool _implementsIComparable;
 
         private static readonly ConcurrentDictionary<Type, object> s_typeToNull = new ConcurrentDictionary<Type, object>();
 

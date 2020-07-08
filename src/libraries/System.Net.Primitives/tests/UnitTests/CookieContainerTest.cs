@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -543,7 +542,7 @@ namespace System.Net.Primitives.Unit.Tests
             Assert.Equal(4, cc.Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Add_ReachedMaxCountWithExpiredCookies_Added()
         {
             Cookie c1 = new Cookie("name1", "value", "", ".domain1.com");
@@ -678,7 +677,7 @@ namespace System.Net.Primitives.Unit.Tests
             Assert.Equal(c1, cc3[1]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task GetCookies_RemovesExpired_Cookies()
         {
             Cookie c1 = new Cookie("name1", "value", "", ".url1.com");

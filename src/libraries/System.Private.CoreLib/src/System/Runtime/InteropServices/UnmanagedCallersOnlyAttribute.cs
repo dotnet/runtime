@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Runtime.InteropServices
 {
@@ -15,7 +14,7 @@ namespace System.Runtime.InteropServices
     ///   * Must not be called from managed code.
     ///   * Must only have <see href="https://docs.microsoft.com/dotnet/framework/interop/blittable-and-non-blittable-types">blittable</see> arguments.
     /// </remarks>
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public sealed class UnmanagedCallersOnlyAttribute : Attribute
     {
         public UnmanagedCallersOnlyAttribute()
@@ -25,7 +24,11 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Optional. If omitted, the runtime will use the default platform calling convention.
         /// </summary>
-        public CallingConvention CallingConvention;
+        /// <remarks>
+        /// Supplied types must be from the official "System.Runtime.CompilerServices" namespace and
+        /// be of the form "CallConvXXX".
+        /// </remarks>
+        public Type[]? CallConvs;
 
         /// <summary>
         /// Optional. If omitted, no named export is emitted during compilation.

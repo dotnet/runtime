@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: OleVariant.h
 //
@@ -600,7 +599,7 @@ private:
     static void MarshalDecimalVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
     static void MarshalDecimalVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
     static void MarshalRecordVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
     static void MarshalRecordVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
     static void MarshalRecordVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
@@ -624,7 +623,7 @@ private:
                                             SIZE_T cElements, PCODE pManagedMarshalerCode);
     static void ClearVariantArray(void* oleArray, SIZE_T cElements, MethodTable* pInterfaceMT, PCODE pManagedMarshalerCode);
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
     static void MarshalArrayVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
     static void MarshalArrayVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
     static void MarshalArrayVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System.Configuration;
@@ -208,13 +207,6 @@ namespace System.Security.Permissions.Tests
             string teststring = pp.ToString();
             ip2 = pp.Union(ip);
             pp.ToXml();
-        }
-
-        [Fact]
-        public static void PrincipalPermissionAttributeCallMethods()
-        {
-            PrincipalPermissionAttribute ppa = new PrincipalPermissionAttribute(new Permissions.SecurityAction());
-            IPermission ip = ppa.CreatePermission();
         }
 
         [Fact]

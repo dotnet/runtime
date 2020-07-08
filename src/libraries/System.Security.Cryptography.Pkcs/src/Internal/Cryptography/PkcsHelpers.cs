@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Buffers;
@@ -689,6 +688,18 @@ namespace Internal.Cryptography
                 exception = e;
                 return false;
             }
+        }
+
+        // Creates a defensive copy of an OID on platforms where OID
+        // is mutable. On platforms where OID is immutable, return the OID as-is.
+        [return: NotNullIfNotNull("oid")]
+        public static Oid? CopyOid(this Oid? oid)
+        {
+#if NETCOREAPP
+            return oid;
+#else
+            return oid is null ? null : new Oid(oid);
+#endif
         }
     }
 }

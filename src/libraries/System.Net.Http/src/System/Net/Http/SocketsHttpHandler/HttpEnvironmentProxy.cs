@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Net.Http;
@@ -98,7 +97,7 @@ namespace System.Net.Http
 
         private readonly Uri? _httpProxyUri;       // String URI for HTTP requests
         private readonly Uri? _httpsProxyUri;      // String URI for HTTPS requests
-        private readonly string[]? _bypass = null; // list of domains not to proxy
+        private readonly string[]? _bypass;        // list of domains not to proxy
         private ICredentials? _credentials;
 
         private HttpEnvironmentProxy(Uri? httpProxy, Uri? httpsProxy, string? bypassList)

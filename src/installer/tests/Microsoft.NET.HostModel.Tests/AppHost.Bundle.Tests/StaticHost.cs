@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
@@ -82,7 +81,7 @@ namespace AppHost.Bundle.Tests
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
-                TestFixture = new TestProjectFixture("StaticHostApp", RepoDirectories);
+                TestFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestFixture.CurrentRid, 

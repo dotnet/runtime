@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 extern ICorJitHost* g_jitHost;
 
@@ -109,6 +108,24 @@ inline CORINFO_CLASS_HANDLE Compiler::eeGetArgClass(CORINFO_SIG_INFO* sig, CORIN
 {
     CORINFO_CLASS_HANDLE argClass = info.compCompHnd->getArgClass(sig, list);
     return argClass;
+}
+
+/*****************************************************************************/
+inline CORINFO_CLASS_HANDLE Compiler::eeGetClassFromContext(CORINFO_CONTEXT_HANDLE context)
+{
+    if (context == METHOD_BEING_COMPILED_CONTEXT())
+    {
+        return impInlineRoot()->info.compClassHnd;
+    }
+
+    if (((SIZE_T)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
+    {
+        return CORINFO_CLASS_HANDLE((SIZE_T)context & ~CORINFO_CONTEXTFLAGS_MASK);
+    }
+    else
+    {
+        return info.compCompHnd->getMethodClass(CORINFO_METHOD_HANDLE((SIZE_T)context & ~CORINFO_CONTEXTFLAGS_MASK));
+    }
 }
 
 /*****************************************************************************

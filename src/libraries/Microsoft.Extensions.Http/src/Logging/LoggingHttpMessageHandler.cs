@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Net.Http;
@@ -53,12 +52,12 @@ namespace Microsoft.Extensions.Http.Logging
 
             var stopwatch = ValueStopwatch.StartNew();
 
-            var shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
+            Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
 
             // Not using a scope here because we always expect this to be at the end of the pipeline, thus there's
             // not really anything to surround.
             Log.RequestStart(_logger, request, shouldRedactHeaderValue);
-            var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            HttpResponseMessage response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
             Log.RequestEnd(_logger, response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
 
             return response;

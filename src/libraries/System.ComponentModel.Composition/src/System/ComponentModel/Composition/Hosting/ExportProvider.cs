@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
@@ -73,6 +72,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     The <see cref="ImportDefinition"/> that defines the conditions of the
         ///     <see cref="Export"/> objects to get.
         /// </param>
+        /// <param name="atomicComposition">The transactional container for the composition.</param>
         /// <result>
         ///     An <see cref="IEnumerable{T}"/> of <see cref="Export"/> objects that match
         ///     the conditions defined by <see cref="ImportDefinition"/>, if found; otherwise, an
@@ -122,6 +122,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     The <see cref="ImportDefinition"/> that defines the conditions of the
         ///     <see cref="Export"/> objects to get.
         /// </param>
+        /// <param name="atomicComposition">The transactional container for the composition.</param>
         /// <param name="exports">
         ///     When this method returns, contains an <see cref="IEnumerable{T}"/> of <see cref="Export"/>
         ///     objects that match the conditions defined by <see cref="ImportDefinition"/>, if found;
@@ -155,6 +156,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     The <see cref="ImportDefinition"/> that defines the conditions of the
         ///     <see cref="Export"/> objects to return.
         /// </param>
+        /// <param name="atomicComposition">The transactional container for the composition.</param>
         /// <result>
         ///     An <see cref="IEnumerable{T}"/> of <see cref="Export"/> objects that match
         ///     the conditions defined by <see cref="ImportDefinition"/>, if found; otherwise, an

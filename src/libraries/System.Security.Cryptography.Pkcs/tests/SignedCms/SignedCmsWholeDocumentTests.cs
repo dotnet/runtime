@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography.X509Certificates;
 using Test.Cryptography;
@@ -10,11 +9,27 @@ namespace System.Security.Cryptography.Pkcs.Tests
 {
     public static class SignedCmsWholeDocumentTests
     {
-        [Fact]
-        public static void ReadRsaPssDocument()
+        [Theory]
+#if !NET472
+        [InlineData(true)]
+#endif
+        [InlineData(false)]
+        public static void ReadRsaPssDocument(bool fromSpan)
         {
             SignedCms cms = new SignedCms();
-            cms.Decode(SignedDocuments.RsaPssDocument);
+            if (fromSpan)
+            {
+#if !NET472
+                cms.Decode(SignedDocuments.RsaPssDocument.AsSpan());
+#else
+                throw new Xunit.Sdk.XunitException(
+                    "This test should not evaluate for .NET Framework, the API is missing.");
+#endif
+            }
+            else
+            {
+                cms.Decode(SignedDocuments.RsaPssDocument);
+            }
 
             Assert.Equal(3, cms.Version);
 
@@ -76,7 +91,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 messageDigestAttr.MessageDigest.ByteArrayToHex());
 
             Assert.IsType<Pkcs9AttributeObject>(signedAttrs[3].Values[0]);
+#if !NETCOREAPP
             Assert.NotSame(signedAttrs[3].Oid, signedAttrs[3].Values[0].Oid);
+#endif
             Assert.Equal(
                 "306A300B060960864801650304012A300B0609608648016503040116300B0609" +
                     "608648016503040102300A06082A864886F70D0307300E06082A864886F70D03" +

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "eventpipe.h"
@@ -88,8 +87,6 @@ void EventPipeThreadSessionState::IncrementSequenceNumber()
     m_sequenceNumber++;
 }
 
-
-
 void ReleaseEventPipeThreadRef(EventPipeThread *pThread)
 {
     LIMITED_METHOD_CONTRACT;
@@ -103,6 +100,9 @@ void AcquireEventPipeThreadRef(EventPipeThread *pThread)
 }
 
 thread_local EventPipeThreadHolder EventPipeThread::gCurrentEventPipeThreadHolder;
+
+SpinLock EventPipeThread::s_threadsLock;
+SList<SListElem<EventPipeThread *>> EventPipeThread::s_pThreads;
 
 EventPipeThread::EventPipeThread()
 {
@@ -136,13 +136,20 @@ EventPipeThread::~EventPipeThread()
 #endif
 }
 
-/*static */ EventPipeThread *EventPipeThread::Get()
+void EventPipeThread::Initialize()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    s_threadsLock.Init(LOCK_TYPE_DEFAULT);
+}
+
+EventPipeThread *EventPipeThread::Get()
 {
     LIMITED_METHOD_CONTRACT;
     return gCurrentEventPipeThreadHolder;
 }
 
-/*static */ EventPipeThread* EventPipeThread::GetOrCreate()
+EventPipeThread* EventPipeThread::GetOrCreate()
 {
     CONTRACTL
     {
@@ -157,6 +164,11 @@ EventPipeThread::~EventPipeThread()
         EX_TRY
         {
             gCurrentEventPipeThreadHolder = new EventPipeThread();
+            
+            {
+                SpinLockHolder crst(&s_threadsLock);
+                s_pThreads.InsertTail(new SListElem<EventPipeThread *>((EventPipeThread *)gCurrentEventPipeThreadHolder));
+            }
         }
         EX_CATCH
         {
@@ -164,6 +176,13 @@ EventPipeThread::~EventPipeThread()
         EX_END_CATCH(SwallowAllExceptions);
     }
     return gCurrentEventPipeThreadHolder;
+}
+
+EventPipeThreadIterator EventPipeThread::GetThreads()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return EventPipeThreadIterator(&s_pThreads);
 }
 
 void EventPipeThread::AddRef()
@@ -175,8 +194,32 @@ void EventPipeThread::AddRef()
 void EventPipeThread::Release()
 {
     LIMITED_METHOD_CONTRACT;
+
     if (FastInterlockDecrement(&m_refCount) == 0)
     {
+        SpinLockHolder crst(&s_threadsLock);
+        
+        // Remove ourselves from the global list
+        SListElem<EventPipeThread *> *pElem = s_pThreads.GetHead();
+        while (pElem != nullptr)
+        {
+            // A null value shouldn't ever be added to the list
+            _ASSERTE(pElem->GetValue() != nullptr);
+
+            if (pElem->GetValue() == this)
+            {
+                break;
+            }
+
+            pElem = s_pThreads.GetNext(pElem);
+        }
+
+        if (pElem == nullptr || s_pThreads.FindAndRemove(pElem) == nullptr)
+        {
+            // We should always be in the list
+            _ASSERTE(!"We couldn't find ourselves in the global thread list");
+        }
+
         // https://isocpp.org/wiki/faq/freestore-mgmt#delete-this
         // As long as you're careful, it's okay (not evil) for an object to commit suicide (delete this).
         delete this;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -54,7 +53,7 @@ namespace System.IO
         private readonly bool _useAsyncIO;
 
         /// <summary>cached task for read ops that complete synchronously</summary>
-        private Task<int>? _lastSynchronouslyCompletedTask = null;
+        private Task<int>? _lastSynchronouslyCompletedTask;
 
         /// <summary>
         /// Currently cached position in the stream.  This should always mirror the underlying file's actual position,
@@ -67,7 +66,7 @@ namespace System.IO
         private bool _exposedHandle;
 
         /// <summary>Caches whether Serialization Guard has been disabled for file writes</summary>
-        private static int s_cachedSerializationSwitch = 0;
+        private static int s_cachedSerializationSwitch;
 
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access)

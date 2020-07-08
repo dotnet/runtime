@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -87,7 +86,7 @@ namespace System.Threading.Channels.Tests
         public void CreateBounded_ValidBufferSizes_Success(int bufferedCapacity) =>
             Assert.NotNull(Channel.CreateBounded<int>(bufferedCapacity));
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DefaultWriteAsync_UsesWaitToWriteAsyncAndTryWrite()
         {
             var c = new TestChannelWriter<int>(10);
@@ -113,7 +112,7 @@ namespace System.Threading.Channels.Tests
             Assert.False(t.IsCompleted);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DefaultWriteAsync_CatchesTryWriteExceptions()
         {
             var w = new TryWriteThrowingWriter<int>();
@@ -122,7 +121,7 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAsync<FormatException>(async () => await t);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DefaultReadAsync_CatchesTryWriteExceptions()
         {
             var r = new TryReadThrowingReader<int>();
@@ -131,7 +130,7 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAsync<FieldAccessException>(() => t);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task TestBaseClassReadAsync()
         {
             WrapperChannel<int> channel = new WrapperChannel<int>(10);

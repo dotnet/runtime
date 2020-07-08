@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Serialization
 {
@@ -28,16 +27,16 @@ namespace System.Xml.Serialization
     internal class XmlSerializationCodeGen
     {
         private readonly IndentedWriter _writer;
-        private int _nextMethodNumber = 0;
+        private int _nextMethodNumber;
         private readonly Hashtable _methodNames = new Hashtable();
         private readonly ReflectionAwareCodeGen _raCodeGen;
         private readonly TypeScope[] _scopes;
-        private readonly TypeDesc _stringTypeDesc = null;
-        private readonly TypeDesc _qnameTypeDesc = null;
+        private readonly TypeDesc _stringTypeDesc;
+        private readonly TypeDesc _qnameTypeDesc;
         private readonly string _access;
         private readonly string _className;
         private TypeMapping[] _referencedMethods;
-        private int _references = 0;
+        private int _references;
         private readonly Hashtable _generatedMethods = new Hashtable();
 
         internal XmlSerializationCodeGen(IndentedWriter writer, TypeScope[] scopes, string access, string className)

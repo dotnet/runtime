@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -30,12 +29,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private void Populate()
         {
-            foreach (var descriptor in _descriptors)
+            foreach (ServiceDescriptor descriptor in _descriptors)
             {
-                var serviceTypeInfo = descriptor.ServiceType.GetTypeInfo();
+                TypeInfo serviceTypeInfo = descriptor.ServiceType.GetTypeInfo();
                 if (serviceTypeInfo.IsGenericTypeDefinition)
                 {
-                    var implementationTypeInfo = descriptor.ImplementationType?.GetTypeInfo();
+                    TypeInfo implementationTypeInfo = descriptor.ImplementationType?.GetTypeInfo();
 
                     if (implementationTypeInfo == null || !implementationTypeInfo.IsGenericTypeDefinition)
                     {
@@ -53,7 +52,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 else if (descriptor.ImplementationInstance == null && descriptor.ImplementationFactory == null)
                 {
                     Debug.Assert(descriptor.ImplementationType != null);
-                    var implementationTypeInfo = descriptor.ImplementationType.GetTypeInfo();
+                    TypeInfo implementationTypeInfo = descriptor.ImplementationType.GetTypeInfo();
 
                     if (implementationTypeInfo.IsGenericTypeDefinition ||
                         implementationTypeInfo.IsAbstract ||
@@ -64,8 +63,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                 }
 
-                var cacheKey = descriptor.ServiceType;
-                _descriptorLookup.TryGetValue(cacheKey, out var cacheItem);
+                Type cacheKey = descriptor.ServiceType;
+                _descriptorLookup.TryGetValue(cacheKey, out ServiceDescriptorCacheItem cacheItem);
                 _descriptorLookup[cacheKey] = cacheItem.Add(descriptor);
             }
         }
@@ -77,7 +76,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         internal ServiceCallSite GetCallSite(ServiceDescriptor serviceDescriptor, CallSiteChain callSiteChain)
         {
-            if (_descriptorLookup.TryGetValue(serviceDescriptor.ServiceType, out var descriptor))
+            if (_descriptorLookup.TryGetValue(serviceDescriptor.ServiceType, out ServiceDescriptorCacheItem descriptor))
             {
                 return TryCreateExact(serviceDescriptor, serviceDescriptor.ServiceType, callSiteChain, descriptor.GetSlot(serviceDescriptor));
             }
@@ -95,7 +94,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             callSiteChain.CheckCircularDependency(serviceType);
 
-            var callSite = TryCreateExact(serviceType, callSiteChain) ??
+            ServiceCallSite callSite = TryCreateExact(serviceType, callSiteChain) ??
                                        TryCreateOpenGeneric(serviceType, callSiteChain) ??
                                        TryCreateEnumerable(serviceType, callSiteChain);
 
@@ -106,7 +105,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private ServiceCallSite TryCreateExact(Type serviceType, CallSiteChain callSiteChain)
         {
-            if (_descriptorLookup.TryGetValue(serviceType, out var descriptor))
+            if (_descriptorLookup.TryGetValue(serviceType, out ServiceDescriptorCacheItem descriptor))
             {
                 return TryCreateExact(descriptor.Last, serviceType, callSiteChain, DefaultSlot);
             }
@@ -117,7 +116,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private ServiceCallSite TryCreateOpenGeneric(Type serviceType, CallSiteChain callSiteChain)
         {
             if (serviceType.IsConstructedGenericType
-                && _descriptorLookup.TryGetValue(serviceType.GetGenericTypeDefinition(), out var descriptor))
+                && _descriptorLookup.TryGetValue(serviceType.GetGenericTypeDefinition(), out ServiceDescriptorCacheItem descriptor))
             {
                 return TryCreateOpenGeneric(descriptor.Last, serviceType, callSiteChain, DefaultSlot);
             }
@@ -134,23 +133,23 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 if (serviceType.IsConstructedGenericType &&
                     serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 {
-                    var itemType = serviceType.GenericTypeArguments[0];
-                    var cacheLocation = CallSiteResultCacheLocation.Root;
+                    Type itemType = serviceType.GenericTypeArguments[0];
+                    CallSiteResultCacheLocation cacheLocation = CallSiteResultCacheLocation.Root;
 
                     var callSites = new List<ServiceCallSite>();
 
                     // If item type is not generic we can safely use descriptor cache
                     if (!itemType.IsConstructedGenericType &&
-                        _descriptorLookup.TryGetValue(itemType, out var descriptors))
+                        _descriptorLookup.TryGetValue(itemType, out ServiceDescriptorCacheItem descriptors))
                     {
                         for (int i = 0; i < descriptors.Count; i++)
                         {
-                            var descriptor = descriptors[i];
+                            ServiceDescriptor descriptor = descriptors[i];
 
                             // Last service should get slot 0
-                            var slot = descriptors.Count - i - 1;
+                            int slot = descriptors.Count - i - 1;
                             // There may not be any open generics here
-                            var callSite = TryCreateExact(descriptor, itemType, callSiteChain, slot);
+                            ServiceCallSite callSite = TryCreateExact(descriptor, itemType, callSiteChain, slot);
                             Debug.Assert(callSite != null);
 
                             cacheLocation = GetCommonCacheLocation(cacheLocation, callSite.Cache.Location);
@@ -159,12 +158,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                     else
                     {
-                        var slot = 0;
+                        int slot = 0;
                         // We are going in reverse so the last service in descriptor list gets slot 0
-                        for (var i = _descriptors.Count - 1; i >= 0; i--)
+                        for (int i = _descriptors.Count - 1; i >= 0; i--)
                         {
-                            var descriptor = _descriptors[i];
-                            var callSite = TryCreateExact(descriptor, itemType, callSiteChain, slot) ??
+                            ServiceDescriptor descriptor = _descriptors[i];
+                            ServiceCallSite callSite = TryCreateExact(descriptor, itemType, callSiteChain, slot) ??
                                            TryCreateOpenGeneric(descriptor, itemType, callSiteChain, slot);
 
                             if (callSite != null)
@@ -180,7 +179,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
 
 
-                    var resultCache = ResultCache.None;
+                    ResultCache resultCache = ResultCache.None;
                     if (cacheLocation == CallSiteResultCacheLocation.Scope || cacheLocation == CallSiteResultCacheLocation.Root)
                     {
                         resultCache = new ResultCache(cacheLocation, new ServiceCacheKey(serviceType, DefaultSlot));
@@ -238,7 +237,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 Debug.Assert(descriptor.ImplementationType != null, "descriptor.ImplementationType != null");
                 var lifetime = new ResultCache(descriptor.Lifetime, serviceType, slot);
-                var closedType = descriptor.ImplementationType.MakeGenericType(serviceType.GenericTypeArguments);
+                Type closedType = descriptor.ImplementationType.MakeGenericType(serviceType.GenericTypeArguments);
                 return CreateConstructorCallSite(lifetime, serviceType, closedType, callSiteChain);
             }
 
@@ -251,7 +250,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             try
             {
                 callSiteChain.Add(serviceType, implementationType);
-                var constructors = implementationType.GetTypeInfo()
+                ConstructorInfo[] constructors = implementationType.GetTypeInfo()
                     .DeclaredConstructors
                     .Where(constructor => constructor.IsPublic)
                     .ToArray();
@@ -264,8 +263,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
                 else if (constructors.Length == 1)
                 {
-                    var constructor = constructors[0];
-                    var parameters = constructor.GetParameters();
+                    ConstructorInfo constructor = constructors[0];
+                    ParameterInfo[] parameters = constructor.GetParameters();
                     if (parameters.Length == 0)
                     {
                         return new ConstructorCallSite(lifetime, serviceType, constructor);
@@ -286,11 +285,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                 ConstructorInfo bestConstructor = null;
                 HashSet<Type> bestConstructorParameterTypes = null;
-                for (var i = 0; i < constructors.Length; i++)
+                for (int i = 0; i < constructors.Length; i++)
                 {
-                    var parameters = constructors[i].GetParameters();
+                    ParameterInfo[] parameters = constructors[i].GetParameters();
 
-                    var currentParameterCallSites = CreateArgumentCallSites(
+                    ServiceCallSite[] currentParameterCallSites = CreateArgumentCallSites(
                         serviceType,
                         implementationType,
                         callSiteChain,
@@ -318,7 +317,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                             if (!bestConstructorParameterTypes.IsSupersetOf(parameters.Select(p => p.ParameterType)))
                             {
                                 // Ambiguous match exception
-                                var message = string.Join(
+                                string message = string.Join(
                                     Environment.NewLine,
                                     SR.Format(SR.AmbiguousConstructorException, implementationType),
                                     bestConstructor,
@@ -354,12 +353,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             bool throwIfCallSiteNotFound)
         {
             var parameterCallSites = new ServiceCallSite[parameters.Length];
-            for (var index = 0; index < parameters.Length; index++)
+            for (int index = 0; index < parameters.Length; index++)
             {
-                var parameterType = parameters[index].ParameterType;
-                var callSite = GetCallSite(parameterType, callSiteChain);
+                Type parameterType = parameters[index].ParameterType;
+                ServiceCallSite callSite = GetCallSite(parameterType, callSiteChain);
 
-                if (callSite == null && ParameterDefaultValue.TryGetDefaultValue(parameters[index], out var defaultValue))
+                if (callSite == null && ParameterDefaultValue.TryGetDefaultValue(parameters[index], out object defaultValue))
                 {
                     callSite = new ConstantCallSite(parameterType, defaultValue);
                 }
@@ -449,7 +448,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                 if (_items != null)
                 {
-                    var index = _items.IndexOf(descriptor);
+                    int index = _items.IndexOf(descriptor);
                     if (index != -1)
                     {
                         return index + 1;
@@ -461,7 +460,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             public ServiceDescriptorCacheItem Add(ServiceDescriptor descriptor)
             {
-                var newCacheItem = new ServiceDescriptorCacheItem();
+                var newCacheItem = default(ServiceDescriptorCacheItem);
                 if (_item == null)
                 {
                     Debug.Assert(_items == null);

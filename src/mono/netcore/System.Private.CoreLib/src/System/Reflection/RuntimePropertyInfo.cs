@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // (C) 2001 Ximian, Inc.  http://www.ximian.com
 // Copyright (C) 2004-2005 Novell, Inc (http://www.novell.com)
@@ -25,6 +27,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -150,7 +153,7 @@ namespace System.Reflection
         {
             StringBuilder sbName = new StringBuilder(PropertyType.FormatTypeName());
 
-            sbName.Append(" ");
+            sbName.Append(' ');
             sbName.Append(Name);
 
             ParameterInfo[] pi = GetIndexParameters();
@@ -158,7 +161,7 @@ namespace System.Reflection
             {
                 sbName.Append(" [");
                 RuntimeParameterInfo.FormatParameters(sbName, pi, 0);
-                sbName.Append("]");
+                sbName.Append(']');
             }
 
             return sbName.ToString();
@@ -366,6 +369,8 @@ namespace System.Reflection
          * The idea behing this optimization is to use a pair of delegates to simulate the same effect of doing a reflection call.
          * The first delegate cast the this argument to the right type and the second does points to the target method.
          */
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "MethodInfo used with MakeGenericMethod doesn't have DynamicallyAccessedMembers generic parameters")]
         private static GetterAdapter CreateGetterDelegate(MethodInfo method)
         {
             Type[] typeVector;

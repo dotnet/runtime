@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: eventtracebase.h
 // Abstract: This module implements base Event Tracing support (excluding some of the
@@ -204,8 +203,7 @@ struct ProfilingScanContext;
 
 #define ETWOnStartup(StartEventName, EndEventName) \
     ETWTraceStartup trace##StartEventName##(Microsoft_Windows_DotNETRuntimePrivateHandle, &StartEventName, &StartupId, &EndEventName, &StartupId);
-#define ETWFireEvent(EventName) \
-    ETWTraceStartup::StartupTraceEvent(Microsoft_Windows_DotNETRuntimePrivateHandle, &EventName, &StartupId);
+#define ETWFireEvent(EventName) FireEtw##EventName(GetClrInstanceId())
 
 #ifndef FEATURE_REDHAWK
 // Headers

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -328,6 +327,40 @@ namespace System
 
                 Debug.Assert(v > 0);
                 Debug.Assert(double.IsFinite(v));
+
+                int length;
+                int decimalExponent;
+                bool result;
+
+                if (requestedDigits == -1)
+                {
+                    DiyFp w = DiyFp.CreateAndGetBoundaries(v, out DiyFp boundaryMinus, out DiyFp boundaryPlus).Normalize();
+                    result = TryRunShortest(in boundaryMinus, in w, in boundaryPlus, number.Digits, out length, out decimalExponent);
+                }
+                else
+                {
+                    DiyFp w = new DiyFp(v).Normalize();
+                    result = TryRunCounted(in w, requestedDigits, number.Digits, out length, out decimalExponent);
+                }
+
+                if (result)
+                {
+                    Debug.Assert((requestedDigits == -1) || (length == requestedDigits));
+
+                    number.Scale = length + decimalExponent;
+                    number.Digits[length] = (byte)('\0');
+                    number.DigitsCount = length;
+                }
+
+                return result;
+            }
+
+            public static bool TryRunHalf(Half value, int requestedDigits, ref NumberBuffer number)
+            {
+                Half v = Half.IsNegative(value) ? Half.Negate(value) : value;
+
+                Debug.Assert((double)v > 0);
+                Debug.Assert(Half.IsFinite(v));
 
                 int length;
                 int decimalExponent;

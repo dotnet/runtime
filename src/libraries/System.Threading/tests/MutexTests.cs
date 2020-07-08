@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -96,7 +95,7 @@ namespace System.Threading.Tests
                 Assert.Throws<UnauthorizedAccessException>(() => new Mutex(false, "Global\\" + Guid.NewGuid().ToString("N"))));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(GetValidNames))]
         public void OpenExisting(string name)
         {
@@ -225,7 +224,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(AbandonExisting_MemberData))]
         public void AbandonExisting(
             string name,
@@ -465,7 +464,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void NamedMutex_ThreadExitDisposeRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");
@@ -525,7 +524,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void NamedMutex_DisposeWhenLockedRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");

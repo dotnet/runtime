@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Xml;
@@ -11,9 +10,9 @@ namespace System.Security.Cryptography.Xml
     {
         private readonly Type[] _inputTypes = { typeof(XmlDocument) };
         private readonly Type[] _outputTypes = { typeof(XmlDocument) };
-        private XmlNamespaceManager _namespaceManager = null;
-        private XmlDocument _license = null;
-        private IRelDecryptor _relDecryptor = null;
+        private XmlNamespaceManager _namespaceManager;
+        private XmlDocument _license;
+        private IRelDecryptor _relDecryptor;
         private const string ElementIssuer = "issuer";
         private const string NamespaceUriCore = "urn:mpeg:mpeg21:2003:01-REL-R-NS";
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -2719,6 +2718,8 @@ namespace System.Drawing.Printing
         public virtual System.Drawing.Graphics? OnStartPage(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintPageEventArgs e) { throw null; }
         public virtual void OnStartPrint(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintEventArgs e) { }
     }
+    [System.ComponentModel.DefaultPropertyAttribute("DocumentName")]
+    [System.ComponentModel.DefaultEventAttribute("PrintPage")]
     public partial class PrintDocument : System.ComponentModel.Component
     {
         public PrintDocument() { }

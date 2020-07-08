@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _INTEROP_COMWRAPPERS_H_
 #define _INTEROP_COMWRAPPERS_H_
@@ -125,14 +124,13 @@ ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);
 // Class for connecting a native COM object to a managed object instance
 class NativeObjectWrapperContext
 {
-#ifdef _DEBUG
-    size_t _sentinel;
-#endif
-
     IReferenceTracker* _trackerObject;
     void* _runtimeContext;
     Volatile<BOOL> _isValidTracker;
 
+#ifdef _DEBUG
+    size_t _sentinel;
+#endif
 public: // static
     // Convert a context pointer into a NativeObjectWrapperContext.
     static NativeObjectWrapperContext* MapFromRuntimeContext(_In_ void* cxt);

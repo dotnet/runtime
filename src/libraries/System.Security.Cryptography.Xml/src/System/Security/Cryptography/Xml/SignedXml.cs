@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -17,25 +16,25 @@ namespace System.Security.Cryptography.Xml
         protected string m_strSigningKeyName;
 
         private AsymmetricAlgorithm _signingKey;
-        private XmlDocument _containingDocument = null;
-        private IEnumerator _keyInfoEnum = null;
-        private X509Certificate2Collection _x509Collection = null;
-        private IEnumerator _x509Enum = null;
+        private XmlDocument _containingDocument;
+        private IEnumerator _keyInfoEnum;
+        private X509Certificate2Collection _x509Collection;
+        private IEnumerator _x509Enum;
 
-        private bool[] _refProcessed = null;
-        private int[] _refLevelCache = null;
+        private bool[] _refProcessed;
+        private int[] _refLevelCache;
 
-        internal XmlResolver _xmlResolver = null;
-        internal XmlElement _context = null;
-        private bool _bResolverSet = false;
+        internal XmlResolver _xmlResolver;
+        internal XmlElement _context;
+        private bool _bResolverSet;
 
         private Func<SignedXml, bool> _signatureFormatValidator = DefaultSignatureFormatValidator;
         private Collection<string> _safeCanonicalizationMethods;
 
         // Built in canonicalization algorithm URIs
-        private static IList<string> s_knownCanonicalizationMethods = null;
+        private static IList<string> s_knownCanonicalizationMethods;
         // Built in transform algorithm URIs (excluding canonicalization URIs)
-        private static IList<string> s_defaultSafeTransformMethods = null;
+        private static IList<string> s_defaultSafeTransformMethods;
 
         // additional HMAC Url identifiers
         private const string XmlDsigMoreHMACMD5Url = "http://www.w3.org/2001/04/xmldsig-more#hmac-md5";
@@ -45,7 +44,7 @@ namespace System.Security.Cryptography.Xml
         private const string XmlDsigMoreHMACRIPEMD160Url = "http://www.w3.org/2001/04/xmldsig-more#hmac-ripemd160";
 
         // defines the XML encryption processing rules
-        private EncryptedXml _exml = null;
+        private EncryptedXml _exml;
 
         //
         // public constant Url identifiers most frequently used within the XML Signature classes
@@ -603,8 +602,8 @@ namespace System.Security.Cryptography.Xml
         // private methods
         //
 
-        private bool _bCacheValid = false;
-        private byte[] _digestedSignedInfo = null;
+        private bool _bCacheValid;
+        private byte[] _digestedSignedInfo;
 
         private static bool DefaultSignatureFormatValidator(SignedXml signedXml)
         {
@@ -836,7 +835,7 @@ namespace System.Security.Cryptography.Xml
 
         private class ReferenceLevelSortOrder : IComparer
         {
-            private ArrayList _references = null;
+            private ArrayList _references;
             public ReferenceLevelSortOrder() { }
 
             public ArrayList References

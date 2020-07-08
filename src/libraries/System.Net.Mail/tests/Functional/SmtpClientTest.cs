@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // SmtpClientTest.cs - Unit Test Cases for System.Net.Mail.SmtpClient
 //
@@ -309,7 +309,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31719")]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/31719")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and may not time out for low values")]
         [PlatformSpecific(~TestPlatforms.OSX)] // on OSX, not all synchronous operations (e.g. connect) can be aborted by closing the socket.
         public void TestZeroTimeout()

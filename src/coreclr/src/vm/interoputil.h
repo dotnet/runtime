@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef _H_INTEROP_UTIL
@@ -265,14 +264,12 @@ OBJECTREF AllocateComObject_ForManaged(MethodTable* pMT);
 
 //---------------------------------------------------------------------------
  //  get/load data for a given clsid
-MethodTable* GetTypeForCLSID(REFCLSID rclsid, BOOL* pfAssemblyInReg = NULL);
+MethodTable* GetTypeForCLSID(REFCLSID rclsid);
 
 
 //---------------------------------------------------------------------------
  //  get/load a value class for a given guid
-#ifdef FEATURE_CLASSIC_COMINTEROP
 MethodTable* GetValueTypeForGUID(REFCLSID guid);
-#endif
 
 DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, TypeHandle *pHndDefClass);
 DefaultInterfaceType GetDefaultInterfaceForClassWrapper(TypeHandle hndClass, TypeHandle *pHndDefClass);

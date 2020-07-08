@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -23,6 +22,7 @@ namespace System.Net.Sockets
         internal bool LastConnectFailed { get; set; }
         internal bool DualMode { get; set; }
         internal bool ExposedHandleOrUntrackedConfiguration { get; private set; }
+        internal bool PreferInlineCompletions { get; set; } = SocketAsyncEngine.InlineSocketCompletionsEnabled;
 
         internal void RegisterConnectResult(SocketError error)
         {
@@ -178,7 +178,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal bool IsDisconnected { get; private set; } = false;
+        internal bool IsDisconnected { get; private set; }
 
         internal void SetToDisconnected()
         {

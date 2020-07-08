@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -17,18 +16,18 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed class X509KeyUsageExtension : X509Extension
     {
         public X509KeyUsageExtension()
-            : base(Oids.KeyUsage)
+            : base(Oids.KeyUsageOid)
         {
             _decoded = true;
         }
 
         public X509KeyUsageExtension(AsnEncodedData encodedKeyUsage, bool critical)
-            : base(Oids.KeyUsage, encodedKeyUsage.RawData, critical)
+            : base(Oids.KeyUsageOid, encodedKeyUsage.RawData, critical)
         {
         }
 
         public X509KeyUsageExtension(X509KeyUsageFlags keyUsages, bool critical)
-            : base(Oids.KeyUsage, X509Pal.Instance.EncodeX509KeyUsageExtension(keyUsages), critical)
+            : base(Oids.KeyUsageOid, X509Pal.Instance.EncodeX509KeyUsageExtension(keyUsages), critical)
         {
         }
 

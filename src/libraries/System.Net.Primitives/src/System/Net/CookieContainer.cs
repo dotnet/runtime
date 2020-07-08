@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Collections;
@@ -107,7 +106,7 @@ namespace System.Net
         private int m_maxCookieSize = DefaultCookieLengthLimit; // Do not rename (binary serialization)
         private int m_maxCookies = DefaultCookieLimit; // Do not rename (binary serialization)
         private int m_maxCookiesPerDomain = DefaultPerDomainCookieLimit; // Do not rename (binary serialization)
-        private int m_count = 0; // Do not rename (binary serialization)
+        private int m_count; // Do not rename (binary serialization)
         private readonly string m_fqdnMyDomain = s_fqdnMyDomain; // Do not rename (binary serialization)
 
         public CookieContainer()
@@ -396,9 +395,9 @@ namespace System.Net
             }
             lock (m_domainTable.SyncRoot)
             {
-                foreach (object? item in m_domainTable)
+                foreach (object item in m_domainTable)
                 {
-                    DictionaryEntry entry = (DictionaryEntry)item!;
+                    DictionaryEntry entry = (DictionaryEntry)item;
                     if (domain == null)
                     {
                         tempDomain = (string)entry.Key;
@@ -691,9 +690,9 @@ namespace System.Net
             }
 
             bool isLocalDomain = IsLocalDomain(uri.Host);
-            foreach (Cookie? c in cookies)
+            foreach (Cookie c in cookies)
             {
-                Cookie new_cookie = c!.Clone();
+                Cookie new_cookie = c.Clone();
                 new_cookie.VerifySetDefaults(new_cookie.Variant, uri, isLocalDomain, m_fqdnMyDomain, true, true);
                 Add(new_cookie, true);
             }

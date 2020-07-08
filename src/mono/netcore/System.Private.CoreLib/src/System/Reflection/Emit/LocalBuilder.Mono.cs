@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -33,24 +35,25 @@
 //
 
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
     public sealed partial class LocalBuilder : LocalVariableInfo
     {
-        // Needs to have the same layout as RuntimeLocalVariableInfo
-        #region Sync with reflection.h
+#region Sync with MonoReflectionLocalBuilder in object-internals.h
         internal Type type;
         internal bool is_pinned;
         internal ushort position;
         private string? name;
-        #endregion
+#endregion
 
         internal ILGenerator ilgen;
         private int startOffset;
         private int endOffset;
 
+        [DynamicDependency(nameof(name))]  // Automatically keeps all previous fields too due to StructLayout
         internal LocalBuilder(Type t, ILGenerator ilgen)
         {
             this.type = t;

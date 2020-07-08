@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if DEBUG
 // Uncomment to enable runtime checks to help validate that NetEventSource isn't being misused
@@ -297,6 +296,36 @@ namespace System.Net
         [Event(CriticalFailureEventId, Level = EventLevel.Critical, Keywords = Keywords.Debug)]
         private void CriticalFailure(string thisOrContextObject, string? memberName, string? message) =>
             WriteEvent(CriticalFailureEventId, thisOrContextObject, memberName ?? MissingMember, message);
+        #endregion
+
+        #region Verbose
+        /// <summary>Logs an info message at verbose mode.</summary>
+        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
+        /// <param name="formattableString">The message to be logged.</param>
+        /// <param name="memberName">The calling member.</param>
+        [NonEvent]
+        public static void Verbose(object? thisOrContextObject, FormattableString formattableString, [CallerMemberName] string? memberName = null)
+        {
+            DebugValidateArg(thisOrContextObject);
+            DebugValidateArg(formattableString);
+            if (IsEnabled) Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(formattableString));
+        }
+
+        /// <summary>Logs an info at verbose mode.</summary>
+        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
+        /// <param name="message">The message to be logged.</param>
+        /// <param name="memberName">The calling member.</param>
+        [NonEvent]
+        public static void Verbose(object? thisOrContextObject, object message, [CallerMemberName] string? memberName = null)
+        {
+            DebugValidateArg(thisOrContextObject);
+            DebugValidateArg(message);
+            if (IsEnabled) Log.VerboseMessage(IdOf(thisOrContextObject), memberName, Format(message).ToString());
+        }
+
+        [Event(ErrorEventId, Level = EventLevel.Verbose, Keywords = Keywords.Default)]
+        private void VerboseMessage(string thisOrContextObject, string? memberName, string? message) =>
+            WriteEvent(ErrorEventId, thisOrContextObject, memberName ?? MissingMember, message);
         #endregion
 
         #region DumpBuffer

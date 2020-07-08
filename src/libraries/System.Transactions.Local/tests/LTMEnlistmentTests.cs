@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection;
@@ -165,7 +164,7 @@ namespace System.Transactions.Tests
             Assert.Equal(expectedTxStatus, tx.TransactionInformation.Status);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(5, EnlistmentOptions.None, Phase1Vote.Prepared, Phase1Vote.Prepared, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
         [InlineData(5, EnlistmentOptions.None, Phase1Vote.Prepared, Phase1Vote.ForceRollback, true, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
         public void EnlistVolatile(int volatileCount, EnlistmentOptions enlistmentOption, Phase1Vote volatilePhase1Vote, Phase1Vote lastPhase1Vote, bool commit, EnlistmentOutcome expectedEnlistmentOutcome, TransactionStatus expectedTxStatus)

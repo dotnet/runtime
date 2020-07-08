@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 
@@ -11,9 +10,6 @@
 #include "eeconfig.h"
 #include "appdomain.inl"
 #include "eventtrace.h"
-#if defined(FEATURE_APPX)
-#include "appxutil.h"
-#endif // FEATURE_APPX
 #include "../binder/inc/clrprivbindercoreclr.h"
 
 #include "clr/fs/path.h"
@@ -50,24 +46,6 @@ void QCALLTYPE AppDomainNative::CreateDynamicAssembly(QCall::ObjectHandleOnStack
 
     END_QCALL;
 }
-
-#ifdef FEATURE_APPX
-// static
-BOOL QCALLTYPE AppDomainNative::IsAppXProcess()
-{
-    QCALL_CONTRACT;
-
-    BOOL result;
-
-    BEGIN_QCALL;
-
-    result = AppX::IsAppXProcess();
-
-    END_QCALL;
-
-    return result;
-}
-#endif // FEATURE_APPX
 
 FCIMPL0(Object*, AppDomainNative::GetLoadedAssemblies)
 {

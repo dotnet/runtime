@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Concurrent;
@@ -2031,7 +2030,7 @@ namespace System.Xml.Serialization
             public MemberMapping Mapping;
             public CollectionMember Collection;
             public int FixupIndex = -1;
-            public bool MultiRef = false;
+            public bool MultiRef;
             public Action<object> Source;
             public Func<object> GetSource;
             public Action<object> ArraySource;

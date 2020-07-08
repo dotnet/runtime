@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -20,12 +19,14 @@ namespace System.Net.Http.Functional.Tests
             Assert.Throws<ArgumentNullException>(() => new StringContent(null));
         }
 
-        [Fact]
-        public async Task Ctor_EmptyString_Accept()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Ctor_EmptyString_Accept(bool readStreamAsync)
         {
             // Consider empty strings like null strings (null and empty strings should be treated equally).
             var content = new StringContent(string.Empty);
-            Stream result = await content.ReadAsStreamAsync();
+            Stream result = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(0, result.Length);
         }
 

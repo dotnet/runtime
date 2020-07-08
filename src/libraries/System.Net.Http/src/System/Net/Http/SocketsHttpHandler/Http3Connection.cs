@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,9 +45,9 @@ namespace System.Net.Http
         private int _maximumHeadersLength = int.MaxValue; // TODO: this is not yet observed by Http3Stream when buffering headers.
 
         // Once the server's streams are received, these are set to 1. Further receipt of these streams results in a connection error.
-        private int _haveServerControlStream = 0;
-        private int _haveServerQpackDecodeStream = 0;
-        private int _haveServerQpackEncodeStream = 0;
+        private int _haveServerControlStream;
+        private int _haveServerQpackDecodeStream;
+        private int _haveServerQpackEncodeStream;
 
         // Manages MAX_STREAM count from server.
         private long _maximumRequestStreams;
@@ -163,7 +162,7 @@ namespace System.Net.Http
             }
         }
 
-        public override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
 

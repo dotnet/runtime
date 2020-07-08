@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.ComponentModel;
@@ -55,7 +54,7 @@ namespace System.DirectoryServices.Protocols
     {
         private string _name;
         private string _rule;
-        private bool _order = false;
+        private bool _order;
 
         public SortKey()
         {
@@ -809,10 +808,10 @@ namespace System.DirectoryServices.Protocols
 
     public class VlvRequestControl : DirectoryControl
     {
-        private int _before = 0;
-        private int _after = 0;
-        private int _offset = 0;
-        private int _estimateCount = 0;
+        private int _before;
+        private int _after;
+        private int _offset;
+        private int _estimateCount;
         private byte[] _target;
         private byte[] _context;
 

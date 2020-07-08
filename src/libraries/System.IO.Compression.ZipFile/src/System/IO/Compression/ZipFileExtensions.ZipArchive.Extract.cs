@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 
@@ -31,7 +30,7 @@ namespace System.IO.Compression
         /// <exception cref="NotSupportedException">destinationDirectoryName is in an invalid format. </exception>
         /// <exception cref="InvalidDataException">An archive entry was not found or was corrupt.
         /// -or- An archive entry has been compressed using a compression method that is not supported.</exception>
-        ///
+        /// <param name="source">The zip archive to extract files from.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system.
         /// The directory specified must not exist. The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
@@ -61,7 +60,7 @@ namespace System.IO.Compression
         /// <exception cref="NotSupportedException">destinationDirectoryName is in an invalid format. </exception>
         /// <exception cref="InvalidDataException">An archive entry was not found or was corrupt.
         /// -or- An archive entry has been compressed using a compression method that is not supported.</exception>
-        ///
+        /// <param name="source">The zip archive to extract files from.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system.
         /// The directory specified must not exist. The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>

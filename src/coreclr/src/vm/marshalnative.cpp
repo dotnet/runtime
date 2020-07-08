@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: MarshalNative.cpp
 //
@@ -695,80 +694,6 @@ FCIMPL1(int, MarshalNative::GetHRForException, Object* eUNSAFE)
 FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP
-
-//====================================================================
-// map GUID to Type
-//====================================================================
-
-/*OBJECTREF */
-FCIMPL1(Object*, MarshalNative::GetLoadedTypeForGUID, GUID* pGuid)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pGuid, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF refRetVal = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refRetVal);
-
-    if (!pGuid)
-        COMPlusThrowArgumentNull(W("pGuid"));
-
-    AppDomain* pDomain = SystemDomain::GetCurrentDomain();
-    _ASSERTE(pDomain);
-
-    MethodTable* pMT = pDomain->LookupClass(*(pGuid));
-    if (pMT)
-        refRetVal = pMT->GetManagedClassObject();
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(refRetVal);
-}
-FCIMPLEND
-
-//====================================================================
-// map Type to ITypeInfo*
-//====================================================================
-FCIMPL1(ITypeInfo*, MarshalNative::GetITypeInfoForType, ReflectClassBaseObject* refClassUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    ITypeInfo* pTI = NULL;
-    REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF) refClassUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refClass);
-
-    // Check for null arguments.
-    if(!refClass)
-        COMPlusThrowArgumentNull(W("t"));
-
-    MethodTable *pRefMT = refClass->GetMethodTable();
-    if (pRefMT != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
-
-    TypeHandle th = refClass->GetType();
-
-    if (th.HasInstantiation())
-        COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
-
-    // Make sure the type is visible from COM.
-    if (!::IsTypeVisibleFromCom(th))
-        COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
-
-    // Retrieve the EE class from the reflection type.
-    MethodTable* pMT = th.GetMethodTable();
-    _ASSERTE(pMT);
-
-    // Retrieve the ITypeInfo for the class.
-    IfFailThrow(GetITypeInfoForEEClass(pMT, &pTI, true /* bClassInfo */));
-    _ASSERTE(pTI != NULL);
-
-    HELPER_METHOD_FRAME_END();
-    return pTI;
-}
-FCIMPLEND
-
 //====================================================================
 // return the IUnknown* for an Object.
 //====================================================================

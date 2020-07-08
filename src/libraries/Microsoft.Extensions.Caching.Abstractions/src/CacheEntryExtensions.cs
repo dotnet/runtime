@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Microsoft.Extensions.Primitives;
@@ -180,12 +179,12 @@ namespace Microsoft.Extensions.Caching.Memory
             entry.Priority = options.Priority;
             entry.Size = options.Size;
 
-            foreach (var expirationToken in options.ExpirationTokens)
+            foreach (IChangeToken expirationToken in options.ExpirationTokens)
             {
                 entry.AddExpirationToken(expirationToken);
             }
 
-            foreach (var postEvictionCallback in options.PostEvictionCallbacks)
+            foreach (PostEvictionCallbackRegistration postEvictionCallback in options.PostEvictionCallbacks)
             {
                 entry.RegisterPostEvictionCallback(postEvictionCallback.EvictionCallback, postEvictionCallback.State);
             }

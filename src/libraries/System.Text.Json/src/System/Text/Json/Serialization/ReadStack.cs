@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -82,8 +81,7 @@ namespace System.Text.Json
 
         public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
-
+            JsonClassInfo jsonClassInfo = options.GetOrAddClassForRootType(type);
             Current.JsonClassInfo = jsonClassInfo;
 
             // The initial JsonPropertyInfo will be used to obtain the converter.

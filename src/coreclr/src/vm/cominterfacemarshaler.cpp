@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ComInterfaceMarshaler.cpp
 //
@@ -104,8 +103,7 @@ VOID COMInterfaceMarshaler::InitializeObjectClass(IUnknown *pIncomingIP)
     }
     CONTRACTL_END;
 
-    // If we are in an APPX process we do not check for IProvideClassInfo.
-    if (m_typeHandle.IsNull() && !AppX::IsAppXProcess())
+    if (m_typeHandle.IsNull())
     {
         EX_TRY
         {

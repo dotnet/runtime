@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Diagnostics;
@@ -41,7 +40,6 @@ namespace System.Net
         }
 
 #if DEBUG
-        internal object? _debugAsyncChain = null;    // Optionally used to track chains of async calls.
         private bool _protectState;                 // Used by ContextAwareResult to prevent some calls.
 #endif
 

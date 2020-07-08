@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Collections;
@@ -16,7 +15,7 @@ namespace System.DirectoryServices.ActiveDirectory
         private ArrayList _binaryData = new ArrayList();
         private Hashtable _excludedNameTime = new Hashtable();
         private ArrayList _binaryDataTime = new ArrayList();
-        internal bool retrieved = false;
+        internal bool retrieved;
 
         internal ForestTrustRelationshipInformation(DirectoryContext context, string source, DS_DOMAIN_TRUSTS unmanagedTrust, TrustType type)
         {

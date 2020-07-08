@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -202,7 +201,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets the empty instance.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.Clear()
         {
             return this.Clear();
@@ -510,7 +508,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.Add(TKey key, TValue value)
         {
             return this.Add(key, value);
@@ -519,7 +516,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.SetItem(TKey key, TValue value)
         {
             return this.SetItem(key, value);
@@ -538,7 +534,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.AddRange(IEnumerable<KeyValuePair<TKey, TValue>> pairs)
         {
             return this.AddRange(pairs);
@@ -547,7 +542,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.RemoveRange(IEnumerable<TKey> keys)
         {
             return this.RemoveRange(keys);
@@ -556,7 +550,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.Remove(TKey key)
         {
             return this.Remove(key);
@@ -827,7 +820,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// An <see cref="IEnumerator"/> object that can be used to iterate through the collection.
         /// </returns>
-        [ExcludeFromCodeCoverage]
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();

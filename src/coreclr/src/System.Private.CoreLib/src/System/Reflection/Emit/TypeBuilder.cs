@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -400,7 +399,10 @@ namespace System.Reflection.Emit
         private readonly string? m_strName;
         private readonly string? m_strNameSpace;
         private string? m_strFullQualName;
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? m_typeParent;
+
         private List<Type>? m_typeInterfaces;
         private readonly TypeAttributes m_iAttr;
         private GenericParameterAttributes m_genParamAttributes;
@@ -415,6 +417,8 @@ namespace System.Reflection.Emit
         private Type? m_enumUnderlyingType;
         internal bool m_isHiddenGlobalType;
         private bool m_hasBeenCreated;
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private RuntimeType m_bakedRuntimeType = null!;
 
         private readonly int m_genParamPos;
@@ -465,7 +469,7 @@ namespace System.Reflection.Emit
         }
 
         internal TypeBuilder(
-            string fullname, TypeAttributes attr, Type? parent, Type[]? interfaces, ModuleBuilder module,
+            string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, ModuleBuilder module,
             PackingSize iPackingSize, int iTypeSize, TypeBuilder? enclosingType)
         {
             if (fullname == null)
@@ -1588,7 +1592,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent, Type[]? interfaces)
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
         {
             lock (SyncRoot)
             {
@@ -1600,7 +1604,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent)
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             lock (SyncRoot)
             {
@@ -1616,7 +1620,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent, int typeSize)
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, int typeSize)
         {
             lock (SyncRoot)
             {
@@ -1624,7 +1628,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent, PackingSize packSize)
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize)
         {
             lock (SyncRoot)
             {
@@ -1632,7 +1636,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent, PackingSize packSize, int typeSize)
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize, int typeSize)
         {
             lock (SyncRoot)
             {
@@ -1640,7 +1644,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private TypeBuilder DefineNestedTypeNoLock(string name, TypeAttributes attr, Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize)
+        private TypeBuilder DefineNestedTypeNoLock(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize)
         {
             return new TypeBuilder(name, attr, parent, interfaces, m_module, packSize, typeSize, this);
         }
@@ -2061,7 +2065,7 @@ namespace System.Reflection.Emit
 
         public PackingSize PackingSize => m_iPackingSize;
 
-        public void SetParent(Type? parent)
+        public void SetParent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             ThrowIfCreated();
 
@@ -2091,7 +2095,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void AddInterfaceImplementation(Type interfaceType)
+        public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
         {
             if (interfaceType == null)
             {

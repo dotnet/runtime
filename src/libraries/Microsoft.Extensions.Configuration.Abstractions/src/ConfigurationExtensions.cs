@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -55,16 +54,16 @@ namespace Microsoft.Extensions.Configuration
             var stack = new Stack<IConfiguration>();
             stack.Push(configuration);
             var rootSection = configuration as IConfigurationSection;
-            var prefixLength = (makePathsRelative && rootSection != null) ? rootSection.Path.Length + 1 : 0;
+            int prefixLength = (makePathsRelative && rootSection != null) ? rootSection.Path.Length + 1 : 0;
             while (stack.Count > 0)
             {
-                var config = stack.Pop();
+                IConfiguration config = stack.Pop();
                 // Don't include the sections value if we are removing paths, since it will be an empty key
                 if (config is IConfigurationSection section && (!makePathsRelative || config != configuration))
                 {
                     yield return new KeyValuePair<string, string>(section.Path.Substring(prefixLength), section.Value);
                 }
-                foreach (var child in config.GetChildren())
+                foreach (IConfigurationSection child in config.GetChildren())
                 {
                     stack.Push(child);
                 }

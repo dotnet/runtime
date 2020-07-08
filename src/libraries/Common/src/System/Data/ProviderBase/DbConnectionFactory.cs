@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,7 +21,7 @@ namespace System.Data.ProviderBase
 
         // s_pendingOpenNonPooled is an array of tasks used to throttle creation of non-pooled connections to
         // a maximum of Environment.ProcessorCount at a time.
-        private static uint s_pendingOpenNonPooledNext = 0;
+        private static uint s_pendingOpenNonPooledNext;
         private static readonly Task<DbConnectionInternal>[] s_pendingOpenNonPooled = new Task<DbConnectionInternal>[Environment.ProcessorCount];
         private static Task<DbConnectionInternal> s_completedTask;
 

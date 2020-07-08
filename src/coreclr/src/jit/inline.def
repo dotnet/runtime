@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Macro template for inline observations
 //
@@ -28,10 +27,8 @@ INLINE_OBSERVATION(UNUSED_INITIAL,            bool,   "unused initial observatio
 
 INLINE_OBSERVATION(BAD_ARGUMENT_NUMBER,       bool,   "invalid argument number",              FATAL,       CALLEE)
 INLINE_OBSERVATION(BAD_LOCAL_NUMBER,          bool,   "invalid local number",                 FATAL,       CALLEE)
-INLINE_OBSERVATION(CLASS_INIT_FAILURE,        bool,   "class init failed",                    FATAL,       CALLEE)
 INLINE_OBSERVATION(COMPILATION_ERROR,         bool,   "compilation error",                    FATAL,       CALLEE)
 INLINE_OBSERVATION(EXCEEDS_THRESHOLD,         bool,   "exceeds profit threshold",             FATAL,       CALLEE)
-INLINE_OBSERVATION(HAS_DELEGATE_INVOKE,       bool,   "delegate invoke",                      FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_EH,                    bool,   "has exception handling",               FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_ENDFILTER,             bool,   "has endfilter",                        FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_ENDFINALLY,            bool,   "has endfinally",                       FATAL,       CALLEE)
@@ -120,7 +117,7 @@ INLINE_OBSERVATION(ARG_NO_BASH_TO_REF,        bool,   "argument can't bash to re
 INLINE_OBSERVATION(ARG_TYPES_INCOMPATIBLE,    bool,   "argument types incompatible",          FATAL,       CALLSITE)
 INLINE_OBSERVATION(CANT_EMBED_PINVOKE_COOKIE, bool,   "can't embed pinvoke cookie",           FATAL,       CALLSITE)
 INLINE_OBSERVATION(CANT_EMBED_VARARGS_COOKIE, bool,   "can't embed varargs cookie",           FATAL,       CALLSITE)
-INLINE_OBSERVATION(CLASS_INIT_FAILURE_SPEC,   bool,   "speculative class init failed",        FATAL,       CALLSITE)
+INLINE_OBSERVATION(CANT_CLASS_INIT,           bool,   "can't class init",                     FATAL,       CALLSITE)
 INLINE_OBSERVATION(COMPILATION_ERROR,         bool,   "compilation error",                    FATAL,       CALLSITE)
 INLINE_OBSERVATION(COMPILATION_FAILURE,       bool,   "failed to compile",                    FATAL,       CALLSITE)
 INLINE_OBSERVATION(CROSS_BOUNDARY_CALLI,      bool,   "cross-boundary calli",                 FATAL,       CALLSITE)

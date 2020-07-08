@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -89,7 +88,7 @@ namespace System.Xml.Xsl.XsltOld
         private RootAction _rootAction;
         private List<TheQuery> _queryStore;
         private readonly QueryBuilder _queryBuilder = new QueryBuilder();
-        private int _rtfCount = 0;
+        private int _rtfCount;
 
         // Used to load Built In templates
         public bool AllowBuiltInMode;

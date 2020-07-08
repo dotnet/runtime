@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+    <!-- Disable for ilasm round-trip test failure: https://github.com/dotnet/runtime/issues/38506 -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ver_fg_13.il" />
+  </ItemGroup>
+</Project>

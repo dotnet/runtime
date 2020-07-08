@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal.h"
 #include "hostfxr.h"
@@ -9,7 +8,7 @@
 #include "fx_ver.h"
 #include "trace.h"
 #include "utils.h"
-#include "hostfxr_resolver_t.h"
+#include "hostfxr_resolver.h"
 
 #if defined(FEATURE_APPHOST)
 #include "bundle_marker.h"

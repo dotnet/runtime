@@ -52,10 +52,10 @@ jobs:
       continueOnError: true
 
     # Compute job name from template parameters
-    ${{ if eq(parameters.testGroup, 'innerloop') }}:
+    ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
       displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
-    ${{ if ne(parameters.testGroup, 'innerloop') }}:
+    ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
       displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
 
@@ -73,10 +73,10 @@ jobs:
         - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
 
-    ${{ if eq(parameters.testGroup, 'innerloop') }}:
+    ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       timeoutInMinutes: 90
 
-    ${{ if ne(parameters.testGroup, 'innerloop') }}:
+    ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       timeoutInMinutes: 160
 
     steps:

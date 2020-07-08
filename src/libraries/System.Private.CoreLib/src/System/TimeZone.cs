@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -26,7 +25,7 @@ namespace System
     [Obsolete("System.TimeZone has been deprecated.  Please investigate the use of System.TimeZoneInfo instead.")]
     public abstract class TimeZone
     {
-        private static volatile TimeZone? currentTimeZone = null;
+        private static volatile TimeZone? currentTimeZone;
 
         // Private object for locking instead of locking on a public type for SQL reliability work.
         private static object? s_InternalSyncObject;

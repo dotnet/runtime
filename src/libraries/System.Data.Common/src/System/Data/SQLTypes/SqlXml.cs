@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Xml;
@@ -10,7 +9,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Text;
 using System.Reflection;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.SqlTypes
 {
@@ -128,7 +127,6 @@ namespace System.Data.SqlTypes
 
         private static MethodInfo CreateSqlReaderMethodInfo
         {
-            [PreserveDependency("CreateSqlReader", "System.Xml.XmlReader", "System.Private.Xml")]
             get
             {
                 if (s_createSqlReaderMethodInfo == null)

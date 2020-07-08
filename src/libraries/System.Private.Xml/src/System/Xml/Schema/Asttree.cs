@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 namespace System.Xml.Schema
@@ -89,7 +88,7 @@ namespace System.Xml.Schema
         // equal & ! attribute then move
         // "a/b/c"     pointer from a move to b
         // return true if reach c and c is an element and c is the axis
-        internal bool MoveToChild(string name, string URN, int depth, ForwardAxis parent)
+        internal bool MoveToChild(string name, string? URN, int depth, ForwardAxis parent)
         {
             // an attribute can never be the same as an element
             if (Asttree.IsAttribute(this.curNode))
@@ -186,7 +185,7 @@ namespace System.Xml.Schema
 
         // used in the beginning of .//  and MoveToChild
         // didn't consider Self, only consider name
-        internal static bool Equal(string thisname, string thisURN, string name, string URN)
+        internal static bool Equal(string thisname, string? thisURN, string name, string? URN)
         {
             // which means "b" in xpath, no namespace should be specified
             if (thisURN == null)
@@ -211,7 +210,7 @@ namespace System.Xml.Schema
 
         // "a/b/c"     pointer from b move to a
         // needn't change even tree structure changes
-        internal void MoveToParent(string name, string URN, int depth)
+        internal void MoveToParent(string name, string? URN, int depth)
         {
             if (_subtree.IsSelfAxis)
             {
@@ -232,7 +231,7 @@ namespace System.Xml.Schema
 
         // "a/b/c"     pointer from a move to b
         // return true if reach c
-        internal bool MoveToChild(string name, string URN, int depth)
+        internal bool MoveToChild(string name, string? URN, int depth)
         {
             bool result = false;
             // push first
@@ -253,7 +252,7 @@ namespace System.Xml.Schema
         // attribute can only at the topaxis part
         // dealing with attribute only here, didn't go into stack element at all
         // stack element only deal with moving the pointer around elements
-        internal bool MoveToAttribute(string name, string URN, int depth)
+        internal bool MoveToAttribute(string name, string? URN, int depth)
         {
             if (!_subtree.IsAttribute)
             {
@@ -324,7 +323,7 @@ namespace System.Xml.Schema
             _isActive = true;
         }
 
-        public bool MoveToStartElement(string localname, string URN)
+        public bool MoveToStartElement(string localname, string? URN)
         {
             if (!_isActive)
             {
@@ -360,7 +359,7 @@ namespace System.Xml.Schema
         }
 
         // return result doesn't have any meaning until in SelectorActiveAxis
-        public virtual bool EndElement(string localname, string URN)
+        public virtual bool EndElement(string localname, string? URN)
         {
             // need to think if the early quitting will affect reactivating....
             if (_currentDepth == 0)
@@ -381,12 +380,13 @@ namespace System.Xml.Schema
         }
 
         // Secondly field interface
-        public bool MoveToAttribute(string localname, string URN)
+        public bool MoveToAttribute(string localname, string? URN)
         {
             if (!_isActive)
             {
                 return false;
             }
+
             bool result = false;
             for (int i = 0; i < _axisStack.Count; ++i)
             {
@@ -395,6 +395,7 @@ namespace System.Xml.Schema
                     result = true;
                 }
             }
+
             return result;
         }
     }

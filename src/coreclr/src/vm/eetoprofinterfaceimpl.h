@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // EEToProfInterfaceImpl.h
 //
@@ -22,6 +21,8 @@
 #include "shash.h"
 #include "eventtracebase.h"
 #include "gcinterface.h"
+
+class EventPipeProvider;
 
 class SimpleRWLock;
 
@@ -485,6 +486,25 @@ public:
 
     HRESULT GetAssemblyReferences(LPCWSTR wszAssemblyPath, IAssemblyBindingClosure * pClosure, AssemblyReferenceClosureWalkContextForProfAPI * pContext);
 
+    //
+    // Event Pipe
+    //
+    HRESULT EventPipeEventDelivered(
+        EventPipeProvider *provider,
+        DWORD eventId,
+        DWORD eventVersion,
+        ULONG cbMetadataBlob,
+        LPCBYTE metadataBlob,
+        ULONG cbEventData,
+        LPCBYTE eventData,
+        LPCGUID pActivityId,
+        LPCGUID pRelatedActivityId,
+        Thread *pEventThread,
+        ULONG numStackFrames,
+        UINT_PTR stackFrames[]);
+
+    HRESULT EventPipeProviderCreated(EventPipeProvider *provider);
+
 private:
 
     //
@@ -546,15 +566,16 @@ private:
 
     // Pointer to the profiler's implementation of the callback interface(s).
     // Profilers MUST support ICorProfilerCallback2.
-    // Profilers MAY optionally support ICorProfilerCallback3,4,5,6,7,8,9
-    ICorProfilerCallback2 * m_pCallback2;
-    ICorProfilerCallback3 * m_pCallback3;
-    ICorProfilerCallback4 * m_pCallback4;
-    ICorProfilerCallback5 * m_pCallback5;
-    ICorProfilerCallback6 * m_pCallback6;
-    ICorProfilerCallback7 * m_pCallback7;
-    ICorProfilerCallback8 * m_pCallback8;
-    ICorProfilerCallback9 * m_pCallback9;
+    // Profilers MAY optionally support ICorProfilerCallback3,4,5,6,7,8,9,10
+    ICorProfilerCallback2  * m_pCallback2;
+    ICorProfilerCallback3  * m_pCallback3;
+    ICorProfilerCallback4  * m_pCallback4;
+    ICorProfilerCallback5  * m_pCallback5;
+    ICorProfilerCallback6  * m_pCallback6;
+    ICorProfilerCallback7  * m_pCallback7;
+    ICorProfilerCallback8  * m_pCallback8;
+    ICorProfilerCallback9  * m_pCallback9;
+    ICorProfilerCallback10 * m_pCallback10;
 
     HMODULE                 m_hmodProfilerDLL;
 

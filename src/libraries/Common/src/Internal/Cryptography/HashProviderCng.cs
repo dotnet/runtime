@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -81,22 +80,9 @@ namespace Internal.Cryptography
             }
         }
 
-        public sealed override byte[] FinalizeHashAndReset()
+        public override int FinalizeHashAndReset(Span<byte> destination)
         {
-            var hash = new byte[_hashSize];
-            bool success = TryFinalizeHashAndReset(hash, out int bytesWritten);
-            Debug.Assert(success);
-            Debug.Assert(hash.Length == bytesWritten);
-            return hash;
-        }
-
-        public override bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
-        {
-            if (destination.Length < _hashSize)
-            {
-                bytesWritten = 0;
-                return false;
-            }
+            Debug.Assert(destination.Length >= _hashSize);
 
             Debug.Assert(_hHash != null);
             NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(_hHash, destination, _hashSize, 0);
@@ -105,9 +91,27 @@ namespace Internal.Cryptography
                 throw Interop.BCrypt.CreateCryptographicException(ntStatus);
             }
 
-            bytesWritten = _hashSize;
             ResetHashObject();
-            return true;
+            return _hashSize;
+        }
+
+        public override int GetCurrentHash(Span<byte> destination)
+        {
+            Debug.Assert(destination.Length >= _hashSize);
+
+            Debug.Assert(_hHash != null);
+
+            using (SafeBCryptHashHandle tmpHash = Interop.BCrypt.BCryptDuplicateHash(_hHash))
+            {
+                NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(tmpHash, destination, _hashSize, 0);
+
+                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                {
+                    throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                }
+
+                return _hashSize;
+            }
         }
 
         public sealed override void Dispose(bool disposing)

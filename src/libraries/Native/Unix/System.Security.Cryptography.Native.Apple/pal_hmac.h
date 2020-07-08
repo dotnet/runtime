@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -45,3 +44,10 @@ Complete the HMAC and copy the result into pbOutput.
 Returns 1 on success, 0 on error.
 */
 PALEXPORT int32_t AppleCryptoNative_HmacFinal(HmacCtx* ctx, uint8_t* pbOutput);
+
+/*
+Computes the HMAC of the accumulated data in ctx without resetting the state.
+
+Returns 1 on success, 0 on error.
+*/
+PALEXPORT int32_t AppleCryptoNative_HmacCurrent(const HmacCtx* ctx, uint8_t* pbOutput);
