@@ -3619,7 +3619,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
                                            pParamTokenArray,
                                            nlType,
                                            nlFlags,
-                                           0,
+                                           1, // Indicating as the first argument
                                            pss,
                                            isInstanceMethod,
                                            argOffset,
