@@ -3662,8 +3662,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 	mb->method->save_lmf = 1;
 
-	gboolean unmanaged_callers_only = FALSE;
-
 	if (G_UNLIKELY (pinvoke && mono_method_has_unmanaged_callers_only_attribute (method))) {
 		/* emit a wrapper that throws a NotSupportedException */
 		get_marshal_cb ()->mb_emit_exception (mb, "System", "NotSupportedException", "Method canot be marked with both  DllImportAttribute and UnmanagedCallersOnlyAttribute");
