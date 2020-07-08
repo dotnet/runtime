@@ -199,9 +199,35 @@ namespace System.Net
             // Add Encoding header, if any. e.g. =?encoding?b?
             WriteState.AppendHeader();
 
-            for (int i = 0; i < count; ++i)
+            if (_writeState.Encoding == null)
             {
-                AppendEncodedCodepoint(buffer[offset + i], shouldAppendSpaceToCRLF);
+                for (int i = 0; i < count; ++i)
+                {
+                    AppendEncodedCodepoint(buffer[offset + i], shouldAppendSpaceToCRLF);
+                }
+            }
+            else
+            {
+                // TODO: find way not to transform bytes back and forth
+                char[] chars = _writeState.Encoding.GetChars(buffer, offset, count);
+                for (int i = 0; i < chars.Length; ++i)
+                {
+                    if (char.IsSurrogate(chars[i]))
+                    {
+                        if (!char.IsSurrogatePair(chars[i], chars[i + 1]))
+                        {
+                            throw new ArgumentException(nameof(buffer));
+                        }
+                        byte[] bytes = _writeState.Encoding.GetBytes(chars, i, 2);
+                        AppendEncodedCodepoint(bytes, shouldAppendSpaceToCRLF);
+                        ++i;
+                    }
+                    else
+                    {
+                        byte[] bytes = _writeState.Encoding.GetBytes(chars, i, 1);
+                        AppendEncodedCodepoint(bytes, shouldAppendSpaceToCRLF);
+                    }
+                }
             }
 
             if (dontDeferFinalBytes)
@@ -214,6 +240,25 @@ namespace System.Net
             return count;
         }
 
+        private int AppendEncodedCodepoint(byte[] bytes, bool shouldAppendSpaceToCRLF)
+        {
+            if (bytes.Length != 1 && bytes.Length != 2 && bytes.Length != 4)
+            {
+                throw new ArgumentException(nameof(bytes));
+            }
+
+            if (LineBreakNeeded(bytes.Length)) {
+                AppendPadding();
+                WriteState.AppendCRLF(shouldAppendSpaceToCRLF);
+            }
+            for (int i = 0; i < bytes.Length; ++i)
+            {
+                ApppendEncodedByte(bytes[i]);
+            }
+
+            return bytes.Length;
+        }
+
         private int AppendEncodedCodepoint(byte b, bool shouldAppendSpaceToCRLF)
         {
             if (LineBreakNeeded(1)) {
@@ -223,28 +268,6 @@ namespace System.Net
             ApppendEncodedByte(b);
             return 1;
         }
-        private int AppendEncodedCodepoint(byte b0, byte b1, bool shouldAppendSpaceToCRLF)
-        {
-            if (LineBreakNeeded(2)) {
-                AppendPadding();
-                WriteState.AppendCRLF(shouldAppendSpaceToCRLF);
-            }
-            ApppendEncodedByte(b0);
-            ApppendEncodedByte(b1);
-            return 2;
-        }
-        private int AppendEncodedCodepoint(byte b0, byte b1, byte b2, byte b3, bool shouldAppendSpaceToCRLF)
-        {
-            if (LineBreakNeeded(4)) {
-                AppendPadding();
-                WriteState.AppendCRLF(shouldAppendSpaceToCRLF);
-            }
-            ApppendEncodedByte(b0);
-            ApppendEncodedByte(b1);
-            ApppendEncodedByte(b2);
-            ApppendEncodedByte(b3);
-            return 4;
-        }
 
         private bool LineBreakNeeded(int numberOfBytesToAppend)
         {
@@ -253,19 +276,27 @@ namespace System.Net
             }
 
             int bytesLeftInCurrentBlock = 0;
+            int numberOfCharsLeftInCurrentBlock = 0;
             switch (WriteState.Padding)
             {
                 case 2: // 1 byte was encoded from 3
                     bytesLeftInCurrentBlock = 2;
+                    numberOfCharsLeftInCurrentBlock = 3;
                     break;
                 case 1: // 2 bytes were encoded from 3
                     bytesLeftInCurrentBlock = 1;
+                    numberOfCharsLeftInCurrentBlock = 2;
                     break;
             }
 
             int numberOfBytesInNewBlock = numberOfBytesToAppend - bytesLeftInCurrentBlock;
+            if (numberOfBytesInNewBlock <= 0)
+            {
+                return false;
+            }
+
             int numberOfBlocksToAppend = numberOfBytesInNewBlock / 3 + (numberOfBytesInNewBlock % 3 == 0 ? 0 : 1);
-            int numberOfCharsToAppend = numberOfBlocksToAppend * SizeOfBase64EncodedBlock;
+            int numberOfCharsToAppend = numberOfCharsLeftInCurrentBlock + numberOfBlocksToAppend * SizeOfBase64EncodedBlock;
 
             return WriteState.CurrentLineLength + numberOfCharsToAppend + _writeState.FooterLength > _lineLength;
         }

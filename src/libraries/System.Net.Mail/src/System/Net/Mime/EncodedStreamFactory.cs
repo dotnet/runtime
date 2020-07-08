@@ -26,6 +26,7 @@ namespace System.Net.Mime
             if (useBase64Encoding)
             {
                 writeState = new Base64WriteStateInfo(InitialBufferSize, header, footer, DefaultMaxLineLength, headerTextLength);
+                ((Base64WriteStateInfo)writeState).Encoding = encoding;
                 return new Base64Stream((Base64WriteStateInfo)writeState);
             }
 
