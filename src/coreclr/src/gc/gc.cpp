@@ -2085,7 +2085,6 @@ void qsort1(uint8_t** low, uint8_t** high, unsigned int depth);
 
 void* virtual_alloc (size_t size);
 void* virtual_alloc (size_t size, bool use_large_pages_p, uint16_t numa_node = NUMA_NODE_UNDEFINED);
-void virtual_free (void* add, size_t size);
 
 /* per heap static initialization */
 #if defined(BACKGROUND_GC) && !defined(MULTIPLE_HEAPS)
@@ -3938,7 +3937,7 @@ struct initial_memory_details
         ALLATONCE = 1,
         EACH_GENERATION,
         EACH_BLOCK,
-        ALLATONCE_SEPARATED_POH
+        ALLATONCE_SEPARATED_POH,
         EACH_NUMA_NODE
     };
 
@@ -4034,6 +4033,7 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
     // figure out number of NUMA nodes and allocate additional table for NUMA local reservation
     memory_details.numa_reserved_block_count = 0;
     memory_details.numa_reserved_block_table = nullptr;
+    int numa_node_count = 0;
     if (heap_no_to_numa_node != nullptr)
     {
         uint16_t highest_numa_node = 0;
@@ -4047,7 +4047,8 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
 
         assert (highest_numa_node < MAX_SUPPORTED_CPUS);
 
-        memory_details.numa_reserved_block_count = highest_numa_node + 1;
+        numa_node_count = highest_numa_node + 1;
+        memory_details.numa_reserved_block_count = numa_node_count * (1 + separated_poh_p);
         memory_details.numa_reserved_block_table = new (nothrow) numa_reserved_block[memory_details.numa_reserved_block_count];
         if (memory_details.numa_reserved_block_table == nullptr)
         {
@@ -4062,6 +4063,7 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
         // figure out how much to reserve on each NUMA node
         // note this can be very different between NUMA nodes, depending on
         // which processors our heaps are associated with
+        size_t merged_pinned_size = separated_poh_p ? 0 : pinned_size;
         for (int heap_no = 0; heap_no < num_heaps; heap_no++)
         {
             uint16_t heap_numa_node = heap_no_to_numa_node[heap_no];
@@ -4069,19 +4071,29 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
             numa_reserved_block * block = &memory_details.numa_reserved_block_table[heap_numa_node];
 
             // add the size required for this heap
-            block->block_size += normal_size + large_size + pinned_size;
+            block->block_size += normal_size + large_size + merged_pinned_size;
+
+            if (separated_poh_p)
+            {
+                numa_reserved_block* pinned_block = &memory_details.numa_reserved_block_table[numa_node_count + heap_numa_node];
+
+                // add the pinned size required for this heap
+                pinned_block->block_size += pinned_size;
+            }
         }
 
         // reserve the appropriate size on each NUMA node
         bool failure = false;
-        for (int numa_node = 0; numa_node < memory_details.numa_reserved_block_count; numa_node++)
+        for (int block_index = 0; block_index < memory_details.numa_reserved_block_count; block_index++)
         {
-            numa_reserved_block * block = &memory_details.numa_reserved_block_table[numa_node];
+            numa_reserved_block * block = &memory_details.numa_reserved_block_table[block_index];
 
             if (block->block_size == 0)
                 continue;
 
-            block->memory_base = (uint8_t*)virtual_alloc (block->block_size, use_large_pages_p, numa_node);
+            int numa_node = block_index % numa_node_count;
+            bool pinned_block = block_index >= numa_node_count;
+            block->memory_base = (uint8_t*)virtual_alloc (block->block_size, use_large_pages_p && !pinned_block, numa_node);
             if (block->memory_base == nullptr)
             {
                 dprintf(2, ("failed to reserve %Id bytes for on NUMA node %u", block->block_size, numa_node));
@@ -4100,9 +4112,9 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
             // if we had any failures, undo the work done so far
             // we will instead use one of the other allocation patterns
             // we could try to use what we did succeed to reserve, but that gets complicated
-            for (int numa_node = 0; numa_node < memory_details.numa_reserved_block_count; numa_node++)
+            for (int block_index = 0; block_index < memory_details.numa_reserved_block_count; block_index++)
             {
-                numa_reserved_block * block = &memory_details.numa_reserved_block_table[numa_node];
+                numa_reserved_block * block = &memory_details.numa_reserved_block_table[block_index];
 
                 if (block->memory_base != nullptr)
                 {
@@ -4121,12 +4133,17 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
             {
                 numa_reserved_block * block = &memory_details.numa_reserved_block_table[numa_node];
 
+                numa_reserved_block* pinned_block = separated_poh_p ? &memory_details.numa_reserved_block_table[numa_node_count + numa_node] : nullptr;
+
                 // if the block's size is 0, there can be no heaps on this NUMA node
                 if (block->block_size == 0)
+                {
+                    assert((pinned_block == nullptr) || (pinned_block->block_size == 0));
                     continue;
+                }
 
                 uint8_t* memory_base = block->memory_base;
-
+                uint8_t* pinned_memory_base = ((pinned_block == nullptr) ? nullptr : pinned_block->memory_base);
                 for (int heap_no = 0; heap_no < num_heaps; heap_no++)
                 {
                     uint16_t heap_numa_node = heap_no_to_numa_node[heap_no];
@@ -4143,11 +4160,20 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
                     memory_details.initial_large_heap[heap_no].memory_base = memory_base;
                     memory_base += large_size;
 
-                    memory_details.initial_pinned_heap[heap_no].memory_base = memory_base;
-                    memory_base += pinned_size;
+                    if (separated_poh_p)
+                    {
+                        memory_details.initial_pinned_heap[heap_no].memory_base = pinned_memory_base;
+                        pinned_memory_base += pinned_size;
+                    }
+                    else
+                    {
+                        memory_details.initial_pinned_heap[heap_no].memory_base = memory_base;
+                        memory_base += pinned_size;
+                    }
                 }
                 // sanity check - we should be at the end of the memory block for this NUMA node
                 assert (memory_base == block->memory_base + block->block_size);
+                assert ((pinned_block == nullptr) || (pinned_memory_base == pinned_block->memory_base + pinned_block->block_size));
             }
             memory_details.allocation_pattern = initial_memory_details::EACH_NUMA_NODE;
             reserve_success = TRUE;
@@ -4156,92 +4182,69 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
 
     if (!reserve_success)
     {
-        size_t requestedMemory = memory_details.block_count * (normal_size + large_size + pinned_size);
+        size_t temp_pinned_size = (separated_poh_p ? 0 : pinned_size);
+        size_t separate_pinned_size = memory_details.block_count * pinned_size;
+        size_t requestedMemory = memory_details.block_count * (normal_size + large_size + temp_pinned_size);
 
-    uint8_t* allatonce_block = (uint8_t*)virtual_alloc (requestedMemory, use_large_pages_p);
-    uint8_t* separated_poh_block = nullptr;
-    if (allatonce_block && separated_poh_p)
-    {
-        separated_poh_block = (uint8_t*)virtual_alloc (separate_pinned_size, false);
-        if (!separated_poh_block)
+        uint8_t* allatonce_block = (uint8_t*)virtual_alloc(requestedMemory, use_large_pages_p);
+        uint8_t* separated_poh_block = nullptr;
+        if (allatonce_block && separated_poh_p)
         {
-            virtual_free (allatonce_block, requestedMemory);
-            allatonce_block = nullptr;
+            separated_poh_block = (uint8_t*)virtual_alloc(separate_pinned_size, false);
+            if (!separated_poh_block)
+            {
+                virtual_free(allatonce_block, requestedMemory);
+                allatonce_block = nullptr;
+            }
         }
-    }
-    if (allatonce_block)
-    {
-        if (separated_poh_p)
-        {
-            g_gc_lowest_address = min (allatonce_block, separated_poh_block);
-            g_gc_highest_address = max ((allatonce_block + requestedMemory), (separated_poh_block + separate_pinned_size));
-            memory_details.allocation_pattern = initial_memory_details::ALLATONCE_SEPARATED_POH;
-        }
-        else
-        {
-            g_gc_lowest_address = allatonce_block;
-            g_gc_highest_address = allatonce_block + requestedMemory;
-            memory_details.allocation_pattern = initial_memory_details::ALLATONCE;
-        }
-        uint8_t* allatonce_block = (uint8_t*)virtual_alloc (requestedMemory, use_large_pages_p);
         if (allatonce_block)
         {
-            g_gc_lowest_address = allatonce_block;
-            g_gc_highest_address = allatonce_block + requestedMemory;
-
-            memory_details.allocation_pattern = initial_memory_details::ALLATONCE;
-
-        for (int i = 0; i < memory_details.block_count; i++)
-        {
-            memory_details.initial_normal_heap[i].memory_base = allatonce_block + 
-                                                             (i * normal_size);
-            memory_details.initial_large_heap[i].memory_base = allatonce_block +
-                (memory_details.block_count * normal_size) + (i * large_size);
             if (separated_poh_p)
             {
-                memory_details.initial_pinned_heap[i].memory_base = separated_poh_block +
-                                                                  (i * pinned_size);
+                g_gc_lowest_address = min(allatonce_block, separated_poh_block);
+                g_gc_highest_address = max((allatonce_block + requestedMemory), (separated_poh_block + separate_pinned_size));
+                memory_details.allocation_pattern = initial_memory_details::ALLATONCE_SEPARATED_POH;
             }
             else
             {
-                memory_details.initial_pinned_heap[i].memory_base = allatonce_block +
-                    (memory_details.block_count * (normal_size + large_size)) + (i * pinned_size);
+                g_gc_lowest_address = allatonce_block;
+                g_gc_highest_address = allatonce_block + requestedMemory;
+                memory_details.allocation_pattern = initial_memory_details::ALLATONCE;
             }
+
             for (int i = 0; i < memory_details.block_count; i++)
             {
-                memory_details.initial_normal_heap[i].memory_base = allatonce_block + 
-                                                                 (i * normal_size);
+                memory_details.initial_normal_heap[i].memory_base = allatonce_block +
+                    (i * normal_size);
                 memory_details.initial_large_heap[i].memory_base = allatonce_block +
                     (memory_details.block_count * normal_size) + (i * large_size);
-                memory_details.initial_pinned_heap[i].memory_base = allatonce_block +
-                    (memory_details.block_count * (normal_size + large_size)) + (i * pinned_size);
-
-            reserve_success = TRUE;
-        }
-    }
-    else
-    {
-        // try to allocate 3 blocks
-        uint8_t* b1 = (uint8_t*)virtual_alloc (memory_details.block_count * normal_size, use_large_pages_p);
-        uint8_t* b2 = (uint8_t*)virtual_alloc (memory_details.block_count * large_size, use_large_pages_p);
-        uint8_t* b3 = (uint8_t*)virtual_alloc (memory_details.block_count * pinned_size, use_large_pages_p && !separated_poh_p);
-                reserve_success = TRUE;
+                if (separated_poh_p)
+                {
+                    memory_details.initial_pinned_heap[i].memory_base = separated_poh_block +
+                        (i * pinned_size);
+                }
+                else
+                {
+                    memory_details.initial_pinned_heap[i].memory_base = allatonce_block +
+                        (memory_details.block_count * (normal_size + large_size)) + (i * pinned_size);
+                }
             }
+            reserve_success = TRUE;
         }
         else
         {
             // try to allocate 3 blocks
-            uint8_t* b1 = (uint8_t*)virtual_alloc (memory_details.block_count * normal_size, use_large_pages_p);
-            uint8_t* b2 = (uint8_t*)virtual_alloc (memory_details.block_count * large_size, use_large_pages_p);
-            uint8_t* b3 = (uint8_t*)virtual_alloc (memory_details.block_count * pinned_size, use_large_pages_p);
+            uint8_t* b1 = (uint8_t*)virtual_alloc(memory_details.block_count * normal_size, use_large_pages_p);
+            uint8_t* b2 = (uint8_t*)virtual_alloc(memory_details.block_count * large_size, use_large_pages_p);
+            uint8_t* b3 = (uint8_t*)virtual_alloc(memory_details.block_count * pinned_size, use_large_pages_p && !separated_poh_p);
 
             if (b1 && b2 && b3)
             {
                 memory_details.allocation_pattern = initial_memory_details::EACH_GENERATION;
-                g_gc_lowest_address = min (b1, min(b2, b3));
-                g_gc_highest_address = max (b1 + memory_details.block_count * normal_size,
-                                       max (b2 + memory_details.block_count * large_size,
-                                            b3 + memory_details.block_count * pinned_size));
+                g_gc_lowest_address = min(b1, min(b2, b3));
+                g_gc_highest_address = max(b1 + memory_details.block_count * normal_size,
+                    max(b2 + memory_details.block_count * large_size,
+                        b3 + memory_details.block_count * pinned_size));
 
                 for (int i = 0; i < memory_details.block_count; i++)
                 {
@@ -4257,11 +4260,11 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
                 // allocation failed, we'll go on to try allocating each block.
                 // We could preserve the b1 alloc, but code complexity increases
                 if (b1)
-                    virtual_free (b1, memory_details.block_count * normal_size);
+                    virtual_free(b1, memory_details.block_count * normal_size);
                 if (b2)
-                    virtual_free (b2, memory_details.block_count * large_size);
+                    virtual_free(b2, memory_details.block_count * large_size);
                 if (b3)
-                    virtual_free (b3, memory_details.block_count * pinned_size);
+                    virtual_free(b3, memory_details.block_count * pinned_size);
             }
 
             if ((b2 == NULL) && (memory_details.block_count > 1))
@@ -4271,7 +4274,7 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
                 imemory_data* current_block = memory_details.initial_memory;
                 for (int i = 0; i < (memory_details.block_count * (total_generation_count - ephemeral_generation_count)); i++, current_block++)
                 {
-                    size_t block_size = memory_details.block_size (i);
+                    size_t block_size = memory_details.block_size(i);
                     uint16_t numa_node = NUMA_NODE_UNDEFINED;
                     if (heap_no_to_numa_node != nullptr)
                     {
@@ -4279,15 +4282,15 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
                         numa_node = heap_no_to_numa_node[heap_no];
                     }
                     current_block->memory_base =
-                        (uint8_t*)virtual_alloc (block_size, use_large_pages_p, numa_node);
+                        (uint8_t*)virtual_alloc(block_size, use_large_pages_p, numa_node);
                     if (current_block->memory_base == 0)
                     {
                         // Free the blocks that we've allocated so far
                         current_block = memory_details.initial_memory;
                         for (int j = 0; j < i; j++, current_block++) {
                             if (current_block->memory_base != 0) {
-                                block_size = memory_details.block_size (i);
-                                virtual_free (current_block->memory_base, block_size);
+                                block_size = memory_details.block_size(i);
+                                virtual_free(current_block->memory_base, block_size);
                             }
                         }
                         reserve_success = FALSE;
@@ -4306,6 +4309,7 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
         }
     }
 
+
     return reserve_success;
 }
 
@@ -4322,11 +4326,10 @@ void gc_heap::destroy_initial_memory()
         else if (memory_details.allocation_pattern == initial_memory_details::ALLATONCE_SEPARATED_POH)
         {
             virtual_free(memory_details.initial_memory[0].memory_base,
-                memory_details.block_count*(memory_details.block_size_normal +
-                memory_details.block_size_large));
-                memory_details.block_size_large + memory_details.block_size_pinned));
+                memory_details.block_count * (memory_details.block_size_normal +
+                    memory_details.block_size_large));
             virtual_free(memory_details.initial_pinned_heap[0].memory_base,
-                memory_details.block_count*(memory_details.block_size_pinned));
+                memory_details.block_count * (memory_details.block_size_pinned));
         }
         else if (memory_details.allocation_pattern == initial_memory_details::EACH_GENERATION)
         {
@@ -4336,10 +4339,8 @@ void gc_heap::destroy_initial_memory()
             virtual_free (memory_details.initial_large_heap[0].memory_base,
                 memory_details.block_count*memory_details.block_size_large);
 
-             virtual_free (memory_details.initial_pinned_heap[0].memory_base,
+            virtual_free (memory_details.initial_pinned_heap[0].memory_base,
                 memory_details.block_count*memory_details.block_size_pinned);
-        }
-        else
         }
         else if (memory_details.allocation_pattern == initial_memory_details::EACH_BLOCK)
         {
@@ -4357,9 +4358,9 @@ void gc_heap::destroy_initial_memory()
         {
             assert(memory_details.allocation_pattern == initial_memory_details::EACH_NUMA_NODE);
 
-            for (uint16_t numa_node = 0; numa_node < memory_details.numa_reserved_block_count; numa_node++)
+            for (int block_index = 0; block_index < memory_details.numa_reserved_block_count; block_index++)
             {
-                numa_reserved_block * block = &memory_details.numa_reserved_block_table[numa_node];
+                numa_reserved_block * block = &memory_details.numa_reserved_block_table[block_index];
 
                 if (block->memory_base != nullptr)
                 {
@@ -4958,7 +4959,7 @@ public:
     static uint16_t heap_no_to_proc_no[MAX_SUPPORTED_CPUS];
     static uint16_t heap_no_to_numa_node[MAX_SUPPORTED_CPUS];
     static uint16_t proc_no_to_numa_node[MAX_SUPPORTED_CPUS];
-    static uint16_t numa_node_to_heap_map[MAX_SUPPORTED_CPUS + 4];
+    static uint16_t numa_node_to_heap_map[MAX_SUPPORTED_CPUS+4];
     // Note this is the total numa nodes GC heaps are on. There might be
     // more on the machine if GC threads aren't using all of them.
     static uint16_t total_numa_nodes;
@@ -5163,7 +5164,7 @@ public:
                 heaps_on_node[total_numa_nodes].node_no = heap_no_to_numa_node[i];
 
                 // Set the end of the heap number range for the previous NUMA node
-                numa_node_to_heap_map[heap_no_to_numa_node[i - 1] + 1] =
+                numa_node_to_heap_map[heap_no_to_numa_node[i-1] + 1] =
                 // Set the start of the heap number range for the current NUMA node
                 numa_node_to_heap_map[heap_no_to_numa_node[i]] = (uint16_t)i;
             }
@@ -5171,7 +5172,7 @@ public:
         }
 
         // Set the end of the heap range for the last NUMA node
-        numa_node_to_heap_map[heap_no_to_numa_node[nheaps - 1] + 1] = (uint16_t)nheaps; //mark the end with nheaps
+        numa_node_to_heap_map[heap_no_to_numa_node[nheaps-1] + 1] = (uint16_t)nheaps; //mark the end with nheaps
         total_numa_nodes++;
     }
 
@@ -5233,7 +5234,7 @@ public:
     {
         uint16_t numa_node = heap_no_to_numa_node[hn];
         *start = (int)numa_node_to_heap_map[numa_node];
-        *end = (int)(numa_node_to_heap_map[numa_node + 1]);
+        *end   = (int)(numa_node_to_heap_map[numa_node+1]);
 #ifdef HEAP_BALANCE_INSTRUMENTATION
         dprintf(HEAP_BALANCE_TEMP_LOG, ("TEMPget_heap_range: %d is in numa node %d, start = %d, end = %d", hn, numa_node, *start, *end));
 #endif //HEAP_BALANCE_INSTRUMENTATION
@@ -5283,7 +5284,7 @@ uint16_t heap_select::proc_no_to_heap_no[MAX_SUPPORTED_CPUS];
 uint16_t heap_select::heap_no_to_proc_no[MAX_SUPPORTED_CPUS];
 uint16_t heap_select::heap_no_to_numa_node[MAX_SUPPORTED_CPUS];
 uint16_t heap_select::proc_no_to_numa_node[MAX_SUPPORTED_CPUS];
-uint16_t heap_select::numa_node_to_heap_map[MAX_SUPPORTED_CPUS + 4];
+uint16_t heap_select::numa_node_to_heap_map[MAX_SUPPORTED_CPUS+4];
 uint16_t  heap_select::total_numa_nodes;
 node_heap_count heap_select::heaps_on_node[MAX_SUPPORTED_NODES];
 
