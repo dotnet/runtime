@@ -3979,7 +3979,6 @@ type_is_blittable (MonoType *type)
 	case MONO_TYPE_R8:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-	case MONO_TYPE_CHAR:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 		return TRUE;
