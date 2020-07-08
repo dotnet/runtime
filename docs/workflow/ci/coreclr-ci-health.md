@@ -9,10 +9,9 @@ https://github.com/dotnet/coreclr/issues/27231 was opened as a way to simply vie
 ## TOC
 
 1. [Terminology](#Terminology)
-2. [CI Overview](#CI\ Overview)
+2. [CI Overview](#CI-Overview)
 3. [Analytics](#Analytics)
 4. [Resources](#Resources)
-5. [Sample Investigations](#Sample\ Investigations)
 
 #### Terminology
 
