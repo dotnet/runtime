@@ -5,8 +5,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-#pragma warning disable CS3011 // Only CLS-compliant members can be abstract
-
 namespace System.Text.Encodings.Web
 {
     public abstract partial class HtmlEncoder : System.Text.Encodings.Web.TextEncoder
