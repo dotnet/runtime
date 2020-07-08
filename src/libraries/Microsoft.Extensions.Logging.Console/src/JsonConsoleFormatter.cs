@@ -7,6 +7,7 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -81,6 +82,13 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteEndObject();
                 }
 
+                if (logEntry.State is IReadOnlyCollection<KeyValuePair<string, object>> stateDictionary)
+                {
+                    foreach (KeyValuePair<string, object> item in stateDictionary)
+                    {
+                        writer.WriteString(item.Key, Convert.ToString(item.Value, CultureInfo.InvariantCulture));
+                    }
+                }
                 GetScopeInformation(writer, scopeProvider);
                 writer.WriteEndObject();
                 writer.Flush();
@@ -107,12 +115,22 @@ namespace Microsoft.Extensions.Logging.Console
         {
             if (FormatterOptions.IncludeScopes && scopeProvider != null)
             {
-                int numScopes = 1;
+                int numScopes = 0;
                 writer.WriteStartObject("Scopes");
                 scopeProvider.ForEachScope((scope, state) =>
                 {
-                    state.WriteString("Scope_" + numScopes++, scope.ToString());
-                }, (writer));
+                    if (scope is IReadOnlyCollection<KeyValuePair<string, object>> scopeDictionary)
+                    {
+                        foreach (KeyValuePair<string, object> item in scopeDictionary)
+                        {
+                            state.WriteString(item.Key, Convert.ToString(item.Value, CultureInfo.InvariantCulture));
+                        }
+                    }
+                    else
+                    {
+                        state.WriteString(numScopes++.ToString(), scope.ToString());
+                    }
+                }, writer);
                 writer.WriteEndObject();
             }
         }
