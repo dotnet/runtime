@@ -196,7 +196,6 @@ namespace System.Runtime.CompilerServices.Tests
         {
             // TODO: Test actual function pointer types when typeof(delegate*<...>) support is available
 
-            Type comObjType = typeof(object).Assembly.GetType("System.__ComObject", throwOnError: true);
             Type canonType = typeof(object).Assembly.GetType("System.__Canon", throwOnError: true);
 
             yield return new[] { typeof(string), typeof(ArgumentException) }; // variable-length type
@@ -223,9 +222,10 @@ namespace System.Runtime.CompilerServices.Tests
             yield return new[] { typeof(ArgIterator), typeof(NotSupportedException) }; // byref type
             yield return new[] { typeof(List<>).MakeGenericType(canonType), typeof(NotSupportedException) }; // shared by generic instantiations
 
-            yield return new[] { comObjType, typeof(NotSupportedException) }; // COM type
             if (PlatformDetection.IsWindows)
             {
+                Type comObjType = typeof(object).Assembly.GetType("System.__ComObject", throwOnError: true);
+                yield return new[] { comObjType, typeof(NotSupportedException) }; // COM type
                 yield return new[] { typeof(WbemContext), typeof(NotSupportedException) }; // COM type
             }
         }
