@@ -82,7 +82,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             start = end;
             end = start + 4 /* sizeof(uint32_t) */;
             UInt32 OSLength = BitConverter.ToUInt32(response.Payload[start..end]);
-            Logger.logger.Log($"OSLength: {OSLength});
+            Logger.logger.Log($"OSLength: {OSLength}");
 
             start = end;
             end = start + ((int)OSLength * sizeof(char));
