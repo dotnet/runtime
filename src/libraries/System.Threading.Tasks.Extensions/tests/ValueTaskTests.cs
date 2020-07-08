@@ -368,16 +368,12 @@ namespace System.Threading.Tasks.Tests
             Assert.NotSame(t.AsTask(), t.AsTask());
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_CreateFromValueTaskSource_Success(bool sync)
         {
-            if (!sync && !PlatformDetection.IsThreadingSupported)
-            {
-                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
-            }
-
             var vt = new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0) : ManualResetValueTaskSourceFactory.Delay(1, 0), 0);
             Task t = vt.AsTask();
             if (sync)
@@ -387,16 +383,12 @@ namespace System.Threading.Tasks.Tests
             await t;
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromValueTaskSource_Success(bool sync)
         {
-            if (!sync && !PlatformDetection.IsThreadingSupported)
-            {
-                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
-            }
-
             var vt = new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(42) : ManualResetValueTaskSourceFactory.Delay(1, 42), 0);
             Task<int> t = vt.AsTask();
             if (sync)
@@ -406,16 +398,12 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(42, await t);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_CreateFromValueTaskSource_Faulted(bool sync)
         {
-            if (!sync && !PlatformDetection.IsThreadingSupported)
-            {
-                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
-            }
-
             var vt = new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0, new FormatException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new FormatException()), 0);
             Task t = vt.AsTask();
             if (sync)
@@ -429,16 +417,12 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromValueTaskSource_Faulted(bool sync)
         {
-            if (!sync && !PlatformDetection.IsThreadingSupported)
-            {
-                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
-            }
-
             var vt = new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(0, new FormatException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new FormatException()), 0);
             Task<int> t = vt.AsTask();
             if (sync)
@@ -452,16 +436,12 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_CreateFromValueTaskSource_Canceled(bool sync)
         {
-            if (!sync && !PlatformDetection.IsThreadingSupported)
-            {
-                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
-            }
-
             var vt = new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0, new OperationCanceledException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new OperationCanceledException()), 0);
             Task t = vt.AsTask();
             if (sync)
@@ -475,16 +455,12 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromValueTaskSource_Canceled(bool sync)
         {
-            if (!sync && !PlatformDetection.IsThreadingSupported)
-            {
-                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
-            }
-
             var vt = new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(0, new OperationCanceledException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new OperationCanceledException()), 0);
             Task<int> t = vt.AsTask();
             if (sync)
@@ -598,10 +574,11 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(thread, Environment.CurrentManagedThreadId);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_CreateFromTask_Await_Normal(bool? continueOnCapturedContext)
         {
             var t = new ValueTask(Task.Delay(1));
@@ -612,10 +589,11 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromTask_Await_Normal(bool? continueOnCapturedContext)
         {
             var t = new ValueTask<int>(Task.Delay(1).ContinueWith(_ => 42));
@@ -626,10 +604,11 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task CreateFromValueTaskSource_Await_Normal(bool? continueOnCapturedContext)
         {
             var mre = new ManualResetValueTaskSource<int>();
@@ -642,10 +621,11 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromValueTaskSource_Await_Normal(bool? continueOnCapturedContext)
         {
             var mre = new ManualResetValueTaskSource<int>();
@@ -829,12 +809,13 @@ namespace System.Threading.Tasks.Tests
             });
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(CtorMode.Task, false)]
         [InlineData(CtorMode.ValueTaskSource, false)]
         [InlineData(CtorMode.Result, true)]
         [InlineData(CtorMode.Task, true)]
         [InlineData(CtorMode.ValueTaskSource, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_Awaiter_ContinuesOnCapturedContext(CtorMode mode, bool sync)
         {
             await Task.Run(async () =>
@@ -862,7 +843,7 @@ namespace System.Threading.Tasks.Tests
             });
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(CtorMode.Task, true, false)]
         [InlineData(CtorMode.ValueTaskSource, true, false)]
         [InlineData(CtorMode.Task, false, false)]
@@ -873,6 +854,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.Result, false, true)]
         [InlineData(CtorMode.Task, false, true)]
         [InlineData(CtorMode.ValueTaskSource, false, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_ConfiguredAwaiter_ContinuesOnCapturedContext(CtorMode mode, bool continueOnCapturedContext, bool sync)
         {
             await Task.Run(async () =>
@@ -900,7 +882,7 @@ namespace System.Threading.Tasks.Tests
             });
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(CtorMode.Task, true, false)]
         [InlineData(CtorMode.ValueTaskSource, true, false)]
         [InlineData(CtorMode.Task, false, false)]
@@ -911,6 +893,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.Result, false, true)]
         [InlineData(CtorMode.Task, false, true)]
         [InlineData(CtorMode.ValueTaskSource, false, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_ConfiguredAwaiter_ContinuesOnCapturedContext(CtorMode mode, bool continueOnCapturedContext, bool sync)
         {
             await Task.Run(async () =>

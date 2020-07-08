@@ -398,7 +398,8 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public static async Task AwaitTasksAndValueTasks_InTaskAndValueTaskMethods()
         {
             for (int i = 0; i < 2; i++)
@@ -520,7 +521,8 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_ConcurrentBuilders_WorkCorrectly()
         {
             await Task.WhenAll(Enumerable.Range(0, Environment.ProcessorCount).Select(async _ =>
@@ -537,7 +539,8 @@ namespace System.Threading.Tasks.Tests
             }));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_ConcurrentBuilders_WorkCorrectly()
         {
             await Task.WhenAll(Enumerable.Range(0, Environment.ProcessorCount).Select(async _ =>

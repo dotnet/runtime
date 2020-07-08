@@ -10,7 +10,8 @@ namespace System.Threading.Tasks.Sources.Tests
 {
     public class ManualResetValueTaskSourceTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task ReuseInstanceWithResets_Success()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -82,7 +83,8 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Equal(2, mrvts.Version);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task SetResult_AfterOnCompleted_ResultAvailableAsynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -130,7 +132,8 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Equal(2, mrvts.Version);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task SetException_AfterOnCompleted_ResultAvailableAsynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -407,11 +410,12 @@ namespace System.Threading.Tasks.Sources.Tests
             protected override IEnumerable<Task> GetScheduledTasks() => null;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task AsyncEnumerable_Success(bool awaitForeach, bool asyncIterator)
         {
             IAsyncEnumerable<int> enumerable = asyncIterator ?
