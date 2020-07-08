@@ -1393,7 +1393,6 @@ class TestHFAandHVA
         ReturnVectorTWithMerge(1, 0.0, 0.0, 0.0, 0.0);
         ReturnVectorTWithMerge<short>(2, 0, 0, 0, 0);
         ReturnVectorTWithMerge<long>(3, 0, 0, 0, 0);
-        ReturnVectorTWithMerge<Vector<Single>>(3, new Vector<Single>(0), new Vector<Single>(0), new Vector<Single>(0), new Vector<Single>(0));
 
         ReturnVectorShortWrapper();
         ReturnVectorShortWrapperPromoted();
