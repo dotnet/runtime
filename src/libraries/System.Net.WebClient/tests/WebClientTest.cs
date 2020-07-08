@@ -42,7 +42,7 @@ namespace System.Net.Tests
             var wc = new WebClient();
 
             AssertExtensions.Throws<ArgumentException>("value", () => { wc.BaseAddress = "http::/invalid url"; });
-            AssertExtensions.Throws<ArgumentNullException>("Encoding", () => { wc.Encoding = null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { wc.Encoding = null; });
         }
 
         [Fact]

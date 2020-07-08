@@ -50,21 +50,6 @@ BOOL FinalizerThread::HaveExtraWorkForFinalizer()
     return GetFinalizerThread()->HaveExtraWorkForFinalizer();
 }
 
-// This helper is here to avoid EH goo associated with DefineFullyQualifiedNameForStack being
-// invoked when logging is off.
-NOINLINE
-void LogFinalization(Object* obj)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-#ifdef FEATURE_EVENT_TRACE
-    ETW::GCLog::SendFinalizeObjectEvent(obj->GetMethodTable(), obj);
-#endif // FEATURE_EVENT_TRACE
-}
-
-
 void CallFinalizer(Object* obj)
 {
     STATIC_CONTRACT_THROWS;
@@ -76,40 +61,26 @@ void CallFinalizer(Object* obj)
     LOG((LF_GC, LL_INFO1000, "Finalizing " LOG_OBJECT_CLASS(obj)));
 
     _ASSERTE(GetThread()->PreemptiveGCDisabled());
-    // if we don't have a class, we can't call the finalizer
-    // if the object has been marked run as finalizer run don't call either
-    if (pMT)
+
+    if (!((obj->GetHeader()->GetBits()) & BIT_SBLK_FINALIZER_RUN))
     {
-        if (!((obj->GetHeader()->GetBits()) & BIT_SBLK_FINALIZER_RUN))
-        {
+        _ASSERTE(pMT->HasFinalizer());
 
-            _ASSERTE(obj->GetMethodTable() == pMT);
-            _ASSERTE(pMT->HasFinalizer());
+#ifdef FEATURE_EVENT_TRACE
+        ETW::GCLog::SendFinalizeObjectEvent(pMT, obj);
+#endif // FEATURE_EVENT_TRACE
 
-            LogFinalization(obj);
-            MethodTable::CallFinalizer(obj);
-        }
-        else
-        {
-            //reset the bit so the object can be put on the list
-            //with RegisterForFinalization
-            obj->GetHeader()->ClrBit (BIT_SBLK_FINALIZER_RUN);
-        }
+        MethodTable::CallFinalizer(obj);
+    }
+    else
+    {
+        //reset the bit so the object can be put on the list
+        //with RegisterForFinalization
+        obj->GetHeader()->ClrBit (BIT_SBLK_FINALIZER_RUN);
     }
 }
 
-void FinalizerThread::DoOneFinalization(Object* fobj, Thread* pThread)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    CallFinalizer(fobj);
-
-    pThread->InternalReset();
-}
-
-void FinalizerThread::FinalizeAllObjects(int bitToCheck)
+void FinalizerThread::FinalizeAllObjects()
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -126,16 +97,12 @@ void FinalizerThread::FinalizeAllObjects(int bitToCheck)
     // Finalize everyone
     while (fobj && !fQuitFinalizer)
     {
-        if (fobj->GetHeader()->GetBits() & bitToCheck)
-        {
-            fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
-        }
-        else
-        {
-            fcount++;
-            DoOneFinalization(fobj, pThread);
-            fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
-        }
+        fcount++;
+
+        CallFinalizer(fobj);
+        pThread->InternalReset();
+
+        fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
     }
     FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
 }
@@ -345,7 +312,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             GetFinalizerThread()->EEResetAbort(Thread::TAR_ALL);
         }
 
-        FinalizeAllObjects(0);
+        FinalizeAllObjects();
 
         // We may still have the finalizer thread for abort.  If so the abort request is for previous finalizer method, not for next one.
         if (GetFinalizerThread()->IsAbortRequested())
@@ -431,14 +398,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
     // since doing so will cause OLE32 to CoUninitialize.
     while (1)
     {
-        PAL_TRY(void *, unused, NULL)
-        {
-            __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
-        }
-        PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
-        {
-        }
-        PAL_ENDTRY
+        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
     }
 
     return 0;

@@ -82,24 +82,17 @@ namespace System.Net.WebSockets
             return ConnectAsyncCore(uri, cancellationToken);
         }
 
-        private async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken)
+        private Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken)
         {
             _innerWebSocket = new WebSocketHandle();
-            try
-            {
-                // Change internal state to 'connected' to enable the other methods
-                if ((InternalState)Interlocked.CompareExchange(ref _state, (int)InternalState.Connected, (int)InternalState.Connecting) != InternalState.Connecting)
-                {
-                    throw new ObjectDisposedException(GetType().FullName); // Aborted/Disposed during connect.
-                }
 
-                await _innerWebSocket.ConnectAsync(uri, cancellationToken, Options).ConfigureAwait(false);
-            }
-            catch (Exception ex)
+            // Change internal state to 'connected' to enable the other methods
+            if ((InternalState)Interlocked.CompareExchange(ref _state, (int)InternalState.Connected, (int)InternalState.Connecting) != InternalState.Connecting)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
-                throw;
+                return Task.FromException(new ObjectDisposedException(nameof(ClientWebSocket))); // Aborted/Disposed during connect.
             }
+
+            return _innerWebSocket.ConnectAsync(uri, cancellationToken, Options);
         }
 
         public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
