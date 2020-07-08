@@ -546,6 +546,9 @@ namespace Mono.Linker.Steps
 					continue;
 				}
 
+				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (ca.AttributeType.Resolve ()))
+					continue;
+
 				MarkCustomAttribute (ca, reason, sourceLocationMember);
 				MarkSpecialCustomAttributeDependencies (ca, provider, sourceLocationMember);
 			}
@@ -1354,6 +1357,13 @@ namespace Mono.Linker.Steps
 			// Treat cctors triggered by a called method specially and mark this case up-front.
 			if (type.HasMethods && ShouldMarkTypeStaticConstructor (type) && reason.Kind == DependencyKind.DeclaringTypeOfCalledMethod)
 				MarkStaticConstructor (type, new DependencyInfo (DependencyKind.TriggersCctorForCalledMethod, reason.Source), type);
+
+			// Check type being used was not removed by the LinkerRemovableAttribute
+			if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (type))
+				_context.LogWarning ($"Custom Attribute {type.GetDisplayName ()} is being referenced in code but the linker was " +
+					$"instructed to remove all instances of this attribute. If the attribute instances are necessary make sure to " +
+					$"either remove the linker attribute XML portion which removes the attribute instances, or to override this use " +
+					$"the linker XML descriptor to keep the attribute type (which in turn keeps all of its instances).", 2045, sourceLocationMember);
 
 			if (CheckProcessed (type))
 				return null;
