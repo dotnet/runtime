@@ -129,22 +129,16 @@ namespace Microsoft.Extensions.Logging.Console
         private static string GetSyslogSeverityString(LogLevel logLevel)
         {
             // 'Syslog Message Severities' from https://tools.ietf.org/html/rfc5424.
-            switch (logLevel)
+            return logLevel switch
             {
-                case LogLevel.Trace:
-                case LogLevel.Debug:
-                    return "<7>"; // debug-level messages
-                case LogLevel.Information:
-                    return "<6>"; // informational messages
-                case LogLevel.Warning:
-                    return "<4>"; // warning conditions
-                case LogLevel.Error:
-                    return "<3>"; // error conditions
-                case LogLevel.Critical:
-                    return "<2>"; // critical conditions
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(logLevel));
-            }
+                LogLevel.Trace => "<7>",
+                LogLevel.Debug => "<7>",        // debug-level messages
+                LogLevel.Information => "<6>",  // informational messages
+                LogLevel.Warning => "<4>",     // warning conditions
+                LogLevel.Error => "<3>",       // error conditions
+                LogLevel.Critical => "<2>",    // critical conditions
+                _ => throw new ArgumentOutOfRangeException(nameof(logLevel))
+            };
         }
 
         private void GetScopeInformation(StringBuilder stringBuilder, IExternalScopeProvider scopeProvider)

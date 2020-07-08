@@ -88,23 +88,16 @@ namespace Microsoft.Extensions.Logging.Console
 
         private static string GetLogLevelString(LogLevel logLevel)
         {
-            switch (logLevel)
+            return logLevel switch
             {
-                case LogLevel.Trace:
-                    return "Trace";
-                case LogLevel.Debug:
-                    return "Debug";
-                case LogLevel.Information:
-                    return "Information";
-                case LogLevel.Warning:
-                    return "Warning";
-                case LogLevel.Error:
-                    return "Error";
-                case LogLevel.Critical:
-                    return "Critical";
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(logLevel));
-            }
+                LogLevel.Trace => "Trace",
+                LogLevel.Debug => "Debug",
+                LogLevel.Information => "Information",
+                LogLevel.Warning => "Warning",
+                LogLevel.Error => "Error",
+                LogLevel.Critical => "Critical",
+                _ => throw new ArgumentOutOfRangeException(nameof(logLevel))
+            };
         }
 
         private void GetScopeInformation(Utf8JsonWriter writer, IExternalScopeProvider scopeProvider)

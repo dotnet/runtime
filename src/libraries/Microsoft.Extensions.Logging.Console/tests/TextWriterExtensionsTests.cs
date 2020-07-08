@@ -70,30 +70,22 @@ namespace Microsoft.Extensions.Logging
 
         private static string GetForegroundColorEscapeCode(ConsoleColor color)
         {
-            switch (color)
+            return color switch
             {
-                case ConsoleColor.Red:
-                    return "\x1B[31m";
-                case ConsoleColor.DarkGreen:
-                    return "\x1B[32m";
-                case ConsoleColor.DarkYellow:
-                    return "\x1B[33m";
-                case ConsoleColor.Gray:
-                    return "\x1B[37m";
-                default:
-                    return "\x1B[39m";
-            }
+                ConsoleColor.DarkGreen => "\x1B[32m",
+                ConsoleColor.DarkYellow => "\x1B[33m",
+                ConsoleColor.Gray => "\x1B[37m",
+                _ => "\x1B[39m\x1B[22m" // default foreground color
+            };
         }
 
         private static string GetBackgroundColorEscapeCode(ConsoleColor color)
         {
-            switch (color)
+            return color switch
             {
-                case ConsoleColor.Red:
-                    return "\x1B[41m";
-                default:
-                    return "\x1B[49m";
-            }
+                ConsoleColor.Red => "\x1B[41m",
+                _ => "\x1B[49m"
+            };
         }
     }
 }

@@ -157,49 +157,36 @@ namespace Microsoft.Extensions.Logging.Console
 
         private static string GetLogLevelString(LogLevel logLevel)
         {
-            switch (logLevel)
+            return logLevel switch
             {
-                case LogLevel.Trace:
-                    return "trce";
-                case LogLevel.Debug:
-                    return "dbug";
-                case LogLevel.Information:
-                    return "info";
-                case LogLevel.Warning:
-                    return "warn";
-                case LogLevel.Error:
-                    return "fail";
-                case LogLevel.Critical:
-                    return "crit";
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(logLevel));
-            }
+                LogLevel.Trace => "trce",
+                LogLevel.Debug => "dbug",
+                LogLevel.Information => "info",
+                LogLevel.Warning => "warn",
+                LogLevel.Error => "fail",
+                LogLevel.Critical => "crit",
+                _ => throw new ArgumentOutOfRangeException(nameof(logLevel))
+            };
         }
 
         private ConsoleColors GetLogLevelConsoleColors(LogLevel logLevel)
         {
-            if (!FormatterOptions.DisableColors)
+            if (FormatterOptions.DisableColors)
             {
-                // We must explicitly set the background color if we are setting the foreground color,
-                // since just setting one can look bad on the users console.
-                switch (logLevel)
-                {
-                    case LogLevel.Critical:
-                        return new ConsoleColors(ConsoleColor.White, ConsoleColor.Red);
-                    case LogLevel.Error:
-                        return new ConsoleColors(ConsoleColor.Black, ConsoleColor.Red);
-                    case LogLevel.Warning:
-                        return new ConsoleColors(ConsoleColor.Yellow, ConsoleColor.Black);
-                    case LogLevel.Information:
-                        return new ConsoleColors(ConsoleColor.DarkGreen, ConsoleColor.Black);
-                    case LogLevel.Debug:
-                        return new ConsoleColors(ConsoleColor.Gray, ConsoleColor.Black);
-                    case LogLevel.Trace:
-                        return new ConsoleColors(ConsoleColor.Gray, ConsoleColor.Black);
-                }
+                return new ConsoleColors(null, null);
             }
-
-            return new ConsoleColors(null, null);
+            // We must explicitly set the background color if we are setting the foreground color,
+            // since just setting one can look bad on the users console.
+            return logLevel switch
+            {
+                LogLevel.Trace => new ConsoleColors(ConsoleColor.Gray, ConsoleColor.Black),
+                LogLevel.Debug => new ConsoleColors(ConsoleColor.Gray, ConsoleColor.Black),
+                LogLevel.Information => new ConsoleColors(ConsoleColor.DarkGreen, ConsoleColor.Black),
+                LogLevel.Warning => new ConsoleColors(ConsoleColor.Yellow, ConsoleColor.Black),
+                LogLevel.Error => new ConsoleColors(ConsoleColor.Black, ConsoleColor.Red),
+                LogLevel.Critical => new ConsoleColors(ConsoleColor.White, ConsoleColor.Red),
+                _ => new ConsoleColors(null, null)
+            };
         }
 
         private void GetScopeInformation(StringBuilder stringBuilder, IExternalScopeProvider scopeProvider, bool singleLine)
