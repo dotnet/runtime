@@ -163,7 +163,7 @@ namespace System.Resources
     // resource files containing thousands of resources.
     //
 #if CORERT
-    public  // On CoreRT, this must be public because of need to whitelist past the ReflectionBlock.
+    public  // On CoreRT, this must be public because of need to allowlist past the ReflectionBlock.
 #else
     internal
 #endif

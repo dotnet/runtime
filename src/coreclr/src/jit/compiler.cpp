@@ -3413,7 +3413,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
         }
 
         // This stress mode name did not match anything in the stress
-        // mode whitelist. If user has requested only enable mode,
+        // mode allowlist. If user has requested only enable mode,
         // don't allow this stress mode to turn on.
         const bool onlyEnableMode = JitConfig.JitStressModeNamesOnly() != 0;
 

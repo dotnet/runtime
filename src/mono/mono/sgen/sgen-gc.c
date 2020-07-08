@@ -106,7 +106,7 @@
     happened.  This might make for a good first implementation to get
     some data on performance.
 
- *) Some sort of blacklist support?  Blacklists is a concept from the
+ *) Some sort of blocklist support?  Blocklists is a concept from the
     Boehm GC: if during a conservative scan we find pointers to an
     area which we might use as heap, we mark that area as unusable, so
     pointer retention by random pinning pointers is reduced.
