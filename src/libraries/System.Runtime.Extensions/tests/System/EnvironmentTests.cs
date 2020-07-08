@@ -61,10 +61,15 @@ namespace System.Tests
         }
 
         [Fact]
+        public void ProcessId_Idempotent()
+        {
+            Assert.InRange(Environment.ProcessId, 1, int.MaxValue);
+            Assert.Equal(Environment.ProcessId, Environment.ProcessId);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ProcessId_MatchesExpectedValue()
         {
-            Assert.Equal(Environment.ProcessId, Environment.ProcessId);
-
             using RemoteInvokeHandle handle = RemoteExecutor.Invoke(() => Console.WriteLine(Environment.ProcessId), new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } });
             Assert.Equal(handle.Process.Id, int.Parse(handle.Process.StandardOutput.ReadToEnd()));
         }
