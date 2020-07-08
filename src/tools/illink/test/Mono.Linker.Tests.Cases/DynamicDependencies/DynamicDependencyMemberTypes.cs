@@ -16,8 +16,8 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		static class B
 		{
 			[Kept]
-			[DynamicDependency (DynamicallyAccessedMemberTypes.DefaultConstructor, typeof (TypeWithAutoImplementedDefaultConstructor))]
-			[DynamicDependency (DynamicallyAccessedMemberTypes.DefaultConstructor, typeof (TypeWithDefaultConstructor))]
+			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof (TypeWithAutoImplementedPublicParameterlessConstructor))]
+			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof (TypeWithPublicParameterlessConstructor))]
 			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicConstructors, typeof (TypeWithPublicConstructor))]
 			[DynamicDependency (DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof (TypeWithNonPublicConstructor))]
 			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicMethods, typeof (TypeWithPublicMethod))]
@@ -39,19 +39,19 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 
 
 		[KeptMember (".ctor()")]
-		class TypeWithAutoImplementedDefaultConstructor
+		class TypeWithAutoImplementedPublicParameterlessConstructor
 		{
 			public void Method () { }
 
 			public int field;
 		}
 
-		class TypeWithDefaultConstructor
+		class TypeWithPublicParameterlessConstructor
 		{
 			[Kept]
-			public TypeWithDefaultConstructor () { }
+			public TypeWithPublicParameterlessConstructor () { }
 
-			public TypeWithDefaultConstructor (int i) { }
+			public TypeWithPublicParameterlessConstructor (int i) { }
 		}
 
 		class TypeWithPublicConstructor

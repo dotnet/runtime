@@ -13,17 +13,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	{
 		static void Main ()
 		{
-			TestDefaultConstructor ();
+			TestPublicParameterlessConstructor ();
 			TestPublicConstructors ();
 			TestConstructors ();
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequirePublicConstructors), new Type[] { typeof (string) })]
 		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequireNonPublicConstructors), new Type[] { typeof (string) })]
-		static void TestDefaultConstructor ()
+		static void TestPublicParameterlessConstructor ()
 		{
-			string type = GetTypeWithDefaultConstructor ().AssemblyQualifiedName;
-			RequireDefaultConstructor (type);
+			string type = GetTypeWithPublicParameterlessConstructor ().AssemblyQualifiedName;
+			RequirePublicParameterlessConstructor (type);
 			RequirePublicConstructors (type);
 			RequireNonPublicConstructors (type);
 			RequireNothing (type);
@@ -33,25 +33,25 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static void TestPublicConstructors ()
 		{
 			string type = GetTypeWithPublicConstructors ().AssemblyQualifiedName;
-			RequireDefaultConstructor (type);
+			RequirePublicParameterlessConstructor (type);
 			RequirePublicConstructors (type);
 			RequireNonPublicConstructors (type);
 			RequireNothing (type);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequireDefaultConstructor), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequirePublicParameterlessConstructor), new Type[] { typeof (string) })]
 		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequirePublicConstructors), new Type[] { typeof (string) })]
 		static void TestConstructors ()
 		{
 			string type = GetTypeWithNonPublicConstructors ().AssemblyQualifiedName;
-			RequireDefaultConstructor (type);
+			RequirePublicParameterlessConstructor (type);
 			RequirePublicConstructors (type);
 			RequireNonPublicConstructors (type);
 			RequireNothing (type);
 		}
 
-		private static void RequireDefaultConstructor (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
+		private static void RequirePublicParameterlessConstructor (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			string type)
 		{
 		}
@@ -73,8 +73,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
-		private static Type GetTypeWithDefaultConstructor ()
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+		private static Type GetTypeWithPublicParameterlessConstructor ()
 		{
 			return null;
 		}

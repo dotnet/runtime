@@ -22,26 +22,26 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string) })]
 		static void TestGetPublicParameterlessConstructorWithEmptyTypes ()
 		{
-			s_typeWithKeptDefaultConstructor.GetConstructor (Type.EmptyTypes);
-			s_typeWithKeptDefaultConstructor.GetMethod ("Foo");
+			s_typeWithKeptPublicParameterlessConstructor.GetConstructor (Type.EmptyTypes);
+			s_typeWithKeptPublicParameterlessConstructor.GetMethod ("Foo");
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string) })]
 		static void TestGetPublicParameterlessConstructorWithArrayEmpty ()
 		{
-			s_typeWithKeptDefaultConstructor.GetConstructor (Array.Empty<Type> ());
-			s_typeWithKeptDefaultConstructor.GetMethod ("Foo");
+			s_typeWithKeptPublicParameterlessConstructor.GetConstructor (Array.Empty<Type> ());
+			s_typeWithKeptPublicParameterlessConstructor.GetMethod ("Foo");
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (Type[]) })]
 		static void TestGetPublicParameterlessConstructorWithUnknownArray ()
 		{
-			s_typeWithKeptDefaultConstructor.GetConstructor (s_localEmptyArrayInvisibleToAnalysis);
+			s_typeWithKeptPublicParameterlessConstructor.GetConstructor (s_localEmptyArrayInvisibleToAnalysis);
 		}
 
 		static Type[] s_localEmptyArrayInvisibleToAnalysis = Type.EmptyTypes;
 
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
-		static Type s_typeWithKeptDefaultConstructor = typeof (EmptyArrayIntrinsicsDataFlow);
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+		static Type s_typeWithKeptPublicParameterlessConstructor = typeof (EmptyArrayIntrinsicsDataFlow);
 	}
 }

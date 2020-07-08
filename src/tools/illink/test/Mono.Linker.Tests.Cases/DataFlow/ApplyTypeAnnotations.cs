@@ -104,7 +104,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		private static void RequireCombination (
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers(
-				DynamicallyAccessedMemberTypes.DefaultConstructor |
+				DynamicallyAccessedMemberTypes.PublicParameterlessConstructor |
 				DynamicallyAccessedMemberTypes.PublicFields |
 				DynamicallyAccessedMemberTypes.PublicMethods |
 				DynamicallyAccessedMemberTypes.PublicProperties)]
@@ -116,7 +116,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		private static void RequireCombinationOnString (
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers(
-				DynamicallyAccessedMemberTypes.DefaultConstructor |
+				DynamicallyAccessedMemberTypes.PublicParameterlessConstructor |
 				DynamicallyAccessedMemberTypes.PublicFields |
 				DynamicallyAccessedMemberTypes.PublicMethods |
 				DynamicallyAccessedMemberTypes.PublicProperties)]

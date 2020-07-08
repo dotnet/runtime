@@ -33,18 +33,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			nestedinstance.ReadFromInstanceField ();
 		}
 
-		Type _typeWithDefaultConstructor;
+		Type _typeWithPublicParameterlessConstructor;
 
-		Type PropertyWithDefaultConstructor { get; set; }
+		Type PropertyWithPublicParameterlessConstructor { get; set; }
 
 		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
 		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		[RecognizedReflectionAccessPattern]
 		private void ReadFromInstanceField ()
 		{
-			RequireDefaultConstructor (_typeWithDefaultConstructor);
-			RequirePublicConstructors (_typeWithDefaultConstructor);
-			RequireNonPublicConstructors (_typeWithDefaultConstructor);
+			RequirePublicParameterlessConstructor (_typeWithPublicParameterlessConstructor);
+			RequirePublicConstructors (_typeWithPublicParameterlessConstructor);
+			RequireNonPublicConstructors (_typeWithPublicParameterlessConstructor);
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
@@ -53,18 +53,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Type type,
 			Type type2)
 		{
-			RequireDefaultConstructor (type);
-			RequireDefaultConstructor (type2);
+			RequirePublicParameterlessConstructor (type);
+			RequirePublicParameterlessConstructor (type2);
 			RequirePublicConstructors (type);
 			RequirePublicConstructors (type2);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequireDefaultConstructor), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequirePublicParameterlessConstructor), new Type[] { typeof (Type) })]
 		private void SpacesBetweenParametersWrongArgument (
 			Type type,
 			bool nonused)
 		{
-			RequireDefaultConstructor (type);
+			RequirePublicParameterlessConstructor (type);
 		}
 
 		[RecognizedReflectionAccessPattern]
@@ -72,28 +72,28 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			T input,
 			Type type)
 		{
-			RequireDefaultConstructor (type);
+			RequirePublicParameterlessConstructor (type);
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (ReturnConstructorsFailure), new Type[] { typeof (Type) },
 			returnType: typeof (Type))]
 		private Type ReturnConstructorsFailure (
-			Type defaultConstructorType)
+			Type publicParameterlessConstructorType)
 		{
-			return defaultConstructorType;
+			return publicParameterlessConstructorType;
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
 		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromInstanceProperty ()
 		{
-			RequireDefaultConstructor (PropertyWithDefaultConstructor);
-			RequirePublicConstructors (PropertyWithDefaultConstructor);
-			RequireNonPublicConstructors (PropertyWithDefaultConstructor);
+			RequirePublicParameterlessConstructor (PropertyWithPublicParameterlessConstructor);
+			RequirePublicConstructors (PropertyWithPublicParameterlessConstructor);
+			RequireNonPublicConstructors (PropertyWithPublicParameterlessConstructor);
 		}
 
-		private static void RequireDefaultConstructor (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
+		private static void RequirePublicParameterlessConstructor (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			Type type)
 		{
 		}
@@ -114,20 +114,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class NestedType
 		{
-			Type _typeWithDefaultConstructor;
+			Type _typeWithPublicParameterlessConstructor;
 
 			[UnrecognizedReflectionAccessPattern (typeof (NestedType), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
 			[UnrecognizedReflectionAccessPattern (typeof (NestedType), nameof (RequireConstructors), new Type[] { typeof (Type) })]
 			[RecognizedReflectionAccessPattern]
 			public void ReadFromInstanceField ()
 			{
-				RequireDefaultConstructor (_typeWithDefaultConstructor);
-				RequirePublicConstructors (_typeWithDefaultConstructor);
-				RequireConstructors (_typeWithDefaultConstructor);
+				RequirePublicParameterlessConstructor (_typeWithPublicParameterlessConstructor);
+				RequirePublicConstructors (_typeWithPublicParameterlessConstructor);
+				RequireConstructors (_typeWithPublicParameterlessConstructor);
 			}
 
-			private static void RequireDefaultConstructor (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
+			private static void RequirePublicParameterlessConstructor (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			Type type)
 			{
 			}

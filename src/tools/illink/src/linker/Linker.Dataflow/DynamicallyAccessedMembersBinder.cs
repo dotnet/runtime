@@ -32,7 +32,7 @@ namespace Mono.Linker
 					yield return c;
 			}
 
-			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.DefaultConstructor)) {
+			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)) {
 				foreach (var c in typeDefinition.GetConstructorsOnType (filter: m => m.IsPublic && m.Parameters.Count == 0))
 					yield return c;
 			}

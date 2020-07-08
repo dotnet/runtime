@@ -37,14 +37,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[Kept]
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
-		static Type s_typeWithDefaultConstructor;
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+		static Type s_typeWithPublicParameterlessConstructor;
 
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (ByRefDataflow), nameof (MethodWithRefParameter), new string[] { "System.Type&" })]
 		public static void PassRefToField ()
 		{
-			MethodWithRefParameter (ref s_typeWithDefaultConstructor);
+			MethodWithRefParameter (ref s_typeWithPublicParameterlessConstructor);
 		}
 
 		[Kept]

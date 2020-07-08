@@ -101,7 +101,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		private static void FromParameterOnStaticMethod (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
 		{
@@ -136,7 +136,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (Type), typeof (BindingFlags), typeof (Binder), typeof (object[]), typeof (CultureInfo) })]
 		[Kept]
 		private void FromParameterOnInstanceMethod (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
 		{
@@ -425,7 +425,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		[RecognizedReflectionAccessPattern]
 		private static void TestCreateInstanceOfTWithDataflow<
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor),
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor),
 			KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))] T> ()
 		{
 			Activator.CreateInstance<T> ();

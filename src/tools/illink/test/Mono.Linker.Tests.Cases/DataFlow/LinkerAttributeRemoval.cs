@@ -26,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestType ();
 		}
 		[Kept]
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 		Type _fieldWithCustomAttribute;
 
 		[Kept]
