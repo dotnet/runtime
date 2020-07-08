@@ -109,12 +109,7 @@
 class VerifyLayoutsMD
 {
     // we have a bunch of arrays with this fixed size, make sure it doesn't change
-#ifndef FEATURE_METADATA_EMIT_PORTABLE_PDB
     static_assert_no_msg(TBL_COUNT == 45);
-#else
-    // increasing the size for portable PDB tables support (last supported table is ImportScope 0x35 + 1 = 54)
-    static_assert_no_msg(TBL_COUNT == 54);
-#endif 
 
 
 
