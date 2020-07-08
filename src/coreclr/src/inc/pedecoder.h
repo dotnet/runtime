@@ -130,7 +130,6 @@ class PEDecoder
     PEDecoder();
     PEDecoder(void *flatBase, COUNT_T size);              // flatBase is the raw disk layout data (using MapViewOfFile)
     PEDecoder(PTR_VOID mappedBase, bool relocated = FALSE);  // mappedBase is the mapped/expanded file (using LoadLibrary)
-    virtual ~PEDecoder();
 
     void Init(void *flatBase, COUNT_T size);
     HRESULT Init(void *mappedBase, bool relocated = FALSE);
@@ -138,7 +137,6 @@ class PEDecoder
 
     PTR_VOID GetBase() const;            // Currently loaded base, as opposed to GetPreferredBase()
     BOOL IsMapped() const;
-    virtual BOOL IsInBundle() const;
     BOOL IsRelocated() const;
     BOOL IsFlat() const;
     BOOL HasContents() const;

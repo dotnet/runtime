@@ -55,14 +55,6 @@ inline BOOL PEDecoder::IsMapped() const
     return (m_flags & FLAG_MAPPED) != 0;
 }
 
-inline BOOL PEDecoder::IsInBundle() const
-{
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC;
-
-    return false;
-}
-
 inline BOOL PEDecoder::IsRelocated() const
 {
     LIMITED_METHOD_CONTRACT;
@@ -1418,16 +1410,6 @@ inline READYTORUN_HEADER * PEDecoder::GetReadyToRunHeader() const
         RETURN m_pReadyToRunHeader;
 
     RETURN FindReadyToRunHeader();
-}
-
-inline PEDecoder::~PEDecoder()
-{
-    CONTRACTL
-    {
-        DESTRUCTOR_CHECK;
-        NOTHROW;
-    }
-    CONTRACTL_END;
 }
 
 #endif // _PEDECODER_INL_
