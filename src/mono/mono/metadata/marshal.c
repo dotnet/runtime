@@ -3941,6 +3941,48 @@ emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke
 }
 #endif
 
+static gboolean
+type_is_blittable (MonoType *type)
+{
+	if (type->byref)
+		return FALSE;
+	type = mono_type_get_underlying_type (type);
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+		return TRUE;
+	default:
+		return m_class_is_blittable (mono_class_from_mono_type_internal (type));
+	}
+}
+
+static gboolean
+method_signature_is_blittable (MonoMethodSignature *sig)
+{
+	if (!type_is_blittable (sig->ret))
+		return FALSE;
+
+	for (int i = 0; i < sig->param_count; ++i) {
+		MonoType *type = sig->params [i];
+		if (!type_is_blittable (type))
+			return FALSE;
+	}
+	return TRUE;
+}
+
 /**
  * mono_marshal_get_managed_wrapper:
  * Generates IL code to call managed methods from unmanaged code 
@@ -3993,6 +4035,10 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 		}
 		if (method->is_generic || method->is_inflated || mono_class_is_ginst (method->klass)) {
 			mono_error_set_invalid_program (error, "method %s with UnamangedCallersOnlyAttribute is generic", mono_method_full_name (method, TRUE));
+			return NULL;
+		}
+		if (!method_signature_is_blittable (invoke_sig)) {
+			mono_error_set_invalid_program (error, "method %s with UnmanagedCallersOnlyAttribute has non-blittable parameters", mono_method_full_name (method, TRUE));
 			return NULL;
 		}
 		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
