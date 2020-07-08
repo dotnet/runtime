@@ -46,8 +46,6 @@ namespace Microsoft.Extensions.Logging.Console
             using (var writer = new Utf8JsonWriter(output, FormatterOptions.JsonWriterOptions))
             {
                 writer.WriteStartObject();
-
-
                 string timestamp = null;
                 var timestampFormat = FormatterOptions.TimestampFormat;
                 if (timestampFormat != null)
@@ -55,57 +53,55 @@ namespace Microsoft.Extensions.Logging.Console
                     var dateTime = FormatterOptions.UseUtcTimestamp ? DateTime.UtcNow : DateTime.Now;
                     timestamp = dateTime.ToString(timestampFormat);
                 }
-                writer.WriteString("timestamp", timestamp);
-                writer.WriteNumber("eventId", eventId);
-                writer.WriteString("logLevel", GetLogLevelString(logLevel));
-                writer.WriteString("category", category);
-                writer.WriteString("message", message);
+                writer.WriteString("Timestamp", timestamp);
+                writer.WriteNumber(nameof(logEntry.EventId), eventId);
+                writer.WriteString(nameof(logEntry.LogLevel), GetLogLevelString(logLevel));
+                writer.WriteString(nameof(logEntry.Category), category);
+                writer.WriteString("Message", message);
 
                 if (exception != null)
                 {
-                    writer.WriteStartObject("exception");
-                    writer.WriteString("message", exception.Message.ToString());
-                    writer.WriteString("type", exception.GetType().ToString());
-                    writer.WriteStartArray("stackTrace");
-                    if (exception?.StackTrace != null)
+                    writer.WriteStartObject(nameof(Exception));
+                    writer.WriteString(nameof(exception.Message), exception.Message.ToString());
+                    writer.WriteString("Type", exception.GetType().ToString());
+                    writer.WriteStartArray(nameof(exception.StackTrace));
+                    string stackTrace = exception?.StackTrace;
+                    if (stackTrace != null)
                     {
-                        foreach (var stackTraceLines in exception?.StackTrace?.Split(Environment.NewLine))
+                        foreach (var stackTraceLines in stackTrace?.Split(Environment.NewLine))
                         {
-                            JsonSerializer.Serialize<string>(writer, stackTraceLines);
+                            writer.WriteStringValue(stackTraceLines);
                         }
                     }
                     writer.WriteEndArray();
-                    writer.WriteNumber("hResult", exception.HResult);
+                    writer.WriteNumber(nameof(exception.HResult), exception.HResult);
                     writer.WriteEndObject();
                 }
 
                 GetScopeInformation(writer, scopeProvider);
-
                 writer.WriteEndObject();
-
                 writer.Flush();
             }
             textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span));
             textWriter.Write(Environment.NewLine);
         }
 
-
         private static string GetLogLevelString(LogLevel logLevel)
         {
             switch (logLevel)
             {
                 case LogLevel.Trace:
-                    return "json_trace";
+                    return "Trace";
                 case LogLevel.Debug:
-                    return "json_debug";
+                    return "Debug";
                 case LogLevel.Information:
-                    return "json_info";
+                    return "Information";
                 case LogLevel.Warning:
-                    return "json_warn";
+                    return "Warning";
                 case LogLevel.Error:
-                    return "json_fail";
+                    return "Error";
                 case LogLevel.Critical:
-                    return "json_critical";
+                    return "Critical";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(logLevel));
             }
@@ -117,27 +113,23 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 if (FormatterOptions.IncludeScopes && scopeProvider != null)
                 {
-                    writer.WriteStartObject("scopes");
+                    writer.WriteStartObject("Scopes");
                     scopeProvider.ForEachScope((scope, state) =>
                     {
                         if (scope is IReadOnlyList<KeyValuePair<string, object>> kvps)
                         {
                             foreach (var kvp in kvps)
                             {
-                                if (kvp.Value is string ss)
-                                    state.WriteString(kvp.Key, ss);
-                                else
-                                if (kvp.Value is int ii)
-                                    state.WriteNumber(kvp.Key, ii);
+                                if (kvp.Value is string stringValue)
+                                    state.WriteString(kvp.Key, stringValue);
+                                else if (kvp.Value is int intValue)
+                                    state.WriteNumber(kvp.Key, intValue);
                                 else
                                 {
-                                    // check how this work
                                     state.WritePropertyName(kvp.Key);
                                     JsonSerializer.Serialize(state, kvp.Value);
                                 }
                             }
-                            //state is the writer
-                            //JsonSerializer.Serialize(state, scope);
                         }
                         else
                         {

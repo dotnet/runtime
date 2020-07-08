@@ -43,6 +43,9 @@ namespace Microsoft.Extensions.Logging.Console
 #pragma warning restore CS0618
         }
 
+        /// <summary>
+        /// Name of the log message formatter to use. Defaults to "simple" />.
+        /// </summary>
         public string FormatterName { get; set; }
 
         /// <summary>

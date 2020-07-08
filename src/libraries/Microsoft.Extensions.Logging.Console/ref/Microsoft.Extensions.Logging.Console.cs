@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Logging.Console
     public static partial class ConsoleFormatterNames
     {
         public const string Json = "json";
-        public const string Simple = "default";
+        public const string Simple = "simple";
         public const string Systemd = "systemd";
     }
     public partial class ConsoleFormatterOptions
