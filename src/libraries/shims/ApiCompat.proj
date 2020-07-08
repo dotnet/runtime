@@ -37,7 +37,7 @@
     <PropertyGroup>
       <ApiCompatImplementationDirs>$(BuildTargetFrameworkRefPath.TrimEnd('\/'))</ApiCompatImplementationDirs>
       <ApiCompatArgs Condition="'$(ApiCompatExcludeAttributeList)' != ''">$(ApiCompatArgs) --exclude-attributes "$(ApiCompatExcludeAttributeList)"</ApiCompatArgs>
-      <ApiCompatArgs>$(ApiCompatArgs) --impl-dirs "$(ApiCompatImplementationDirs)"</ApiCompatArgs>
+      <ApiCompatArgs>$(ApiCompatArgs) --impl-dirs "$(ApiCompatImplementationDirs)" --validate-baseline</ApiCompatArgs>
       <BaselineApiCompatArgs Condition="Exists($(ApiCompatBaselineIgnoreFile))">--baseline "$(ApiCompatBaselineIgnoreFile)"</BaselineApiCompatArgs>
       <ApiCompatExitCode>0</ApiCompatExitCode>
     </PropertyGroup>
