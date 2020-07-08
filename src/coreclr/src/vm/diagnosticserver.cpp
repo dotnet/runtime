@@ -7,6 +7,7 @@
 #include "eventpipeprotocolhelper.h"
 #include "dumpdiagnosticprotocolhelper.h"
 #include "profilerdiagnosticprotocolhelper.h"
+#include "processdiagnosticsprotocolhelper.h"
 #include "diagnosticsprotocol.h"
 
 #ifdef TARGET_UNIX
@@ -85,6 +86,10 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
 
             case DiagnosticsIpc::DiagnosticServerCommandSet::Dump:
                 DumpDiagnosticProtocolHelper::HandleIpcMessage(message, pStream);
+                break;
+
+            case DiagnosticsIpc::DiagnosticServerCommandSet::Process:
+                ProcessDiagnosticsProtocolHelper::HandleIpcMessage(message,pStream);
                 break;
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH

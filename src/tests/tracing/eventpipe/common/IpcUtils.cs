@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -13,6 +14,7 @@ using Microsoft.Diagnostics.Tools.RuntimeClient;
 using System.Threading;
 using System.Linq;
 using System.Reflection;
+using System.Security.Principal;
 
 // modified version of same code in dotnet/diagnostics for testing
 namespace Tracing.Tests.Common
@@ -153,6 +155,12 @@ namespace Tracing.Tests.Common
 
             return fSuccess;
         }
+
+        public static void Assert(bool predicate, string message = "")
+        {
+            if (!predicate)
+                throw new Exception(message);
+        }
     }
 
     public class IpcHeader
@@ -274,7 +282,7 @@ namespace Tracing.Tests.Common
             {
                 sb.Append("Payload=[ ");
                 foreach (byte b in Payload)
-                    sb.Append($"'{b:X4}' ");
+                    sb.Append($"0x{b:X2} ");
                 sb.Append(" ]");
             }
             sb.Append("}");
@@ -314,6 +322,59 @@ namespace Tracing.Tests.Common
         private static IpcMessage Read(Stream stream)
         {
             return IpcMessage.Parse(stream);
+        }
+    }
+
+    public class ConnectionHelper
+    {
+        private static string IpcRootPath { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"\\.\pipe\" : Path.GetTempPath();
+        public static Stream GetStandardTransport(int processId)
+        {
+            try 
+            {
+                var process = Process.GetProcessById(processId);
+            }
+            catch (System.ArgumentException)
+            {
+                throw new Exception($"Process {processId} is not running.");
+            }
+            catch (System.InvalidOperationException)
+            {
+                throw new Exception($"Process {processId} seems to be elevated.");
+            }
+ 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                string pipeName = $"dotnet-diagnostic-{processId}";
+                var namedPipe = new NamedPipeClientStream(
+                    ".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation);
+                namedPipe.Connect(3);
+                return namedPipe;
+            }
+            else
+            {
+                string ipcPort;
+                try
+                {
+                    ipcPort = Directory.GetFiles(IpcRootPath, $"dotnet-diagnostic-{processId}-*-socket") // Try best match.
+                                .OrderByDescending(f => new FileInfo(f).LastWriteTime)
+                                .FirstOrDefault();
+                    if (ipcPort == null)
+                    {
+                        throw new Exception($"Process {processId} not running compatible .NET Core runtime.");
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    throw new Exception($"Process {processId} not running compatible .NET Core runtime.");
+                }
+                string path = Path.Combine(IpcRootPath, ipcPort);
+                var remoteEP = new UnixDomainSocketEndPoint(path);
+
+                var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                socket.Connect(remoteEP);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
         }
     }
 }

@@ -24,14 +24,14 @@ static bool IsNullOrWhiteSpace(LPCWSTR value)
     return true;
 }
 
-static inline uint32_t GetStringLengthInBytes(const char *&value)
+static inline uint32_t GetStringLength(const char *&value)
 {
         return static_cast<uint32_t>(strlen(value) + 1);
 }
 
-static inline uint32_t GetStringLengthInBytes(const WCHAR *&value)
+static inline uint32_t GetStringLength(const WCHAR *&value)
 {
-        return static_cast<uint32_t>((wcslen(value) + 1) * 2);
+        return static_cast<uint32_t>(wcslen(value) + 1);
 }
 
 template <typename T>
@@ -41,18 +41,18 @@ static bool TryWriteString(uint8_t * &bufferCursor, uint16_t &bufferLen, const T
         std::is_same<T, char>::value || std::is_same<T, WCHAR>::value,
         "Can only be instantiated with char and WCHAR types.");
 
-    uint32_t stringLen = GetStringLengthInBytes(value);
-    ASSERT(bufferLen >= stringLen + sizeof(uint32_t));
+    uint32_t stringLen = GetStringLength(value);
+    ASSERT(bufferLen >= (stringLen * sizeof(T)) + sizeof(uint32_t));
     if (bufferLen < stringLen + sizeof(uint32_t))
         return false;
 
     memcpy(bufferCursor, &stringLen, sizeof(stringLen));
     bufferCursor += sizeof(stringLen);
 
-    memcpy(bufferCursor, value, stringLen);
-    bufferCursor += stringLen;
+    memcpy(bufferCursor, value, stringLen * sizeof(T));
+    bufferCursor += stringLen * sizeof(T);
 
-    bufferLen -= (stringLen + sizeof(uint32_t));
+    bufferLen -= (stringLen * sizeof(T) + sizeof(uint32_t));
     return true;
 }
 
@@ -67,7 +67,7 @@ uint16_t ProcessInfoPayload::GetSize()
     // GUID = 16 little endian bytes
     // wchar = 2 little endian bytes, UTF16 encoding
     // array<T> = uint length, length # of Ts
-    // string = (array<char> where the last char must = 0) or (length = 0)
+    // string = (array<wchar> where the last char must = 0) or (length = 0)
 
     // uint64_t ProcessId;
     // GUID RuntimeCookie;
@@ -81,17 +81,17 @@ uint16_t ProcessInfoPayload::GetSize()
 
     size += sizeof(uint32_t);
     size += CommandLine != nullptr ?
-        GetStringLengthInBytes(CommandLine) :
+        GetStringLength(CommandLine) * sizeof(WCHAR) :
         0;
 
     size += sizeof(uint32_t);
     size += OS != nullptr ?
-        GetStringLengthInBytes(OS) :
+        GetStringLength(OS) * sizeof(WCHAR) :
         0;
 
     size += sizeof(uint32_t);
     size += Arch != nullptr ?
-        GetStringLengthInBytes(Arch) :
+        GetStringLength(Arch) * sizeof(WCHAR) :
         0;
 
     ASSERT(!size.IsOverflow());
