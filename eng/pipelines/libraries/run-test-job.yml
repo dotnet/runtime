@@ -162,7 +162,7 @@ jobs:
             ${{ if in(parameters.coreclrTestGroup, 'gcstress0x3-gcstress0xc') }}:
               scenarios:
               # Disable gcstress0x3 for now; it causes lots of test timeouts. Investigate this after
-              # gcstress0xc runs are clean.
+              # gcstress0xc runs are clean. Tracking issue: https://github.com/dotnet/runtime/issues/38903.
               # - gcstress0x3
               - gcstress0xc
             ${{ if in(parameters.coreclrTestGroup, 'gcstress-extra') }}:
