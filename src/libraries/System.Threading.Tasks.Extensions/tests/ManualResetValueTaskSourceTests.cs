@@ -239,7 +239,7 @@ namespace System.Threading.Tasks.Sources.Tests
             mrvts.OnCompleted(_ => { }, new object(), 0, (ValueTaskSourceOnCompletedFlags)int.MaxValue);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task OnCompleted_ContinuationAlwaysInvokedAsynchronously(bool runContinuationsAsynchronously)
@@ -249,12 +249,12 @@ namespace System.Threading.Tasks.Sources.Tests
             {
                 var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-                int threadId = Environment.CurrentManagedThreadId;
+                var tl = new ThreadLocal<int> { Value = 42 };
                 mrvts.SetResult(42);
                 mrvts.OnCompleted(
                     _ =>
                     {
-                        Assert.NotEqual(threadId, Environment.CurrentManagedThreadId);
+                        Assert.NotEqual(42, tl.Value);
                         tcs.SetResult();
                     },
                     null,
@@ -262,11 +262,13 @@ namespace System.Threading.Tasks.Sources.Tests
                     ValueTaskSourceOnCompletedFlags.None);
                 mrvts.Reset();
 
+                tl.Value = 0;
+
                 await tcs.Task;
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task SetResult_RunContinuationsAsynchronously_ContinuationInvokedAccordingly(bool runContinuationsAsynchronously)
@@ -276,11 +278,11 @@ namespace System.Threading.Tasks.Sources.Tests
             {
                 var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-                int threadId = Environment.CurrentManagedThreadId;
+                var tl = new ThreadLocal<int> { Value = 42 };
                 mrvts.OnCompleted(
                     _ =>
                     {
-                        Assert.Equal(!runContinuationsAsynchronously, threadId == Environment.CurrentManagedThreadId);
+                        Assert.Equal(!runContinuationsAsynchronously, tl.Value == 42);
                         tcs.SetResult();
                     },
                     null,
@@ -288,6 +290,8 @@ namespace System.Threading.Tasks.Sources.Tests
                     ValueTaskSourceOnCompletedFlags.None);
                 mrvts.SetResult(42);
                 mrvts.Reset();
+
+                tl.Value = 0;
 
                 await tcs.Task;
             }
