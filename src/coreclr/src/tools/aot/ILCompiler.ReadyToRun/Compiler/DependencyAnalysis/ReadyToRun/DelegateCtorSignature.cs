@@ -44,11 +44,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 SignatureContext innerContext = builder.EmitFixup(factory, ReadyToRunFixupKind.DelegateCtor, _methodToken.Module, factory.SignatureContext);
 
                 builder.EmitMethodSignature(
-                    new MethodWithToken(_targetMethod.Method, _methodToken, constrainedType: null),
+                    new MethodWithToken(_targetMethod.Method, _methodToken, constrainedType: null, unboxing: false),
                     enforceDefEncoding: false,
                     enforceOwningType: false,
                     innerContext,
-                    isUnboxingStub: false,
                     isInstantiatingStub: _targetMethod.Method.HasInstantiation);
 
                 builder.EmitTypeSignature(_delegateType, innerContext);

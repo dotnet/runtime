@@ -396,11 +396,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             bool enforceDefEncoding,
             bool enforceOwningType,
             SignatureContext context,
-            bool isUnboxingStub,
             bool isInstantiatingStub)
         {
             uint flags = 0;
-            if (isUnboxingStub)
+            if (method.Unboxing)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub;
             }

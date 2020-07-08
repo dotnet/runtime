@@ -47,7 +47,7 @@ namespace ILCompiler
 
         public string SingleMethodTypeName { get; set; }
         public string SingleMethodName { get; set; }
-        public string[] SingleMethodGenericArgs { get; set; }
+        public string[] SingleMethodGenericArg { get; set; }
 
         public string[] CodegenOptions { get; set; }
 

@@ -574,7 +574,7 @@ namespace ILCompiler
 
         private MethodDesc CheckAndParseSingleMethodModeArguments(CompilerTypeSystemContext context)
         {
-            if (_commandLineOptions.SingleMethodName == null && _commandLineOptions.SingleMethodTypeName == null && _commandLineOptions.SingleMethodGenericArgs == null)
+            if (_commandLineOptions.SingleMethodName == null && _commandLineOptions.SingleMethodTypeName == null && _commandLineOptions.SingleMethodGenericArg == null)
                 return null;
 
             if (_commandLineOptions.SingleMethodName == null || _commandLineOptions.SingleMethodTypeName == null)
@@ -587,8 +587,8 @@ namespace ILCompiler
             if (method == null)
                 throw new CommandLineException(string.Format(SR.MethodNotFoundOnType, _commandLineOptions.SingleMethodName, _commandLineOptions.SingleMethodTypeName));
 
-            if (method.HasInstantiation != (_commandLineOptions.SingleMethodGenericArgs != null) ||
-                (method.HasInstantiation && (method.Instantiation.Length != _commandLineOptions.SingleMethodGenericArgs.Length)))
+            if (method.HasInstantiation != (_commandLineOptions.SingleMethodGenericArg != null) ||
+                (method.HasInstantiation && (method.Instantiation.Length != _commandLineOptions.SingleMethodGenericArg.Length)))
             {
                 throw new CommandLineException(
                     string.Format(SR.GenericArgCountMismatch, method.Instantiation.Length, _commandLineOptions.SingleMethodName, _commandLineOptions.SingleMethodTypeName));
@@ -597,7 +597,7 @@ namespace ILCompiler
             if (method.HasInstantiation)
             {
                 List<TypeDesc> genericArguments = new List<TypeDesc>();
-                foreach (var argString in _commandLineOptions.SingleMethodGenericArgs)
+                foreach (var argString in _commandLineOptions.SingleMethodGenericArg)
                     genericArguments.Add(FindType(context, argString));
                 method = method.MakeInstantiatedMethod(genericArguments.ToArray());
             }

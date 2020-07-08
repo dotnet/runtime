@@ -125,7 +125,7 @@ void FinalizerThread::FinalizeAllObjects(int bitToCheck)
     Thread *pThread = GetThread();
 
     // Finalize everyone
-    while (fobj)
+    while (fobj && !fQuitFinalizer)
     {
         if (fobj->GetHeader()->GetBits() & bitToCheck)
         {
