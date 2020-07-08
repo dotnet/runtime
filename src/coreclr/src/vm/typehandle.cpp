@@ -245,7 +245,7 @@ TypeHandle TypeHandle::GetTypeParam() const
 
     if (IsTypeDesc())
         return AsTypeDesc()->GetTypeParam();
-    
+
     return TypeHandle();
 }
 
@@ -286,7 +286,7 @@ TypeHandle TypeHandle::MakeArray(int rank) const
 TypeHandle TypeHandle::MakeNativeValueType() const
 {
     STATIC_CONTRACT_WRAPPER;
-    
+
     return ClassLoader::LoadNativeValueTypeThrowing(*this);
 }
 
@@ -421,7 +421,7 @@ bool TypeHandle::IsHFA() const
     return false;
 }
 
-CorElementType TypeHandle::GetHFAType() const
+CorInfoHFAElemType TypeHandle::GetHFAType() const
 {
     WRAPPER_NO_CONTRACT;
 
@@ -431,7 +431,7 @@ CorElementType TypeHandle::GetHFAType() const
     if (AsTypeDesc()->IsNativeValueType())
         return AsNativeValueType()->GetNativeHFAType();
 
-    return ELEMENT_TYPE_END;
+    return CORINFO_HFA_ELEM_NONE;
 }
 
 
@@ -524,20 +524,6 @@ TypeHandle TypeHandle::GetDefItfForComClassItf() const
     return GetMethodTable()->GetDefItfForComClassItf();
 }
 
-BOOL TypeHandle::IsProjectedFromWinRT() const
-{
-    LIMITED_METHOD_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
-    return GetMethodTable()->IsProjectedFromWinRT();
-}
-
-BOOL TypeHandle::IsExportedToWinRT() const
-{
-    LIMITED_METHOD_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
-    return GetMethodTable()->IsExportedToWinRT();
-}
-
 ComCallWrapperTemplate *TypeHandle::GetComCallWrapperTemplate() const
 {
     LIMITED_METHOD_CONTRACT;
@@ -575,7 +561,7 @@ BOOL TypeHandle::IsBoxedAndCanCastTo(TypeHandle type, TypeHandlePairList *pPairL
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM());
 
-        LOADS_TYPE(CLASS_DEPENDENCIES_LOADED);
+        LOADS_TYPE(CLASS_LOAD_EXACTPARENTS);
 
         // The caller should check for an exact match.
         // That will cover the cast of a (unboxed) valuetype to itself.
@@ -622,7 +608,7 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
 
-        LOADS_TYPE(CLASS_DEPENDENCIES_LOADED);
+        LOADS_TYPE(CLASS_LOAD_EXACTPARENTS);
     }
     CONTRACTL_END
 

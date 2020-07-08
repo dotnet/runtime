@@ -3,8 +3,8 @@
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
 
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
-  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)" />
+  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)" />
 
   <PropertyGroup>
     <!--
@@ -12,13 +12,14 @@
       Needs to happen in Directory.Build.targets to allow all the pkgproj's to set Version property first.
     -->
     <StableVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' != 'true'">$(Version)</StableVersion>
+    <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
   </PropertyGroup>
 
   <!--
-    Mono does not need some pkgproj (no host on mobile, no crossgen for desktop), so allow projects to 
+    Mono does not need some pkgproj (no host on mobile, no crossgen for desktop), so allow projects to
     opt out.
   -->
-  <Target Name="MonoSkipBuildProps" 
+  <Target Name="MonoSkipBuildProps"
           Condition="'$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
           BeforeTargets="GetSkipBuildProps">
     <PropertyGroup>
@@ -26,8 +27,14 @@
     </PropertyGroup>
   </Target>
 
-  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
     <RuntimeSpecificFrameworkSuffix>.Mono</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MonoEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
+    <RuntimeSpecificFrameworkSuffix>.Mono.LLVM</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MonoBundleLLVMOptimizer)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
+    <RuntimeSpecificFrameworkSuffix>.Mono.LLVM.AOT</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
 
   <!--
@@ -112,7 +119,7 @@
   -->
   <Target Name="RemoveDuplicateResolvedNuGetPackageAssets">
     <RemoveDuplicates Inputs="@(ReferenceCopyLocalPaths)">
-      <Output TaskParameter="Filtered" ItemName="FilteredReferenceCopyLocalPaths"/>
+      <Output TaskParameter="Filtered" ItemName="FilteredReferenceCopyLocalPaths" />
     </RemoveDuplicates>
 
     <ItemGroup>
@@ -149,6 +156,15 @@
       -->
       <File Remove="@(SiblingSymbolFile)" />
       <File Include="@(SiblingSymbolFile)" />
+    </ItemGroup>
+
+    <!-- On Windows, native symbols are installed to a PDB subdirectory -->
+    <ItemGroup>
+      <WindowsSymbolFileInSubdirectory Include="@(WindowsSymbolFile -> '%(RootDir)%(Directory)PDB\%(Filename)%(Extension)')" />
+      <ExistingWindowsSymbolFileInSubdirectory Include="@(WindowsSymbolFileInSubdirectory)" Condition="Exists('%(Identity)')" />
+      <File Include="@(ExistingWindowsSymbolFileInSubdirectory)">
+        <IsSymbolFile>true</IsSymbolFile>
+      </File>
     </ItemGroup>
 
     <PropertyGroup>
@@ -324,7 +340,8 @@
       FileClassifications="@(FrameworkListFileClass)"
       TargetFile="$(FrameworkListFile)"
       TargetFilePrefixes="ref/;runtimes/"
-      RootAttributes="@(FrameworkListRootAttributes)" />
+      RootAttributes="@(FrameworkListRootAttributes)"
+      SingleFileHostIncludeFilenames="@(SingleFileHostIncludeFilename)" />
 
     <ItemGroup>
       <File Include="$(FrameworkListFile)">
@@ -356,8 +373,6 @@
   <Target Name="AddCrossgenToolPackageReferences"
           BeforeTargets="CollectPackageReferences">
     <ItemGroup>
-      <CrossgenToolPackageReference Include="$(MicrosoftTargetingPackPrivateWinRTPackage)" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" />
-
       <!-- This tool is a prebuilt not buildable from source. -->
       <CrossgenToolPackageReference
         Condition="'$(DotNetBuildFromSource)' != 'true'"
@@ -371,7 +386,7 @@
       <PackageReference
         Include="@(CrossgenToolPackageReference)"
         Exclude="@(PackageReference)"
-        ExcludeAssets="All"/>
+        ExcludeAssets="All" />
     </ItemGroup>
   </Target>
 </Project>

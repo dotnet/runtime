@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
 using Internal.NativeCrypto;
@@ -16,7 +17,7 @@ namespace System.Security.Cryptography
         private SafeKeyHandle? _safeKeyHandle;
         private SafeProvHandle? _safeProvHandle;
         private readonly SHA1 _sha1;
-        private static volatile CspProviderFlags s_useMachineKeyStore = 0;
+        private static volatile CspProviderFlags s_useMachineKeyStore;
         private bool _disposed;
 
         /// <summary>
@@ -200,7 +201,7 @@ namespace System.Security.Cryptography
             get
             {
                 byte[] keySize = CapiHelper.GetKeyParameter(SafeKeyHandle, Constants.CLR_KEYLEN);
-                _keySize = (keySize[0] | (keySize[1] << 8) | (keySize[2] << 16) | (keySize[3] << 24));
+                _keySize = BinaryPrimitives.ReadInt32LittleEndian(keySize);
                 return _keySize;
             }
         }

@@ -60,6 +60,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <semaphore.h>
 #include <stdint.h>
 #include <dlfcn.h>
+#include <limits.h>
 
 #ifdef __linux__
 #include <sys/syscall.h> // __NR_membarrier
@@ -2010,12 +2011,7 @@ PAL_NotifyRuntimeStarted()
     _ASSERTE(ret == TRUE || processIdDisambiguationKey == 0);
 
     UnambiguousProcessDescriptor unambiguousProcessDescriptor(gPID, processIdDisambiguationKey);
-    LPCSTR applicationGroupId =
-#ifdef __APPLE__
-        PAL_GetApplicationGroupId();
-#else
-        nullptr;
-#endif
+    LPCSTR applicationGroupId = PAL_GetApplicationGroupId();
     CreateSemaphoreName(startupSemName, RuntimeStartupSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
     CreateSemaphoreName(continueSemName, RuntimeContinueSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
 
@@ -2065,13 +2061,18 @@ exit:
     return launched;
 }
 
-#ifdef __APPLE__
 LPCSTR
 PALAPI
 PAL_GetApplicationGroupId()
 {
+#ifdef __APPLE__
     return gApplicationGroupId;
+#else
+    return nullptr;
+#endif
 }
+
+#ifdef __APPLE__
 
 // We use 7bits from each byte, so this computes the extra size we need to encode a given byte count
 constexpr int GetExtraEncodedAreaSize(UINT rawByteCount)
@@ -3302,8 +3303,6 @@ Function:
 BOOL
 PROCCreateCrashDump(char** argv)
 {
-#if HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
-
     // Fork the core dump child process.
     pid_t childpid = fork();
 
@@ -3318,31 +3317,32 @@ PROCCreateCrashDump(char** argv)
         // Child process
         if (execve(argv[0], argv, palEnvironment) == -1)
         {
-            ERROR("PPROCCreateCrashDump: execve FAILED %d (%s)\n", errno, strerror(errno));
+            ERROR("PROCCreateCrashDump: execve() FAILED %d (%s)\n", errno, strerror(errno));
             return false;
         }
     }
     else
     {
+#if HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
         // Gives the child process permission to use /proc/<pid>/mem and ptrace
         if (prctl(PR_SET_PTRACER, childpid, 0, 0, 0) == -1)
         {
             // Ignore any error because on some CentOS and OpenSUSE distros, it isn't
             // supported but createdump works just fine.
-            ERROR("PPROCCreateCrashDump: prctl() FAILED %d (%s)\n", errno, strerror(errno));
+            ERROR("PROCCreateCrashDump: prctl() FAILED %d (%s)\n", errno, strerror(errno));
         }
+#endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
         // Parent waits until the child process is done
         int wstatus = 0;
         int result = waitpid(childpid, &wstatus, 0);
         if (result != childpid)
         {
-            ERROR("PPROCCreateCrashDump: waitpid FAILED result %d wstatus %d errno %d (%s)\n",
+            ERROR("PROCCreateCrashDump: waitpid() FAILED result %d wstatus %d errno %d (%s)\n",
                 result, wstatus, errno, strerror(errno));
             return false;
         }
         return !WIFEXITED(wstatus) || WEXITSTATUS(wstatus) == 0;
     }
-#endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
     return true;
 }
 

@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : Stack<TElement>
     {
-        protected override void Add(TElement value, ref ReadStack state)
+        protected override void Add(in TElement value, ref ReadStack state)
         {
             ((TCollection)state.Current.ReturnValue!).Push(value);
         }

@@ -5354,7 +5354,7 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
         /// <summary>Emit code to print out the current state of the runner.</summary>
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         private void DumpBacktracking()
         {
             Mvlocfld(_runtextposLocal!, s_runtextposField);

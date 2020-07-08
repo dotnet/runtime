@@ -227,15 +227,13 @@ if (CLR_CMAKE_HOST_UNIX)
 
   if(CLR_CMAKE_HOST_OSX)
     message("Detected OSX x86_64")
-  endif(CLR_CMAKE_HOST_OSX)
-
-  if(CLR_CMAKE_HOST_FREEBSD)
+  elseif(CLR_CMAKE_HOST_FREEBSD)
     message("Detected FreeBSD amd64")
-  endif(CLR_CMAKE_HOST_FREEBSD)
-
-  if(CLR_CMAKE_HOST_NETBSD)
+  elseif(CLR_CMAKE_HOST_NETBSD)
     message("Detected NetBSD amd64")
-  endif(CLR_CMAKE_HOST_NETBSD)
+  elseif(CLR_CMAKE_HOST_SUNOS)
+    message("Detected SunOS amd64")
+  endif(CLR_CMAKE_HOST_OSX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 if (CLR_CMAKE_HOST_WIN32)
@@ -373,6 +371,8 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_definitions(-DTARGET_LINUX)
   elseif(CLR_CMAKE_TARGET_NETBSD)
     add_definitions(-DTARGET_NETBSD)
+  elseif(CLR_CMAKE_TARGET_SUNOS)
+    add_definitions(-DTARGET_SUNOS)
   elseif(CLR_CMAKE_TARGET_ANDROID)
     add_definitions(-DTARGET_ANDROID)
   endif()
@@ -454,7 +454,8 @@ if (MSVC)
   # 4132: Const object should be initialized.
   # 4212: Function declaration used ellipsis.
   # 4530: C++ exception handler used, but unwind semantics are not enabled. Specify -GX.
-  add_compile_options(/w34092 /w34121 /w34125 /w34130 /w34132 /w34212 /w34530)
+  # 35038: data member 'member1' will be initialized after data member 'member2'.
+  add_compile_options(/w34092 /w34121 /w34125 /w34130 /w34132 /w34212 /w34530 /w35038)
 
   # Set Warning Level 4:
   # 4177: Pragma data_seg s/b at global scope.
@@ -576,5 +577,19 @@ else (CLR_CMAKE_HOST_WIN32)
     find_program(AWK awk)
     if (AWK STREQUAL "AWK-NOTFOUND")
         message(FATAL_ERROR "AWK not found")
+    endif()
+
+    # detect linker
+    set(ldVersion ${CMAKE_C_COMPILER};-Wl,--version)
+    execute_process(COMMAND ${ldVersion}
+        ERROR_QUIET
+        OUTPUT_VARIABLE ldVersionOutput)
+
+    if("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold")
+        set(LD_GNU 1)
+    elseif("${ldVersionOutput}" MATCHES "Solaris Link")
+        set(LD_SOLARIS 1)
+    else(CLR_CMAKE_HOST_OSX)
+        set(LD_OSX 1)
     endif()
 endif(CLR_CMAKE_HOST_WIN32)

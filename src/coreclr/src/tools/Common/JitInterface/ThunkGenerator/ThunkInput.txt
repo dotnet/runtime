@@ -121,6 +121,7 @@ CorInfoIsAccessAllowedResult,,int
 CorInfoMethodRuntimeFlags,,int
 CorInfoTailCall,,int
 CorInfoType,,int
+CorInfoHFAElemType,,int
 CorInfoTypeWithMod,,int
 CorInfoUnmanagedCallConv,,int
 InfoAccessType,,int
@@ -230,7 +231,7 @@ FUNCTIONS
     bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_LOOKUP_KIND * pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP *pLookup)
     void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP *pLookup)
     const char* getHelperName(CorInfoHelpFunc helpFunc)
-    CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context, BOOL speculative)
+    CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context)
     void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
     CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId)
     CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls)
@@ -263,7 +264,7 @@ FUNCTIONS
     CORINFO_ARG_LIST_HANDLE getArgNext(CORINFO_ARG_LIST_HANDLE args);
     CorInfoTypeWithMod getArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet);
     CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
-    CorInfoType getHFAType(CORINFO_CLASS_HANDLE hClass);
+    CorInfoHFAElemType getHFAType(CORINFO_CLASS_HANDLE hClass);
     HRESULT GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers);
     ULONG GetErrorMessage(LPWSTR buffer, ULONG bufferLength);
     [ManualNativeWrapper] int FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers);

@@ -12,7 +12,7 @@ namespace System.Tests
 {
     public class UnloadingAndProcessExitTests : FileCleanupTestBase
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void UnloadingEventMustHappenBeforeProcessExitEvent()
         {
             string fileName = GetTestFilePath();

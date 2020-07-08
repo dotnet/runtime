@@ -66,27 +66,17 @@ namespace
     }
 }
 
-template<typename T>
 int load_hostpolicy(
     const pal::string_t& lib_dir,
     pal::dll_t* h_host,
-    hostpolicy_contract_t &hostpolicy_contract,
-    const char *main_entry_symbol,
-    T* main_fn)
+    hostpolicy_contract_t& hostpolicy_contract)
 {
-    assert(main_entry_symbol != nullptr && main_fn != nullptr);
-
     int rc = hostpolicy_resolver::load(lib_dir, h_host, hostpolicy_contract);
     if (rc != StatusCode::Success)
     {
         trace::error(_X("An error occurred while loading required library %s from [%s]"), LIBHOSTPOLICY_NAME, lib_dir.c_str());
         return rc;
     }
-
-    // Obtain entrypoint symbol
-    *main_fn = reinterpret_cast<T>(pal::get_symbol(*h_host, main_entry_symbol));
-    if (*main_fn == nullptr)
-        return StatusCode::CoreHostEntryPointFailure;
 
     return StatusCode::Success;
 }
@@ -114,7 +104,18 @@ static int execute_app(
     hostpolicy_contract_t hostpolicy_contract{};
     corehost_main_fn host_main = nullptr;
 
-    int code = load_hostpolicy(impl_dll_dir, &hostpolicy_dll, hostpolicy_contract, "corehost_main", &host_main);
+    int code = load_hostpolicy(impl_dll_dir, &hostpolicy_dll, hostpolicy_contract);
+
+    // Obtain entrypoint symbol
+    if (code == StatusCode::Success)
+    {
+        host_main = hostpolicy_contract.corehost_main;
+        if (host_main == nullptr)
+        {
+            code = StatusCode::CoreHostEntryPointFailure;
+        }
+    }
+
     if (code != StatusCode::Success)
     {
         handle_initialize_failure_or_abort();
@@ -164,7 +165,18 @@ static int execute_host_command(
     hostpolicy_contract_t hostpolicy_contract{};
     corehost_main_with_output_buffer_fn host_main = nullptr;
 
-    int code = load_hostpolicy(impl_dll_dir, &hostpolicy_dll, hostpolicy_contract, "corehost_main_with_output_buffer", &host_main);
+    int code = load_hostpolicy(impl_dll_dir, &hostpolicy_dll, hostpolicy_contract);
+
+    // Obtain entrypoint symbol
+    if (code == StatusCode::Success)
+    {
+        host_main = hostpolicy_contract.corehost_main_with_output_buffer;
+        if (host_main == nullptr)
+        {
+            code = StatusCode::CoreHostEntryPointFailure;
+        }
+    }
+
     if (code != StatusCode::Success)
         return code;
 
@@ -471,7 +483,7 @@ namespace
 
         if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, probe_realpaths, &hostpolicy_dir))
         {
-            return CoreHostLibMissingFailure;
+            return StatusCode::CoreHostLibMissingFailure;
         }
 
         init.reset(new corehost_init_t(host_command, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions));
@@ -723,7 +735,7 @@ int fx_muxer_t::initialize_for_app(
     }
 
     std::unique_ptr<host_context_t> context;
-    rc = initialize_context(hostpolicy_dir, *init, intialization_options_t::none, context);
+    rc = initialize_context(hostpolicy_dir, *init, initialization_options_t::none, context);
     if (rc != StatusCode::Success)
     {
         trace::error(_X("Failed to initialize context for app: %s. Error code: 0x%x"), host_info.app_path.c_str(), rc);
@@ -744,7 +756,7 @@ int fx_muxer_t::initialize_for_runtime_config(
     const pal::char_t *runtime_config_path,
     hostfxr_handle *host_context_handle)
 {
-    int32_t initialization_options = intialization_options_t::none;
+    uint32_t initialization_options = initialization_options_t::none;
     const host_context_t *existing_context;
     {
         std::unique_lock<std::mutex> lock{ g_context_lock };
@@ -761,7 +773,7 @@ int fx_muxer_t::initialize_for_runtime_config(
         }
         else if (existing_context->type == host_context_type::empty)
         {
-            initialization_options |= intialization_options_t::wait_for_initialized;
+            initialization_options |= initialization_options_t::wait_for_initialized;
         }
     }
 
@@ -858,8 +870,30 @@ int fx_muxer_t::run_app(host_context_t *context)
 
 int fx_muxer_t::get_runtime_delegate(host_context_t *context, coreclr_delegate_type type, void **delegate)
 {
-    if (context->is_app)
-        return StatusCode::InvalidArgFailure;
+    switch (type)
+    {
+    case coreclr_delegate_type::com_activation:
+    case coreclr_delegate_type::load_in_memory_assembly:
+    case coreclr_delegate_type::winrt_activation:
+    case coreclr_delegate_type::com_register:
+    case coreclr_delegate_type::com_unregister:
+        if (context->is_app)
+            return StatusCode::HostApiUnsupportedScenario;
+        break;
+    default:
+        // Always allowed
+        break;
+    }
+
+    // last_known_delegate_type was added in 5.0, so old versions won't set it and it will be zero.
+    // But when get_runtime_delegate was originally implemented in 3.0,
+    // it supported up to load_assembly_and_get_function_pointer so we check that first.
+    if (type > coreclr_delegate_type::load_assembly_and_get_function_pointer
+        && (size_t)type > context->hostpolicy_context_contract.last_known_delegate_type)
+    {
+        trace::error(_X("The requested delegate type is not available in the target framework."));
+        return StatusCode::HostApiUnsupportedVersion;
+    }
 
     const corehost_context_contract &contract = context->hostpolicy_context_contract;
     {
@@ -896,10 +930,12 @@ const host_context_t* fx_muxer_t::get_active_host_context()
         return nullptr;
     }
 
-    corehost_context_contract hostpolicy_context_contract;
+    corehost_context_contract hostpolicy_context_contract = {};
     {
+        hostpolicy_context_contract.version = sizeof(corehost_context_contract);
         propagate_error_writer_t propagate_error_writer_to_corehost(hostpolicy_contract.set_error_writer);
-        int rc = hostpolicy_contract.initialize(nullptr, intialization_options_t::get_contract, &hostpolicy_context_contract);
+        uint32_t options = initialization_options_t::get_contract | initialization_options_t::context_contract_version_set;
+        int rc = hostpolicy_contract.initialize(nullptr, options, &hostpolicy_context_contract);
         if (rc != StatusCode::Success)
         {
             trace::error(_X("Failed to get contract for existing initialized hostpolicy: 0x%x"), rc);

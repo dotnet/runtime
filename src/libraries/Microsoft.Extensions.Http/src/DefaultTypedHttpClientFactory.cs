@@ -45,16 +45,16 @@ namespace Microsoft.Extensions.Http
         // as a transient, so that it doesn't close over the application root service provider.
         public class Cache
         {
-            private readonly static Func<ObjectFactory> _createActivator = () => ActivatorUtilities.CreateFactory(typeof(TClient), new Type[] { typeof(HttpClient), });
+            private static readonly Func<ObjectFactory> _createActivator = () => ActivatorUtilities.CreateFactory(typeof(TClient), new Type[] { typeof(HttpClient), });
 
             private ObjectFactory _activator;
             private bool _initialized;
             private object _lock;
 
             public ObjectFactory Activator => LazyInitializer.EnsureInitialized(
-                ref _activator, 
-                ref _initialized, 
-                ref _lock, 
+                ref _activator,
+                ref _initialized,
+                ref _lock,
                 _createActivator);
         }
     }

@@ -173,7 +173,7 @@ namespace System.Drawing
                     catch
                     {
                         // Exception from converter is too generic.
-                        throw new ArgumentException(SR.Format(SR.TextParseFailedFormat, font, $"name{separator} size[units[{separator} style=style1[{separator} style2{separator} ...]]]"), nameof(sizeStr));
+                        throw new ArgumentException(SR.Format(SR.TextParseFailedFormat, font, $"name{separator} size[units[{separator} style=style1[{separator} style2{separator} ...]]]"), nameof(value));
                     }
                 }
 

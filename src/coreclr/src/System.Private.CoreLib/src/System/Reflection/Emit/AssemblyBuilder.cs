@@ -21,6 +21,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Globalization;
 using System.IO;
@@ -125,7 +126,7 @@ namespace System.Reflection.Emit
         // This is only valid in the "external" AssemblyBuilder
         internal AssemblyBuilderData _assemblyData;
         private readonly InternalAssemblyBuilder _internalAssemblyBuilder;
-        private ModuleBuilder _manifestModuleBuilder = null!;
+        private ModuleBuilder _manifestModuleBuilder;
         // Set to true if the manifest module was returned by code:DefineDynamicModule to the user
         private bool _isManifestModuleUsedAsDefinedModule;
 
@@ -208,6 +209,7 @@ namespace System.Reflection.Emit
             }
         }
 
+        [MemberNotNull(nameof(_manifestModuleBuilder))]
         private void InitManifestModule()
         {
             InternalModuleBuilder modBuilder = (InternalModuleBuilder)GetInMemoryAssemblyModule(GetNativeHandle());

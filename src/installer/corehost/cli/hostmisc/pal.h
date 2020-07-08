@@ -76,7 +76,15 @@
 #else
 #define LIB_PREFIX _X("lib")
 #define MAKE_LIBNAME(NAME) (LIB_PREFIX _X(NAME) _X(".so"))
+#if defined(TARGET_FREEBSD)
+#define FALLBACK_HOST_RID _X("freebsd")
+#elif defined(TARGET_ILLUMOS)
+#define FALLBACK_HOST_RID _X("illumos")
+#elif defined(__sun)
+#define FALLBACK_HOST_RID _X("solaris")
+#else
 #define FALLBACK_HOST_RID _X("linux")
+#endif
 #endif
 
 #define LIBCORECLR_FILENAME (LIB_PREFIX _X("coreclr"))
@@ -146,7 +154,7 @@ namespace pal
     inline int strncasecmp(const char_t* str1, const char_t* str2, int len) { return ::_wcsnicmp(str1, str2, len); }
     inline int pathcmp(const pal::string_t &path1, const pal::string_t &path2) { return strcasecmp(path1.c_str(), path2.c_str()); }
     inline string_t to_string(int value) { return std::to_wstring(value); }
-	
+
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
     inline FILE * file_open(const string_t& path, const char_t* mode) { return ::_wfopen(path.c_str(), mode); }
 
@@ -249,7 +257,6 @@ namespace pal
     inline void err_flush() { std::fflush(stderr); }
     inline void out_flush() { std::fflush(stdout); }
 
-    // Based upon https://github.com/dotnet/core-setup/blob/master/src/Microsoft.DotNet.PlatformAbstractions/Native/PlatformApis.cs
     string_t get_current_os_rid_platform();
     inline string_t get_current_os_fallback_rid()
     {
@@ -272,6 +279,7 @@ namespace pal
 
     bool get_own_executable_path(string_t* recv);
     bool get_own_module_path(string_t* recv);
+    bool get_method_module_path(string_t* recv, void* method);
     bool get_module_path(dll_t mod, string_t* recv);
     bool get_current_module(dll_t *mod);
     bool getenv(const char_t* name, string_t* recv);

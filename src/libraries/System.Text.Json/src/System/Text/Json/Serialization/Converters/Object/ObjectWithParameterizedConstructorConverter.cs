@@ -21,10 +21,9 @@ namespace System.Text.Json.Serialization.Converters
     {
         internal sealed override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
-            bool shouldReadPreservedReferences = options.ReferenceHandling.ShouldReadPreservedReferences();
             object obj;
 
-            if (!state.SupportContinuation && !shouldReadPreservedReferences)
+            if (state.UseFastPath)
             {
                 // Fast path that avoids maintaining state variables.
 
@@ -99,7 +98,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (dataExtKey == null)
                         {
-                            jsonPropertyInfo.SetValueAsObject(obj, propValue);
+                            jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, propValue);
                         }
                         else
                         {
@@ -134,6 +133,8 @@ namespace System.Text.Json.Serialization.Converters
             {
                 state.Current.JsonClassInfo.UpdateSortedParameterCache(ref state.Current);
             }
+
+            EndRead(ref state);
 
             value = (T)obj;
 
@@ -187,10 +188,10 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
+                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
                     JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                         obj: null!,
-                        ref reader,
-                        options,
+                        unescapedPropertyName,
                         ref state,
                         out _,
                         createExtensionProperty: false);
@@ -272,10 +273,10 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj: null!,
-                            ref reader,
-                            options,
+                            unescapedPropertyName,
                             ref state,
                             out bool useExtensionProperty,
                             createExtensionProperty: false);
@@ -440,11 +441,12 @@ namespace System.Text.Json.Serialization.Converters
             InitializeConstructorArgumentCaches(ref state, options);
         }
 
+        protected virtual void EndRead(ref ReadStack state) { }
+
         /// <summary>
         /// Lookup the constructor parameter given its name in the reader.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryLookupConstructorParameter(
+        protected virtual bool TryLookupConstructorParameter(
             ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
@@ -454,41 +456,19 @@ namespace System.Text.Json.Serialization.Converters
 
             ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
 
-            if (!state.Current.JsonClassInfo.TryGetParameter(unescapedPropertyName, ref state.Current, out jsonParameterInfo))
-            {
-                return false;
-            }
+            jsonParameterInfo = state.Current.JsonClassInfo.GetParameter(
+                unescapedPropertyName,
+                ref state.Current,
+                out byte[] utf8PropertyName);
 
-            Debug.Assert(jsonParameterInfo != null);
-
-            // Increment ConstructorParameterIndex so GetProperty() starts with the next parameter the next time this function is called.
+            // Increment ConstructorParameterIndex so GetParameter() checks the next parameter first when called again.
             state.Current.CtorArgumentState!.ParameterIndex++;
 
-            // Support JsonException.Path.
-            Debug.Assert(
-                jsonParameterInfo.JsonPropertyName == null ||
-                options.PropertyNameCaseInsensitive ||
-                unescapedPropertyName.SequenceEqual(jsonParameterInfo.JsonPropertyName));
-
-            if (jsonParameterInfo.JsonPropertyName == null)
-            {
-                byte[] propertyNameArray = unescapedPropertyName.ToArray();
-                if (options.PropertyNameCaseInsensitive)
-                {
-                    // Each payload can have a different name here; remember the value on the temporary stack.
-                    state.Current.JsonPropertyName = propertyNameArray;
-                }
-                else
-                {
-                    //Prevent future allocs by caching globally on the JsonPropertyInfo which is specific to a Type+PropertyName
-                    // so it will match the incoming payload except when case insensitivity is enabled(which is handled above).
-                    jsonParameterInfo.JsonPropertyName = propertyNameArray;
-                }
-            }
+            // For case insensitive and missing property support of JsonPath, remember the value on the temporary stack.
+            state.Current.JsonPropertyName = utf8PropertyName;
 
             state.Current.CtorArgumentState.JsonParameterInfo = jsonParameterInfo;
-
-            return true;
+            return jsonParameterInfo != null;
         }
 
         internal override bool ConstructorIsParameterized => true;

@@ -62,6 +62,8 @@ namespace System.Text.Json.Serialization
         // This is used internally to quickly determine the type being converted for JsonConverter<T>.
         internal abstract Type TypeToConvert { get; }
 
+        internal abstract bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value);
+
         internal abstract bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
 
         /// <summary>
@@ -69,9 +71,16 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal abstract bool WriteCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
 
+        /// <summary>
+        /// Loosely-typed WriteWithQuotes() that forwards to strongly-typed WriteWithQuotes().
+        /// </summary>
+        internal abstract void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state);
+
         // Whether a type (ClassType.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized => false;
 
         internal ConstructorInfo? ConstructorInfo { get; set; }
+
+        internal virtual void Initialize(JsonSerializerOptions options) { }
     }
 }

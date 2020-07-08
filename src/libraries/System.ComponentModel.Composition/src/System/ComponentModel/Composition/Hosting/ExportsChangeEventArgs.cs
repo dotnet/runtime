@@ -19,7 +19,7 @@ namespace System.ComponentModel.Composition.Hosting
     {
         private readonly IEnumerable<ExportDefinition> _addedExports;
         private readonly IEnumerable<ExportDefinition> _removedExports;
-        private IEnumerable<string>? _changedContractNames = null;
+        private IEnumerable<string>? _changedContractNames;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ExportsChangeEventArgs"/> class with

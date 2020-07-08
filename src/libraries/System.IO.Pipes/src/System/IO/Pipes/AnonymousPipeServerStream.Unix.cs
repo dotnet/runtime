@@ -54,10 +54,5 @@ namespace System.IO.Pipes
             _clientHandle = clientHandle;
             State = PipeState.Connected;
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
     }
 }

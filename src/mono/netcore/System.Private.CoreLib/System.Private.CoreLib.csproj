@@ -8,8 +8,7 @@
     <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
-    <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
 
     <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
     <DebugType>Portable</DebugType>
@@ -19,10 +18,6 @@
     <OutputPath>$(BinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
     <Platforms>x64;x86;arm;arm64;wasm</Platforms>
-
-    <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
-    <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
-    <ILLinkTrimXml>$(MSBuildThisFileDirectory)src\LinkerDescriptor\System.Private.CoreLib.xml</ILLinkTrimXml>
   </PropertyGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
@@ -126,10 +121,9 @@
 
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
-    <FeaturePortableTimer>true</FeaturePortableTimer>
-    <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
+    <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
+    <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableThreadPool>
     <FeaturePerfTracing>true</FeaturePerfTracing>
-    <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
     <FeatureDefaultInterfaces>true</FeatureDefaultInterfaces>
   </PropertyGroup>
 
@@ -145,6 +139,20 @@
     <DefineConstants Condition="'$(TargetstvOS)' == 'true'">$(DefineConstants);TARGET_TVOS</DefineConstants>
   </PropertyGroup>
 
+  <!-- ILLinker settings -->
+  <PropertyGroup>
+    <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
+    <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)System.Private.CoreLib.xml" />
+    <ILLinkDescriptorsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
+    
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml"
+                             Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
+  </ItemGroup>
+  
   <!-- Sources -->
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\Console.Mono.cs" />
@@ -186,7 +194,6 @@
       <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\__ComObject.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Internal.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.Mono.cs" />
@@ -273,7 +280,6 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Environment.Unix.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\EventWaitHandle.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Mutex.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Semaphore.Unix.Mono.cs" />
@@ -282,7 +288,6 @@
       <Compile Include="$(BclSourcesRoot)\System\IO\MonoIOError.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-      <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTable.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeMarshal.cs" />
@@ -295,6 +300,15 @@
       <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
         <Link>Common\Interop\OSX\Interop.SearchPath.cs</Link>
       </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Browser.Mono.cs" />
+      <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.UnixOrWindows.Mono.cs" />
   </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />

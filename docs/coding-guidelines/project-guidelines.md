@@ -97,6 +97,46 @@ When building an individual project the `BuildTargetFramework` and `TargetOS` wi
 - .NET Framework latest -> `$(NetFrameworkCurrent)-Windows_NT`
 
 # Library project guidelines
+
+## TargetFramework conditions
+`TargetFramework` conditions should be avoided in the first PropertyGroup as that causes DesignTimeBuild issues: https://github.com/dotnet/project-system/issues/6143
+
+1. Use an equality check if the TargetFramework isn't overloaded with the OS portion.
+Example:
+```
+<PropertyGroup>
+  <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+</PropertyGroup>
+<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">...</ItemGroup>
+```
+2. Use a StartsWith when you want to test for multiple .NETStandard or .NETFramework versions.
+Example:
+```
+<PropertyGroup>
+  <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+</PropertyGroup>
+<ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))>...</ItemGroup>
+```
+3. Use a StartsWith if the TargetFramework is overloaded with the OS portion.
+Example:
+```
+<PropertyGroup>
+  <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0-Unix</TargetFrameworks>
+</PropertyGroup>
+<ItemGroup Condition="$(TargetFramework.StartsWith('netstandard2.0'))>...</ItemGroup>
+```
+4. Use negations if that makes the conditions easier.
+Example:
+```
+<PropertyGroup>
+  <TargetFrameworks>netstandard2.0;net461;net472;net5.0</TargetFrameworks>
+</PropertyGroup>
+<ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))>...</ItemGroup>
+<ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">...</ItemGroup>
+```
+
+## Directory layout
+
 Library projects should use the following directory layout.
 
 ```
@@ -121,7 +161,7 @@ The output for the ref project build will be a flat targeting pack folder in the
 ## src
 In the src directory for a library there should be only **one** `.csproj` file that contains any information necessary to build the library in various target frameworks. All supported target frameworks should be listed in the `TargetFrameworks` property.
 
-All libraries should use `<Reference Include="..." />` for all their project references. That will cause them to be resolved against a targeting pack (i.e. `bin\ref\net5.0` or `\bin\ref\netstanard2.0`) based on the project target framework. There should not be any direct project references to other libraries. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
+All libraries should use `<Reference Include="..." />` for all their project references. That will cause them to be resolved against a targeting pack (i.e. `bin\ref\net5.0` or `\bin\ref\netstandard2.0`) based on the project target framework. There should not be any direct project references to other libraries. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
 <BR>//**CONSIDER**: just using Reference and use a reference to System.Private.CoreLib as a trigger to turn the other References into a ProjectReference automatically. That will allow us to have consistency where all projects just use Reference.
 
 ### src output
@@ -129,8 +169,8 @@ The output for the src product build will be a flat runtime folder into the foll
 
 `bin\runtime\$(BuildSettings)`
 
-Note: The `BuildSettings` is a global property and not the project setting because we need all projects to output to the same runtime directory no matter which compatible target framework we select and build the project with. 
-```<BuildSettings>$(BuildTargetFramework)-$(TargetOS)-(Configuration)-(TargetArchitecture)</BuildSettings>``` 
+Note: The `BuildSettings` is a global property and not the project setting because we need all projects to output to the same runtime directory no matter which compatible target framework we select and build the project with.
+```<BuildSettings>$(BuildTargetFramework)-$(TargetOS)-(Configuration)-(TargetArchitecture)</BuildSettings>```
 
 ## pkg
 In the pkg directory for the library there should be only **one** `.pkgproj` for the primary package for the library. If the library has platform-specific implementations those should be split into platform specific projects in a subfolder for each platform. (see [Package projects](./package-projects.md))
@@ -176,7 +216,6 @@ Each source file should use the following guidelines
  - Where `<feature>` is the name of something that causes a fork in code that isn't a single configuration. Examples:
   - `.CoreCLR.cs` - implementation specific to CoreCLR runtime
   - `.Win32.cs` - implementation based on [Win32](https://en.wikipedia.org/wiki/Windows_API)
-  - `.WinRT.cs` - implementation based on [WinRT](https://en.wikipedia.org/wiki/Windows_Runtime)
 
 ## Define naming convention
 

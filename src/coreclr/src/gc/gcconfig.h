@@ -122,7 +122,13 @@ public:
     INT_CONFIG   (BGCFLEnableSmooth,      "BGCFLEnableSmooth",      NULL,                             0,                 "Enables smoothing")                                                                      \
     INT_CONFIG   (BGCFLEnableTBH,         "BGCFLEnableTBH",         NULL,                             0,                 "Enables TBH")                                                                            \
     INT_CONFIG   (BGCFLEnableFF,          "BGCFLEnableFF",          NULL,                             0,                 "Enables FF")                                                                             \
-    INT_CONFIG   (BGCG2RatioStep,         "BGCG2RatioStep",         NULL,                             5,                 "Ratio correction factor for ML loop") 
+    INT_CONFIG   (BGCG2RatioStep,         "BGCG2RatioStep",         NULL,                             5,                 "Ratio correction factor for ML loop")                                                    \
+    INT_CONFIG   (GCHeapHardLimitSOH,     "GCHeapHardLimitSOH",     NULL,                             0,                 "Specifies a hard limit for the GC heap SOH")                                             \
+    INT_CONFIG   (GCHeapHardLimitLOH,     "GCHeapHardLimitLOH",     NULL,                             0,                 "Specifies a hard limit for the GC heap LOH")                                             \
+    INT_CONFIG   (GCHeapHardLimitPOH,     "GCHeapHardLimitPOH",     NULL,                             0,                 "Specifies a hard limit for the GC heap POH")                                             \
+    INT_CONFIG   (GCHeapHardLimitSOHPercent, "GCHeapHardLimitSOHPercent", NULL,                             0,                 "Specifies the GC heap SOH usage as a percentage of the total memory")              \
+    INT_CONFIG   (GCHeapHardLimitLOHPercent, "GCHeapHardLimitLOHPercent", NULL,                             0,                 "Specifies the GC heap LOH usage as a percentage of the total memory")              \
+    INT_CONFIG   (GCHeapHardLimitPOHPercent, "GCHeapHardLimitPOHPercent", NULL,                             0,                 "Specifies the GC heap POH usage as a percentage of the total memory")              \
 
 // This class is responsible for retreiving configuration information
 // for how the GC should operate.

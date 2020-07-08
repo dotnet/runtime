@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Packaging
 {
@@ -67,7 +65,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentNullException">If parameter "package" is null</exception>
         /// <exception cref="ArgumentNullException">If parameter "partUri" is null</exception>
         /// <exception cref="ArgumentException">If parameter "partUri" does not conform to the valid partUri syntax</exception>
-        protected PackagePart(Package package, Uri partUri, string contentType)
+        protected PackagePart(Package package, Uri partUri, string? contentType)
             : this(package, partUri, contentType, CompressionOption.NotCompressed)
         {
         }
@@ -98,7 +96,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If parameter "partUri" does not conform to the valid partUri syntax</exception>
         protected PackagePart(Package package,
                                 Uri partUri,
-                                string contentType,
+                                string? contentType,
                                 CompressionOption compressionOption)
         {
             if (package == null)
@@ -320,7 +318,7 @@ namespace System.IO.Packaging
             if (mode == FileMode.Truncate)
                 throw new ArgumentException(SR.TruncateNotSupported);
 
-            Stream s = GetStreamCore(mode, access);
+            Stream? s = GetStreamCore(mode, access);
 
             if (s == null)
                 throw new IOException(SR.NullStreamReturned);
@@ -354,7 +352,7 @@ namespace System.IO.Packaging
         /// <param name="mode"></param>
         /// <param name="access"></param>
         /// <returns></returns>
-        protected abstract Stream GetStreamCore(FileMode mode, FileAccess access);
+        protected abstract Stream? GetStreamCore(FileMode mode, FileAccess access);
 
         #endregion Stream Methods
 
@@ -402,7 +400,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If relationship is being targeted to a relationship part</exception>
         /// <exception cref="System.Xml.XmlException">If parameter "id" is not a valid Xsd Id</exception>
         /// <exception cref="System.Xml.XmlException">If an id is provided in the method, and its not unique</exception>
-        public PackageRelationship CreateRelationship(Uri targetUri, TargetMode targetMode, string relationshipType, string id)
+        public PackageRelationship CreateRelationship(Uri targetUri, TargetMode targetMode, string relationshipType, string? id)
         {
             CheckInvalidState();
             _container.ThrowIfReadOnly();
@@ -495,7 +493,7 @@ namespace System.IO.Packaging
             //All the validations for dispose and file access are done in the
             //GetRelationshipHelper method.
 
-            PackageRelationship returnedRelationship = GetRelationshipHelper(id);
+            PackageRelationship? returnedRelationship = GetRelationshipHelper(id);
             if (returnedRelationship == null)
                 throw new InvalidOperationException(SR.PackagePartRelationshipDoesNotExist);
             else
@@ -564,7 +562,7 @@ namespace System.IO.Packaging
         {
             get
             {
-                return _contentType;
+                return _contentType!;
             }
         }
 
@@ -635,7 +633,7 @@ namespace System.IO.Packaging
 
                     //Once the container is closed there is no way to get to the stream or any other part
                     //in the container.
-                    _container = null;
+                    _container = null!;
 
                     //We do not need to explicitly call GC.SuppressFinalize(this)
 
@@ -675,6 +673,7 @@ namespace System.IO.Packaging
         #region Private Methods
 
         // lazy init
+        [MemberNotNull(nameof(_relationships))]
         private void EnsureRelationships()
         {
             if (_relationships == null)
@@ -737,7 +736,7 @@ namespace System.IO.Packaging
         /// </summary>
         /// <param name="id">The relationship ID.</param>
         /// <returns>The relationship with ID 'id' or null if not found.</returns>
-        private PackageRelationship GetRelationshipHelper(string id)
+        private PackageRelationship? GetRelationshipHelper(string id)
         {
             CheckInvalidState();
             _container.ThrowIfWriteOnly();
@@ -756,7 +755,7 @@ namespace System.IO.Packaging
         /// owned by this PackagePart, based on the filter string
         /// </summary>
         /// <returns></returns>
-        private PackageRelationshipCollection GetRelationshipsHelper(string filterString)
+        private PackageRelationshipCollection GetRelationshipsHelper(string? filterString)
         {
             CheckInvalidState();
             _container.ThrowIfWriteOnly();
@@ -795,9 +794,9 @@ namespace System.IO.Packaging
 
         private readonly PackUriHelper.ValidatedPartUri _uri;
         private Package _container;
-        private ContentType _contentType;
-        private List<Stream> _requestedStreams;
-        private InternalRelationshipCollection _relationships;
+        private ContentType? _contentType;
+        private List<Stream>? _requestedStreams;
+        private InternalRelationshipCollection? _relationships;
         private readonly CompressionOption _compressionOption = CompressionOption.NotCompressed;
         private bool _disposed;
         private bool _deleted;

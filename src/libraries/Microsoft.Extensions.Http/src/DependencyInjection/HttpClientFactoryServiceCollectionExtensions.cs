@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
@@ -146,7 +146,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
@@ -190,13 +190,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient<TClient>(this IServiceCollection services)
@@ -209,7 +209,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.AddTypedClientCore<TClient>(validateSingleType: true);
             return builder;
@@ -232,13 +232,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this IServiceCollection services)
@@ -252,7 +252,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.AddTypedClientCore<TClient, TImplementation>(validateSingleType: true);
             return builder;
@@ -271,13 +271,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// <para>
         /// Use <see cref="Options.Options.DefaultName"/> as the name to configure the default client.
@@ -321,13 +321,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// <para>
         /// Use <see cref="Options.Options.DefaultName"/> as the name to configure the default client.
@@ -368,13 +368,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient<TClient>(this IServiceCollection services, Action<HttpClient> configureClient)
@@ -392,7 +392,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
             builder.AddTypedClientCore<TClient>(validateSingleType: true);
@@ -413,13 +413,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient<TClient>(this IServiceCollection services, Action<IServiceProvider, HttpClient> configureClient)
@@ -437,7 +437,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
             builder.AddTypedClientCore<TClient>(validateSingleType: true);
@@ -462,13 +462,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this IServiceCollection services, Action<HttpClient> configureClient)
@@ -487,7 +487,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
             builder.AddTypedClientCore<TClient, TImplementation>(validateSingleType: true);
@@ -512,13 +512,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this IServiceCollection services, Action<IServiceProvider, HttpClient> configureClient)
@@ -537,7 +537,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
             builder.AddTypedClientCore<TClient, TImplementation>(validateSingleType: true);
@@ -558,13 +558,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// <para>
         /// Use <see cref="Options.Options.DefaultName"/> as the name to configure the default client.
@@ -610,13 +610,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// <para>
         /// Use <see cref="Options.Options.DefaultName"/> as the name to configure the default client.
@@ -666,13 +666,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// <para>
         /// Use <see cref="Options.Options.DefaultName"/> as the name to configure the default client.
@@ -723,13 +723,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// <para>
         /// Use <see cref="Options.Options.DefaultName"/> as the name to configure the default client.
@@ -778,13 +778,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this IServiceCollection services, Func<HttpClient, TImplementation> factory)
@@ -801,7 +801,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(factory));
             }
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             return AddHttpClient<TClient, TImplementation>(services, name, factory);
         }
 
@@ -822,13 +822,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// <typeparamref name="TImplementation">
         /// </typeparamref>
@@ -875,13 +875,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this IServiceCollection services, Func<HttpClient, IServiceProvider, TImplementation> factory)
@@ -898,7 +898,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(factory));
             }
 
-            var name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             return AddHttpClient<TClient, TImplementation>(services, name, factory);
         }
 
@@ -919,13 +919,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using 
+        /// <see cref="HttpClient"/> instances that apply the provided configuration can be retrieved using
         /// <see cref="IHttpClientFactory.CreateClient(string)"/> and providing the matching name.
         /// </para>
         /// <para>
         /// <typeparamref name="TClient"/> instances constructed with the appropriate <see cref="HttpClient" />
         /// can be retrieved from <see cref="IServiceProvider.GetService(Type)" /> (and related methods) by providing
-        /// <typeparamref name="TClient"/> as the service type. 
+        /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this IServiceCollection services, string name, Func<HttpClient, IServiceProvider, TImplementation> factory)

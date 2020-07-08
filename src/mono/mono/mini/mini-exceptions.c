@@ -2693,6 +2693,10 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		MONO_PROFILER_RAISE (exception_throw, (obj));
 		jit_tls->orig_ex_ctx_set = FALSE;
 
+#ifdef ENABLE_NETCORE
+		mono_first_chance_exception_internal (obj);
+#endif
+
 		StackFrameInfo catch_frame;
 		MonoFirstPassResult res;
 		res = handle_exception_first_pass (&ctx_cp, obj, &first_filter_idx, &ji, &prev_ji, non_exception, &catch_frame, &last_mono_wrapper_runtime_invoke);
@@ -3378,7 +3382,6 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
 }
 
 #ifndef MONO_CROSS_COMPILE
-static gboolean handle_crash_loop = FALSE;
 
 /*
  * mono_handle_native_crash:
@@ -3387,12 +3390,9 @@ static gboolean handle_crash_loop = FALSE;
  *   printing diagnostic information and aborting.
  */
 void
-mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info)
+mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, void *context)
 {
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
-
-	if (handle_crash_loop)
-		return;
 
 #ifdef MONO_ARCH_USE_SIGACTION
 	struct sigaction sa;
@@ -3400,17 +3400,20 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 
-	/* Remove our SIGABRT handler */
+	/* Mono has crashed - remove our handlers except SIGTERM, which is used by crash reporting */
+	/*  TODO: Combine with mono_runtime_cleanup_handlers (but with an option to not de-allocate anything) */
+	if (mini_debug_options.handle_sigint) {
+		g_assert (sigaction (SIGINT, &sa, NULL) != -1);
+	}
+
 	g_assert (sigaction (SIGABRT, &sa, NULL) != -1);
-
-	/* On some systems we get a SIGILL when calling abort (), because it might
-	 * fail to raise SIGABRT */
+	g_assert (sigaction (SIGFPE, &sa, NULL) != -1);
+	g_assert (sigaction (SIGSYS, &sa, NULL) != -1);
+	g_assert (sigaction (SIGSEGV, &sa, NULL) != -1);
+	g_assert (sigaction (SIGQUIT, &sa, NULL) != -1);
+	g_assert (sigaction (SIGBUS, &sa, NULL) != -1);
 	g_assert (sigaction (SIGILL, &sa, NULL) != -1);
-
-	/* Remove SIGCHLD, it uses the finalizer thread */
 	g_assert (sigaction (SIGCHLD, &sa, NULL) != -1);
-
-	/* Remove SIGQUIT, we are already dumping threads */
 	g_assert (sigaction (SIGQUIT, &sa, NULL) != -1);
 
 #endif
@@ -3423,11 +3426,8 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 		}
 	}
 
-	/* prevent infinite loops in crash handling */
-	handle_crash_loop = TRUE;
-
 	/*
-	 * A SIGSEGV indicates something went very wrong so we can no longer depend
+	 * A crash indicates something went very wrong so we can no longer depend
 	 * on anything working. So try to print out lots of diagnostics, starting 
 	 * with ones which have a greater chance of working.
 	 */
@@ -3453,13 +3453,13 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 		g_async_safe_printf ("=================================================================\n");
 	}
 
-	mono_post_native_crash_handler (signal, mctx, info, mono_do_crash_chaining);
+	mono_post_native_crash_handler (signal, mctx, info, mono_do_crash_chaining, context);
 }
 
 #else
 
 void
-mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info)
+mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, void *context)
 {
 	g_assert_not_reached ();
 }

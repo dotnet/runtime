@@ -30,7 +30,7 @@ namespace System.Net.Tests
             Assert.Null(initialDefaultWebProxyCredentials);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DefaultWebProxy_SetThenGet_ValuesMatch()
         {
             RemoteExecutor.Invoke(() =>

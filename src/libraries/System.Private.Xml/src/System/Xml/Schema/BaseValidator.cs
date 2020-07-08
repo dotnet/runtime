@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.IO;
@@ -9,25 +10,26 @@ namespace System.Xml.Schema
     using System.Xml;
     using System.Text;
     using System.Collections;
+    using System.Diagnostics.CodeAnalysis;
 
 #pragma warning disable 618
 
     internal class BaseValidator
     {
-        private readonly XmlSchemaCollection _schemaCollection;
+        private readonly XmlSchemaCollection? _schemaCollection;
         private readonly IValidationEventHandling _eventHandling;
         private readonly XmlNameTable _nameTable;
-        private SchemaNames _schemaNames;
+        private SchemaNames? _schemaNames;
         private readonly PositionInfo _positionInfo;
-        private XmlResolver _xmlResolver;
-        private Uri _baseUri;
+        private XmlResolver? _xmlResolver;
+        private Uri? _baseUri;
 
-        protected SchemaInfo schemaInfo;
+        protected SchemaInfo? schemaInfo;
         protected XmlValidatingReaderImpl reader;
         protected XmlQualifiedName elementName;
-        protected ValidationState context;
-        protected StringBuilder textValue;
-        protected string textString;
+        protected ValidationState? context;
+        protected StringBuilder? textValue;
+        protected string? textString;
         protected bool hasSibling;
         protected bool checkDatatype;
 
@@ -44,7 +46,7 @@ namespace System.Xml.Schema
             elementName = other.elementName;
         }
 
-        public BaseValidator(XmlValidatingReaderImpl reader, XmlSchemaCollection schemaCollection, IValidationEventHandling eventHandling)
+        public BaseValidator(XmlValidatingReaderImpl reader, XmlSchemaCollection? schemaCollection, IValidationEventHandling eventHandling)
         {
             Debug.Assert(schemaCollection == null || schemaCollection.NameTable == reader.NameTable);
             this.reader = reader;
@@ -60,7 +62,7 @@ namespace System.Xml.Schema
             get { return reader; }
         }
 
-        public XmlSchemaCollection SchemaCollection
+        public XmlSchemaCollection? SchemaCollection
         {
             get { return _schemaCollection; }
         }
@@ -78,6 +80,7 @@ namespace System.Xml.Schema
                 {
                     return _schemaNames;
                 }
+
                 if (_schemaCollection != null)
                 {
                     _schemaNames = _schemaCollection.GetSchemaNames(_nameTable);
@@ -86,6 +89,7 @@ namespace System.Xml.Schema
                 {
                     _schemaNames = new SchemaNames(_nameTable);
                 }
+
                 return _schemaNames;
             }
         }
@@ -95,13 +99,13 @@ namespace System.Xml.Schema
             get { return _positionInfo; }
         }
 
-        public XmlResolver XmlResolver
+        public XmlResolver? XmlResolver
         {
             get { return _xmlResolver; }
             set { _xmlResolver = value; }
         }
 
-        public Uri BaseUri
+        public Uri? BaseUri
         {
             get { return _baseUri; }
             set { _baseUri = value; }
@@ -112,7 +116,7 @@ namespace System.Xml.Schema
             get { return (ValidationEventHandler)_eventHandling.EventHandler; }
         }
 
-        public SchemaInfo SchemaInfo
+        public SchemaInfo? SchemaInfo
         {
             get
             {
@@ -124,7 +128,8 @@ namespace System.Xml.Schema
             }
         }
 
-        public IDtdInfo DtdInfo
+        [DisallowNull]
+        public IDtdInfo? DtdInfo
         {
             get
             {
@@ -132,11 +137,12 @@ namespace System.Xml.Schema
             }
             set
             {
-                SchemaInfo tmpSchemaInfo = value as SchemaInfo;
+                SchemaInfo? tmpSchemaInfo = value as SchemaInfo;
                 if (tmpSchemaInfo == null)
                 {
                     throw new XmlException(SR.Xml_InternalError, string.Empty);
                 }
+
                 this.schemaInfo = tmpSchemaInfo;
             }
         }
@@ -157,39 +163,42 @@ namespace System.Xml.Schema
         {
         }
 
-        public virtual object FindId(string name)
+        public virtual object? FindId(string name)
         {
             return null;
         }
 
         public void ValidateText()
         {
+            Debug.Assert(context != null);
             if (context.NeedValidateChildren)
             {
                 if (context.IsNill)
                 {
-                    SendValidationEvent(SR.Sch_ContentInNill, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
+                    SendValidationEvent(SR.Sch_ContentInNill, XmlSchemaValidator.QNameString(context.LocalName!, context.Namespace!));
                     return;
                 }
-                ContentValidator contentValidator = context.ElementDecl.ContentValidator;
+
+                ContentValidator contentValidator = context.ElementDecl!.ContentValidator!;
                 XmlSchemaContentType contentType = contentValidator.ContentType;
                 if (contentType == XmlSchemaContentType.ElementOnly)
                 {
-                    ArrayList names = contentValidator.ExpectedElements(context, false);
+                    ArrayList? names = contentValidator.ExpectedElements(context, false);
                     if (names == null)
                     {
-                        SendValidationEvent(SR.Sch_InvalidTextInElement, XmlSchemaValidator.BuildElementName(context.LocalName, context.Namespace));
+                        SendValidationEvent(SR.Sch_InvalidTextInElement, XmlSchemaValidator.BuildElementName(context.LocalName!, context.Namespace!));
                     }
                     else
                     {
                         Debug.Assert(names.Count > 0);
-                        SendValidationEvent(SR.Sch_InvalidTextInElementExpecting, new string[] { XmlSchemaValidator.BuildElementName(context.LocalName, context.Namespace), XmlSchemaValidator.PrintExpectedElements(names, false) });
+                        SendValidationEvent(SR.Sch_InvalidTextInElementExpecting, new string[] { XmlSchemaValidator.BuildElementName(context.LocalName!, context.Namespace!), XmlSchemaValidator.PrintExpectedElements(names, false) });
                     }
                 }
                 else if (contentType == XmlSchemaContentType.Empty)
                 {
                     SendValidationEvent(SR.Sch_InvalidTextInEmpty, string.Empty);
                 }
+
                 if (checkDatatype)
                 {
                     SaveTextValue(reader.Value);
@@ -199,17 +208,20 @@ namespace System.Xml.Schema
 
         public void ValidateWhitespace()
         {
+            Debug.Assert(context != null);
             if (context.NeedValidateChildren)
             {
-                XmlSchemaContentType contentType = context.ElementDecl.ContentValidator.ContentType;
+                XmlSchemaContentType contentType = context.ElementDecl!.ContentValidator!.ContentType;
                 if (context.IsNill)
                 {
-                    SendValidationEvent(SR.Sch_ContentInNill, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
+                    SendValidationEvent(SR.Sch_ContentInNill, XmlSchemaValidator.QNameString(context.LocalName!, context.Namespace!));
                 }
+
                 if (contentType == XmlSchemaContentType.Empty)
                 {
                     SendValidationEvent(SR.Sch_InvalidWhitespaceInEmpty, string.Empty);
                 }
+
                 if (checkDatatype)
                 {
                     SaveTextValue(reader.Value);
@@ -219,17 +231,20 @@ namespace System.Xml.Schema
 
         private void SaveTextValue(string value)
         {
+            Debug.Assert(textString != null);
             if (textString.Length == 0)
             {
                 textString = value;
             }
             else
             {
+                Debug.Assert(textValue != null);
                 if (!hasSibling)
                 {
                     textValue.Append(textString);
                     hasSibling = true;
                 }
+
                 textValue.Append(value);
             }
         }
@@ -239,12 +254,12 @@ namespace System.Xml.Schema
             SendValidationEvent(code, string.Empty);
         }
 
-        protected void SendValidationEvent(string code, string[] args)
+        protected void SendValidationEvent(string code, string?[]? args)
         {
             SendValidationEvent(new XmlSchemaException(code, args, reader.BaseURI, _positionInfo.LineNumber, _positionInfo.LinePosition));
         }
 
-        protected void SendValidationEvent(string code, string arg)
+        protected void SendValidationEvent(string code, string? arg)
         {
             SendValidationEvent(new XmlSchemaException(code, arg, reader.BaseURI, _positionInfo.LineNumber, _positionInfo.LinePosition));
         }
@@ -254,12 +269,12 @@ namespace System.Xml.Schema
             SendValidationEvent(e, XmlSeverityType.Error);
         }
 
-        protected void SendValidationEvent(string code, string msg, XmlSeverityType severity)
+        protected void SendValidationEvent(string code, string? msg, XmlSeverityType severity)
         {
             SendValidationEvent(new XmlSchemaException(code, msg, reader.BaseURI, _positionInfo.LineNumber, _positionInfo.LinePosition), severity);
         }
 
-        protected void SendValidationEvent(string code, string[] args, XmlSeverityType severity)
+        protected void SendValidationEvent(string code, string?[]? args, XmlSeverityType severity)
         {
             SendValidationEvent(new XmlSchemaException(code, args, reader.BaseURI, _positionInfo.LineNumber, _positionInfo.LinePosition), severity);
         }
@@ -276,10 +291,10 @@ namespace System.Xml.Schema
             }
         }
 
-        protected static void ProcessEntity(SchemaInfo sinfo, string name, object sender, ValidationEventHandler eventhandler, string baseUri, int lineNumber, int linePosition)
+        protected static void ProcessEntity(SchemaInfo sinfo, string name, object? sender, ValidationEventHandler? eventhandler, string? baseUri, int lineNumber, int linePosition)
         {
-            SchemaEntity en;
-            XmlSchemaException e = null;
+            SchemaEntity? en;
+            XmlSchemaException? e = null;
             if (!sinfo.GeneralEntities.TryGetValue(new XmlQualifiedName(name), out en))
             {
                 // validation error, see xml spec [68]
@@ -289,6 +304,7 @@ namespace System.Xml.Schema
             {
                 e = new XmlSchemaException(SR.Sch_UnparsedEntityRef, name, baseUri, lineNumber, linePosition);
             }
+
             if (e != null)
             {
                 if (eventhandler != null)
@@ -304,8 +320,8 @@ namespace System.Xml.Schema
 
         protected static void ProcessEntity(SchemaInfo sinfo, string name, IValidationEventHandling eventHandling, string baseUriStr, int lineNumber, int linePosition)
         {
-            SchemaEntity en;
-            string errorResId = null;
+            SchemaEntity? en;
+            string? errorResId = null;
             if (!sinfo.GeneralEntities.TryGetValue(new XmlQualifiedName(name), out en))
             {
                 // validation error, see xml spec [68]
@@ -330,7 +346,7 @@ namespace System.Xml.Schema
             }
         }
 
-        public static BaseValidator CreateInstance(ValidationType valType, XmlValidatingReaderImpl reader, XmlSchemaCollection schemaCollection, IValidationEventHandling eventHandling, bool processIdentityConstraints)
+        public static BaseValidator? CreateInstance(ValidationType valType, XmlValidatingReaderImpl reader, XmlSchemaCollection schemaCollection, IValidationEventHandling eventHandling, bool processIdentityConstraints)
         {
             switch (valType)
             {
@@ -352,6 +368,7 @@ namespace System.Xml.Schema
                 default:
                     break;
             }
+
             return null;
         }
     }

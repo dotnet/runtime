@@ -54,8 +54,6 @@ class AssemblySpec  : public BaseAssemblySpec
     // functions that take special care (and thus are allowed to use the function) are listed below
     friend Assembly * Module::GetAssemblyIfLoaded(
                 mdAssemblyRef       kAssemblyRef,
-                LPCSTR              szWinRtNamespace,
-                LPCSTR              szWinRtClassName,
                 IMDInternalImport * pMDImportOverride,
                 BOOL                fDoNotUtilizeExtraChecks,
                 ICLRPrivBinder      *pBindingContextForLoadedAssembly);
@@ -232,11 +230,6 @@ class AssemblySpec  : public BaseAssemblySpec
         return m_pAppDomain;
     }
 
-    void ParseEncodedName();
-
-    void SetWindowsRuntimeType(LPCUTF8 szNamespace, LPCUTF8 szClassName);
-    void SetWindowsRuntimeType(SString const & _ssTypeName);
-
     inline HRESULT SetContentType(AssemblyContentType type)
     {
         LIMITED_METHOD_CONTRACT;
@@ -247,28 +240,14 @@ class AssemblySpec  : public BaseAssemblySpec
         }
         else if (type == AssemblyContentType_WindowsRuntime)
         {
-            m_dwFlags = (m_dwFlags & ~afContentType_Mask) | afContentType_WindowsRuntime;
-            return S_OK;
+            // WinRT assemblies are not supported as direct references.
+            return COR_E_PLATFORMNOTSUPPORTED;
         }
         else
         {
             _ASSERTE(!"Unexpected content type.");
             return E_UNEXPECTED;
         }
-    }
-
-    // Returns true if the object can be used to bind to the target assembly.
-    // One case in which this is not true is when the content type is WinRT
-    // but no type name has been set.
-    inline bool HasBindableIdentity() const
-    {
-        STATIC_CONTRACT_LIMITED_METHOD;
-#ifdef FEATURE_COMINTEROP
-        return (HasUniqueIdentity() ||
-                (IsContentType_WindowsRuntime() && (GetWinRtTypeClassName() != NULL)));
-#else
-        return TRUE;
-#endif
     }
 
     inline BOOL CanUseWithBindingCache() const

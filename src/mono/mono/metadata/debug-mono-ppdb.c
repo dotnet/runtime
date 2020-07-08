@@ -43,19 +43,6 @@ struct _MonoPPDBFile {
 	GHashTable *method_hash;
 };
 
-/* IMAGE_DEBUG_DIRECTORY structure */
-typedef struct
-{
-	gint32 characteristics;
-	gint32 time_date_stamp;
-	gint16 major_version;
-	gint16 minor_version;
-	gint32 type;
-	gint32 size_of_data;
-	gint32 address;
-	gint32 pointer;
-}  ImageDebugDirectory;
-
 typedef struct {
 	gint32 signature;
 	guint8 guid [16];
@@ -67,11 +54,6 @@ typedef struct {
 	guint32 entry_point;
 	guint64 referenced_tables;
 } PdbStreamHeader;
-
-typedef enum {
-	DEBUG_DIR_ENTRY_CODEVIEW = 2,
-	DEBUG_DIR_ENTRY_PPDB = 17
-} DebugDirectoryEntryType;
 
 #define EMBEDDED_PPDB_MAGIC 0x4244504d
 
@@ -497,7 +479,7 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 	if (source_files)
 		sindexes = g_ptr_array_new ();
 
-	if (!method->token)
+	if (!method->token || tables [MONO_TABLE_METHODBODY].rows == 0)
 		return;
 
 	method_idx = mono_metadata_token_index (method->token);

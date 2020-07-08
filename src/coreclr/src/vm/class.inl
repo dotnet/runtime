@@ -28,7 +28,6 @@ inline void EEClassOptionalFields::Init()
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
     m_pClassFactory = NULL;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-    m_WinRTRedirectedTypeIndex = WinMDAdapter::RedirectedTypeIndex_Invalid;
 #endif // FEATURE_COMINTEROP
     m_cbModuleDynamicID = MODULE_NON_DYNAMIC_STATICS;
 #if defined(UNIX_AMD64_ABI)

@@ -43,14 +43,14 @@ namespace Microsoft.Extensions.Http
                 // Run other configuration first, we want to decorate.
                 next(builder);
 
-                var loggerName = !string.IsNullOrEmpty(builder.Name) ? builder.Name : "Default";
+                string loggerName = !string.IsNullOrEmpty(builder.Name) ? builder.Name : "Default";
 
                 // We want all of our logging message to show up as-if they are coming from HttpClient,
                 // but also to include the name of the client for more fine-grained control.
-                var outerLogger = _loggerFactory.CreateLogger($"System.Net.Http.HttpClient.{loggerName}.LogicalHandler");
-                var innerLogger = _loggerFactory.CreateLogger($"System.Net.Http.HttpClient.{loggerName}.ClientHandler");
+                ILogger outerLogger = _loggerFactory.CreateLogger($"System.Net.Http.HttpClient.{loggerName}.LogicalHandler");
+                ILogger innerLogger = _loggerFactory.CreateLogger($"System.Net.Http.HttpClient.{loggerName}.ClientHandler");
 
-                var options = _optionsMonitor.Get(builder.Name);
+                HttpClientFactoryOptions options = _optionsMonitor.Get(builder.Name);
 
                 // The 'scope' handler goes first so it can surround everything.
                 builder.AdditionalHandlers.Insert(0, new LoggingScopeHttpMessageHandler(outerLogger, options));

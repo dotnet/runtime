@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "comwrappers.hpp"
+#include <interoplibabi.h>
 #include <interoplibimports.h>
 
 #include <new> // placement new
@@ -47,8 +48,8 @@ namespace ABI
     };
     ABI_ASSERT(sizeof(ComInterfaceDispatch) == sizeof(void*));
 
-    const size_t DispatchAlignmentThisPtr = 16; // Should be a power of 2.
-    const intptr_t DispatchThisPtrMask = ~(DispatchAlignmentThisPtr - 1);
+    using InteropLib::ABI::DispatchAlignmentThisPtr;
+    using InteropLib::ABI::DispatchThisPtrMask;
     ABI_ASSERT(sizeof(void*) < DispatchAlignmentThisPtr);
 
     const intptr_t AlignmentThisPtrMaxPadding = DispatchAlignmentThisPtr - sizeof(void*);
@@ -179,17 +180,20 @@ namespace ABI
     }
 }
 
+// ManagedObjectWrapper_QueryInterface needs to be visible outside of this compilation unit
+// to support the DAC. See code:ClrDataAccess::DACTryGetComWrappersObjectFromCCW for the
+// usage in the DAC (look for the GetEEFuncEntryPoint call).
+HRESULT STDMETHODCALLTYPE ManagedObjectWrapper_QueryInterface(
+    _In_ ABI::ComInterfaceDispatch* disp,
+    /* [in] */ REFIID riid,
+    /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+{
+    ManagedObjectWrapper* wrapper = ABI::ToManagedObjectWrapper(disp);
+    return wrapper->QueryInterface(riid, ppvObject);
+}
+
 namespace
 {
-    HRESULT STDMETHODCALLTYPE ManagedObjectWrapper_QueryInterface(
-        _In_ ABI::ComInterfaceDispatch* disp,
-        /* [in] */ REFIID riid,
-        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
-    {
-        ManagedObjectWrapper* wrapper = ABI::ToManagedObjectWrapper(disp);
-        return wrapper->QueryInterface(riid, ppvObject);
-    }
-
     ULONG STDMETHODCALLTYPE ManagedObjectWrapper_AddRef(_In_ ABI::ComInterfaceDispatch* disp)
     {
         ManagedObjectWrapper* wrapper = ABI::ToManagedObjectWrapper(disp);
@@ -310,6 +314,7 @@ void ManagedObjectWrapper::GetIUnknownImpl(
     *fpRelease = ManagedObjectWrapper_IUnknownImpl.Release;
 }
 
+// The logic here should match code:ClrDataAccess::DACTryGetComWrappersObjectFromCCW in daccess/request.cpp
 ManagedObjectWrapper* ManagedObjectWrapper::MapFromIUnknown(_In_ IUnknown* pUnk)
 {
     _ASSERTE(pUnk != nullptr);

@@ -46,7 +46,7 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         // 24*7*4 = 672
         private readonly bool[] _scheduleArray = new bool[672];
-        private readonly long _utcOffSet = 0;
+        private readonly long _utcOffSet;
 
         public ActiveDirectorySchedule()
         {
@@ -59,7 +59,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public ActiveDirectorySchedule(ActiveDirectorySchedule schedule) : this()
         {
             if (schedule == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(schedule));
 
             bool[] tmpSchedule = schedule._scheduleArray;
             for (int i = 0; i < 672; i++)

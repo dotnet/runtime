@@ -7,7 +7,7 @@ using System;
 namespace Microsoft.Extensions.Http
 {
     /// <summary>
-    /// Used by the <see cref="DefaultHttpClientFactory"/> to apply additional initialization to the configure the 
+    /// Used by the <see cref="DefaultHttpClientFactory"/> to apply additional initialization to the configure the
     /// <see cref="HttpMessageHandlerBuilder"/> immediately before <see cref="HttpMessageHandlerBuilder.Build()"/>
     /// is called.
     /// </summary>

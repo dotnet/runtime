@@ -728,6 +728,7 @@ TESTS_CS_SRC=		\
 	null-blob-main.cs \
 	last-error.cs \
 	rgctx-thread-static.cs \
+	ccw-class-iface.cs \
 	bug-gh-17285.cs
 
 # some tests fail to compile on mcs
@@ -1431,6 +1432,7 @@ PROFILE_DISABLED_TESTS += \
 	dynamic-method-delegate.exe \
 	dynamic-method-churn.exe \
 	bug-666008.exe \
+	ccw-class-iface.exe \
 	bug-685908.exe
 
 # Test which needs System.Web support
@@ -1947,72 +1949,18 @@ INTERP_DISABLED_TESTS += calli_sig_check.exe
 
 # Test is too sensitive.
 INTERP_DISABLED_TESTS += localloc-noinit.exe
-
-# bug-48015.exe: be careful when re-enabling, it happens that it returns with exit code 0, but doesn't actually execute the test.
+INTERP_DISABLED_TESTS += dim-diamondshape.exe
+INTERP_DISABLED_TESTS += pinvoke3.exe
+INTERP_DISABLED_TESTS += cominterop.exe
+INTERP_DISABLED_TESTS += ccw-class-iface.exe
 # bug-60862.exe: missing support to map IP->method; only works on platforms with altstack support.
-# bug-60843.exe: something goes wrong when turning the decoded enum value into a boxed enum, so the loaded value ends up being random bytes
-
-if ARM
-INTERP_DISABLED_TESTS += \
-	appdomain-unload-callback.exe \
-	appdomain-unload.exe \
-	assemblyresolve_event6.exe \
-	async-with-cb-throws.exe \
-	block_guard_restore_aligment_on_exit.exe \
-	bug-323114.exe \
-	bug-335131.2.exe \
-	bug-415577.exe \
-	bug-45841-fpstack-exceptions.exe \
-	bug-48015.exe \
-	bug-60862.exe \
-	bug-80307.exe \
-	bug-80392.2.exe \
-	bug445361.exe \
-	calliGenericTest.exe \
-	cominterop.exe \
-	context-static.exe \
-	delegate-async-exit.exe \
-	delegate-delegate-exit.exe \
-	delegate-exit.exe \
-	delegate1.exe \
-	delegate3.exe \
-	delegate5.exe \
-	delegate8.exe \
-	delegate9.exe \
-	dim-diamondshape.exe \
-	dynamic-method-stack-traces.exe \
-	even-odd.exe \
-	exception18.exe \
-	field-access.exe \
-	finalizer-exception.exe \
-	handleref.exe \
-	monitor-abort.exe \
-	nullable_boxing.2.exe \
-	pinvoke2.exe \
-	pinvoke3.exe \
-	remoting2.exe \
-	remoting3.exe \
-	safehandle.2.exe \
-	stackframes-async.2.exe \
-	static-constructor.exe \
-	threadpool-exceptions2.exe \
-	threadpool-exceptions3.exe \
-	threadpool-exceptions4.exe \
-	threadpool-exceptions5.exe \
-	threadpool-exceptions6.exe \
-	thunks.exe \
-	typeload-unaligned.exe \
-	vararg.exe \
-	vararg2.exe \
-	vararg3.exe
-endif
+INTERP_DISABLED_TESTS += bug-60862.exe
+# bug-48015.exe: remoting test that fails on fullaotinterp scenarios
+INTERP_DISABLED_TESTS += bug-48015.exe
 
 if ARM64
 INTERP_DISABLED_TESTS += \
-	bug-48015.exe \
-	bug-80307.exe \
-	dim-diamondshape.exe \
-	pinvoke3.exe
+	bug-80307.exe
 
 # Test is too sensitive.
 DISABLED_TESTS += localloc-noinit.exe
@@ -2022,24 +1970,6 @@ endif
 if HOST_WIN32
 # Test is too sensitive?
 DISABLED_TESTS += localloc-noinit.exe
-endif
-
-if AMD64
-INTERP_DISABLED_TESTS += \
-	assemblyresolve_event6.exe \
-	bug-48015.exe \
-	bug-60862.exe \
-	cominterop.exe \
-	dim-diamondshape.exe \
-	pinvoke3.exe
-endif
-
-if X86
-INTERP_DISABLED_TESTS += \
-	bug-60862.exe \
-	cominterop.exe \
-	dim-diamondshape.exe \
-	pinvoke3.exe
 endif
 
 TESTS_CS=$(filter-out $(DISABLED_TESTS),$(TESTS_CS_SRC:.cs=.exe))
@@ -2823,7 +2753,7 @@ test-unhandled-exception: unhandled-exception-test-runner.2.exe
 safehandle.2.exe winx64structs.exe thunks.exe pinvoke3.exe pinvoke2.exe pinvoke-2.2.exe pinvoke17.exe pinvoke13.exe \
 	pinvoke11.exe pinvoke_ppcs.exe pinvoke_ppci.exe pinvoke_ppcf.exe pinvoke_ppcd.exe pinvoke_ppcc.exe pinvoke.exe \
 	marshalbool.exe marshal9.exe marshal5.exe marshal.exe handleref.exe cominterop.exe bug-Xamarin-5278.exe \
-	bug-58782-plain-throw.exe bug-58782-capture-and-throw.exe install_eh_callback.exe: libtest.la
+	bug-58782-plain-throw.exe bug-58782-capture-and-throw.exe install_eh_callback.exe ccw-class-iface.exe: libtest.la
 
 EXTRA_DIST += event-il.il
 

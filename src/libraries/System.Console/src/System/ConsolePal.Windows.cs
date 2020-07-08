@@ -570,30 +570,17 @@ namespace System
             }
         }
 
-        public static int CursorLeft
+        public static (int Left, int Top) GetCursorPosition()
         {
-            get
-            {
-                Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
-                return csbi.dwCursorPosition.X;
-            }
-        }
-
-        public static int CursorTop
-        {
-            get
-            {
-                Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
-                return csbi.dwCursorPosition.Y;
-            }
+            Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+            return (csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y);
         }
 
         public static unsafe string Title
         {
             get
             {
-                Span<char> initialBuffer = stackalloc char[256];
-                ValueStringBuilder builder = new ValueStringBuilder(initialBuffer);
+                ValueStringBuilder builder = new ValueStringBuilder(stackalloc char[256]);
 
                 while (true)
                 {

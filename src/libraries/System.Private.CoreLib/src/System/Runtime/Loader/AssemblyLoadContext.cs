@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -292,6 +293,7 @@ namespace System.Runtime.Loader
 
         // These methods load assemblies into the current AssemblyLoadContext
         // They may be used in the implementation of an AssemblyLoadContext derivation
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public Assembly LoadFromAssemblyPath(string assemblyPath)
         {
             if (assemblyPath == null)
@@ -312,6 +314,7 @@ namespace System.Runtime.Loader
             }
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public Assembly LoadFromNativeImagePath(string nativeImagePath, string? assemblyPath)
         {
             if (nativeImagePath == null)
@@ -337,11 +340,13 @@ namespace System.Runtime.Loader
             }
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public Assembly LoadFromStream(Stream assembly)
         {
             return LoadFromStream(assembly, null);
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public Assembly LoadFromStream(Stream assembly, Stream? assemblySymbols)
         {
             if (assembly == null)
@@ -564,16 +569,6 @@ namespace System.Runtime.Loader
             return context.ResolveUsingLoad(assemblyName);
         }
 
-        // This method is invoked by the VM to resolve a satellite assembly reference
-        // after trying assembly resolution via Load override without success.
-        private static Assembly? ResolveSatelliteAssembly(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
-        {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-
-            // Invoke the ResolveSatelliteAssembly method
-            return context.ResolveSatelliteAssembly(assemblyName);
-        }
-
         private Assembly? GetFirstResolvedAssemblyFromResolvingEvent(AssemblyName assemblyName)
         {
             Assembly? resolvedAssembly = null;
@@ -715,6 +710,8 @@ namespace System.Runtime.Loader
         }
 #endif // !CORERT
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Satellite assemblies have no code in them and loading is not a problem")]
         private Assembly? ResolveSatelliteAssembly(AssemblyName assemblyName)
         {
             // Called by native runtime when CultureName is not empty

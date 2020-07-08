@@ -78,7 +78,7 @@ namespace System.Text.Json.Serialization
 
             int parameterCount = constructor.GetParameters().Length;
 
-            Debug.Assert(parameterCount < JsonConstants.UnboxedParameterCountThreshold);
+            Debug.Assert(parameterCount <= JsonConstants.UnboxedParameterCountThreshold);
 
             return (arg0, arg1, arg2, arg3) =>
             {
@@ -113,7 +113,7 @@ namespace System.Text.Json.Serialization
         public override Action<TCollection, object?> CreateAddMethodDelegate<TCollection>()
         {
             Type collectionType = typeof(TCollection);
-            Type elementType = typeof(object);
+            Type elementType = JsonClassInfo.ObjectType;
 
             // We verified this won't be null when we created the converter for the collection type.
             MethodInfo addMethod = (collectionType.GetMethod("Push") ?? collectionType.GetMethod("Enqueue"))!;

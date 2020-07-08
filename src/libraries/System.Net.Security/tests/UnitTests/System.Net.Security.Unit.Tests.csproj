@@ -24,7 +24,6 @@
     <!-- Fakes -->
     <Compile Include="Fakes\FakeSslStream.Implementation.cs" />
     <Compile Include="Fakes\FakeAuthenticatedStream.cs" />
-    <Compile Include="Fakes\FakeLazyAsyncResult.cs" />
     <!-- Common test files -->
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
              Link="CommonTest\System\Net\SslProtocolSupport.cs" />
@@ -33,6 +32,8 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Production code references -->
+    <Compile Include="..\..\src\System\Net\Security\NetEventSource.Security.cs"
+             Link="ProductionCode\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslStream.cs"
              Link="ProductionCode\System\Net\Security\SslStream.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslClientAuthenticationOptions.cs"
@@ -45,8 +46,12 @@
              Link="ProductionCode\System\Net\Security\SslApplicationProtocol.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslConnectionInfo.cs"
              Link="ProductionCode\System\Net\Security\SslConnectionInfo.cs" />
-    <Compile Include="..\..\src\System\Net\Security\SslStream.Implementation.Adapters.cs"
-             Link="ProductionCode\System\Net\Security\SslStream.Implementation.Adapters.cs" />
+    <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.cs"
+             Link="ProductionCode\System\Net\Security\SslStreamCertificateContext.cs" />
+    <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.Windows.cs"
+             Link="ProductionCode\System\Net\Security\SslStreamCertificateContext.Windows.cs" />
+    <Compile Include="..\..\src\System\Net\Security\ReadWriteAdapter.cs"
+             Link="ProductionCode\System\Net\Security\ReadWriteAdapter.cs" />
     <Compile Include="..\..\src\System\Net\SslStreamContext.cs"
              Link="ProductionCode\System\Net\SslStreamContext.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
@@ -55,6 +60,8 @@
              Link="ProductionCode\Common\System\Net\TlsAlertType.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsAlertMessage.cs"
              Link="ProductionCode\Common\System\Net\TlsAlertMessage.cs" />
+    <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
+             Link="ProductionCode\Common\System\Net\TlsFrameHelper.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"
              Link="Common\Interop\Windows\SChannel\Interop.Alerts.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"

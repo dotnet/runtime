@@ -245,7 +245,6 @@ namespace System.Text
             m_ChunkChars = GC.AllocateUninitializedArray<char>(persistedCapacity);
             persistedString.CopyTo(0, m_ChunkChars, 0, persistedString.Length);
             m_ChunkLength = persistedString.Length;
-            m_ChunkPrevious = null;
             AssertInvariants();
         }
 
@@ -982,12 +981,12 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder AppendLine() => Append(Environment.NewLineConst);
+        public StringBuilder AppendLine() => Append(Environment.NewLine);
 
         public StringBuilder AppendLine(string? value)
         {
             Append(value);
-            return Append(Environment.NewLineConst);
+            return Append(Environment.NewLine);
         }
 
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
@@ -1144,7 +1143,9 @@ namespace System.Text
             return this;
         }
 
+#pragma warning disable CA1830 // Prefer strongly-typed Append and Insert method overloads on StringBuilder. No need to fix for the builder itself
         public StringBuilder Append(bool value) => Append(value.ToString());
+#pragma warning restore CA1830
 
         public StringBuilder Append(char value)
         {

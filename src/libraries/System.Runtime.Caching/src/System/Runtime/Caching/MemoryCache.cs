@@ -344,7 +344,7 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            if (name == string.Empty)
+            if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
             }
@@ -364,7 +364,7 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            if (name == string.Empty)
+            if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
             }

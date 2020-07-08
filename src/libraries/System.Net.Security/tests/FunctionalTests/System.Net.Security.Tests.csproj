@@ -9,6 +9,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="NotifyReadVirtualNetworkStream.cs" />
     <Compile Include="DummyTcpServer.cs" />
+    <Compile Include="SslStreamExtensions.cs" />
     <Compile Include="TestConfiguration.cs" />
     <Compile Include="TestHelper.cs" />
     <!-- SslStream Tests -->
@@ -60,15 +61,17 @@
              Link="Common\System\Net\VirtualNetwork\VirtualNetwork.cs" />
     <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetworkStream.cs"
              Link="Common\System\Net\VirtualNetwork\VirtualNetworkStream.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs"
+             Link="CommonTest\System\Security\Cryptography\509Certificates\CertificateAuthority.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
+             Link="CommonTest\System\Security\Cryptography\509Certificates\RevocationResponder.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs" />
-    <Compile Include="..\..\src\System\Net\Security\SniHelper.cs"
-             Link="src\SniHelper.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
              Link="src\TlsFrameHelper.cs" />
-    <Compile Include="SniHelperTest.cs" />
+    <Compile Include="TlsFrameHelperTests.cs" />
     <Compile Include="SslAuthenticationOptionsTest.cs" />
     <Compile Include="SslStreamAlertsTest.cs" />
     <Compile Include="SslStreamAllowRenegotiationTests.cs" />

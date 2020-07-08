@@ -157,7 +157,7 @@ namespace System.Net.Test.Common
 
             if (_ignoredSettingsAckPromise != null && header.Type == FrameType.Settings && header.Flags == FrameFlags.Ack)
             {
-                _ignoredSettingsAckPromise.TrySetResult(false);
+                _ignoredSettingsAckPromise.TrySetResult(true);
                 _ignoredSettingsAckPromise = null;
                 return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
             }

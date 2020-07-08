@@ -6859,6 +6859,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 unsigned             lclNum = lcl->GetLclNum();
                 LclVarDsc*           varDsc = &lvaTable[lclNum];
 
+                if (varDsc->CanBeReplacedWithItsField(this))
+                {
+                    lclNum = varDsc->lvFieldLclStart;
+                    varDsc = &lvaTable[lclNum];
+                }
+
                 // Do we have a Use (read) of the LclVar?
                 //
                 if ((lcl->gtFlags & GTF_VAR_DEF) == 0 ||

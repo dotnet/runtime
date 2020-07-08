@@ -103,6 +103,7 @@ internal static partial class Interop
 
         // Custom Error codes to track errors beyond kernel interface.
         EHOSTNOTFOUND    = 0x20001,           // Name lookup failed
+        ESOCKETERROR     = 0x20002,           // Unspecified socket error
 
         // POSIX permits these to have the same value and we make them always equal so
         // that we do not introduce a dependency on distinguishing between them that
@@ -182,6 +183,16 @@ internal static partial class Interop
             return Marshal.PtrToStringAnsi((IntPtr)message)!;
         }
 
+#if SERIAL_PORTS
+        [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_ConvertErrorPlatformToPal")]
+        internal static extern Error ConvertErrorPlatformToPal(int platformErrno);
+
+        [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_ConvertErrorPalToPlatform")]
+        internal static extern int ConvertErrorPalToPlatform(Error error);
+
+        [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_StrErrorR")]
+        private static extern unsafe byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
+#else
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConvertErrorPlatformToPal")]
         internal static extern Error ConvertErrorPlatformToPal(int platformErrno);
 
@@ -190,6 +201,7 @@ internal static partial class Interop
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_StrErrorR")]
         private static extern unsafe byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
+#endif
     }
 }
 

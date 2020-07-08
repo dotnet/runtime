@@ -27,7 +27,9 @@ namespace System.Globalization.Tests
         private static Stream GetIdnaTestTxt()
         {
             string fileName = null;
-            if (PlatformDetection.IsWindows7)
+            if (PlatformDetection.ICUVersion >= new Version(66, 0))
+                fileName = "IdnaTest_13.txt";
+            else if (PlatformDetection.IsWindows7)
                 fileName = "IdnaTest_Win7.txt";
             else if (PlatformDetection.IsWindows10Version1903OrGreater)
                 fileName = "IdnaTest_11.txt";
@@ -60,7 +62,9 @@ namespace System.Globalization.Tests
 
         private static IConformanceIdnaTest GetConformanceIdnaTest(string line, int lineCount)
         {
-            if (PlatformDetection.IsWindows7)
+            if (PlatformDetection.ICUVersion >= new Version(66, 0))
+                return new Unicode_13_0_IdnaTest(line, lineCount);
+            else if (PlatformDetection.IsWindows7)
                 return new Unicode_Win7_IdnaTest(line, lineCount);
             else if (PlatformDetection.IsWindows10Version1903OrGreater)
                 return new Unicode_11_0_IdnaTest(line, lineCount);
@@ -83,9 +87,12 @@ namespace System.Globalization.Tests
         /// <returns></returns>
         public static IEnumerable<IConformanceIdnaTest> GetDataset()
         {
+            // Nls is transitional so we filter out non transitional test cases.
+            // Icu is the opposite.
+            IdnType idnFilter = PlatformDetection.IsNlsGlobalization ? IdnType.Nontransitional : IdnType.Transitional;
             foreach (var entry in ParseFile(GetIdnaTestTxt(), GetConformanceIdnaTest))
             {
-                if (entry.Type != IdnType.Nontransitional && entry.Source != string.Empty)
+                if (entry.Type != idnFilter && entry.Source != string.Empty)
                     yield return entry;
             }
         }

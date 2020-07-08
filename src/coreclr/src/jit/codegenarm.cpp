@@ -156,7 +156,10 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 //------------------------------------------------------------------------
 // instGen_Set_Reg_To_Imm: Move an immediate value into an integer register.
 //
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, insFlags flags)
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
+                                     regNumber reg,
+                                     ssize_t   imm,
+                                     insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(unsigned gtFlags))
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
@@ -961,7 +964,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     // If this is a register candidate that has been spilled, genConsumeReg() will
     // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
 
-    if (!isRegCandidate && !(tree->gtFlags & GTF_SPILLED))
+    if (!isRegCandidate && !tree->IsMultiReg() && !(tree->gtFlags & GTF_SPILLED))
     {
         const LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
         var_types        type   = varDsc->GetRegisterType(tree);
@@ -1048,9 +1051,9 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
     // var = call, where call returns a multi-reg return value
     // case is handled separately.
-    if (data->gtSkipReloadOrCopy()->IsMultiRegCall())
+    if (data->gtSkipReloadOrCopy()->IsMultiRegNode())
     {
-        genMultiRegCallStoreToLocal(tree);
+        genMultiRegStoreToLocal(tree);
     }
     else
     {
@@ -1648,14 +1651,14 @@ void CodeGen::genCodeForMulLong(GenTreeMultiRegOp* node)
 // genProfilingEnterCallback: Generate the profiling function enter callback.
 //
 // Arguments:
-//     initReg        - register to use as scratch register
-//     pInitRegZeroed - OUT parameter. *pInitRegZeroed set to 'false' if 'initReg' is
-//                      not zero after this call.
+//     initReg          - register to use as scratch register
+//     pInitRegModified - OUT parameter. *pInitRegModified set to 'true' if and only if
+//                        this call sets 'initReg' to a non-zero value.
 //
 // Return Value:
 //     None
 //
-void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegModified)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -1688,7 +1691,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
     if (initReg == argReg)
     {
-        *pInitRegZeroed = false;
+        *pInitRegModified = true;
     }
 }
 
@@ -1818,14 +1821,17 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 // Arguments:
 //      frameSize         - the size of the stack frame being allocated.
 //      initReg           - register to use as a scratch register.
-//      pInitRegZeroed    - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
+//      pInitRegModified  - OUT parameter. *pInitRegModified is set to 'true' if and only if
 //                          this call sets 'initReg' to a non-zero value.
 //      maskArgRegsLiveIn - incoming argument registers that are currently live.
 //
 // Return value:
 //      None
 //
-void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
+void CodeGen::genAllocLclFrame(unsigned  frameSize,
+                               regNumber initReg,
+                               bool*     pInitRegModified,
+                               regMaskTP maskArgRegsLiveIn)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -1855,7 +1861,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         }
 
         regSet.verifyRegUsed(initReg);
-        *pInitRegZeroed = false; // The initReg does not contain zero
+        *pInitRegModified = true;
 
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, frameSize);
         compiler->unwindPadding();
@@ -1875,7 +1881,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         if ((genRegMask(initReg) & (RBM_STACK_PROBE_HELPER_ARG | RBM_STACK_PROBE_HELPER_CALL_TARGET |
                                     RBM_STACK_PROBE_HELPER_TRASH)) != RBM_NONE)
         {
-            *pInitRegZeroed = false;
+            *pInitRegModified = true;
         }
     }
 

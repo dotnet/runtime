@@ -314,7 +314,7 @@ DECLARE_INTERFACE_(ICeeGenInternal, IUnknown)
 // Private interface exposed by
 //    AssemblyMDInternalImport - gives us access to the internally stored IMDInternalImport*.
 //
-//    RegMeta, WinMDImport - supports the internal GetMetaDataInternalInterfaceFromPublic() "api".
+//    RegMeta - supports the internal GetMetaDataInternalInterfaceFromPublic() "api".
 //
 // {92B2FEF9-F7F5-420d-AD42-AECEEE10A1EF}
 EXTERN_GUID(IID_IGetIMDInternalImport, 0x92b2fef9, 0xf7f5, 0x420d, 0xad, 0x42, 0xae, 0xce, 0xee, 0x10, 0xa1, 0xef);

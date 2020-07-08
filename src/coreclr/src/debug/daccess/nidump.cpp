@@ -887,8 +887,6 @@ NativeImageDumper::DumpNativeImage()
                                                           NULL, &dwAssemblyFlags));
         if ((afContentType_WindowsRuntime & dwAssemblyFlags) == afContentType_WindowsRuntime)
         {
-            // The WinMD adapter doesn't implement the IID_IMetaDataTables interface so we can't dump
-            // the raw metadata.
             DisplayWriteElementString ("Metadata", "Not supported by WinRT", COR_INFO);
         }
         else
@@ -3869,15 +3867,6 @@ void NativeImageDumper::DumpModule( PTR_Module module )
                            false );
     }
 
-#ifdef FEATURE_COMINTEROP
-    TraverseGuidToMethodTableHash( module->m_pGuidToTypeHash,
-                            "m_pGuidToTypeHash",
-                            offsetof(Module, m_pGuidToTypeHash),
-                            fieldsize(Module, m_pGuidToTypeHash),
-                            true);
-
-#endif // FEATURE_COMINTEROP
-
     _ASSERTE(module->m_pProfilingBlobTable == NULL);
 
     DisplayWriteFieldFlag( m_nativeImageProfiling,
@@ -5514,18 +5503,13 @@ NativeImageDumper::EnumMnemonics s_MTFlagsHigh[] =
 
     MTFLAG_ENTRY(HasFinalizer),
     MTFLAG_ENTRY(IfNotInterfaceThenMarshalable),
-#if defined(FEATURE_COMINTEROP)
-    MTFLAG_ENTRY(IfInterfaceThenHasGuidInfo),
-#endif
+    MTFLAG_ENTRY(IDynamicInterfaceCastable),
 #if defined(FEATURE_ICASTABLE)
     MTFLAG_ENTRY(ICastable),
 #endif
     MTFLAG_ENTRY(HasIndirectParent),
     MTFLAG_ENTRY(ContainsPointers),
     MTFLAG_ENTRY(HasTypeEquivalence),
-#if defined(FEATURE_COMINTEROP)
-    MTFLAG_ENTRY(HasRCWPerTypeData),
-#endif
     MTFLAG_ENTRY(HasCriticalFinalizer),
     MTFLAG_ENTRY(Collectible),
     MTFLAG_ENTRY(ContainsGenericVariables),
@@ -5552,7 +5536,6 @@ NativeImageDumper::EnumMnemonics s_MTFlags2[] =
     MTFLAG2_ENTRY(IsIntrinsicType),
     MTFLAG2_ENTRY(RequiresDispatchTokenFat),
     MTFLAG2_ENTRY(HasCctor),
-    MTFLAG2_ENTRY(HasCCWTemplate),
 #ifdef FEATURE_64BIT_ALIGNMENT
     MTFLAG2_ENTRY(RequiresAlign8),
 #endif
@@ -5708,8 +5691,6 @@ static NativeImageDumper::EnumMnemonics s_VMFlags[] =
         VMF_ENTRY(SPARSE_FOR_COMINTEROP),
         VMF_ENTRY(HASCOCLASSATTRIB),
         VMF_ENTRY(COMEVENTITFMASK),
-        VMF_ENTRY(PROJECTED_FROM_WINRT),
-        VMF_ENTRY(EXPORTED_TO_WINRT),
 #endif // FEATURE_COMINTEROP
 
         VMF_ENTRY(NOT_TIGHTLY_PACKED),
@@ -7204,47 +7185,6 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
 
     }
 
-#ifdef FEATURE_COMINTEROP
-    if (haveCompleteExtents &&
-        mt->HasGuidInfo() &&
-        CHECK_OPT(METHODTABLES)
-        )
-    {
-        PTR_GuidInfo guidInfo(*mt->GetGuidInfoPtr());
-
-        if (guidInfo != NULL)
-        {
-            m_display->StartStructureWithOffset( "OptionalMember_GuidInfo",
-                                                 mt->GetOffsetOfOptionalMember(MethodTable::OptionalMember_GuidInfo),
-                                                 sizeof(void*),
-                                                 DPtrToPreferredAddr(guidInfo),
-                                                 sizeof(GuidInfo)
-                                                 );
-            TempBuffer buf;
-            GuidToString( guidInfo->m_Guid, buf );
-            DisplayWriteFieldStringW( m_Guid, (const WCHAR *)buf, GuidInfo,
-                                      ALWAYS );
-            DisplayWriteFieldFlag( m_bGeneratedFromName,
-                                   guidInfo->m_bGeneratedFromName,
-                                   GuidInfo, ALWAYS );
-            DisplayEndStructure( ALWAYS ); // OptionalMember_GuidInfo
-        }
-    }
-
-    if (haveCompleteExtents &&
-        mt->HasCCWTemplate()
-        && CHECK_OPT(METHODTABLES)
-        )
-    {
-        PTR_ComCallWrapperTemplate ccwTemplate(TO_TADDR(*mt->GetCCWTemplatePtr()));
-        m_display->WriteFieldPointer( "OptionalMember_CCWTemplate",
-                                      mt->GetOffsetOfOptionalMember(MethodTable::OptionalMember_CCWTemplate),
-                                      sizeof(void *),
-                                      DPtrToPreferredAddr(ccwTemplate)
-                                      );
-    }
-#endif // FEATURE_COMINTEROP
-
     DisplayEndStructure( METHODTABLES ); //MethodTable
 } // NativeImageDumper::DumpMethodTable
 #ifdef _PREFAST_
@@ -7983,7 +7923,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
             {
                 PTR_DictionaryLayout layout(wrapped->IsSharedByGenericMethodInstantiations()
                                             ? dac_cast<TADDR>(wrapped->GetDictLayoutRaw()) : NULL );
-                dictSize = DictionaryLayout::GetDictionarySizeFromLayout(imd->GetNumGenericMethodArgs(), 
+                dictSize = DictionaryLayout::GetDictionarySizeFromLayout(imd->GetNumGenericMethodArgs(),
                                                                           layout);
             }
         }
@@ -8650,7 +8590,7 @@ NativeImageDumper::EnumMnemonics s_CConv[] =
     CC_CALLCONV_ENTRY(IMAGE_CEE_CS_CALLCONV_FIELD),
     CC_CALLCONV_ENTRY(IMAGE_CEE_CS_CALLCONV_LOCAL_SIG),
     CC_CALLCONV_ENTRY(IMAGE_CEE_CS_CALLCONV_PROPERTY),
-    CC_CALLCONV_ENTRY(IMAGE_CEE_CS_CALLCONV_UNMGD),
+    CC_CALLCONV_ENTRY(IMAGE_CEE_CS_CALLCONV_UNMANAGED),
     CC_CALLCONV_ENTRY(IMAGE_CEE_CS_CALLCONV_GENERICINST),
     CC_CALLCONV_ENTRY(IMAGE_CEE_CS_CALLCONV_NATIVEVARARG),
 #undef CC_CALLCONV_ENTRY

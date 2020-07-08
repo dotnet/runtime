@@ -207,7 +207,7 @@ class MethodDesc
 
 public:
 
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
     static const int ALIGNMENT_SHIFT = 3;
 #else
     static const int ALIGNMENT_SHIFT = 2;
@@ -1829,17 +1829,18 @@ protected:
 
     enum {
         // enum_flag2_HasPrecode implies that enum_flag2_HasStableEntryPoint is set.
-        enum_flag2_HasStableEntryPoint      = 0x01,   // The method entrypoint is stable (either precode or actual code)
-        enum_flag2_HasPrecode               = 0x02,   // Precode has been allocated for this method
+        enum_flag2_HasStableEntryPoint                  = 0x01,   // The method entrypoint is stable (either precode or actual code)
+        enum_flag2_HasPrecode                           = 0x02,   // Precode has been allocated for this method
 
-        enum_flag2_IsUnboxingStub           = 0x04,
-        enum_flag2_HasNativeCodeSlot        = 0x08,   // Has slot for native code
+        enum_flag2_IsUnboxingStub                       = 0x04,
+        enum_flag2_HasNativeCodeSlot                    = 0x08,   // Has slot for native code
 
-        enum_flag2_IsJitIntrinsic           = 0x10,   // Jit may expand method as an intrinsic
+        enum_flag2_IsJitIntrinsic                       = 0x10,   // Jit may expand method as an intrinsic
 
-        enum_flag2_IsEligibleForTieredCompilation = 0x20,
+        enum_flag2_IsEligibleForTieredCompilation       = 0x20,
 
-        // unused                           = 0x40,
+        enum_flag2_RequiresCovariantReturnTypeChecking  = 0x40
+
         // unused                           = 0x80,
     };
     BYTE        m_bFlags2;
@@ -1900,6 +1901,19 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_bFlags2 |= enum_flag2_IsJitIntrinsic;
+    }
+
+    BOOL RequiresCovariantReturnTypeChecking()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return (m_bFlags2 & enum_flag2_RequiresCovariantReturnTypeChecking) != 0;
+    }
+
+    void SetRequiresCovariantReturnTypeChecking()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_bFlags2 |= enum_flag2_RequiresCovariantReturnTypeChecking;
     }
 
     static const SIZE_T s_ClassificationSizeTable[];
@@ -2495,7 +2509,7 @@ class StoredSigMethodDesc : public MethodDesc
 
     RelativePointer<TADDR>           m_pSig;
     DWORD           m_cSig;
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
     // m_dwExtendedFlags is not used by StoredSigMethodDesc itself.
     // It is used by child classes. We allocate the space here to get
     // optimal layout.
@@ -2554,7 +2568,7 @@ class FCallMethodDesc : public MethodDesc
 #endif
 
     DWORD   m_dwECallID;
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
     DWORD   m_padding;
 #endif
 
@@ -2594,7 +2608,7 @@ protected:
     RelativePointer<PTR_CUTF8>           m_pszMethodName;
     PTR_DynamicResolver m_pResolver;
 
-#ifndef HOST_64BIT
+#ifndef TARGET_64BIT
     // We use m_dwExtendedFlags from StoredSigMethodDesc on WIN64
     DWORD               m_dwExtendedFlags;   // see DynamicMethodDesc::ExtendedFlags enum
 #endif
@@ -2612,7 +2626,7 @@ protected:
         nomdDelegateStub             = 0x0040,
         nomdStructMarshalStub        = 0x0080,
         nomdUnbreakable              = 0x0100,
-        nomdDelegateCOMStub          = 0x0200,  // CLR->COM or COM->CLR call via a delegate (WinRT specific)
+        //unused                     = 0x0200,
         nomdSignatureNeedsRestore    = 0x0400,
         nomdStubNeedsCOMStarted      = 0x0800,  // EnsureComStarted must be called before executing the method
         nomdMulticastStub            = 0x1000,
@@ -2661,7 +2675,7 @@ public:
     void SetNativeStackArgSize(WORD cbArgSize)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(IsILStub() && (cbArgSize % sizeof(SLOT)) == 0);
+        _ASSERTE(IsILStub() && (cbArgSize % TARGET_POINTER_SIZE) == 0);
         m_dwExtendedFlags = (m_dwExtendedFlags & ~nomdStackArgSize) | ((DWORD)cbArgSize << 16);
     }
 
@@ -2718,7 +2732,6 @@ public:
     bool IsCOMToCLRStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) &&  IsReverseStub()); }
     bool IsPInvokeStub()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 != (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsCALLIStub() && !IsStructMarshalStub()); }
     bool IsUnbreakable()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnbreakable));  }
-    bool IsDelegateCOMStub() { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdDelegateCOMStub));  }
     bool IsSignatureNeedsRestore() { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdSignatureNeedsRestore)); }
     bool IsStubNeedsCOMStarted()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStubNeedsCOMStarted)); }
     bool IsStructMarshalStub()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStructMarshalStub)); }
@@ -2746,7 +2759,7 @@ public:
     bool HasMDContextArg()
     {
         LIMITED_METHOD_CONTRACT;
-        return ((IsCLRToCOMStub() && !IsDelegateCOMStub()) || IsPInvokeStub());
+        return IsCLRToCOMStub() || IsPInvokeStub();
     }
 
     void Restore();
@@ -3150,6 +3163,7 @@ public:
 #ifdef TARGET_WINDOWS
 private:
     FARPROC FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE mod, PTR_CUTF8 entryPointName) const;
+    FARPROC FindEntryPointWithSuffix(NATIVE_LIBRARY_HANDLE mod, PTR_CUTF8 entryPointName, char suffix) const;
 #endif
 public:
 

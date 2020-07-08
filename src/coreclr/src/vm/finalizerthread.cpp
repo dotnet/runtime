@@ -379,7 +379,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 #if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(FEATURE_COMINTEROP)
     // Make sure the finalizer thread is set to MTA to avoid hitting
     // DevDiv Bugs 180773 - [Stress Failure] AV at CoreCLR!SafeQueryInterfaceHelper
-    GetFinalizerThread()->SetApartment(Thread::AS_InMTA, FALSE);
+    GetFinalizerThread()->SetApartment(Thread::AS_InMTA);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT && !FEATURE_COMINTEROP
 
     s_FinalizerThreadOK = GetFinalizerThread()->HasStarted();

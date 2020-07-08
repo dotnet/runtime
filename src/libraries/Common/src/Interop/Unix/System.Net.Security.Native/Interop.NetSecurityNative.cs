@@ -127,12 +127,11 @@ internal static partial class Interop
             ref GssBuffer token);
 
         [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_Wrap")]
-        private static extern Status Wrap(
+        private static extern unsafe Status Wrap(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
             bool isEncrypt,
-            byte[] inputBytes,
-            int offset,
+            byte* inputBytes,
             int count,
             ref GssBuffer outBuffer);
 
@@ -145,20 +144,17 @@ internal static partial class Interop
             int count,
             ref GssBuffer outBuffer);
 
-        internal static Status WrapBuffer(
+        internal static unsafe Status WrapBuffer(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
             bool isEncrypt,
-            byte[] inputBytes,
-            int offset,
-            int count,
+            ReadOnlySpan<byte> inputBytes,
             ref GssBuffer outBuffer)
         {
-            Debug.Assert(inputBytes != null, "inputBytes must be valid value");
-            Debug.Assert(offset >= 0 && offset <= inputBytes.Length, "offset must be valid");
-            Debug.Assert(count >= 0 && count <= (inputBytes.Length - offset), "count must be valid");
-
-            return Wrap(out minorStatus, contextHandle, isEncrypt, inputBytes, offset, count, ref outBuffer);
+            fixed (byte* inputBytesPtr = inputBytes)
+            {
+                return Wrap(out minorStatus, contextHandle, isEncrypt, inputBytesPtr, inputBytes.Length, ref outBuffer);
+            }
         }
 
         internal static Status UnwrapBuffer(

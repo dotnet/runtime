@@ -6,6 +6,60 @@ using System;
 using System.Runtime.InteropServices;
 using System.DirectoryServices.Protocols;
 
+namespace System.DirectoryServices.Protocols
+{
+    /// <summary>
+    /// Structure that will get passed into the Sasl interactive callback in case
+    /// the authentication process emits challenges to validate information.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SaslDefaultCredentials
+    {
+        public string mech;
+        public string realm;
+        public string authcid;
+        public string passwd;
+        public string authzid;
+    }
+
+    /// <summary>
+    /// Structure that will represent a Sasl Interactive challenge during a
+    /// Sasl interactive bind, which will contain the challenge and it is also
+    /// where we will have to resolve the result.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    internal class SaslInteractiveChallenge
+    {
+        public ulong saslChallengeType;
+        public string challenge;
+        public string prompt;
+        public string defresult;
+        public IntPtr result;
+        public uint len;
+    }
+
+    internal enum SaslChallengeType
+    {
+        SASL_CB_LIST_END = 0,
+        SASL_CB_GETOPT = 1,
+        SASL_CB_LOG = 2,
+        SASL_CB_GETPATH = 3,
+        SASL_CB_VERIFYFILE = 4,
+        SASL_CB_GETCONFPATH = 5,
+        SASL_CB_USER = 0x4001,
+        SASL_CB_AUTHNAME = 0x4002,
+        SASL_CB_LANGUAGE = 0x4003,
+        SASL_CB_PASS = 0x4004,
+        SASL_CB_ECHOPROMPT = 0x4005,
+        SASL_CB_NOECHOPROMPT = 0x4006,
+        SASL_CB_CNONCE = 0x4007,
+        SASL_CB_GETREALM = 0x4008,
+        SASL_CB_PROXY_POLICY = 0x8001,
+    }
+}
+
+internal delegate int LDAP_SASL_INTERACT_PROC(IntPtr ld, uint flags, IntPtr defaults, IntPtr interact);
+
 internal static partial class Interop
 {
     [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_initialize", CharSet = CharSet.Ansi, SetLastError = true)]
@@ -74,8 +128,8 @@ internal static partial class Interop
     [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_reference", CharSet = CharSet.Ansi)]
     public static extern int ldap_parse_reference([In] ConnectionHandle ldapHandle, [In] IntPtr result, ref IntPtr referrals, IntPtr ServerControls, byte freeIt);
 
-    [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_bind_s", CharSet = CharSet.Ansi, SetLastError = true)]
-    public static extern int ldap_sasl_bind_s([In] ConnectionHandle ld, string dn, string mechanism, berval cred, IntPtr servercontrol, IntPtr clientcontrol, ref berval servercredp);
+    [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_interactive_bind_s", CharSet = CharSet.Ansi)]
+    internal static extern int ldap_sasl_interactive_bind([In] ConnectionHandle ld, string dn, string mechanism, IntPtr serverctrls, IntPtr clientctrls, uint flags, [MarshalAs(UnmanagedType.FunctionPtr)] LDAP_SASL_INTERACT_PROC proc, IntPtr defaults);
 
     [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_simple_bind_s", CharSet = CharSet.Ansi, SetLastError = true)]
     public static extern int ldap_simple_bind([In] ConnectionHandle ld, string who, string passwd);

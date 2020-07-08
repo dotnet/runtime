@@ -39,13 +39,13 @@ namespace System.Threading.Tasks.Tests
             // We want to make sure that holding on to the resulting Task doesn't keep
             // that finalizable object alive.
 
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             Task t = null;
 
             Thread runner = new Thread(() =>
             {
-                var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult(true) };
+                var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult() };
                 var al = new AsyncLocal<object>(){ Value = state }; // ensure the object is stored in ExecutionContext
                 t = Task.Run(() => { }); // run a task that'll capture EC
                 al.Value = null;
@@ -91,12 +91,12 @@ namespace System.Threading.Tasks.Tests
             // We want to make sure that holding on to the resulting TCS doesn't keep
             // that finalizable object alive.
 
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             TaskCompletionSource<int> t = null;
             await Task.Run(delegate // avoid any issues with the stack keeping the object alive
             {
-                var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult(true) };
+                var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult() };
                 var al = new AsyncLocal<object> { Value = state }; // ensure the object is stored in ExecutionContext
                 t = tcsFactory(); // create the TCS that shouldn't capture ExecutionContext
                 al.Value = null;

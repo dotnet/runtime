@@ -51,7 +51,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(type.ToString(), ex.ToString());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(TypesWithInvalidMembers_WithMembers))]
         public void TypeWithInvalidMember(Type classType, Type invalidMemberType, string invalidMemberName)
         {
@@ -74,7 +74,7 @@ namespace System.Text.Json.Serialization.Tests
             ValidateException(ex, classType, invalidMemberType, invalidMemberName);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(OpenGenericTypes_ToSerialize))]
         public void SerializeOpenGeneric(Type type)
         {
@@ -92,7 +92,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<ArgumentException>(() => Serializer.Serialize(obj, type));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(OpenGenericTypes))]
         public void SerializeInvalidTypes_NullValue(Type type)
         {
@@ -100,7 +100,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(type.ToString(), ex.ToString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SerializeOpenGeneric_NullableOfT()
         {
             Type openNullableType = typeof(Nullable<>);
@@ -163,5 +163,25 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         private ref struct MyRefStruct { }
+
+        [Fact]
+        public void ArraySegmentTest()
+        {
+            var obj = new ClassWithArraySegment()
+            {
+                ArraySegment = new ArraySegment<byte>(new byte[] { 1 }),
+            };
+
+            string serialized = JsonSerializer.Serialize(obj);
+            Assert.Equal(@"{""ArraySegment"":[1]}", serialized);
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithArraySegment>(serialized));
+            Assert.Contains(typeof(ArraySegment<byte>).ToString(), ex.ToString());
+        }
+
+        private class ClassWithArraySegment
+        {
+            public ArraySegment<byte> ArraySegment { get; set; }
+        }
     }
 }

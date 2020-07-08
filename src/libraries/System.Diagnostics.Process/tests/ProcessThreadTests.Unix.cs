@@ -5,6 +5,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -12,7 +13,7 @@ namespace System.Diagnostics.Tests
     public partial class ProcessThreadTests
     {
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestPriorityLevelProperty_Unix()
         {
             CreateDefaultProcess();

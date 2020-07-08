@@ -9,11 +9,11 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ActiveDirectorySchemaClassCollection : CollectionBase
     {
-        private DirectoryEntry _classEntry = null;
-        private readonly string _propertyName = null;
-        private readonly ActiveDirectorySchemaClass _schemaClass = null;
-        private readonly bool _isBound = false;
-        private readonly DirectoryContext _context = null;
+        private DirectoryEntry _classEntry;
+        private readonly string _propertyName;
+        private readonly ActiveDirectorySchemaClass _schemaClass;
+        private readonly bool _isBound;
+        private readonly DirectoryContext _context;
 
         internal ActiveDirectorySchemaClassCollection(DirectoryContext context,
                                                         ActiveDirectorySchemaClass schemaClass,
@@ -111,7 +111,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (schemaClass == null)
                 {
-                    throw new ArgumentException(nameof(schemaClasses));
+                    throw new ArgumentException(null, nameof(schemaClasses));
                 }
             }
 
@@ -132,7 +132,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (schemaClass == null)
                 {
-                    throw new ArgumentException(nameof(schemaClasses));
+                    throw new ArgumentException(null, nameof(schemaClasses));
                 }
             }
 
@@ -154,7 +154,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (schemaClass == null)
                 {
-                    throw new ArgumentException(nameof(schemaClasses));
+                    throw new ArgumentException(null, nameof(schemaClasses));
                 }
             }
 
@@ -360,7 +360,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (!(value is ActiveDirectorySchemaClass))
             {
-                throw new ArgumentException(nameof(value));
+                throw new ArgumentException(null, nameof(value));
             }
 
             if (!((ActiveDirectorySchemaClass)value).isBound)

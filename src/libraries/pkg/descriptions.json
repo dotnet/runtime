@@ -127,6 +127,11 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.HostFactoryResolver.Sources",
+    "Description": "Internal package for sharing Microsoft.Extensions.Hosting.HostFactoryResolver type.",
+    "CommonTypes": []
+  },
+  {
     "Name": "Microsoft.Extensions.Hosting",
     "Description": "Hosting and startup infrastructures for applications.",
     "CommonTypes": []
@@ -258,11 +263,6 @@
   {
     "Name": "Microsoft.NETCore.Platforms",
     "Description": "Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.",
-    "CommonTypes": []
-  },
-  {
-    "Name": "Microsoft.NETCore.Platforms.Future",
-    "Description": "Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.  This package represents future platforms not yet supported in .NETCore stable release and is subject to change.",
     "CommonTypes": []
   },
   {
@@ -938,6 +938,22 @@
       "System.Dynamic.DynamicObject",
       "System.Runtime.CompilerServices.CallSiteBinder",
       "System.Runtime.CompilerServices.ConditionalWeakTable<TKey, TValue>"
+    ]
+  },
+  {
+    "Name": "System.Formats.Asn1",
+    "Description": "Provides classes that can read and write the ASN.1 BER, CER, and DER data formats.",
+    "CommonTypes": [
+        "System.Formats.Asn1.AsnReader",
+        "System.Formats.Asn1.AsnWriter"
+    ]
+  },
+  {
+    "Name": "System.Formats.Cbor",
+    "Description": "Provides classes that can read and write the CBOR data format.",
+    "CommonTypes": [
+        "System.Formats.Cbor.CborReader",
+        "System.Formats.Cbor.CborWriter"
     ]
   },
   {
@@ -1689,13 +1705,6 @@
     ]
   },
   {
-    "Name": "System.Runtime.Intrinsics.Experimental",
-    "Description": "Provides APIs for accessing processor specific instructions.",
-    "CommonTypes": [
-        "System.Runtime.Intrinsics.Arm.Arm64"
-    ]
-  },
-  {
     "Name": "System.Runtime.Handles",
     "Description": "Provides base classes, including System.Runtime.InteropServices.CriticalHandle and System.Runtime.InteropServices.SafeHandle, for types that represent operating system handles.",
     "CommonTypes": [
@@ -1795,34 +1804,6 @@
       "System.Xml.XmlDictionaryReaderQuotas",
       "System.Runtime.Serialization.DataContractResolver",
       "System.Xml.IXmlDictionary"
-    ]
-  },
-  {
-    "Name": "System.Runtime.WindowsRuntime",
-    "Description": "Provides extensions methods that improve interoperation between managed code and the Windows Runtime.",
-    "CommonTypes": [
-      "System.WindowsRuntimeSystemExtensions",
-      "System.IO.WindowsRuntimeStorageExtensions",
-      "System.IO.WindowsRuntimeStreamExtensions",
-      "System.Runtime.InteropServices.WindowsRuntime.AsyncInfo",
-      "System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeBuffer"
-    ]
-  },
-  {
-    "Name": "System.Runtime.WindowsRuntime.UI.Xaml",
-    "Description": "Provides managed equivalents of Extensible Application Markup Language (XAML) UI types from Windows Runtime.",
-    "CommonTypes": [
-      "Windows.UI.Xaml.CornerRadius",
-      "Windows.UI.Xaml.Duration",
-      "Windows.UI.Xaml.DurationType",
-      "Windows.UI.Xaml.GridLength",
-      "Windows.UI.Xaml.GridUnitType",
-      "Windows.UI.Xaml.Thickness",
-      "Windows.UI.Xaml.Media.Matrix",
-      "Windows.UI.Xaml.Media.Animation.KeyTime",
-      "Windows.UI.Xaml.Media.Animation.RepeatBehavior",
-      "Windows.UI.Xaml.Media.Animation.RepeatBehaviorType",
-      "Windows.UI.Xaml.Media.Media3D.Matrix3D"
     ]
   },
   {

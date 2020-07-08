@@ -5,6 +5,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -13,7 +14,7 @@ namespace System.Diagnostics.Tests
     {
         private const int s_ConsoleEncoding = 437;
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestChangesInConsoleEncoding()
         {
             Action<int> run = expectedCodePage =>

@@ -420,17 +420,11 @@ class CEEInfo : public ICorJitInfo
 {
     friend class CEEDynamicCodeInfo;
 
-    const char * __stdcall ICorMethodInfo_Hack_getMethodName(CORINFO_METHOD_HANDLE ftnHnd, const char** scopeName)
-    {
-        WRAPPER_NO_CONTRACT;
-        return getMethodName(ftnHnd, scopeName);
-    }
-
-    mdMethodDef __stdcall ICorClassInfo_Hack_getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
-    {
-        WRAPPER_NO_CONTRACT;
-        return getMethodDefFromMethod(hMethod);
-    }
+    void GetTypeContext(const CORINFO_SIG_INST* info, SigTypeContext* pTypeContext);
+    MethodDesc* GetMethodFromContext(CORINFO_CONTEXT_HANDLE context);
+    TypeHandle GetTypeFromContext(CORINFO_CONTEXT_HANDLE context);
+    void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
+    BOOL ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context);
 
 public:
     // ICorClassInfo stuff
@@ -525,8 +519,7 @@ public:
     CorInfoInitClassResult initClass(
             CORINFO_FIELD_HANDLE    field,
             CORINFO_METHOD_HANDLE   method,
-            CORINFO_CONTEXT_HANDLE  context,
-            BOOL                    speculative = FALSE);
+            CORINFO_CONTEXT_HANDLE  context);
 
     void classMustBeLoadedBeforeCodeIsRun (CORINFO_CLASS_HANDLE cls);
     void methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE meth);
@@ -848,7 +841,7 @@ public:
             CORINFO_ARG_LIST_HANDLE    args
             );
 
-    CorInfoType getHFAType (
+    CorInfoHFAElemType getHFAType (
             CORINFO_CLASS_HANDLE hClass
             );
 
@@ -1683,6 +1676,9 @@ void ClearJitGenericHandleCache(AppDomain *pDomain);
 CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 
 bool __stdcall TrackAllocationsEnabled();
+
+FCDECL0(INT64, GetJittedBytes);
+FCDECL0(INT32, GetJittedMethodsCount);
 
 #endif // JITINTERFACE_H
 

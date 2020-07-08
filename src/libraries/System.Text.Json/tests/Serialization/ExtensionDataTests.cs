@@ -56,7 +56,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ExtensionPropertyIgnoredWhenNull()
+        public static void ExtensionPropertyIgnoredWhenWritingDefault()
         {
             string expected = @"{}";
             string actual = JsonSerializer.Serialize(new ClassWithExtensionPropertyAsObject());
@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void MultipleExtensionPropertyIgnoredWhenNull()
+        public static void MultipleExtensionPropertyIgnoredWhenWritingDefault()
         {
             var obj = new ClassWithMultipleDictionaries();
             string actual = JsonSerializer.Serialize(obj);
@@ -97,6 +97,18 @@ namespace System.Text.Json.Serialization.Tests
             };
             actual = JsonSerializer.Serialize(obj);
             Assert.Equal("{\"ActualDictionary\":{},\"test\":\"value\"}", actual);
+        }
+
+        [Fact]
+        public static void ExtensionPropertyInvalidJsonFail()
+        {
+            const string BadJson = @"{""Good"":""OK"",""Bad"":!}";
+
+            JsonException jsonException = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(BadJson));
+            Assert.Contains("Path: $.Bad | LineNumber: 0 | BytePositionInLine: 19.", jsonException.ToString());
+            Assert.NotNull(jsonException.InnerException);
+            Assert.IsAssignableFrom<JsonException>(jsonException.InnerException);
+            Assert.Contains("!", jsonException.InnerException.ToString());
         }
 
         [Fact]
@@ -854,9 +866,8 @@ namespace System.Text.Json.Serialization.Tests
             ClassWithInvalidExtensionPropertyStringString obj1 = new ClassWithInvalidExtensionPropertyStringString();
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj1));
 
-            // This fails with NotSupportedException since all Dictionaries currently need to have a string TKey.
             ClassWithInvalidExtensionPropertyObjectString obj2 = new ClassWithInvalidExtensionPropertyObjectString();
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj2));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj2));
         }
 
         private class ClassWithExtensionPropertyAlreadyInstantiated

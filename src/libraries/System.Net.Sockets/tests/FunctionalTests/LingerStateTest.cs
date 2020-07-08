@@ -19,7 +19,7 @@ namespace System.Net.Sockets.Tests
 
         private void TestLingerState_ArgumentException(Socket sock, bool enabled, int lingerTime)
         {
-            AssertExtensions.Throws<ArgumentException>("optionValue.LingerTime", () =>
+            AssertExtensions.Throws<ArgumentException>("optionValue", () =>
             {
                 sock.LingerState = new LingerOption(enabled, lingerTime);
             });

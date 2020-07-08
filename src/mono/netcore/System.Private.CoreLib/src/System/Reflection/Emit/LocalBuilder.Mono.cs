@@ -33,24 +33,25 @@
 //
 
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
     public sealed partial class LocalBuilder : LocalVariableInfo
     {
-        // Needs to have the same layout as RuntimeLocalVariableInfo
-        #region Sync with reflection.h
+#region Sync with MonoReflectionLocalBuilder in object-internals.h
         internal Type type;
         internal bool is_pinned;
         internal ushort position;
         private string? name;
-        #endregion
+#endregion
 
         internal ILGenerator ilgen;
         private int startOffset;
         private int endOffset;
 
+        [DynamicDependency(nameof(name))]  // Automatically keeps all previous fields too due to StructLayout
         internal LocalBuilder(Type t, ILGenerator ilgen)
         {
             this.type = t;

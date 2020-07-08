@@ -84,7 +84,7 @@ namespace System.Net.Http.Json
                 !mediaType.Equals(JsonContent.JsonMediaType, StringComparison.OrdinalIgnoreCase) &&
                 !IsValidStructuredSyntaxJsonSuffix(mediaType.AsSpan()))
             {
-                throw new NotSupportedException(SR.ContentTypeNotSupported);
+                throw new NotSupportedException(SR.Format(SR.ContentTypeNotSupported, mediaType));
             }
         }
 

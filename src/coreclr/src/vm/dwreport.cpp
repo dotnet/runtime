@@ -189,8 +189,8 @@ HRESULT DwGetFileVersionInfo(
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -602,7 +602,7 @@ HRESULT GetManagedBucketParametersForIp(
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -677,7 +677,7 @@ void* GetBucketParametersForManagedException(UINT_PTR ip, TypeOfReportedError to
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;

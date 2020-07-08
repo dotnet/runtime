@@ -15,16 +15,16 @@ namespace Microsoft.Extensions.Logging
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
-            var loggers = MessageLoggers;
+            MessageLogger[] loggers = MessageLoggers;
             if (loggers == null)
             {
                 return;
             }
 
             List<Exception> exceptions = null;
-            for (var i = 0; i < loggers.Length; i++)
+            for (int i = 0; i < loggers.Length; i++)
             {
-                ref readonly var loggerInfo = ref loggers[i];
+                ref readonly MessageLogger loggerInfo = ref loggers[i];
                 if (!loggerInfo.IsEnabled(logLevel))
                 {
                     continue;
@@ -58,17 +58,17 @@ namespace Microsoft.Extensions.Logging
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            var loggers = MessageLoggers;
+            MessageLogger[] loggers = MessageLoggers;
             if (loggers == null)
             {
                 return false;
             }
 
             List<Exception> exceptions = null;
-            var i = 0;
+            int i = 0;
             for (; i < loggers.Length; i++)
             {
-                ref readonly var loggerInfo = ref loggers[i];
+                ref readonly MessageLogger loggerInfo = ref loggers[i];
                 if (!loggerInfo.IsEnabled(logLevel))
                 {
                     continue;
@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.Logging
 
         public IDisposable BeginScope<TState>(TState state)
         {
-            var loggers = ScopeLoggers;
+            ScopeLogger[] loggers = ScopeLoggers;
 
             if (loggers == null)
             {
@@ -126,9 +126,9 @@ namespace Microsoft.Extensions.Logging
 
             var scope = new Scope(loggers.Length);
             List<Exception> exceptions = null;
-            for (var i = 0; i < loggers.Length; i++)
+            for (int i = 0; i < loggers.Length; i++)
             {
-                ref readonly var scopeLogger = ref loggers[i];
+                ref readonly ScopeLogger scopeLogger = ref loggers[i];
 
                 try
                 {
@@ -200,8 +200,8 @@ namespace Microsoft.Extensions.Logging
 
                     if (_disposable != null)
                     {
-                        var count = _disposable.Length;
-                        for (var index = 0; index != count; ++index)
+                        int count = _disposable.Length;
+                        for (int index = 0; index != count; ++index)
                         {
                             if (_disposable[index] != null)
                             {

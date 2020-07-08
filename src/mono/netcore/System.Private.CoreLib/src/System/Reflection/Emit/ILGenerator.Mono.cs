@@ -32,6 +32,7 @@
 
 #if MONO_FEATURE_SRE
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Runtime.InteropServices;
 
@@ -46,11 +47,13 @@ namespace System.Reflection.Emit
         public const int FAULT = 4;
         public const int FILTER_START = -1;
 
+#region Sync with MonoILExceptionBlock in object-internals.h
         internal Type? extype;
         internal int type;
         internal int start;
         internal int len;
         internal int filter_offset;
+#endregion
 
         internal void Debug()
         {
@@ -65,14 +68,12 @@ namespace System.Reflection.Emit
     }
     internal struct ILExceptionInfo
     {
-#pragma warning disable 169
-#pragma warning disable 414
+#region Sync with MonoILExceptionInfo in object-internals.h
         internal ILExceptionBlock[] handlers;
         internal int start;
         internal int len;
         internal Label end;
-#pragma warning restore 169
-#pragma warning restore 414
+#endregion
 
         internal int NumHandlers()
         {
@@ -216,7 +217,7 @@ namespace System.Reflection.Emit
             public int maxStack;
         }
 
-        #region Sync with reflection.h
+#region Sync with MonoReflectionILGen in object-internals.h
         private byte[] code;
         private int code_len;
         private int max_stack;
@@ -225,7 +226,7 @@ namespace System.Reflection.Emit
         private ILExceptionInfo[]? ex_handlers;
         private int num_token_fixups;
         private object? token_fixups;
-        #endregion
+#endregion
 
         private LabelData[]? labels;
         private int num_labels;
@@ -243,6 +244,7 @@ namespace System.Reflection.Emit
         private List<SequencePointList>? sequencePointLists;
         private SequencePointList? currentSequence;
 
+        [DynamicDependency(nameof(token_fixups))]  // Automatically keeps all previous fields too due to StructLayout
         internal ILGenerator(Module m, ITokenGenerator token_gen, int size)
         {
             if (size < 0)
@@ -887,10 +889,7 @@ namespace System.Reflection.Emit
             Emit(opcode, helper);
         }
 
-        private static Type GetConsoleType()
-        {
-            return Type.GetType("System.Console, System.Console", throwOnError: true)!;
-        }
+        private const string ConsoleTypeFullName = "System.Console, System.Console";
 
         public virtual void EmitWriteLine(FieldInfo fld)
         {
@@ -907,7 +906,8 @@ namespace System.Reflection.Emit
                 Emit(OpCodes.Ldarg_0);
                 Emit(OpCodes.Ldfld, fld);
             }
-            Emit(OpCodes.Call, GetConsoleType().GetMethod("WriteLine", new Type[1] { fld.FieldType })!);
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { fld.FieldType })!);
         }
 
         public virtual void EmitWriteLine(LocalBuilder localBuilder)
@@ -919,13 +919,15 @@ namespace System.Reflection.Emit
             // The MS implementation does not check for valuetypes here but it
             // should.
             Emit(OpCodes.Ldloc, localBuilder);
-            Emit(OpCodes.Call, GetConsoleType().GetMethod("WriteLine", new Type[1] { localBuilder.LocalType })!);
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { localBuilder.LocalType })!);
         }
 
         public virtual void EmitWriteLine(string value)
         {
             Emit(OpCodes.Ldstr, value);
-            Emit(OpCodes.Call, GetConsoleType().GetMethod("WriteLine", new Type[1] { typeof(string) })!);
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { typeof(string) })!);
         }
 
         public virtual void EndExceptionBlock()
@@ -1010,7 +1012,7 @@ namespace System.Reflection.Emit
             get { return sequencePointLists != null; }
         }
 
-        public virtual void ThrowException(Type excType)
+        public virtual void ThrowException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type excType)
         {
             if (excType == null)
                 throw new ArgumentNullException(nameof(excType));

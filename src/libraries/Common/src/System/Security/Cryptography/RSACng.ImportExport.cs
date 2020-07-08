@@ -353,6 +353,7 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     This function checks the magic value in the key blob header
         /// </summary>
+        /// <param name="magic">The expected magic number.</param>
         /// <param name="includePrivateParameters">Private blob if true else public key blob</param>
         private static void CheckMagicValueOfKey(KeyBlobMagicNumber magic, bool includePrivateParameters)
         {

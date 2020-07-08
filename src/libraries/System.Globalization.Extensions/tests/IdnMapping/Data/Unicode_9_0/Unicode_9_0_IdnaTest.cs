@@ -19,14 +19,8 @@ namespace System.Globalization.Tests
     /// Column 4: toASCII - the result of applying toASCII to the source, using nontransitional. A blank value means the same as the toUnicode value.
     /// Column 5: NV8 - present if the toUnicode value would not be a valid domain name under IDNA2008. Not a normative field.
     /// </summary>
-    public class Unicode_9_0_IdnaTest : IConformanceIdnaTest
+    public class Unicode_9_0_IdnaTest : Unicode_IdnaTest
     {
-        public IdnType Type { get; set; }
-        public string Source { get; set; }
-        public ConformanceIdnaUnicodeTestResult UnicodeResult { get; set; }
-        public ConformanceIdnaTestResult ASCIIResult { get; set; }
-        public int LineNumber { get; set; }
-
         public Unicode_9_0_IdnaTest(string line, int lineNumber)
         {
             string[] split = line.Split(';');
@@ -52,36 +46,6 @@ namespace System.Globalization.Tests
                 default:
                     throw new ArgumentOutOfRangeException(nameof(idnType), "Unknown idnType");
             }
-        }
-
-        /// <summary>
-        /// This will convert strings with escaped sequences to literal characters.  The input string is
-        /// expected to have escaped sequences in the form of '\uXXXX'.
-        ///
-        /// Example: "a\u0020b" will be converted to 'a b'.
-        /// </summary>
-        private static string EscapedToLiteralString(string escaped, int lineNumber)
-        {
-            var sb = new StringBuilder();
-
-            for (int i = 0; i < escaped.Length; i++)
-            {
-                if (i + 1 < escaped.Length && escaped[i] == '\\' && escaped[i + 1] == 'u')
-                {
-                    // Verify that the escaped sequence is not malformed
-                    Assert.True(i + 5 < escaped.Length, "There was a problem converting to literal string on Line " + lineNumber);
-
-                    var codepoint = Convert.ToInt32(escaped.Substring(i + 2, 4), 16);
-                    sb.Append((char)codepoint);
-                    i += 5;
-                }
-                else
-                {
-                    sb.Append(escaped[i]);
-                }
-            }
-
-            return sb.ToString().Trim();
         }
     }
 }

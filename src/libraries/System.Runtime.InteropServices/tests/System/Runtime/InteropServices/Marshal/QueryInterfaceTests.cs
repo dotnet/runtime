@@ -14,69 +14,54 @@ namespace System.Runtime.InteropServices.Tests
         public const int E_NOINTERFACE = unchecked((int)0x80004002);
         public const string IID_IUNKNOWN = "00000000-0000-0000-C000-000000000046";
         public const string IID_IDISPATCH = "00020400-0000-0000-C000-000000000046";
-        public const string IID_IINSPECTABLE = "AF86E2E0-B12D-4c6a-9C5A-D7AA65101E90";
-        public const string IID_IKEYVALUEPAIR = "02b51929-c1c4-4a7e-8940-0312b5c18500";
 
         public static IEnumerable<object[]> QueryInterface_ValidInterface_TestData()
         {
             yield return new object[] { new object(), IID_IUNKNOWN };
             yield return new object[] { new object(), IID_IDISPATCH };
-            yield return new object[] { new object(), IID_IINSPECTABLE };
 
             yield return new object[] { 10, IID_IUNKNOWN };
             if (!PlatformDetection.IsNetCore)
             {
                 yield return new object[] { 10, IID_IDISPATCH };
             }
-            yield return new object[] { 10, IID_IINSPECTABLE };
 
             yield return new object[] { "string", IID_IUNKNOWN };
             if (!PlatformDetection.IsNetCore)
             {
                 yield return new object[] { "string", IID_IDISPATCH };
             }
-            yield return new object[] { "string", IID_IINSPECTABLE };
 
             yield return new object[] { new NonGenericClass(), IID_IUNKNOWN };
             if (!PlatformDetection.IsNetCore)
             {
                 yield return new object[] { new NonGenericClass(), IID_IDISPATCH };
             }
-            yield return new object[] { new NonGenericClass(), IID_IINSPECTABLE };
             yield return new object[] { new GenericClass<string>(), IID_IUNKNOWN };
-            yield return new object[] { new GenericClass<string>(), IID_IINSPECTABLE };
 
             yield return new object[] { new NonGenericStruct(), IID_IUNKNOWN };
             if (!PlatformDetection.IsNetCore)
             {
                 yield return new object[] { new NonGenericStruct(), IID_IDISPATCH };
             }
-            yield return new object[] { new NonGenericStruct(), IID_IINSPECTABLE };
             yield return new object[] { new GenericStruct<string>(), IID_IUNKNOWN };
-            yield return new object[] { new GenericStruct<string>(), IID_IINSPECTABLE };
 
             yield return new object[] { Int32Enum.Value1, IID_IUNKNOWN };
             if (!PlatformDetection.IsNetCore)
             {
                 yield return new object[] { Int32Enum.Value1, IID_IDISPATCH };
             }
-            yield return new object[] { Int32Enum.Value1, IID_IINSPECTABLE };
 
             yield return new object[] { new int[] { 10 }, IID_IUNKNOWN };
-            yield return new object[] { new int[] { 10 }, IID_IINSPECTABLE };
             yield return new object[] { new int[][] { new int[] { 10 } }, IID_IUNKNOWN };
-            yield return new object[] { new int[][] { new int[] { 10 } }, IID_IINSPECTABLE };
             yield return new object[] { new int[,] { { 10 } }, IID_IUNKNOWN };
-            yield return new object[] { new int[,] { { 10 } }, IID_IINSPECTABLE };
 
             MethodInfo method = typeof(GetObjectForIUnknownTests).GetMethod(nameof(NonGenericMethod), BindingFlags.NonPublic | BindingFlags.Static);
             Delegate d = method.CreateDelegate(typeof(NonGenericDelegate));
             yield return new object[] { d, IID_IUNKNOWN };
             yield return new object[] { d, IID_IDISPATCH };
-            yield return new object[] { d, IID_IINSPECTABLE };
 
             yield return new object[] { new KeyValuePair<string, int>("key", 10), IID_IUNKNOWN };
-            yield return new object[] { new KeyValuePair<string, int>("key", 10), IID_IINSPECTABLE };
         }
 
         [Theory]
@@ -118,7 +103,6 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new Dictionary<string, int>(), IID_IDISPATCH };
             yield return new object[] { new GenericStruct<string>(), IID_IDISPATCH };
             yield return new object[] { new KeyValuePair<string, int>(), IID_IDISPATCH };
-            yield return new object[] { new KeyValuePair<string, int>("key", 10), IID_IKEYVALUEPAIR };
         }
 
         [Theory]

@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -23,9 +24,13 @@ namespace System.Text.Json
         public static JsonPropertyInfo GetPropertyPlaceholder()
         {
             JsonPropertyInfo info = new JsonPropertyInfo<object>();
-            info.IsPropertyPolicy = false;
-            info.ShouldDeserialize = false;
-            info.ShouldSerialize = false;
+
+            Debug.Assert(!info.IsForClassInfo);
+            Debug.Assert(!info.ShouldDeserialize);
+            Debug.Assert(!info.ShouldSerialize);
+
+            info.NameAsString = string.Empty;
+
             return info;
         }
 
@@ -82,14 +87,8 @@ namespace System.Text.Json
 
             Debug.Assert(NameAsString != null);
 
-            // At this point propertyName is valid UTF16, so just call the simple UTF16->UTF8 encoder.
-            Name = Encoding.UTF8.GetBytes(NameAsString);
-
-            // Cache the escaped property name.
-            EscapedName = JsonEncodedText.Encode(Name, Options.Encoder);
-
-            ulong key = JsonClassInfo.GetKey(Name);
-            PropertyNameKey = key;
+            NameAsUtf8Bytes = Encoding.UTF8.GetBytes(NameAsString);
+            EscapedNameSection = JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
         }
 
         private void DetermineSerializationCapabilities(JsonIgnoreCondition? ignoreCondition)
@@ -135,19 +134,24 @@ namespace System.Text.Json
 
                 if (ignoreCondition != JsonIgnoreCondition.Never)
                 {
-                    Debug.Assert(ignoreCondition == JsonIgnoreCondition.WhenNull);
-                    IgnoreNullValues = true;
+                    Debug.Assert(ignoreCondition == JsonIgnoreCondition.WhenWritingDefault);
+                    IgnoreDefaultValuesOnWrite = true;
                 }
             }
-            else
+#pragma warning disable CS0618 // IgnoreNullValues is obsolete
+            else if (Options.IgnoreNullValues)
             {
-                IgnoreNullValues = Options.IgnoreNullValues;
+                Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
+                IgnoreDefaultValuesOnRead = true;
+                IgnoreDefaultValuesOnWrite = true;
             }
+            else if (Options.DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault)
+            {
+                Debug.Assert(!Options.IgnoreNullValues);
+                IgnoreDefaultValuesOnWrite = true;
+            }
+#pragma warning restore CS0618 // IgnoreNullValues is obsolete
         }
-
-        // The escaped name passed to the writer.
-        // Use a field here (not a property) to avoid value semantics.
-        public JsonEncodedText? EscapedName;
 
         public static TAttribute? GetAttribute<TAttribute>(PropertyInfo propertyInfo) where TAttribute : Attribute
         {
@@ -190,19 +194,36 @@ namespace System.Text.Json
             Options = options;
         }
 
-        public bool IgnoreNullValues { get; private set; }
+        public bool IgnoreDefaultValuesOnRead { get; private set; }
+        public bool IgnoreDefaultValuesOnWrite { get; private set; }
 
-        public bool IsPropertyPolicy { get; protected set; }
+        /// <summary>
+        /// True if the corresponding cref="JsonClassInfo.PropertyInfoForClassInfo"/> is this instance.
+        /// </summary>
+        public bool IsForClassInfo { get; protected set; }
 
-        // The name from a Json value. This is cached for performance on first deserialize.
-        public byte[]? JsonPropertyName { get; set; }
+        // There are 3 copies of the property name:
+        // 1) NameAsString. The unescaped property name.
+        // 2) NameAsUtf8Bytes. The Utf8 version of NameAsString. Used during during deserialization for property lookup.
+        // 3) EscapedNameSection. The escaped verson of NameAsUtf8Bytes plus the wrapping quotes and a trailing colon. Used during serialization.
 
-        // The name of the property with any casing policy or the name specified from JsonPropertyNameAttribute.
-        public byte[]? Name { get; private set; }
-        public string? NameAsString { get; private set; }
+        /// <summary>
+        /// The unescaped name of the property.
+        /// Is either the actual CLR property name,
+        /// the value specified in JsonPropertyNameAttribute,
+        /// or the value returned from PropertyNamingPolicy(clrPropertyName).
+        /// </summary>
+        public string NameAsString { get; private set; } = null!;
 
-        // Key for fast property name lookup.
-        public ulong PropertyNameKey { get; set; }
+        /// <summary>
+        /// Utf8 version of NameAsString.
+        /// </summary>
+        public byte[] NameAsUtf8Bytes = null!;
+
+        /// <summary>
+        /// The escaped name passed to the writer.
+        /// </summary>
+        public byte[] EscapedNameSection = null!;
 
         // Options can be referenced here since all JsonPropertyInfos originate from a JsonClassInfo that is cached on JsonSerializerOptions.
         protected JsonSerializerOptions Options { get; set; } = null!; // initialized in Init method
@@ -222,7 +243,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    JsonConverter<object> converter = (JsonConverter<object>)Options.GetConverter(typeof(object));
+                    JsonConverter<object> converter = (JsonConverter<object>)Options.GetConverter(JsonClassInfo.ObjectType);
 
                     if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out object? value))
                     {
@@ -260,7 +281,7 @@ namespace System.Text.Json
         {
             Debug.Assert(this == state.Current.JsonClassInfo.DataExtensionProperty);
 
-            if (RuntimeClassInfo.ElementType == typeof(object) && reader.TokenType == JsonTokenType.Null)
+            if (RuntimeClassInfo.ElementType == JsonClassInfo.ObjectType && reader.TokenType == JsonTokenType.Null)
             {
                 value = null;
                 return true;
@@ -295,9 +316,9 @@ namespace System.Text.Json
             }
         }
 
-        public Type? RuntimePropertyType { get; private set; } = null;
+        public Type? RuntimePropertyType { get; private set; }
 
-        public abstract void SetValueAsObject(object obj, object? value);
+        public abstract void SetExtensionDictionaryAsObject(object obj, object? extensionDict);
 
         public bool ShouldSerialize { get; private set; }
         public bool ShouldDeserialize { get; private set; }

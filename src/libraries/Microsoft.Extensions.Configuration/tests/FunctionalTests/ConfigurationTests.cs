@@ -902,6 +902,7 @@ IniKey1=IniValue2");
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnMono("System.IO.FileSystem.Watcher is not supported on wasm", TestPlatforms.Browser)]
         public void CanEnumerateProviders()
         {
             var config = CreateBuilder()
@@ -947,7 +948,7 @@ IniKey1=IniValue2");
             Assert.True(token.HasChanged);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void BindingDoesNotThrowIfReloadedDuringBinding()
         {

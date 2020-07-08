@@ -12,14 +12,12 @@ parameters:
   # 'pr' - the queues used for a pull request for the platform. Typically a small set.
   # 'ci' - the queues used for a CI (post-merge) test run.
   # 'all' - the queues used for non-PR, non-CI test runs, e.g., Manual or Scheduled runs. Typically this is all available queues.
-  # 'corefx' - the queues used for a corefx test run.
   helixQueueGroup: 'pr'
   # helixQueuesTemplate is a yaml template which will be expanded in order to set up the helix queues
   # for the given platform and helixQueueGroup.
   helixQueuesTemplate: ''
   stagedBuild: false
   # When set to false, suppresses reuse of OSX managed build artifacts (for pipelines without an OSX obj)
-  managedOsxBuild: true
   # When set to true, passes the 'platforms' value as a job parameter also named 'platforms'.
   # Handled as an opt-in parameter to avoid excessive yaml.
   passPlatforms: false
@@ -28,7 +26,6 @@ parameters:
 jobs:
 
 # Linux arm
-
 - ${{ if or(containsValue(parameters.platforms, 'Linux_arm'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
@@ -47,7 +44,6 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: Linux
         crossrootfsDir: '/crossrootfs/arm'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -71,7 +67,6 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: Linux
         crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -100,11 +95,6 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        ${{ if ne(parameters.managedOsxBuild, true) }}:
-          managedTestBuildOsGroup: Linux
-          managedTestBuildOsSubgroup: _musl
-        ${{ if eq(parameters.managedOsxBuild, true) }}:
-          managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl arm64
@@ -128,7 +118,6 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: Linux
         crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -152,10 +141,6 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        ${{ if ne(parameters.managedOsxBuild, true) }}:
-          managedTestBuildOsGroup: Linux
-        ${{ if eq(parameters.managedOsxBuild, true) }}:
-          managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # WebAssembly
@@ -169,7 +154,7 @@ jobs:
       archType: wasm
       platform: Browser_wasm
       container:
-        image: ubuntu-18.04-webassembly-20200409132031-f70ea41
+        image: ubuntu-18.04-webassembly-20200529220811-6a6da63
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -305,7 +290,6 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # tvOS arm64
@@ -325,7 +309,6 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # iOS x64
@@ -338,6 +321,25 @@ jobs:
       osGroup: iOS
       archType: x64
       platform: iOS_x64
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# iOS x86
+
+- ${{ if containsValue(parameters.platforms, 'iOS_x86') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: iOS
+      archType: x86
+      platform: iOS_x86
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -365,7 +367,6 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # iOS arm64
@@ -385,12 +386,11 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # macOS x64
 
-- ${{ if or(containsValue(parameters.platforms, 'OSX_x64'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'OSX_x64'), containsValue(parameters.platforms, 'CoreClrTestBuildHost'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
@@ -405,7 +405,6 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Windows x64
@@ -425,7 +424,6 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: Windows_NT
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Windows x86
@@ -445,7 +443,6 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: Windows_NT
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Windows arm
@@ -464,12 +461,11 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: Windows_NT
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Windows arm64
 
-- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_arm64'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
@@ -484,5 +480,4 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: Windows_NT
         ${{ insert }}: ${{ parameters.jobParameters }}

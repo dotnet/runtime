@@ -854,7 +854,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     if (op2 == nullptr)
     {
         //
-        // Must an OAK_NOT_EQUAL assertion
+        // Must be an OAK_NOT_EQUAL assertion
         //
         noway_assert(assertionKind == OAK_NOT_EQUAL);
 
@@ -1788,6 +1788,23 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         dsc.assertionKind    = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
         dsc.op1.kind         = O1K_BOUND_OPER_BND;
         dsc.op1.vn           = op1VN;
+        dsc.op2.kind         = O2K_CONST_INT;
+        dsc.op2.vn           = vnStore->VNZeroForType(op2->TypeGet());
+        dsc.op2.u1.iconVal   = 0;
+        dsc.op2.u1.iconFlags = 0;
+        AssertionIndex index = optAddAssertion(&dsc);
+        optCreateComplementaryAssertion(index, nullptr, nullptr);
+        return index;
+    }
+    // Cases where op1 holds the lhs of the condition and op2 holds the bound arithmetic.
+    // Loop condition like: "i < bnd +/-k"
+    // Assertion: "i < bnd +/- k != 0"
+    else if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
+    {
+        AssertionDsc dsc;
+        dsc.assertionKind    = OAK_NOT_EQUAL;
+        dsc.op1.kind         = O1K_BOUND_OPER_BND;
+        dsc.op1.vn           = relopVN;
         dsc.op2.kind         = O2K_CONST_INT;
         dsc.op2.vn           = vnStore->VNZeroForType(op2->TypeGet());
         dsc.op2.u1.iconVal   = 0;

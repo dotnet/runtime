@@ -60,9 +60,6 @@ namespace System.Threading.Tasks
         /// <summary>A task canceled using `new CancellationToken(true)`.</summary>
         private static readonly Task s_canceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
 
-        /// <summary>A successfully completed task.</summary>
-        internal static Task CompletedTask => Task.CompletedTask;
-
         /// <summary>null if representing a successful synchronous completion, otherwise a <see cref="Task"/> or a <see cref="IValueTaskSource"/>.</summary>
         internal readonly object? _obj;
         /// <summary>Opaque value passed through to the <see cref="IValueTaskSource"/>.</summary>
@@ -114,6 +111,40 @@ namespace System.Threading.Tasks
             _continueOnCapturedContext = continueOnCapturedContext;
         }
 
+        /// <summary>Gets a task that has already completed successfully.</summary>
+        public static ValueTask CompletedTask => default;
+
+        /// <summary>Creates a <see cref="ValueTask{TResult}"/> that's completed successfully with the specified result.</summary>
+        /// <typeparam name="TResult">The type of the result returned by the task.</typeparam>
+        /// <param name="result">The result to store into the completed task.</param>
+        /// <returns>The successfully completed task.</returns>
+        public static ValueTask<TResult> FromResult<TResult>(TResult result) =>
+            new ValueTask<TResult>(result);
+
+        /// <summary>Creates a <see cref="ValueTask"/> that has completed due to cancellation with the specified cancellation token.</summary>
+        /// <param name="cancellationToken">The cancellation token with which to complete the task.</param>
+        /// <returns>The canceled task.</returns>
+        public static ValueTask FromCanceled(CancellationToken cancellationToken) =>
+            new ValueTask(Task.FromCanceled(cancellationToken));
+
+        /// <summary>Creates a <see cref="ValueTask{TResult}"/> that has completed due to cancellation with the specified cancellation token.</summary>
+        /// <param name="cancellationToken">The cancellation token with which to complete the task.</param>
+        /// <returns>The canceled task.</returns>
+        public static ValueTask<TResult> FromCanceled<TResult>(CancellationToken cancellationToken) =>
+            new ValueTask<TResult>(Task.FromCanceled<TResult>(cancellationToken));
+
+        /// <summary>Creates a <see cref="ValueTask"/> that has completed with the specified exception.</summary>
+        /// <param name="exception">The exception with which to complete the task.</param>
+        /// <returns>The faulted task.</returns>
+        public static ValueTask FromException(Exception exception) =>
+            new ValueTask(Task.FromException(exception));
+
+        /// <summary>Creates a <see cref="ValueTask{TResult}"/> that has completed with the specified exception.</summary>
+        /// <param name="exception">The exception with which to complete the task.</param>
+        /// <returns>The faulted task.</returns>
+        public static ValueTask<TResult> FromException<TResult>(Exception exception) =>
+            new ValueTask<TResult>(Task.FromException<TResult>(exception));
+
         /// <summary>Returns the hash code for this instance.</summary>
         public override int GetHashCode() => _obj?.GetHashCode() ?? 0;
 
@@ -145,7 +176,7 @@ namespace System.Threading.Tasks
             object? obj = _obj;
             Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
             return
-                obj == null ? CompletedTask :
+                obj == null ? Task.CompletedTask :
                 obj as Task ??
                 GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource>(obj));
         }
@@ -168,7 +199,7 @@ namespace System.Threading.Tasks
                     // Propagate any exceptions that may have occurred, then return
                     // an already successfully completed task.
                     t.GetResult(_token);
-                    return CompletedTask;
+                    return Task.CompletedTask;
 
                     // If status is Faulted or Canceled, GetResult should throw.  But
                     // we can't guarantee every implementation will do the "right thing".

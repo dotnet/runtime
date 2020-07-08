@@ -69,26 +69,6 @@ VOID BaseAssemblySpec::CloneFieldsToStackingAllocator( StackingAllocator* alloc)
         m_wszCodeBase = temp;
     }
 
-    if ((~m_ownedFlags & WINRT_TYPE_NAME_OWNED)) {
-        if (m_szWinRtTypeNamespace)
-        {
-            S_UINT32 len = S_UINT32((DWORD) strlen(m_szWinRtTypeNamespace)) + S_UINT32(1);
-            if(len.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
-            LPSTR temp = (LPSTR)alloc->Alloc(len*S_UINT32(sizeof(CHAR)));
-            strcpy_s(temp, len.Value(), m_szWinRtTypeNamespace);
-            m_szWinRtTypeNamespace = temp;
-        }
-
-        if (m_szWinRtTypeClassName)
-        {
-            S_UINT32 len = S_UINT32((DWORD) strlen(m_szWinRtTypeClassName)) + S_UINT32(1);
-            if(len.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
-            LPSTR temp = (LPSTR)alloc->Alloc(len*S_UINT32(sizeof(CHAR)));
-            strcpy_s(temp, len.Value(), m_szWinRtTypeClassName);
-            m_szWinRtTypeClassName = temp;
-        }
-    }
-
     _ASSERTE(hash == Hash());
 
 }
@@ -362,40 +342,6 @@ BOOL BaseAssemblySpec::RefMatchesDef(const BaseAssemblySpec* pRef, const BaseAss
     }
 }
 
-//===========================================================================================
-// This function may embed additional information, if required.
-//
-// For WinRT (ContentType=WindowsRuntime) assembly specs, this will embed the type name in
-// the IAssemblyName's ASM_NAME_NAME property; otherwise this just creates an IAssemblyName
-// for the provided assembly spec.
-
-void BaseAssemblySpec::GetEncodedName(SString & ssEncodedName) const
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END
-
-#ifdef FEATURE_COMINTEROP
-    if (IsContentType_WindowsRuntime() && GetWinRtTypeClassName() != NULL)
-    {
-        ssEncodedName.SetUTF8(GetName());
-        ssEncodedName.Append(SL(W("!")));
-        if (GetWinRtTypeNamespace() != NULL)
-        {
-            ssEncodedName.AppendUTF8(GetWinRtTypeNamespace());
-            ssEncodedName.Append(SL(W(".")));
-        }
-        ssEncodedName.AppendUTF8(GetWinRtTypeClassName());
-    }
-    else
-#endif
-    {
-        ssEncodedName.SetUTF8(m_pAssemblyName);
-    }
-}
-
 VOID BaseAssemblySpec::SetName(SString const & ssName)
 {
     CONTRACTL
@@ -594,134 +540,6 @@ HRESULT BaseAssemblySpec::Init(IAssemblyName *pName)
     }
 
     return S_OK;
-}
-
-HRESULT BaseAssemblySpec::CreateFusionName(
-    IAssemblyName **ppName,
-    BOOL fIncludeCodeBase/*=TRUE*/,
-    BOOL fMustBeBindable /*=FALSE*/) const
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    EX_TRY
-    {
-        IAssemblyName *pFusionAssemblyName = NULL;
-        LPWSTR pwLocale = NULL;
-        CQuickBytes qb;
-
-        NonVMComHolder< IAssemblyName > holder(NULL);
-
-        SmallStackSString ssAssemblyName;
-        fMustBeBindable ? GetEncodedName(ssAssemblyName) : GetName(ssAssemblyName);
-
-        IfFailGo(CreateAssemblyNameObject(&pFusionAssemblyName, ssAssemblyName.GetUnicode(), false /*parseDisplayName*/));
-
-        holder = pFusionAssemblyName;
-
-        if (m_context.usMajorVersion != (USHORT) -1) {
-            IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_MAJOR_VERSION,
-                                                      &m_context.usMajorVersion,
-                                                      sizeof(USHORT)));
-
-            if (m_context.usMinorVersion != (USHORT) -1) {
-                IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_MINOR_VERSION,
-                                                          &m_context.usMinorVersion,
-                                                          sizeof(USHORT)));
-
-                if (m_context.usBuildNumber != (USHORT) -1) {
-                    IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_BUILD_NUMBER,
-                                                              &m_context.usBuildNumber,
-                                                              sizeof(USHORT)));
-
-                    if (m_context.usRevisionNumber != (USHORT) -1)
-                        IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_REVISION_NUMBER,
-                                                                  &m_context.usRevisionNumber,
-                                                                  sizeof(USHORT)));
-                }
-            }
-        }
-
-        if (m_context.szLocale) {
-            int pwLocaleLen = WszMultiByteToWideChar(CP_UTF8, 0, m_context.szLocale, -1, 0, 0);
-            if(pwLocaleLen == 0) {
-                IfFailGo(HRESULT_FROM_GetLastError());
-            } else if (pwLocaleLen > MAKE_MAX_LENGTH) {
-                IfFailGo(COR_E_OVERFLOW);
-            }
-            pwLocale = (LPWSTR) qb.AllocNoThrow((pwLocaleLen + 1) *sizeof(WCHAR));
-            if (!pwLocaleLen)
-                IfFailGo(E_OUTOFMEMORY);
-            if (!WszMultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS,
-                                        m_context.szLocale, -1, pwLocale, pwLocaleLen))
-                IfFailGo(HRESULT_FROM_GetLastError());
-            pwLocale[pwLocaleLen] = 0;
-
-            IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_CULTURE,
-                                                      pwLocale,
-                                                      (DWORD)(wcslen(pwLocale) + 1) * sizeof (WCHAR)));
-        }
-
-        if (m_pbPublicKeyOrToken) {
-            if (m_cbPublicKeyOrToken) {
-                if(m_dwFlags & afPublicKey) {
-                    IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_PUBLIC_KEY,
-                                                              m_pbPublicKeyOrToken, m_cbPublicKeyOrToken));
-                }
-                else {
-                        IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_PUBLIC_KEY_TOKEN,
-                                                                  m_pbPublicKeyOrToken, m_cbPublicKeyOrToken));
-                }
-            }
-            else {
-            }
-        }
-
-
-        // Set the Processor Architecture (if any)
-        {
-            DWORD dwPEkind = (DWORD)PAIndex(m_dwFlags);
-            // Note: Value 0x07 = code:afPA_NoPlatform falls through
-            if ((dwPEkind >= peMSIL) && (dwPEkind <= peARM))
-            {
-                PEKIND peKind = (PEKIND)dwPEkind;
-                IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_ARCHITECTURE,
-                                                          &peKind, sizeof(peKind)));
-            }
-        }
-
-        // Set the Content Type (if any)
-        {
-            if (IsAfContentType_WindowsRuntime(m_dwFlags))
-            {
-                DWORD dwContentType = AssemblyContentType_WindowsRuntime;
-                IfFailGo(pFusionAssemblyName->SetProperty(
-                        ASM_NAME_CONTENT_TYPE,
-                        &dwContentType,
-                        sizeof(dwContentType)));
-            }
-        }
-
-        _ASSERTE(m_wszCodeBase == NULL);
-
-        *ppName = pFusionAssemblyName;
-
-        holder.SuppressRelease();
-        hr = S_OK;
-
-    ErrExit:
-        ;
-    }
-    EX_CATCH_HRESULT(hr);
-
-    return hr;
 }
 
 #endif // !DACCESS_COMPILE

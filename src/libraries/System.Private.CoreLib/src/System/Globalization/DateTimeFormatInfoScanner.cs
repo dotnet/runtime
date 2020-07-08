@@ -91,55 +91,26 @@ namespace System.Globalization
         internal const char IgnorableSymbolChar = '\xe001';
 
         // Known CJK suffix
-        internal const string CJKYearSuff = "\u5e74";
-        internal const string CJKMonthSuff = "\u6708";
-        internal const string CJKDaySuff = "\u65e5";
+        internal const char CJKYearSuff = '\u5e74';
+        internal const char CJKMonthSuff = '\u6708';
+        internal const char CJKDaySuff = '\u65e5';
 
-        internal const string KoreanYearSuff = "\ub144";
-        internal const string KoreanMonthSuff = "\uc6d4";
-        internal const string KoreanDaySuff = "\uc77c";
+        internal const char KoreanYearSuff = '\ub144';
+        internal const char KoreanMonthSuff = '\uc6d4';
+        internal const char KoreanDaySuff = '\uc77c';
 
-        internal const string KoreanHourSuff = "\uc2dc";
-        internal const string KoreanMinuteSuff = "\ubd84";
-        internal const string KoreanSecondSuff = "\ucd08";
+        internal const char KoreanHourSuff = '\uc2dc';
+        internal const char KoreanMinuteSuff = '\ubd84';
+        internal const char KoreanSecondSuff = '\ucd08';
 
-        internal const string CJKHourSuff = "\u6642";
-        internal const string ChineseHourSuff = "\u65f6";
+        internal const char CJKHourSuff = '\u6642';
+        internal const char ChineseHourSuff = '\u65f6';
 
-        internal const string CJKMinuteSuff = "\u5206";
-        internal const string CJKSecondSuff = "\u79d2";
+        internal const char CJKMinuteSuff = '\u5206';
+        internal const char CJKSecondSuff = '\u79d2';
 
-        // The collection fo date words & postfix.
+        // The collection for date words & postfix.
         internal List<string> m_dateWords = new List<string>();
-        // Hashtable for the known words.
-        private static volatile Dictionary<string, string>? s_knownWords;
-
-        private static Dictionary<string, string> KnownWords =>
-            s_knownWords ??=
-            new Dictionary<string, string>(16)
-            {
-                // Add known words into the hash table.
-
-                // Skip these special symbols.
-                { "/", string.Empty },
-                { "-", string.Empty },
-                { ".", string.Empty },
-
-                // Skip known CJK suffixes.
-                { CJKYearSuff, string.Empty },
-                { CJKMonthSuff, string.Empty },
-                { CJKDaySuff, string.Empty },
-                { KoreanYearSuff, string.Empty },
-                { KoreanMonthSuff, string.Empty },
-                { KoreanDaySuff, string.Empty },
-                { KoreanHourSuff, string.Empty },
-                { KoreanMinuteSuff, string.Empty },
-                { KoreanSecondSuff, string.Empty },
-                { CJKHourSuff, string.Empty },
-                { ChineseHourSuff, string.Empty },
-                { CJKMinuteSuff, string.Empty },
-                { CJKSecondSuff, string.Empty }
-            };
 
         ////////////////////////////////////////////////////////////////////////////
         //
@@ -203,43 +174,68 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////////
         internal void AddDateWordOrPostfix(string? formatPostfix, string str)
         {
-            if (str.Length > 0)
+            if (str.Length == 0)
             {
-                // Some cultures use . like an abbreviation
-                if (str.Equals("."))
+                return;
+            }
+
+            if (str.Length == 1)
+            {
+                switch (str[0])
                 {
-                    AddIgnorableSymbols(".");
-                    return;
+                    // Some cultures use . like an abbreviation
+                    case '.':
+                        AddIgnorableSymbols(".");
+                        return;
+
+                    // Skip these special symbols.
+                    case '/':
+                    case '-':
+                        return;
+
+                    // Skip known CJK suffixes.
+                    case CJKYearSuff:
+                    case CJKMonthSuff:
+                    case CJKDaySuff:
+                    case KoreanYearSuff:
+                    case KoreanMonthSuff:
+                    case KoreanDaySuff:
+                    case KoreanHourSuff:
+                    case KoreanMinuteSuff:
+                    case KoreanSecondSuff:
+                    case CJKHourSuff:
+                    case ChineseHourSuff:
+                    case CJKMinuteSuff:
+                    case CJKSecondSuff:
+                        return;
+                }
+            }
+
+            m_dateWords ??= new List<string>();
+
+            if (formatPostfix == "MMMM")
+            {
+                // Add the word into the ArrayList as "\xfffe" + real month postfix.
+                string temp = MonthPostfixChar + str;
+                if (!m_dateWords.Contains(temp))
+                {
+                    m_dateWords.Add(temp);
+                }
+            }
+            else
+            {
+                if (!m_dateWords.Contains(str))
+                {
+                    m_dateWords.Add(str);
                 }
 
-                if (!KnownWords.TryGetValue(str, out _))
+                if (str[^1] == '.')
                 {
-                    m_dateWords ??= new List<string>();
-
-                    if (formatPostfix == "MMMM")
+                    // Old version ignore the trailing dot in the date words. Support this as well.
+                    string strWithoutDot = str[0..^1];
+                    if (!m_dateWords.Contains(strWithoutDot))
                     {
-                        // Add the word into the ArrayList as "\xfffe" + real month postfix.
-                        string temp = MonthPostfixChar + str;
-                        if (!m_dateWords.Contains(temp))
-                        {
-                            m_dateWords.Add(temp);
-                        }
-                    }
-                    else
-                    {
-                        if (!m_dateWords.Contains(str))
-                        {
-                            m_dateWords.Add(str);
-                        }
-                        if (str[^1] == '.')
-                        {
-                            // Old version ignore the trailing dot in the date words. Support this as well.
-                            string strWithoutDot = str[0..^1];
-                            if (!m_dateWords.Contains(strWithoutDot))
-                            {
-                                m_dateWords.Add(strWithoutDot);
-                            }
-                        }
+                        m_dateWords.Add(strWithoutDot);
                     }
                 }
             }
@@ -685,8 +681,8 @@ namespace System.Globalization
                         // we don't need the UseDigitPrefixInTokens since it is slower.
                         switch (array[i][index])
                         {
-                            case '\x6708': // CJKMonthSuff
-                            case '\xc6d4': // KoreanMonthSuff
+                            case CJKMonthSuff:
+                            case KoreanMonthSuff:
                                 return false;
                         }
                     }
@@ -697,7 +693,7 @@ namespace System.Globalization
                         // Starting with Windows 8, the CJK months for some cultures looks like: "1' \x6708'"
                         // instead of just "1\x6708"
                         if (array[i][index] == '\'' && array[i][index + 1] == ' ' &&
-                           array[i][index + 2] == '\x6708' && array[i][index + 3] == '\'')
+                           array[i][index + 2] == CJKMonthSuff && array[i][index + 3] == '\'')
                         {
                             return false;
                         }

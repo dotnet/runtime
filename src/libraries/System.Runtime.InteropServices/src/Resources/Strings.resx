@@ -75,7 +75,4 @@
   <data name="InvalidOperation_NoDispIdAttribute" xml:space="preserve">
     <value>Event invocation for COM objects requires event to be attributed with DispIdAttribute.</value>
   </data>
-  <data name="StandardOleMarshalObjectGetMarshalerFailed" xml:space="preserve">
-    <value>Failed to get marshaler for IID {0}.</value>
-  </data>
 </root>

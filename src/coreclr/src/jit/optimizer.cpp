@@ -7369,6 +7369,12 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
     preHead->inheritWeight(head);
     preHead->bbFlags &= ~BBF_PROF_WEIGHT;
 
+    // Copy the bbReach set from head for the new preHead block
+    preHead->bbReach = BlockSetOps::MakeEmpty(this);
+    BlockSetOps::Assign(this, preHead->bbReach, head->bbReach);
+    // Also include 'head' in the preHead bbReach set
+    BlockSetOps::AddElemD(this, preHead->bbReach, head->bbNum);
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -9188,4 +9194,271 @@ void Compiler::optOptimizeBools()
 #ifdef DEBUG
     fgDebugCheckBBlist();
 #endif
+}
+
+typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> LclVarRefCounts;
+
+//------------------------------------------------------------------------------------------
+// optRemoveRedundantZeroInits: Remove redundant zero intializations.
+//
+// Notes:
+//    This phase iterates over basic blocks starting with the first basic block until there is no unique
+//    basic block successor or until it detects a loop. It keeps track of local nodes it encounters.
+//    When it gets to an assignment to a local variable or a local field, it checks whether the assignment
+//    is the first reference to the local (or to the parent of the local field), and, if so,
+//    it may do one of two optimizations:
+//      1. If the following conditions are true:
+//            the local is untracked,
+//            the rhs of the assignment is 0,
+//            the local is guaranteed to be fully initialized in the prolog,
+//         then the explicit zero initialization is removed.
+//      2. If the following conditions are true:
+//            the assignment is to a local (and not a field),
+//            the local is not lvLiveInOutOfHndlr or no exceptions can be thrown between the prolog and the assignment,
+//            either the local has no gc pointers or there are no gc-safe points between the prolog and the assignment,
+//         then the local is marked with lvHasExplicitInit which tells the codegen not to insert zero initialization
+//         for this local in the prolog.
+
+void Compiler::optRemoveRedundantZeroInits()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In optRemoveRedundantZeroInits()\n");
+    }
+#endif // DEBUG
+
+    CompAllocator   allocator(getAllocator(CMK_ZeroInit));
+    LclVarRefCounts refCounts(allocator);
+    BitVecTraits    bitVecTraits(lvaCount, this);
+    BitVec          zeroInitLocals = BitVecOps::MakeEmpty(&bitVecTraits);
+    bool            hasGCSafePoint = false;
+    bool            canThrow       = false;
+
+    assert(fgStmtListThreaded);
+
+    for (BasicBlock* block = fgFirstBB; (block != nullptr) && ((block->bbFlags & BBF_MARKED) == 0);
+         block             = block->GetUniqueSucc())
+    {
+        block->bbFlags |= BBF_MARKED;
+        CompAllocator   allocator(getAllocator(CMK_ZeroInit));
+        LclVarRefCounts defsInBlock(allocator);
+        bool            removedTrackedDefs = false;
+        for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr;)
+        {
+            Statement* next = stmt->GetNextStmt();
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            {
+                if (((tree->gtFlags & GTF_CALL) != 0) && (!tree->IsCall() || !tree->AsCall()->IsSuppressGCTransition()))
+                {
+                    hasGCSafePoint = true;
+                }
+
+                if ((tree->gtFlags & GTF_EXCEPT) != 0)
+                {
+                    canThrow = true;
+                }
+
+                switch (tree->gtOper)
+                {
+                    case GT_LCL_VAR:
+                    case GT_LCL_FLD:
+                    case GT_LCL_VAR_ADDR:
+                    case GT_LCL_FLD_ADDR:
+                    {
+                        unsigned  lclNum    = tree->AsLclVarCommon()->GetLclNum();
+                        unsigned* pRefCount = refCounts.LookupPointer(lclNum);
+                        if (pRefCount != nullptr)
+                        {
+                            *pRefCount = (*pRefCount) + 1;
+                        }
+                        else
+                        {
+                            refCounts.Set(lclNum, 1);
+                        }
+
+                        if ((tree->gtFlags & GTF_VAR_DEF) == 0)
+                        {
+                            break;
+                        }
+
+                        // We need to count the number of tracked var defs in the block
+                        // so that we can update block->bbVarDef if we remove any tracked var defs.
+
+                        LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
+                        if (lclDsc->lvTracked)
+                        {
+                            unsigned* pDefsCount = defsInBlock.LookupPointer(lclNum);
+                            if (pDefsCount != nullptr)
+                            {
+                                *pDefsCount = (*pDefsCount) + 1;
+                            }
+                            else
+                            {
+                                defsInBlock.Set(lclNum, 1);
+                            }
+                        }
+                        else if (varTypeIsStruct(lclDsc) && ((tree->gtFlags & GTF_VAR_USEASG) == 0) &&
+                                 lvaGetPromotionType(lclDsc) != PROMOTION_TYPE_NONE)
+                        {
+                            for (unsigned i = lclDsc->lvFieldLclStart; i < lclDsc->lvFieldLclStart + lclDsc->lvFieldCnt;
+                                 ++i)
+                            {
+                                if (lvaGetDesc(i)->lvTracked)
+                                {
+                                    unsigned* pDefsCount = defsInBlock.LookupPointer(i);
+                                    if (pDefsCount != nullptr)
+                                    {
+                                        *pDefsCount = (*pDefsCount) + 1;
+                                    }
+                                    else
+                                    {
+                                        defsInBlock.Set(i, 1);
+                                    }
+                                }
+                            }
+                        }
+
+                        break;
+                    }
+                    case GT_ASG:
+                    {
+                        GenTreeOp* treeOp = tree->AsOp();
+
+                        unsigned lclNum = BAD_VAR_NUM;
+
+                        if (treeOp->gtOp1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                        {
+                            lclNum = treeOp->gtOp1->AsLclVarCommon()->GetLclNum();
+                        }
+                        else if (treeOp->gtOp1->OperIs(GT_OBJ, GT_BLK))
+                        {
+                            GenTreeLclVarCommon* lcl = treeOp->gtOp1->gtGetOp1()->IsLocalAddrExpr();
+
+                            if (lcl != nullptr)
+                            {
+                                lclNum = lcl->GetLclNum();
+                            }
+                        }
+
+                        if (lclNum == BAD_VAR_NUM)
+                        {
+                            break;
+                        }
+
+                        LclVarDsc* const lclDsc    = lvaGetDesc(lclNum);
+                        unsigned*        pRefCount = refCounts.LookupPointer(lclNum);
+
+                        // pRefCount can't be null because the local node on the lhs of the assignment
+                        // must have already been seen.
+                        assert(pRefCount != nullptr);
+                        if (*pRefCount != 1)
+                        {
+                            break;
+                        }
+
+                        unsigned parentRefCount = 0;
+                        if (lclDsc->lvIsStructField && refCounts.Lookup(lclDsc->lvParentLcl, &parentRefCount) &&
+                            (parentRefCount != 0))
+                        {
+                            break;
+                        }
+
+                        unsigned fieldRefCount = 0;
+                        if (lclDsc->lvPromoted)
+                        {
+                            for (unsigned i = lclDsc->lvFieldLclStart;
+                                 (fieldRefCount == 0) && (i < lclDsc->lvFieldLclStart + lclDsc->lvFieldCnt); ++i)
+                            {
+                                refCounts.Lookup(i, &fieldRefCount);
+                            }
+                        }
+
+                        if (fieldRefCount != 0)
+                        {
+                            break;
+                        }
+
+                        // The local hasn't been referenced before this assignment.
+                        bool removedExplicitZeroInit = false;
+
+                        if (treeOp->gtOp2->IsIntegralConst(0))
+                        {
+                            bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+                            bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+
+                            if (BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclNum) ||
+                                (lclDsc->lvIsStructField &&
+                                 BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
+                                (!lclDsc->lvTracked && !fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn)))
+                            {
+                                // We are guaranteed to have a zero initialization in the prolog or a
+                                // dominating explicit zero initialization and the local hasn't been redefined
+                                // between the prolog and this explicit zero initialization so the assignment
+                                // can be safely removed.
+                                if (tree == stmt->GetRootNode())
+                                {
+                                    fgRemoveStmt(block, stmt);
+                                    removedExplicitZeroInit      = true;
+                                    lclDsc->lvSuppressedZeroInit = 1;
+
+                                    if (lclDsc->lvTracked)
+                                    {
+                                        removedTrackedDefs   = true;
+                                        unsigned* pDefsCount = defsInBlock.LookupPointer(lclNum);
+                                        *pDefsCount          = (*pDefsCount) - 1;
+                                    }
+                                }
+                            }
+
+                            if (treeOp->gtOp1->OperIs(GT_LCL_VAR))
+                            {
+                                BitVecOps::AddElemD(&bitVecTraits, zeroInitLocals, lclNum);
+                            }
+                            *pRefCount = 0;
+                        }
+
+                        if (!removedExplicitZeroInit && treeOp->gtOp1->OperIs(GT_LCL_VAR) &&
+                            (!canThrow || !lclDsc->lvLiveInOutOfHndlr))
+                        {
+                            // If compMethodRequiresPInvokeFrame() returns true, lower may later
+                            // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME which is a gc-safe point.
+                            if (!lclDsc->HasGCPtr() ||
+                                (!GetInterruptible() && !hasGCSafePoint && !compMethodRequiresPInvokeFrame()))
+                            {
+                                // The local hasn't been used and won't be reported to the gc between
+                                // the prolog and this explicit intialization. Therefore, it doesn't
+                                // require zero initialization in the prolog.
+                                lclDsc->lvHasExplicitInit = 1;
+                            }
+                        }
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+            stmt = next;
+        }
+
+        if (removedTrackedDefs)
+        {
+            LclVarRefCounts::KeyIterator iter(defsInBlock.Begin());
+            LclVarRefCounts::KeyIterator end(defsInBlock.End());
+            for (; !iter.Equal(end); iter++)
+            {
+                unsigned int lclNum = iter.Get();
+                if (defsInBlock[lclNum] == 0)
+                {
+                    VarSetOps::RemoveElemD(this, block->bbVarDef, lvaGetDesc(lclNum)->lvVarIndex);
+                }
+            }
+        }
+    }
+
+    for (BasicBlock* block = fgFirstBB; (block != nullptr) && ((block->bbFlags & BBF_MARKED) != 0);
+         block             = block->GetUniqueSucc())
+    {
+        block->bbFlags &= ~BBF_MARKED;
+    }
 }

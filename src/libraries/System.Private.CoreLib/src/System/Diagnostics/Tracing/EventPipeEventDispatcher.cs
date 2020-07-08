@@ -27,14 +27,14 @@ namespace System.Diagnostics.Tracing
 
         private readonly IntPtr m_RuntimeProviderID;
 
-        private ulong m_sessionID = 0;
+        private ulong m_sessionID;
         private DateTime m_syncTimeUtc;
         private long m_syncTimeQPC;
         private long m_timeQPCFrequency;
 
         private bool m_stopDispatchTask;
         private readonly EventPipeWaitHandle m_dispatchTaskWaitHandle = new EventPipeWaitHandle();
-        private Task? m_dispatchTask = null;
+        private Task? m_dispatchTask;
         private readonly object m_dispatchControlLock = new object();
         private readonly Dictionary<EventListener, EventListenerSubscription> m_subscriptions = new Dictionary<EventListener, EventListenerSubscription>();
 

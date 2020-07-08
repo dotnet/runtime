@@ -350,8 +350,6 @@ and enabling support for running WPF on .NET Core (Windows Only).
 [corefx]: http://github.com/dotnet/corefx
 [referencesource]: https://github.com/microsoft/referencesource
 [mono-supported-platforms]: http://www.mono-project.com/docs/about-mono/supported-platforms/
-[JamesNK]: https://twitter.com/JamesNK
-[Newtonsoft.Json]: https://github.com/JamesNK/Newtonsoft.Json
 [mono-winforms]: http://www.mono-project.com/docs/gui/winforms/
 [xunit]: https://github.com/xunit
 [mc.dot.net]: https://mc.dot.net/

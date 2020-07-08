@@ -513,31 +513,11 @@ public:
         WRAPPER_NO_CONTRACT;
         return ((GetInteropAttributeMask() & INTEROP_ATTRIBUTE_PRIMARY_INTEROP_ASSEMBLY) != 0);
     }
-
-    // Does this assembly contain windows metadata
-    bool IsWinMD();
-
-    // Does this assembly contain windows metadata with managed implementation
-    bool IsManagedWinMD();
-
-    // Returns the IWinMDImport interface of the manifest module metadata or NULL if this assembly is not a .winmd
-    IWinMDImport *GetManifestWinMDImport();
 #endif
 
 
 protected:
 #ifdef FEATURE_COMINTEROP
-    enum WinMDStatus
-    {
-        WinMDStatus_Unknown,
-        WinMDStatus_IsPureWinMD,
-        WinMDStatus_IsManagedWinMD,
-        WinMDStatus_IsNotWinMD
-    };
-
-    // Determine if the assembly is a pure Windows Metadata file, contians managed implementation, or is not
-    // Windows Metadata at all.
-    WinMDStatus GetWinMDStatus();
 
     enum InteropAttributeStatus {
         INTEROP_ATTRIBUTE_UNSET                    = 0,
@@ -555,13 +535,10 @@ protected:
 
         int mask = INTEROP_ATTRIBUTE_UNSET;
 
-        if (!IsWinMD()) // ignore classic COM interop CAs in .winmd
-        {
-            if (GetManifestModule()->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::ImportedFromTypeLib, NULL, 0) == S_OK)
-                mask |= INTEROP_ATTRIBUTE_IMPORTED_FROM_TYPELIB;
-            if (GetManifestModule()->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::PrimaryInteropAssembly, NULL, 0) == S_OK)
-                mask |= INTEROP_ATTRIBUTE_PRIMARY_INTEROP_ASSEMBLY;
-        }
+        if (GetManifestModule()->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::ImportedFromTypeLib, NULL, 0) == S_OK)
+            mask |= INTEROP_ATTRIBUTE_IMPORTED_FROM_TYPELIB;
+        if (GetManifestModule()->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::PrimaryInteropAssembly, NULL, 0) == S_OK)
+            mask |= INTEROP_ATTRIBUTE_PRIMARY_INTEROP_ASSEMBLY;
 
         if (!IsDynamic())
         {
@@ -571,7 +548,7 @@ protected:
 
         return static_cast<InteropAttributeStatus>(mask);
     }
-#endif // FEATURE_INTEROP
+#endif // FEATURE_COMINTEROP
 
 private:
 
@@ -606,9 +583,6 @@ private:
     // If a TypeLib is ever required for this module, cache the pointer here.
     ITypeLib              *m_pITypeLib;
     InteropAttributeStatus m_InteropAttributeStatus;
-
-    WinMDStatus            m_winMDStatus;
-    IWinMDImport          *m_pManifestWinMDImport;
 #endif // FEATURE_COMINTEROP
 
     DebuggerAssemblyControlFlags m_debuggerFlags;

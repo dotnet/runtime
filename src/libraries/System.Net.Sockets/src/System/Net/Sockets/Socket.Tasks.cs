@@ -195,7 +195,7 @@ namespace System.Net.Sockets
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref EventArgs.ValueTaskReceive, () => new AwaitableSocketAsyncEventArgs());
@@ -344,7 +344,7 @@ namespace System.Net.Sockets
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref EventArgs.ValueTaskSend, () => new AwaitableSocketAsyncEventArgs());
@@ -368,7 +368,7 @@ namespace System.Net.Sockets
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask(Task.FromCanceled(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
             }
 
             AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref EventArgs.ValueTaskSend, () => new AwaitableSocketAsyncEventArgs());
@@ -780,7 +780,7 @@ namespace System.Net.Sockets
             /// the pool.  If it completes asynchronously, then it's the responsibility of whoever
             /// accesses this second, so we track whether it's already been accessed.
             /// </summary>
-            internal bool _accessed = false;
+            internal bool _accessed;
 
             internal TaskSocketAsyncEventArgs() :
                 base(unsafeSuppressExecutionContextFlow: true) // avoid flowing context at lower layers as we only expose Task, which handles it
@@ -906,7 +906,7 @@ namespace System.Net.Sockets
 
                 return error == SocketError.Success ?
                     new ValueTask<int>(bytesTransferred) :
-                    new ValueTask<int>(Task.FromException<int>(CreateException(error)));
+                    ValueTask.FromException<int>(CreateException(error));
             }
 
             /// <summary>Initiates a send operation on the associated socket.</summary>
@@ -928,7 +928,7 @@ namespace System.Net.Sockets
 
                 return error == SocketError.Success ?
                     new ValueTask<int>(bytesTransferred) :
-                    new ValueTask<int>(Task.FromException<int>(CreateException(error)));
+                    ValueTask.FromException<int>(CreateException(error));
             }
 
             public ValueTask SendAsyncForNetworkStream(Socket socket, CancellationToken cancellationToken)
@@ -947,7 +947,7 @@ namespace System.Net.Sockets
 
                 return error == SocketError.Success ?
                     default :
-                    new ValueTask(Task.FromException(CreateException(error)));
+                    ValueTask.FromException(CreateException(error));
             }
 
             public ValueTask ConnectAsync(Socket socket)
@@ -973,7 +973,7 @@ namespace System.Net.Sockets
 
                 return error == SocketError.Success ?
                     default :
-                    new ValueTask(Task.FromException(CreateException(error)));
+                    ValueTask.FromException(CreateException(error));
             }
 
             /// <summary>Gets the status of the operation.</summary>
