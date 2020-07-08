@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -105,7 +104,10 @@ namespace System.Resources
         private Dictionary<string, ResourceSet>? _resourceSets;
         private readonly string? _moduleDir;          // For assembly-ignorant directory location
         private readonly Type? _locationInfo;         // For Assembly or type-based directory layout
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         private readonly Type? _userResourceSet;      // Which ResourceSet instance to create
+
         private CultureInfo? _neutralResourcesCulture;  // For perf optimizations.
 
         private CultureNameResourceSetPair? _lastUsedResourceCache;
@@ -166,7 +168,9 @@ namespace System.Resources
         //
         // Note: System.Windows.Forms uses this method at design time.
         //
-        private ResourceManager(string baseName, string resourceDir, Type? userResourceSet)
+        private ResourceManager(string baseName, string resourceDir,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type? userResourceSet)
         {
             if (null == baseName)
                 throw new ArgumentNullException(nameof(baseName));
@@ -179,7 +183,6 @@ namespace System.Resources
             _userResourceSet = userResourceSet;
             _resourceSets = new Dictionary<string, ResourceSet>();
             _lastUsedResourceCache = new CultureNameResourceSetPair();
-            _useManifest = false;
 
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
             _resourceGroveler = new FileBasedResourceGroveler(mediator);
@@ -200,7 +203,9 @@ namespace System.Resources
             CommonAssemblyInit();
         }
 
-        public ResourceManager(string baseName, Assembly assembly, Type? usingResourceSet)
+        public ResourceManager(string baseName, Assembly assembly,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+        Type? usingResourceSet)
         {
             if (null == baseName)
                 throw new ArgumentNullException(nameof(baseName));
@@ -264,6 +269,7 @@ namespace System.Resources
 
         // Returns the Type of the ResourceSet the ResourceManager uses
         // to construct ResourceSets.
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public virtual Type ResourceSetType => _userResourceSet ?? typeof(RuntimeResourceSet);
 
         protected UltimateResourceFallbackLocation FallbackLocation
@@ -754,6 +760,7 @@ namespace System.Resources
             // NEEDED BOTH BY FILE-BASED  AND ASSEMBLY-BASED
             internal Type? LocationInfo => _rm._locationInfo;
 
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             internal Type? UserResourceSet => _rm._userResourceSet;
 
             internal string? BaseNameField => _rm.BaseNameField;

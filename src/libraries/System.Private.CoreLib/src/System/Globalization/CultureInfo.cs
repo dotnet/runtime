@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 ////////////////////////////////////////////////////////////////////////////
 //
@@ -187,7 +186,6 @@ namespace System.Globalization
             Debug.Assert(cultureData != null);
             _cultureData = cultureData;
             _name = cultureData.CultureName;
-            _isInherited = false;
             _isReadOnly = isReadOnly;
         }
 
@@ -674,7 +672,7 @@ namespace System.Globalization
                     CultureTypes.NeutralCultures :
                     CultureTypes.SpecificCultures;
 
-                if (_cultureData.IsWin32Installed)
+                if (CultureData.IsWin32Installed)
                 {
                     types |= CultureTypes.InstalledWin32Cultures;
                 }

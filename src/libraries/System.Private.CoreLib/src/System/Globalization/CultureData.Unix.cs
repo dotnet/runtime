@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -120,10 +119,10 @@ namespace System.Globalization
             return ebcdicCodePage == -1 ? CultureData.Invariant.EBCDICCodePage : ebcdicCodePage;
         }
 
-        internal bool IsWin32Installed => false;
+        internal static bool IsWin32Installed => false;
 
         internal static unsafe CultureData GetCurrentRegionData() => CultureInfo.CurrentCulture._cultureData;
 
-        private bool ShouldUseUserOverrideNlsData => false;
+        private static bool ShouldUseUserOverrideNlsData => false;
     }
 }

@@ -21,7 +21,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunFixupKind fixupKind,
             MethodWithToken method,
             MethodWithGCInfo localMethod,
-            bool isUnboxingStub,
             bool isInstantiatingStub)
             : base(
                   factory,
@@ -30,7 +29,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                   factory.MethodSignature(
                       fixupKind,
                       method,
-                      isUnboxingStub,
                       isInstantiatingStub))
         {
             _localMethod = localMethod;

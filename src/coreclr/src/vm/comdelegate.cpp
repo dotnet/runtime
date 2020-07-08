@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: COMDelegate.cpp
 //
@@ -2031,8 +2030,9 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
     if (pMD->HasClassOrMethodInstantiation())
         EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_GenericMethod")));
 
-    // Arguments
-    if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
+    // Arguments - Scenarios involving UnmanagedCallersOnly are handled during the jit.
+    bool unmanagedCallersOnlyRequiresMarshalling = false;
+    if (NDirect::MarshalingRequired(pMD, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
         EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
 }
 

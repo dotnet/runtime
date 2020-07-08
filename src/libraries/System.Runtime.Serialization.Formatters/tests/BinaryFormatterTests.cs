@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -24,7 +23,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
         [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/11191", RuntimeConfiguration.Checked)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/35915", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/35915", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [InlineData(2 * 6_584_983 - 2)] // previous limit
         [InlineData(2 * 7_199_369 - 2)] // last pre-computed prime number
         public void SerializeHugeObjectGraphs(int limit)

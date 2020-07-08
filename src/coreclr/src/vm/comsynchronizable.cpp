@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 /*============================================================
@@ -853,7 +852,7 @@ FCIMPLEND
 // Indicate whether the thread will host an STA (this may fail if the thread has
 // already been made part of the MTA, use GetApartmentState or the return state
 // from this routine to check for this).
-FCIMPL3(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, INT32 iState, CLR_BOOL fireMDAOnMismatch)
+FCIMPL2(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, INT32 iState)
 {
     FCALL_CONTRACT;
 
@@ -896,7 +895,7 @@ FCIMPL3(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, I
         {
             EX_TRY
             {
-                state = thread->SetApartment(state, fireMDAOnMismatch == TRUE);
+                state = thread->SetApartment(state);
             }
             EX_CATCH
             {
@@ -1021,7 +1020,7 @@ FCIMPL1(void, ThreadNative::StartupSetApartmentState, ThreadBaseObject* pThisUNS
     Thread::ApartmentState as = thread->GetExplicitApartment();
     if (as == Thread::AS_Unknown)
     {
-        thread->SetApartment(Thread::AS_InMTA, TRUE);
+        thread->SetApartment(Thread::AS_InMTA);
     }
 
     HELPER_METHOD_FRAME_END();

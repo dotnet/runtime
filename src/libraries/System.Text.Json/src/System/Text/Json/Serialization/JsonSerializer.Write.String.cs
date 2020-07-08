@@ -1,6 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -20,7 +21,7 @@ namespace System.Text.Json
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
         /// and <see cref="SerializeAsync"/>.
         /// </remarks>
-        public static string Serialize<TValue>(TValue value, JsonSerializerOptions? options = null)
+        public static string Serialize<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(TValue value, JsonSerializerOptions? options = null)
         {
             return Serialize<TValue>(value, typeof(TValue), options);
         }
@@ -43,7 +44,10 @@ namespace System.Text.Json
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
         /// and <see cref="SerializeAsync"/>.
         /// </remarks>
-        public static string Serialize(object? value, Type inputType, JsonSerializerOptions? options = null)
+        public static string Serialize(
+            object? value,
+            [DynamicallyAccessedMembers(MembersAccessedOnWrite)] Type inputType,
+            JsonSerializerOptions? options = null)
         {
             if (inputType == null)
             {

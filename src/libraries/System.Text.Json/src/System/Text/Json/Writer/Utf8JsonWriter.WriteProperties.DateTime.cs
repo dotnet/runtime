@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Buffers.Text;
@@ -374,6 +373,13 @@ namespace System.Text.Json
             BytesPending += bytesWritten;
 
             output[BytesPending++] = JsonConstants.Quote;
+        }
+
+        internal void WritePropertyName(DateTime value)
+        {
+            Span<byte> buffer = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
+            JsonWriterHelper.WriteDateTimeTrimmed(buffer, value, out int bytesWritten);
+            WritePropertyNameUnescaped(buffer.Slice(0, bytesWritten));
         }
     }
 }

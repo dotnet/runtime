@@ -11,5 +11,6 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\DataViewTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\TypedArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\ArrayTests.cs" />    
   </ItemGroup>
 </Project>
