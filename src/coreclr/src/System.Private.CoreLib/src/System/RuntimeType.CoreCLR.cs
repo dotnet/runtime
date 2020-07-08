@@ -3882,7 +3882,7 @@ namespace System
                     // is implicitly public and no-ops.
 
                     _ctorIsPublic = true;
-                    _pfnCtor = &GC.KeepAlive; // no-op fn                    
+                    _pfnCtor = &GC.KeepAlive; // a convenient no-op fn
                 }
                 else
                 {

@@ -59,8 +59,7 @@
     <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <!-- Turning off analyzers for now because they fail when they see calli invocations -->
-    <EnableAnalyzers>false</EnableAnalyzers>
+    <EnableAnalyzers>true</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- Platform specific properties -->
