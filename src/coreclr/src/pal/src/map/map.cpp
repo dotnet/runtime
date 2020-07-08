@@ -2441,7 +2441,6 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
 
     size_t headerSize;
     headerSize = GetVirtualPageSize(); // if there are lots of sections, this could be wrong
-    headerSize = RoundToPage(headerSize, offset);
 
     if (forceOveralign)
     {
