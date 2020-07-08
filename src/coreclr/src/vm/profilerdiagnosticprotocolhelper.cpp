@@ -23,6 +23,13 @@ void ProfilerDiagnosticProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessa
     }
     CONTRACTL_END;
 
+    if (!g_fEEStarted)
+    {
+        DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, CORPROF_E_NOT_YET_AVAILABLE);
+        delete pStream;
+        return;
+    }
+
     switch ((ProfilerCommandId)message.GetHeader().CommandId)
     {
     case ProfilerCommandId::AttachProfiler:

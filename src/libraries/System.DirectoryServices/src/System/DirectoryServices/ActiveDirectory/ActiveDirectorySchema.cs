@@ -26,10 +26,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class ActiveDirectorySchema : ActiveDirectoryPartition
     {
-        private bool _disposed = false;
-        private DirectoryEntry _schemaEntry = null;
-        private DirectoryEntry _abstractSchemaEntry = null;
-        private DirectoryServer _cachedSchemaRoleOwner = null;
+        private bool _disposed;
+        private DirectoryEntry _schemaEntry;
+        private DirectoryEntry _abstractSchemaEntry;
+        private DirectoryServer _cachedSchemaRoleOwner;
 
         #region constructors
         internal ActiveDirectorySchema(DirectoryContext context, string distinguishedName)

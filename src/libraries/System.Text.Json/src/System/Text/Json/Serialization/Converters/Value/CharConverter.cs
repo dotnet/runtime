@@ -28,5 +28,19 @@ namespace System.Text.Json.Serialization.Converters
 #endif
                 );
         }
+
+        internal override char ReadWithQuotes(ref Utf8JsonReader reader)
+            => Read(ref reader, default!, default!);
+
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, char value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            writer.WritePropertyName(
+#if BUILDING_INBOX_LIBRARY
+                MemoryMarshal.CreateSpan(ref value, 1)
+#else
+                value.ToString()
+#endif
+                );
+        }
     }
 }

@@ -79,7 +79,7 @@ public:
     static FCDECL1(INT32,   GetThreadContext,  ThreadBaseObject* pThisUNSAFE);
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     static FCDECL1(INT32,   GetApartmentState, ThreadBaseObject* pThis);
-    static FCDECL3(INT32,   SetApartmentState, ThreadBaseObject* pThisUNSAFE, INT32 iState, CLR_BOOL fireMDAOnMismatch);
+    static FCDECL2(INT32,   SetApartmentState, ThreadBaseObject* pThisUNSAFE, INT32 iState);
     static FCDECL1(void,    StartupSetApartmentState, ThreadBaseObject* pThis);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 

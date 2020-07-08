@@ -13,6 +13,11 @@
 #define EP_GCX_PREEMP_ENTER ep_rt_redefine
 #define EP_GCX_PREEMP_EXIT ep_rt_redefine
 
+#define EP_YIELD_WHILE(condition) ep_rt_redefine
+
+#define EP_ALWAYS_INLINE ep_rt_redefine
+#define EP_ALIGN_UP(val,align) ep_rt_redefine
+
 #define EP_RT_DECLARE_LIST(list_name, list_type, item_type) \
 	static void ep_rt_ ## list_name ## _free (list_type *list, void (*callback)(void *)); \
 	static void ep_rt_ ## list_name ## _clear (list_type *list, void (*callback)(void *)); \
@@ -34,6 +39,18 @@
 	static void ep_rt_ ## queue_name ## _push_head (queue_type *queue, item_type item); \
 	static void ep_rt_ ## queue_name ## _push_tail (queue_type *queue, item_type item); \
 	static bool ep_rt_ ## queue_name ## _is_empty (const queue_type *queue);
+
+#define EP_RT_DECLARE_ARRAY(array_name, array_type, item_type) \
+	static void ep_rt_ ## array_name ## _alloc (array_type *ep_array); \
+	static void ep_rt_ ## array_name ## _free (array_type *ep_array); \
+	static void ep_rt_ ## array_name ## _append (array_type *ep_array, item_type item); \
+	static size_t ep_rt_ ## array_name ## _size (const array_type *ep_array);
+
+#define EP_RT_DECLARE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
+	static void ep_rt_ ## array_name ## _iterator_begin (const array_type *ep_array, iterator_type *iterator); \
+	static bool ep_rt_ ## array_name ## _iterator_end (const array_type *ep_array, const iterator_type *iterator); \
+	static void ep_rt_ ## array_name ## _iterator_next (const array_type *ep_array, iterator_type *iterator); \
+	static item_type ep_rt_ ## array_name ## _iterator_value (const iterator_type *iterator);
 
 #define EP_RT_DECLARE_HASH_MAP(hash_map_name, hash_map_type, key_type, value_type) \
 	static void ep_rt_ ## hash_map_name ## _alloc (hash_map_type *hash_map, uint32_t (*hash_callback)(const void *), bool (*eq_callback)(const void *, const void *), void (*key_free_callback)(void *), void (*value_free_callback)(void *)); \
@@ -71,6 +88,14 @@ static
 int32_t
 ep_rt_atomic_dec_int32_t (volatile int32_t *value);
 
+static
+int64_t
+ep_rt_atomic_inc_int64_t (volatile int64_t *value);
+
+static
+int64_t
+ep_rt_atomic_dec_int64_t (volatile int64_t *value);
+
 /*
  * EventPipe.
  */
@@ -104,6 +129,32 @@ ep_rt_config_requires_lock_not_held (void);
 #define ep_rt_config_requires_lock_not_held()
 #endif
 
+static
+bool
+ep_rt_walk_managed_stack_for_current_thread (EventPipeStackContents *stack_contents);
+
+static
+void
+ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config);
+
+static
+void
+ep_rt_init_providers_and_events (void);
+
+/*
+ * EventPipeBuffer.
+ */
+
+EP_RT_DECLARE_ARRAY (buffer_array, ep_rt_buffer_array_t, EventPipeBuffer *)
+EP_RT_DECLARE_ARRAY_ITERATOR (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
+
+/*
+ * EventPipeBufferList.
+ */
+
+EP_RT_DECLARE_ARRAY (buffer_list_array, ep_rt_buffer_list_array_t, EventPipeBufferList *)
+EP_RT_DECLARE_ARRAY_ITERATOR (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_array_iterator_t, EventPipeBufferList *)
+
 /*
  * EventPipeEvent.
  */
@@ -135,6 +186,26 @@ ep_rt_provider_list_find_by_name (
 	const ep_char8_t *name);
 
 /*
+ * EventPipeProviderConfiguration.
+ */
+
+static
+bool
+ep_rt_config_value_get_enable (void);
+
+static
+ep_char8_t *
+ep_rt_config_value_get_config (void);
+
+static
+ep_char8_t *
+ep_rt_config_value_get_output_path (void);
+
+static
+uint32_t
+ep_rt_config_value_get_circular_mb (void);
+
+/*
  * EventPipeSampleProfiler.
  */
 
@@ -154,6 +225,10 @@ static
 uint32_t
 ep_rt_sample_profiler_get_sampling_rate (void);
 
+static
+void
+ep_rt_sample_set_sampling_rate (uint32_t nanoseconds);
+
 /*
  * EventPipeSessionProvider.
  */
@@ -166,6 +241,30 @@ EventPipeSessionProvider *
 ep_rt_session_provider_list_find_by_name (
 	const ep_rt_session_provider_list_t *list,
 	const ep_char8_t *name);
+
+/*
+ * EventPipeSequencePoint.
+ */
+
+EP_RT_DECLARE_LIST (sequence_point_list, ep_rt_sequence_point_list_t, EventPipeSequencePoint *)
+EP_RT_DECLARE_LIST_ITERATOR (sequence_point_list, ep_rt_sequence_point_list_t, ep_rt_sequence_point_list_iterator_t, EventPipeSequencePoint *)
+
+/*
+ * EventPipeThread.
+ */
+
+EP_RT_DECLARE_ARRAY (thread_array, ep_rt_thread_array_t, EventPipeThread *)
+EP_RT_DECLARE_ARRAY_ITERATOR (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
+
+/*
+ * EventPipeThreadSessionState.
+ */
+
+EP_RT_DECLARE_LIST (thread_session_state_list, ep_rt_thread_session_state_list_t, EventPipeThreadSessionState *)
+EP_RT_DECLARE_LIST_ITERATOR (thread_session_state_list, ep_rt_thread_session_state_list_t, ep_rt_thread_session_state_list_iterator_t, EventPipeThreadSessionState *)
+
+EP_RT_DECLARE_ARRAY (thread_session_state_array, ep_rt_thread_session_state_array_t, EventPipeThreadSessionState *)
+EP_RT_DECLARE_ARRAY_ITERATOR (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
 
 /*
  * Arrays.
@@ -185,7 +284,10 @@ ep_rt_byte_array_free (uint8_t *ptr);
 
 static
 void
-ep_rt_wait_event_alloc (ep_rt_wait_event_handle_t *wait_event);
+ep_rt_wait_event_alloc (
+	ep_rt_wait_event_handle_t *wait_event,
+	bool manual,
+	bool initial);
 
 static
 void
@@ -226,6 +328,12 @@ ep_rt_create_activity_id (
 
 #define ep_rt_object_alloc(obj_type) ep_rt_redefine
 
+#define ep_rt_object_array_alloc(obj_type,size) ep_rt_redefine
+
+static
+void
+ep_rt_object_array_free (void *ptr);
+
 static
 void
 ep_rt_object_free (void *ptr);
@@ -251,16 +359,20 @@ size_t
 ep_rt_current_thread_get_id (void);
 
 static
-uint64_t
+int64_t
 ep_rt_perf_counter_query (void);
 
 static
-uint64_t
+int64_t
 ep_rt_perf_frequency_query (void);
 
 static
-uint64_t
+ep_systemtime_t
 ep_rt_system_time_get (void);
+
+static
+int32_t
+ep_rt_system_get_alloc_granularity (void);
 
 static
 const ep_char8_t *
@@ -281,6 +393,14 @@ ep_rt_file_write (
 	const uint8_t *buffer,
 	uint32_t bytes_to_write,
 	uint32_t *bytes_written);
+
+static
+uint8_t *
+ep_rt_valloc0 (size_t buffer_size);
+
+static
+void
+ep_rt_vfree (uint8_t *buffer, size_t buffer_size);
 
 /*
 * SpinLock.
@@ -376,7 +496,6 @@ static
 EventPipeThread *
 ep_rt_thread_get_or_create (void);
 
-
 /*
  * ThreadSequenceNumberMap.
  */
@@ -430,6 +549,26 @@ ep_rt_volatile_store_uint64_t_without_barrier (
 	uint64_t value);
 
 static
+int64_t
+ep_rt_volatile_load_int64_t (const volatile int64_t *ptr);
+
+static
+int64_t
+ep_rt_volatile_load_int64_t_without_barrier (const volatile int64_t *ptr);
+
+static
+void
+ep_rt_volatile_store_int64_t (
+	volatile int64_t *ptr,
+	int64_t value);
+
+static
+void
+ep_rt_volatile_store_int64_t_without_barrier (
+	volatile int64_t *ptr,
+	int64_t value);
+
+static
 void *
 ep_rt_volatile_load_ptr (volatile void **ptr);
 
@@ -450,31 +589,55 @@ ep_rt_volatile_store_ptr_without_barrier (
 	void *value);
 
 /*
+ * Enter/Exit spin lock helper used with error handling macros.
+ */
+
+#define EP_SPIN_LOCK_ENTER(expr, section_name) \
+{ \
+	ep_rt_spin_lock_requires_lock_not_held (expr); \
+	ep_rt_spin_lock_aquire (expr); \
+	bool _no_error_ ##section_name = false;
+
+#define EP_SPIN_LOCK_EXIT(expr, section_name) \
+	_no_error_ ##section_name = true; \
+	goto _ep_on_spinlock_exit_ ##section_name; \
+_ep_on_spinlock_exit_ ##section_name : \
+	ep_rt_spin_lock_requires_lock_held (expr); \
+	ep_rt_spin_lock_release (expr); \
+	if (EP_UNLIKELY((!_no_error_ ##section_name))) \
+		goto ep_on_error; \
+	ep_rt_spin_lock_requires_lock_not_held (expr); \
+}
+
+#define ep_raise_error_if_nok_holding_spin_lock(expr, section_name) do { if (EP_UNLIKELY(!(expr))) { _no_error_ ##section_name = false; goto _ep_on_spinlock_exit_ ##section_name; } } while (0)
+#define ep_raise_error_holding_spin_lock(section_name) do { _no_error_ ##section_name = false; goto _ep_on_spinlock_exit_ ##section_name; } while (0)
+
+/*
  * Enter/Exit config lock helper used with error handling macros.
  */
 
-#define EP_CONFIG_LOCK_ENTER \
+#define EP_LOCK_ENTER(section_name) \
 { \
-	ep_rt_config_requires_lock_not_held (); \
-	bool _owns_lock = ep_rt_config_aquire (); \
-	bool _no_error = false; \
-	if (EP_UNLIKELY((!_owns_lock))) \
-		goto _ep_on_lock_exit;
+	ep_requires_lock_not_held (); \
+	bool _owns_config_lock_ ##section_name = ep_rt_config_aquire (); \
+	bool _no_config_error_ ##section_name = false; \
+	if (EP_UNLIKELY((!_owns_config_lock_ ##section_name))) \
+		goto _ep_on_config_lock_exit_ ##section_name;
 
-#define EP_CONFIG_LOCK_EXIT \
-	_no_error = true; \
-_ep_on_lock_exit: \
-	if (EP_UNLIKELY((!_owns_lock))) \
+#define EP_LOCK_EXIT(section_name) \
+	_no_config_error_ ##section_name = true; \
+_ep_on_config_lock_exit_ ##section_name: \
+	if (EP_UNLIKELY((!_owns_config_lock_ ##section_name))) \
 		goto ep_on_error; \
-	ep_rt_config_requires_lock_held (); \
+	ep_requires_lock_held (); \
 	ep_rt_config_release (); \
-	if (EP_UNLIKELY((!_no_error))) \
+	if (EP_UNLIKELY((!_no_config_error_ ##section_name))) \
 		goto ep_on_error; \
-	ep_rt_config_requires_lock_not_held (); \
+	ep_requires_lock_not_held (); \
 }
 
-#define ep_raise_error_if_nok_holding_lock(expr) do { if (EP_UNLIKELY(!(expr))) goto _ep_on_lock_exit; } while (0)
-#define ep_raise_error_holding_lock() do { goto _ep_on_lock_exit; } while (0)
+#define ep_raise_error_if_nok_holding_lock(expr, section_name) do { if (EP_UNLIKELY(!(expr))) { _no_config_error_ ##section_name = false; goto _ep_on_config_lock_exit_ ##section_name; } } while (0)
+#define ep_raise_error_holding_lock(section_name) do { _no_config_error_ ##section_name = false; goto _ep_on_config_lock_exit_ ##section_name; } while (0)
 
 #include "ep-rt-mono.h"
 

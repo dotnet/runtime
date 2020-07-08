@@ -162,6 +162,7 @@ namespace System.ComponentModel.Composition
         ///     Satisfies the imports of the specified attributed object exactly once and they will not
         ///     ever be recomposed.
         /// </summary>
+        /// <param name="compositionService">The composition service to use.</param>
         /// <param name="attributedPart">
         ///     The attributed object to set the imports.
         /// </param>
@@ -191,9 +192,11 @@ namespace System.ComponentModel.Composition
         ///     Satisfies the imports of the specified attributed object exactly once and they will not
         ///     ever be recomposed.
         /// </summary>
+        /// <param name="compositionService">The composition service to use.</param>
         /// <param name="attributedPart">
         ///     The attributed object to set the imports.
         /// </param>
+        /// <param name="reflectionContext">The reflection context for the part.</param>
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="compositionService"/> or <paramref name="attributedPart"/>  or <paramref name="reflectionContext"/> is <see langword="null"/>.
         /// </exception>

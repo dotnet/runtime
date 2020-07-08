@@ -29,7 +29,7 @@ usage()
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android,"
-  echo "                                  Browser, NetBSD or SunOS."
+  echo "                                  Browser, NetBSD, illumos or Solaris."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --projects <value>              Project or solution file(s) to build."
   echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
@@ -73,6 +73,7 @@ usage()
   echo "  --cmakeargs                User-settable additional arguments passed to CMake."
   echo "  --gcc                      Optional argument to build using gcc in PATH (default)."
   echo "  --gccx.y                   Optional argument to build using gcc version x.y."
+  echo "  --portablebuild            Optional argument: set to false to force a non-portable build."
   echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
@@ -106,24 +107,25 @@ usage()
   echo "* Build Mono runtime for Linux x64 on Release configuration."
   echo "./build.sh mono -c release"
   echo ""
-  echo "It's important to mention that to build Mono for the first time,"
-  echo "you need to build the CLR and Libs subsets beforehand."
-  echo "This is done automatically if a full build is performed at first."
+  echo "* Build Release coreclr corelib, crossgen corelib and update Debug libraries testhost to run test on an updated corelib."
+  echo "./build.sh clr.corelib+clr.nativecorelib+libs.pretest -rc release"
+  echo ""
+  echo "* Build Debug mono corelib and update Release libraries testhost to run test on an updated corelib."
+  echo "./build.sh mono.corelib+libs.pretest -rc debug -c release"
+  echo ""
   echo ""
   echo "For more general information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
 }
 
 initDistroRid()
 {
-    source $scriptroot/native/init-distro-rid.sh
+    source "$scriptroot"/native/init-distro-rid.sh
 
     local passedRootfsDir=""
     local targetOs="$1"
     local buildArch="$2"
     local isCrossBuild="$3"
-    # For RID calculation purposes, say we are always a portable build
-    # All of our packages that use the distro rid (CoreCLR packages) are portable.
-    local isPortableBuild=1
+    local isPortableBuild="$4"
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified.
     if (( isCrossBuild == 1 )); then
@@ -141,6 +143,7 @@ arguments=''
 cmakeargs=''
 extraargs=''
 crossBuild=0
+portableBuild=1
 
 source $scriptroot/native/init-os-and-arch.sh
 
@@ -206,7 +209,7 @@ while [[ $# > 0 ]]; do
       ;;
 
      -configuration|-c)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No configuration supplied. See help (--help) for supported configurations." 1>&2
         exit 1
       fi
@@ -258,11 +261,13 @@ while [[ $# > 0 ]]; do
           os="Android" ;;
         browser)
           os="Browser" ;;
-        sunos)
-          os="SunOS" ;;
+        illumos)
+          os="illumos" ;;
+        solaris)
+          os="Solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, and SunOS."
+          echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, illumos and Solaris."
           exit 1
           ;;
       esac
@@ -359,6 +364,19 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
 
+     -portablebuild)
+      if [ -z ${2+x} ]; then
+        echo "No value for portablebuild is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      passedPortable="$(echo "$2" | awk '{print tolower($0)}')"
+      if [ "$passedPortable" = false ]; then
+        portableBuild=0
+        arguments="$arguments /p:PortableBuild=false"
+      fi
+      shift 2
+      ;;
+
       *)
       extraargs="$extraargs $1"
       shift 1
@@ -370,7 +388,7 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
-initDistroRid $os $arch $crossBuild
+initDistroRid $os $arch $crossBuild $portableBuild
 
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.

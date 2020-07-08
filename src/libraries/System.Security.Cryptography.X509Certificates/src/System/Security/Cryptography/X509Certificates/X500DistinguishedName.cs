@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -17,6 +9,19 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed class X500DistinguishedName : AsnEncodedData
     {
         public X500DistinguishedName(byte[] encodedDistinguishedName)
+            : base(new Oid(null, null), encodedDistinguishedName)
+        {
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="X500DistinguishedName"/>
+        ///   class using information from the provided data.
+        /// </summary>
+        /// <param name="encodedDistinguishedName">
+        ///   The encoded distinguished name.
+        /// </param>
+        /// <seealso cref="Encode"/>
+        public X500DistinguishedName(ReadOnlySpan<byte> encodedDistinguishedName)
             : base(new Oid(null, null), encodedDistinguishedName)
         {
         }

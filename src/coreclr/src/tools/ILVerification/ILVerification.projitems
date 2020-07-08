@@ -13,6 +13,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)Verifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VerifierError.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Strings.resx">
+      <LogicalName>ILVerification.Strings.resources</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
   <PropertyGroup>
     <ToolsCommonPath>$(MSBuildThisFileDirectory)..\Common\</ToolsCommonPath>
   </PropertyGroup>

@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.True(service.ExecuteTask.IsCompleted);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task StopAsyncStopsEvenIfTaskNeverEnds()
         {
             var service = new IgnoreCancellationService();
@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             await service.StopAsync(cts.Token);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task StopAsyncThrowsIfCancellationCallbackThrows()
         {
             var service = new ThrowOnCancellationService();

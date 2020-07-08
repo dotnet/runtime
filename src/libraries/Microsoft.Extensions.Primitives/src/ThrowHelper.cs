@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Primitives
 
         internal static void ThrowInvalidOperationException(ExceptionResource resource, params object[] args)
         {
-            var message = string.Format(GetResourceText(resource), args);
+            string message = string.Format(GetResourceText(resource), args);
 
             throw new InvalidOperationException(message);
         }

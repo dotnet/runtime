@@ -972,6 +972,104 @@ void ClassLoader::LoadExactParents(MethodTable *pMT)
     RETURN;
 }
 
+// Get CorElementType of the reduced type of a type.
+// The reduced type concept is described in ECMA 335 chapter I.8.7
+//
+/*static*/
+CorElementType ClassLoader::GetReducedTypeElementType(TypeHandle hType)
+{
+    CorElementType elemType = hType.GetVerifierCorElementType();
+    switch (elemType)
+    {
+        case ELEMENT_TYPE_U1:
+            return ELEMENT_TYPE_I1;
+        case ELEMENT_TYPE_U2:
+            return ELEMENT_TYPE_I2;
+        case ELEMENT_TYPE_U4:
+            return ELEMENT_TYPE_I4;
+        case ELEMENT_TYPE_U8:
+            return ELEMENT_TYPE_I8;
+        case ELEMENT_TYPE_U:
+            return ELEMENT_TYPE_I;
+        default:
+            return elemType;
+    }
+}
+
+// Get CorElementType of the verification type of a type.
+// The verification type concepts is described in ECMA 335 chapter I.8.7
+//
+/*static*/
+CorElementType ClassLoader::GetVerificationTypeElementType(TypeHandle hType)
+{
+    CorElementType reducedTypeElementType = GetReducedTypeElementType(hType);
+
+    switch (reducedTypeElementType)
+    {
+        case ELEMENT_TYPE_BOOLEAN:
+            return ELEMENT_TYPE_I1;
+        case ELEMENT_TYPE_CHAR:
+            return ELEMENT_TYPE_I2;
+        default:
+            return reducedTypeElementType;
+    }
+}
+
+// Check if verification types of two types are equal
+//
+/*static*/
+bool ClassLoader::AreVerificationTypesEqual(TypeHandle hType1, TypeHandle hType2)
+{
+    if (hType1 == hType2)
+    {
+        return true;
+    }
+
+    CorElementType e1 = GetVerificationTypeElementType(hType1);
+    if (!CorIsPrimitiveType(e1))
+    {
+        return false;
+    }
+
+    CorElementType e2 = GetVerificationTypeElementType(hType2);
+
+    return e1 == e2;
+}
+
+// Check if signatures of two function pointers are compatible
+// Note - this is a simplified version of what's described in the ECMA spec and it considers
+// pointers to be method-signature-compatible-with only if the signatures are the same.
+//
+/*static*/
+bool ClassLoader::IsMethodSignatureCompatibleWith(FnPtrTypeDesc* fn1TD, FnPtrTypeDesc* fn2TD)
+{
+    if (fn1TD->GetCallConv() != fn1TD->GetCallConv())
+    {
+        return false;
+    }
+
+    if (fn1TD->GetNumArgs() != fn2TD->GetNumArgs())
+    {
+        return false;
+    }
+
+    TypeHandle* pFn1ArgTH = fn1TD->GetRetAndArgTypes();
+    TypeHandle* pFn2ArgTH = fn2TD->GetRetAndArgTypes();
+    for (DWORD i = 0; i < fn1TD->GetNumArgs() + 1; i++)
+    {
+#ifdef FEATURE_PREJIT
+        if (!ZapSig::CompareTaggedPointerToTypeHandle(pFn1ArgTH->GetModule(), pFn1ArgTH[i].AsTAddr(), pFn2ArgTH[i]))
+#else
+        if (pFn1ArgTH[i] != pFn2ArgTH[i])
+#endif
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // Checks if two types are compatible according to compatible-with as described in ECMA 335 I.8.7.1
 // Most of the checks are performed by the CanCastTo, but with some cases pre-filtered out.
 //
@@ -984,6 +1082,36 @@ bool ClassLoader::IsCompatibleWith(TypeHandle hType1, TypeHandle hType2)
     {
         return false;
     }
+
+    // Managed pointers are compatible only if they are pointer-element-compatible-with as described in ECMA I.8.7.2
+    if (hType1.IsByRef() && hType2.IsByRef())
+    {
+        return AreVerificationTypesEqual(hType1.GetTypeParam(), hType2.GetTypeParam());
+    }
+
+    // Unmanaged pointers are handled the same way as managed pointers
+    if (hType1.IsPointer() && hType2.IsPointer())
+    {
+        return AreVerificationTypesEqual(hType1.GetTypeParam(), hType2.GetTypeParam());
+    }
+
+    // Function pointers are compatible only if they are method-signature-compatible-with as described in ECMA I.8.7.1
+    if (hType1.IsFnPtrType() && hType2.IsFnPtrType())
+    {
+        return IsMethodSignatureCompatibleWith(hType1.AsFnPtrType(), hType2.AsFnPtrType());
+    }
+
+    // None of the types can be a managed pointer, a pointer or a function pointer here,
+    // all the valid cases were handled above.
+    if (hType1.IsByRef() || hType2.IsByRef() ||
+        hType1.IsPointer() || hType2.IsPointer() ||
+        hType1.IsFnPtrType() || hType2.IsFnPtrType())
+    {
+        return false;
+    }
+
+    _ASSERTE(hType1.GetMethodTable() != NULL);
+    _ASSERTE(hType2.GetMethodTable() != NULL);
 
     // Nullable<T> can be cast to T, but this is not compatible according to ECMA I.8.7.1
     bool isCastFromNullableOfTtoT = hType1.GetMethodTable()->IsNullable() && hType2.IsEquivalentTo(hType1.GetMethodTable()->GetInstantiation()[0]);
@@ -1083,9 +1211,6 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
         SigTypeContext context2(pMD);
         MetaSig methodSig2(pMD);
         TypeHandle hType2 = methodSig2.GetReturnProps().GetTypeHandleThrowing(pMD->GetModule(), &context2, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
-
-        _ASSERTE(hType1.GetMethodTable() != NULL);
-        _ASSERTE(hType2.GetMethodTable() != NULL);
 
         if (!IsCompatibleWith(hType1, hType2))
         {
@@ -1412,7 +1537,7 @@ int MethodTable::GetVectorSize()
 }
 
 //*******************************************************************************
-CorElementType MethodTable::GetHFAType()
+CorInfoHFAElemType MethodTable::GetHFAType()
 {
     CONTRACTL
     {
@@ -1422,7 +1547,7 @@ CorElementType MethodTable::GetHFAType()
     CONTRACTL_END;
 
     if (!IsHFA())
-        return ELEMENT_TYPE_END;
+        return CORINFO_HFA_ELEM_NONE;
 
     MethodTable * pMT = this;
     for (;;)
@@ -1433,7 +1558,7 @@ CorElementType MethodTable::GetHFAType()
         int vectorSize = pMT->GetVectorSize();
         if (vectorSize != 0)
         {
-            return (vectorSize == 8) ? ELEMENT_TYPE_R8 : ELEMENT_TYPE_VALUETYPE;
+            return (vectorSize == 8) ? CORINFO_HFA_ELEM_VECTOR64 : CORINFO_HFA_ELEM_VECTOR128;
         }
 
         PTR_FieldDesc pFirstField = pMT->GetApproxFieldDescListRaw();
@@ -1448,14 +1573,15 @@ CorElementType MethodTable::GetHFAType()
             break;
 
         case ELEMENT_TYPE_R4:
+            return CORINFO_HFA_ELEM_FLOAT;
         case ELEMENT_TYPE_R8:
-            return fieldType;
+            return CORINFO_HFA_ELEM_DOUBLE;
 
         default:
             // This should never happen. MethodTable::IsHFA() should be set only on types
             // that have a valid HFA type when the flag is used to track HFA status.
             _ASSERTE(false);
-            return ELEMENT_TYPE_END;
+            return CORINFO_HFA_ELEM_NONE;
         }
     }
 }
@@ -1471,7 +1597,7 @@ bool MethodTable::IsNativeHFA()
     return GetNativeLayoutInfo()->IsNativeHFA();
 }
 
-CorElementType MethodTable::GetNativeHFAType()
+CorInfoHFAElemType MethodTable::GetNativeHFAType()
 {
     LIMITED_METHOD_CONTRACT;
     if (!HasLayout() || IsBlittable())
@@ -1499,7 +1625,6 @@ EEClass::CheckForHFA()
     // This method should be called for valuetypes only
     _ASSERTE(GetMethodTable()->IsValueType());
 
-
     // The opaque Vector types appear to have multiple fields, but need to be treated
     // as an opaque type of a single vector.
     if (GetMethodTable()->GetVectorSize() != 0)
@@ -1510,8 +1635,7 @@ EEClass::CheckForHFA()
         return true;
     }
 
-    int elemSize = 0;
-    CorElementType hfaType = ELEMENT_TYPE_END;
+    CorInfoHFAElemType hfaType = CORINFO_HFA_ELEM_NONE;
 
     FieldDesc *pFieldDescList = GetFieldDescList();
 
@@ -1523,17 +1647,13 @@ EEClass::CheckForHFA()
         hasZeroOffsetField |= (pFD->GetOffset() == 0);
 
         CorElementType fieldType = pFD->GetFieldType();
+        CorInfoHFAElemType fieldHFAType = CORINFO_HFA_ELEM_NONE;
 
         switch (fieldType)
         {
         case ELEMENT_TYPE_VALUETYPE:
             {
 #ifdef TARGET_ARM64
-            // hfa/hva types are unique by size, except for Vector64 which we can conveniently
-                // treat as if it were a double for ABI purposes. However, it only qualifies as
-                // an HVA if all fields are the same type. This will ensure that we only
-                // consider it an HVA if all the fields are ELEMENT_TYPE_VALUETYPE (which have been
-                // determined above to be vectors) of the same size.
                 MethodTable* pMT;
 #if defined(FEATURE_HFA)
                 pMT = pByValueClassCache[i];
@@ -1543,22 +1663,15 @@ EEClass::CheckForHFA()
                 int thisElemSize = pMT->GetVectorSize();
                 if (thisElemSize != 0)
                 {
-                    if (elemSize == 0)
-                    {
-                        elemSize = thisElemSize;
-                    }
-                    else if ((thisElemSize != elemSize) || (hfaType != ELEMENT_TYPE_VALUETYPE))
-                    {
-                        return false;
-                    }
+                    fieldHFAType = (thisElemSize == 8) ? CORINFO_HFA_ELEM_VECTOR64 : CORINFO_HFA_ELEM_VECTOR128;
                 }
                 else
 #endif // TARGET_ARM64
                 {
 #if defined(FEATURE_HFA)
-                    fieldType = pByValueClassCache[i]->GetHFAType();
+                    fieldHFAType = pByValueClassCache[i]->GetHFAType();
 #else
-                    fieldType = pFD->LookupApproxFieldTypeHandle().AsMethodTable()->GetHFAType();
+                    fieldHFAType = pFD->LookupApproxFieldTypeHandle().AsMethodTable()->GetHFAType();
 #endif
                 }
             }
@@ -1571,6 +1684,7 @@ EEClass::CheckForHFA()
                 {
                     return false;
                 }
+                fieldHFAType = CORINFO_HFA_ELEM_FLOAT;
             }
             break;
         case ELEMENT_TYPE_R8:
@@ -1580,6 +1694,7 @@ EEClass::CheckForHFA()
                 {
                     return false;
                 }
+                fieldHFAType = CORINFO_HFA_ELEM_DOUBLE;
             }
             break;
         default:
@@ -1588,38 +1703,36 @@ EEClass::CheckForHFA()
         }
 
         // Field type should be a valid HFA type.
-        if (fieldType == ELEMENT_TYPE_END)
+        if (fieldHFAType == CORINFO_HFA_ELEM_NONE)
         {
             return false;
         }
 
         // Initialize with a valid HFA type.
-        if (hfaType == ELEMENT_TYPE_END)
+        if (hfaType == CORINFO_HFA_ELEM_NONE)
         {
-            hfaType = fieldType;
+            hfaType = fieldHFAType;
         }
         // All field types should be equal.
-        else if (fieldType != hfaType)
+        else if (fieldHFAType != hfaType)
         {
             return false;
         }
     }
 
+    int elemSize = 0;
     switch (hfaType)
     {
-    case ELEMENT_TYPE_R4:
+    case CORINFO_HFA_ELEM_FLOAT:
         elemSize = 4;
         break;
-    case ELEMENT_TYPE_R8:
+    case CORINFO_HFA_ELEM_DOUBLE:
+    case CORINFO_HFA_ELEM_VECTOR64:
         elemSize = 8;
         break;
 #ifdef TARGET_ARM64
-    case ELEMENT_TYPE_VALUETYPE:
-        // Should already have set elemSize, but be conservative
-        if (elemSize == 0)
-        {
-            return false;
-        }
+    case CORINFO_HFA_ELEM_VECTOR128:
+        elemSize = 16;
         break;
 #endif
     default:

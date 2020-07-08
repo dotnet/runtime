@@ -26,9 +26,9 @@ namespace System.Data
 
         private sealed class ColumnInfo
         {
-            public bool flag = false;               // Misc. Use
-            public bool equalsOperator = false;     // True when the associated expr has = Operator defined
-            public BinaryNode expr = null;          // Binary Search capable expression associated
+            public bool flag;               // Misc. Use
+            public bool equalsOperator;     // True when the associated expr has = Operator defined
+            public BinaryNode expr;          // Binary Search capable expression associated
         }
 
         private ColumnInfo[] _candidateColumns;

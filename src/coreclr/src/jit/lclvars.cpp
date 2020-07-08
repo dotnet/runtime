@@ -86,8 +86,6 @@ void Compiler::lvaInit()
     lvaCurEpoch = 0;
 
     structPromotionHelper = new (this, CMK_Generic) StructPromotionHelper(this);
-
-    lvaEnregEHVars = (((opts.compFlags & CLFLG_REGVAR) != 0) && JitConfig.EnableEHWriteThru());
 }
 
 /*****************************************************************************/
@@ -1844,17 +1842,9 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
-#if !FEATURE_MULTIREG_STRUCT_PROMOTE
-    if (varDsc->lvIsMultiRegArg)
+    if (!compiler->lvaEnregMultiRegVars && varDsc->lvIsMultiRegArgOrRet())
     {
-        JITDUMP("  struct promotion of V%02u is disabled because lvIsMultiRegArg\n", lclNum);
-        return false;
-    }
-#endif
-
-    if (varDsc->lvIsMultiRegRet)
-    {
-        JITDUMP("  struct promotion of V%02u is disabled because lvIsMultiRegRet\n", lclNum);
+        JITDUMP("  struct promotion of V%02u is disabled because lvIsMultiRegArgOrRet()\n", lclNum);
         return false;
     }
 
@@ -1867,7 +1857,26 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
 
     CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
     assert(typeHnd != nullptr);
-    return CanPromoteStructType(typeHnd);
+
+    bool canPromote = CanPromoteStructType(typeHnd);
+    if (canPromote && varDsc->lvIsMultiRegArgOrRet())
+    {
+        if (structPromotionInfo.fieldCnt > MAX_MULTIREG_COUNT)
+        {
+            canPromote = false;
+        }
+#ifdef UNIX_AMD64_ABI
+        else
+        {
+            SortStructFields();
+            if ((structPromotionInfo.fieldCnt == 2) && (structPromotionInfo.fields[1].fldOffset != TARGET_POINTER_SIZE))
+            {
+                canPromote = false;
+            }
+        }
+#endif // UNIX_AMD64_ABI
+    }
+    return canPromote;
 }
 
 //--------------------------------------------------------------------------------------------
@@ -1915,6 +1924,11 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
                 structPromotionInfo.fieldCnt, varDsc->lvFieldAccessed);
         shouldPromote = false;
     }
+    else if (varDsc->lvIsMultiRegRet && structPromotionInfo.containsHoles && structPromotionInfo.customLayout)
+    {
+        JITDUMP("Not promoting multi-reg returned struct local V%02u with holes.\n", lclNum);
+        shouldPromote = false;
+    }
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
     // TODO-PERF - Only do this when the LclVar is used in an argument context
     // TODO-ARM64 - HFA support should also eliminate the need for this.
@@ -1959,6 +1973,12 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
                     lclNum, structPromotionInfo.fieldCnt);
             shouldPromote = false;
         }
+    }
+    else if (!compiler->compDoOldStructRetyping() && (lclNum == compiler->genReturnLocal) &&
+             (structPromotionInfo.fieldCnt > 1))
+    {
+        // TODO-1stClassStructs: a temporary solution to keep diffs small, it will be fixed later.
+        shouldPromote = false;
     }
 
     //
@@ -2292,12 +2312,13 @@ void Compiler::lvaPromoteLongVars()
     for (unsigned lclNum = 0; lclNum < startLvaCount; lclNum++)
     {
         LclVarDsc* varDsc = &lvaTable[lclNum];
-        if (!varTypeIsLong(varDsc) || varDsc->lvDoNotEnregister || varDsc->lvIsMultiRegArgOrRet() ||
-            (varDsc->lvRefCnt() == 0) || varDsc->lvIsStructField || (fgNoStructPromotion && varDsc->lvIsParam))
+        if (!varTypeIsLong(varDsc) || varDsc->lvDoNotEnregister || (varDsc->lvRefCnt() == 0) ||
+            varDsc->lvIsStructField || (fgNoStructPromotion && varDsc->lvIsParam))
         {
             continue;
         }
 
+        assert(!varDsc->lvIsMultiRegArgOrRet());
         varDsc->lvFieldCnt      = 2;
         varDsc->lvFieldLclStart = lvaCount;
         varDsc->lvPromoted      = true;
@@ -3396,23 +3417,8 @@ void Compiler::lvaSortByRefCount()
                 lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
             }
         }
-        else if (varDsc->lvIsStructField && (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT) &&
-                 (lvaGetDesc(varDsc->lvParentLcl)->lvRefCnt() > 1))
+        else if (varDsc->lvIsStructField && (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT))
         {
-            // SSA must exclude struct fields that are not independently promoted
-            // as dependent fields could be assigned using a CopyBlock
-            // resulting in a single node causing multiple SSA definitions
-            // which isn't currently supported by SSA
-            //
-            // If the parent struct local ref count is less than 2, then either the struct is no longer
-            // referenced or the field is no longer referenced: we increment the struct local ref count in incRefCnts
-            // for each field use when the struct is dependently promoted. This can happen, e.g, if we've removed
-            // a block initialization for the struct. In that case we can still track the local field.
-            //
-            // TODO-CQ:  Consider using lvLclBlockOpAddr and only marking these LclVars
-            // untracked when a blockOp is used to assign the struct.
-            //
-            varDsc->lvTracked = 0; // so, don't mark as tracked
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_DepField));
         }
         else if (varDsc->lvPinned)
@@ -3638,6 +3644,53 @@ var_types LclVarDsc::lvaArgType()
 #endif // TARGET_AMD64
 
     return type;
+}
+
+//----------------------------------------------------------------------------------------------
+// CanBeReplacedWithItsField: check if a whole struct reference could be replaced by a field.
+//
+// Arguments:
+//    comp - the compiler instance;
+//
+// Return Value:
+//    true if that can be replaced, false otherwise.
+//
+// Notes:
+//    The replacement can be made only for independently promoted structs
+//    with 1 field without holes.
+//
+bool LclVarDsc::CanBeReplacedWithItsField(Compiler* comp) const
+{
+    if (!lvPromoted)
+    {
+        return false;
+    }
+
+    if (comp->lvaGetPromotionType(this) != Compiler::PROMOTION_TYPE_INDEPENDENT)
+    {
+        return false;
+    }
+    if (lvFieldCnt != 1)
+    {
+        return false;
+    }
+    if (lvContainsHoles)
+    {
+        return false;
+    }
+
+#if defined(FEATURE_SIMD)
+    // If we return `struct A { SIMD16 a; }` we split the struct into several fields.
+    // In order to do that we have to have its field `a` in memory. Right now lowering cannot
+    // handle RETURN struct(multiple registers)->SIMD16(one register), but it can be improved.
+    LclVarDsc* fieldDsc = comp->lvaGetDesc(lvFieldLclStart);
+    if (varTypeIsSIMD(fieldDsc))
+    {
+        return false;
+    }
+#endif // FEATURE_SIMD
+
+    return true;
 }
 
 //------------------------------------------------------------------------

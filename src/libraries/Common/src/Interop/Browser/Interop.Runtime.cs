@@ -38,8 +38,6 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object ReleaseObject(int jsObjHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object NewObjectJS(int jsObjHandle, object[] parms, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object BindCoreObject(int jsObjHandle, int gcHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object BindHostObject(int jsObjHandle, int gcHandle, out int exceptionalResult);
@@ -91,13 +89,6 @@ internal static partial class Interop
             return (int)res;
         }
 
-        public static JSObject? NewJSObject(JSObject? jsFuncPtr = null, params object[] parms)
-        {
-            object res = NewObjectJS(jsFuncPtr?.JSHandle ?? 0, parms, out int exception);
-            if (exception != 0)
-                throw new JSException((string)res);
-            return res as JSObject;
-        }
         public static object GetGlobalObject(string? str = null)
         {
             int exception;

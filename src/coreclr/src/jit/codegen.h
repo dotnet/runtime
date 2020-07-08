@@ -980,7 +980,6 @@ protected:
     void genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode);
@@ -1117,7 +1116,9 @@ protected:
     void genUnspillLocal(
         unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum, bool reSpill, bool isLastUse);
     void genUnspillRegIfNeeded(GenTree* tree);
+    void genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex);
     regNumber genConsumeReg(GenTree* tree);
+    regNumber genConsumeReg(GenTree* tree, unsigned multiRegIndex);
     void genCopyRegIfNeeded(GenTree* tree, regNumber needReg);
     void genConsumeRegAndCopy(GenTree* tree, regNumber needReg);
 
@@ -1130,6 +1131,7 @@ protected:
     }
 
     void genRegCopy(GenTree* tree);
+    regNumber genRegCopy(GenTree* tree, unsigned multiRegIndex);
     void genTransferRegGCState(regNumber dst, regNumber src);
     void genConsumeAddress(GenTree* addr);
     void genConsumeAddrMode(GenTreeAddrMode* mode);
@@ -1188,7 +1190,7 @@ protected:
     void genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode);
 #endif
     void genCodeForPhysReg(GenTreePhysReg* tree);
-    void genCodeForNullCheck(GenTreeOp* tree);
+    void genCodeForNullCheck(GenTreeIndir* tree);
     void genCodeForCmpXchg(GenTreeCmpXchg* tree);
 
     void genAlignStackBeforeCall(GenTreePutArgStk* putArgStk);
@@ -1278,7 +1280,8 @@ protected:
     void genEHFinallyOrFilterRet(BasicBlock* block);
 #endif // !FEATURE_EH_FUNCLETS
 
-    void genMultiRegStoreToLocal(GenTree* treeNode);
+    void genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode);
+    void genMultiRegStoreToLocal(GenTreeLclVar* lclNode);
 
     // Codegen for multi-register struct returns.
     bool isStructReturn(GenTree* treeNode);
@@ -1481,7 +1484,11 @@ public:
 
     void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE);
 
-    void instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, insFlags flags = INS_FLAGS_DONT_CARE);
+    void instGen_Set_Reg_To_Imm(emitAttr  size,
+                                regNumber reg,
+                                ssize_t   imm,
+                                insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t targetHandle = 0)
+                                    DEBUGARG(unsigned gtFlags = 0));
 
     void instGen_Compare_Reg_To_Zero(emitAttr size, regNumber reg);
 

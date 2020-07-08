@@ -76,12 +76,14 @@
     <!-- Keep it in sync with PRERELEASE in eng/native/configureplatform.cmake -->
     <IsPrerelease>true</IsPrerelease>
 
+    <IsExperimentalAssembly>$(MSBuildProjectName.Contains('Experimental'))</IsExperimentalAssembly>
+
     <!-- Experimental packages should not be stable -->
-    <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(MSBuildProjectName.Contains('Experimental'))">true</SuppressFinalPackageVersion>
-    <IsShippingAssembly Condition="$(MSBuildProjectName.Contains('Experimental'))">false</IsShippingAssembly>
+    <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(IsExperimentalAssembly)">true</SuppressFinalPackageVersion>
+    <IsShippingAssembly Condition="$(IsExperimentalAssembly)">false</IsShippingAssembly>
 
     <!-- We don't want Private packages to be shipped to NuGet.org -->
-    <IsShippingPackage Condition="$(MSBuildProjectName.Contains('Private')) and '$(MSBuildProjectExtension)' == '.pkgproj'">false</IsShippingPackage>
+    <IsShippingPackage Condition="($(MSBuildProjectName.Contains('Private')) or $(IsExperimentalAssembly)) and '$(MSBuildProjectExtension)' == '.pkgproj'">false</IsShippingPackage>
   </PropertyGroup>
 
   <!-- Language configuration -->

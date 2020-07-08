@@ -142,7 +142,7 @@ namespace System.Linq.Parallel
         protected abstract QueryOperatorEnumerator<TIntermediate, int> CreateEnumerator<TKey>(
             int index, int count, QueryOperatorEnumerator<TSource, TKey> source, object? sharedData, CancellationToken cancellationToken);
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "This method should never be called. Associative aggregation can always be parallelized")]
         internal override IEnumerable<TIntermediate> AsSequentialQuery(CancellationToken token)
         {
             Debug.Fail("This method should never be called. Associative aggregation can always be parallelized.");

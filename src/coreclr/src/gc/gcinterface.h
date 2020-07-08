@@ -297,6 +297,14 @@ enum end_no_gc_region_status
     end_no_gc_alloc_exceeded = 3
 };
 
+enum gc_kind
+{
+    gc_kind_any = 0,           // any of the following kind
+    gc_kind_ephemeral = 1,     // gen0 or gen1 GC
+    gc_kind_full_blocking = 2, // blocking gen2 GC
+    gc_kind_background = 3     // background GC (always gen2)
+};
+
 typedef enum
 {
     /*
@@ -597,20 +605,48 @@ public:
     ===========================================================================
     */
 
-    // Gets memory related information -
+    // Gets memory related information the last GC observed. Depending on the last arg, this could
+    // be any last GC that got recorded, or of the kind specified by this arg. All info below is
+    // what was observed by that last GC.
+    // 
     // highMemLoadThreshold - physical memory load (in percentage) when GC will start to
-    // react aggressively to reclaim memory.
+    //   react aggressively to reclaim memory.
     // totalPhysicalMem - the total amount of phyiscal memory available on the machine and the memory
-    // limit set on the container if running in a container.
-    // lastRecordedMemLoad - physical memory load in percentage recorded in the last GC
-    // lastRecordedHeapSize - total managed heap size recorded in the last GC
-    // lastRecordedFragmentation - total fragmentation in the managed heap recorded in the last GC
+    //   limit set on the container if running in a container.
+    // lastRecordedMemLoad - physical memory load in percentage.
+    // lastRecordedHeapSizeBytes - total managed heap size.
+    // lastRecordedFragmentation - total fragmentation in the managed heap.
+    // totalCommittedBytes - total committed bytes by the managed heap.
+    // promotedBytes - promoted bytes. 
+    // pinnedObjectCount - # of pinned objects observed.
+    // finalizationPendingCount - # of objects ready for finalization.
+    // index - the index of the GC.
+    // generation - the generation the GC collected.
+    // pauseTimePct - the % pause time in GC so far since process started.
+    // isCompaction - compacted or not.
+    // isConcurrent - concurrent or not.
+    // genInfoRaw - info about each generation.
+    // pauseInfoRaw - pause info.
     virtual void GetMemoryInfo(uint64_t* highMemLoadThresholdBytes,
-                               uint64_t* totalPhysicalMemoryBytes,
+                               uint64_t* totalAvailableMemoryBytes,
                                uint64_t* lastRecordedMemLoadBytes,
-                               uint32_t* lastRecordedMemLoadPct,
-                               size_t* lastRecordedHeapSizeBytes,
-                               size_t* lastRecordedFragmentationBytes) = 0;
+                               uint64_t* lastRecordedHeapSizeBytes,
+                               uint64_t* lastRecordedFragmentationBytes,
+                               uint64_t* totalCommittedBytes,
+                               uint64_t* promotedBytes,
+                               uint64_t* pinnedObjectCount,
+                               uint64_t* finalizationPendingCount,
+                               uint64_t* index,
+                               uint32_t* generation,
+                               uint32_t* pauseTimePct,
+                               bool* isCompaction,
+                               bool* isConcurrent,
+                               uint64_t* genInfoRaw,
+                               uint64_t* pauseInfoRaw,
+                               int kind) = 0;
+
+    // Get the last memory load in percentage observed by the last GC.
+    virtual uint32_t GetMemoryLoad() = 0;
 
     // Gets the current GC latency mode.
     virtual int GetGcLatencyMode() = 0;

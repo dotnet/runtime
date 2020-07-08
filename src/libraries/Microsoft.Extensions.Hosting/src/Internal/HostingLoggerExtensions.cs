@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             var reflectionTypeLoadException = exception as ReflectionTypeLoadException;
             if (reflectionTypeLoadException != null)
             {
-                foreach (var ex in reflectionTypeLoadException.LoaderExceptions)
+                foreach (Exception ex in reflectionTypeLoadException.LoaderExceptions)
                 {
                     message = message + Environment.NewLine + ex.Message;
                 }

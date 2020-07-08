@@ -973,6 +973,10 @@ private:
     static void ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT);
 
     static bool IsCompatibleWith(TypeHandle hType1, TypeHandle hType2);
+    static CorElementType GetReducedTypeElementType(TypeHandle hType);
+    static CorElementType GetVerificationTypeElementType(TypeHandle hType);
+    static bool AreVerificationTypesEqual(TypeHandle hType1, TypeHandle hType2);
+    static bool IsMethodSignatureCompatibleWith(FnPtrTypeDesc* fn1TD, FnPtrTypeDesc* fn2TD);
 
     // Create a non-canonical instantiation of a generic type based off the canonical instantiation
     // (For example, MethodTable for List<string> is based on the MethodTable for List<__Canon>)

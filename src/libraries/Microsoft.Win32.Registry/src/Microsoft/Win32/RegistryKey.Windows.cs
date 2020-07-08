@@ -188,6 +188,7 @@ namespace Microsoft.Win32
         /// HKEY_CURRENT_CONFIG.
         /// </summary>
         /// <param name="hKeyHive">HKEY_* to open.</param>
+        /// <param name="view">Which view over the registry to employ.</param>
         /// <returns>The RegistryKey requested.</returns>
         private static RegistryKey OpenBaseKeyCore(RegistryHive hKeyHive, RegistryView view)
         {

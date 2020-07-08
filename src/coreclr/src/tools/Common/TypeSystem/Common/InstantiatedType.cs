@@ -146,9 +146,9 @@ namespace Internal.TypeSystem
         }
 
         // TODO: Substitutions, generics, modopts, ...
-        public override MethodDesc GetMethod(string name, MethodSignature signature)
+        public override MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
         {
-            MethodDesc typicalMethodDef = _typeDef.GetMethod(name, signature);
+            MethodDesc typicalMethodDef = _typeDef.GetMethod(name, signature, substitution);
             if (typicalMethodDef == null)
                 return null;
             return _typeDef.Context.GetMethodForInstantiatedType(typicalMethodDef, this);

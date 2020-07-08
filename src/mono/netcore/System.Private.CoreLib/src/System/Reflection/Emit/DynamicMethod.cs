@@ -37,6 +37,7 @@ using System.Text;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
@@ -45,9 +46,7 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     public sealed class DynamicMethod : MethodInfo
     {
-
-#pragma warning disable 169, 414, 649
-        #region Sync with reflection.h
+#region Sync with MonoReflectionDynamicMethod in object-internals.h
         private RuntimeMethodHandle mhandle;
         private string name;
         private Type returnType;
@@ -62,8 +61,7 @@ namespace System.Reflection.Emit
         private object?[]? refs;
         private IntPtr referenced_by;
         private Type? owner;
-        #endregion
-#pragma warning restore 169, 414, 649
+#endregion
 
         private Delegate? deleg;
         private RuntimeMethodInfo? method;
@@ -105,6 +103,7 @@ namespace System.Reflection.Emit
         {
         }
 
+        [DynamicDependency(nameof(owner))]  // Automatically keeps all previous fields too due to StructLayout
         private DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type? owner, Module? m, bool skipVisibility, bool anonHosted, bool typeOwner)
         {
             if (name == null)
@@ -443,14 +442,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        // FIXME: "Not implemented"
-        public override ICustomAttributeProvider ReturnTypeCustomAttributes
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override ICustomAttributeProvider ReturnTypeCustomAttributes => new EmptyCAHolder();
 
         /*
                 public override int MetadataToken {

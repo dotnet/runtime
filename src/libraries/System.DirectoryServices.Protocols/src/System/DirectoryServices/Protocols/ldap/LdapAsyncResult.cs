@@ -9,14 +9,13 @@ namespace System.DirectoryServices.Protocols
 {
     internal class LdapAsyncResult : IAsyncResult
     {
-        private LdapAsyncWaitHandle _asyncWaitHandle = null;
-        internal AsyncCallback _callback = null;
-        internal bool _completed = false;
-        private readonly bool _completedSynchronously = false;
-        internal ManualResetEvent _manualResetEvent = null;
-        private readonly object _stateObject = null;
-        internal LdapRequestState _resultObject = null;
-        internal bool _partialResults = false;
+        private LdapAsyncWaitHandle _asyncWaitHandle;
+        internal AsyncCallback _callback;
+        internal bool _completed;
+        internal ManualResetEvent _manualResetEvent;
+        private readonly object _stateObject;
+        internal LdapRequestState _resultObject;
+        internal bool _partialResults;
 
         public LdapAsyncResult(AsyncCallback callbackRoutine, object state, bool partialResults)
         {
@@ -30,10 +29,10 @@ namespace System.DirectoryServices.Protocols
 
         WaitHandle IAsyncResult.AsyncWaitHandle
         {
-            get => _asyncWaitHandle ?? (_asyncWaitHandle = new LdapAsyncWaitHandle(_manualResetEvent.SafeWaitHandle));
+            get => _asyncWaitHandle ??= new LdapAsyncWaitHandle(_manualResetEvent.SafeWaitHandle);
         }
 
-        bool IAsyncResult.CompletedSynchronously => _completedSynchronously;
+        bool IAsyncResult.CompletedSynchronously => false;
 
         bool IAsyncResult.IsCompleted => _completed;
 
@@ -62,10 +61,10 @@ namespace System.DirectoryServices.Protocols
 
     internal class LdapRequestState
     {
-        internal DirectoryResponse _response = null;
-        internal LdapAsyncResult _ldapAsync = null;
-        internal Exception _exception = null;
-        internal bool _abortCalled = false;
+        internal DirectoryResponse _response;
+        internal LdapAsyncResult _ldapAsync;
+        internal Exception _exception;
+        internal bool _abortCalled;
 
         public LdapRequestState() { }
     }
@@ -85,8 +84,8 @@ namespace System.DirectoryServices.Protocols
         internal ResultsStatus _resultStatus = ResultsStatus.PartialResult;
         internal TimeSpan _requestTimeout;
 
-        internal SearchResponse _response = null;
-        internal Exception _exception = null;
+        internal SearchResponse _response;
+        internal Exception _exception;
         internal DateTime _startTime;
 
         public LdapPartialAsyncResult(int messageID, AsyncCallback callbackRoutine, object state, bool partialResults, LdapConnection con, bool partialCallback, TimeSpan requestTimeout) : base(callbackRoutine, state, partialResults)

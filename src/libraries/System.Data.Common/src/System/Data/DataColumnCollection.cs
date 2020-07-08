@@ -27,8 +27,8 @@ namespace System.Data
         private bool _fInClear;
 
         private DataColumn[] _columnsImplementingIChangeTracking = Array.Empty<DataColumn>();
-        private int _nColumnsImplementingIChangeTracking = 0;
-        private int _nColumnsImplementingIRevertibleChangeTracking = 0;
+        private int _nColumnsImplementingIChangeTracking;
+        private int _nColumnsImplementingIRevertibleChangeTracking;
 
         /// <summary>
         /// DataColumnCollection constructor.  Used only by DataTable.

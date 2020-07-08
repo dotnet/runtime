@@ -148,7 +148,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate byte* __getHelperName(IntPtr _this, IntPtr* ppException, CorInfoHelpFunc helpFunc);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate CorInfoInitClassResult __initClass(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context, [MarshalAs(UnmanagedType.Bool)]bool speculative);
+        delegate CorInfoInitClassResult __initClass(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __classMustBeLoadedBeforeCodeIsRun(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -214,7 +214,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getArgClass(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate CorInfoType __getHFAType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* hClass);
+        delegate CorInfoHFAElemType __getHFAType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* hClass);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate HRESULT __GetErrorHRESULT(IntPtr _this, IntPtr* ppException, _EXCEPTION_POINTERS* pExceptionPointers);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -1288,12 +1288,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static CorInfoInitClassResult _initClass(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context, [MarshalAs(UnmanagedType.Bool)]bool speculative)
+        static CorInfoInitClassResult _initClass(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.initClass(field, method, context, speculative);
+                return _this.initClass(field, method, context);
             }
             catch (Exception ex)
             {
@@ -1743,7 +1743,7 @@ namespace Internal.JitInterface
             }
         }
 
-        static CorInfoType _getHFAType(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* hClass)
+        static CorInfoHFAElemType _getHFAType(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* hClass)
         {
             var _this = GetThis(thisHandle);
             try
@@ -1753,7 +1753,7 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-                return default(CorInfoType);
+                return default(CorInfoHFAElemType);
             }
         }
 

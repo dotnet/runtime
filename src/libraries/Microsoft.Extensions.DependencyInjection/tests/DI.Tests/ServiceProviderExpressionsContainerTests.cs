@@ -9,6 +9,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     public class ServiceProviderExpressionsContainerTests : ServiceProviderContainerTests
     {
         protected override IServiceProvider CreateServiceProvider(IServiceCollection collection) =>
-            collection.BuildServiceProvider(new ServiceProviderOptions { Mode = ServiceProviderMode.Expressions });
+            collection.BuildServiceProvider(ServiceProviderMode.Expressions);
     }
 }

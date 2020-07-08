@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Pkcs
         //
 
         public Pkcs9MessageDigest() :
-            base(Oid.FromOidValue(Oids.MessageDigest, OidGroup.ExtensionOrAttribute))
+            base(Oids.MessageDigestOid.CopyOid())
         {
         }
 
@@ -57,6 +57,6 @@ namespace System.Security.Cryptography.Pkcs
             return PkcsHelpers.DecodeOctetString(rawData);
         }
 
-        private volatile byte[]? _lazyMessageDigest = null;
+        private volatile byte[]? _lazyMessageDigest;
     }
 }

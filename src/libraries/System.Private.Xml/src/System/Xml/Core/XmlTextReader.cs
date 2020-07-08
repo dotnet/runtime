@@ -353,15 +353,12 @@ namespace System.Xml
             return _impl.LookupPrefix(namespaceName);
         }
 
-        // This pragma disables a warning that the return type is not CLS-compliant, but generics are part of CLS in Whidbey.
-#pragma warning disable 3002
         // FXCOP: ExplicitMethodImplementationsInUnsealedClassesHaveVisibleAlternates
         // public versions of IXmlNamespaceResolver methods, so that XmlTextReader subclasses can access them
         public IDictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope)
         {
             return _impl.GetNamespacesInScope(scope);
         }
-#pragma warning restore 3002
 
         //
         // XmlTextReader
@@ -408,7 +405,7 @@ namespace System.Xml
             set { _impl.EntityHandling = value; }
         }
 
-        public XmlResolver XmlResolver
+        public XmlResolver? XmlResolver
         {
             set { _impl.XmlResolver = value; }
         }

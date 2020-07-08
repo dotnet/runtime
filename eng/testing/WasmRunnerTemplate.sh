@@ -1,19 +1,24 @@
 #!/usr/bin/env bash
 
 EXECUTION_DIR=$(dirname $0)
-JAVASCRIPT_ENGINE=$1
 
 cd $EXECUTION_DIR
 
 XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
-dotnet xharness wasm test --engine=$JAVASCRIPT_ENGINE \
-    --js-file=runtime.js -v \
-    --output-directory=$XHARNESS_OUT \
-    -- --enable-gc --run WasmTestRunner.dll ${@:2}
+if [ ! -z "$XHARNESS_CLI_PATH" ]; then
+	# When running in CI, we only have the .NET runtime available
+	# We need to call the XHarness CLI DLL directly via dotnet exec
+	HARNESS_RUNNER="dotnet exec $XHARNESS_CLI_PATH"
+else
+	HARNESS_RUNNER="dotnet xharness"
+fi
+
+# RunCommands defined in tests.mobile.targets
+[[RunCommands]]
 
 _exitCode=$?
 
-echo "Xharness artifacts: $XHARNESS_OUT"
+echo "XHarness artifacts: $XHARNESS_OUT"
 
 exit $_exitCode

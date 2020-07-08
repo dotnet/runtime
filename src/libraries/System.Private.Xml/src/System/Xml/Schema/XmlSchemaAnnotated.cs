@@ -42,7 +42,7 @@ namespace System.Xml.Schema
             set { Id = value; }
         }
 
-        internal override void SetUnhandledAttributes(XmlAttribute[] moreAttributes)
+        internal override void SetUnhandledAttributes(XmlAttribute[]? moreAttributes)
         {
             _moreAttributes = moreAttributes;
         }

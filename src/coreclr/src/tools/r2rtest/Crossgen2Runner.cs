@@ -16,6 +16,7 @@ namespace R2RTest
         /// True for scenarios where the composite image has dependencies outside itself that should not be unrooted inputs
         /// </summary>
         public bool PartialComposite { get; set; }
+        public string CompositeRoot { get; set; }
     }
 
     /// <summary>
@@ -107,6 +108,11 @@ namespace R2RTest
             if (CompositeMode)
             {
                 yield return "--composite";
+            }
+
+            if (!string.IsNullOrEmpty(Crossgen2RunnerOptions.CompositeRoot))
+            {
+                yield return $"--compositerootpath={Crossgen2RunnerOptions.CompositeRoot}";
             }
 
             if (_options.Crossgen2Parallelism != 0)

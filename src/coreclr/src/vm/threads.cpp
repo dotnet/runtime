@@ -4722,7 +4722,7 @@ BOOL Thread::PrepareApartmentAndContext()
         FastInterlockAnd ((ULONG *) &m_State, ~TS_InSTA & ~TS_InMTA);
 
         // Attempt to set the requested apartment state.
-        SetApartment(aState, FALSE);
+        SetApartment(aState);
     }
 
     // In the case where we own the thread and we have switched it to a different
@@ -4732,9 +4732,9 @@ BOOL Thread::PrepareApartmentAndContext()
 #endif //FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #ifdef FEATURE_COMINTEROP
-    // Our IInitializeSpy will be registered in AppX always, in classic processes
+    // Our IInitializeSpy will be registered in classic processes
     // only if the internal config switch is on.
-    if (AppX::IsAppXProcess() || g_pConfig->EnableRCWCleanupOnSTAShutdown())
+    if (g_pConfig->EnableRCWCleanupOnSTAShutdown())
     {
         NewHolder<ApartmentSpyImpl> pSpyImpl = new ApartmentSpyImpl();
 
@@ -4909,9 +4909,7 @@ VOID Thread::ResetApartment()
 // achieved is returned and may differ from the input state if someone managed
 // to call CoInitializeEx on this thread first (note that calls to SetApartment
 // made before the thread has started are guaranteed to succeed).
-// The fFireMDAOnMismatch indicates if we should fire the apartment state probe
-// on an apartment state mismatch.
-Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAOnMismatch)
+Thread::ApartmentState Thread::SetApartment(ApartmentState state)
 {
     CONTRACTL {
         THROWS;
@@ -7240,7 +7238,7 @@ void Thread::DoExtraWorkForFinalizer()
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     if (RequiresCoInitialize())
     {
-        SetApartment(AS_InMTA, FALSE);
+        SetApartment(AS_InMTA);
     }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 

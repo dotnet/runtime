@@ -71,7 +71,7 @@ namespace System.Net.Security
                 {
                     _sslAuthenticationOptions.TargetHost = "?" + Interlocked.Increment(ref s_uniqueNameInteger).ToString(NumberFormatInfo.InvariantInfo);
                 }
-                _context = new SecureChannel(_sslAuthenticationOptions);
+                _context = new SecureChannel(_sslAuthenticationOptions, this);
             }
             catch (Win32Exception e)
             {
@@ -98,7 +98,7 @@ namespace System.Net.Security
 
             try
             {
-                _context = new SecureChannel(_sslAuthenticationOptions);
+                _context = new SecureChannel(_sslAuthenticationOptions, this);
             }
             catch (Win32Exception e)
             {
@@ -129,6 +129,8 @@ namespace System.Net.Security
         //
         private void CloseInternal()
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             _exception = s_disposedSentinel;
             _context?.Close();
 
@@ -153,6 +155,8 @@ namespace System.Net.Security
                 // Suppress finalizer if the read buffer was returned.
                 GC.SuppressFinalize(this);
             }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         private SecurityStatusPal EncryptData(ReadOnlyMemory<byte> buffer, ref byte[] outBuffer, out int outSize)
@@ -248,6 +252,7 @@ namespace System.Net.Security
                     if (message.Size > 0)
                     {
                         await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
+                        await adapter.FlushAsync().ConfigureAwait(false);
                         if (NetEventSource.IsEnabled)
                             NetEventSource.Log.SentFrame(this, message.Payload);
                     }
@@ -292,6 +297,7 @@ namespace System.Net.Security
                     {
                         // If there is message send it out even if call failed. It may contain TLS Alert.
                         await adapter.WriteAsync(payload!, 0, size).ConfigureAwait(false);
+                        await adapter.FlushAsync().ConfigureAwait(false);
 
                         if (NetEventSource.IsEnabled)
                             NetEventSource.Log.SentFrame(this, payload);
@@ -1087,13 +1093,6 @@ namespace System.Net.Security
                     return Framing.Invalid;
                 }
 
-#if TRACE_VERBOSE
-                if (bytes[1] != 3 && NetEventSource.IsEnabled)
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"WARNING: SslState::DetectFraming() SSL protocol is > 3, trying SSL3 framing in retail = {bytes[1]:x}");
-                }
-#endif
-
                 version = (bytes[1] << 8) | bytes[2];
                 if (version < 0x300 || version >= 0x500)
                 {
@@ -1105,14 +1104,6 @@ namespace System.Net.Security
                 //
                 return Framing.SinceSSL3;
             }
-
-#if TRACE_VERBOSE
-            if ((bytes[0] & 0x80) == 0 && NetEventSource.IsEnabled)
-            {
-                // We have a three-byte header format
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"WARNING: SslState::DetectFraming() SSL v <=2 HELLO has no high bit set for 3 bytes header, we are broken, received byte = {bytes[0]:x}");
-            }
-#endif
 
             if (bytes.Length < 3)
             {

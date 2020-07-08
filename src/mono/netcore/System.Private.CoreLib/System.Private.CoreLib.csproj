@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <!-- Generate Mono corelib version file -->
   <Import Project="GenerateMonoCoreLibVersionFile.targets" />
 
@@ -8,8 +8,7 @@
     <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
-    <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
 
     <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
     <DebugType>Portable</DebugType>
@@ -122,8 +121,8 @@
 
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
-    <FeaturePortableTimer>true</FeaturePortableTimer>
-    <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
+    <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
+    <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableThreadPool>
     <FeaturePerfTracing>true</FeaturePerfTracing>
     <FeatureDefaultInterfaces>true</FeatureDefaultInterfaces>
   </PropertyGroup>
@@ -144,10 +143,12 @@
   <PropertyGroup>
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
     <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
-    <ILLinkTrimXml>$(ILLinkDirectory)System.Private.CoreLib.xml</ILLinkTrimXml>
   </PropertyGroup>
 
   <ItemGroup>
+    <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)System.Private.CoreLib.xml" />
+    <ILLinkDescriptorsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
+    
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml"
                              Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
   </ItemGroup>
@@ -299,6 +300,15 @@
       <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
         <Link>Common\Interop\OSX\Interop.SearchPath.cs</Link>
       </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Browser.Mono.cs" />
+      <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.UnixOrWindows.Mono.cs" />
   </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />

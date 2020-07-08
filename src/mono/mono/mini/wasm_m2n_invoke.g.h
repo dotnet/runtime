@@ -138,6 +138,15 @@ wasm_invoke_viiiiiiiiiiiiii (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_viiiiiiiiiiiiiii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, int arg_2, int arg_3, int arg_4, int arg_5, int arg_6, int arg_7, int arg_8, int arg_9, int arg_10, int arg_11, int arg_12, int arg_13, int arg_14);
+	T func = (T)target_func;
+	func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], (int)(gssize)margs->iargs [2], (int)(gssize)margs->iargs [3], (int)(gssize)margs->iargs [4], (int)(gssize)margs->iargs [5], (int)(gssize)margs->iargs [6], (int)(gssize)margs->iargs [7], (int)(gssize)margs->iargs [8], (int)(gssize)margs->iargs [9], (int)(gssize)margs->iargs [10], (int)(gssize)margs->iargs [11], (int)(gssize)margs->iargs [12], (int)(gssize)margs->iargs [13], (int)(gssize)margs->iargs [14]);
+
+}
+
+static void
 wasm_invoke_i (void *target_func, InterpMethodArguments *margs)
 {
 	typedef int (*T)(void);
@@ -283,6 +292,16 @@ wasm_invoke_iiliiii (void *target_func, InterpMethodArguments *margs)
 	typedef int (*T)(int arg_0, gint64 arg_1, int arg_2, int arg_3, int arg_4, int arg_5);
 	T func = (T)target_func;
 	int res = func ((int)(gssize)margs->iargs [0], get_long_arg (margs, 1), (int)(gssize)margs->iargs [3], (int)(gssize)margs->iargs [4], (int)(gssize)margs->iargs [5], (int)(gssize)margs->iargs [6]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_iiil (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(int arg_0, int arg_1, gint64 arg_2);
+	T func = (T)target_func;
+	int res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], get_long_arg (margs, 2));
 	*(int*)margs->retval = res;
 
 }
@@ -758,6 +777,87 @@ wasm_invoke_dddd (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_vf (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)]);
+
+}
+
+static void
+wasm_invoke_vff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, float arg_1);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)]);
+
+}
+
+static void
+wasm_invoke_vfff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, float arg_1, float arg_2);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)]);
+
+}
+
+static void
+wasm_invoke_vffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, float arg_1, float arg_2, float arg_3);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)]);
+
+}
+
+static void
+wasm_invoke_vfffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, float arg_1, float arg_2, float arg_3, float arg_4);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)], *(float*)&margs->fargs [FIDX (4)]);
+
+}
+
+static void
+wasm_invoke_vffffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, float arg_1, float arg_2, float arg_3, float arg_4, float arg_5);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)], *(float*)&margs->fargs [FIDX (4)], *(float*)&margs->fargs [FIDX (5)]);
+
+}
+
+static void
+wasm_invoke_vfffffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, float arg_1, float arg_2, float arg_3, float arg_4, float arg_5, float arg_6);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)], *(float*)&margs->fargs [FIDX (4)], *(float*)&margs->fargs [FIDX (5)], *(float*)&margs->fargs [FIDX (6)]);
+
+}
+
+static void
+wasm_invoke_vffffffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, float arg_1, float arg_2, float arg_3, float arg_4, float arg_5, float arg_6, float arg_7);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)], *(float*)&margs->fargs [FIDX (4)], *(float*)&margs->fargs [FIDX (5)], *(float*)&margs->fargs [FIDX (6)], *(float*)&margs->fargs [FIDX (7)]);
+
+}
+
+static void
+wasm_invoke_vfi (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(float arg_0, int arg_1);
+	T func = (T)target_func;
+	func (*(float*)&margs->fargs [FIDX (0)], (int)(gssize)margs->iargs [0]);
+
+}
+
+static void
 wasm_invoke_vif (void *target_func, InterpMethodArguments *margs)
 {
 	typedef void (*T)(int arg_0, float arg_1);
@@ -817,6 +917,33 @@ wasm_invoke_viiffi (void *target_func, InterpMethodArguments *margs)
 	typedef void (*T)(int arg_0, int arg_1, float arg_2, float arg_3, int arg_4);
 	T func = (T)target_func;
 	func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], *(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], (int)(gssize)margs->iargs [2]);
+
+}
+
+static void
+wasm_invoke_viif (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, float arg_2);
+	T func = (T)target_func;
+	func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], *(float*)&margs->fargs [FIDX (0)]);
+
+}
+
+static void
+wasm_invoke_viifff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, float arg_2, float arg_3, float arg_4);
+	T func = (T)target_func;
+	func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], *(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)]);
+
+}
+
+static void
+wasm_invoke_viifi (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, float arg_2, int arg_3);
+	T func = (T)target_func;
+	func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], *(float*)&margs->fargs [FIDX (0)], (int)(gssize)margs->iargs [2]);
 
 }
 
@@ -1009,11 +1136,29 @@ wasm_invoke_lill (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_vl (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(gint64 arg_0);
+	T func = (T)target_func;
+	func (get_long_arg (margs, 0));
+
+}
+
+static void
 wasm_invoke_vil (void *target_func, InterpMethodArguments *margs)
 {
 	typedef void (*T)(int arg_0, gint64 arg_1);
 	T func = (T)target_func;
 	func ((int)(gssize)margs->iargs [0], get_long_arg (margs, 1));
+
+}
+
+static void
+wasm_invoke_viil (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, gint64 arg_2);
+	T func = (T)target_func;
+	func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], get_long_arg (margs, 2));
 
 }
 
@@ -1382,1124 +1527,323 @@ wasm_invoke_viiiif (void *target_func, InterpMethodArguments *margs)
 
 }
 
-static void
-icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodArguments *margs)
-{
-	if (cookie[0] == 'V') {
-		if (cookie[1] == 'I') {
-			if (cookie[2] == 'I') {
-				if (cookie[3] == 'I') {
-					if (cookie[4] == 'I') {
-						if (cookie[5] == 'I') {
-							if (cookie[6] == 'I') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == 'I') {
-										if (cookie[9] == 'I') {
-											if (cookie[10] == 'I') {
-												if (cookie[11] == 'I') {
-													if (cookie[12] == 'I') {
-														if (cookie[13] == 'I') {
-															if (cookie[14] == 'I') {
-																if (cookie[15] == '\0') {
-																	// found: VIIIIIIIIIIIIII depth 16
-																	wasm_invoke_viiiiiiiiiiiiii (target_func, margs);
-																	return;
-																}
-															}
-															else if (cookie[14] == '\0') {
-																// found: VIIIIIIIIIIIII depth 16
-																wasm_invoke_viiiiiiiiiiiii (target_func, margs);
-																return;
-															}
-														}
-														else if (cookie[13] == '\0') {
-															// found: VIIIIIIIIIIII depth 15
-															wasm_invoke_viiiiiiiiiiii (target_func, margs);
-															return;
-														}
-													}
-													else if (cookie[12] == '\0') {
-														// found: VIIIIIIIIIII depth 14
-														wasm_invoke_viiiiiiiiiii (target_func, margs);
-														return;
-													}
-												}
-												else if (cookie[11] == '\0') {
-													// found: VIIIIIIIIII depth 13
-													wasm_invoke_viiiiiiiiii (target_func, margs);
-													return;
-												}
-											}
-											else if (cookie[10] == '\0') {
-												// found: VIIIIIIIII depth 12
-												wasm_invoke_viiiiiiiii (target_func, margs);
-												return;
-											}
-										}
-										else if (cookie[9] == '\0') {
-											// found: VIIIIIIII depth 11
-											wasm_invoke_viiiiiiii (target_func, margs);
-											return;
-										}
-									}
-									else if (cookie[8] == '\0') {
-										// found: VIIIIIII depth 10
-										wasm_invoke_viiiiiii (target_func, margs);
-										return;
-									}
-								}
-								else if (cookie[7] == '\0') {
-									// found: VIIIIII depth 9
-									wasm_invoke_viiiiii (target_func, margs);
-									return;
-								}
-							}
-							else if (cookie[6] == '\0') {
-								// found: VIIIII depth 8
-								wasm_invoke_viiiii (target_func, margs);
-								return;
-							}
-						}
-						else if (cookie[5] == 'F') {
-							if (cookie[6] == '\0') {
-								// found: VIIIIF depth 8
-								wasm_invoke_viiiif (target_func, margs);
-								return;
-							}
-						}
-						else if (cookie[5] == '\0') {
-							// found: VIIII depth 8
-							wasm_invoke_viiii (target_func, margs);
-							return;
-						}
-					}
-					else if (cookie[4] == 'F') {
-						if (cookie[5] == 'F') {
-							if (cookie[6] == 'I') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == 'I') {
-										if (cookie[9] == '\0') {
-											// found: VIIIFFIII depth 11
-											wasm_invoke_viiiffiii (target_func, margs);
-											return;
-										}
-									}
-									else if (cookie[8] == '\0') {
-										// found: VIIIFFII depth 11
-										wasm_invoke_viiiffii (target_func, margs);
-										return;
-									}
-								}
-							}
-						}
-						else if (cookie[5] == 'I') {
-							if (cookie[6] == 'I') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == '\0') {
-										// found: VIIIFIII depth 11
-										wasm_invoke_viiifiii (target_func, margs);
-										return;
-									}
-								}
-								else if (cookie[7] == '\0') {
-									// found: VIIIFII depth 11
-									wasm_invoke_viiifii (target_func, margs);
-									return;
-								}
-							}
-						}
-						else if (cookie[5] == '\0') {
-							// found: VIIIF depth 9
-							wasm_invoke_viiif (target_func, margs);
-							return;
-						}
-					}
-					else if (cookie[4] == '\0') {
-						// found: VIII depth 7
-						wasm_invoke_viii (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == 'F') {
-					if (cookie[4] == 'F') {
-						if (cookie[5] == 'F') {
-							if (cookie[6] == 'F') {
-								if (cookie[7] == '\0') {
-									// found: VIIFFFF depth 9
-									wasm_invoke_viiffff (target_func, margs);
-									return;
-								}
-							}
-						}
-						else if (cookie[5] == 'I') {
-							if (cookie[6] == 'I') {
-								if (cookie[7] == '\0') {
-									// found: VIIFFII depth 10
-									wasm_invoke_viiffii (target_func, margs);
-									return;
-								}
-							}
-							else if (cookie[6] == '\0') {
-								// found: VIIFFI depth 10
-								wasm_invoke_viiffi (target_func, margs);
-								return;
-							}
-						}
-						else if (cookie[5] == '\0') {
-							// found: VIIFF depth 9
-							wasm_invoke_viiff (target_func, margs);
-							return;
-						}
-					}
-				}
-				else if (cookie[3] == '\0') {
-					// found: VII depth 6
-					wasm_invoke_vii (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == 'F') {
-				if (cookie[3] == 'F') {
-					if (cookie[4] == 'F') {
-						if (cookie[5] == 'I') {
-							if (cookie[6] == 'I') {
-								if (cookie[7] == 'F') {
-									if (cookie[8] == 'F') {
-										if (cookie[9] == '\0') {
-											// found: VIFFFIIFF depth 11
-											wasm_invoke_vifffiiff (target_func, margs);
-											return;
-										}
-									}
-								}
-							}
-							else if (cookie[6] == '\0') {
-								// found: VIFFFI depth 9
-								wasm_invoke_vifffi (target_func, margs);
-								return;
-							}
-						}
-						else if (cookie[5] == 'F') {
-							if (cookie[6] == 'F') {
-								if (cookie[7] == 'F') {
-									if (cookie[8] == '\0') {
-										// found: VIFFFFFF depth 11
-										wasm_invoke_viffffff (target_func, margs);
-										return;
-									}
-								}
-								else if (cookie[7] == 'I') {
-									if (cookie[8] == '\0') {
-										// found: VIFFFFFI depth 12
-										wasm_invoke_vifffffi (target_func, margs);
-										return;
-									}
-								}
-								else if (cookie[7] == '\0') {
-									// found: VIFFFFF depth 12
-									wasm_invoke_vifffff (target_func, margs);
-									return;
-								}
-							}
-							else if (cookie[6] == 'I') {
-								if (cookie[7] == '\0') {
-									// found: VIFFFFI depth 11
-									wasm_invoke_viffffi (target_func, margs);
-									return;
-								}
-							}
-							else if (cookie[6] == '\0') {
-								// found: VIFFFF depth 11
-								wasm_invoke_viffff (target_func, margs);
-								return;
-							}
-						}
-						else if (cookie[5] == '\0') {
-							// found: VIFFF depth 9
-							wasm_invoke_vifff (target_func, margs);
-							return;
-						}
-					}
-					else if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: VIFFI depth 8
-							wasm_invoke_viffi (target_func, margs);
-							return;
-						}
-					}
-					else if (cookie[4] == '\0') {
-						// found: VIFF depth 8
-						wasm_invoke_viff (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == 'I') {
-					if (cookie[4] == '\0') {
-						// found: VIFI depth 7
-						wasm_invoke_vifi (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == '\0') {
-					// found: VIF depth 7
-					wasm_invoke_vif (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == 'L') {
-				if (cookie[3] == 'L') {
-					if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: VILLI depth 8
-							wasm_invoke_villi (target_func, margs);
-							return;
-						}
-					}
-				}
-				else if (cookie[3] == '\0') {
-					// found: VIL depth 7
-					wasm_invoke_vil (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == 'D') {
-				if (cookie[3] == '\0') {
-					// found: VID depth 7
-					wasm_invoke_vid (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == '\0') {
-				// found: VI depth 7
-				wasm_invoke_vi (target_func, margs);
-				return;
-			}
-		}
-		else if (cookie[1] == '\0') {
-			// found: V depth 3
-			wasm_invoke_v (target_func, margs);
-			return;
-		}
-	}
-	else if (cookie[0] == 'I') {
-		if (cookie[1] == 'I') {
-			if (cookie[2] == 'I') {
-				if (cookie[3] == 'F') {
-					if (cookie[4] == 'F') {
-						if (cookie[5] == 'F') {
-							if (cookie[6] == 'F') {
-								if (cookie[7] == 'F') {
-									if (cookie[8] == 'F') {
-										if (cookie[9] == 'F') {
-											if (cookie[10] == 'F') {
-												if (cookie[11] == 'I') {
-													if (cookie[12] == 'I') {
-														if (cookie[13] == 'I') {
-															if (cookie[14] == '\0') {
-																// found: IIIFFFFFFFFIII depth 16
-																wasm_invoke_iiiffffffffiii (target_func, margs);
-																return;
-															}
-														}
-													}
-												}
-												else if (cookie[11] == '\0') {
-													// found: IIIFFFFFFFF depth 14
-													wasm_invoke_iiiffffffff (target_func, margs);
-													return;
-												}
-											}
-										}
-										else if (cookie[9] == '\0') {
-											// found: IIIFFFFFF depth 12
-											wasm_invoke_iiiffffff (target_func, margs);
-											return;
-										}
-									}
-									else if (cookie[8] == '\0') {
-										// found: IIIFFFFF depth 11
-										wasm_invoke_iiifffff (target_func, margs);
-										return;
-									}
-								}
-								else if (cookie[7] == '\0') {
-									// found: IIIFFFF depth 10
-									wasm_invoke_iiiffff (target_func, margs);
-									return;
-								}
-							}
-							else if (cookie[6] == 'I') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == '\0') {
-										// found: IIIFFFII depth 11
-										wasm_invoke_iiifffii (target_func, margs);
-										return;
-									}
-								}
-							}
-						}
-						else if (cookie[5] == 'I') {
-							if (cookie[6] == 'F') {
-								if (cookie[7] == 'F') {
-									if (cookie[8] == 'F') {
-										if (cookie[9] == 'I') {
-											if (cookie[10] == 'I') {
-												if (cookie[11] == '\0') {
-													// found: IIIFFIFFFII depth 14
-													wasm_invoke_iiiffifffii (target_func, margs);
-													return;
-												}
-											}
-										}
-									}
-									else if (cookie[8] == 'I') {
-										if (cookie[9] == 'I') {
-											if (cookie[10] == '\0') {
-												// found: IIIFFIFFII depth 14
-												wasm_invoke_iiiffiffii (target_func, margs);
-												return;
-											}
-										}
-									}
-								}
-							}
-							else if (cookie[6] == 'I') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == 'I') {
-										if (cookie[9] == 'I') {
-											if (cookie[10] == '\0') {
-												// found: IIIFFIIIII depth 14
-												wasm_invoke_iiiffiiiii (target_func, margs);
-												return;
-											}
-										}
-									}
-								}
-								else if (cookie[7] == '\0') {
-									// found: IIIFFII depth 12
-									wasm_invoke_iiiffii (target_func, margs);
-									return;
-								}
-							}
-						}
-					}
-					else if (cookie[4] == 'I') {
-						if (cookie[5] == 'I') {
-							if (cookie[6] == 'I') {
-								if (cookie[7] == '\0') {
-									// found: IIIFIII depth 10
-									wasm_invoke_iiifiii (target_func, margs);
-									return;
-								}
-							}
-							else if (cookie[6] == '\0') {
-								// found: IIIFII depth 10
-								wasm_invoke_iiifii (target_func, margs);
-								return;
-							}
-						}
-						else if (cookie[5] == '\0') {
-							// found: IIIFI depth 9
-							wasm_invoke_iiifi (target_func, margs);
-							return;
-						}
-					}
-					else if (cookie[4] == '\0') {
-						// found: IIIF depth 8
-						wasm_invoke_iiif (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == 'I') {
-					if (cookie[4] == 'I') {
-						if (cookie[5] == 'I') {
-							if (cookie[6] == 'I') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == 'I') {
-										if (cookie[9] == 'I') {
-											if (cookie[10] == 'I') {
-												if (cookie[11] == 'I') {
-													if (cookie[12] == 'I') {
-														if (cookie[13] == 'I') {
-															if (cookie[14] == '\0') {
-																// found: IIIIIIIIIIIIII depth 17
-																wasm_invoke_iiiiiiiiiiiiii (target_func, margs);
-																return;
-															}
-														}
-														else if (cookie[13] == '\0') {
-															// found: IIIIIIIIIIIII depth 17
-															wasm_invoke_iiiiiiiiiiiii (target_func, margs);
-															return;
-														}
-													}
-													else if (cookie[12] == '\0') {
-														// found: IIIIIIIIIIII depth 16
-														wasm_invoke_iiiiiiiiiiii (target_func, margs);
-														return;
-													}
-												}
-												else if (cookie[11] == '\0') {
-													// found: IIIIIIIIIII depth 15
-													wasm_invoke_iiiiiiiiiii (target_func, margs);
-													return;
-												}
-											}
-											else if (cookie[10] == '\0') {
-												// found: IIIIIIIIII depth 14
-												wasm_invoke_iiiiiiiiii (target_func, margs);
-												return;
-											}
-										}
-										else if (cookie[9] == '\0') {
-											// found: IIIIIIIII depth 13
-											wasm_invoke_iiiiiiiii (target_func, margs);
-											return;
-										}
-									}
-									else if (cookie[8] == '\0') {
-										// found: IIIIIIII depth 12
-										wasm_invoke_iiiiiiii (target_func, margs);
-										return;
-									}
-								}
-								else if (cookie[7] == 'F') {
-									if (cookie[8] == 'F') {
-										if (cookie[9] == 'I') {
-											if (cookie[10] == '\0') {
-												// found: IIIIIIIFFI depth 14
-												wasm_invoke_iiiiiiiffi (target_func, margs);
-												return;
-											}
-										}
-										else if (cookie[9] == '\0') {
-											// found: IIIIIIIFF depth 14
-											wasm_invoke_iiiiiiiff (target_func, margs);
-											return;
-										}
-									}
-									else if (cookie[8] == '\0') {
-										// found: IIIIIIIF depth 13
-										wasm_invoke_iiiiiiif (target_func, margs);
-										return;
-									}
-								}
-								else if (cookie[7] == '\0') {
-									// found: IIIIIII depth 12
-									wasm_invoke_iiiiiii (target_func, margs);
-									return;
-								}
-							}
-							else if (cookie[6] == 'F') {
-								if (cookie[7] == 'F') {
-									if (cookie[8] == 'I') {
-										if (cookie[9] == '\0') {
-											// found: IIIIIIFFI depth 13
-											wasm_invoke_iiiiiiffi (target_func, margs);
-											return;
-										}
-									}
-								}
-								else if (cookie[7] == 'I') {
-									if (cookie[8] == 'I') {
-										if (cookie[9] == '\0') {
-											// found: IIIIIIFII depth 14
-											wasm_invoke_iiiiiifii (target_func, margs);
-											return;
-										}
-									}
-								}
-							}
-							else if (cookie[6] == '\0') {
-								// found: IIIIII depth 11
-								wasm_invoke_iiiiii (target_func, margs);
-								return;
-							}
-						}
-						else if (cookie[5] == 'F') {
-							if (cookie[6] == 'F') {
-								if (cookie[7] == 'F') {
-									if (cookie[8] == 'F') {
-										if (cookie[9] == 'I') {
-											if (cookie[10] == 'I') {
-												if (cookie[11] == 'I') {
-													if (cookie[12] == 'I') {
-														if (cookie[13] == '\0') {
-															// found: IIIIIFFFFIIII depth 17
-															wasm_invoke_iiiiiffffiiii (target_func, margs);
-															return;
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-							else if (cookie[6] == 'I') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == '\0') {
-										// found: IIIIIFII depth 13
-										wasm_invoke_iiiiifii (target_func, margs);
-										return;
-									}
-								}
-							}
-							else if (cookie[6] == '\0') {
-								// found: IIIIIF depth 12
-								wasm_invoke_iiiiif (target_func, margs);
-								return;
-							}
-						}
-						else if (cookie[5] == '\0') {
-							// found: IIIII depth 10
-							wasm_invoke_iiiii (target_func, margs);
-							return;
-						}
-					}
-					else if (cookie[4] == 'F') {
-						if (cookie[5] == 'I') {
-							if (cookie[6] == 'I') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == '\0') {
-										// found: IIIIFIII depth 12
-										wasm_invoke_iiiifiii (target_func, margs);
-										return;
-									}
-								}
-								else if (cookie[7] == '\0') {
-									// found: IIIIFII depth 12
-									wasm_invoke_iiiifii (target_func, margs);
-									return;
-								}
-							}
-							else if (cookie[6] == '\0') {
-								// found: IIIIFI depth 11
-								wasm_invoke_iiiifi (target_func, margs);
-								return;
-							}
-						}
-						else if (cookie[5] == '\0') {
-							// found: IIIIF depth 10
-							wasm_invoke_iiiif (target_func, margs);
-							return;
-						}
-					}
-					else if (cookie[4] == '\0') {
-						// found: IIII depth 9
-						wasm_invoke_iiii (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == '\0') {
-					// found: III depth 7
-					wasm_invoke_iii (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == 'F') {
-				if (cookie[3] == 'I') {
-					if (cookie[4] == 'F') {
-						if (cookie[5] == 'I') {
-							if (cookie[6] == 'I') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == 'I') {
-										if (cookie[9] == 'I') {
-											if (cookie[10] == 'I') {
-												if (cookie[11] == '\0') {
-													// found: IIFIFIIIIII depth 14
-													wasm_invoke_iififiiiiii (target_func, margs);
-													return;
-												}
-											}
-											else if (cookie[10] == '\0') {
-												// found: IIFIFIIIII depth 14
-												wasm_invoke_iififiiiii (target_func, margs);
-												return;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-					else if (cookie[4] == 'I') {
-						if (cookie[5] == 'I') {
-							if (cookie[6] == 'I') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == 'I') {
-										if (cookie[9] == '\0') {
-											// found: IIFIIIIII depth 13
-											wasm_invoke_iifiiiiii (target_func, margs);
-											return;
-										}
-									}
-									else if (cookie[8] == '\0') {
-										// found: IIFIIIII depth 13
-										wasm_invoke_iifiiiii (target_func, margs);
-										return;
-									}
-								}
-							}
-							else if (cookie[6] == '\0') {
-								// found: IIFIII depth 11
-								wasm_invoke_iifiii (target_func, margs);
-								return;
-							}
-						}
-						else if (cookie[5] == '\0') {
-							// found: IIFII depth 10
-							wasm_invoke_iifii (target_func, margs);
-							return;
-						}
-					}
-					else if (cookie[4] == '\0') {
-						// found: IIFI depth 9
-						wasm_invoke_iifi (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == 'F') {
-					if (cookie[4] == 'F') {
-						if (cookie[5] == 'F') {
-							if (cookie[6] == 'F') {
-								if (cookie[7] == 'F') {
-									if (cookie[8] == 'F') {
-										if (cookie[9] == 'F') {
-											if (cookie[10] == '\0') {
-												// found: IIFFFFFFFF depth 14
-												wasm_invoke_iiffffffff (target_func, margs);
-												return;
-											}
-										}
-									}
-									else if (cookie[8] == '\0') {
-										// found: IIFFFFFF depth 13
-										wasm_invoke_iiffffff (target_func, margs);
-										return;
-									}
-								}
-							}
-							else if (cookie[6] == 'I') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == '\0') {
-										// found: IIFFFFII depth 13
-										wasm_invoke_iiffffii (target_func, margs);
-										return;
-									}
-								}
-								else if (cookie[7] == '\0') {
-									// found: IIFFFFI depth 13
-									wasm_invoke_iiffffi (target_func, margs);
-									return;
-								}
-							}
-						}
-						else if (cookie[5] == 'I') {
-							if (cookie[6] == '\0') {
-								// found: IIFFFI depth 11
-								wasm_invoke_iifffi (target_func, margs);
-								return;
-							}
-						}
-						else if (cookie[5] == '\0') {
-							// found: IIFFF depth 11
-							wasm_invoke_iifff (target_func, margs);
-							return;
-						}
-					}
-					else if (cookie[4] == 'I') {
-						if (cookie[5] == 'I') {
-							if (cookie[6] == 'I') {
-								if (cookie[7] == '\0') {
-									// found: IIFFIII depth 12
-									wasm_invoke_iiffiii (target_func, margs);
-									return;
-								}
-							}
-							else if (cookie[6] == '\0') {
-								// found: IIFFII depth 12
-								wasm_invoke_iiffii (target_func, margs);
-								return;
-							}
-						}
-						else if (cookie[5] == '\0') {
-							// found: IIFFI depth 11
-							wasm_invoke_iiffi (target_func, margs);
-							return;
-						}
-					}
-					else if (cookie[4] == '\0') {
-						// found: IIFF depth 10
-						wasm_invoke_iiff (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == '\0') {
-					// found: IIF depth 8
-					wasm_invoke_iif (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == 'L') {
-				if (cookie[3] == 'I') {
-					if (cookie[4] == 'I') {
-						if (cookie[5] == 'I') {
-							if (cookie[6] == 'I') {
-								if (cookie[7] == '\0') {
-									// found: IILIIII depth 11
-									wasm_invoke_iiliiii (target_func, margs);
-									return;
-								}
-							}
-							else if (cookie[6] == 'L') {
-								if (cookie[7] == '\0') {
-									// found: IILIIIL depth 12
-									wasm_invoke_iiliiil (target_func, margs);
-									return;
-								}
-							}
-						}
-					}
-					else if (cookie[4] == '\0') {
-						// found: IILI depth 9
-						wasm_invoke_iili (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == 'L') {
-					if (cookie[4] == 'L') {
-						if (cookie[5] == 'I') {
-							if (cookie[6] == '\0') {
-								// found: IILLLI depth 11
-								wasm_invoke_iillli (target_func, margs);
-								return;
-							}
-						}
-					}
-					else if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: IILLI depth 11
-							wasm_invoke_iilli (target_func, margs);
-							return;
-						}
-					}
-				}
-				else if (cookie[3] == '\0') {
-					// found: IIL depth 9
-					wasm_invoke_iil (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == '\0') {
-				// found: II depth 7
-				wasm_invoke_ii (target_func, margs);
-				return;
-			}
-		}
-		else if (cookie[1] == 'F') {
-			if (cookie[2] == 'F') {
-				if (cookie[3] == 'F') {
-					if (cookie[4] == 'F') {
-						if (cookie[5] == 'I') {
-							if (cookie[6] == 'I') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == 'I') {
-										if (cookie[9] == '\0') {
-											// found: IFFFFIIII depth 12
-											wasm_invoke_iffffiiii (target_func, margs);
-											return;
-										}
-									}
-								}
-							}
-						}
-						else if (cookie[5] == 'F') {
-							if (cookie[6] == 'F') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == '\0') {
-										// found: IFFFFFFI depth 12
-										wasm_invoke_iffffffi (target_func, margs);
-										return;
-									}
-								}
-							}
-						}
-					}
-				}
-				else if (cookie[3] == 'I') {
-					if (cookie[4] == 'F') {
-						if (cookie[5] == 'I') {
-							if (cookie[6] == '\0') {
-								// found: IFFIFI depth 10
-								wasm_invoke_iffifi (target_func, margs);
-								return;
-							}
-						}
-						else if (cookie[5] == '\0') {
-							// found: IFFIF depth 10
-							wasm_invoke_iffif (target_func, margs);
-							return;
-						}
-					}
-					else if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: IFFII depth 10
-							wasm_invoke_iffii (target_func, margs);
-							return;
-						}
-					}
-					else if (cookie[4] == '\0') {
-						// found: IFFI depth 10
-						wasm_invoke_iffi (target_func, margs);
-						return;
-					}
-				}
-			}
-			else if (cookie[2] == 'I') {
-				if (cookie[3] == 'I') {
-					if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: IFIII depth 9
-							wasm_invoke_ifiii (target_func, margs);
-							return;
-						}
-					}
-				}
-				else if (cookie[3] == '\0') {
-					// found: IFI depth 8
-					wasm_invoke_ifi (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == '\0') {
-				// found: IF depth 7
-				wasm_invoke_if (target_func, margs);
-				return;
-			}
-		}
-		else if (cookie[1] == 'D') {
-			if (cookie[2] == 'I') {
-				if (cookie[3] == 'I') {
-					if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: IDIII depth 9
-							wasm_invoke_idiii (target_func, margs);
-							return;
-						}
-					}
-				}
-			}
-			else if (cookie[2] == '\0') {
-				// found: ID depth 7
-				wasm_invoke_id (target_func, margs);
-				return;
-			}
-		}
-		else if (cookie[1] == 'L') {
-			if (cookie[2] == 'I') {
-				if (cookie[3] == '\0') {
-					// found: ILI depth 8
-					wasm_invoke_ili (target_func, margs);
-					return;
-				}
-			}
-		}
-		else if (cookie[1] == '\0') {
-			// found: I depth 7
-			wasm_invoke_i (target_func, margs);
-			return;
-		}
-	}
-	else if (cookie[0] == 'F') {
-		if (cookie[1] == 'I') {
-			if (cookie[2] == 'I') {
-				if (cookie[3] == 'I') {
-					if (cookie[4] == 'I') {
-						if (cookie[5] == 'I') {
-							if (cookie[6] == 'I') {
-								if (cookie[7] == '\0') {
-									// found: FIIIIII depth 10
-									wasm_invoke_fiiiiii (target_func, margs);
-									return;
-								}
-							}
-						}
-					}
-					else if (cookie[4] == '\0') {
-						// found: FIII depth 8
-						wasm_invoke_fiii (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == '\0') {
-					// found: FII depth 7
-					wasm_invoke_fii (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == 'F') {
-				if (cookie[3] == 'F') {
-					if (cookie[4] == 'F') {
-						if (cookie[5] == '\0') {
-							// found: FIFFF depth 9
-							wasm_invoke_fifff (target_func, margs);
-							return;
-						}
-					}
-					else if (cookie[4] == '\0') {
-						// found: FIFF depth 9
-						wasm_invoke_fiff (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == '\0') {
-					// found: FIF depth 8
-					wasm_invoke_fif (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == '\0') {
-				// found: FI depth 7
-				wasm_invoke_fi (target_func, margs);
-				return;
-			}
-		}
-		else if (cookie[1] == 'F') {
-			if (cookie[2] == 'F') {
-				if (cookie[3] == 'F') {
-					if (cookie[4] == '\0') {
-						// found: FFFF depth 8
-						wasm_invoke_ffff (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == '\0') {
-					// found: FFF depth 8
-					wasm_invoke_fff (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == 'I') {
-				if (cookie[3] == '\0') {
-					// found: FFI depth 8
-					wasm_invoke_ffi (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == '\0') {
-				// found: FF depth 8
-				wasm_invoke_ff (target_func, margs);
-				return;
-			}
-		}
-	}
-	else if (cookie[0] == 'L') {
-		if (cookie[1] == 'I') {
-			if (cookie[2] == 'L') {
-				if (cookie[3] == 'I') {
-					if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: LILII depth 9
-							wasm_invoke_lilii (target_func, margs);
-							return;
-						}
-					}
-					else if (cookie[4] == '\0') {
-						// found: LILI depth 9
-						wasm_invoke_lili (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == 'L') {
-					if (cookie[4] == '\0') {
-						// found: LILL depth 9
-						wasm_invoke_lill (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == '\0') {
-					// found: LIL depth 9
-					wasm_invoke_lil (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == 'I') {
-				if (cookie[3] == '\0') {
-					// found: LII depth 8
-					wasm_invoke_lii (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == '\0') {
-				// found: LI depth 8
-				wasm_invoke_li (target_func, margs);
-				return;
-			}
-		}
-		else if (cookie[1] == 'L') {
-			if (cookie[2] == '\0') {
-				// found: LL depth 7
-				wasm_invoke_ll (target_func, margs);
-				return;
-			}
-		}
-		else if (cookie[1] == '\0') {
-			// found: L depth 7
-			wasm_invoke_l (target_func, margs);
-			return;
-		}
-	}
-	else if (cookie[0] == 'D') {
-		if (cookie[1] == 'D') {
-			if (cookie[2] == 'D') {
-				if (cookie[3] == 'D') {
-					if (cookie[4] == '\0') {
-						// found: DDDD depth 9
-						wasm_invoke_dddd (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == '\0') {
-					// found: DDD depth 9
-					wasm_invoke_ddd (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == 'I') {
-				if (cookie[3] == '\0') {
-					// found: DDI depth 9
-					wasm_invoke_ddi (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == '\0') {
-				// found: DD depth 9
-				wasm_invoke_dd (target_func, margs);
-				return;
-			}
-		}
-		else if (cookie[1] == 'I') {
-			if (cookie[2] == 'D') {
-				if (cookie[3] == 'D') {
-					if (cookie[4] == '\0') {
-						// found: DIDD depth 10
-						wasm_invoke_didd (target_func, margs);
-						return;
-					}
-				}
-				else if (cookie[3] == '\0') {
-					// found: DID depth 10
-					wasm_invoke_did (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == '\0') {
-				// found: DI depth 9
-				wasm_invoke_di (target_func, margs);
-				return;
-			}
-		}
-	}
-	g_error ("CANNOT HANDLE COOKIE %s\n", cookie);
-}
+static const char* interp_to_native_signatures [] = {
+"DD",
+"DDD",
+"DDDD",
+"DDI",
+"DI",
+"DID",
+"DIDD",
+"FF",
+"FFF",
+"FFFF",
+"FFI",
+"FI",
+"FIF",
+"FIFF",
+"FIFFF",
+"FII",
+"FIII",
+"FIIIIII",
+"I",
+"ID",
+"IDIII",
+"IF",
+"IFFFFFFI",
+"IFFFFIIII",
+"IFFI",
+"IFFIF",
+"IFFIFI",
+"IFFII",
+"IFI",
+"IFIII",
+"II",
+"IIF",
+"IIFF",
+"IIFFF",
+"IIFFFFFF",
+"IIFFFFFFFF",
+"IIFFFFI",
+"IIFFFFII",
+"IIFFFI",
+"IIFFI",
+"IIFFII",
+"IIFFIII",
+"IIFI",
+"IIFIFIIIII",
+"IIFIFIIIIII",
+"IIFII",
+"IIFIII",
+"IIFIIIII",
+"IIFIIIIII",
+"III",
+"IIIF",
+"IIIFFFF",
+"IIIFFFFF",
+"IIIFFFFFF",
+"IIIFFFFFFFF",
+"IIIFFFFFFFFIII",
+"IIIFFFII",
+"IIIFFIFFFII",
+"IIIFFIFFII",
+"IIIFFII",
+"IIIFFIIIII",
+"IIIFI",
+"IIIFII",
+"IIIFIII",
+"IIII",
+"IIIIF",
+"IIIIFI",
+"IIIIFII",
+"IIIIFIII",
+"IIIII",
+"IIIIIF",
+"IIIIIFFFFIIII",
+"IIIIIFII",
+"IIIIII",
+"IIIIIIFFI",
+"IIIIIIFII",
+"IIIIIII",
+"IIIIIIIF",
+"IIIIIIIFF",
+"IIIIIIIFFI",
+"IIIIIIII",
+"IIIIIIIII",
+"IIIIIIIIII",
+"IIIIIIIIIII",
+"IIIIIIIIIIII",
+"IIIIIIIIIIIII",
+"IIIIIIIIIIIIII",
+"IIIL",
+"IIL",
+"IILI",
+"IILIIII",
+"IILIIIL",
+"IILLI",
+"IILLLI",
+"ILI",
+"L",
+"LI",
+"LII",
+"LIL",
+"LILI",
+"LILII",
+"LILL",
+"LL",
+"V",
+"VF",
+"VFF",
+"VFFF",
+"VFFFF",
+"VFFFFF",
+"VFFFFFF",
+"VFFFFFFF",
+"VFFFFFFFF",
+"VFI",
+"VI",
+"VID",
+"VIF",
+"VIFF",
+"VIFFF",
+"VIFFFF",
+"VIFFFFF",
+"VIFFFFFF",
+"VIFFFFFI",
+"VIFFFFI",
+"VIFFFI",
+"VIFFFIIFF",
+"VIFFI",
+"VIFI",
+"VII",
+"VIIF",
+"VIIFF",
+"VIIFFF",
+"VIIFFFF",
+"VIIFFI",
+"VIIFFII",
+"VIIFI",
+"VIII",
+"VIIIF",
+"VIIIFFII",
+"VIIIFFIII",
+"VIIIFII",
+"VIIIFIII",
+"VIIII",
+"VIIIIF",
+"VIIIII",
+"VIIIIII",
+"VIIIIIII",
+"VIIIIIIII",
+"VIIIIIIIII",
+"VIIIIIIIIII",
+"VIIIIIIIIIII",
+"VIIIIIIIIIIII",
+"VIIIIIIIIIIIII",
+"VIIIIIIIIIIIIII",
+"VIIIIIIIIIIIIIII",
+"VIIL",
+"VIL",
+"VILLI",
+"VL",
+};
+static void* interp_to_native_invokes [] = {
+wasm_invoke_dd,
+wasm_invoke_ddd,
+wasm_invoke_dddd,
+wasm_invoke_ddi,
+wasm_invoke_di,
+wasm_invoke_did,
+wasm_invoke_didd,
+wasm_invoke_ff,
+wasm_invoke_fff,
+wasm_invoke_ffff,
+wasm_invoke_ffi,
+wasm_invoke_fi,
+wasm_invoke_fif,
+wasm_invoke_fiff,
+wasm_invoke_fifff,
+wasm_invoke_fii,
+wasm_invoke_fiii,
+wasm_invoke_fiiiiii,
+wasm_invoke_i,
+wasm_invoke_id,
+wasm_invoke_idiii,
+wasm_invoke_if,
+wasm_invoke_iffffffi,
+wasm_invoke_iffffiiii,
+wasm_invoke_iffi,
+wasm_invoke_iffif,
+wasm_invoke_iffifi,
+wasm_invoke_iffii,
+wasm_invoke_ifi,
+wasm_invoke_ifiii,
+wasm_invoke_ii,
+wasm_invoke_iif,
+wasm_invoke_iiff,
+wasm_invoke_iifff,
+wasm_invoke_iiffffff,
+wasm_invoke_iiffffffff,
+wasm_invoke_iiffffi,
+wasm_invoke_iiffffii,
+wasm_invoke_iifffi,
+wasm_invoke_iiffi,
+wasm_invoke_iiffii,
+wasm_invoke_iiffiii,
+wasm_invoke_iifi,
+wasm_invoke_iififiiiii,
+wasm_invoke_iififiiiiii,
+wasm_invoke_iifii,
+wasm_invoke_iifiii,
+wasm_invoke_iifiiiii,
+wasm_invoke_iifiiiiii,
+wasm_invoke_iii,
+wasm_invoke_iiif,
+wasm_invoke_iiiffff,
+wasm_invoke_iiifffff,
+wasm_invoke_iiiffffff,
+wasm_invoke_iiiffffffff,
+wasm_invoke_iiiffffffffiii,
+wasm_invoke_iiifffii,
+wasm_invoke_iiiffifffii,
+wasm_invoke_iiiffiffii,
+wasm_invoke_iiiffii,
+wasm_invoke_iiiffiiiii,
+wasm_invoke_iiifi,
+wasm_invoke_iiifii,
+wasm_invoke_iiifiii,
+wasm_invoke_iiii,
+wasm_invoke_iiiif,
+wasm_invoke_iiiifi,
+wasm_invoke_iiiifii,
+wasm_invoke_iiiifiii,
+wasm_invoke_iiiii,
+wasm_invoke_iiiiif,
+wasm_invoke_iiiiiffffiiii,
+wasm_invoke_iiiiifii,
+wasm_invoke_iiiiii,
+wasm_invoke_iiiiiiffi,
+wasm_invoke_iiiiiifii,
+wasm_invoke_iiiiiii,
+wasm_invoke_iiiiiiif,
+wasm_invoke_iiiiiiiff,
+wasm_invoke_iiiiiiiffi,
+wasm_invoke_iiiiiiii,
+wasm_invoke_iiiiiiiii,
+wasm_invoke_iiiiiiiiii,
+wasm_invoke_iiiiiiiiiii,
+wasm_invoke_iiiiiiiiiiii,
+wasm_invoke_iiiiiiiiiiiii,
+wasm_invoke_iiiiiiiiiiiiii,
+wasm_invoke_iiil,
+wasm_invoke_iil,
+wasm_invoke_iili,
+wasm_invoke_iiliiii,
+wasm_invoke_iiliiil,
+wasm_invoke_iilli,
+wasm_invoke_iillli,
+wasm_invoke_ili,
+wasm_invoke_l,
+wasm_invoke_li,
+wasm_invoke_lii,
+wasm_invoke_lil,
+wasm_invoke_lili,
+wasm_invoke_lilii,
+wasm_invoke_lill,
+wasm_invoke_ll,
+wasm_invoke_v,
+wasm_invoke_vf,
+wasm_invoke_vff,
+wasm_invoke_vfff,
+wasm_invoke_vffff,
+wasm_invoke_vfffff,
+wasm_invoke_vffffff,
+wasm_invoke_vfffffff,
+wasm_invoke_vffffffff,
+wasm_invoke_vfi,
+wasm_invoke_vi,
+wasm_invoke_vid,
+wasm_invoke_vif,
+wasm_invoke_viff,
+wasm_invoke_vifff,
+wasm_invoke_viffff,
+wasm_invoke_vifffff,
+wasm_invoke_viffffff,
+wasm_invoke_vifffffi,
+wasm_invoke_viffffi,
+wasm_invoke_vifffi,
+wasm_invoke_vifffiiff,
+wasm_invoke_viffi,
+wasm_invoke_vifi,
+wasm_invoke_vii,
+wasm_invoke_viif,
+wasm_invoke_viiff,
+wasm_invoke_viifff,
+wasm_invoke_viiffff,
+wasm_invoke_viiffi,
+wasm_invoke_viiffii,
+wasm_invoke_viifi,
+wasm_invoke_viii,
+wasm_invoke_viiif,
+wasm_invoke_viiiffii,
+wasm_invoke_viiiffiii,
+wasm_invoke_viiifii,
+wasm_invoke_viiifiii,
+wasm_invoke_viiii,
+wasm_invoke_viiiif,
+wasm_invoke_viiiii,
+wasm_invoke_viiiiii,
+wasm_invoke_viiiiiii,
+wasm_invoke_viiiiiiii,
+wasm_invoke_viiiiiiiii,
+wasm_invoke_viiiiiiiiii,
+wasm_invoke_viiiiiiiiiii,
+wasm_invoke_viiiiiiiiiiii,
+wasm_invoke_viiiiiiiiiiiii,
+wasm_invoke_viiiiiiiiiiiiii,
+wasm_invoke_viiiiiiiiiiiiiii,
+wasm_invoke_viil,
+wasm_invoke_vil,
+wasm_invoke_villi,
+wasm_invoke_vl,
+};

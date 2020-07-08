@@ -205,7 +205,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Lerp(Vector2 value1, Vector2 value2, float amount)
         {
-            return value1 + (value2 - value1) * amount;
+            return (value1 * (1.0f - amount)) + (value2 * amount);
         }
 
         /// <summary>

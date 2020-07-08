@@ -156,7 +156,10 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 //------------------------------------------------------------------------
 // instGen_Set_Reg_To_Imm: Move an immediate value into an integer register.
 //
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, insFlags flags)
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
+                                     regNumber reg,
+                                     ssize_t   imm,
+                                     insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(unsigned gtFlags))
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
@@ -1048,7 +1051,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
     // var = call, where call returns a multi-reg return value
     // case is handled separately.
-    if (data->gtSkipReloadOrCopy()->IsMultiRegCall())
+    if (data->gtSkipReloadOrCopy()->IsMultiRegNode())
     {
         genMultiRegStoreToLocal(tree);
     }

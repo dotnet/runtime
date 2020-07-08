@@ -2,33 +2,34 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Xml.Serialization;
 
     public class XmlSchemaNotation : XmlSchemaAnnotated
     {
-        private string _name;
-        private string _publicId;
-        private string _systemId;
+        private string? _name;
+        private string? _publicId;
+        private string? _systemId;
         private XmlQualifiedName _qname = XmlQualifiedName.Empty;
 
         [XmlAttribute("name")]
-        public string Name
+        public string? Name
         {
             get { return _name; }
             set { _name = value; }
         }
 
         [XmlAttribute("public")]
-        public string Public
+        public string? Public
         {
             get { return _publicId; }
             set { _publicId = value; }
         }
 
         [XmlAttribute("system")]
-        public string System
+        public string? System
         {
             get { return _systemId; }
             set { _systemId = value; }
@@ -42,7 +43,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        internal override string NameAttribute
+        internal override string? NameAttribute
         {
             get { return Name; }
             set { Name = value; }

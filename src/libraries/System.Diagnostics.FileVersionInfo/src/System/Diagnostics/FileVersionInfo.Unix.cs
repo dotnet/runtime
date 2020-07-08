@@ -33,10 +33,6 @@ namespace System.Diagnostics
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Attempt to load our fields from the metadata of the file, if it's a managed assembly.</summary>
         /// <returns>true if the file is a managed assembly; otherwise, false.</returns>
         private bool TryLoadManagedAssemblyMetadata()
@@ -224,6 +220,7 @@ namespace System.Diagnostics
 
         /// <summary>Parses a string as a UInt16 until it hits a non-digit.</summary>
         /// <param name="s">The string to parse.</param>
+        /// <param name="endedEarly">Whether parsing ended prior to reaching the end of the input.</param>
         /// <returns>The parsed value.</returns>
         private static ushort ParseUInt16UntilNonDigit(string s, out bool endedEarly)
         {

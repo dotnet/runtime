@@ -77,6 +77,17 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
+        internal sealed override bool TryReadAsObject(
+            ref Utf8JsonReader reader,
+            JsonSerializerOptions options,
+            ref ReadStack state,
+            out object? value)
+        {
+            Debug.Fail("We should never get here.");
+
+            throw new InvalidOperationException();
+        }
+
         internal sealed override bool TryWriteAsObject(
             Utf8JsonWriter writer,
             object? value,
@@ -93,6 +104,16 @@ namespace System.Text.Json.Serialization
         internal sealed override bool WriteCoreAsObject(
             Utf8JsonWriter writer,
             object? value,
+            JsonSerializerOptions options,
+            ref WriteStack state)
+        {
+            Debug.Fail("We should never get here.");
+
+            throw new InvalidOperationException();
+        }
+
+        internal sealed override void WriteWithQuotesAsObject(
+            Utf8JsonWriter writer, object value,
             JsonSerializerOptions options,
             ref WriteStack state)
         {

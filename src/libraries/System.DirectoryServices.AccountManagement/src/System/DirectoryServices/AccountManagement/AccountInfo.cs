@@ -20,7 +20,7 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // AccountLockoutTime
-        private Nullable<DateTime> _accountLockoutTime = null;
+        private Nullable<DateTime> _accountLockoutTime;
         private LoadState _accountLockoutTimeLoaded = LoadState.NotSet;
 
         public Nullable<DateTime> AccountLockoutTime
@@ -32,7 +32,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // LastLogon
-        private Nullable<DateTime> _lastLogon = null;
+        private Nullable<DateTime> _lastLogon;
         private LoadState _lastLogonLoaded = LoadState.NotSet;
 
         public Nullable<DateTime> LastLogon
@@ -64,8 +64,8 @@ namespace System.DirectoryServices.AccountManagement
         //  without needing to ever call the set accessor.  Therefore, rather than a simple "changed" flag set
         //  by the set accessor, we need to track the original value of the property, and flag it as changed
         //  if current value != original value.
-        private byte[] _permittedLogonTimes = null;
-        private byte[] _permittedLogonTimesOriginal = null;
+        private byte[] _permittedLogonTimes;
+        private byte[] _permittedLogonTimesOriginal;
         private LoadState _permittedLogonTimesLoaded = LoadState.NotSet;
 
         public byte[] PermittedLogonTimes
@@ -99,7 +99,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // AccountExpirationDate
-        private Nullable<DateTime> _expirationDate = null;
+        private Nullable<DateTime> _expirationDate;
         private LoadState _expirationDateChanged = LoadState.NotSet;
 
         public Nullable<DateTime> AccountExpirationDate
@@ -120,7 +120,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // SmartcardLogonRequired
-        private bool _smartcardLogonRequired = false;
+        private bool _smartcardLogonRequired;
         private LoadState _smartcardLogonRequiredChanged = LoadState.NotSet;
 
         public bool SmartcardLogonRequired
@@ -141,7 +141,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // DelegationPermitted
-        private bool _delegationPermitted = false;
+        private bool _delegationPermitted;
         private LoadState _delegationPermittedChanged = LoadState.NotSet;
 
         public bool DelegationPermitted
@@ -162,7 +162,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // BadLogonCount
-        private int _badLogonCount = 0;
+        private int _badLogonCount;
         private LoadState _badLogonCountChanged = LoadState.NotSet;
 
         public int BadLogonCount
@@ -174,7 +174,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // HomeDirectory
-        private string _homeDirectory = null;
+        private string _homeDirectory;
         private LoadState _homeDirectoryChanged = LoadState.NotSet;
 
         public string HomeDirectory
@@ -195,7 +195,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // HomeDrive
-        private string _homeDrive = null;
+        private string _homeDrive;
         private LoadState _homeDriveChanged = LoadState.NotSet;
 
         public string HomeDrive
@@ -216,7 +216,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // ScriptPath
-        private string _scriptPath = null;
+        private string _scriptPath;
         private LoadState _scriptPathChanged = LoadState.NotSet;
 
         public string ScriptPath

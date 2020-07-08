@@ -15,5 +15,15 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WriteNumberValue(value);
         }
+
+        internal override ulong ReadWithQuotes(ref Utf8JsonReader reader)
+        {
+            return reader.GetUInt64WithQuotes();
+        }
+
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, ulong value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            writer.WritePropertyName(value);
+        }
     }
 }

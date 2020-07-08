@@ -1446,15 +1446,6 @@ void DomainAssembly::Allocate()
         assemblyHolder.SuppressRelease();
     }
 
-#ifdef FEATURE_COMINTEROP
-    // If we are in an AppX process we should prevent loading of PIA in the AppDomain.
-    // This will ensure that we do not run into any compatibility issues in case a type has both a co-Class and a Winrt Class
-    if (AppX::IsAppXProcess() && pAssembly->IsPIA())
-    {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_PIAInAppxProcess"));
-    }
-#endif
-
     SetAssembly(pAssembly);
 
 #ifdef FEATURE_PREJIT

@@ -24,7 +24,5 @@ namespace Microsoft.Extensions.DependencyInjection
         /// NOTE: this check doesn't verify open generics services.
         /// </summary>
         public bool ValidateOnBuild { get; set; }
-
-        internal ServiceProviderMode Mode { get; set; } = ServiceProviderMode.Default;
     }
 }
