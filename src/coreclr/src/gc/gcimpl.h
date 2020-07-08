@@ -319,7 +319,7 @@ public:
 
     size_t GetLastGCGenerationSize(int gen);
 
-    size_t GetLastGCTimeBetweenGC(int gen);
+    uint64_t GetLastGCTimeBetweenGC(int gen);
 
     int GetGenerationLastGCDuration(int gen);
 

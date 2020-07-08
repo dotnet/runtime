@@ -184,8 +184,6 @@ void GCHeap::UpdatePostGCCounters()
         total_num_sync_blocks,
         static_cast<uint32_t>(total_num_gc_handles));
 
-#endif // FEATURE_EVENT_TRACE
-
     uint64_t _currentPerfCounterTimer = GCToOSInterface::QueryPerformanceCounter();
     uint64_t _currentPerfCounterFreq = (uint64_t)GCToOSInterface::QueryPerformanceFrequency();
 
@@ -216,9 +214,10 @@ void GCHeap::UpdatePostGCCounters()
         g_percentTimeInGCSinceLastGC = 0;
 
     // Update per-generation time spent in GC in ms
-    uint32_t totalTimeInGCInMs = g_TotalTimeInGC * 1000 / _currentPerfCounterFreq;
+    uint32_t totalTimeInGCInMs = (uint32_t)(g_TotalTimeInGC * 1000 / _currentPerfCounterFreq);
     g_GenerationLastGCDuration[condemned_gen] = totalTimeInGCInMs;
     g_TotalTimeSinceLastGCEnd = _currentPerfCounterTimer;
+#endif // FEATURE_EVENT_TRACE
 }
 
 int GCHeap::GetLastGCPercentTimeInGC()
@@ -231,7 +230,7 @@ size_t GCHeap::GetLastGCGenerationSize(int gen)
     return g_GenerationSizes[gen];
 }
 
-size_t GCHeap::GetLastGCTimeBetweenGC(int gen)
+uint64_t GCHeap::GetLastGCTimeBetweenGC(int gen)
 {
     if (gen < 0)
     {
