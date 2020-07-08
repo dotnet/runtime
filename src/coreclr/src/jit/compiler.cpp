@@ -955,6 +955,10 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
 #endif // UNIX_AMD64_ABI
 
+#ifdef UNIX_X86_ABI
+    canReturnInRegister = false;
+#endif
+
     // Check for cases where a small struct is returned in a register
     // via a primitive type.
     //

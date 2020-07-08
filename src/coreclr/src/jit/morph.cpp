@@ -2768,15 +2768,20 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                          call->gtCallArgs->GetNode()->gtOper ==
                              GT_NOP); // the arg was already morphed to a register (fgMorph called twice)
             maxRegArgs = 1;
+#ifdef UNIX_X86_ABI
+            // Add in the ret buff arg
+            if (callHasRetBuffArg)
+                maxRegArgs++;
+#endif
         }
         else
         {
             maxRegArgs = 0;
+            
+            // Add in the ret buff arg
+            if (callHasRetBuffArg)
+                maxRegArgs++;
         }
-
-        // Add in the ret buff arg
-        if (callHasRetBuffArg)
-            maxRegArgs++;
     }
 #endif // TARGET_X86
 
