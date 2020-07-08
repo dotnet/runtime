@@ -18,6 +18,8 @@ CreateDump(const char* dumpPath, int pid, MINIDUMP_TYPE minidumpType)
     {
         goto exit;
     }
+    printf("Process %d %s\n", crashInfo->Pid(), crashInfo->Name().c_str());
+
     // Suspend all the threads in the target process and build the list of threads
     if (!crashInfo->EnumerateAndSuspendThreads())
     {
