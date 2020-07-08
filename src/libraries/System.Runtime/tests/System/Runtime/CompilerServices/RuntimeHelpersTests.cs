@@ -196,8 +196,6 @@ namespace System.Runtime.CompilerServices.Tests
         {
             // TODO: Test actual function pointer types when typeof(delegate*<...>) support is available
 
-            Type canonType = typeof(object).Assembly.GetType("System.__Canon", throwOnError: true);
-
             yield return new[] { typeof(string), typeof(ArgumentException) }; // variable-length type
             yield return new[] { typeof(int[]), typeof(ArgumentException) }; // variable-length type
             yield return new[] { typeof(int[,]), typeof(ArgumentException) }; // variable-length type
@@ -220,9 +218,14 @@ namespace System.Runtime.CompilerServices.Tests
 
             yield return new[] { typeof(ReadOnlySpan<int>), typeof(NotSupportedException) }; // byref type
             yield return new[] { typeof(ArgIterator), typeof(NotSupportedException) }; // byref type
-            yield return new[] { typeof(List<>).MakeGenericType(canonType), typeof(NotSupportedException) }; // shared by generic instantiations
 
-            if (PlatformDetection.IsWindows)
+            if (PlatformDetection.IsNetCore)
+            {
+                Type canonType = typeof(object).Assembly.GetType("System.__Canon", throwOnError: true);
+                yield return new[] { typeof(List<>).MakeGenericType(canonType), typeof(NotSupportedException) }; // shared by generic instantiations
+            }
+
+            if (PlatformDetection.SupportsComInterop)
             {
                 Type comObjType = typeof(object).Assembly.GetType("System.__ComObject", throwOnError: true);
                 yield return new[] { comObjType, typeof(NotSupportedException) }; // COM type
@@ -236,6 +239,46 @@ namespace System.Runtime.CompilerServices.Tests
         [ComImport]
         internal class WbemContext
         {
+        }
+
+        internal class ClassWithBeforeFieldInitCctor
+        {
+            private static readonly int _theInt = GetInt();
+
+            private static int GetInt()
+            {
+                AppDomain.CurrentDomain.SetData("ClassWithBeforeFieldInitCctor_CctorRan", true);
+                return 0;
+            }
+        }
+
+        internal class ClassWithNormalCctor
+        {
+            private static readonly int _theInt;
+
+            static ClassWithNormalCctor()
+            {
+                AppDomain.CurrentDomain.SetData("ClassWithNormalCctor_CctorRan", true);
+                _theInt = 0;
+            }
+        }
+
+        [Fact]
+        public static void GetUninitalizedObject_DoesNotRunBeforeFieldInitCctors()
+        {
+            object o = RuntimeHelpers.GetUninitializedObject(typeof(ClassWithBeforeFieldInitCctor));
+            Assert.IsType<ClassWithBeforeFieldInitCctor>(o);
+
+            Assert.Null(AppDomain.CurrentDomain.GetData("ClassWithBeforeFieldInitCctor_CctorRan"));
+        }
+
+        [Fact]
+        public static void GetUninitalizedObject_RunsNormalStaticCtors()
+        {
+            object o = RuntimeHelpers.GetUninitializedObject(typeof(ClassWithNormalCctor));
+            Assert.IsType<ClassWithNormalCctor>(o);
+
+            Assert.Equal(true, AppDomain.CurrentDomain.GetData("ClassWithNormalCctor_CctorRan"));
         }
 
         [Theory]

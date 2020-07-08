@@ -214,7 +214,14 @@ namespace System
         /// MethodTable* corresponding to that type. If the type is <see cref="Nullable{T}"/> closed over
         /// some T and <paramref name="unwrapNullable"/> is true, then returns the values for the 'T'.
         /// </summary>
-        internal static delegate*<MethodTable*, object> GetNewobjHelperFnPtr(RuntimeType type, out MethodTable* pMT, bool unwrapNullable, bool allowCom)
+        internal static delegate*<MethodTable*, object> GetNewobjHelperFnPtr(
+            // This API doesn't call any constructors, but the type needs to be seen as constructed.
+            // A type is seen as constructed if a constructor is kept.
+            // This obviously won't cover a type with no constructor. Reference types with no
+            // constructor are an academic problem. Valuetypes with no constructors are a problem,
+            // but IL Linker currently treats them as always implicitly boxed.
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type,
+            out MethodTable* pMT, bool unwrapNullable, bool allowCom)
         {
             Debug.Assert(type != null);
 

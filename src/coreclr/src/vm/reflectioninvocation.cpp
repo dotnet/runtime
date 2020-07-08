@@ -568,7 +568,7 @@ FCIMPLEND
  * throws an exception. If TypeHandle is a value type, the NEWOBJ helper will create
  * a boxed zero-inited instance of the value type.
  */
-    void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
+void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
         QCall::TypeHandle pTypeHandle,
         PCODE* ppNewobjHelper,
         MethodTable** ppMT,
@@ -596,6 +596,8 @@ FCIMPLEND
 
     MethodTable* pMT = typeHandle.AsMethodTable();
     PREFIX_ASSUME(pMT != NULL);
+
+    pMT->EnsureInstanceActive();
 
     // Don't allow creating instances of void or delegates
     if (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_VOID) || pMT->IsDelegate())
@@ -646,13 +648,10 @@ FCIMPLEND
         pMT = pMT->GetInstantiation()[0].GetMethodTable();
     }
 
-    // Ensure the type's cctor has run
-    Assembly* pAssem = pMT->GetAssembly();
-    if (!pMT->IsClassInited())
+    // Run the type's cctor if needed (if not marked beforefieldinit)
+    if (pMT->HasPreciseInitCctors())
     {
-        pMT->CheckRestore();
-        pMT->EnsureInstanceActive();
-        pMT->CheckRunClassInitThrowing();
+        pMT->CheckRunClassInitAsIfConstructingThrowing();
     }
 
     // And we're done!

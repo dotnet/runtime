@@ -3971,24 +3971,26 @@ namespace System
 
                 Debug.Assert(cache._pfnNewobj != null);
                 Debug.Assert(cache._pfnCtor != null);
+                Debug.Assert(cache._pMT != null);
 
                 if (!cache._ctorIsPublic && publicOnly)
                 {
                     throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
                 }
 
+                object? obj = cache._pfnNewobj(cache._pMT); // allocation outside the try block (allow OOM to bubble up)
+                GC.KeepAlive(this); // can't allow the type to be collected before the object is created
+
                 try
                 {
-                    object? obj = cache._pfnNewobj(cache._pMT);
-                    GC.KeepAlive(this); // can't allow the type to be collected before the object is created
-
                     cache._pfnCtor(obj);
-                    return obj;
                 }
                 catch (Exception e) when (wrapExceptions)
                 {
                     throw new TargetInvocationException(e);
                 }
+
+                return obj;
             }
 
             if (!skipCheckThis)
