@@ -115,25 +115,7 @@ namespace Microsoft.Extensions.Logging.Console
                 writer.WriteStartObject("Scopes");
                 scopeProvider.ForEachScope((scope, state) =>
                 {
-                    if (scope is IReadOnlyList<KeyValuePair<string, object>> kvps)
-                    {
-                        foreach (var kvp in kvps)
-                        {
-                            if (kvp.Value is string stringValue)
-                                state.WriteString(kvp.Key, stringValue);
-                            else if (kvp.Value is int intValue)
-                                state.WriteNumber(kvp.Key, intValue);
-                            else
-                            {
-                                state.WritePropertyName(kvp.Key);
-                                JsonSerializer.Serialize(state, kvp.Value);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        state.WriteString("Scope_" + numScopes++, scope.ToString());
-                    }
+                    state.WriteString("Scope_" + numScopes++, scope.ToString());
                 }, (writer));
                 writer.WriteEndObject();
             }
