@@ -233,3 +233,7 @@ error and warning codes.
 #### `IL2044`: Could not find any type in namespace 'namespace' specified in 'XML document location'
 
 - The 'XML document location' specifies a namespace 'namespace' but there are no types found in such namespace.
+
+#### `IL2045`: Custom Attribute 'type' is being referenced in code but the linker was instructed to remove all instances of this attribute. If the attribute instances are necessary make sure to either remove the linker attribute XML portion which removes the attribute instances, or to override this use the linker XML descriptor to keep the attribute type (which in turn keeps all of its instances).
+
+- CustomAttribute 'type' is being referenced in the code but the 'type' has been removed using the "remove" attribute tag on a type inside the LinkAttributes xml
