@@ -45,7 +45,7 @@ namespace System.Net
         private ReadStateInfo? _readState;
 
         //the number of bytes needed to encode three bytes (see algorithm description in Encode method below)
-        private const int SizeOfBase64EncodedChar = 4;
+        private const int SizeOfBase64EncodedBlock = 4;
 
         //bytes with this value in the decode map are invalid
         private const byte InvalidBase64Value = 255;
@@ -199,104 +199,121 @@ namespace System.Net
             // Add Encoding header, if any. e.g. =?encoding?b?
             WriteState.AppendHeader();
 
-            int cur = offset;
-            switch (WriteState.Padding)
+            for (int i = 0; i < count; ++i)
             {
-                case 2:
-                    WriteState.Append(Base64EncodeMap[WriteState.LastBits | ((buffer[cur] & 0xf0) >> 4)]);
-                    if (count == 1)
-                    {
-                        WriteState.LastBits = (byte)((buffer[cur] & 0x0f) << 2);
-                        WriteState.Padding = 1;
-                        cur++;
-                        return cur - offset;
-                    }
-                    WriteState.Append(Base64EncodeMap[((buffer[cur] & 0x0f) << 2) | ((buffer[cur + 1] & 0xc0) >> 6)]);
-                    WriteState.Append(Base64EncodeMap[(buffer[cur + 1] & 0x3f)]);
-                    cur += 2;
-                    count -= 2;
-                    WriteState.Padding = 0;
-                    break;
-                case 1:
-                    WriteState.Append(Base64EncodeMap[WriteState.LastBits | ((buffer[cur] & 0xc0) >> 6)]);
-                    WriteState.Append(Base64EncodeMap[(buffer[cur] & 0x3f)]);
-                    cur++;
-                    count--;
-                    WriteState.Padding = 0;
-                    break;
+                AppendEncodedCodepoint(buffer[offset + i], shouldAppendSpaceToCRLF);
             }
 
-            int calcLength = cur + (count - (count % 3));
-
-            // Convert three bytes at a time to base64 notation.  This will output 4 chars.
-            for (; cur < calcLength; cur += 3)
+            if (dontDeferFinalBytes)
             {
-                if ((_lineLength != -1) && (WriteState.CurrentLineLength + SizeOfBase64EncodedChar + _writeState.FooterLength > _lineLength))
-                {
-                    WriteState.AppendCRLF(shouldAppendSpaceToCRLF);
-                }
-
-                //how we actually encode: get three bytes in the
-                //buffer to be encoded.  Then, extract six bits at a time and encode each six bit chunk as a base-64 character.
-                //this means that three bytes of data will be encoded as four base64 characters.  It also means that to encode
-                //a character, we must have three bytes to encode so if the number of bytes is not divisible by three, we
-                //must pad the buffer (this happens below)
-                WriteState.Append(Base64EncodeMap[(buffer[cur] & 0xfc) >> 2]);
-                WriteState.Append(Base64EncodeMap[((buffer[cur] & 0x03) << 4) | ((buffer[cur + 1] & 0xf0) >> 4)]);
-                WriteState.Append(Base64EncodeMap[((buffer[cur + 1] & 0x0f) << 2) | ((buffer[cur + 2] & 0xc0) >> 6)]);
-                WriteState.Append(Base64EncodeMap[(buffer[cur + 2] & 0x3f)]);
-            }
-
-            cur = calcLength; //Where we left off before
-
-            // See if we need to fold before writing the last section (with possible padding)
-            if ((count % 3 != 0) && (_lineLength != -1) && (WriteState.CurrentLineLength + SizeOfBase64EncodedChar + _writeState.FooterLength >= _lineLength))
-            {
-                WriteState.AppendCRLF(shouldAppendSpaceToCRLF);
-            }
-
-            //now pad this thing if we need to.  Since it must be a number of bytes that is evenly divisble by 3,
-            //if there are extra bytes, pad with '=' until we have a number of bytes divisible by 3
-            switch (count % 3)
-            {
-                case 2: //One character padding needed
-                    WriteState.Append(Base64EncodeMap[(buffer[cur] & 0xFC) >> 2]);
-                    WriteState.Append(Base64EncodeMap[((buffer[cur] & 0x03) << 4) | ((buffer[cur + 1] & 0xf0) >> 4)]);
-                    if (dontDeferFinalBytes)
-                    {
-                        WriteState.Append(Base64EncodeMap[((buffer[cur + 1] & 0x0f) << 2)]);
-                        WriteState.Append(Base64EncodeMap[64]);
-                        WriteState.Padding = 0;
-                    }
-                    else
-                    {
-                        WriteState.LastBits = (byte)((buffer[cur + 1] & 0x0F) << 2);
-                        WriteState.Padding = 1;
-                    }
-                    cur += 2;
-                    break;
-
-                case 1: // Two character padding needed
-                    WriteState.Append(Base64EncodeMap[(buffer[cur] & 0xFC) >> 2]);
-                    if (dontDeferFinalBytes)
-                    {
-                        WriteState.Append(Base64EncodeMap[(byte)((buffer[cur] & 0x03) << 4)]);
-                        WriteState.Append(Base64EncodeMap[64]);
-                        WriteState.Append(Base64EncodeMap[64]);
-                        WriteState.Padding = 0;
-                    }
-                    else
-                    {
-                        WriteState.LastBits = (byte)((buffer[cur] & 0x03) << 4);
-                        WriteState.Padding = 2;
-                    }
-                    cur++;
-                    break;
+                AppendPadding();
             }
 
             // Write out the last footer, if any.  e.g. ?=
             WriteState.AppendFooter();
-            return cur - offset;
+            return count;
+        }
+
+        private int AppendEncodedCodepoint(byte b, bool shouldAppendSpaceToCRLF)
+        {
+            if (LineBreakNeeded(1)) {
+                AppendPadding();
+                WriteState.AppendCRLF(shouldAppendSpaceToCRLF);
+            }
+            ApppendEncodedByte(b);
+            return 1;
+        }
+        private int AppendEncodedCodepoint(byte b0, byte b1, bool shouldAppendSpaceToCRLF)
+        {
+            if (LineBreakNeeded(2)) {
+                AppendPadding();
+                WriteState.AppendCRLF(shouldAppendSpaceToCRLF);
+            }
+            ApppendEncodedByte(b0);
+            ApppendEncodedByte(b1);
+            return 2;
+        }
+        private int AppendEncodedCodepoint(byte b0, byte b1, byte b2, byte b3, bool shouldAppendSpaceToCRLF)
+        {
+            if (LineBreakNeeded(4)) {
+                AppendPadding();
+                WriteState.AppendCRLF(shouldAppendSpaceToCRLF);
+            }
+            ApppendEncodedByte(b0);
+            ApppendEncodedByte(b1);
+            ApppendEncodedByte(b2);
+            ApppendEncodedByte(b3);
+            return 4;
+        }
+
+        private bool LineBreakNeeded(int numberOfBytesToAppend)
+        {
+            if (_lineLength == -1) {
+                return false;
+            }
+
+            int bytesLeftInCurrentBlock = 0;
+            switch (WriteState.Padding)
+            {
+                case 2: // 1 byte was encoded from 3
+                    bytesLeftInCurrentBlock = 2;
+                    break;
+                case 1: // 2 bytes were encoded from 3
+                    bytesLeftInCurrentBlock = 1;
+                    break;
+            }
+
+            int numberOfBytesInNewBlock = numberOfBytesToAppend - bytesLeftInCurrentBlock;
+            int numberOfBlocksToAppend = numberOfBytesInNewBlock / 3 + (numberOfBytesInNewBlock % 3 == 0 ? 0 : 1);
+            int numberOfCharsToAppend = numberOfBlocksToAppend * SizeOfBase64EncodedBlock;
+
+            return WriteState.CurrentLineLength + numberOfCharsToAppend + _writeState.FooterLength > _lineLength;
+        }
+
+        private int ApppendEncodedByte(byte b)
+        {
+            switch (WriteState.Padding)
+            {
+                case 0: // add first byte of 3
+                    WriteState.Append(Base64EncodeMap[(b & 0xfc) >> 2]);
+                    WriteState.LastBits = (byte)((b & 0x03) << 4);
+                    WriteState.Padding = 2;
+                    return 1;
+                case 2: // add second byte of 3
+                    WriteState.Append(Base64EncodeMap[WriteState.LastBits | ((b & 0xf0) >> 4)]);
+                    WriteState.LastBits = (byte)((b & 0x0f) << 2);
+                    WriteState.Padding = 1;
+                    return 1;
+                case 1: // add third byte of 3
+                    WriteState.Append(Base64EncodeMap[WriteState.LastBits | ((b & 0xc0) >> 6)]);
+                    WriteState.Append(Base64EncodeMap[(b & 0x3f)]);
+                    WriteState.Padding = 0;
+                    return 1;
+                default:
+                    return 0; // TODO: illegal state. throw exception?
+            }
+        }
+
+        private void AppendPadding()
+        {
+            switch (WriteState.Padding)
+            {
+                case 0: // no padding needed
+                    break;
+                case 2: // 2 character padding needed (1 byte was encoded instead of 3)
+                    WriteState.Append(Base64EncodeMap[WriteState.LastBits]);
+                    WriteState.Append(Base64EncodeMap[64]);
+                    WriteState.Append(Base64EncodeMap[64]);
+                    WriteState.Padding = 0;
+                    break;
+                case 1: // 1 character padding needed (2 bytes were encoded instead of 3)
+                    WriteState.Append(Base64EncodeMap[WriteState.LastBits]);
+                    WriteState.Append(Base64EncodeMap[64]);
+                    WriteState.Padding = 0;
+                    break;
+                default:
+                    break; // TODO: illegal state. throw exception?
+            }
         }
 
         public string GetEncodedString() => Encoding.ASCII.GetString(WriteState.Buffer, 0, WriteState.Length);
