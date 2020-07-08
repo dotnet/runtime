@@ -34,7 +34,7 @@ if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__RepoRootDir=%__ProjectDir%\..\.."
 for %%i in ("%__RepoRootDir%") do SET "__RepoRootDir=%%~fi"
 
-set "__TestDir=%__ProjectDir%\tests"
+set "__TestDir=%__RepoRootDir%\src\tests"
 set "__ProjectFilesDir=%__TestDir%"
 set "__SourceDir=%__ProjectDir%\src"
 set "__RootBinDir=%__RepoRootDir%\artifacts"
@@ -42,7 +42,7 @@ set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
 :: Default __Exclude to issues.targets
-set __Exclude=%__TestDir%\issues.targets
+set __Exclude=%__ProjectDir%\tests\issues.targets
 
 REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:TargetArchitecture=x64)
 set "__args= %*"
@@ -204,7 +204,7 @@ REM ============================================================================
 
 if defined __SkipStressDependencies goto skipstressdependencies
 
-call "%__TestDir%\setup-stress-dependencies.cmd" /arch %__BuildArch% /outputdir %__BinDir%
+call "%__ProjectDir%\tests\setup-stress-dependencies.cmd" /arch %__BuildArch% /outputdir %__BinDir%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: setup-stress-dependencies failed.
     goto     :Exit_Failure
