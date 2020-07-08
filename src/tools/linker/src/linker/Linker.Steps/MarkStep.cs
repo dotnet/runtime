@@ -160,8 +160,6 @@ namespace Mono.Linker.Steps
 		};
 #endif
 
-		FlowAnnotations _flowAnnotations;
-
 		public MarkStep ()
 		{
 			_methods = new Queue<(MethodDefinition, DependencyInfo)> ();
@@ -178,7 +176,6 @@ namespace Mono.Linker.Steps
 		public virtual void Process (LinkContext context)
 		{
 			_context = context;
-			_flowAnnotations = new FlowAnnotations (_context);
 
 			Initialize ();
 			Process ();
@@ -434,6 +431,8 @@ namespace Mono.Linker.Steps
 
 		void ProcessVirtualMethod (MethodDefinition method)
 		{
+			_context.Annotations.EnqueueVirtualMethod (method);
+
 			var overrides = Annotations.GetOverrides (method);
 			if (overrides == null)
 				return;
@@ -958,8 +957,8 @@ namespace Mono.Linker.Steps
 
 			MarkCustomAttributeArgument (namedArgument.Argument, ca, sourceLocationMember);
 
-			if (property != null && _flowAnnotations.RequiresDataFlowAnalysis (property.SetMethod)) {
-				var scanner = new ReflectionMethodBodyScanner (_context, this, _flowAnnotations);
+			if (property != null && _context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (property.SetMethod)) {
+				var scanner = new ReflectionMethodBodyScanner (_context, this);
 				var caCtor = (ca as CustomAttribute).Constructor.Resolve ();
 				scanner.ProcessAttributeDataflow (caCtor, property.SetMethod, new List<CustomAttributeArgument> { namedArgument.Argument });
 			}
@@ -995,8 +994,8 @@ namespace Mono.Linker.Steps
 
 			MarkCustomAttributeArgument (namedArgument.Argument, ca, sourceLocationMember);
 
-			if (field != null && _flowAnnotations.RequiresDataFlowAnalysis (field)) {
-				var scanner = new ReflectionMethodBodyScanner (_context, this, _flowAnnotations);
+			if (field != null && _context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (field)) {
+				var scanner = new ReflectionMethodBodyScanner (_context, this);
 				scanner.ProcessAttributeDataflow (field, namedArgument.Argument);
 			}
 		}
@@ -1036,8 +1035,8 @@ namespace Mono.Linker.Steps
 				MarkCustomAttributeArgument (argument, ca, source);
 
 			var resolvedConstructor = ca.Constructor.Resolve ();
-			if (resolvedConstructor != null && _flowAnnotations.RequiresDataFlowAnalysis (resolvedConstructor)) {
-				var scanner = new ReflectionMethodBodyScanner (_context, this, _flowAnnotations);
+			if (resolvedConstructor != null && _context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (resolvedConstructor)) {
+				var scanner = new ReflectionMethodBodyScanner (_context, this);
 				scanner.ProcessAttributeDataflow (source, resolvedConstructor, ca.ConstructorArguments);
 			}
 		}
@@ -2063,11 +2062,11 @@ namespace Mono.Linker.Steps
 				var argument = arguments[i];
 				var parameter = parameters[i];
 
-				if (_flowAnnotations.RequiresDataFlowAnalysis (parameter)) {
+				if (_context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (parameter)) {
 					// The only two implementations of IGenericInstance both derive from MemberReference
 					Debug.Assert (instance is MemberReference);
 
-					var scanner = new ReflectionMethodBodyScanner (_context, this, _flowAnnotations);
+					var scanner = new ReflectionMethodBodyScanner (_context, this);
 					scanner.ProcessGenericArgumentDataFlow (parameter, argument, sourceLocationMember ?? (instance as MemberReference).Resolve ());
 				}
 
@@ -2624,7 +2623,7 @@ namespace Mono.Linker.Steps
 					MarkType (eh.CatchType, new DependencyInfo (DependencyKind.CatchType, body.Method), body.Method);
 
 			bool requiresReflectionMethodBodyScanner =
-				ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody (_flowAnnotations, body.Method);
+				ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody (_context.Annotations.FlowAnnotations, body.Method);
 			foreach (Instruction instruction in body.Instructions)
 				MarkInstruction (instruction, body.Method, ref requiresReflectionMethodBodyScanner);
 
@@ -2668,7 +2667,7 @@ namespace Mono.Linker.Steps
 				case Code.Ldflda: // Field address loads (as those can be used to store values to annotated field and thus must be checked)
 				case Code.Ldsflda:
 					requiresReflectionMethodBodyScanner |=
-						ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess (_flowAnnotations, (FieldReference) instruction.Operand);
+						ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess (_context.Annotations.FlowAnnotations, (FieldReference) instruction.Operand);
 					break;
 
 				default: // Other field operations are not interesting as they don't need to be checked
@@ -2689,7 +2688,7 @@ namespace Mono.Linker.Steps
 						_ => throw new Exception ($"unexpected opcode {instruction.OpCode}")
 					};
 					requiresReflectionMethodBodyScanner |=
-						ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite (_context, _flowAnnotations, (MethodReference) instruction.Operand);
+						ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite (_context, (MethodReference) instruction.Operand);
 					MarkMethod ((MethodReference) instruction.Operand, new DependencyInfo (dependencyKind, method), method);
 					break;
 				}
@@ -2782,7 +2781,7 @@ namespace Mono.Linker.Steps
 		protected virtual void MarkReflectionLikeDependencies (MethodBody body, bool requiresReflectionMethodBodyScanner)
 		{
 			if (requiresReflectionMethodBodyScanner) {
-				var scanner = new ReflectionMethodBodyScanner (_context, this, _flowAnnotations);
+				var scanner = new ReflectionMethodBodyScanner (_context, this);
 				scanner.ScanAndProcessReturnValue (body);
 			}
 

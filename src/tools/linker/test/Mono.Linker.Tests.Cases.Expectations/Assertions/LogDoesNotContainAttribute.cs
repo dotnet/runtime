@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 		Inherited = false)]
 	public class LogDoesNotContainAttribute : EnableLoggerAttribute
 	{
-		public LogDoesNotContainAttribute (string message)
+		public LogDoesNotContainAttribute (string message, bool regexMatch = false)
 		{
 			if (string.IsNullOrEmpty (message))
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (message));
