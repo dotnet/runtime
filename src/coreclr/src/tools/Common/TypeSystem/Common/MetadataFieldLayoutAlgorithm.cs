@@ -633,7 +633,8 @@ namespace Internal.TypeSystem
                 }
                 else
                 {
-                    cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, context.Target.LayoutPointerSize, context.Target);
+                    largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, context.Target.LayoutPointerSize);
+                    cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, largestAlignmentRequired, context.Target);
                 }
                 offsets[fieldOrdinal] = new FieldAndOffset(instanceValueClassFieldsArr[i], cumulativeInstanceFieldPos);
 
