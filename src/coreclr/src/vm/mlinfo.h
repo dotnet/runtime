@@ -52,8 +52,7 @@ enum MarshalFlags
     MARSHAL_FLAG_HRESULT_SWAP       = 0x010,
     MARSHAL_FLAG_RETVAL             = 0x020,
     // unused                       = 0x040,
-    MARSHAL_FLAG_FIELD              = 0x080,
-    MARSHAL_FLAG_IN_MEMBER_FUNCTION = 0x100
+    MARSHAL_FLAG_FIELD              = 0x080
 };
 
 #include <pshpack1.h>
@@ -322,7 +321,6 @@ public:
                 BOOL BestFit,
                 BOOL ThrowOnUnmappableChar,
                 BOOL fEmitsIL,
-                BOOL onInstanceMethod,
                 MethodDesc* pMD = NULL,
                 BOOL fUseCustomMarshal = TRUE
 #ifdef _DEBUG
@@ -520,7 +518,6 @@ private:
     VARTYPE         m_arrayElementType;
     int             m_iArrayRank;
     BOOL            m_nolowerbounds;  // if managed type is SZARRAY, don't allow lower bounds
-    BOOL            m_onInstanceMethod;
 
     // for NT_ARRAY only
     UINT32          m_multiplier;     // multipler for "sizeis"

@@ -353,12 +353,6 @@ protected:
         return (0 != (dwMarshalFlags & MARSHAL_FLAG_RETVAL));
     }
 
-    static inline bool IsInMemberFunction(DWORD dwMarshalFlags)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (0 != (dwMarshalFlags & MARSHAL_FLAG_IN_MEMBER_FUNCTION));
-    }
-
     static inline bool IsFieldMarshal(DWORD dwMarshalFlags)
     {
         LIMITED_METHOD_CONTRACT;
@@ -602,7 +596,6 @@ public:
         bool byrefNativeReturn = false;
         CorElementType typ = ELEMENT_TYPE_VOID;
         UINT32 nativeSize = 0;
-        bool nativeMethodIsMemberFunction = IsInMemberFunction(dwMarshalFlags);
 
         // we need to convert value type return types to primitives as
         // JIT does not inline P/Invoke calls that return structures
@@ -623,32 +616,19 @@ public:
             // JIT32 and JIT64 (which is only used on the Windows Desktop CLR) has a problem generating
             // code for the pinvoke ILStubs which do a return using a struct type.  Therefore, we
             // change the signature of calli to return void and make the return buffer as first argument.
-
-            // For Windows, we need to use a return buffer for native member functions returning structures.
-            // On Windows arm we need to respect HFAs and not use a return buffer if the return type is an HFA
-            // for X86 Windows non-member functions we bash the return type from struct to U1, U2, U4 or U8
+            // For X86 Windows we bash the return type from struct to U1, U2, U4 or U8
             // and use byrefNativeReturn for all other structs.
-            if (nativeMethodIsMemberFunction)
-            {
-#ifdef TARGET_ARM
-                byrefNativeReturn = !nativeType.InternalToken.GetMethodTable()->IsNativeHFA();
-#else
-                byrefNativeReturn = true;
-#endif
-            }
-            else
-            {
+
 #ifdef TARGET_X86
-                switch (nativeSize)
-                {
-                    case 1: typ = ELEMENT_TYPE_U1; break;
-                    case 2: typ = ELEMENT_TYPE_U2; break;
-                    case 4: typ = ELEMENT_TYPE_U4; break;
-                    case 8: typ = ELEMENT_TYPE_U8; break;
-                    default: byrefNativeReturn = true; break;
-                }
-#endif // TARGET_X86
+            switch (nativeSize)
+            {
+                case 1: typ = ELEMENT_TYPE_U1; break;
+                case 2: typ = ELEMENT_TYPE_U2; break;
+                case 4: typ = ELEMENT_TYPE_U4; break;
+                case 8: typ = ELEMENT_TYPE_U8; break;
+                default: byrefNativeReturn = true; break;
             }
+#endif // TARGET_X86
 #endif // defined(TARGET_WINDOWS)
 
             // for UNIX_X86_ABI, we always need a return buffer argument for any size of structs.
@@ -657,7 +637,7 @@ public:
 #endif
         }
 
-        if (IsHresultSwap(dwMarshalFlags) || (byrefNativeReturn && (IsCLRToNative(m_dwMarshalFlags) || nativeMethodIsMemberFunction)))
+        if (IsHresultSwap(dwMarshalFlags) || (byrefNativeReturn && IsCLRToNative(m_dwMarshalFlags)))
         {
             LocalDesc extraParamType = nativeType;
             extraParamType.MakeByRef();
@@ -778,10 +758,6 @@ public:
                 // we tolerate NULL here mainly for backward compatibility reasons
                 m_nativeHome.EmitCopyToByrefArgWithNullCheck(m_pcsUnmarshal, &nativeType, argidx);
                 m_pcsUnmarshal->EmitLDC(S_OK);
-            }
-            else if (byrefNativeReturn && nativeMethodIsMemberFunction)
-            {
-                m_nativeHome.EmitCopyToByrefArg(m_pcsUnmarshal, &nativeType, argidx);
             }
             else
             {

@@ -1188,7 +1188,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                          BOOL BestFit,
                          BOOL ThrowOnUnmappableChar,
                          BOOL fEmitsIL,
-                         BOOL onInstanceMethod,
                          MethodDesc* pMD,
                          BOOL fLoadCustomMarshal
 #ifdef _DEBUG
@@ -1231,7 +1230,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
     CorElementType corElemType      = ELEMENT_TYPE_END;
     m_pMT                           = NULL;
     m_pMD                           = pMD;
-    m_onInstanceMethod              = onInstanceMethod;
 
 #ifdef FEATURE_COMINTEROP
     m_fDispItf                      = FALSE;
@@ -1377,7 +1375,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
     // that have been normalized away have default marshaling or MarshalAs(Struct).
     // In addition, the nativeType must be updated with the type of the real primitive inside.
     // We don't normalize on return values of member functions since struct return values need to be treated as structures.
-    if (isParam || !onInstanceMethod)
+    if (isParam)
     {
         VerifyAndAdjustNormalizedType(pModule, sig, pTypeContext, &mtype, &nativeType);
     }
@@ -2370,7 +2368,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         // (returning small value types by value in registers) is already done in JIT64.
                         if (        !m_byref   // Permit register-sized structs as return values
                                  && !isParam
-                                 && !onInstanceMethod
                                  && CorIsPrimitiveType(m_pMT->GetInternalCorElementType())
                                  && !IsUnmanagedValueTypeReturnedByRef(nativeSize)
                                  && managedSize <= sizeof(void*)
@@ -2776,7 +2773,7 @@ DWORD CalculateArgumentMarshalFlags(BOOL byref, BOOL in, BOOL out, BOOL fMngToNa
     return dwMarshalFlags;
 }
 
-DWORD CalculateReturnMarshalFlags(BOOL hrSwap, BOOL fMngToNative, BOOL onInstanceMethod)
+DWORD CalculateReturnMarshalFlags(BOOL hrSwap, BOOL fMngToNative)
 {
     LIMITED_METHOD_CONTRACT;
     DWORD dwMarshalFlags = MARSHAL_FLAG_RETVAL;
@@ -2789,11 +2786,6 @@ DWORD CalculateReturnMarshalFlags(BOOL hrSwap, BOOL fMngToNative, BOOL onInstanc
     if (fMngToNative)
     {
         dwMarshalFlags |= MARSHAL_FLAG_CLR_TO_NATIVE;
-    }
-
-    if (onInstanceMethod)
-    {
-        dwMarshalFlags |= MARSHAL_FLAG_IN_MEMBER_FUNCTION;
     }
 
     return dwMarshalFlags;
@@ -2939,7 +2931,7 @@ void MarshalInfo::GenerateReturnIL(NDirectStubLinker* psl,
         }
 
         NewHolder<ILMarshaler> pMarshaler = CreateILMarshaler(m_type, psl);
-        DWORD dwMarshalFlags = CalculateReturnMarshalFlags(retval, fMngToNative, m_onInstanceMethod);
+        DWORD dwMarshalFlags = CalculateReturnMarshalFlags(retval, fMngToNative);
 
         if (!pMarshaler->SupportsReturnMarshal(dwMarshalFlags, &resID))
         {
